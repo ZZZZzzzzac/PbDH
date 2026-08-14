@@ -15,11 +15,38 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 
 ## 目录约定
 
-- `src/`：产品源代码
-- `tests/`：自动化测试
+- `apps/player/`：Player App
+- `apps/creator/`：Creator App（卡牌工坊）
+- `apps/gm/`：GM App（GM 卡片桌面）
+- `apps/market/`：公共 Market 前端
+- `apps/backend/`：模块化单体 Platform Backend
+- `contracts/`：语言无关、独立版本化的 Contract Schemas 与契约样例；不得依赖具体 App、共享 package 或编程语言
+- `packages/templates/`：可信 Resource Templates 与 Template Registry；使用无 React 的 `core` 入口和前端专用 `frontend` 入口隔离
+- `packages/resource-renderer/`：所有前端共用的 Canonical Card Surface 渲染接口、基础组件与隔离样式；接收已解析 Template，不反向读取 Template Registry
+- `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
+- `packages/tabletop/`：共享 Tabletop Core 与 React Surface；使用 `core` 和 `react` 子入口隔离
+- `tests/`：跨 App 集成测试与 Contract/Template 一致性测试；模块内部测试跟随所属模块
 - `scripts/`：一次性或开发辅助脚本
 - `docs/`：项目文档与 ADR
 - `.scratch/`：临时 issue/研究材料；正式工作项使用 GitHub Issues
+
+新增顶层目录或共享 package 前，必须先更新本节或建立对应目录级 `AGENTS.md`。不得把旧仓库作为 submodule、subtree 或嵌套仓库放入本项目。
+
+## 依赖方向
+
+- `contracts/` 位于最底层；共享 package 不得形成循环依赖，也不得依赖 `apps/`。
+- `packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
+- `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
+- App 组合根负责解析 Template 并注入 Renderer、Tabletop 与 Conversion；共享模块不得通过全局 Registry 反向寻找宿主能力。
+- `apps/backend` 只能使用 `contracts/` 与无 React 的 `packages/templates/core` 等服务端安全入口，禁止依赖 React、DOM 或浏览器专用代码。
+- 建立代码后必须用自动化依赖边界检查守住以上规则；新增例外前先修订本节和对应 ADR。
+
+## 旧仓库迁移
+
+- `PbDH_Cards` 是半成品来源，可复制并重组到本项目；迁移验收前保留原仓库作为历史证据。
+- `PbDH_sheet` 是线上产品来源，原仓库保持不动。本项目只选择性复制代码、测试和行为，不直接修改或运行时引用其源码。
+- 每次复制必须记录来源仓库、commit 与原路径。旧 Issue、PRD、ADR 和 Git 历史只作证据，不成为本项目权威文档。
+- Sheet 行为迁移以可验证的测试和显式验收为准；不得因为代码已复制就宣称完成替代。
 
 ## Agent skills
 
@@ -34,3 +61,12 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 ### Domain docs
 
 本项目采用 single-context 文档布局。详见 `docs/agents/domain.md`。
+
+### PRD hierarchy
+
+- 正式 PRD 使用 GitHub Issues；本地 `CONTEXT.md` 与 `docs/adr/` 分别维护领域语言和已接受架构决策。
+- L0 只有 `PbDH Platform`。
+- L1 固定为 `System Authoring Workflow`、`Player App`、`Creator App`、`GM App`、`Market`、`Contracts & Template Platform`。
+- App 目录、共享 composition code、Platform Backend 及其内部模块是部署或实现边界，不自动成为产品 L1。
+- L2 按一个 L1 内可独立验收的用户能力拆分；下层 PRD 不得覆盖上层边界，发生冲突时先修订上层权威。
+- 旧 Sheet/Cards PRD 只作需求证据，不复制为新项目权威正文。

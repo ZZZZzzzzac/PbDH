@@ -16,6 +16,7 @@ node_modules/
 .vite/
 
 # Local environment and editor files
+.scratch/
 .env
 .env.*
 !.env.example
