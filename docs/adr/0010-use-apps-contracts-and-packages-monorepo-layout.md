@@ -2,6 +2,8 @@
 
 Status: accepted
 
+The `apps/gm` directory decision is superseded by ADR-0051; Creator-hosted GM Tabletop uses `apps/creator`. The remaining monorepo and dependency layout stays accepted.
+
 PbDH will organize product entry points under `apps/`, language-neutral schemas under top-level `contracts/`, and shared executable frontend Modules under `packages/`. The first App directories are `player`, `creator`, `gm`, `market`, and `backend`; the first shared executable areas are `templates`, `resource-renderer`, `resource-conversion`, and `tabletop`.
 
 Contract Schemas are not TypeScript implementation packages and therefore remain outside `packages/`. App boundaries remain visible even though all source is in one repository. A shared package is created only for behaviour genuinely used by more than one App, not merely because two files have similar names.

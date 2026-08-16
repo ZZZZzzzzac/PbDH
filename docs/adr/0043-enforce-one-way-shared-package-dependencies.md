@@ -2,6 +2,8 @@
 
 Status: accepted
 
+ADR-0051 removes GM App as a separate composition root and injects Tabletop capabilities through Creator App. The one-way dependency rules remain accepted.
+
 PbDH shared packages form a directed acyclic dependency graph. Top-level `contracts` is the language-neutral foundation. Shared packages never depend on an App, and App composition roots resolve concrete Template capabilities and inject them into Renderer, Tabletop, and Conversion workflows. A shared module cannot locate host state or the Template Registry through a reverse import or global singleton.
 
 `packages/templates` exposes a React-free `core` entry for schemas, defaults, Registry metadata, and behaviour declarations, plus a frontend-only `frontend` entry for authoring layouts and presentation implementations. `packages/tabletop` similarly exposes pure `core` state and command capabilities separately from its `react` spatial surface. `packages/resource-renderer` defines the common rendering interface, primitives, and isolated surface but does not import `packages/templates`; it renders a Template capability supplied by the host. `packages/resource-conversion` may use Contract definitions and `templates/core`, never frontend Template code.

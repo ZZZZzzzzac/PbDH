@@ -10,7 +10,7 @@ A single platform version would make unrelated changes appear coupled: changing 
 
 - Resource Package Contract governs the pure-data package document plus its self-contained Portable Archive file Profile, contained Game Resources, Asset ID references, and installation-facing metadata.
 - System Package Contract governs the player-system definition, Resource Compatibility declarations, system-specific Character Data Schema, and Player App extension points.
-- Character Save Contract governs the durable platform envelope around player-owned character state, including its System Package reference, Game Resource References, dependency metadata, and the system-specific Character Data payload.
+- Character Save Contract governs the durable platform envelope around player-owned character state, including its System Package reference and version plus the system-specific Character Data payload. Per ADR-0052, resource-backed character fields contain final values written by a Player resource-application interaction rather than Game Resource References, selected-state snapshots, or Resource Package dependency metadata.
 - Tabletop Document Contract governs the pure-data tabletop document plus its self-contained Portable Archive file Profile, including Tabletop Instances, their independent Tabletop Instance Resource Copies, layout, and runtime state. It owns and may mutate table-private copies without owning or mutating their source Game Resources.
 - Backend API Contract governs client/server request, response, error, authentication-context, and synchronization protocol payloads.
 - A file or network boundary must carry, or unambiguously negotiate, the relevant Family version; internal functions and TypeScript-only types do not need public versions.

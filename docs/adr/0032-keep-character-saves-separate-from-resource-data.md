@@ -1,6 +1,6 @@
 # Keep Character Saves Separate from Resource Data
 
-Status: accepted
+Status: superseded by ADR-0052
 
 A Character Save stores character-owned state plus stable references and dependency metadata for the Game Resources it uses. It does not embed Game Resource definitions, Resource Packages, or resource media bytes. Resource data remains independently installed, versioned, distributed through Market, or imported from a user-provided file.
 

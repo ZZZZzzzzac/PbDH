@@ -16,8 +16,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 ## 目录约定
 
 - `apps/player/`：Player App
-- `apps/creator/`：Creator App（卡牌工坊）
-- `apps/gm/`：GM App（GM 卡片桌面）
+- `apps/creator/`：Creator App（卡牌工坊与其内嵌的 GM Tabletop 标签页）
 - `apps/market/`：公共 Market 前端
 - `apps/backend/`：模块化单体 Platform Backend
 - `contracts/`：语言无关、独立版本化的 Contract Schemas 与契约样例；不得依赖具体 App、共享 package 或编程语言
@@ -66,7 +65,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 
 - 正式 PRD 使用 GitHub Issues；本地 `CONTEXT.md` 与 `docs/adr/` 分别维护领域语言和已接受架构决策。
 - L0 只有 `PbDH Platform`。
-- L1 固定为 `System Authoring Workflow`、`Player App`、`Creator App`、`GM App`、`Market`、`Contracts & Template Platform`。
+- L1 固定为 `System Authoring Workflow`、`Player App`、`Creator App`、`GM Tabletop`、`Market`、`Contracts & Template Platform`。`GM Tabletop` 是 Creator App 内的独立产品能力与文档类型，不是独立 App 或部署物。
 - App 目录、共享 composition code、Platform Backend 及其内部模块是部署或实现边界，不自动成为产品 L1。
 - L2 按一个 L1 内可独立验收的用户能力拆分；下层 PRD 不得覆盖上层边界，发生冲突时先修订上层权威。
 - 旧 Sheet/Cards PRD 只作需求证据，不复制为新项目权威正文。

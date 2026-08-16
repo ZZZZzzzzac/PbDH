@@ -1,6 +1,6 @@
 # Use Local-first Cloud Sync with Domain-owned Documents
 
-Status: accepted
+Status: superseded by ADR-0049
 
 Player App, Creator App, and GM App will include Cloud Sync in their first release. Creator Workspaces, GM tabletop documents, and Character Saves write locally first, then reuse one synchronization mechanism for durable outbox delivery, debounced background upload, reconnect retry, quota handling, account-wide single-active-session enforcement, and server-side recycle-bin retention. They remain separate domain documents with separate repositories and sync payloads; Cloud Sync does not create one aggregate workspace that owns all private account data. Each Character Save is independently synchronized instead of placing every Player record in one Player workspace document.
 

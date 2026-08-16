@@ -2,6 +2,8 @@
 
 Status: accepted
 
+ADR-0051 removes Creator-to-GM App session switching because both capabilities share Creator App. The account-wide single-active-session policy remains accepted.
+
 PbDH will retain the Cards account-wide single-active-session design. A PbDH Account has at most one active Platform session across Player App, Creator App, GM App, and authenticated Market operations. Starting a new session while another exists requires explicit confirmation that the old session will be replaced.
 
 The product does not optimize its first release for one person using multiple PbDH Apps or devices concurrently. Account-wide exclusion is simpler than document leases, prevents concurrent cloud writers across all domain documents, and reuses the implemented Cards session claim and replacement behavior.

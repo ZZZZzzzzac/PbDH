@@ -6,6 +6,8 @@ PbDH Account storage quota exists to limit user-controlled image storage. Only M
 
 For one account, each distinct normalized WebP is charged once by byte size regardless of how many cards, resources, documents, or publications reference its Asset ID. If two accounts independently own references to identical content-addressed bytes, each account is charged once even if the Backend physically deduplicates the blob. Installing another creator's Market resource does not create asset ownership, a cloud copy, or quota usage for the installer.
 
+A durable Cloud Document may nevertheless hold a non-owning private read reference to Market media that the user validly acquired while it was public. This keeps the existing document recoverable after withdrawal without charging the consumer's quota or creating media ownership. The reference is released with the document's permanent deletion or recycle-bin expiry.
+
 A Market publication remains an owning reference for its creator while that account exists. Publishing an asset therefore does not free the creator's quota, and withdrawing a publication does not free quota while another private or public owning reference remains. This prevents publication from becoming a way to store unlimited media outside account limits. If the account is deleted while the publication survives as read-only, its public reference becomes Platform-custodied and no longer belongs to or consumes quota for the deleted account.
 
 ## Consequences

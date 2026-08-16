@@ -4,7 +4,7 @@ Status: accepted
 
 Character Saves cross durable boundaries independently of both System Packages and Backend APIs: they are stored locally, exported as files, synchronized as private cloud documents, and reopened by later Player App versions. PbDH therefore makes Character Save the fifth independently versioned Contract Family alongside Resource Package, System Package, Tabletop Document, and Backend API.
 
-The Character Save Contract governs the platform-owned envelope: its own Contract version, stable save identity, System Package ID and recorded version, Game Resource References, dependency metadata, and the contained Character Data payload. The target System Package continues to own the schema and semantics of that payload. Transporting the save through Backend API does not make the API Contract its data format, and changing a System Package does not implicitly change the Character Save envelope Contract.
+The Character Save Contract governs the platform-owned envelope: its own Contract version, stable save identity, System Package ID and recorded version, and the contained Character Data payload. Per ADR-0052, resource-backed character fields are already materialized inside that payload and the envelope carries no Game Resource References or Resource Package dependency metadata for them. The target System Package continues to own the schema and semantics of the payload. Transporting the save through Backend API does not make the API Contract its data format, and changing a System Package does not implicitly change the Character Save envelope Contract.
 
 ## Consequences
 
