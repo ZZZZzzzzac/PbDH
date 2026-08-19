@@ -9,6 +9,7 @@ export {
   buildTemplateSupportManifest,
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
+export { weaponAuthoringLayout } from "./weapon/1.0.0-alpha.1/authoring-layout.ts";
 export type {
   AuthoringControl,
   AuthoringField,

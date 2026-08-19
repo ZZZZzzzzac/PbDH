@@ -1,11 +1,14 @@
 import { adversaryTemplate } from "./adversary/1.0.0-alpha.1/capability.ts";
 import { TemplateRegistry } from "./registry.ts";
+import { weaponTemplate } from "./weapon/1.0.0-alpha.1/capability.ts";
 
 export { adversaryTemplate } from "./adversary/1.0.0-alpha.1/capability.ts";
 export type {
   AdversaryData,
   AdversaryFeature,
 } from "./adversary/1.0.0-alpha.1/capability.ts";
+export { weaponTemplate } from "./weapon/1.0.0-alpha.1/capability.ts";
+export type { WeaponData } from "./weapon/1.0.0-alpha.1/capability.ts";
 export { TemplateRegistry } from "./registry.ts";
 export type {
   MediaSlot,
@@ -17,4 +20,5 @@ export type {
 
 export const templateRegistry = new TemplateRegistry([
   adversaryTemplate,
+  weaponTemplate,
 ]);
