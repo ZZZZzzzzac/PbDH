@@ -8,8 +8,8 @@
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 5 进行中；#23—#30 已完成 monorepo 验证脊柱、Contract Catalog、Resource Package、敌人 Template、Canonical Renderer、最小 System Package，以及 Creator 敌人创作与包交换原型的设计和人工评审。阶段 6 产品纵切尚未开始。
-- 下一步：按 #31—#33 完成 Player、GM Tabletop 与 Market 的 PRD 覆盖表、OpenPencil 线框和可交互浏览器原型。
+- 产品实现：阶段 5 进行中；#23—#30 已完成并关闭，覆盖 monorepo 验证脊柱、Contract Catalog、Resource Package、敌人 Template、Canonical Renderer、最小 System Package，以及 Creator 敌人创作与包交换原型的设计和人工评审。#31 已开始接入 Player 本地资源库；原生路由已按旧 Sheet 的“武器”入口校准，敌人资源在 Player 中进入“其他资源”。阶段 6 产品纵切尚未开始。
+- 下一步：先拆分并完成武器 Template、Renderer 与 Creator 主武器创作的实现 Issue，再完成 #31 的 Player 主武器选择与 Character Data 写入；随后按 #32—#33 完成敌人 GM Tabletop 与敌人/武器 Market 双交接设计原型。
 
 ## 推进模型
 
@@ -172,7 +172,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 5：实施准备与 Issue 拆分
 
-阶段状态：进行中。实现 Issue #23—#30 已完成；下一项为 #31 Player 敌人安装与兼容路由纵切设计，之后依次完成 #32—#33。
+阶段状态：进行中。实现 Issue #23—#30 已完成并关闭；#31 已完成设计和资源仓储原型，仍缺正式武器 Template/Creator 链路及主武器写入 Character Data。之后依次完成 #32 与 #33。
 
 进入产品代码前完成：
 
@@ -181,15 +181,15 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 3. 建立跨语言 Contract conformance、Template/Renderer 一致性和单一验证入口；不得使用只供某个 App 的临时 Schema 或伪 Renderer 穿过纵切。
 4. 为 Resource Package Contract `1.0.0` 建立真实语料、正反例、安全边界和 known-answer fixtures；具体 Profile 上限在正式发布前根据语料和压力结果冻结。
 5. 记录从 `PbDH_Cards`、`PbDH_sheet` 或其他旧来源复制的每份代码、测试和数据的来源仓库、commit 与原路径。
-6. 冻结首条纵切使用的一份敌人资源、媒体和预期卡面，作为跨 App 共同 fixture。
+6. 冻结首条纵切使用的一份敌人资源、媒体和预期卡面，作为跨 App 共同 fixture；Player 同时使用一份主武器 fixture 验证 Daggerheart Core 的真实原生入口，敌人资源在 Player 中进入“其他资源”。
 7. 为第一条纵切建立 PRD 覆盖表，并完成其 OpenPencil 低保真线框、相关状态清单和人工布局评审；设计范围只覆盖该纵切实际经过的界面。
 8. 在真实 App 外壳中建立可交互浏览器原型，验证主路径和验收相关异常状态；fixtures 与正式 Contract 对齐，原型验收不替代真实端到端验收。
 
 完成标准：实现 Issue 不需要重新决定顶层产品边界；Agent 能在明确 Contract、依赖方向、PRD—界面映射、已评审原型和验收条件下独立实施。
 
-## 阶段 6：完成第一条敌人资源纵切
+## 阶段 6：完成敌人与武器两条资源纵切
 
-实施并联合验收以下真实路径：
+实施并联合验收两条真实路径。敌人卡验证 Creator、Market 与 GM，武器卡验证 Creator、Market 与 Player：
 
 ```text
 官方敌人数据与媒体
@@ -197,18 +197,27 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 → 敌人 Template 与 Renderer Revision
 → Creator Workspace 创建、编辑和规范卡面预览
 → 导出并重新导入完整 .pbres
-→ Player 安装、多目标原生路由与其他资源降级
-→ GM Tabletop 显式放置、修改实例状态并保存 .pbtab
 → Creator 发布到 Market
-→ Market 下载、安装和 App 交接
-→ Creator Workspace / Character Save / GM Tabletop Document 分别云同步与恢复
+→ Market 下载并交接到 Creator App 内的 GM Tabletop
+→ GM 显式放置、修改实例状态并保存 .pbtab
+→ Creator Workspace / GM Tabletop Document 分别云同步与恢复
+
+官方主武器数据
+→ Resource Package Contract
+→ 武器 Template 与 Renderer Revision
+→ Creator Workspace 创建、编辑和规范卡面预览
+→ Creator 发布到 Market
+→ Market 下载并交接到 Player
+→ Daggerheart Core 将主武器路由到原生“武器”入口
+→ 玩家选择主武器，System Package Dependency 把最终字段值写入 Character Data
+→ Character Save 云同步与恢复，不保存资源引用或选择状态
 ```
 
-纵切必须使用真实 Contract、真实敌人 Template、共享 Renderer、规范化媒体和正式文件边界。不得使用私有临时 Contract、硬编码敌人页面、截图伪卡面、公开私有媒体捷径、自动放置或静默更新来宣称闭环。
+两条纵切必须使用真实 Contract、对应的正式 Template、共享 Renderer 和正式文件边界。不得使用私有临时 Contract、Player 硬编码武器字段映射、截图伪卡面、公开私有媒体捷径、自动放置或静默更新来宣称闭环。敌人包可安装到 Player，但只能进入“其他资源”；主武器包不得因此自动改写 Character Data。
 
 本阶段同时完成设计—实现循环的首次校准：先完成整条纵切的设计与原型评审，再实施真实端到端路径；首次校准通过前，不以“设计领先”为理由启动第二条纵切。校准结果至少确定 Platform UI 外壳、共同交互规则、PRD 覆盖表格式和人工评审门禁。
 
-完成标准：同一敌人资源可以创建、导出、导入、验证、渲染、安装、显式放置、修改桌面实例、发布、重新取得并跨设备恢复；文件、云端和 Market 路径保持相同身份与内容边界。若纵切失败，先修正对应 Contract、ADR 或 L2，不扩大模板和应用范围。
+完成标准：敌人资源完成 Creator → Market → GM 的创建、发布、取得、显式放置、实例操作和恢复；主武器资源完成 Creator → Market → Player 的创建、发布、取得、原生路由、显式选择、最终字段写入和 Character Save 恢复。文件、云端和 Market 路径保持相同身份与内容边界。若纵切失败，先修正对应 Contract、ADR 或 L2，不扩大模板和应用范围。
 
 ## 阶段 7：扩大共同平台与官方内容
 
