@@ -6919,6 +6919,742 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n1127",
+                  "name": "Renderer Revision / weapon-card-r1 / Canonical",
+                  "role": "card",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10.0,
+                  "padding": [
+                    14.0,
+                    18.0
+                  ],
+                  "alignItems": "center",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#FFFDF8"
+                    }
+                  ],
+                  "stroke": {
+                    "thickness": 1.0,
+                    "fill": [
+                      {
+                        "type": "solid",
+                        "color": "#D4C8B5"
+                      }
+                    ]
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n1128",
+                      "name": "预览标题 / weapon-card-r1",
+                      "locked": false,
+                      "width": 420.0,
+                      "height": "fit_content",
+                      "content": "WEAPON-CARD-R1 · 默认预览",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 11.0,
+                      "fontWeight": 700,
+                      "letterSpacing": 0.0,
+                      "lineHeight": 1.25,
+                      "textAlign": "center",
+                      "textGrowth": "fixed-width",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#641F1D"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1129",
+                      "name": "weapon-card-r1 / Canonical",
+                      "role": "card",
+                      "width": 360.0,
+                      "height": 568.0,
+                      "layout": "vertical",
+                      "clipContent": true,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#EEE4D0"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 3.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#21150F"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1130",
+                          "name": "卡面 / 武器标题",
+                          "width": "fill_container",
+                          "height": 132.0,
+                          "layout": "vertical",
+                          "gap": 7.0,
+                          "padding": [
+                            18.0,
+                            18.0,
+                            14.0,
+                            18.0
+                          ],
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#321B18"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n1131",
+                              "name": "标题 / 类型与位阶",
+                              "width": "fill_container",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n1132",
+                                  "name": "标题 / 类型",
+                                  "locked": false,
+                                  "width": 140.0,
+                                  "height": "fit_content",
+                                  "content": "主武器",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "letterSpacing": 0.0,
+                                  "lineHeight": 1.25,
+                                  "textAlign": "left",
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#E7C79A"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n1133",
+                                  "name": "标题 / 位阶",
+                                  "locked": false,
+                                  "width": 100.0,
+                                  "height": "fit_content",
+                                  "content": "位阶 1",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "letterSpacing": 0.0,
+                                  "lineHeight": 1.25,
+                                  "textAlign": "right",
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#E7C79A"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1134",
+                              "name": "标题 / 名称",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "阔剑",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 32.0,
+                              "fontWeight": 800,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.25,
+                              "textAlign": "left",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFF4DF"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1135",
+                              "name": "标题 / 规则摘要",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "敏捷 · 近战 · 单手",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 550,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.25,
+                              "textAlign": "left",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#D8BA91"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1136",
+                          "name": "卡面 / 武器规则",
+                          "width": "fill_container",
+                          "height": 436.0,
+                          "layout": "vertical",
+                          "gap": 12.0,
+                          "padding": [
+                            14.0,
+                            14.0,
+                            16.0,
+                            14.0
+                          ],
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n1137",
+                              "name": "规则 / 核心数据",
+                              "width": "fill_container",
+                              "height": 66.0,
+                              "layout": "horizontal",
+                              "gap": 8.0,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "n1138",
+                                  "name": "核心数据 / 属性",
+                                  "width": "fill_container",
+                                  "height": 66.0,
+                                  "layout": "vertical",
+                                  "gap": 2.0,
+                                  "padding": [
+                                    8.0,
+                                    6.0
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#F7F0E2"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#C8B89F"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n1139",
+                                      "name": "核心数据 / 属性 / 数值",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "敏捷",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 20.0,
+                                      "fontWeight": 800,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#641F1D"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1140",
+                                      "name": "核心数据 / 属性 / 标签",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "属性",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 600,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#725443"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1141",
+                                  "name": "核心数据 / 距离",
+                                  "width": "fill_container",
+                                  "height": 66.0,
+                                  "layout": "vertical",
+                                  "gap": 2.0,
+                                  "padding": [
+                                    8.0,
+                                    6.0
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#F7F0E2"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#C8B89F"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n1142",
+                                      "name": "核心数据 / 距离 / 数值",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "近战",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 20.0,
+                                      "fontWeight": 800,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#641F1D"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1143",
+                                      "name": "核心数据 / 距离 / 标签",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "距离",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 600,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#725443"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1144",
+                                  "name": "核心数据 / 伤害",
+                                  "width": "fill_container",
+                                  "height": 66.0,
+                                  "layout": "vertical",
+                                  "gap": 2.0,
+                                  "padding": [
+                                    8.0,
+                                    6.0
+                                  ],
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#F7F0E2"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#C8B89F"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n1145",
+                                      "name": "核心数据 / 伤害 / 数值",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "d8",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 20.0,
+                                      "fontWeight": 800,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#641F1D"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1146",
+                                      "name": "核心数据 / 伤害 / 标签",
+                                      "locked": false,
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "content": "伤害",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 600,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "center",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#725443"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1147",
+                              "name": "规则 / 伤害与负荷",
+                              "width": "fill_container",
+                              "height": 42.0,
+                              "layout": "horizontal",
+                              "gap": 8.0,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "n1148",
+                                  "name": "规则 / 伤害类型",
+                                  "width": "fill_container",
+                                  "height": 42.0,
+                                  "layout": "horizontal",
+                                  "padding": [
+                                    0.0,
+                                    10.0
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#641F1D"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n1149",
+                                      "name": "伤害类型 / 标签",
+                                      "locked": false,
+                                      "width": 70.0,
+                                      "height": "fit_content",
+                                      "content": "伤害类型",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 600,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "left",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#E7C79A"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1150",
+                                      "name": "伤害类型 / 数值",
+                                      "locked": false,
+                                      "width": 70.0,
+                                      "height": "fit_content",
+                                      "content": "物理",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 14.0,
+                                      "fontWeight": 800,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "right",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#FFF4DF"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1151",
+                                  "name": "规则 / 负荷",
+                                  "width": "fill_container",
+                                  "height": 42.0,
+                                  "layout": "horizontal",
+                                  "padding": [
+                                    0.0,
+                                    10.0
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#641F1D"
+                                    }
+                                  ],
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n1152",
+                                      "name": "负荷 / 标签",
+                                      "locked": false,
+                                      "width": 48.0,
+                                      "height": "fit_content",
+                                      "content": "负荷",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 600,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "left",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#E7C79A"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1153",
+                                      "name": "负荷 / 数值",
+                                      "locked": false,
+                                      "width": 70.0,
+                                      "height": "fit_content",
+                                      "content": "单手",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 14.0,
+                                      "fontWeight": 800,
+                                      "letterSpacing": 0.0,
+                                      "lineHeight": 1.25,
+                                      "textAlign": "right",
+                                      "textGrowth": "fixed-width",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#FFF4DF"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1154",
+                              "name": "规则 / 描述",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10.0,
+                              "padding": [
+                                16.0,
+                                16.0
+                              ],
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F7F0E2"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C8B89F"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n1155",
+                                  "name": "描述 / 标题",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "可靠",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 18.0,
+                                  "fontWeight": 800,
+                                  "letterSpacing": 0.0,
+                                  "lineHeight": 1.25,
+                                  "textAlign": "left",
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#641F1D"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "line",
+                                  "id": "n1156",
+                                  "name": "描述 / 分隔线",
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#C8B89F"
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n1157",
+                                  "name": "描述 / 正文",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "你的攻击掷骰 +1。",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 15.0,
+                                  "fontWeight": 500,
+                                  "letterSpacing": 0.0,
+                                  "lineHeight": 1.25,
+                                  "textAlign": "left",
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1158",
+                              "name": "卡面 / 页脚",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "DAGGERHEART CORE · 武器",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 9.0,
+                              "fontWeight": 650,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.25,
+                              "textAlign": "center",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ],
+                      "reusable": true
+                    },
+                    {
+                      "type": "text",
+                      "id": "n1159",
+                      "name": "预览说明 / weapon-card-r1 / 共享",
+                      "locked": false,
+                      "width": 420.0,
+                      "height": "fit_content",
+                      "content": "Creator、Player、GM Tabletop、Market 共享同一张规范卡面",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 9.0,
+                      "fontWeight": 450,
+                      "letterSpacing": 0.0,
+                      "lineHeight": 1.25,
+                      "textAlign": "center",
+                      "textGrowth": "fixed-width",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#725443"
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -13339,7 +14075,7 @@
     "8951517819015149355": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAZACADASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAYEBQcD/8QAKBAAAgECBQMEAwEAAAAAAAAAAQIDBBEABRIhMQZBURMUInEjUmFC/8QAFwEBAQEBAAAAAAAAAAAAAAAAAgMAAf/EABgRAAMBAQAAAAAAAAAAAAAAAAABEQIh/9oADAMBAAIRAxEAPwDS5ZYoV1SyIg8swGF7P+pRQl6enWSOQAFpXhOwNwCoNr/fG3fBPmmZPV1NJBJFFK7mKGSRLIly2lt92PxYcW1W5BxwzPLaDKcsWsradK2vdvlJOSyGQqSSV40gXsLdh94Omx4SvSBl/WsocCeNp4uSzlUkPHAFh527+Rhyoa2Cvplnp3BBHyW41IfBHY4yH2EyD8iemsbem99ijkEhSOf8th36UppIc6q1iEkFJoEkaB1dZFLMAdR+RW4Yqbbgjf8AY5bo95zKhpkgpnqFnkhR5kFlcpdl+jip6lRKujWnip6iSrZvwOiOoib9i9rADn+2234vMGKMknGQEy2kNC9PUQxSmdR7hxFoMrcljbve5/nbETp2JqNq3LxFMtPTzXp3eMqpjYatIJ3Oklr384usGOQ1P//Z"
   },
   "editorMeta": {
-    "activePageIndex": 2,
+    "activePageIndex": 1,
     "preserveAuthoredGeometry": false
   }
 }

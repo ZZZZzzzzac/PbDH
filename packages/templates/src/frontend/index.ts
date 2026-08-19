@@ -10,6 +10,12 @@ export {
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
 export { weaponAuthoringLayout } from "./weapon/1.0.0-alpha.1/authoring-layout.ts";
+export {
+  weaponCardDesignSource,
+  weaponRendererRevision,
+  weaponRendererStyles,
+  type WeaponRuntimeState,
+} from "./weapon/1.0.0-alpha.1/renderer.tsx";
 export type {
   AuthoringControl,
   AuthoringField,

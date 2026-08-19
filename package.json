@@ -19,8 +19,8 @@
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
-    "generate:design": "node scripts/generate-adversary-card-design.mjs && node scripts/generate-player-design.mjs",
-    "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-player-design.mjs --check",
+    "generate:design": "node scripts/generate-adversary-card-design.mjs && node scripts/generate-weapon-card-design.mjs && node scripts/generate-player-design.mjs",
+    "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-weapon-card-design.mjs --check && node scripts/generate-player-design.mjs --check",
     "test:ts": "vitest run tests",
     "test:python": "node scripts/python.mjs -m pytest tests",
     "typecheck": "tsc --noEmit",

@@ -67,9 +67,7 @@ describe("武器 Template 1.0.0-alpha.1 Core", () => {
       summary: "主武器 · 敏捷 · 近战 · d8",
       searchText: "阔剑 主武器 敏捷 近战 d8 单手 物理 可靠：你的攻击掷骰+1。 1",
     });
-    expect(weaponTemplate.mediaSlots).toEqual([
-      { id: "portrait", label: "主图", required: false, accepts: ["image/webp"] },
-    ]);
+    expect(weaponTemplate.mediaSlots).toEqual([]);
     expect(resource.media).toEqual({});
     expect(weaponTemplate.defaultPresentation).toEqual({
       width: "90",
