@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/resource-package/0.0.0-dev.1/schema.json",
+  "title": "Resource Package development envelope",
+  "description": "仅用于证明 Contract 生命周期与诊断；业务字段由 #25 定义。",
+  "type": "object",
+  "required": ["contractVersion", "payload"],
+  "properties": {
+    "contractVersion": {
+      "const": "0.0.0-dev.1"
+    },
+    "payload": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

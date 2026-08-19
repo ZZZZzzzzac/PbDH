@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/catalog.schema.json",
+  "title": "PbDH Contract Catalog",
+  "type": "object",
+  "required": ["catalogVersion", "families"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "catalogVersion": {
+      "const": 1
+    },
+    "families": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "versions"],
+        "properties": {
+          "id": {
+            "enum": [
+              "resource-package",
+              "system-package",
+              "character-save",
+              "tabletop-document",
+              "backend-api"
+            ]
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["version", "state", "schema"],
+              "properties": {
+                "version": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+                },
+                "state": {
+                  "enum": ["development", "published", "deprecated"]
+                },
+                "schema": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

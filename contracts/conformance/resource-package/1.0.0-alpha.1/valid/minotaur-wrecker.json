@@ -1,0 +1,91 @@
+{
+  "contractVersion": "1.0.0-alpha.1",
+  "package": {
+    "id": "01a0132c-4eef-7703-94ac-ec8b5e66c7de",
+    "version": "1.0.0-alpha.1",
+    "name": "牛头人破坏者测试资源包",
+    "description": "PbDH 首个跨语言 Resource Package 逻辑快照。"
+  },
+  "targets": [
+    {
+      "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+      "version": "1.0.0-alpha.1"
+    }
+  ],
+  "license": {
+    "label": "PbDH test fixture; image public domain",
+    "declaration": "此快照仅作 PbDH 合约测试语料；配图由项目所有者确认属于公开领域。"
+  },
+  "forkSource": null,
+  "assets": [
+    {
+      "id": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+      "mediaType": "image/webp",
+      "byteLength": "42822",
+      "width": "500",
+      "height": "382"
+    }
+  ],
+  "resources": [
+    {
+      "id": "01a0132c-4eef-7703-94ac-ec8c026547f7",
+      "path": "敌人/牛头人破坏者.json",
+      "template": {
+        "id": "敌人",
+        "version": "1.0.0-alpha.1"
+      },
+      "presentation": {
+        "width": "90",
+        "height": "142",
+        "unit": "mm",
+        "mode": "split",
+        "fixedRatio": true
+      },
+      "data": {
+        "名称": "牛头人破坏者",
+        "原文": "MINOTAUR WRECKER",
+        "位阶": "2",
+        "种类": "斗士",
+        "特性": [
+          {
+            "名称": "蓄力",
+            "原名": "Ramp Up",
+            "类型": "被动",
+            "特性描述": "你必须**花费 1 恐惧点**来聚焦牛头人破坏者。当被聚焦时，其可以对范围内所有目标进行普通攻击。"
+          },
+          {
+            "名称": "蛮牛冲撞",
+            "原名": "Charging Bull",
+            "类型": "动作",
+            "特性描述": "**标记 1 压力点**以冲撞通过近距离范围内的一个群体，并对路径上的所有目标进行攻击。"
+          },
+          {
+            "名称": "角撞",
+            "原名": "Gore",
+            "类型": "动作",
+            "特性描述": "对一个邻近范围内的目标进行攻击，将牛头人破坏者移动到目标的近战范围。成功时，造成 **2d8** 点直接物理伤害。"
+          }
+        ],
+        "类型": "敌人",
+        "简介": "一个脾气暴躁的巨大牛头费尔博格。",
+        "动机与战术": "吞噬，角撞，导航，压制，追击",
+        "难度": "16",
+        "重度伤害阈值": "14",
+        "严重伤害阈值": "27",
+        "生命点": "7",
+        "压力点": "5",
+        "攻击命中": "+2",
+        "攻击武器": "战斧",
+        "攻击范围": "邻近",
+        "攻击伤害": "2d8+5",
+        "攻击属性": "物理",
+        "经历": "导航+2"
+      },
+      "media": {
+        "portrait": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034"
+      }
+    }
+  ],
+  "emptyDirectories": [],
+  "snapshotDigest": "sha256:0a7e7e9cd431b9f4072dc8ff400e720bfb6786d1fa9bbb72a0f8cc1578314516"
+}

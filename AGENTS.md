@@ -4,6 +4,22 @@
 
 PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需求前，不引入具体框架。
 
+## 技术基线
+
+- Monorepo 使用 npm workspaces；不引入 Nx、Turborepo 或其他任务编排层。
+- Player、Creator 与 Market 前端使用 React 19、TypeScript 6、Vite 8；前端单元测试使用 Vitest 4。
+- 浏览器本地持久化优先使用 Dexie/IndexedDB；共享模块只依赖 Repository 接口，不直接依赖具体数据库。
+- Platform Backend 使用 Python 与 FastAPI；具体数据库在首个需要持久化的 Backend 实现 Issue 中决定，未经确认不得创建或修改 schema。
+- 文件与持久化 Contract 以 JSON Schema 2020-12 为权威；TypeScript 与 Python 实现必须消费同一组版本化 conformance fixtures。
+- TypeScript Contract 校验使用 AJV；压缩归档使用 fflate。实现库不成为 Contract 权威。
+
+## 验证入口
+
+- 安装 Node 依赖：`npm install`。
+- Python 开发依赖安装到项目 `.venv`，使用 `python -m pip install -r requirements-dev.txt`；不得安装全局依赖。
+- 单一非交互式验证命令：`npm run verify`。
+- 新增 App、共享 package、Contract 实现或 Python 消费端时，必须接入该命令；不得建立只在子目录运行的隐藏验证入口。
+
 ## 工作规则
 
 - 默认使用中文沟通；代码、命令、变量名使用英文，注释使用中文。
@@ -20,6 +36,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `apps/market/`：公共 Market 前端
 - `apps/backend/`：模块化单体 Platform Backend
 - `contracts/`：语言无关、独立版本化的 Contract Schemas 与契约样例；不得依赖具体 App、共享 package 或编程语言
+- `packages/contract-runtime/`：前端共享的 Contract Catalog Reader、Validator 与稳定诊断映射；只依赖 `contracts/` 制品，不拥有 Schema 或业务操作
 - `packages/templates/`：可信 Resource Templates 与 Template Registry；使用无 React 的 `core` 入口和前端专用 `frontend` 入口隔离
 - `packages/resource-renderer/`：所有前端共用的 Canonical Card Surface 渲染接口、基础组件与隔离样式；接收已解析 Template，不反向读取 Template Registry
 - `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
@@ -34,7 +51,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 ## 依赖方向
 
 - `contracts/` 位于最底层；共享 package 不得形成循环依赖，也不得依赖 `apps/`。
-- `packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
+- `packages/contract-runtime`、`packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
 - App 组合根负责解析 Template 并注入 Renderer、Tabletop 与 Conversion；共享模块不得通过全局 Registry 反向寻找宿主能力。
 - `apps/backend` 只能使用 `contracts/` 与无 React 的 `packages/templates/core` 等服务端安全入口，禁止依赖 React、DOM 或浏览器专用代码。

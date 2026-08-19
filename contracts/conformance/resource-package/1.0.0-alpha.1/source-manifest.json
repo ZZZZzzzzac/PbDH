@@ -1,0 +1,17 @@
+{
+  "fixture": "valid/minotaur-wrecker.json",
+  "dataSource": {
+    "repository": "PbDH_Cards",
+    "commit": "0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe",
+    "path": "frontend/src/templates/adversary/fixtures/coreAdversary.fixture.json"
+  },
+  "mediaSource": {
+    "originalProjectPath": ".scratch/500px-MINOTAUR.webp",
+    "projectOwnerDeclaration": "用户于 2026-08-18 确认该图片属于公开领域并允许直接使用。",
+    "normalizedMediaType": "image/webp",
+    "width": "500",
+    "height": "382",
+    "byteLength": "42822",
+    "sha256": "0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034"
+  }
+}

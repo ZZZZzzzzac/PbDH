@@ -1,0 +1,31 @@
+{
+  "contractVersion": "1.0.0-alpha.1",
+  "package": {
+    "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+    "version": "1.0.0-alpha.1",
+    "name": "Daggerheart",
+    "description": "PbDH 首条敌人资源纵切所需的最小规则包。"
+  },
+  "resourceCompatibility": [
+    {
+      "templateId": "敌人",
+      "versionRange": {
+        "minimumInclusive": "1.0.0-alpha.1",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "adversaries",
+        "label": "敌人"
+      }
+    }
+  ],
+  "embeddedResources": [
+    {
+      "path": "resources/minotaur-wrecker.pbres",
+      "packageId": "01a0132c-4eef-7703-94ac-ec8b5e66c7de",
+      "version": "1.0.0-alpha.1",
+      "minimumVersion": "1.0.0-alpha.1",
+      "snapshotDigest": "sha256:0a7e7e9cd431b9f4072dc8ff400e720bfb6786d1fa9bbb72a0f8cc1578314516"
+    }
+  ]
+}

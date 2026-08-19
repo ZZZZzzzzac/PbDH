@@ -1,0 +1,43 @@
+{
+  "$schema": "./catalog.schema.json",
+  "catalogVersion": 1,
+  "families": [
+    {
+      "id": "resource-package",
+      "versions": [
+        {
+          "version": "0.0.0-dev.1",
+          "state": "development",
+          "schema": "resource-package/0.0.0-dev.1/schema.json"
+        },
+        {
+          "version": "1.0.0-alpha.1",
+          "state": "development",
+          "schema": "resource-package/1.0.0-alpha.1/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "system-package",
+      "versions": [
+        {
+          "version": "1.0.0-alpha.1",
+          "state": "development",
+          "schema": "system-package/1.0.0-alpha.1/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "character-save",
+      "versions": []
+    },
+    {
+      "id": "tabletop-document",
+      "versions": []
+    },
+    {
+      "id": "backend-api",
+      "versions": []
+    }
+  ]
+}

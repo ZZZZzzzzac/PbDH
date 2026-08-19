@@ -1,0 +1,14 @@
+{
+  "name": "@pbdh/templates",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./core": "./src/core/index.ts",
+    "./frontend": "./src/frontend/index.ts"
+  },
+  "dependencies": {
+    "@pbdh/resource-renderer": "0.0.0",
+    "react": "19.2.7"
+  }
+}

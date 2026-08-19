@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/conformance/tooling-smoke.schema.json",
+  "title": "PbDH conformance tooling smoke fixture",
+  "description": "仅验证仓库跨语言工具链；不是正式 Platform Contract。",
+  "type": "object",
+  "required": ["contractVersion", "message"],
+  "properties": {
+    "contractVersion": {
+      "const": "0.0.0-smoke.1"
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

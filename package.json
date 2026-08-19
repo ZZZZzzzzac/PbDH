@@ -1,0 +1,46 @@
+{
+  "name": "pbdh",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/player",
+    "apps/creator",
+    "apps/market",
+    "packages/contract-runtime",
+    "packages/templates",
+    "packages/resource-renderer",
+    "packages/resource-conversion",
+    "packages/tabletop"
+  ],
+  "scripts": {
+    "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
+    "generate:design": "node scripts/generate-adversary-card-design.mjs",
+    "check:design": "node scripts/generate-adversary-card-design.mjs --check",
+    "test:ts": "vitest run tests",
+    "test:python": "node scripts/python.mjs -m pytest tests",
+    "typecheck": "tsc --noEmit",
+    "build:creator": "npm run build -w @pbdh/creator",
+    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:creator"
+  },
+  "dependencies": {
+    "dexie": "4.4.4",
+    "fflate": "0.8.3",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "ajv": "8.17.1",
+    "typescript": "6.0.3",
+    "vite": "8.1.3",
+    "vitest": "4.1.10"
+  }
+}

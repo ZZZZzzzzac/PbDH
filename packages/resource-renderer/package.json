@@ -1,0 +1,14 @@
+{
+  "name": "@pbdh/resource-renderer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./core": "./src/core.ts",
+    "./react": "./src/react.tsx"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  }
+}

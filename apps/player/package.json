@@ -1,0 +1,9 @@
+{
+  "name": "@pbdh/player",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@pbdh/contract-runtime": "0.0.0"
+  }
+}
