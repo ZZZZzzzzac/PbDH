@@ -12,6 +12,13 @@
     "expected": []
   },
   {
+    "name": "accepts-daggerheart-core-primary-weapon",
+    "document": "valid/daggerheart-core-primary-weapon.json",
+    "media": [],
+    "mutation": { "kind": "none" },
+    "expected": []
+  },
+  {
     "name": "rejects-duplicate-resource-id",
     "document": "valid/minotaur-wrecker.json",
     "media": [

@@ -53,7 +53,7 @@ def test_pbsys_contains_the_same_directory_and_complete_pbres() -> None:
     directory_pbres = (FIXTURE_ROOT / "valid/daggerheart" / EMBEDDED["path"]).read_bytes()
     pbsys = (FIXTURE_ROOT / "daggerheart.pbsys").read_bytes()
     with zipfile.ZipFile(io.BytesIO(pbsys)) as archive:
-        assert archive.namelist() == ["system.json", EMBEDDED["path"]]
+        assert archive.namelist() == sorted(["system.json", EMBEDDED["path"]])
         assert json.loads(archive.read("system.json")) == DOCUMENT
         assert archive.read(EMBEDDED["path"]) == directory_pbres
 

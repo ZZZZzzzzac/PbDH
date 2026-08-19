@@ -19,7 +19,7 @@ const system = readJson<SystemPackageDocument>(
   "contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json",
 );
 const resourcePackage = readJson<ResourcePackageLogicalDocument>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
+  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
 );
 
 function routeWithTargets(targets: ResourcePackageLogicalDocument["targets"]) {
@@ -34,7 +34,7 @@ describe("Player Resource Compatibility routing", () => {
     expect(routeWithTargets(resourcePackage.targets)).toMatchObject([
       {
         destination: "native",
-        nativeEntry: { id: "adversaries", label: "敌人" },
+        nativeEntry: { id: "weapons", label: "武器" },
       },
     ]);
   });
@@ -77,7 +77,7 @@ describe("Player Resource Compatibility routing", () => {
     });
   });
 
-  test("contains no Daggerheart or enemy-type special case", () => {
+  test("contains no Daggerheart or weapon-type special case", () => {
     const genericSystem = structuredClone(system);
     genericSystem.package.id = "01a0132c-4eef-7703-94ac-ec8d1a660077";
     genericSystem.package.name = "Generic Test System";
