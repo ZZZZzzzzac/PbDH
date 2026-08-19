@@ -15,8 +15,19 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
-import { adversaryRendererRevision } from "@pbdh/templates/frontend";
-import type { AdversaryData, AdversaryFeature } from "@pbdh/templates/core";
+import {
+  adversaryRendererRevision,
+  weaponAuthoringLayout,
+  weaponRendererRevision,
+} from "@pbdh/templates/frontend";
+import {
+  adversaryTemplate,
+  templateRegistry,
+  weaponTemplate,
+  type AdversaryData,
+  type AdversaryFeature,
+  type WeaponData,
+} from "@pbdh/templates/core";
 
 import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
 import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
@@ -25,6 +36,7 @@ import { creatorWorkspaceDesign } from "./design.generated.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import {
   adversaryData,
+  addTemplateResource,
   clearAdversaryFeature,
   createBlankWorkspace,
   createWorkspace,
@@ -35,11 +47,15 @@ import {
   replacePortrait,
   updateAdversaryData,
   updateResourcePresentation,
+  updateWeaponData,
+  weaponData,
   type CreatorWorkspace,
+  type WorkspaceResource,
 } from "./workspace-model.ts";
 
 type Dialog =
   | { kind: "new" }
+  | { kind: "new-resource" }
   | { kind: "diagnostics"; title: string; diagnostics: ContractDiagnostic[] }
   | { kind: "no-op"; name: string }
   | { kind: "update"; incoming: ResourcePackageCandidate }
@@ -106,6 +122,7 @@ const iconPaths: Record<string, string[]> = {
   search: ["m21 21-4.3-4.3", "M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"],
   settings: ["M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z", "M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 14.7a1.7 1.7 0 0 0-1.55-1H5v-3h.09A1.7 1.7 0 0 0 6.64 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.3 3.8V3h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19 8.3a1.7 1.7 0 0 0 1.55 1H21v3h-.09A1.7 1.7 0 0 0 19.4 15Z"],
   skull: ["M8 19v2", "M12 19v2", "M16 19v2", "M5 12a7 7 0 1 1 14 0v4l-3 3H8l-3-3Z", "M9 13h.01", "M15 13h.01"],
+  sword: ["m14.5 17.5-8-8", "m11 6 6-3-3 6", "m5 14-2 2 5 5 2-2", "m14 9 7-7", "m15 4 5 5"],
   upload: ["M12 21V9", "m7 14 5-5 5 5", "M5 3h14"],
   user: ["M20 21a8 8 0 0 0-16 0", "M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"],
   x: ["M18 6 6 18", "m6 6 12 12"],
@@ -115,6 +132,19 @@ function Icon({ name }: { name: keyof typeof iconPaths }) {
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
     {iconPaths[name].map((path) => <path key={path} d={path} />)}
   </svg>;
+}
+
+function isTemplate(resource: WorkspaceResource, template: { id: string; version: string }): boolean {
+  return resource.template.id === template.id && resource.template.version === template.version;
+}
+
+function resourceTitle(resource: WorkspaceResource): string {
+  const template = templateRegistry.resolve(resource.template.id, resource.template.version);
+  return template?.project(resource.data).title ?? resource.id;
+}
+
+function ResourceIcon({ resource }: { resource: WorkspaceResource }) {
+  return <Icon name={isTemplate(resource, weaponTemplate) ? "sword" : "skull"} />;
 }
 
 function bytesToUrlMap(candidate: ResourcePackageCandidate): Map<string, string> {
@@ -147,6 +177,7 @@ export function CreatorWorkspacePrototype() {
   const startEmpty = new URLSearchParams(window.location.search).get("state") === "empty";
   const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>(startEmpty ? [] : [initialWorkspace]);
   const [activeKey, setActiveKey] = useState(startEmpty ? "" : initialWorkspace.key);
+  const [activeResourceId, setActiveResourceId] = useState(startEmpty ? "" : initialDocument.resources[0]!.id);
   const [assetUrls, setAssetUrls] = useState(() => new Map([[initialAssetId, minotaurImageUrl]]));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [newName, setNewName] = useState("牛头人敌人资源包");
@@ -167,9 +198,17 @@ export function CreatorWorkspacePrototype() {
       .catch(() => setNotice("portrait 字节未就绪；预览可用，导出暂不可用"));
   }, []);
 
-  const data = active ? adversaryData(active) : undefined;
-  const resource = active?.document.resources[0];
-  const previewResource = resource && data ? { ...resource, data } : undefined;
+  const resource = active
+    ? active.document.resources.find((candidate) => candidate.id === activeResourceId)
+      ?? active.document.resources[0]
+    : undefined;
+  const isAdversary = Boolean(resource && isTemplate(resource, adversaryTemplate));
+  const isWeapon = Boolean(resource && isTemplate(resource, weaponTemplate));
+  const adversary = active && resource && isAdversary ? adversaryData(active, resource.id) : undefined;
+  const weapon = active && resource && isWeapon ? weaponData(active, resource.id) : undefined;
+  const previewResource = resource;
+  const adversaryPreviewResource = resource && adversary ? { ...resource, data: adversary } : undefined;
+  const weaponPreviewResource = resource && weapon ? { ...resource, data: weapon } : undefined;
   const previewAssets = useMemo(() => new Map(
     resource
       ? Object.values(resource.media).flatMap((id) => {
@@ -207,6 +246,7 @@ export function CreatorWorkspacePrototype() {
     "--creator-preview-control-active": creatorWorkspaceDesign.previewControls.activeBackground,
     "--creator-preview-switch": creatorWorkspaceDesign.previewControls.switchBackground,
     "--creator-accent": creatorWorkspaceDesign.accent,
+    "--creator-weapon-description-height": `${creatorWorkspaceDesign.weapon.descriptionInputHeight}px`,
   } as CSSProperties;
 
   function replaceActive(next: CreatorWorkspace) {
@@ -215,17 +255,23 @@ export function CreatorWorkspacePrototype() {
   }
 
   function updateData(update: (draft: AdversaryData) => void) {
-    if (active) replaceActive(updateAdversaryData(active, update));
+    if (active && resource) replaceActive(updateAdversaryData(active, update, resource.id));
   }
 
   function updateField(field: Exclude<keyof AdversaryData, "特性">, value: string) {
     updateData((draft) => { draft[field] = value; });
   }
 
+  function updateWeaponField(field: keyof WeaponData, value: string) {
+    if (active && resource) replaceActive(updateWeaponData(active, (draft) => {
+      draft[field] = value;
+    }, resource.id));
+  }
+
   function updatePresentation(
     update: (presentation: CreatorWorkspace["document"]["resources"][number]["presentation"]) => void,
   ) {
-    if (active) replaceActive(updateResourcePresentation(active, update));
+    if (active && resource) replaceActive(updateResourcePresentation(active, update, resource.id));
   }
 
   function updateFeature(index: number, field: keyof AdversaryFeature, value: string) {
@@ -233,12 +279,12 @@ export function CreatorWorkspacePrototype() {
   }
 
   function clearFeature(index: number) {
-    if (active) replaceActive(clearAdversaryFeature(active, index));
+    if (active && resource) replaceActive(clearAdversaryFeature(active, index, resource.id));
     setOpenFeatureMenu(null);
   }
 
   function deleteFeature(index: number) {
-    if (active) replaceActive(deleteAdversaryFeature(active, index));
+    if (active && resource) replaceActive(deleteAdversaryFeature(active, index, resource.id));
     setOpenFeatureMenu(null);
     setDialog(null);
   }
@@ -257,6 +303,7 @@ export function CreatorWorkspacePrototype() {
       return current.map((workspace, index) => index === existing ? next : workspace);
     });
     setActiveKey(next.key);
+    setActiveResourceId(next.document.resources[0]?.id ?? "");
     setDialog(null);
     setNotice(`已载入 ${next.document.package.name}`);
   }
@@ -308,6 +355,7 @@ export function CreatorWorkspacePrototype() {
     const next = await createBlankWorkspace(newName);
     setWorkspaces((current) => [...current, next]);
     setActiveKey(next.key);
+    setActiveResourceId(next.document.resources[0]?.id ?? "");
     setDialog(null);
     setNotice("已显式创建空白 Workspace");
   }
@@ -318,7 +366,7 @@ export function CreatorWorkspacePrototype() {
     if (!file || !active) return;
     try {
       const { asset, bytes } = await imageAsset(file);
-      const next = replacePortrait(active, asset, bytes);
+      const next = replacePortrait(active, asset, bytes, resource?.id);
       setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(file)));
       replaceActive(next);
       setNotice("portrait 已替换；规范卡面同步更新");
@@ -338,6 +386,14 @@ export function CreatorWorkspacePrototype() {
     }
   }
 
+  function createResource(template: typeof adversaryTemplate | typeof weaponTemplate) {
+    if (!active) return;
+    const result = addTemplateResource(active, template.id, template.version);
+    replaceActive(result.workspace);
+    setActiveResourceId(result.resourceId);
+    setDialog(null);
+  }
+
   async function saveAsideThenImport(incoming: ResourcePackageCandidate) {
     const existing = workspaces.find((workspace) =>
       workspace.document.package.id === incoming.document.package.id);
@@ -348,7 +404,7 @@ export function CreatorWorkspacePrototype() {
     setNotice("本地修改已另存为新 Package ID；导入版本已载入");
   }
 
-  if (!active || !data || !resource || !previewResource) {
+  if (!active || !resource || !previewResource || (!adversary && !weapon)) {
     return (
       <main className="creator-prototype" style={designStyle}>
         <header className="platform-appbar">
@@ -378,7 +434,8 @@ export function CreatorWorkspacePrototype() {
     );
   }
 
-  const resourceNames = ["洞穴守卫", "灰烬先知", "荆棘猎手", "深井祭司", "铁牙队长", "腐沼巫师"];
+  const adversaryResources = active.document.resources.filter((candidate) => isTemplate(candidate, adversaryTemplate));
+  const weaponResources = active.document.resources.filter((candidate) => isTemplate(candidate, weaponTemplate));
 
   return (
     <main className="creator-prototype" style={designStyle} data-design-source={creatorWorkspaceDesign.document}>
@@ -402,58 +459,55 @@ export function CreatorWorkspacePrototype() {
             <button type="button" title="新建资源包" aria-label="新建资源包" onClick={() => setDialog({ kind: "new" })}><Icon name="packagePlus" /></button>
             <button type="button" title="导入资源包" aria-label="导入资源包" onClick={() => importRef.current?.click()}><Icon name="upload" /></button>
             <button type="button" title="导出资源包" aria-label="导出资源包" onClick={exportPackage}><Icon name="download" /></button>
-            <button type="button" title="新建资源" aria-label="新建资源"><Icon name="filePlus" /></button>
+            <button type="button" title="新建资源" aria-label="新建资源" onClick={() => setDialog({ kind: "new-resource" })}><Icon name="filePlus" /></button>
             <button type="button" title="新建文件夹" aria-label="新建文件夹"><Icon name="folderPlus" /></button>
           </div></header>
           <label className="explorer-search"><Icon name="search" /><input aria-label="筛选资源" placeholder="筛选资源" /></label>
           <div className="package-root"><Icon name="chevronDown" /><Icon name="package" /><strong>{active.document.package.name}</strong><button aria-label="资源包菜单"><Icon name="ellipsis" /></button></div>
           <div className="resource-tree">
-            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>敌人</b><small>86</small></div>
-            <button type="button" className="file-row is-current"><i /><span className="template-mark adversary"><Icon name="skull" /></span><b>{data.名称 || "未命名敌人"}</b></button>
-            {resourceNames.map((name) => <button type="button" className="file-row" key={name}><i /><span className="template-mark"><Icon name="skull" /></span><span>{name}</span></button>)}
-            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>场景</b><small>24</small></div>
-            {(["荒废林地", "熔岩裂谷"]).map((name) => <button type="button" className="file-row" key={name}><i /><span className="template-mark environment">⌁</span><span>{name}</span></button>)}
-            <div className="folder-row"><span /><Icon name="chevronRight" /><Icon name="folder" /><b>装备</b><small>18</small></div>
+            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>敌人</b><small>{adversaryResources.length}</small></div>
+            {adversaryResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><i /><span className="template-mark adversary"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
+            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>武器</b><small>{weaponResources.length}</small></div>
+            {weaponResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><i /><span className="template-mark weapon"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
             <div className="folder-row"><span /><Icon name="chevronRight" /><Icon name="folder" /><b>自定义</b><small>0</small></div>
           </div>
-          <footer><span>128 个资源</span><span>名称 ↑</span></footer>
+          <footer><span>{active.document.resources.length} 个资源</span><span>名称 ↑</span></footer>
         </aside>
 
         <section className="creator-workbench">
           <nav className="resource-tabs" aria-label="打开的资源">
-            <button type="button" className="is-current"><Icon name="skull" /><span>{data.名称}</span>{active.dirty && <i aria-label="已修改">●</i>}<Icon name="x" /></button>
-            <button type="button" className="is-preview"><Icon name="skull" /><em>洞穴守卫</em><Icon name="x" /></button>
-            <button type="button"><Icon name="skull" /><span>灰烬先知</span><Icon name="x" /></button>
+            <button type="button" className="is-current"><ResourceIcon resource={resource} /><span>{resourceTitle(resource)}</span>{active.dirty && <i aria-label="已修改">●</i>}<Icon name="x" /></button>
+            {active.document.resources.filter((candidate) => candidate.id !== resource.id).slice(0, 2).map((candidate) => <button type="button" className="is-preview" key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><ResourceIcon resource={candidate} /><em>{resourceTitle(candidate)}</em><Icon name="x" /></button>)}
           </nav>
           <div className="workbench-body">
-            <section className="authoring-editor">
+            {adversary && <section className="authoring-editor">
               <div className="field-group identity-fields">
-                <div className="field-row"><Field className="name-field" label="名称" value={data.名称} onChange={(value) => updateField("名称", value)} /><Field className="tier-field" label="位阶" value={data.位阶} onChange={(value) => updateField("位阶", value)} /></div>
-                <div className="field-row"><Field className="name-field" label="英文" value={data.原文} onChange={(value) => updateField("原文", value)} /><Field className="tier-field" label="种类" value={data.种类} onChange={(value) => updateField("种类", value)} /></div>
-                <Field className="full-field" label="简介" value={data.简介} onChange={(value) => updateField("简介", value)} />
+                <div className="field-row"><Field className="name-field" label="名称" value={adversary.名称} onChange={(value) => updateField("名称", value)} /><Field className="tier-field" label="位阶" value={adversary.位阶} onChange={(value) => updateField("位阶", value)} /></div>
+                <div className="field-row"><Field className="name-field" label="英文" value={adversary.原文} onChange={(value) => updateField("原文", value)} /><Field className="tier-field" label="种类" value={adversary.种类} onChange={(value) => updateField("种类", value)} /></div>
+                <Field className="full-field" label="简介" value={adversary.简介} onChange={(value) => updateField("简介", value)} />
               </div>
 
               <div className="field-group combat-fields">
-                <div className="field-row"><Field className="motive-field" label="动机与战术" value={data.动机与战术} onChange={(value) => updateField("动机与战术", value)} /><Field className="experience-field" label="经历" value={data.经历} onChange={(value) => updateField("经历", value)} /></div>
+                <div className="field-row"><Field className="motive-field" label="动机与战术" value={adversary.动机与战术} onChange={(value) => updateField("动机与战术", value)} /><Field className="experience-field" label="经历" value={adversary.经历} onChange={(value) => updateField("经历", value)} /></div>
                 <div className="field-row dense-row">
-                  <Field className="value-field" label="生命" value={data.生命点} onChange={(value) => updateField("生命点", value)} />
-                  <Field className="value-field" label="压力" value={data.压力点} onChange={(value) => updateField("压力点", value)} />
-                  <Field className="difficulty-field" label="难度" value={data.难度} onChange={(value) => updateField("难度", value)} />
-                  <Field className="threshold-field" label="重度阈值" value={data.重度伤害阈值} onChange={(value) => updateField("重度伤害阈值", value)} />
-                  <Field className="threshold-field" label="严重阈值" value={data.严重伤害阈值} onChange={(value) => updateField("严重伤害阈值", value)} />
+                  <Field className="value-field" label="生命" value={adversary.生命点} onChange={(value) => updateField("生命点", value)} />
+                  <Field className="value-field" label="压力" value={adversary.压力点} onChange={(value) => updateField("压力点", value)} />
+                  <Field className="difficulty-field" label="难度" value={adversary.难度} onChange={(value) => updateField("难度", value)} />
+                  <Field className="threshold-field" label="重度阈值" value={adversary.重度伤害阈值} onChange={(value) => updateField("重度伤害阈值", value)} />
+                  <Field className="threshold-field" label="严重阈值" value={adversary.严重伤害阈值} onChange={(value) => updateField("严重伤害阈值", value)} />
                 </div>
                 <div className="field-row dense-row attack-row">
-                  <Field className="attack-field" label="攻击" value={data.攻击命中} onChange={(value) => updateField("攻击命中", value)} />
-                  <Field className="weapon-field" label="武器" value={data.攻击武器} onChange={(value) => updateField("攻击武器", value)} />
-                  <Field className="weapon-field" label="范围" value={data.攻击范围} onChange={(value) => updateField("攻击范围", value)} />
-                  <Field className="damage-field" label="伤害" value={data.攻击伤害} onChange={(value) => updateField("攻击伤害", value)} />
-                  <Field className="damage-field" label="类型" value={data.攻击属性} onChange={(value) => updateField("攻击属性", value)} />
+                  <Field className="attack-field" label="攻击" value={adversary.攻击命中} onChange={(value) => updateField("攻击命中", value)} />
+                  <Field className="weapon-field" label="武器" value={adversary.攻击武器} onChange={(value) => updateField("攻击武器", value)} />
+                  <Field className="weapon-field" label="范围" value={adversary.攻击范围} onChange={(value) => updateField("攻击范围", value)} />
+                  <Field className="damage-field" label="伤害" value={adversary.攻击伤害} onChange={(value) => updateField("攻击伤害", value)} />
+                  <Field className="damage-field" label="类型" value={adversary.攻击属性} onChange={(value) => updateField("攻击属性", value)} />
                 </div>
               </div>
 
               <section className="features-editor">
                 <header><h2>特性</h2><button type="button" onClick={() => updateData((draft) => { draft.特性.push({ 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" }); })}>＋ 新增特性</button></header>
-                {data.特性.map((feature, index) => <article className="feature-editor" key={`${feature.名称}:${index}`}>
+                {adversary.特性.map((feature, index) => <article className="feature-editor" key={`${feature.名称}:${index}`}>
                   <div className="feature-line"><Icon name="grip" /><Field className="feature-name" label="特性名" value={feature.名称} onChange={(value) => updateFeature(index, "名称", value)} /><Field className="feature-type" label="类型" value={feature.类型} onChange={(value) => updateFeature(index, "类型", value)} /><div className="feature-actions">
                     <button type="button" aria-label={`${feature.名称 || "未命名特性"}菜单`} aria-haspopup="menu" aria-expanded={openFeatureMenu === index} onClick={() => setOpenFeatureMenu((current) => current === index ? null : index)}><Icon name="ellipsis" /></button>
                     {openFeatureMenu === index && <div className="feature-menu" role="menu">
@@ -464,17 +518,31 @@ export function CreatorWorkspacePrototype() {
                   <div className="feature-line description-line"><span /><TextareaField label="描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} /></div>
                 </article>)}
               </section>
-            </section>
+            </section>}
 
-            <aside className="preview-panel">
+            {weapon && <section className="authoring-editor weapon-authoring-editor">
+              {weaponAuthoringLayout.sections.map((section) => <div className={`field-group weapon-field-grid ${section.id}`} key={section.id}>
+                {section.fields.map((field) => {
+                  const key = field.path as keyof WeaponData;
+                  return field.control === "textarea"
+                    ? <TextareaField key={field.path} label={field.label} value={weapon[key]} onChange={(value) => updateWeaponField(key, value)} />
+                    : <Field key={field.path} label={field.label} value={weapon[key]} onChange={(value) => updateWeaponField(key, value)} />;
+                })}
+              </div>)}
+            </section>}
+
+            <aside className={`preview-panel ${weapon ? "without-media" : ""}`}>
               <header><h1>实时预览</h1><div>
                 <div className="card-mode" role="group" aria-label="卡面模式">
+                  {weapon && <button type="button" aria-pressed="true">纯文字</button>}
+                  {adversary && <>
                   {(["text", "split", "image"] as const).map((mode) => <button
                     type="button"
                     key={mode}
                     aria-pressed={resource.presentation.mode === mode}
                     onClick={() => updatePresentation((presentation) => { presentation.mode = mode; })}
                   >{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}
+                  </>}
                 </div>
                 <button
                   type="button"
@@ -485,14 +553,11 @@ export function CreatorWorkspacePrototype() {
                 ><span>固定比例</span><i /></button>
                 <button type="button"><Icon name="maximize" />适配</button><strong>70%</strong>
               </div></header>
-              <div className="preview-stage"><div className="card-scale"><CanonicalCardSurface
-                resource={previewResource}
-                expectedRendererRevision="enemy-card-r1"
-                renderer={adversaryRendererRevision}
-                assets={previewAssets}
-                label={`${data.名称 || "未命名敌人"}规范卡面`}
-              /></div></div>
-              <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />替换</button></footer>
+              <div className="preview-stage"><div className="card-scale">
+                {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererRevision} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
+                {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererRevision} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
+              </div></div>
+              {adversary && <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />替换</button></footer>}
             </aside>
           </div>
         </section>
@@ -504,6 +569,9 @@ export function CreatorWorkspacePrototype() {
       {dialog && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true">
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
+        {dialog.kind === "new-resource" && <><h2>新建资源</h2>
+          <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
         {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
           <li key={`${item.code}:${item.location}`}><b>{item.code}</b><code>{item.location || "/"}</code></li>)}</ul>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>保留现状</button></div></>}

@@ -68,5 +68,12 @@ export const creatorWorkspaceDesign = {
     "fixedRatioBackground": "#433E38",
     "switchBackground": "#A43A3E"
   },
-  "accent": "#D65458"
+  "accent": "#D65458",
+  "weapon": {
+    "page": "12 Creator Weapon Editing",
+    "frame": "#37 / Creator Workspace / 主武器编辑",
+    "canonicalSurface": "weapon-card-r1 / Canonical",
+    "nameInputWidth": "fill_container",
+    "descriptionInputHeight": 174
+  }
 } as const;

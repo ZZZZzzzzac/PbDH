@@ -5569,6 +5569,3385 @@
       ]
     },
     {
+      "id": "n1160",
+      "name": "12 Creator Weapon Editing",
+      "children": [
+        {
+          "type": "frame",
+          "id": "n1161",
+          "name": "#37 / Creator Workspace / 主武器编辑",
+          "width": 1440.0,
+          "height": 1024.0,
+          "layout": "vertical",
+          "gap": 0.0,
+          "clipContent": true,
+          "fill": [
+            {
+              "type": "solid",
+              "color": "#EAE4DA"
+            }
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "n1162",
+              "name": "Creator / 顶部应用栏",
+              "width": "fill_container",
+              "height": 56.0,
+              "layout": "horizontal",
+              "padding": [
+                0.0,
+                18.0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#1B1714"
+                }
+              ],
+              "stroke": {
+                "thickness": 1.0,
+                "fill": [
+                  {
+                    "type": "solid",
+                    "color": "#302925"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n1163",
+                  "name": "Platform / 品牌",
+                  "width": 220.0,
+                  "height": "fit_content",
+                  "layout": "horizontal",
+                  "gap": 10.0,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n1164",
+                      "name": "Platform / 品牌标记",
+                      "width": 30.0,
+                      "height": 30.0,
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "cornerRadius": 7.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#641F1D"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n1165",
+                          "name": "Platform / 品牌缩写",
+                          "width": 22.0,
+                          "height": "fit_content",
+                          "content": "P",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 14.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.3,
+                          "textAlign": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "n1166",
+                      "name": "Platform / 品牌名",
+                      "width": 110.0,
+                      "height": "fit_content",
+                      "content": "PbDH",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 16.0,
+                      "fontWeight": 800,
+                      "lineHeight": 1.3,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n1167",
+                  "name": "Platform / 主页面导航",
+                  "width": "fit_content",
+                  "height": 56.0,
+                  "layout": "horizontal",
+                  "gap": 4.0,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n1168",
+                      "name": "主页面 / 玩家车卡器",
+                      "width": "fit_content",
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1169",
+                          "name": "主页面 / 玩家车卡器 / 内容",
+                          "width": "fit_content",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            14.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n1170",
+                              "name": "主页面 / 玩家车卡器 / 文字",
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "玩家车卡器",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 600,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#C8BCAE"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n1171",
+                          "name": "主页面 / 玩家车卡器 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1172",
+                      "name": "主页面 / 卡片工坊 / 当前",
+                      "width": "fit_content",
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1173",
+                          "name": "主页面 / 卡片工坊 / 内容",
+                          "width": "fit_content",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            14.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n1174",
+                              "name": "主页面 / 卡片工坊 / 文字",
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "卡片工坊",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 750,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n1175",
+                          "name": "主页面 / 卡片工坊 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#D65458"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1176",
+                      "name": "主页面 / GM 桌面",
+                      "width": "fit_content",
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1177",
+                          "name": "主页面 / GM 桌面 / 内容",
+                          "width": "fit_content",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            14.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n1178",
+                              "name": "主页面 / GM 桌面 / 文字",
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "GM 桌面",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 600,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#C8BCAE"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n1179",
+                          "name": "主页面 / GM 桌面 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1180",
+                      "name": "主页面 / 资源市场",
+                      "width": "fit_content",
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "space_between",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1181",
+                          "name": "主页面 / 资源市场 / 内容",
+                          "width": "fit_content",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            14.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n1182",
+                              "name": "主页面 / 资源市场 / 文字",
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "资源市场",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 600,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#C8BCAE"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n1183",
+                          "name": "主页面 / 资源市场 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n1184",
+                  "name": "Platform / 全局操作",
+                  "width": 220.0,
+                  "height": "fit_content",
+                  "layout": "horizontal",
+                  "gap": 8.0,
+                  "justifyContent": "end",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n1185",
+                      "name": "全局按钮 / 通知",
+                      "width": 30.0,
+                      "height": 30.0,
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "cornerRadius": 6.0,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n1186",
+                          "name": "全局按钮 / 通知 / 图标",
+                          "iconFontName": "bell",
+                          "width": 15.0,
+                          "height": 15.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#C8BCAE"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1187",
+                      "name": "全局按钮 / 设置",
+                      "width": 30.0,
+                      "height": 30.0,
+                      "layout": "horizontal",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "cornerRadius": 6.0,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n1188",
+                          "name": "全局按钮 / 设置 / 图标",
+                          "iconFontName": "settings",
+                          "width": 15.0,
+                          "height": 15.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#C8BCAE"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1189",
+                      "name": "全局按钮 / 账号",
+                      "width": "fit_content",
+                      "height": 30.0,
+                      "layout": "horizontal",
+                      "gap": 7.0,
+                      "padding": [
+                        0.0,
+                        10.0
+                      ],
+                      "alignItems": "center",
+                      "cornerRadius": 6.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#3A2920"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n1190",
+                          "name": "全局按钮 / 账号 / 图标",
+                          "iconFontName": "user",
+                          "width": 14.0,
+                          "height": 14.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n1191",
+                          "name": "全局按钮 / 账号 / 文字",
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "账号",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 11.0,
+                          "fontWeight": 650,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n1192",
+              "name": "Creator / 三栏工作区",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "horizontal",
+              "gap": 0.0,
+              "padding": 0.0,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n1193",
+                  "name": "工作区 / 资源导航",
+                  "width": 250.0,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 0.0,
+                  "padding": 0.0,
+                  "clipContent": true,
+                  "cornerRadius": 0.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#F3F0EA"
+                    }
+                  ],
+                  "stroke": {
+                    "thickness": 1.0,
+                    "fill": [
+                      {
+                        "type": "solid",
+                        "color": "#D2CBC1"
+                      }
+                    ]
+                  },
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n1194",
+                      "name": "资源管理器 / 工具栏",
+                      "width": "fill_container",
+                      "height": 38.0,
+                      "layout": "horizontal",
+                      "padding": [
+                        0.0,
+                        7.0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#F7F4EF"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#D2CBC1"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n1195",
+                          "name": "资源管理器 / 标题",
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "资源管理器",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 11.0,
+                          "fontWeight": 750,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#2E2924"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1196",
+                          "name": "资源管理器 / 工具操作",
+                          "width": "fit_content",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 0.0,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n1197",
+                              "name": "按钮 / 新建资源包",
+                              "width": 25.0,
+                              "height": 26.0,
+                              "layout": "horizontal",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 3.0,
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n1198",
+                                  "name": "按钮 / 新建资源包 / 图标",
+                                  "iconFontName": "package-plus",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#766F66"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1199",
+                              "name": "按钮 / 导入资源包",
+                              "width": 25.0,
+                              "height": 26.0,
+                              "layout": "horizontal",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 3.0,
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n1200",
+                                  "name": "按钮 / 导入资源包 / 图标",
+                                  "iconFontName": "upload",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#766F66"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1201",
+                              "name": "按钮 / 导出资源包",
+                              "width": 25.0,
+                              "height": 26.0,
+                              "layout": "horizontal",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 3.0,
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n1202",
+                                  "name": "按钮 / 导出资源包 / 图标",
+                                  "iconFontName": "download",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#766F66"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1203",
+                              "name": "按钮 / 新建资源",
+                              "width": 25.0,
+                              "height": 26.0,
+                              "layout": "horizontal",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 3.0,
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n1204",
+                                  "name": "按钮 / 新建资源 / 图标",
+                                  "iconFontName": "file-plus",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#766F66"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1205",
+                              "name": "按钮 / 新建文件夹",
+                              "width": 25.0,
+                              "height": 26.0,
+                              "layout": "horizontal",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 3.0,
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n1206",
+                                  "name": "按钮 / 新建文件夹 / 图标",
+                                  "iconFontName": "folder-plus",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#766F66"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1207",
+                      "name": "资源管理器 / 搜索",
+                      "width": "fill_container",
+                      "height": 38.0,
+                      "layout": "vertical",
+                      "gap": 0.0,
+                      "padding": [
+                        4.0,
+                        7.0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1208",
+                          "name": "输入 / 搜索资源",
+                          "width": "fill_container",
+                          "height": 30.0,
+                          "layout": "horizontal",
+                          "gap": 7.0,
+                          "padding": [
+                            0.0,
+                            8.0
+                          ],
+                          "alignItems": "center",
+                          "cornerRadius": 3.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FBFAF7"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C8C0B5"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1209",
+                              "name": "输入 / 搜索资源 / 图标",
+                              "iconFontName": "search",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1210",
+                              "name": "输入值 / 搜索资源",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "筛选资源",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 500,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.3,
+                              "textAlign": "left",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#918A81"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1211",
+                      "name": "资源管理器 / 当前资源包",
+                      "width": "fill_container",
+                      "height": 30.0,
+                      "layout": "horizontal",
+                      "gap": 5.0,
+                      "padding": [
+                        0.0,
+                        7.0
+                      ],
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#E8E3DB"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#D2CBC1"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n1212",
+                          "name": "当前资源包 / 展开",
+                          "iconFontName": "chevron-down",
+                          "width": 12.0,
+                          "height": 12.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#766F66"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "n1213",
+                          "name": "当前资源包 / 标志",
+                          "iconFontName": "package",
+                          "width": 14.0,
+                          "height": 14.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#8B2D31"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n1214",
+                          "name": "当前资源包 / 名称 / 混合模板",
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "冒险资源包",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 10.0,
+                          "fontWeight": 750,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#2E2924"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon_font",
+                          "id": "n1215",
+                          "name": "当前资源包 / 更多",
+                          "iconFontName": "more-horizontal",
+                          "width": 14.0,
+                          "height": 14.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#766F66"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1216",
+                      "name": "资源管理器 / 目录树",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 0.0,
+                      "padding": [
+                        3.0,
+                        4.0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1217",
+                          "name": "目录项 / 敌人",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 5.0,
+                          "padding": [
+                            0.0,
+                            6.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1218",
+                              "name": "目录项 / 敌人 / 展开",
+                              "iconFontName": "chevron-down",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1219",
+                              "name": "目录项 / 敌人 / 文件夹",
+                              "iconFontName": "folder-open",
+                              "width": 14.0,
+                              "height": 14.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1220",
+                              "name": "目录项 / 敌人 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "敌人",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 650,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1221",
+                              "name": "目录项 / 敌人 / 数量",
+                              "width": 24.0,
+                              "height": "fit_content",
+                              "content": "2",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 9.0,
+                              "fontWeight": 500,
+                              "textAlign": "right",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1222",
+                          "name": "资源文件 / [敌人] 牛头人破坏者",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1223",
+                              "name": "模板标志 / 敌人 / 牛头人破坏者",
+                              "iconFontName": "swords",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1224",
+                              "name": "资源文件 / 牛头人破坏者 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "牛头人破坏者",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 600,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1225",
+                              "name": "资源文件 / 牛头人破坏者 / 已修改",
+                              "visible": false,
+                              "width": 10.0,
+                              "height": "fit_content",
+                              "content": "●",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 8.0,
+                              "fontWeight": 700,
+                              "textAlign": "right",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1226",
+                          "name": "资源文件 / [敌人] 卫队长",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1227",
+                              "name": "模板标志 / 敌人 / 卫队长",
+                              "iconFontName": "swords",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1228",
+                              "name": "资源文件 / 卫队长 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "卫队长",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 600,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1232",
+                          "name": "资源文件 / 荆棘猎手",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1233",
+                              "name": "模板标志 / 荆棘猎手",
+                              "iconFontName": "skull",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1234",
+                              "name": "资源文件 / 荆棘猎手 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "荆棘猎手",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1235",
+                          "name": "资源文件 / 深井祭司",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1236",
+                              "name": "模板标志 / 深井祭司",
+                              "iconFontName": "skull",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1237",
+                              "name": "资源文件 / 深井祭司 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "深井祭司",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1238",
+                          "name": "资源文件 / 铁牙队长",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1239",
+                              "name": "模板标志 / 铁牙队长",
+                              "iconFontName": "skull",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1240",
+                              "name": "资源文件 / 铁牙队长 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "铁牙队长",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1241",
+                          "name": "资源文件 / 腐沼巫师",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1242",
+                              "name": "模板标志 / 腐沼巫师",
+                              "iconFontName": "skull",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1243",
+                              "name": "资源文件 / 腐沼巫师 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "腐沼巫师",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1244",
+                          "name": "目录项 / 场景",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 5.0,
+                          "padding": [
+                            0.0,
+                            6.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1245",
+                              "name": "目录项 / 场景 / 展开状态",
+                              "iconFontName": "chevron-down",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1246",
+                              "name": "目录项 / 场景 / 文件夹",
+                              "iconFontName": "folder",
+                              "width": 14.0,
+                              "height": 14.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1247",
+                              "name": "目录项 / 场景 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "场景",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1248",
+                              "name": "目录项 / 场景 / 数量",
+                              "width": 24.0,
+                              "height": "fit_content",
+                              "content": "24",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 9.0,
+                              "fontWeight": 500,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#9A938A"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1249",
+                          "name": "资源文件 / 荒废林地",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1250",
+                              "name": "模板标志 / 荒废林地",
+                              "iconFontName": "trees",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1251",
+                              "name": "资源文件 / 荒废林地 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "荒废林地",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1252",
+                          "name": "资源文件 / 熔岩裂谷",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1253",
+                              "name": "模板标志 / 熔岩裂谷",
+                              "iconFontName": "trees",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1254",
+                              "name": "资源文件 / 熔岩裂谷 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "熔岩裂谷",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1255",
+                          "name": "目录项 / 武器",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 5.0,
+                          "padding": [
+                            0.0,
+                            6.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1256",
+                              "name": "目录项 / 武器 / 展开",
+                              "iconFontName": "chevron-down",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1257",
+                              "name": "目录项 / 武器 / 文件夹",
+                              "iconFontName": "folder-open",
+                              "width": 14.0,
+                              "height": 14.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1258",
+                              "name": "目录项 / 武器 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "武器",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 650,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1259",
+                              "name": "目录项 / 武器 / 数量",
+                              "width": 24.0,
+                              "height": "fit_content",
+                              "content": "1",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 9.0,
+                              "fontWeight": 500,
+                              "textAlign": "right",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1229",
+                          "name": "资源文件 / [武器] 阔剑 / 当前",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            6.0,
+                            0.0,
+                            24.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#DED7CD"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1230",
+                              "name": "模板标志 / 武器 / 阔剑",
+                              "iconFontName": "sword",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1231",
+                              "name": "资源文件 / 阔剑 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "阔剑",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 750,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1260",
+                          "name": "目录项 / 自定义",
+                          "width": "fill_container",
+                          "height": 26.0,
+                          "layout": "horizontal",
+                          "gap": 5.0,
+                          "padding": [
+                            0.0,
+                            6.0
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1261",
+                              "name": "目录项 / 自定义 / 展开状态",
+                              "iconFontName": "chevron-right",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1262",
+                              "name": "目录项 / 自定义 / 文件夹",
+                              "iconFontName": "folder",
+                              "width": 14.0,
+                              "height": 14.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1263",
+                              "name": "目录项 / 自定义 / 名称",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "自定义",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 550,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#766F66"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1264",
+                              "name": "目录项 / 自定义 / 数量",
+                              "width": 24.0,
+                              "height": "fit_content",
+                              "content": "0",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 9.0,
+                              "fontWeight": 500,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#9A938A"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1265",
+                      "name": "资源管理器 / 底部状态栏",
+                      "width": "fill_container",
+                      "height": 27.0,
+                      "layout": "horizontal",
+                      "padding": [
+                        0.0,
+                        8.0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#E9E4DC"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#D2CBC1"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n1266",
+                          "name": "底部状态栏 / 资源数量",
+                          "width": 90.0,
+                          "height": "fit_content",
+                          "content": "129 个资源",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 9.0,
+                          "fontWeight": 550,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#766F66"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n1267",
+                          "name": "底部状态栏 / 排序",
+                          "width": 70.0,
+                          "height": "fit_content",
+                          "content": "名称 ↑",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 9.0,
+                          "fontWeight": 550,
+                          "textAlign": "right",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#766F66"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n1268",
+                  "name": "工作区 / 资源编辑与预览",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 0.0,
+                  "clipContent": true,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n1269",
+                      "name": "编辑器 / 资源标签页",
+                      "width": "fill_container",
+                      "height": 36.0,
+                      "layout": "horizontal",
+                      "gap": 0.0,
+                      "padding": 0.0,
+                      "alignItems": "end",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#E9E4DC"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1270",
+                          "name": "资源标签 / [武器] 阔剑 / 当前常驻",
+                          "width": "fit_content",
+                          "height": 35.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            9.0
+                          ],
+                          "justifyContent": "start",
+                          "alignItems": "center",
+                          "cornerRadius": 0.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F5F0E8"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1271",
+                              "name": "资源标签 / [武器] 阔剑 / 模板标志",
+                              "iconFontName": "sword",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1272",
+                              "name": "资源标签 / [武器] 阔剑 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "阔剑",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 700,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.3,
+                              "textAlign": "left",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1273",
+                              "name": "资源标签 / [武器] 阔剑 / 已修改",
+                              "locked": false,
+                              "width": 8.0,
+                              "height": "fit_content",
+                              "content": "●",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 7.0,
+                              "fontWeight": 700,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.3,
+                              "textAlign": "right",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1274",
+                              "name": "资源标签 / [武器] 阔剑 / 关闭",
+                              "iconFontName": "x",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#625B53"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1275",
+                          "name": "资源标签 / [敌人] 洞穴守卫 / 临时",
+                          "width": "fit_content",
+                          "height": 35.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            9.0
+                          ],
+                          "justifyContent": "start",
+                          "alignItems": "center",
+                          "cornerRadius": 0.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#E4DED5"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1276",
+                              "name": "资源标签 / [敌人] 洞穴守卫 / 模板标志",
+                              "iconFontName": "swords",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1277",
+                              "name": "资源标签 / [敌人] 洞穴守卫 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "洞穴守卫",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 600,
+                              "letterSpacing": 0.0,
+                              "lineHeight": 1.3,
+                              "textAlign": "left",
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1278",
+                              "name": "资源标签 / [敌人] 洞穴守卫 / 关闭",
+                              "iconFontName": "x",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1279",
+                          "name": "资源标签 / [环境] 荒废林地 / 常驻",
+                          "width": "fit_content",
+                          "height": 35.0,
+                          "layout": "horizontal",
+                          "gap": 6.0,
+                          "padding": [
+                            0.0,
+                            9.0
+                          ],
+                          "justifyContent": "start",
+                          "alignItems": "center",
+                          "cornerRadius": 0.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#E4DED5"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n1280",
+                              "name": "资源标签 / [环境] 荒废林地 / 模板标志",
+                              "iconFontName": "trees",
+                              "width": 13.0,
+                              "height": 13.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n1281",
+                              "name": "资源标签 / [环境] 荒废林地 / 文字",
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "荒废林地",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 10.0,
+                              "fontWeight": 600,
+                              "lineHeight": 1.3,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n1282",
+                              "name": "资源标签 / [环境] 荒废林地 / 关闭",
+                              "iconFontName": "x",
+                              "width": 12.0,
+                              "height": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#725443"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n1283",
+                      "name": "工作区 / 内容与预览主体",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "horizontal",
+                      "gap": 12.0,
+                      "padding": 12.0,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n1284",
+                          "name": "武器编辑器 / 固定编辑布局",
+                          "width": 560.0,
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 0.0,
+                          "padding": 0.0,
+                          "clipContent": true,
+                          "cornerRadius": 0.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FAF7F1"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 0.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#F5F0E8"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n1285",
+                              "name": "编辑器 / 内容滚动区",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10.0,
+                              "padding": [
+                                12.0,
+                                14.0
+                              ],
+                              "clipContent": true,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F5F0E8"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "n1449",
+                                  "name": "武器字段分组 / 名称类型位阶 / 无标题",
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "layout": "vertical",
+                                  "gap": 8.0,
+                                  "padding": 10.0,
+                                  "clipContent": true,
+                                  "cornerRadius": 6.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FAF7F1"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#DED4C6"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "n1450",
+                                      "name": "武器字段 / 名称",
+                                      "width": "fill_container",
+                                      "height": 34.0,
+                                      "layout": "horizontal",
+                                      "gap": 8.0,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "n1451",
+                                          "name": "武器字段名 / 名称",
+                                          "locked": false,
+                                          "width": 52.0,
+                                          "height": "fit_content",
+                                          "content": "名称",
+                                          "fontFamily": "Noto Sans SC",
+                                          "fontSize": 12.0,
+                                          "fontWeight": 700,
+                                          "letterSpacing": 0.0,
+                                          "lineHeight": 1.3,
+                                          "textAlign": "left",
+                                          "textGrowth": "fixed-width",
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#725443"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1452",
+                                          "name": "武器输入框 / 名称",
+                                          "width": "fill_container",
+                                          "height": 32.0,
+                                          "layout": "horizontal",
+                                          "padding": [
+                                            0.0,
+                                            9.0
+                                          ],
+                                          "alignItems": "center",
+                                          "clipContent": true,
+                                          "cornerRadius": 5.0,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#FFFDF8"
+                                            }
+                                          ],
+                                          "stroke": {
+                                            "thickness": 1.0,
+                                            "fill": [
+                                              {
+                                                "type": "solid",
+                                                "color": "#CFC3B2"
+                                              }
+                                            ]
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1453",
+                                              "name": "武器字段值 / 名称",
+                                              "locked": false,
+                                              "width": "fill_container",
+                                              "height": "fit_content",
+                                              "content": "阔剑",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 11.0,
+                                              "fontWeight": 500,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#21150F"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "n1454",
+                                      "name": "武器字段行 / 类型与位阶",
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "layout": "horizontal",
+                                      "gap": 8.0,
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "n1455",
+                                          "name": "武器字段 / 类型",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1456",
+                                              "name": "武器字段名 / 类型",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "类型",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1457",
+                                              "name": "武器输入框 / 类型",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1458",
+                                                  "name": "武器字段值 / 类型",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "主武器",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1459",
+                                          "name": "武器字段 / 位阶",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1460",
+                                              "name": "武器字段名 / 位阶",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "位阶",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1461",
+                                              "name": "武器输入框 / 位阶",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1462",
+                                                  "name": "武器字段值 / 位阶",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "1",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1463",
+                                  "name": "武器字段分组 / 核心数据 / 无标题",
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "layout": "vertical",
+                                  "gap": 8.0,
+                                  "padding": 10.0,
+                                  "clipContent": true,
+                                  "cornerRadius": 6.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FAF7F1"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#DED4C6"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "n1464",
+                                      "name": "武器字段行 / 属性距离伤害",
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "layout": "horizontal",
+                                      "gap": 8.0,
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "n1465",
+                                          "name": "武器字段 / 属性",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1466",
+                                              "name": "武器字段名 / 属性",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "属性",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1467",
+                                              "name": "武器输入框 / 属性",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1468",
+                                                  "name": "武器字段值 / 属性",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "敏捷",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1469",
+                                          "name": "武器字段 / 距离",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1470",
+                                              "name": "武器字段名 / 距离",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "距离",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1471",
+                                              "name": "武器输入框 / 距离",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1472",
+                                                  "name": "武器字段值 / 距离",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "近战",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1473",
+                                          "name": "武器字段 / 伤害",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1474",
+                                              "name": "武器字段名 / 伤害",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "伤害",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1475",
+                                              "name": "武器输入框 / 伤害",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1476",
+                                                  "name": "武器字段值 / 伤害",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "d8",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "n1477",
+                                      "name": "武器字段行 / 伤害类型与负荷",
+                                      "width": "fill_container",
+                                      "height": "fit_content",
+                                      "layout": "horizontal",
+                                      "gap": 8.0,
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "n1478",
+                                          "name": "武器字段 / 伤害类型",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1479",
+                                              "name": "武器字段名 / 伤害类型",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "伤害类型",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1480",
+                                              "name": "武器输入框 / 伤害类型",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1481",
+                                                  "name": "武器字段值 / 伤害类型",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "物理",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1482",
+                                          "name": "武器字段 / 负荷",
+                                          "width": "fill_container",
+                                          "height": 34.0,
+                                          "layout": "horizontal",
+                                          "gap": 8.0,
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1483",
+                                              "name": "武器字段名 / 负荷",
+                                              "locked": false,
+                                              "width": 52.0,
+                                              "height": "fit_content",
+                                              "content": "负荷",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 12.0,
+                                              "fontWeight": 700,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#725443"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "n1484",
+                                              "name": "武器输入框 / 负荷",
+                                              "width": "fill_container",
+                                              "height": 32.0,
+                                              "layout": "horizontal",
+                                              "padding": [
+                                                0.0,
+                                                9.0
+                                              ],
+                                              "alignItems": "center",
+                                              "clipContent": true,
+                                              "cornerRadius": 5.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFFDF8"
+                                                }
+                                              ],
+                                              "stroke": {
+                                                "thickness": 1.0,
+                                                "fill": [
+                                                  {
+                                                    "type": "solid",
+                                                    "color": "#CFC3B2"
+                                                  }
+                                                ]
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "n1485",
+                                                  "name": "武器字段值 / 负荷",
+                                                  "locked": false,
+                                                  "width": "fill_container",
+                                                  "height": "fit_content",
+                                                  "content": "单手",
+                                                  "fontFamily": "Noto Sans SC",
+                                                  "fontSize": 11.0,
+                                                  "fontWeight": 500,
+                                                  "letterSpacing": 0.0,
+                                                  "lineHeight": 1.3,
+                                                  "textAlign": "left",
+                                                  "textGrowth": "fixed-width",
+                                                  "fill": [
+                                                    {
+                                                      "type": "solid",
+                                                      "color": "#21150F"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1486",
+                                  "name": "武器字段分组 / 描述 / 无标题",
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "layout": "vertical",
+                                  "gap": 8.0,
+                                  "padding": 10.0,
+                                  "clipContent": true,
+                                  "cornerRadius": 6.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FAF7F1"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#DED4C6"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "n1487",
+                                      "name": "武器字段 / 描述",
+                                      "width": "fill_container",
+                                      "height": 174.0,
+                                      "layout": "horizontal",
+                                      "gap": 8.0,
+                                      "alignItems": "start",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "n1488",
+                                          "name": "武器字段名 / 描述",
+                                          "locked": false,
+                                          "width": 52.0,
+                                          "height": "fit_content",
+                                          "content": "描述",
+                                          "fontFamily": "Noto Sans SC",
+                                          "fontSize": 12.0,
+                                          "fontWeight": 700,
+                                          "letterSpacing": 0.0,
+                                          "lineHeight": 1.3,
+                                          "textAlign": "left",
+                                          "textGrowth": "fixed-width",
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#725443"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1489",
+                                          "name": "武器输入框 / 描述",
+                                          "width": "fill_container",
+                                          "height": 174.0,
+                                          "layout": "vertical",
+                                          "padding": [
+                                            10.0,
+                                            9.0
+                                          ],
+                                          "clipContent": true,
+                                          "cornerRadius": 5.0,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#FFFDF8"
+                                            }
+                                          ],
+                                          "stroke": {
+                                            "thickness": 1.0,
+                                            "fill": [
+                                              {
+                                                "type": "solid",
+                                                "color": "#CFC3B2"
+                                              }
+                                            ]
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1490",
+                                              "name": "武器字段值 / 描述",
+                                              "locked": false,
+                                              "width": "fill_container",
+                                              "height": "fit_content",
+                                              "content": "可靠：你的攻击掷骰+1。",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 11.0,
+                                              "fontWeight": 500,
+                                              "letterSpacing": 0.0,
+                                              "lineHeight": 1.3,
+                                              "textAlign": "left",
+                                              "textGrowth": "fixed-width",
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#21150F"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1428",
+                          "name": "预览 / Canonical Card Surface",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 0.0,
+                          "padding": 0.0,
+                          "clipContent": true,
+                          "cornerRadius": 10.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#292622"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#3A3530"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n1429",
+                              "name": "预览 / 顶部工具栏",
+                              "width": "fill_container",
+                              "height": 58.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                16.0
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#332F2A"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n1430",
+                                  "name": "预览 / 标题",
+                                  "width": 60.0,
+                                  "height": "fit_content",
+                                  "content": "实时预览",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 800,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFF8EC"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n1431",
+                                  "name": "预览 / 顶部操作",
+                                  "width": "fit_content",
+                                  "height": 32.0,
+                                  "layout": "horizontal",
+                                  "gap": 8.0,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "n1432",
+                                      "name": "预览控件 / 卡面模式",
+                                      "width": 48.0,
+                                      "height": 32.0,
+                                      "layout": "horizontal",
+                                      "gap": 0.0,
+                                      "clipContent": true,
+                                      "cornerRadius": 6.0,
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#433E38"
+                                        }
+                                      ],
+                                      "stroke": {
+                                        "thickness": 1.0,
+                                        "fill": [
+                                          {
+                                            "type": "solid",
+                                            "color": "#5B534A"
+                                          }
+                                        ]
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "n1433",
+                                          "name": "卡面模式 / 纯文字 / 当前",
+                                          "width": 48.0,
+                                          "height": 30.0,
+                                          "layout": "horizontal",
+                                          "justifyContent": "center",
+                                          "alignItems": "center",
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#6F2024"
+                                            }
+                                          ],
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "n1434",
+                                              "name": "卡面模式 / 纯文字 / 文字",
+                                              "width": "fit_content",
+                                              "height": "fit_content",
+                                              "content": "纯文字",
+                                              "fontFamily": "Noto Sans SC",
+                                              "fontSize": 9.0,
+                                              "fontWeight": 750,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFF8EC"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "n1439",
+                                      "name": "预览控件 / 固定比例 / 开启",
+                                      "width": 100.0,
+                                      "height": 32.0,
+                                      "layout": "horizontal",
+                                      "gap": 6.0,
+                                      "padding": [
+                                        0.0,
+                                        8.0
+                                      ],
+                                      "alignItems": "center",
+                                      "cornerRadius": 6.0,
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#433E38"
+                                        }
+                                      ],
+                                      "stroke": {
+                                        "thickness": 1.0,
+                                        "fill": [
+                                          {
+                                            "type": "solid",
+                                            "color": "#5B534A"
+                                          }
+                                        ]
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "n1440",
+                                          "name": "固定比例 / 标签",
+                                          "width": 48.0,
+                                          "height": "fit_content",
+                                          "content": "固定比例",
+                                          "fontFamily": "Noto Sans SC",
+                                          "fontSize": 9.0,
+                                          "fontWeight": 650,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#F4E8D7"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "n1441",
+                                          "name": "固定比例 / 开关 / 开启",
+                                          "width": 26.0,
+                                          "height": 16.0,
+                                          "layout": "horizontal",
+                                          "padding": [
+                                            2.0,
+                                            2.0,
+                                            2.0,
+                                            12.0
+                                          ],
+                                          "alignItems": "center",
+                                          "cornerRadius": 8.0,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#A43A3E"
+                                            }
+                                          ],
+                                          "children": [
+                                            {
+                                              "type": "ellipse",
+                                              "id": "n1442",
+                                              "name": "固定比例 / 开关 / 滑块",
+                                              "width": 12.0,
+                                              "height": 12.0,
+                                              "fill": [
+                                                {
+                                                  "type": "solid",
+                                                  "color": "#FFF8EC"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "n1443",
+                                      "name": "预览控件 / 适配",
+                                      "width": 58.0,
+                                      "height": 32.0,
+                                      "layout": "horizontal",
+                                      "gap": 6.0,
+                                      "padding": [
+                                        0.0,
+                                        8.0
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "cornerRadius": 6.0,
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#433E38"
+                                        }
+                                      ],
+                                      "stroke": {
+                                        "thickness": 1.0,
+                                        "fill": [
+                                          {
+                                            "type": "solid",
+                                            "color": "#5B534A"
+                                          }
+                                        ]
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "icon_font",
+                                          "id": "n1444",
+                                          "name": "预览控件 / 适配 / 图标",
+                                          "iconFontName": "maximize",
+                                          "width": 14.0,
+                                          "height": 14.0,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#F4E8D7"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "n1445",
+                                          "name": "预览控件 / 适配 / 文字",
+                                          "width": "fit_content",
+                                          "height": "fit_content",
+                                          "content": "适配",
+                                          "fontFamily": "Noto Sans SC",
+                                          "fontSize": 10.0,
+                                          "fontWeight": 750,
+                                          "fill": [
+                                            {
+                                              "type": "solid",
+                                              "color": "#F4E8D7"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n1446",
+                                      "name": "预览缩放 / 70%",
+                                      "width": 42.0,
+                                      "height": "fit_content",
+                                      "content": "70%",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 10.0,
+                                      "fontWeight": 700,
+                                      "textAlign": "right",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#FFF8EC"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n1447",
+                              "name": "预览 / 居中画布",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "horizontal",
+                              "padding": [
+                                22.0,
+                                20.0
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "clipContent": true,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#292622"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "ref",
+                                  "id": "n1448",
+                                  "name": "预览实例 / weapon-card-r1 / 唯一规范卡面",
+                                  "ref": "n1129",
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "n113",
       "name": "30 Components",
       "children": [

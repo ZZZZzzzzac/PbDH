@@ -55,6 +55,7 @@ const pageNodes = descendants(page);
 const surface = unique(pageNodes, "#28 / Canonical Card Surface");
 const surfaceNodes = descendants(surface);
 const card = unique(surfaceNodes, "enemy-card-r1 / Canonical");
+const weaponCard = unique(pageNodes, "weapon-card-r1 / Canonical");
 
 if (card.role !== "card" || card.layout !== "vertical" || card.clipContent !== true) {
   throw new Error("enemy-card-r1 / Canonical must remain a clipped vertical card");
@@ -213,6 +214,17 @@ const activeMode = unique(workspaceNodes, "卡面模式 / 半图半文字 / 当�
 const fixedRatioControl = unique(workspaceNodes, "预览控件 / 固定比例 / 开启");
 const fixedRatioSwitch = unique(workspaceNodes, "固定比例 / 开关 / 开启");
 
+const weaponWorkspacePage = unique(document.pages, "12 Creator Weapon Editing");
+const weaponWorkspaceNodes = descendants(weaponWorkspacePage);
+const weaponWorkspace = unique(weaponWorkspaceNodes, "#37 / Creator Workspace / 主武器编辑");
+const weaponColumns = unique(weaponWorkspaceNodes, "Creator / 三栏工作区");
+const weaponResourceNav = unique(weaponWorkspaceNodes, "工作区 / 资源导航");
+const weaponWorkspaceBody = unique(weaponWorkspaceNodes, "工作区 / 内容与预览主体");
+const weaponEditor = unique(weaponWorkspaceNodes, "武器编辑器 / 固定编辑布局");
+const weaponNameInput = unique(weaponWorkspaceNodes, "武器输入框 / 名称");
+const weaponDescriptionInput = unique(weaponWorkspaceNodes, "武器输入框 / 描述");
+const weaponPreview = unique(weaponWorkspaceNodes, "预览 / Canonical Card Surface");
+
 if (columns.layout !== "horizontal" || resourceNav.width !== 250 || workspaceBody.layout !== "horizontal") {
   throw new Error("Creator Workspace must retain the reviewed IDE navigation and editor/preview layout");
 }
@@ -225,6 +237,14 @@ if (number(fieldInput, "height") !== 32 || number(fieldLabel, "fontSize") !== 12
 if (featureMenuEditor.height !== 102 || featureMenuAnchor.layout !== "none"
   || featureMenuAnchor.clipContent !== false || featureMenu.y !== 20) {
   throw new Error("Creator feature menu must float without changing the feature editor height");
+}
+if (weaponColumns.layout !== "horizontal" || weaponResourceNav.width !== resourceNav.width
+  || weaponWorkspaceBody.layout !== "horizontal" || weaponEditor.layout !== "vertical"
+  || weaponEditor.width !== 560) {
+  throw new Error("Creator weapon editing must reuse the reviewed IDE shell and parallel preview layout");
+}
+if (descendants(weaponPreview).filter((node) => node.type === "ref" && node.ref === weaponCard.id).length !== 1) {
+  throw new Error("Creator weapon preview must reference weapon-card-r1 / Canonical exactly once");
 }
 
 const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-design.mjs 从 docs/design/creator-app.op 生成，禁止手改.\n\nexport const creatorWorkspaceDesign = ${JSON.stringify({
@@ -293,6 +313,13 @@ const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-desi
     switchBackground: solid(fixedRatioSwitch),
   },
   accent: solid(appTabMarker),
+  weapon: {
+    page: weaponWorkspacePage.name,
+    frame: weaponWorkspace.name,
+    canonicalSurface: "weapon-card-r1 / Canonical",
+    nameInputWidth: weaponNameInput.width,
+    descriptionInputHeight: weaponDescriptionInput.height,
+  },
 }, null, 2)} as const;\n`;
 
 if (process.argv.includes("--check")) {

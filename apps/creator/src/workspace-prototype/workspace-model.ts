@@ -4,7 +4,13 @@ import {
   type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
-import { adversaryTemplate, type AdversaryData } from "@pbdh/templates/core";
+import {
+  adversaryTemplate,
+  templateRegistry,
+  weaponTemplate,
+  type AdversaryData,
+  type WeaponData,
+} from "@pbdh/templates/core";
 
 export type CreatorWorkspace = ResourcePackageCandidate & {
   key: string;
@@ -12,6 +18,7 @@ export type CreatorWorkspace = ResourcePackageCandidate & {
 };
 
 export type ImportPlan = "insert" | "no-op" | "update" | "conflict";
+export type WorkspaceResource = ResourcePackageLogicalDocument["resources"][number];
 
 function cloneMedia(media: ReadonlyMap<string, Uint8Array>): Map<string, Uint8Array> {
   return new Map([...media].map(([id, bytes]) => [id, bytes.slice()]));
@@ -29,37 +36,93 @@ export function createWorkspace(
   };
 }
 
-export function adversaryData(workspace: CreatorWorkspace): AdversaryData {
-  const resource = workspace.document.resources[0];
-  if (!resource || resource.template.id !== adversaryTemplate.id) {
-    throw new Error("Creator prototype requires one adversary resource");
+export function workspaceResource(
+  workspace: CreatorWorkspace,
+  resourceId = workspace.document.resources[0]?.id,
+): WorkspaceResource {
+  const resource = workspace.document.resources.find((candidate) => candidate.id === resourceId);
+  if (!resource) throw new Error(`Missing resource: ${resourceId ?? "<none>"}`);
+  return resource;
+}
+
+function assertTemplate(resource: WorkspaceResource, id: string, version: string): void {
+  if (resource.template.id !== id || resource.template.version !== version) {
+    throw new Error(`Expected ${id}@${version}, received ${resource.template.id}@${resource.template.version}`);
   }
+}
+
+export function adversaryData(workspace: CreatorWorkspace, resourceId?: string): AdversaryData {
+  const resource = workspaceResource(workspace, resourceId);
+  assertTemplate(resource, adversaryTemplate.id, adversaryTemplate.version);
   return resource.data as AdversaryData;
+}
+
+export function weaponData(workspace: CreatorWorkspace, resourceId?: string): WeaponData {
+  const resource = workspaceResource(workspace, resourceId);
+  assertTemplate(resource, weaponTemplate.id, weaponTemplate.version);
+  return resource.data as WeaponData;
 }
 
 export function updateAdversaryData(
   workspace: CreatorWorkspace,
   update: (data: AdversaryData) => void,
+  resourceId?: string,
 ): CreatorWorkspace {
   const next = createWorkspace(workspace, true);
-  update(adversaryData(next));
+  update(adversaryData(next, resourceId));
+  return next;
+}
+
+export function updateWeaponData(
+  workspace: CreatorWorkspace,
+  update: (data: WeaponData) => void,
+  resourceId?: string,
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  update(weaponData(next, resourceId));
   return next;
 }
 
 export function updateResourcePresentation(
   workspace: CreatorWorkspace,
   update: (presentation: ResourcePresentation) => void,
+  resourceId?: string,
 ): CreatorWorkspace {
   const next = createWorkspace(workspace, true);
-  const resource = next.document.resources[0];
-  if (!resource) throw new Error("Missing resource presentation");
+  const resource = workspaceResource(next, resourceId);
   update(resource.presentation);
   return next;
+}
+
+export function addTemplateResource(
+  workspace: CreatorWorkspace,
+  templateId: string,
+  templateVersion: string,
+): { workspace: CreatorWorkspace; resourceId: string } {
+  const template = templateRegistry.resolve(templateId, templateVersion);
+  if (!template) throw new Error(`Unsupported Template: ${templateId}@${templateVersion}`);
+  const next = createWorkspace(workspace, true);
+  let sequence = next.document.resources.length + 1;
+  let resourceId = `resource-${sequence}`;
+  while (next.document.resources.some((resource) => resource.id === resourceId)) {
+    sequence += 1;
+    resourceId = `resource-${sequence}`;
+  }
+  next.document.resources.push({
+    id: resourceId,
+    path: `resources/${resourceId}.json`,
+    template: { id: template.id, version: template.version },
+    presentation: structuredClone(template.defaultPresentation),
+    data: structuredClone(template.defaultData),
+    media: {},
+  });
+  return { workspace: next, resourceId };
 }
 
 export function clearAdversaryFeature(
   workspace: CreatorWorkspace,
   index: number,
+  resourceId?: string,
 ): CreatorWorkspace {
   return updateAdversaryData(workspace, (data) => {
     const feature = data.特性[index];
@@ -68,21 +131,22 @@ export function clearAdversaryFeature(
     feature.原名 = "";
     feature.类型 = "";
     feature.特性描述 = "";
-  });
+  }, resourceId);
 }
 
 export function deleteAdversaryFeature(
   workspace: CreatorWorkspace,
   index: number,
+  resourceId?: string,
 ): CreatorWorkspace {
   return updateAdversaryData(workspace, (data) => {
     data.特性.splice(index, 1);
-  });
+  }, resourceId);
 }
 
-export function removePortrait(workspace: CreatorWorkspace): CreatorWorkspace {
+export function removePortrait(workspace: CreatorWorkspace, resourceId?: string): CreatorWorkspace {
   const next = createWorkspace(workspace, true);
-  const resource = next.document.resources[0];
+  const resource = workspaceResource(next, resourceId);
   const removedAssetId = resource?.media.portrait;
   if (resource) delete resource.media.portrait;
   if (removedAssetId && !next.document.resources.some((candidate) =>
@@ -97,10 +161,10 @@ export function replacePortrait(
   workspace: CreatorWorkspace,
   asset: ResourcePackageLogicalDocument["assets"][number],
   bytes: Uint8Array,
+  resourceId?: string,
 ): CreatorWorkspace {
   const next = createWorkspace(workspace, true);
-  const resource = next.document.resources[0];
-  if (!resource) throw new Error("Missing adversary resource");
+  const resource = workspaceResource(next, resourceId);
   const previousAssetId = resource.media.portrait;
   if (previousAssetId) {
     next.document.assets = next.document.assets.filter((candidate) => candidate.id !== previousAssetId);
