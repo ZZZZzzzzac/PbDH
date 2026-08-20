@@ -160,7 +160,8 @@ const css = `
 .enemy-state-row { height: ${mm(number(hpRow, "height"))}; display: flex; align-items: center; gap: ${mm(number(hpRow, "gap"))}; }
 .enemy-state-label { box-sizing: border-box; width: ${mm(number(hpLabel, "width"))}; height: ${mm(number(hpLabel, "height"))}; display: grid; place-items: center; background: ${solid(hpLabel)}; color: ${solid(hpText)}; font: ${cssFont(hpText)}; }
 .enemy-state-markers { display: flex; gap: ${mm(number(hpRow, "gap"))}; color: ${solid(hpMarkers[0])}; }
-.enemy-state-marker { width: ${mm(number(hpMarkers[0], "width"))}; height: ${mm(number(hpMarkers[0], "height"))}; display: grid; place-items: center; font-size: ${mm(number(hpMarkers[0], "height"))}; line-height: 1; }
+.enemy-state-marker { width: ${mm(number(hpMarkers[0], "width"))}; height: ${mm(number(hpMarkers[0], "height"))}; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: ${mm(number(hpMarkers[0], "height"))}; line-height: 1; }
+.enemy-state-marker:not(:disabled) { cursor: pointer; }
 .enemy-state-row.is-stress { height: ${mm(number(stressRow, "height"))}; }
 .enemy-state-row.is-stress .enemy-state-label { width: ${mm(number(stressLabel, "width"))}; height: ${mm(number(stressLabel, "height"))}; color: ${solid(stressText)}; font: ${cssFont(stressText)}; }
 .enemy-state-row.is-stress .enemy-state-markers { gap: ${mm(number(stressRow, "gap"))}; color: ${solid(stressMarkers[0])}; }
@@ -225,6 +226,30 @@ const weaponNameInput = unique(weaponWorkspaceNodes, "武器输入框 / 名称")
 const weaponDescriptionInput = unique(weaponWorkspaceNodes, "武器输入框 / 描述");
 const weaponPreview = unique(weaponWorkspaceNodes, "预览 / Canonical Card Surface");
 
+const gmPage = unique(document.pages, "13 GM Tabletop");
+const gmPageNodes = descendants(gmPage);
+const gmWorkspace = unique(gmPageNodes, "#32 / GM Tabletop / 敌人桌面");
+const gmWorkspaceNodes = descendants(gmWorkspace);
+const gmColumns = unique(gmWorkspaceNodes, "Creator / GM 桌面工作区");
+const gmResourceNav = unique(gmWorkspaceNodes, "工作区 / 资源导航");
+const gmContent = unique(gmWorkspaceNodes, "GM 桌面 / 桌面标签与内容");
+const gmTabs = unique(gmWorkspaceNodes, "桌面文档 / 标签栏");
+const gmCanvas = unique(gmWorkspaceNodes, "桌面画布 / 视口");
+const gmZoomStatus = unique(gmWorkspaceNodes, "桌面画布 / 缩放状态");
+const gmSelectedInstance = unique(gmWorkspaceNodes, "桌面实例 / 牛头人破坏者 / 选中框");
+const gmInstanceEditor = unique(gmPageNodes, "#32 / GM Tabletop / 敌人实例编辑");
+const gmInstanceEditorNodes = descendants(gmInstanceEditor);
+const gmInstanceToolbar = unique(gmInstanceEditorNodes, "GM 桌面 / 实例编辑工具栏");
+const gmInstanceBody = unique(gmInstanceEditorNodes, "GM 桌面 / 敌人实例编辑主体");
+const gmInstanceForm = unique(gmInstanceEditorNodes, "敌人编辑器 / 固定编辑布局");
+const gmInstancePreview = unique(gmInstanceEditorNodes, "预览 / Canonical Card Surface");
+const gmMenusPage = unique(document.pages, "20 GM Dialogs & Menus");
+const gmMenuNodes = descendants(gmMenusPage);
+const gmCanvasMenu = unique(gmMenuNodes, "空白桌面 / 右键菜单");
+const gmInstanceMenu = unique(gmMenuNodes, "桌面实例 / 右键菜单");
+const gmSendToTabletopMenu = unique(gmMenuNodes, "资源右键 / 发送到桌面 / 子菜单");
+const gmSendToTabletopNew = unique(gmMenuNodes, "资源右键 / 发送到桌面 / 新建桌面");
+
 if (columns.layout !== "horizontal" || resourceNav.width !== 250 || workspaceBody.layout !== "horizontal") {
   throw new Error("Creator Workspace must retain the reviewed IDE navigation and editor/preview layout");
 }
@@ -245,6 +270,25 @@ if (weaponColumns.layout !== "horizontal" || weaponResourceNav.width !== resourc
 }
 if (descendants(weaponPreview).filter((node) => node.type === "ref" && node.ref === weaponCard.id).length !== 1) {
   throw new Error("Creator weapon preview must reference weapon-card-r1 / Canonical exactly once");
+}
+if (gmColumns.layout !== "horizontal" || gmResourceNav.width !== resourceNav.width
+  || gmContent.layout !== "vertical" || gmCanvas.layout !== "none") {
+  throw new Error("GM Tabletop must reuse the Creator IDE navigation and reserve only the content body for the canvas");
+}
+if (gmWorkspaceNodes.some((node) => node.name === "画布 / 工具栏")) {
+  throw new Error("GM Tabletop must use whiteboard gestures without a canvas tool-mode toolbar");
+}
+if (gmInstanceMenu.children?.length !== 3 || gmCanvasMenu.children?.length < 3
+  || gmSendToTabletopMenu.children?.length < 2 || gmSendToTabletopNew.children?.length !== 2) {
+  throw new Error("GM Tabletop context and cascading menus must retain their reviewed actions");
+}
+const gmCanvasRefs = descendants(gmCanvas).filter((node) => node.type === "ref");
+if (gmCanvasRefs.length !== 2 || gmCanvasRefs.some((node) => node.ref !== card.id)) {
+  throw new Error("GM Tabletop instances must reference the one enemy Canonical Card Surface");
+}
+if (gmInstanceBody.layout !== "horizontal" || gmInstanceForm.width !== weaponEditor.width
+  || descendants(gmInstancePreview).filter((node) => node.type === "ref" && node.ref === card.id).length !== 1) {
+  throw new Error("GM instance editing must reuse the enemy editor and one Canonical Card Surface");
 }
 
 const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-design.mjs 从 docs/design/creator-app.op 生成，禁止手改.\n\nexport const creatorWorkspaceDesign = ${JSON.stringify({
@@ -319,6 +363,40 @@ const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-desi
     canonicalSurface: "weapon-card-r1 / Canonical",
     nameInputWidth: weaponNameInput.width,
     descriptionInputHeight: weaponDescriptionInput.height,
+  },
+  gmTabletop: {
+    page: gmPage.name,
+    frame: gmWorkspace.name,
+    instanceEditorFrame: gmInstanceEditor.name,
+    resourceNavigationWidth: gmResourceNav.width,
+    tabs: {
+      height: gmTabs.height,
+      background: solid(gmTabs),
+      border: solid(gmTabs, "stroke"),
+    },
+    zoomStatus: {
+      width: gmZoomStatus.width,
+      height: gmZoomStatus.height,
+      background: solid(gmZoomStatus),
+      border: solid(gmZoomStatus, "stroke"),
+    },
+    canvas: {
+      background: solid(gmCanvas),
+      selectedBorder: solid(gmSelectedInstance, "stroke"),
+    },
+    menus: {
+      canvasWidth: gmCanvasMenu.width,
+      instanceWidth: gmInstanceMenu.width,
+      sendToTabletopWidth: gmSendToTabletopMenu.width,
+    },
+    instanceEditor: {
+      toolbarHeight: gmInstanceToolbar.height,
+      bodyGap: gmInstanceBody.gap,
+      bodyPadding: gmInstanceBody.padding,
+      editorWidth: gmInstanceForm.width,
+      previewBackground: solid(gmInstancePreview),
+      previewBorder: solid(gmInstancePreview, "stroke"),
+    },
   },
 }, null, 2)} as const;\n`;
 

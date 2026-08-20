@@ -8,8 +8,10 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@pbdh/local-storage": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",
+    "@pbdh/tabletop": "0.0.0",
     "@pbdh/templates": "0.0.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"

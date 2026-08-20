@@ -41,8 +41,8 @@ export const creatorWorkspaceDesign = {
     ]
   },
   "preview": {
-    "background": "#292622",
-    "border": "#3A3530",
+    "background": "#D8D1C7",
+    "border": "#C9C1B6",
     "radius": 10
   },
   "field": {
@@ -62,11 +62,11 @@ export const creatorWorkspaceDesign = {
   },
   "previewControls": {
     "height": 32,
-    "background": "#433E38",
-    "border": "#5B534A",
-    "activeBackground": "#6F2024",
-    "fixedRatioBackground": "#433E38",
-    "switchBackground": "#A43A3E"
+    "background": "#FFFDF8",
+    "border": "#C9C1B6",
+    "activeBackground": "#641F1D",
+    "fixedRatioBackground": "#FFFDF8",
+    "switchBackground": "#641F1D"
   },
   "accent": "#D65458",
   "weapon": {
@@ -75,5 +75,39 @@ export const creatorWorkspaceDesign = {
     "canonicalSurface": "weapon-card-r1 / Canonical",
     "nameInputWidth": "fill_container",
     "descriptionInputHeight": 174
+  },
+  "gmTabletop": {
+    "page": "13 GM Tabletop",
+    "frame": "#32 / GM Tabletop / 敌人桌面",
+    "instanceEditorFrame": "#32 / GM Tabletop / 敌人实例编辑",
+    "resourceNavigationWidth": 250,
+    "tabs": {
+      "height": 36,
+      "background": "#E9E4DC",
+      "border": "#C9C1B6"
+    },
+    "zoomStatus": {
+      "width": 72,
+      "height": 28,
+      "background": "#F7F4EFE8",
+      "border": "#C9C1B6"
+    },
+    "canvas": {
+      "background": "#D8D1C7",
+      "selectedBorder": "#A8403D"
+    },
+    "menus": {
+      "canvasWidth": 230,
+      "instanceWidth": 180,
+      "sendToTabletopWidth": 210
+    },
+    "instanceEditor": {
+      "toolbarHeight": 42,
+      "bodyGap": 12,
+      "bodyPadding": 12,
+      "editorWidth": 560,
+      "previewBackground": "#D8D1C7",
+      "previewBorder": "#C9C1B6"
+    }
   }
 } as const;

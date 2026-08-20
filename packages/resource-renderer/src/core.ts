@@ -39,6 +39,7 @@ export type RendererRevisionCapability<TData, TState, TOutput> = {
     state: TState;
     assets: Readonly<Partial<Record<string, string>>>;
     presentation: SurfacePresentation;
+    onStateCommand?: (commandId: string, value: string) => void;
   }) => TOutput;
 };
 
@@ -53,6 +54,7 @@ export type SurfaceReady<TData, TState, TOutput> = {
     state: TState;
     assets: Readonly<Partial<Record<string, string>>>;
     presentation: SurfacePresentation;
+    onStateCommand?: (commandId: string, value: string) => void;
   };
 };
 
@@ -103,6 +105,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
   renderer?: RendererRevisionCapability<TData, TState, TOutput>;
   assets: ReadonlyMap<string, ManagedAsset>;
   state?: unknown;
+  onStateCommand?: (commandId: string, value: string) => void;
 }): SurfacePreparation<TData, TState, TOutput> {
   const width = Number(input.resource.presentation.width);
   const height = Number(input.resource.presentation.height);
@@ -226,6 +229,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
       state: state as TState,
       assets: assetUrls,
       presentation,
+      ...(input.onStateCommand ? { onStateCommand: input.onStateCommand } : {}),
     },
   };
 }

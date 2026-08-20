@@ -17,6 +17,7 @@ const workspaceDirectories = [
   "packages/resource-renderer",
   "packages/resource-conversion",
   "packages/tabletop",
+  "packages/local-storage",
 ];
 
 async function collectSourceFiles(relativeDirectory) {

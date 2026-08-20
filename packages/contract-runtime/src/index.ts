@@ -17,6 +17,22 @@ export {
   writeResourcePackageDirectory,
 } from "./portable-archive.ts";
 export {
+  TABLETOP_DOCUMENT_VERSION,
+  validateTabletopDocumentSemantics,
+} from "./tabletop-document.ts";
+export type {
+  TabletopAsset,
+  TabletopDocument,
+  TabletopMedia,
+  TabletopResourceCopy,
+} from "./tabletop-document.ts";
+export { loadPbtab, writePbtab } from "./tabletop-archive.ts";
+export type {
+  PbtabLoadResult,
+  TabletopDocumentCandidate,
+  TabletopDocumentCandidateValidator,
+} from "./tabletop-archive.ts";
+export {
   compareSemVer,
   isSemVerInRange,
   parseSemVer,

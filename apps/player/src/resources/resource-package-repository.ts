@@ -1,27 +1,13 @@
-import Dexie, { type Table } from "dexie";
-
 import type {
   ResourcePackageCandidate,
   ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
+import {
+  PbDHLocalDatabase,
+  type InstalledResourcePackageRecord,
+} from "@pbdh/local-storage";
 
 export type ResourcePackageSource = "bundled" | "file" | "market";
-
-type InstalledResourcePackageRecord = {
-  packageId: string;
-  snapshotDigest: string;
-  version: string;
-  installedAt: string;
-  source: ResourcePackageSource;
-  document: ResourcePackageLogicalDocument;
-};
-
-type ResourceMediaRecord = {
-  assetId: string;
-  mediaType: "image/webp";
-  byteLength: string;
-  bytes: Uint8Array;
-};
 
 export type StoredResourcePackage = ResourcePackageCandidate & {
   installedAt: string;
@@ -34,18 +20,7 @@ export interface ResourcePackageRepository {
   remove(packageId: string): Promise<void>;
 }
 
-export class PbDHLocalDatabase extends Dexie {
-  installedResourcePackages!: Table<InstalledResourcePackageRecord, string>;
-  resourceMedia!: Table<ResourceMediaRecord, string>;
-
-  constructor(name = "pbdh-platform") {
-    super(name);
-    this.version(1).stores({
-      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
-      resourceMedia: "&assetId, byteLength",
-    });
-  }
-}
+export { PbDHLocalDatabase } from "@pbdh/local-storage";
 
 function copyBytes(bytes: Uint8Array): Uint8Array {
   return new Uint8Array(bytes);
@@ -72,20 +47,21 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     const records = await this.#database.installedResourcePackages.orderBy("installedAt").toArray();
     const result: StoredResourcePackage[] = [];
     for (const record of records) {
-      const mediaRecords = await this.#database.resourceMedia.bulkGet(
-        record.document.assets.map((asset) => asset.id),
+      const document = record.document as ResourcePackageLogicalDocument;
+      const mediaRecords = await this.#database.mediaAssets.bulkGet(
+        document.assets.map((asset) => asset.id),
       );
       const media = new Map<string, Uint8Array>();
-      record.document.assets.forEach((asset, index) => {
+      document.assets.forEach((asset, index) => {
         const stored = mediaRecords[index];
         if (!stored) throw new Error(`Installed media record is missing: ${asset.id}`);
         media.set(asset.id, copyBytes(stored.bytes));
       });
       result.push({
-        document: structuredClone(record.document),
+        document: structuredClone(document),
         media,
         installedAt: record.installedAt,
-        source: record.source,
+        source: record.source as ResourcePackageSource,
       });
     }
     return result;
@@ -96,9 +72,10 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     await this.#database.transaction(
       "rw",
       this.#database.installedResourcePackages,
-      this.#database.resourceMedia,
+      this.#database.localDocuments,
+      this.#database.mediaAssets,
       async () => {
-        await this.#database.resourceMedia.bulkPut(candidate.document.assets.map((asset) => ({
+        await this.#database.mediaAssets.bulkPut(candidate.document.assets.map((asset) => ({
           assetId: asset.id,
           mediaType: asset.mediaType,
           byteLength: asset.byteLength,
@@ -111,7 +88,7 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
           installedAt: new Date().toISOString(),
           source,
           document: structuredClone(candidate.document),
-        });
+        } satisfies InstalledResourcePackageRecord);
         await this.#removeUnreferencedMedia();
       },
     );
@@ -121,7 +98,8 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     await this.#database.transaction(
       "rw",
       this.#database.installedResourcePackages,
-      this.#database.resourceMedia,
+      this.#database.localDocuments,
+      this.#database.mediaAssets,
       async () => {
         await this.#database.installedResourcePackages.delete(packageId);
         await this.#removeUnreferencedMedia();
@@ -131,10 +109,14 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
 
   async #removeUnreferencedMedia(): Promise<void> {
     const packages = await this.#database.installedResourcePackages.toArray();
-    const referenced = new Set(packages.flatMap((record) =>
-      record.document.assets.map((asset) => asset.id)));
-    const storedIds = await this.#database.resourceMedia.toCollection().primaryKeys();
+    const documents = await this.#database.localDocuments.toArray();
+    const referenced = new Set([
+      ...packages.flatMap((record) =>
+        (record.document as ResourcePackageLogicalDocument).assets.map((asset) => asset.id)),
+      ...documents.flatMap((record) => record.assetIds),
+    ]);
+    const storedIds = await this.#database.mediaAssets.toCollection().primaryKeys();
     const unreferenced = storedIds.filter((assetId) => !referenced.has(assetId));
-    if (unreferenced.length) await this.#database.resourceMedia.bulkDelete(unreferenced);
+    if (unreferenced.length) await this.#database.mediaAssets.bulkDelete(unreferenced);
   }
 }

@@ -1,0 +1,12 @@
+{
+  "name": "@pbdh/local-storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "dexie": "4.4.4"
+  }
+}

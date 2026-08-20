@@ -33,7 +33,13 @@
     },
     {
       "id": "tabletop-document",
-      "versions": []
+      "versions": [
+        {
+          "version": "1.0.0-alpha.1",
+          "state": "development",
+          "schema": "tabletop-document/1.0.0-alpha.1/schema.json"
+        }
+      ]
     },
     {
       "id": "backend-api",

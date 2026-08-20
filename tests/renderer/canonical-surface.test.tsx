@@ -253,6 +253,8 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(markup).toContain("<small><span>Charging Bull</span><span>动作</span></small>");
     expect(markup).not.toContain("<span>生命</span>");
     expect(markup).not.toContain("<span>压力</span>");
+    expect(markup).toContain("aria-label=\"将生命设为 6\"");
+    expect(markup).toContain("disabled=\"\"");
     expect(adversaryRendererStyles).toContain(".enemy-card.is-fluid");
     expect(adversaryRendererStyles).toContain(".enemy-card.is-image .enemy-art { height: 100%; }");
     const signature = createHash("sha256")
@@ -260,6 +262,6 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("5691a36d74e09bb8f954f8662fc7d337f412a74019ed19dfbc1bae85b56f6da4");
+    expect(signature).toBe("99666724d0b2b899e7c0878ad966bf863c939e9479e1ef9a52fef369f66238ba");
   });
 });

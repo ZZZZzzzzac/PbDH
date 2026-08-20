@@ -83,12 +83,12 @@ describe("Dexie Resource Package Repository", () => {
 
     await store.replace(first, "file");
     await store.replace(second, "market");
-    expect(await database.resourceMedia.count()).toBe(1);
+    expect(await database.mediaAssets.count()).toBe(1);
 
     await store.remove(first.document.package.id);
-    expect(await database.resourceMedia.count()).toBe(1);
+    expect(await database.mediaAssets.count()).toBe(1);
 
     await store.remove(second.document.package.id);
-    expect(await database.resourceMedia.count()).toBe(0);
+    expect(await database.mediaAssets.count()).toBe(0);
   });
 });

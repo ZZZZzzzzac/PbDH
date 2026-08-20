@@ -36,6 +36,15 @@ function renderBoldText(value: string) {
       : part);
 }
 
+function markerTarget(current: string, index: number): string {
+  const target = index + 1;
+  return String(target === Number(current) ? target - 1 : target);
+}
+
+function markerDelta(current: string, index: number): string {
+  return String(Number(markerTarget(current, index)) - Number(current));
+}
+
 export const adversaryRendererRevision: RendererRevisionCapability<
   AdversaryData,
   AdversaryRuntimeState,
@@ -51,7 +60,7 @@ export const adversaryRendererRevision: RendererRevisionCapability<
   },
   validateState: isAdversaryState,
   styles: adversaryRendererStyles,
-  render({ data, state, assets, presentation }) {
+  render({ data, state, assets, presentation, onStateCommand }) {
     const portrait = assets.portrait;
     const mode = presentation.mode;
     const cardClass = [
@@ -99,14 +108,32 @@ export const adversaryRendererRevision: RendererRevisionCapability<
           <section className="enemy-state" aria-label="状态轨道">
             <div className="enemy-state-row">
               <span className="enemy-state-label">HP {state.currentHp}/{data.生命点}</span>
-              <span className="enemy-state-markers" aria-hidden="true">
-                {Array.from({ length: Number(data.生命点) }, (_, index) => <i className="enemy-state-marker" key={index}>♡</i>)}
+              <span className="enemy-state-markers">
+                {Array.from({ length: Number(data.生命点) }, (_, index) => <button
+                  type="button"
+                  className="enemy-state-marker"
+                  aria-label={`将生命设为 ${markerTarget(state.currentHp, index)}`}
+                  aria-pressed={index < Number(state.currentHp)}
+                  disabled={!onStateCommand}
+                  key={index}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => onStateCommand?.("adjust-hp", markerDelta(state.currentHp, index))}
+                >♡</button>)}
               </span>
             </div>
             <div className="enemy-state-row is-stress">
               <span className="enemy-state-label">压力 {state.currentStress}/{data.压力点}</span>
-              <span className="enemy-state-markers" aria-hidden="true">
-                {Array.from({ length: Number(data.压力点) }, (_, index) => <i className="enemy-state-marker" key={index}>◆</i>)}
+              <span className="enemy-state-markers">
+                {Array.from({ length: Number(data.压力点) }, (_, index) => <button
+                  type="button"
+                  className="enemy-state-marker"
+                  aria-label={`将压力设为 ${markerTarget(state.currentStress, index)}`}
+                  aria-pressed={index < Number(state.currentStress)}
+                  disabled={!onStateCommand}
+                  key={index}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => onStateCommand?.("adjust-stress", markerDelta(state.currentStress, index))}
+                >◆</button>)}
               </span>
             </div>
           </section>

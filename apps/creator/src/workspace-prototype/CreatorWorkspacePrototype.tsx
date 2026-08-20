@@ -8,13 +8,26 @@ import {
 } from "react";
 
 import {
+  loadPbtab,
   loadPbres,
+  writePbtab,
   writePbres,
   type ContractDiagnostic,
   type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
+import { DexieLocalDocumentStore } from "@pbdh/local-storage";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import {
+  createTabletopDocument,
+  executeTabletopCommand,
+  type TabletopCapability,
+  type TabletopCommand,
+  type TabletopDocumentModel,
+  type TabletopInstance,
+  type TabletopInstanceResourceCopy,
+} from "@pbdh/tabletop/core";
+import { TabletopSurface } from "@pbdh/tabletop/react";
 import {
   adversaryRendererRevision,
   weaponAuthoringLayout,
@@ -34,6 +47,8 @@ import minotaurPackage from "../../../../contracts/conformance/resource-package/
 
 import { creatorWorkspaceDesign } from "./design.generated.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
+import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
+import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
 import {
   adversaryData,
   addTemplateResource,
@@ -60,12 +75,65 @@ type Dialog =
   | { kind: "no-op"; name: string }
   | { kind: "update"; incoming: ResourcePackageCandidate }
   | { kind: "conflict"; incoming: ResourcePackageCandidate }
-  | { kind: "delete-feature"; index: number; name: string }
+  | { kind: "delete-feature"; index: number; name: string; target: "workspace" | "instance" }
+  | null;
+
+type TabletopContextMenu =
+  | { kind: "resource"; resourceId: string; x: number; y: number; sendOpen: boolean }
+  | { kind: "instance"; instanceId: string; x: number; y: number }
+  | { kind: "canvas"; x: number; y: number }
   | null;
 
 const initialDocument = minotaurPackage as ResourcePackageLogicalDocument;
 const initialWorkspace = createWorkspace({ document: initialDocument, media: new Map() });
 const initialAssetId = initialDocument.assets[0]!.id;
+const gmCapabilities = new Set<TabletopCapability>([
+  "place",
+  "move",
+  "uniform-scale",
+  "duplicate",
+  "delete",
+  "edit-instance-resource",
+  "template-state-command",
+]);
+
+function tabletopResourceCopy(
+  workspace: CreatorWorkspace,
+  resource: WorkspaceResource,
+): TabletopInstanceResourceCopy {
+  return {
+    source: { packageId: workspace.document.package.id, resourceId: resource.id },
+    template: structuredClone(resource.template),
+    presentation: structuredClone(resource.presentation),
+    data: structuredClone(resource.data) as Record<string, unknown>,
+    labels: [],
+    media: structuredClone(resource.media),
+  };
+}
+
+function placeInitialInstance(
+  document: TabletopDocumentModel,
+  instanceId: string,
+  position: { x: number; y: number },
+): TabletopDocumentModel {
+  const resource = initialWorkspace.document.resources[0]!;
+  return executeTabletopCommand(document, {
+    type: "place",
+    instanceId,
+    resource: tabletopResourceCopy(initialWorkspace, resource),
+    state: adversaryTemplate.tabletop.defaultState(resource.data as AdversaryData),
+    position,
+    assets: initialWorkspace.document.assets.filter((asset) =>
+      Object.values(resource.media).includes(asset.id)),
+  }, { capabilities: gmCapabilities }).document;
+}
+
+function initialTabletopDocuments(): TabletopDocumentModel[] {
+  let temple = createTabletopDocument("01989f4e-7b2c-7000-8000-000000000001", "陨落神殿");
+  temple = placeInitialInstance(temple, "01989f4e-7b2c-7000-8000-000000000002", { x: 48, y: 88 });
+  temple = placeInitialInstance(temple, "01989f4e-7b2c-7000-8000-000000000003", { x: 448, y: 220 });
+  return [temple, createTabletopDocument("01989f4e-7b2c-7000-8000-000000000004", "黑湾伏击")];
+}
 
 function Field({
   label,
@@ -134,7 +202,80 @@ function Icon({ name }: { name: keyof typeof iconPaths }) {
   </svg>;
 }
 
-function isTemplate(resource: WorkspaceResource, template: { id: string; version: string }): boolean {
+function AdversaryEditor({
+  data,
+  openFeatureMenu,
+  onField,
+  onFeature,
+  onAddFeature,
+  onToggleFeatureMenu,
+  onClearFeature,
+  onDeleteFeature,
+}: {
+  data: AdversaryData;
+  openFeatureMenu: number | null;
+  onField: (field: Exclude<keyof AdversaryData, "特性">, value: string) => void;
+  onFeature: (index: number, field: keyof AdversaryFeature, value: string) => void;
+  onAddFeature: () => void;
+  onToggleFeatureMenu: (index: number) => void;
+  onClearFeature: (index: number) => void;
+  onDeleteFeature: (index: number, name: string) => void;
+}) {
+  return <section className="authoring-editor">
+    <div className="field-group identity-fields">
+      <div className="field-row"><Field className="name-field" label="名称" value={data.名称} onChange={(value) => onField("名称", value)} /><Field className="tier-field" label="位阶" value={data.位阶} onChange={(value) => onField("位阶", value)} /></div>
+      <div className="field-row"><Field className="name-field" label="英文" value={data.原文} onChange={(value) => onField("原文", value)} /><Field className="tier-field" label="种类" value={data.种类} onChange={(value) => onField("种类", value)} /></div>
+      <Field className="full-field" label="简介" value={data.简介} onChange={(value) => onField("简介", value)} />
+    </div>
+    <div className="field-group combat-fields">
+      <div className="field-row"><Field className="motive-field" label="动机与战术" value={data.动机与战术} onChange={(value) => onField("动机与战术", value)} /><Field className="experience-field" label="经历" value={data.经历} onChange={(value) => onField("经历", value)} /></div>
+      <div className="field-row dense-row">
+        <Field className="value-field" label="生命" value={data.生命点} onChange={(value) => onField("生命点", value)} />
+        <Field className="value-field" label="压力" value={data.压力点} onChange={(value) => onField("压力点", value)} />
+        <Field className="difficulty-field" label="难度" value={data.难度} onChange={(value) => onField("难度", value)} />
+        <Field className="threshold-field" label="重度阈值" value={data.重度伤害阈值} onChange={(value) => onField("重度伤害阈值", value)} />
+        <Field className="threshold-field" label="严重阈值" value={data.严重伤害阈值} onChange={(value) => onField("严重伤害阈值", value)} />
+      </div>
+      <div className="field-row dense-row attack-row">
+        <Field className="attack-field" label="攻击" value={data.攻击命中} onChange={(value) => onField("攻击命中", value)} />
+        <Field className="weapon-field" label="武器" value={data.攻击武器} onChange={(value) => onField("攻击武器", value)} />
+        <Field className="weapon-field" label="范围" value={data.攻击范围} onChange={(value) => onField("攻击范围", value)} />
+        <Field className="damage-field" label="伤害" value={data.攻击伤害} onChange={(value) => onField("攻击伤害", value)} />
+        <Field className="damage-field" label="类型" value={data.攻击属性} onChange={(value) => onField("攻击属性", value)} />
+      </div>
+    </div>
+    <section className="features-editor">
+      <header><h2>特性</h2><button type="button" onClick={onAddFeature}>＋ 新增特性</button></header>
+      {data.特性.map((feature, index) => <article className="feature-editor" key={`${feature.名称}:${index}`}>
+        <div className="feature-line"><Icon name="grip" /><Field className="feature-name" label="特性名" value={feature.名称} onChange={(value) => onFeature(index, "名称", value)} /><Field className="feature-type" label="类型" value={feature.类型} onChange={(value) => onFeature(index, "类型", value)} /><div className="feature-actions">
+          <button type="button" aria-label={`${feature.名称 || "未命名特性"}菜单`} aria-haspopup="menu" aria-expanded={openFeatureMenu === index} onClick={() => onToggleFeatureMenu(index)}><Icon name="ellipsis" /></button>
+          {openFeatureMenu === index && <div className="feature-menu" role="menu">
+            <button type="button" role="menuitem" onClick={() => onClearFeature(index)}>清空内容</button>
+            <button type="button" role="menuitem" className="delete" onClick={() => onDeleteFeature(index, feature.名称)}>删除特性</button>
+          </div>}
+        </div></div>
+        <div className="feature-line description-line"><span /><TextareaField label="描述" value={feature.特性描述} onChange={(value) => onFeature(index, "特性描述", value)} /></div>
+      </article>)}
+    </section>
+  </section>;
+}
+
+function WeaponEditor({ data, onField }: { data: WeaponData; onField: (field: keyof WeaponData, value: string) => void }) {
+  return <section className="authoring-editor weapon-authoring-editor">
+    {weaponAuthoringLayout.sections.map((section) => <div className={`field-group weapon-field-grid ${section.id}`} key={section.id}>
+      {section.fields.map((field) => {
+        const key = field.path as keyof WeaponData;
+        return field.control === "textarea"
+          ? <TextareaField key={field.path} label={field.label} value={data[key]} onChange={(value) => onField(key, value)} />
+          : <Field key={field.path} label={field.label} value={data[key]} onChange={(value) => onField(key, value)} />;
+      })}
+    </div>)}
+  </section>;
+}
+
+type TemplateBoundResource = { template: { id: string; version: string } };
+
+function isTemplate(resource: TemplateBoundResource, template: { id: string; version: string }): boolean {
   return resource.template.id === template.id && resource.template.version === template.version;
 }
 
@@ -143,7 +284,7 @@ function resourceTitle(resource: WorkspaceResource): string {
   return template?.project(resource.data).title ?? resource.id;
 }
 
-function ResourceIcon({ resource }: { resource: WorkspaceResource }) {
+function ResourceIcon({ resource }: { resource: TemplateBoundResource }) {
   return <Icon name={isTemplate(resource, weaponTemplate) ? "sword" : "skull"} />;
 }
 
@@ -182,10 +323,40 @@ export function CreatorWorkspacePrototype() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [newName, setNewName] = useState("牛头人敌人资源包");
   const [openFeatureMenu, setOpenFeatureMenu] = useState<number | null>(null);
+  const [appMode, setAppMode] = useState<"creator" | "gm">("creator");
+  const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>(initialTabletopDocuments);
+  const [openTabletopIds, setOpenTabletopIds] = useState([
+    "01989f4e-7b2c-7000-8000-000000000001",
+    "01989f4e-7b2c-7000-8000-000000000004",
+  ]);
+  const [activeTabletopId, setActiveTabletopId] = useState("01989f4e-7b2c-7000-8000-000000000001");
+  const [selectedInstanceId, setSelectedInstanceId] = useState("01989f4e-7b2c-7000-8000-000000000002");
+  const [tabletopView, setTabletopView] = useState<"canvas" | "instance-editor">("canvas");
+  const [canvasZoom, setCanvasZoom] = useState(0.8);
+  const [tabletopContextMenu, setTabletopContextMenu] = useState<TabletopContextMenu>(null);
+  const [tabletopStorageReady, setTabletopStorageReady] = useState(false);
+  const [tabletopMedia, setTabletopMedia] = useState<Map<string, Uint8Array>>(() => new Map());
+  const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
+  const canvasPanRef = useRef<null | {
+    pointerId: number;
+    button: number;
+    startPointer: { x: number; y: number };
+    startPan: { x: number; y: number };
+    moved: boolean;
+  }>(null);
+  const suppressCanvasContextMenuRef = useRef(false);
+  const tabletopViewportRef = useRef<HTMLDivElement>(null);
   const [, setNotice] = useState("仅本机 · 原型状态保存在当前页面内存");
   const importRef = useRef<HTMLInputElement>(null);
+  const tabletopImportRef = useRef<HTMLInputElement>(null);
   const portraitRef = useRef<HTMLInputElement>(null);
+  const tabletopRepository = useMemo(() => new TabletopDocumentRepository(
+    new DexieLocalDocumentStore(),
+  ), []);
   const active = workspaces.find((workspace) => workspace.key === activeKey) ?? workspaces[0];
+  const activeTabletop = tabletops.find((tabletop) =>
+    tabletop.id === activeTabletopId && openTabletopIds.includes(tabletop.id));
+  const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
 
   useEffect(() => {
     fetch(minotaurImageUrl)
@@ -197,6 +368,32 @@ export function CreatorWorkspacePrototype() {
       })
       .catch(() => setNotice("portrait 字节未就绪；预览可用，导出暂不可用"));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    tabletopRepository.list()
+      .then((stored) => {
+        if (cancelled || stored.length === 0) return;
+        const models = stored.map((item) => item.model);
+        const media = new Map(stored.flatMap((item) => [...item.media]));
+        setTabletops(models);
+        setOpenTabletopIds(models.map((item) => item.id));
+        setActiveTabletopId(models[0]!.id);
+        setSelectedInstanceId("");
+        setTabletopMedia(media);
+        setAssetUrls((current) => new Map([...current, ...[...media].map(([id, bytes]) => [
+          id,
+          URL.createObjectURL(new Blob([
+            bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+          ], { type: "image/webp" })),
+        ] as const)]));
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "桌面恢复失败"))
+      .finally(() => {
+        if (!cancelled) setTabletopStorageReady(true);
+      });
+    return () => { cancelled = true; };
+  }, [tabletopRepository]);
 
   const resource = active
     ? active.document.resources.find((candidate) => candidate.id === activeResourceId)
@@ -217,6 +414,56 @@ export function CreatorWorkspacePrototype() {
         })
       : [],
   ), [assetUrls, resource]);
+  const allTabletopMedia = useMemo(() => new Map([
+    ...tabletopMedia,
+    ...workspaces.flatMap((workspace) => [...workspace.media]),
+  ]), [tabletopMedia, workspaces]);
+
+  useEffect(() => {
+    if (!tabletopStorageReady) return;
+    const timeout = window.setTimeout(() => {
+      Promise.all(tabletops.map((tabletop) =>
+        tabletopRepository.save(tabletop, allTabletopMedia)))
+        .catch((error) => setNotice(error instanceof Error ? error.message : "桌面保存失败"));
+    }, 120);
+    return () => window.clearTimeout(timeout);
+  }, [allTabletopMedia, tabletopRepository, tabletopStorageReady, tabletops]);
+
+  useEffect(() => {
+    if (!tabletopContextMenu) return;
+    const close = () => setTabletopContextMenu(null);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("blur", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("blur", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [tabletopContextMenu]);
+
+  useEffect(() => {
+    const viewport = tabletopViewportRef.current;
+    if (!viewport || appMode !== "gm" || tabletopView !== "canvas") return;
+    const zoomAtPointer = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const nextZoom = Math.min(1.6, Math.max(0.4, canvasZoom * Math.exp(-event.deltaY * 0.002)));
+      const world = {
+        x: (pointer.x - canvasPan.x) / canvasZoom,
+        y: (pointer.y - canvasPan.y) / canvasZoom,
+      };
+      setCanvasZoom(nextZoom);
+      setCanvasPan({ x: pointer.x - world.x * nextZoom, y: pointer.y - world.y * nextZoom });
+    };
+    viewport.addEventListener("wheel", zoomAtPointer, { passive: false });
+    return () => viewport.removeEventListener("wheel", zoomAtPointer);
+  }, [appMode, canvasPan, canvasZoom, tabletopView]);
 
   const designStyle = {
     "--creator-appbar-height": `${creatorWorkspaceDesign.appBar.height}px`,
@@ -247,6 +494,19 @@ export function CreatorWorkspacePrototype() {
     "--creator-preview-switch": creatorWorkspaceDesign.previewControls.switchBackground,
     "--creator-accent": creatorWorkspaceDesign.accent,
     "--creator-weapon-description-height": `${creatorWorkspaceDesign.weapon.descriptionInputHeight}px`,
+    "--gm-tabs-height": `${creatorWorkspaceDesign.gmTabletop.tabs.height}px`,
+    "--gm-tabs-bg": creatorWorkspaceDesign.gmTabletop.tabs.background,
+    "--gm-tabs-border": creatorWorkspaceDesign.gmTabletop.tabs.border,
+    "--gm-zoom-width": `${creatorWorkspaceDesign.gmTabletop.zoomStatus.width}px`,
+    "--gm-zoom-height": `${creatorWorkspaceDesign.gmTabletop.zoomStatus.height}px`,
+    "--gm-zoom-bg": creatorWorkspaceDesign.gmTabletop.zoomStatus.background,
+    "--gm-zoom-border": creatorWorkspaceDesign.gmTabletop.zoomStatus.border,
+    "--gm-instance-toolbar-height": `${creatorWorkspaceDesign.gmTabletop.instanceEditor.toolbarHeight}px`,
+    "--gm-canvas-bg": creatorWorkspaceDesign.gmTabletop.canvas.background,
+    "--gm-selected-border": creatorWorkspaceDesign.gmTabletop.canvas.selectedBorder,
+    "--gm-canvas-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.canvasWidth}px`,
+    "--gm-instance-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.instanceWidth}px`,
+    "--gm-send-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.sendToTabletopWidth}px`,
   } as CSSProperties;
 
   function replaceActive(next: CreatorWorkspace) {
@@ -278,20 +538,171 @@ export function CreatorWorkspacePrototype() {
     updateData((draft) => { draft.特性[index]![field] = value; });
   }
 
+  function applyTabletopCommand(command: TabletopCommand) {
+    if (!activeTabletop) return;
+    const result = executeTabletopCommand(activeTabletop, command, {
+      capabilities: gmCapabilities,
+      templateCommands: (instance) => templateRegistry.resolve(
+        instance.resource.template.id,
+        instance.resource.template.version,
+      )?.tabletop.commands ?? [],
+    });
+    if (result.diagnostics.length > 0) {
+      setNotice(result.diagnostics[0]!.code);
+      return;
+    }
+    setTabletops((current) => current.map((tabletop) =>
+      tabletop.id === activeTabletop.id ? result.document : tabletop));
+  }
+
+  function replaceInstanceResource(
+    instance: TabletopInstance,
+    update: (resourceCopy: Omit<TabletopInstanceResourceCopy, "source" | "template">) => void,
+  ) {
+    const next = structuredClone({
+      presentation: instance.resource.presentation,
+      data: instance.resource.data,
+      labels: instance.resource.labels,
+      media: instance.resource.media,
+    });
+    update(next);
+    applyTabletopCommand({
+      type: "replace-instance-resource",
+      instanceId: instance.id,
+      resource: next,
+    });
+  }
+
+  function updateInstanceAdversary(update: (data: AdversaryData) => void) {
+    if (!selectedInstance) return;
+    replaceInstanceResource(selectedInstance, (resourceCopy) => update(resourceCopy.data as AdversaryData));
+  }
+
+  function updateInstanceWeapon(update: (data: WeaponData) => void) {
+    if (!selectedInstance) return;
+    replaceInstanceResource(selectedInstance, (resourceCopy) => update(resourceCopy.data as WeaponData));
+  }
+
+  function placeResource(resourceId: string, position?: { x: number; y: number }) {
+    if (!active || !activeTabletop) return;
+    const source = active.document.resources.find((candidate) => candidate.id === resourceId);
+    if (!source) return;
+    const template = templateRegistry.resolve(source.template.id, source.template.version);
+    if (!template) return;
+    const instanceId = crypto.randomUUID();
+    const sequence = activeTabletop.instances.length;
+    applyTabletopCommand({
+      type: "place",
+      instanceId,
+      resource: tabletopResourceCopy(active, source),
+      state: template.tabletop.defaultState(source.data as never),
+      position: position ?? { x: 56 + (sequence % 3) * 380, y: 88 + Math.floor(sequence / 3) * 180 },
+      assets: active.document.assets.filter((asset) =>
+        Object.values(source.media).includes(asset.id)),
+    });
+    setSelectedInstanceId(instanceId);
+    setTabletopView("canvas");
+    setTabletopContextMenu(null);
+  }
+
+  function focusTabletop(tabletopId: string, resourceId?: string) {
+    setOpenTabletopIds((current) => current.includes(tabletopId) ? current : [...current, tabletopId]);
+    setActiveTabletopId(tabletopId);
+    if (resourceId) setActiveResourceId(resourceId);
+    setSelectedInstanceId("");
+    setTabletopView("canvas");
+    setAppMode("gm");
+    setTabletopContextMenu(null);
+  }
+
+  function createTabletopAndFocus(resourceId?: string) {
+    const id = crypto.randomUUID();
+    setTabletops((current) => [...current, createTabletopDocument(id, `新桌面 ${current.length + 1}`)]);
+    focusTabletop(id, resourceId);
+  }
+
+  function duplicateSelectedInstance() {
+    if (!selectedInstance) return;
+    const id = crypto.randomUUID();
+    applyTabletopCommand({ type: "duplicate", instanceId: selectedInstance.id, newInstanceId: id });
+    setSelectedInstanceId(id);
+    setTabletopContextMenu(null);
+  }
+
+  function deleteSelectedInstance() {
+    if (!selectedInstance) return;
+    applyTabletopCommand({ type: "delete", instanceId: selectedInstance.id });
+    setSelectedInstanceId("");
+    setTabletopContextMenu(null);
+  }
+
+  async function exportTabletop() {
+    if (!activeTabletop) return;
+    const candidate = await tabletopRepository.save(activeTabletop, allTabletopMedia);
+    const bytes = writePbtab(candidate.document, candidate.media);
+    const blob = new Blob([
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+    ], { type: "application/vnd.pbdh.tabletop+zip" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${activeTabletop.name.replace(/[\\/:*?"<>|]/g, "-")}.pbtab`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setTabletopContextMenu(null);
+  }
+
+  async function importTabletop(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const result = await loadPbtab(
+      new Uint8Array(await file.arrayBuffer()),
+      validateTabletopDocumentCandidate,
+    );
+    if (!result.candidate) {
+      setDialog({ kind: "diagnostics", title: "导入失败 · 零写入", diagnostics: result.diagnostics });
+      return;
+    }
+    const model = await tabletopRepository.import(result.candidate);
+    setTabletopMedia((current) => new Map([...current, ...result.candidate!.media]));
+    setAssetUrls((current) => new Map([
+      ...current,
+      ...[...result.candidate!.media].map(([id, bytes]) => [
+        id,
+        URL.createObjectURL(new Blob([
+          bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+        ], { type: "image/webp" })),
+      ] as const),
+    ]));
+    setTabletops((current) => current.some((item) => item.id === model.id)
+      ? current.map((item) => item.id === model.id ? model : item)
+      : [...current, model]);
+    setOpenTabletopIds((current) => current.includes(model.id) ? current : [...current, model.id]);
+    setActiveTabletopId(model.id);
+    setSelectedInstanceId("");
+    setTabletopView("canvas");
+    setTabletopContextMenu(null);
+  }
+
   function clearFeature(index: number) {
     if (active && resource) replaceActive(clearAdversaryFeature(active, index, resource.id));
     setOpenFeatureMenu(null);
   }
 
-  function deleteFeature(index: number) {
-    if (active && resource) replaceActive(deleteAdversaryFeature(active, index, resource.id));
+  function deleteFeature(index: number, target: "workspace" | "instance" = "workspace") {
+    if (target === "instance") {
+      updateInstanceAdversary((draft) => { draft.特性.splice(index, 1); });
+    } else if (active && resource) {
+      replaceActive(deleteAdversaryFeature(active, index, resource.id));
+    }
     setOpenFeatureMenu(null);
     setDialog(null);
   }
 
-  function requestFeatureDeletion(index: number, name: string) {
+  function requestFeatureDeletion(index: number, name: string, target: "workspace" | "instance" = "workspace") {
     setOpenFeatureMenu(null);
-    setDialog({ kind: "delete-feature", index, name });
+    setDialog({ kind: "delete-feature", index, name, target });
   }
 
   function commitIncoming(candidate: ResourcePackageCandidate) {
@@ -436,6 +847,50 @@ export function CreatorWorkspacePrototype() {
 
   const adversaryResources = active.document.resources.filter((candidate) => isTemplate(candidate, adversaryTemplate));
   const weaponResources = active.document.resources.filter((candidate) => isTemplate(candidate, weaponTemplate));
+  const instanceAdversary = selectedInstance && selectedInstance.resource.template.id === adversaryTemplate.id
+    ? selectedInstance.resource.data as AdversaryData
+    : undefined;
+  const instanceWeapon = selectedInstance && selectedInstance.resource.template.id === weaponTemplate.id
+    ? selectedInstance.resource.data as WeaponData
+    : undefined;
+
+  function assetsFor(media: Record<string, string>) {
+    return new Map(Object.values(media).flatMap((id) => {
+      const url = assetUrls.get(id);
+      return url ? [[id, { status: "ready" as const, url }] as const] : [];
+    }));
+  }
+
+  function renderTabletopInstance(instance: TabletopInstance) {
+    const instanceAssets = assetsFor(instance.resource.media);
+    if (instance.resource.template.id === adversaryTemplate.id) {
+      return <CanonicalCardSurface
+        resource={instance.resource as TabletopInstance["resource"] & { data: AdversaryData }}
+        expectedRendererRevision={adversaryTemplate.rendererRevision}
+        renderer={adversaryRendererRevision}
+        assets={instanceAssets}
+        state={instance.state}
+        onStateCommand={(commandId, value) => applyTabletopCommand({
+          type: "template-state",
+          instanceId: instance.id,
+          commandId,
+          value,
+        })}
+        label={`${(instance.resource.data as AdversaryData).名称}桌面实例`}
+      />;
+    }
+    if (instance.resource.template.id === weaponTemplate.id) {
+      return <CanonicalCardSurface
+        resource={instance.resource as TabletopInstance["resource"] & { data: WeaponData }}
+        expectedRendererRevision={weaponTemplate.rendererRevision}
+        renderer={weaponRendererRevision}
+        assets={instanceAssets}
+        state={instance.state}
+        label={`${(instance.resource.data as WeaponData).名称}桌面实例`}
+      />;
+    }
+    return <div className="tabletop-renderer-error">无法呈现卡面</div>;
+  }
 
   return (
     <main className="creator-prototype" style={designStyle} data-design-source={creatorWorkspaceDesign.document}>
@@ -443,8 +898,8 @@ export function CreatorWorkspacePrototype() {
         <div className="platform-brand"><b>PB</b><strong>PBDH</strong></div>
         <nav className="platform-nav" aria-label="主页面">
           <button type="button">玩家车卡器</button>
-          <button type="button" className="is-current">卡片工坊</button>
-          <button type="button">GM 桌面</button>
+          <button type="button" className={appMode === "creator" ? "is-current" : ""} onClick={() => setAppMode("creator")}>卡片工坊</button>
+          <button type="button" className={appMode === "gm" ? "is-current" : ""} onClick={() => setAppMode("gm")}>GM 桌面</button>
           <button type="button">资源市场</button>
         </nav>
         <div className="platform-actions">
@@ -466,70 +921,46 @@ export function CreatorWorkspacePrototype() {
           <div className="package-root"><Icon name="chevronDown" /><Icon name="package" /><strong>{active.document.package.name}</strong><button aria-label="资源包菜单"><Icon name="ellipsis" /></button></div>
           <div className="resource-tree">
             <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>敌人</b><small>{adversaryResources.length}</small></div>
-            {adversaryResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><i /><span className="template-mark adversary"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
+            {adversaryResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} draggable={appMode === "gm"} onClick={() => setActiveResourceId(candidate.id)} onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "copy";
+              event.dataTransfer.setData("application/x-pbdh-resource", candidate.id);
+            }} onContextMenu={(event) => {
+              event.preventDefault();
+              setActiveResourceId(candidate.id);
+              setTabletopContextMenu({ kind: "resource", resourceId: candidate.id, x: event.clientX, y: event.clientY, sendOpen: false });
+            }}><i /><span className="template-mark adversary"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
             <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>武器</b><small>{weaponResources.length}</small></div>
-            {weaponResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><i /><span className="template-mark weapon"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
+            {weaponResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} draggable={appMode === "gm"} onClick={() => setActiveResourceId(candidate.id)} onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "copy";
+              event.dataTransfer.setData("application/x-pbdh-resource", candidate.id);
+            }} onContextMenu={(event) => {
+              event.preventDefault();
+              setActiveResourceId(candidate.id);
+              setTabletopContextMenu({ kind: "resource", resourceId: candidate.id, x: event.clientX, y: event.clientY, sendOpen: false });
+            }}><i /><span className="template-mark weapon"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
             <div className="folder-row"><span /><Icon name="chevronRight" /><Icon name="folder" /><b>自定义</b><small>0</small></div>
           </div>
           <footer><span>{active.document.resources.length} 个资源</span><span>名称 ↑</span></footer>
         </aside>
 
-        <section className="creator-workbench">
+        {appMode === "creator" && <section className="creator-workbench">
           <nav className="resource-tabs" aria-label="打开的资源">
             <button type="button" className="is-current"><ResourceIcon resource={resource} /><span>{resourceTitle(resource)}</span>{active.dirty && <i aria-label="已修改">●</i>}<Icon name="x" /></button>
             {active.document.resources.filter((candidate) => candidate.id !== resource.id).slice(0, 2).map((candidate) => <button type="button" className="is-preview" key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><ResourceIcon resource={candidate} /><em>{resourceTitle(candidate)}</em><Icon name="x" /></button>)}
           </nav>
           <div className="workbench-body">
-            {adversary && <section className="authoring-editor">
-              <div className="field-group identity-fields">
-                <div className="field-row"><Field className="name-field" label="名称" value={adversary.名称} onChange={(value) => updateField("名称", value)} /><Field className="tier-field" label="位阶" value={adversary.位阶} onChange={(value) => updateField("位阶", value)} /></div>
-                <div className="field-row"><Field className="name-field" label="英文" value={adversary.原文} onChange={(value) => updateField("原文", value)} /><Field className="tier-field" label="种类" value={adversary.种类} onChange={(value) => updateField("种类", value)} /></div>
-                <Field className="full-field" label="简介" value={adversary.简介} onChange={(value) => updateField("简介", value)} />
-              </div>
+            {adversary && <AdversaryEditor
+              data={adversary}
+              openFeatureMenu={openFeatureMenu}
+              onField={updateField}
+              onFeature={updateFeature}
+              onAddFeature={() => updateData((draft) => { draft.特性.push({ 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" }); })}
+              onToggleFeatureMenu={(index) => setOpenFeatureMenu((current) => current === index ? null : index)}
+              onClearFeature={clearFeature}
+              onDeleteFeature={(index, name) => requestFeatureDeletion(index, name)}
+            />}
 
-              <div className="field-group combat-fields">
-                <div className="field-row"><Field className="motive-field" label="动机与战术" value={adversary.动机与战术} onChange={(value) => updateField("动机与战术", value)} /><Field className="experience-field" label="经历" value={adversary.经历} onChange={(value) => updateField("经历", value)} /></div>
-                <div className="field-row dense-row">
-                  <Field className="value-field" label="生命" value={adversary.生命点} onChange={(value) => updateField("生命点", value)} />
-                  <Field className="value-field" label="压力" value={adversary.压力点} onChange={(value) => updateField("压力点", value)} />
-                  <Field className="difficulty-field" label="难度" value={adversary.难度} onChange={(value) => updateField("难度", value)} />
-                  <Field className="threshold-field" label="重度阈值" value={adversary.重度伤害阈值} onChange={(value) => updateField("重度伤害阈值", value)} />
-                  <Field className="threshold-field" label="严重阈值" value={adversary.严重伤害阈值} onChange={(value) => updateField("严重伤害阈值", value)} />
-                </div>
-                <div className="field-row dense-row attack-row">
-                  <Field className="attack-field" label="攻击" value={adversary.攻击命中} onChange={(value) => updateField("攻击命中", value)} />
-                  <Field className="weapon-field" label="武器" value={adversary.攻击武器} onChange={(value) => updateField("攻击武器", value)} />
-                  <Field className="weapon-field" label="范围" value={adversary.攻击范围} onChange={(value) => updateField("攻击范围", value)} />
-                  <Field className="damage-field" label="伤害" value={adversary.攻击伤害} onChange={(value) => updateField("攻击伤害", value)} />
-                  <Field className="damage-field" label="类型" value={adversary.攻击属性} onChange={(value) => updateField("攻击属性", value)} />
-                </div>
-              </div>
-
-              <section className="features-editor">
-                <header><h2>特性</h2><button type="button" onClick={() => updateData((draft) => { draft.特性.push({ 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" }); })}>＋ 新增特性</button></header>
-                {adversary.特性.map((feature, index) => <article className="feature-editor" key={`${feature.名称}:${index}`}>
-                  <div className="feature-line"><Icon name="grip" /><Field className="feature-name" label="特性名" value={feature.名称} onChange={(value) => updateFeature(index, "名称", value)} /><Field className="feature-type" label="类型" value={feature.类型} onChange={(value) => updateFeature(index, "类型", value)} /><div className="feature-actions">
-                    <button type="button" aria-label={`${feature.名称 || "未命名特性"}菜单`} aria-haspopup="menu" aria-expanded={openFeatureMenu === index} onClick={() => setOpenFeatureMenu((current) => current === index ? null : index)}><Icon name="ellipsis" /></button>
-                    {openFeatureMenu === index && <div className="feature-menu" role="menu">
-                      <button type="button" role="menuitem" onClick={() => clearFeature(index)}>清空内容</button>
-                      <button type="button" role="menuitem" className="delete" onClick={() => requestFeatureDeletion(index, feature.名称)}>删除特性</button>
-                    </div>}
-                  </div></div>
-                  <div className="feature-line description-line"><span /><TextareaField label="描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} /></div>
-                </article>)}
-              </section>
-            </section>}
-
-            {weapon && <section className="authoring-editor weapon-authoring-editor">
-              {weaponAuthoringLayout.sections.map((section) => <div className={`field-group weapon-field-grid ${section.id}`} key={section.id}>
-                {section.fields.map((field) => {
-                  const key = field.path as keyof WeaponData;
-                  return field.control === "textarea"
-                    ? <TextareaField key={field.path} label={field.label} value={weapon[key]} onChange={(value) => updateWeaponField(key, value)} />
-                    : <Field key={field.path} label={field.label} value={weapon[key]} onChange={(value) => updateWeaponField(key, value)} />;
-                })}
-              </div>)}
-            </section>}
+            {weapon && <WeaponEditor data={weapon} onField={updateWeaponField} />}
 
             <aside className={`preview-panel ${weapon ? "without-media" : ""}`}>
               <header><h1>实时预览</h1><div>
@@ -560,8 +991,193 @@ export function CreatorWorkspacePrototype() {
               {adversary && <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />替换</button></footer>}
             </aside>
           </div>
-        </section>
+        </section>}
+
+        {appMode === "gm" && activeTabletop && <section className="gm-workbench" data-design-frame={creatorWorkspaceDesign.gmTabletop.frame}>
+          <nav className="tabletop-tabs" aria-label="打开的桌面">
+            {tabletops.filter((tabletop) => openTabletopIds.includes(tabletop.id)).map((tabletop) => <div
+              className={`tabletop-tab ${tabletop.id === activeTabletop.id ? "is-current" : ""}`}
+              key={tabletop.id}
+            ><button type="button" className="tabletop-tab-main" onClick={() => { setActiveTabletopId(tabletop.id); setSelectedInstanceId(""); setTabletopView("canvas"); }}><span>▦</span><b>{tabletop.name}</b></button><button
+              type="button"
+              className="tabletop-tab-close"
+              aria-label={`关闭 ${tabletop.name}`}
+              disabled={openTabletopIds.length === 1}
+              onClick={() => {
+                const remaining = openTabletopIds.filter((id) => id !== tabletop.id);
+                setOpenTabletopIds(remaining);
+                if (tabletop.id === activeTabletop.id) setActiveTabletopId(remaining[0]!);
+                setSelectedInstanceId("");
+                setTabletopView("canvas");
+              }}
+            ><Icon name="x" /></button></div>)}
+            <button type="button" className="new-tabletop" aria-label="新建桌面" onClick={() => createTabletopAndFocus()}>＋</button>
+          </nav>
+
+          {tabletopView === "canvas" && <div
+            ref={tabletopViewportRef}
+            className="tabletop-viewport"
+            onPointerDown={(event) => {
+              if ((event.target as Element).closest("[data-tabletop-instance-id]")) return;
+              setTabletopContextMenu(null);
+              if (event.button === 0) {
+                setSelectedInstanceId("");
+                return;
+              }
+              if (event.button !== 1 && event.button !== 2) return;
+              if (event.button === 1) event.preventDefault();
+              if (event.button === 2) suppressCanvasContextMenuRef.current = false;
+              event.currentTarget.style.cursor = "grabbing";
+              event.currentTarget.setPointerCapture(event.pointerId);
+              canvasPanRef.current = {
+                pointerId: event.pointerId,
+                button: event.button,
+                startPointer: { x: event.clientX, y: event.clientY },
+                startPan: canvasPan,
+                moved: false,
+              };
+            }}
+            onPointerMove={(event) => {
+              const drag = canvasPanRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              const dx = event.clientX - drag.startPointer.x;
+              const dy = event.clientY - drag.startPointer.y;
+              if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+              setCanvasPan({ x: drag.startPan.x + dx, y: drag.startPan.y + dy });
+            }}
+            onPointerUp={(event) => {
+              const drag = canvasPanRef.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              suppressCanvasContextMenuRef.current = drag.button === 2 && drag.moved;
+              canvasPanRef.current = null;
+              event.currentTarget.style.cursor = "";
+            }}
+            onPointerCancel={(event) => { canvasPanRef.current = null; event.currentTarget.style.cursor = ""; }}
+            onContextMenu={(event) => {
+              if ((event.target as Element).closest("[data-tabletop-instance-id]")) return;
+              event.preventDefault();
+              if (suppressCanvasContextMenuRef.current) {
+                suppressCanvasContextMenuRef.current = false;
+                return;
+              }
+              setTabletopContextMenu({ kind: "canvas", x: event.clientX, y: event.clientY });
+            }}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes("application/x-pbdh-resource")) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "copy";
+            }}
+            onDrop={(event) => {
+              const resourceId = event.dataTransfer.getData("application/x-pbdh-resource");
+              if (!resourceId) return;
+              event.preventDefault();
+              const rect = event.currentTarget.getBoundingClientRect();
+              placeResource(resourceId, {
+                x: (event.clientX - rect.left - canvasPan.x) / canvasZoom,
+                y: (event.clientY - rect.top - canvasPan.y) / canvasZoom,
+              });
+            }}
+          >
+            <TabletopSurface
+              document={activeTabletop}
+              capabilities={gmCapabilities}
+              selectedInstanceId={selectedInstanceId}
+              renderInstance={renderTabletopInstance}
+              onSelect={(instanceId) => { setSelectedInstanceId(instanceId); setTabletopContextMenu(null); }}
+              onCommand={applyTabletopCommand}
+              onInstanceContextMenu={(instanceId, position) => {
+                setSelectedInstanceId(instanceId);
+                setTabletopContextMenu({ kind: "instance", instanceId, x: position.x, y: position.y });
+              }}
+              coordinateScale={canvasZoom}
+              style={{ transform: `translate(${canvasPan.x}px, ${canvasPan.y}px) scale(${canvasZoom})` }}
+            />
+            <div className="tabletop-zoom-status">{Math.round(canvasZoom * 100)}%</div>
+          </div>}
+
+          {tabletopView === "instance-editor" && selectedInstance && <>
+            <div className="instance-editor-toolbar">
+              <button type="button" onClick={() => setTabletopView("canvas")}>← 返回桌面</button>
+              <strong><ResourceIcon resource={selectedInstance.resource} />{instanceAdversary?.名称 ?? instanceWeapon?.名称 ?? selectedInstance.id} · 实例</strong>
+            </div>
+            <div className="workbench-body instance-editor-body">
+              {instanceAdversary && <AdversaryEditor
+                data={instanceAdversary}
+                openFeatureMenu={openFeatureMenu}
+                onField={(field, value) => updateInstanceAdversary((draft) => { draft[field] = value; })}
+                onFeature={(index, field, value) => updateInstanceAdversary((draft) => { draft.特性[index]![field] = value; })}
+                onAddFeature={() => updateInstanceAdversary((draft) => { draft.特性.push({ 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" }); })}
+                onToggleFeatureMenu={(index) => setOpenFeatureMenu((current) => current === index ? null : index)}
+                onClearFeature={(index) => updateInstanceAdversary((draft) => { draft.特性[index] = { 名称: "", 原名: "", 类型: "", 特性描述: "" }; setOpenFeatureMenu(null); })}
+                onDeleteFeature={(index, name) => requestFeatureDeletion(index, name, "instance")}
+              />}
+              {instanceWeapon && <WeaponEditor data={instanceWeapon} onField={(field, value) => updateInstanceWeapon((draft) => { draft[field] = value; })} />}
+              <aside className={`preview-panel ${instanceWeapon ? "without-media" : ""}`}>
+                <header><h1>实时预览</h1><div>
+                  <div className="card-mode" role="group" aria-label="卡面模式">
+                    {instanceWeapon && <button type="button" aria-pressed="true">纯文字</button>}
+                    {instanceAdversary && (["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={selectedInstance.resource.presentation.mode === mode} onClick={() => replaceInstanceResource(selectedInstance, (copy) => { copy.presentation.mode = mode; })}>{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}
+                  </div>
+                  <button type="button" className="fixed-ratio" role="switch" aria-checked={selectedInstance.resource.presentation.fixedRatio} onClick={() => replaceInstanceResource(selectedInstance, (copy) => { copy.presentation.fixedRatio = !copy.presentation.fixedRatio; })}><span>固定比例</span><i /></button>
+                  <button type="button"><Icon name="maximize" />适配</button><strong>70%</strong>
+                </div></header>
+                <div className="preview-stage"><div className="card-scale">{renderTabletopInstance(selectedInstance)}</div></div>
+                {instanceAdversary && <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer>}
+              </aside>
+            </div>
+          </>}
+        </section>}
       </div>
+
+      {tabletopContextMenu?.kind === "resource" && <div
+        className="context-menu resource-context-menu"
+        role="menu"
+        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 440)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 220)) }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
+          setActiveResourceId(tabletopContextMenu.resourceId);
+          setAppMode("creator");
+          setTabletopContextMenu(null);
+        }}>打开</button>
+        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
+          setActiveResourceId(tabletopContextMenu.resourceId);
+          setAppMode("creator");
+          setTabletopContextMenu(null);
+        }}>在新标签页打开</button>
+        <div className="context-submenu-anchor" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: true } : current)}>
+          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={tabletopContextMenu.sendOpen}>发送到桌面<Icon name="chevronRight" /></button>
+          {tabletopContextMenu.sendOpen && <div className="context-menu send-to-tabletop-menu" role="menu">
+            {tabletops.map((tabletop) => <button type="button" role="menuitem" key={tabletop.id} className={tabletop.id === activeTabletop?.id ? "is-current" : ""} onClick={() => focusTabletop(tabletop.id, tabletopContextMenu.resourceId)}><span>▦</span>{tabletop.name}</button>)}
+            <i />
+            <button type="button" role="menuitem" className="create" onClick={() => createTabletopAndFocus(tabletopContextMenu.resourceId)}>＋ 新建桌面</button>
+          </div>}
+        </div>
+      </div>}
+
+      {tabletopContextMenu?.kind === "instance" && <div
+        className="context-menu instance-context-menu"
+        role="menu"
+        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 190)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 130)) }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onClick={() => { setTabletopView("instance-editor"); setTabletopContextMenu(null); }}>编辑</button>
+        <button type="button" role="menuitem" onClick={duplicateSelectedInstance}>复制</button>
+        <button type="button" role="menuitem" className="delete" onClick={deleteSelectedInstance}>删除</button>
+      </div>}
+
+      {tabletopContextMenu?.kind === "canvas" && <div
+        className="context-menu canvas-context-menu"
+        role="menu"
+        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 240)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 150)) }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onClick={() => tabletopImportRef.current?.click()}>导入 .pbtab</button>
+        <button type="button" role="menuitem" onClick={exportTabletop}>导出 .pbtab</button>
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); window.print(); }}>打印</button>
+      </div>}
+
+      <input ref={tabletopImportRef} hidden type="file" accept=".pbtab" onChange={importTabletop} />
 
       <input ref={importRef} hidden type="file" accept=".pbres" onChange={importPackage} />
       <input ref={portraitRef} hidden type="file" accept="image/webp" onChange={replacePortraitFromFile} />
@@ -584,7 +1200,7 @@ export function CreatorWorkspacePrototype() {
             <button type="button" onClick={() => saveAsideThenImport(dialog.incoming)}>另存 · 新 Package ID / 1.0.0</button>
             <button type="button" className="danger" onClick={() => commitIncoming(dialog.incoming)}>覆盖 · 丢弃本地修改</button></div></>}
         {dialog.kind === "delete-feature" && <><h2>删除特性</h2><p>删除“{dialog.name || "未命名特性"}”？此操作会立即从当前资源中移除该特性。</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => deleteFeature(dialog.index)}>删除</button></div></>}
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => deleteFeature(dialog.index, dialog.target)}>删除</button></div></>}
       </section></div>}
     </main>
   );

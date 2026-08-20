@@ -41,6 +41,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `packages/resource-renderer/`：所有前端共用的 Canonical Card Surface 渲染接口、基础组件与隔离样式；接收已解析 Template，不反向读取 Template Registry
 - `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
 - `packages/tabletop/`：共享 Tabletop Core 与 React Surface；使用 `core` 和 `react` 子入口隔离
+- `packages/local-storage/`：浏览器本地持久化底座；拥有 PbDH IndexedDB schema 与通用文档/媒体存储实现，业务模块只通过各自 Repository 接口使用
 - `tests/`：跨 App 集成测试与 Contract/Template 一致性测试；模块内部测试跟随所属模块
 - `scripts/`：一次性或开发辅助脚本
 - `docs/`：项目文档与 ADR
@@ -53,6 +54,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `contracts/` 位于最底层；共享 package 不得形成循环依赖，也不得依赖 `apps/`。
 - `packages/contract-runtime`、`packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
+- `packages/local-storage` 只拥有浏览器存储机制与共享信封，不解释 Creator Workspace、GM Tabletop Document 或 Character Save payload；各领域 Repository 负责 Contract 校验与生命周期。
 - App 组合根负责解析 Template 并注入 Renderer、Tabletop 与 Conversion；共享模块不得通过全局 Registry 反向寻找宿主能力。
 - `apps/backend` 只能使用 `contracts/` 与无 React 的 `packages/templates/core` 等服务端安全入口，禁止依赖 React、DOM 或浏览器专用代码。
 - 建立代码后必须用自动化依赖边界检查守住以上规则；新增例外前先修订本节和对应 ADR。

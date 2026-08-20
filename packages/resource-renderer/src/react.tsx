@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -48,8 +48,36 @@ export type CanonicalCardSurfaceProps<TData, TState> = {
   renderer?: RendererRevisionCapability<TData, TState, ReactNode>;
   assets: ReadonlyMap<string, ManagedAsset>;
   state?: unknown;
+  onStateCommand?: (commandId: string, value: string) => void;
   label?: string;
 };
+
+class RendererBoundary extends Component<{
+  resetKey: string;
+  children: ReactNode;
+}, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidUpdate(previous: Readonly<{ resetKey: string; children: ReactNode }>) {
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    if (this.state.failed) {
+      return <div className="pbdh-surface-status" role="status">
+        <span>无法呈现卡面</span>
+        <code>renderer.render.failed</code>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
 
 export function CanonicalCardSurface<TData, TState>(
   props: CanonicalCardSurfaceProps<TData, TState>,
@@ -66,6 +94,11 @@ export function CanonicalCardSurface<TData, TState>(
   const width = prepared.widthMm ?? 63;
   const height = prepared.heightMm ?? 88;
   const fixedRatio = props.resource.presentation.fixedRatio;
+  const rendererResetKey = JSON.stringify([
+    props.expectedRendererRevision,
+    props.resource,
+    props.state,
+  ]);
   const content = prepared.status === "ready"
     ? prepared.renderer.render(prepared.renderInput)
     : (
@@ -86,7 +119,9 @@ export function CanonicalCardSurface<TData, TState>(
         <>
           <style>{boundaryStyles}</style>
           {prepared.status === "ready" && <style>{prepared.renderer.styles}</style>}
-          <div className={`pbdh-surface-root${fixedRatio ? "" : " is-fluid"}`}>{content}</div>
+          <div className={`pbdh-surface-root${fixedRatio ? "" : " is-fluid"}`}>
+            <RendererBoundary resetKey={rendererResetKey}>{content}</RendererBoundary>
+          </div>
         </>,
         shadowRoot,
       )}

@@ -184,6 +184,51 @@ describe("Creator Workspace prototype state model", () => {
         frame: "#37 / Creator Workspace / 主武器编辑",
         canonicalSurface: "weapon-card-r1 / Canonical",
       },
+      gmTabletop: {
+        page: "13 GM Tabletop",
+        frame: "#32 / GM Tabletop / 敌人桌面",
+        instanceEditorFrame: "#32 / GM Tabletop / 敌人实例编辑",
+        resourceNavigationWidth: 250,
+        tabs: { height: 36 },
+        zoomStatus: { width: 72, height: 28 },
+        canvas: { background: "#D8D1C7", selectedBorder: "#A8403D" },
+        menus: { canvasWidth: 230, instanceWidth: 180, sendToTabletopWidth: 210 },
+        instanceEditor: { editorWidth: 560, previewBackground: "#D8D1C7" },
+      },
     });
+  });
+
+  test("prints GM cards without application chrome or selection controls", () => {
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+    expect(styles).toContain("@media print");
+    expect(styles).toContain(".tabletop-tabs, .instance-editor-toolbar");
+    expect(styles).toContain(".tabletop-zoom-status");
+    expect(styles).toContain(".context-menu");
+    expect(styles).toContain(".tabletop-instance.is-selected { outline: 0; }");
+    expect(styles).toContain("transform: none !important");
+  });
+
+  test("binds GM whiteboard gestures and context menus without tool modes", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const surfaceSource = readFileSync(path.join(
+      root,
+      "packages/tabletop/src/react/index.tsx",
+    ), "utf8");
+
+    expect(creatorSource).not.toContain("tabletop-toolbar");
+    expect(creatorSource).not.toContain("tabletopTool");
+    expect(creatorSource).toContain("event.button !== 1 && event.button !== 2");
+    expect(creatorSource).toContain("if (!event.ctrlKey) return");
+    expect(creatorSource).toContain("application/x-pbdh-resource");
+    expect(creatorSource).toContain("send-to-tabletop-menu");
+    expect(surfaceSource).toContain("onPointerMove={moveDrag}");
+    expect(surfaceSource).toContain("onInstanceContextMenu");
+    expect(surfaceSource).toContain("onDragStart={(event) => event.preventDefault()}");
   });
 });

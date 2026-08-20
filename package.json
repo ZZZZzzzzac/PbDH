@@ -15,7 +15,8 @@
     "packages/templates",
     "packages/resource-renderer",
     "packages/resource-conversion",
-    "packages/tabletop"
+    "packages/tabletop",
+    "packages/local-storage"
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
