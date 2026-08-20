@@ -30,6 +30,38 @@ export type SystemPackageDocument = {
     };
     nativeEntry: { id: string; label: string };
   }>;
+  modules: Array<
+    | {
+      id: string;
+      type: "resourcePicker";
+      nativeEntryId: string;
+      buttonLabel: string;
+      columns: Array<{
+        field: string;
+        label: string;
+        width: "compact" | "normal" | "wide" | "fill";
+        sortable: boolean;
+        filterable: boolean;
+      }>;
+    }
+    | {
+      id: string;
+      type: "freeText" | "longText";
+      label: string;
+    }
+  >;
+  dependencies: Array<{
+    id: string;
+    trigger: { type: "resourceSelected"; sourceModuleId: string };
+    condition: { type: "always" };
+    actions: Array<{
+      type: "fillText";
+      targetModuleId: string;
+      content:
+        | { type: "selectedResourceField"; field: string }
+        | { type: "selectedResourceTemplate"; format: string };
+    }>;
+  }>;
   embeddedResources: Array<{
     path: string;
     packageId: string;
@@ -92,6 +124,8 @@ export function validateSystemPackageSemantics(
   const diagnostics: ContractDiagnostic[] = [];
   const compatibilityKeys = new Set<string>();
   const nativeEntries = new Set<string>();
+  const moduleIds = new Set<string>();
+  const dependencyIds = new Set<string>();
   const embeddedPaths = new Set<string>();
   const embeddedIds = new Set<string>();
   document.resourceCompatibility.forEach((compatibility, index) => {
@@ -121,6 +155,60 @@ export function validateSystemPackageSemantics(
         `/resourceCompatibility/${index}/versionRange`,
       ));
     }
+  });
+  document.modules.forEach((module, index) => {
+    if (moduleIds.has(module.id)) {
+      diagnostics.push(diagnostic(
+        "system-package.module.duplicate",
+        `/modules/${index}/id`,
+        { id: module.id },
+      ));
+    }
+    moduleIds.add(module.id);
+    if (module.type === "resourcePicker" && !nativeEntries.has(module.nativeEntryId)) {
+      diagnostics.push(diagnostic(
+        "system-package.module.native-entry-missing",
+        `/modules/${index}/nativeEntryId`,
+        { id: module.nativeEntryId },
+      ));
+    }
+  });
+  document.dependencies.forEach((dependency, index) => {
+    if (dependencyIds.has(dependency.id)) {
+      diagnostics.push(diagnostic(
+        "system-package.dependency.duplicate",
+        `/dependencies/${index}/id`,
+        { id: dependency.id },
+      ));
+    }
+    dependencyIds.add(dependency.id);
+    const source = document.modules.find((module) => module.id === dependency.trigger.sourceModuleId);
+    if (source?.type !== "resourcePicker") {
+      diagnostics.push(diagnostic(
+        "system-package.dependency.source-invalid",
+        `/dependencies/${index}/trigger/sourceModuleId`,
+        { id: dependency.trigger.sourceModuleId },
+      ));
+    }
+    const writtenTargets = new Set<string>();
+    dependency.actions.forEach((action, actionIndex) => {
+      const target = document.modules.find((module) => module.id === action.targetModuleId);
+      if (target?.type !== "freeText" && target?.type !== "longText") {
+        diagnostics.push(diagnostic(
+          "system-package.dependency.target-invalid",
+          `/dependencies/${index}/actions/${actionIndex}/targetModuleId`,
+          { id: action.targetModuleId },
+        ));
+      }
+      if (writtenTargets.has(action.targetModuleId)) {
+        diagnostics.push(diagnostic(
+          "system-package.dependency.target-duplicate",
+          `/dependencies/${index}/actions/${actionIndex}/targetModuleId`,
+          { id: action.targetModuleId },
+        ));
+      }
+      writtenTargets.add(action.targetModuleId);
+    });
   });
   document.embeddedResources.forEach((embedded, index) => {
     if (embeddedPaths.has(embedded.path)) {

@@ -8,8 +8,8 @@
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 5 进行中；#23—#30 已完成并关闭，覆盖 monorepo 验证脊柱、Contract Catalog、Resource Package、敌人 Template、Canonical Renderer、最小 System Package，以及 Creator 敌人创作与包交换原型的设计和人工评审。#31 已开始接入 Player 本地资源库；原生路由已按旧 Sheet 的“武器”入口校准，敌人资源在 Player 中进入“其他资源”。阶段 6 产品纵切尚未开始。
-- 下一步：先拆分并完成武器 Template、Renderer 与 Creator 主武器创作的实现 Issue，再完成 #31 的 Player 主武器选择与 Character Data 写入；随后按 #32—#33 完成敌人 GM Tabletop 与敌人/武器 Market 双交接设计原型。
+- 产品实现：阶段 5 进行中；#23—#31 与 #35—#37 已完成，覆盖 monorepo 验证脊柱、Contract Catalog、Resource Package、敌人/武器 Template、Canonical Renderer、最小 System Package、Creator 敌人/武器创作链路，以及 Player 本地资源库、兼容路由和主武器最终值写入。阶段 6 产品纵切尚未开始。
+- 下一步：按 #32—#33 完成敌人 GM Tabletop 与敌人/武器 Market 双交接设计原型。
 
 ## 推进模型
 
@@ -172,7 +172,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 5：实施准备与 Issue 拆分
 
-阶段状态：进行中。实现 Issue #23—#30 已完成并关闭；#31 已完成设计和资源仓储原型，仍缺正式武器 Template/Creator 链路及主武器写入 Character Data。之后依次完成 #32 与 #33。
+阶段状态：进行中。实现 Issue #23—#31 与 #35—#37 已完成；正式武器 Template、Renderer、Creator 创作链路及 Player 主武器最终值写入均已接通。之后依次完成 #32 与 #33。
 
 进入产品代码前完成：
 

@@ -157,6 +157,20 @@ describe("System Package directory and .pbsys", () => {
       "system-package.native-entry.duplicate",
     ]);
   });
+
+  test("rejects invalid Player Module and Dependency references", () => {
+    const invalid = structuredClone(document);
+    const picker = invalid.modules.find((module) => module.type === "resourcePicker")!;
+    picker.nativeEntryId = "missing-entry";
+    invalid.dependencies[0]!.trigger.sourceModuleId = "primary-weapon-name";
+    invalid.dependencies[0]!.actions[0]!.targetModuleId = "pick-primary-weapon";
+
+    expect(validateSystemPackageSemantics(invalid).map((item) => item.code)).toEqual([
+      "system-package.dependency.target-invalid",
+      "system-package.dependency.source-invalid",
+      "system-package.module.native-entry-missing",
+    ]);
+  });
 });
 
 describe("embedded official Resource admission", () => {

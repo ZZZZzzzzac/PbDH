@@ -19,6 +19,60 @@
       }
     }
   ],
+  "modules": [
+    {
+      "id": "pick-primary-weapon",
+      "type": "resourcePicker",
+      "nativeEntryId": "weapons",
+      "buttonLabel": "选择主武器",
+      "columns": [
+        { "field": "名称", "label": "名称", "width": "fill", "sortable": true, "filterable": false },
+        { "field": "属性", "label": "属性", "width": "normal", "sortable": true, "filterable": true },
+        { "field": "距离", "label": "距离", "width": "normal", "sortable": true, "filterable": true },
+        { "field": "伤害", "label": "伤害", "width": "normal", "sortable": true, "filterable": false },
+        { "field": "负荷", "label": "负荷", "width": "normal", "sortable": true, "filterable": true },
+        { "field": "位阶", "label": "位阶", "width": "compact", "sortable": true, "filterable": true }
+      ]
+    },
+    {
+      "id": "primary-weapon-name",
+      "type": "freeText",
+      "label": "主武器"
+    },
+    {
+      "id": "primary-weapon-description",
+      "type": "longText",
+      "label": "武器特性"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "fill-primary-weapon",
+      "trigger": {
+        "type": "resourceSelected",
+        "sourceModuleId": "pick-primary-weapon"
+      },
+      "condition": { "type": "always" },
+      "actions": [
+        {
+          "type": "fillText",
+          "targetModuleId": "primary-weapon-name",
+          "content": {
+            "type": "selectedResourceTemplate",
+            "format": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
+          }
+        },
+        {
+          "type": "fillText",
+          "targetModuleId": "primary-weapon-description",
+          "content": {
+            "type": "selectedResourceField",
+            "field": "描述"
+          }
+        }
+      ]
+    }
+  ],
   "embeddedResources": [
     {
       "path": "resources/daggerheart-core-primary-weapon.pbres",

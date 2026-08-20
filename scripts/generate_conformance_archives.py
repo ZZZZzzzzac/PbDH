@@ -21,15 +21,13 @@ def main() -> None:
     resource_root = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
     system_root = ROOT / "contracts/conformance/system-package/1.0.0-alpha.1"
     system_directory = system_root / "valid/daggerheart"
-    embedded_path = system_directory / "resources/minotaur-wrecker.pbres"
+    embedded_path = system_directory / "resources/daggerheart-core-primary-weapon.pbres"
     embedded_path.parent.mkdir(parents=True, exist_ok=True)
 
-    document = read_json(resource_root / "valid/minotaur-wrecker.json")
-    asset_id = document["assets"][0]["id"]
-    media_path = resource_root / f"media/{asset_id.removeprefix('sha256:')}.webp"
+    document = read_json(resource_root / "valid/daggerheart-core-primary-weapon.json")
     archive = write_pbres(
         document,
-        {asset_id: media_path.read_bytes()},
+        {},
         compression_level=6,
         export_time=datetime(2000, 1, 1),
     )
@@ -38,8 +36,8 @@ def main() -> None:
     pbsys_path = system_root / "daggerheart.pbsys"
     with zipfile.ZipFile(pbsys_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as output:
         for source, archive_path in [
+            (embedded_path, "resources/daggerheart-core-primary-weapon.pbres"),
             (system_directory / "system.json", "system.json"),
-            (embedded_path, "resources/minotaur-wrecker.pbres"),
         ]:
             info = zipfile.ZipInfo(archive_path, (2000, 1, 1, 0, 0, 0))
             info.create_system = 3

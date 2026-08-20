@@ -13,6 +13,11 @@ import primaryWeaponPackageJson from "../../../contracts/conformance/resource-pa
 import systemJson from "../../../contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json";
 
 import { ResourceManager } from "./resource-manager/ResourceManager.tsx";
+import { ResourcePickerDialog } from "./resource-manager/ResourcePickerDialog.tsx";
+import {
+  applyResourceSelection,
+  type CharacterData,
+} from "./resources/apply-resource-selection.ts";
 import {
   commitResourcePackageInstall,
   type ResourcePackageInstallPlan,
@@ -28,6 +33,10 @@ const primaryWeaponInstalled: InstalledResourcePackage = {
   media: new Map(),
   routes: routeResourcePackage({ currentSystem, resourcePackage: primaryWeaponDocument }),
 };
+const primaryWeaponPicker = currentSystem.modules.find(
+  (module): module is Extract<SystemPackageDocument["modules"][number], { type: "resourcePicker" }> =>
+    module.type === "resourcePicker" && module.id === "pick-primary-weapon",
+);
 
 type WeaponData = {
   名称: string;
@@ -47,6 +56,9 @@ export function PlayerAppPrototype() {
     [primaryWeaponDocument.package.id, primaryWeaponInstalled],
   ]));
   const [managerOpen, setManagerOpen] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerError, setPickerError] = useState<string>();
+  const [characterData, setCharacterData] = useState<CharacterData>({});
   const [openResource, setOpenResource] = useState(() => ({
     installed: primaryWeaponInstalled,
     resourceId: primaryWeaponDocument.resources[0]!.id,
@@ -141,7 +153,7 @@ export function PlayerAppPrototype() {
     <div className="player-shell">
       <aside className="sheet-index"><h2>人物卡</h2><button className="selected">阿斯特里德</button><button>新建人物</button><footer><button onClick={() => setManagerOpen(true)}>资源管理器</button></footer></aside>
       <section className="character-sheet"><header><div><small>DAGGERHEART</small><h1>阿斯特里德</h1></div><span>等级 3</span></header>
-        <div className="sheet-grid"><section><h2>属性</h2><div className="attribute-grid">{[["敏捷","+2"],["力量","+1"],["精准","+0"],["直觉","+1"],["风度","−1"],["知识","+2"]].map(([label,value]) => <div key={label}><span>{label}</span><b>{value}</b></div>)}</div></section><section><h2>经历</h2><p>荒野向导　+2</p><p>古老遗迹研究者　+1</p></section><section><h2>生命与压力</h2><div className="tracks"><b>生命</b><span>○ ○ ○ ○ ○ ○</span><b>压力</b><span>◇ ◇ ◇ ◇ ◇ ◇</span></div></section></div>
+        <div className="sheet-grid"><section><h2>属性</h2><div className="attribute-grid">{[["敏捷","+2"],["力量","+1"],["精准","+0"],["直觉","+1"],["风度","−1"],["知识","+2"]].map(([label,value]) => <div key={label}><span>{label}</span><b>{value}</b></div>)}</div></section><section><h2>经历</h2><p>荒野向导　+2</p><p>古老遗迹研究者　+1</p></section><section><h2>生命与压力</h2><div className="tracks"><b>生命</b><span>○ ○ ○ ○ ○ ○</span><b>压力</b><span>◇ ◇ ◇ ◇ ◇ ◇</span></div></section><section className="sheet-weapon"><header><h2>主武器</h2><button disabled={!primaryWeaponPicker} onClick={() => { setPickerError(undefined); setPickerOpen(true); }}>{primaryWeaponPicker?.buttonLabel ?? "资源库不可用"}</button></header><div className="weapon-values"><p>{renderInlineText(characterData["primary-weapon-name"] ?? "—")}</p><p>{characterData["primary-weapon-description"] ?? "—"}</p></div></section></div>
       </section>
       <aside className="native-resources"><header><h2>{resourceArea}</h2><button onClick={() => setManagerOpen(true)}>管理资源</button></header>
         {weapon && <section className="native-weapon" aria-label="主武器详情">
@@ -154,5 +166,27 @@ export function PlayerAppPrototype() {
     </div>
 
     {managerOpen && <ResourceManager currentSystem={currentSystem} library={library} onCommitInstall={commitInstall} onClose={() => setManagerOpen(false)} onOpenResource={(installed, resourceId) => { setOpenResource({ installed, resourceId }); setManagerOpen(false); }} />}
+    {pickerOpen && primaryWeaponPicker?.type === "resourcePicker" && <ResourcePickerDialog library={library} module={primaryWeaponPicker} error={pickerError} onClose={() => setPickerOpen(false)} onCommit={(candidate) => {
+      const result = applyResourceSelection({
+        characterData,
+        currentSystem,
+        sourceModuleId: primaryWeaponPicker.id,
+        selectedResource: candidate.resource,
+      });
+      if (result.diagnostics.length > 0) {
+        console.error("无法应用所选资源", result.diagnostics);
+        setPickerError("无法应用：所选资源缺少系统要求的字段");
+        return;
+      }
+      setPickerError(undefined);
+      setCharacterData(result.characterData);
+      setOpenResource({ installed: candidate.installed, resourceId: candidate.resource.id });
+      setPickerOpen(false);
+    }} />}
   </main>;
+}
+
+function renderInlineText(value: string) {
+  const match = /^\*\*(.+?)\*\*(.*)$/u.exec(value);
+  return match ? <><strong>{match[1]}</strong>{match[2]}</> : value;
 }
