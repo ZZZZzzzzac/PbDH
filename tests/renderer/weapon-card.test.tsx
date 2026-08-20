@@ -37,12 +37,12 @@ const packageFixture = JSON.parse(readFileSync(
 };
 const resource = packageFixture.resources[0]!;
 
-function prepare(candidate = resource) {
+function prepare(candidate = resource, assets = new Map()) {
   return prepareCanonicalSurface({
     resource: candidate,
     expectedRendererRevision: "weapon-card-r1",
     renderer: weaponRendererRevision,
-    assets: new Map(),
+    assets,
   });
 }
 
@@ -56,12 +56,12 @@ describe("weapon-card-r1 Canonical Surface", () => {
     expect(result.renderInput.state).toEqual({});
     expect(result.renderer).toBe(weaponRendererRevision);
     expect(weaponRendererRevision.requiredMediaSlots).toEqual([]);
-    expect(weaponRendererRevision.optionalMediaSlots).toEqual([]);
+    expect(weaponRendererRevision.optionalMediaSlots).toEqual(["portrait"]);
     expect(weaponRendererRevision.validateState({})).toBe(true);
     expect(weaponRendererRevision.validateState({ selected: "true" })).toBe(false);
   });
 
-  test("renders every weapon field without reserving an image region", () => {
+  test("renders every weapon field without reserving an image region in text mode", () => {
     const result = prepare();
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
@@ -71,6 +71,25 @@ describe("weapon-card-r1 Canonical Surface", () => {
     expect(markup).not.toContain("<img");
     expect(markup).not.toContain("weapon-art");
     expect(markup).toContain("data-renderer-revision=\"weapon-card-r1\"");
+  });
+
+  test("renders split and image presentation modes from the optional portrait", () => {
+    const candidate = structuredClone(resource);
+    const presentation = candidate.presentation as { mode: "text" | "split" | "image" };
+    candidate.media.portrait = "portrait";
+    const assets = new Map([["portrait", { status: "ready" as const, url: "blob:weapon-portrait" }]]);
+    presentation.mode = "split";
+    const split = prepare(candidate, assets);
+    if (split.status !== "ready") throw new Error("Expected ready Surface");
+    expect(renderToStaticMarkup(split.renderer.render(split.renderInput))).toContain("weapon-art");
+
+    presentation.mode = "image";
+    const image = prepare(candidate, assets);
+    if (image.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(image.renderer.render(image.renderInput));
+    expect(markup).toContain("is-image-only");
+    expect(markup).toContain("blob:weapon-portrait");
+    expect(markup).not.toContain("weapon-body");
   });
 
   test("keeps fixed-ratio overflow clipped and allows explicit fluid growth", () => {
@@ -127,7 +146,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("5fe59fe0f3d695de4cf5dc648554bf00d15fb7c2ae49a5c1c40cca0e5b4ff478");
+    expect(signature).toBe("7d65677973706b5a6d1c0456ddd8d1556e99b38f663c17789f298ec7c58faab6");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {

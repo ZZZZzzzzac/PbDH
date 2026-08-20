@@ -25,9 +25,15 @@ def main() -> None:
     embedded_path.parent.mkdir(parents=True, exist_ok=True)
 
     document = read_json(resource_root / "valid/daggerheart-core-primary-weapon.json")
+    media = {
+        asset["id"]: (
+            resource_root / "media" / f"{asset['id'].removeprefix('sha256:')}.webp"
+        ).read_bytes()
+        for asset in document["assets"]
+    }
     archive = write_pbres(
         document,
-        {},
+        media,
         compression_level=6,
         export_time=datetime(2000, 1, 1),
     )

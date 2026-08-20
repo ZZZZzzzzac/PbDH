@@ -59,7 +59,9 @@ export const weaponTemplate = deepFreeze<TemplateCoreCapability<WeaponData>>({
     ].map(normalizeSearchPart).filter(Boolean).join(" ");
     return { title, summary, searchText };
   },
-  mediaSlots: [],
+  mediaSlots: [
+    { id: "portrait", label: "主图", required: false, accepts: ["image/webp"] },
+  ],
   defaultPresentation: {
     width: "90",
     height: "142",

@@ -103,6 +103,11 @@ const css = `
   border: ${mm(number(card.stroke, "thickness"))} solid ${solid(card, "stroke")};
 }
 .weapon-card.is-fluid { height: auto; min-height: ${mm(number(card, "height"))}; overflow: visible; }
+.weapon-art { box-sizing: border-box; width: 100%; height: 42mm; flex: none; overflow: hidden; display: grid; place-items: center; background: ${solid(header)}; }
+.weapon-art img { width: 100%; height: 100%; object-fit: cover; }
+.weapon-art.is-image-only { height: 100%; }
+.weapon-image-missing { color: ${solid(typeText)}; font: ${cssFont(summary)}; }
+.weapon-card.is-split .weapon-body { height: 67mm; }
 .weapon-header { box-sizing: border-box; height: ${mm(number(header, "height"))}; display: flex; flex-direction: column; gap: ${mm(number(header, "gap"))}; padding: ${padding(header.padding)}; background: ${solid(header)}; }
 .weapon-meta { height: ${mm(number(meta, "height"))}; display: flex; align-items: center; justify-content: space-between; }
 .weapon-type { width: ${mm(number(typeText, "width"))}; color: ${solid(typeText)}; font: ${cssFont(typeText)}; }

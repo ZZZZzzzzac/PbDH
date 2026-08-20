@@ -5,6 +5,7 @@ import {
   useState,
   type ChangeEvent,
   type CSSProperties,
+  type ReactNode,
 } from "react";
 
 import {
@@ -46,43 +47,68 @@ import minotaurImageUrl from "../../../../contracts/conformance/resource-package
 import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
 
 import { creatorWorkspaceDesign } from "./design.generated.ts";
+import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
+import { preparePublicationCandidate } from "./publication-candidate.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
+import { WorkspaceTree } from "./WorkspaceTree.tsx";
 import {
   adversaryData,
   addTemplateResource,
   clearAdversaryFeature,
+  closeWorkspaceResourceTab,
   createBlankWorkspace,
   createWorkspace,
+  createWorkspaceFolder,
+  deleteWorkspaceNode,
   deleteAdversaryFeature,
+  duplicateWorkspaceResource,
   forkCurrentWorkspace,
+  moveWorkspaceNode,
+  pinWorkspaceResource,
   planImport,
   prepareWorkspaceExport,
+  previewWorkspaceResource,
+  renameWorkspaceFolder,
   replacePortrait,
+  selectWorkspaceFolder,
+  toggleWorkspaceFolder,
   updateAdversaryData,
   updateResourcePresentation,
   updateWeaponData,
   weaponData,
   type CreatorWorkspace,
+  type WorkspaceNodeRef,
   type WorkspaceResource,
 } from "./workspace-model.ts";
 
 type Dialog =
   | { kind: "new" }
   | { kind: "new-resource" }
+  | { kind: "publish" }
   | { kind: "diagnostics"; title: string; diagnostics: ContractDiagnostic[] }
   | { kind: "no-op"; name: string }
   | { kind: "update"; incoming: ResourcePackageCandidate }
   | { kind: "conflict"; incoming: ResourcePackageCandidate }
   | { kind: "delete-feature"; index: number; name: string; target: "workspace" | "instance" }
+  | { kind: "delete-workspace-node"; node: WorkspaceNodeRef; name: string }
+  | { kind: "close-workspace"; workspaceKey: string; name: string }
   | null;
 
 type TabletopContextMenu =
   | { kind: "resource"; resourceId: string; x: number; y: number; sendOpen: boolean }
   | { kind: "instance"; instanceId: string; x: number; y: number }
   | { kind: "canvas"; x: number; y: number }
+  | { kind: "workspace"; workspaceKey: string; x: number; y: number }
   | null;
+
+type PublicationCoverDraft = {
+  assetId: string;
+  url: string;
+  asset?: ResourcePackageLogicalDocument["assets"][number];
+  bytes?: Uint8Array;
+};
 
 const initialDocument = minotaurPackage as ResourcePackageLogicalDocument;
 const initialWorkspace = createWorkspace({ document: initialDocument, media: new Map() });
@@ -184,7 +210,6 @@ const iconPaths: Record<string, string[]> = {
   folderPlus: ["M3 6h6l2 2h10v11H3Z", "M12 11v6", "M9 14h6"],
   grip: ["M9 5h.01", "M15 5h.01", "M9 12h.01", "M15 12h.01", "M9 19h.01", "M15 19h.01"],
   image: ["M3 5h18v14H3Z", "m3 16 5-5 4 4 3-3 3 4", "M14.5 9.5h.01"],
-  maximize: ["M8 3H3v5", "M16 3h5v5", "M8 21H3v-5", "M16 21h5v-5"],
   package: ["m12 3 9 5-9 5-9-5Z", "m3 8 9 5 9-5", "M3 8v9l9 5 9-5V8", "M12 13v9"],
   packagePlus: ["m12 3 9 5-9 5-9-5Z", "M3 8v9l9 5 9-5V8", "M12 13v9", "M17 4v6", "M14 7h6"],
   search: ["m21 21-4.3-4.3", "M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"],
@@ -288,6 +313,30 @@ function ResourceIcon({ resource }: { resource: TemplateBoundResource }) {
   return <Icon name={isTemplate(resource, weaponTemplate) ? "sword" : "skull"} />;
 }
 
+function AutoFitPreview({ children }: { children: ReactNode }) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    const card = cardRef.current;
+    if (!stage || !card) return;
+    const fit = () => {
+      const width = Math.max(card.scrollWidth, card.offsetWidth, 1);
+      const height = Math.max(card.scrollHeight, card.offsetHeight, 1);
+      setScale(Math.min(1, Math.max(0.1, (stage.clientWidth - 40) / width), Math.max(0.1, (stage.clientHeight - 44) / height)));
+    };
+    const observer = new ResizeObserver(fit);
+    observer.observe(stage);
+    observer.observe(card);
+    fit();
+    return () => observer.disconnect();
+  }, [children]);
+
+  return <div ref={stageRef} className="preview-stage"><div ref={cardRef} className="card-scale" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>{children}</div></div>;
+}
+
 function bytesToUrlMap(candidate: ResourcePackageCandidate): Map<string, string> {
   return new Map([...candidate.media].map(([id, bytes]) => [
     id,
@@ -322,6 +371,15 @@ export function CreatorWorkspacePrototype() {
   const [assetUrls, setAssetUrls] = useState(() => new Map([[initialAssetId, minotaurImageUrl]]));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [newName, setNewName] = useState("牛头人敌人资源包");
+  const [publicationTitle, setPublicationTitle] = useState(initialDocument.package.name);
+  const [publicationSummary, setPublicationSummary] = useState(initialDocument.package.description);
+  const [publicationLanguage, setPublicationLanguage] = useState("中文");
+  const [publicationTags, setPublicationTags] = useState("敌人、Daggerheart");
+  const [publicationRightsConfirmed, setPublicationRightsConfirmed] = useState(true);
+  const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({
+    assetId: initialAssetId,
+    url: minotaurImageUrl,
+  });
   const [openFeatureMenu, setOpenFeatureMenu] = useState<number | null>(null);
   const [appMode, setAppMode] = useState<"creator" | "gm">("creator");
   const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>(initialTabletopDocuments);
@@ -334,6 +392,7 @@ export function CreatorWorkspacePrototype() {
   const [tabletopView, setTabletopView] = useState<"canvas" | "instance-editor">("canvas");
   const [canvasZoom, setCanvasZoom] = useState(0.8);
   const [tabletopContextMenu, setTabletopContextMenu] = useState<TabletopContextMenu>(null);
+  const [workspaceStorageReady, setWorkspaceStorageReady] = useState(false);
   const [tabletopStorageReady, setTabletopStorageReady] = useState(false);
   const [tabletopMedia, setTabletopMedia] = useState<Map<string, Uint8Array>>(() => new Map());
   const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
@@ -350,9 +409,10 @@ export function CreatorWorkspacePrototype() {
   const importRef = useRef<HTMLInputElement>(null);
   const tabletopImportRef = useRef<HTMLInputElement>(null);
   const portraitRef = useRef<HTMLInputElement>(null);
-  const tabletopRepository = useMemo(() => new TabletopDocumentRepository(
-    new DexieLocalDocumentStore(),
-  ), []);
+  const publicationCoverRef = useRef<HTMLInputElement>(null);
+  const localDocumentStore = useMemo(() => new DexieLocalDocumentStore(), []);
+  const creatorWorkspaceRepository = useMemo(() => new CreatorWorkspaceRepository(localDocumentStore), [localDocumentStore]);
+  const tabletopRepository = useMemo(() => new TabletopDocumentRepository(localDocumentStore), [localDocumentStore]);
   const active = workspaces.find((workspace) => workspace.key === activeKey) ?? workspaces[0];
   const activeTabletop = tabletops.find((tabletop) =>
     tabletop.id === activeTabletopId && openTabletopIds.includes(tabletop.id));
@@ -363,11 +423,45 @@ export function CreatorWorkspacePrototype() {
       .then((response) => response.arrayBuffer())
       .then((buffer) => {
         setWorkspaces((current) => current.map((workspace) => workspace.key === initialWorkspace.key
-          ? { ...workspace, media: new Map([[initialAssetId, new Uint8Array(buffer)]]) }
+          && workspace.document.assets.some((asset) => asset.id === initialAssetId)
+          && !workspace.media.has(initialAssetId)
+          ? { ...workspace, media: new Map(workspace.media).set(initialAssetId, new Uint8Array(buffer)) }
           : workspace));
       })
       .catch(() => setNotice("portrait 字节未就绪；预览可用，导出暂不可用"));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    creatorWorkspaceRepository.list()
+      .then((stored) => {
+        if (cancelled || stored.length === 0) return;
+        setWorkspaces(stored);
+        const restoredActive = stored[0];
+        setActiveKey(restoredActive?.key ?? "");
+        setActiveResourceId(restoredActive?.openResourceIds[0] ?? "");
+        setAssetUrls((current) => new Map([
+          ...current,
+          ...stored.flatMap((workspace) => [...bytesToUrlMap(workspace)]),
+        ]));
+      })
+      .catch((error) => setNotice(error instanceof Error ? error.message : "工作区恢复失败"))
+      .finally(() => {
+        if (!cancelled) setWorkspaceStorageReady(true);
+      });
+    return () => { cancelled = true; };
+  }, [creatorWorkspaceRepository]);
+
+  useEffect(() => {
+    if (!workspaceStorageReady) return;
+    const timeout = window.setTimeout(() => {
+      const selected = workspaces.find((workspace) => workspace.key === activeKey);
+      Promise.all(workspaces.map((workspace) => creatorWorkspaceRepository.save(workspace)))
+        .then(() => selected ? creatorWorkspaceRepository.save(selected) : undefined)
+        .catch((error) => setNotice(error instanceof Error ? error.message : "工作区保存失败"));
+    }, 120);
+    return () => window.clearTimeout(timeout);
+  }, [activeKey, creatorWorkspaceRepository, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     let cancelled = false;
@@ -395,15 +489,11 @@ export function CreatorWorkspacePrototype() {
     return () => { cancelled = true; };
   }, [tabletopRepository]);
 
-  const resource = active
-    ? active.document.resources.find((candidate) => candidate.id === activeResourceId)
-      ?? active.document.resources[0]
-    : undefined;
+  const resource = active?.document.resources.find((candidate) => candidate.id === activeResourceId);
   const isAdversary = Boolean(resource && isTemplate(resource, adversaryTemplate));
   const isWeapon = Boolean(resource && isTemplate(resource, weaponTemplate));
   const adversary = active && resource && isAdversary ? adversaryData(active, resource.id) : undefined;
   const weapon = active && resource && isWeapon ? weaponData(active, resource.id) : undefined;
-  const previewResource = resource;
   const adversaryPreviewResource = resource && adversary ? { ...resource, data: adversary } : undefined;
   const weaponPreviewResource = resource && weapon ? { ...resource, data: weapon } : undefined;
   const previewAssets = useMemo(() => new Map(
@@ -512,6 +602,125 @@ export function CreatorWorkspacePrototype() {
   function replaceActive(next: CreatorWorkspace) {
     setWorkspaces((current) => current.map((workspace) => workspace.key === active!.key ? next : workspace));
     setActiveKey(next.key);
+  }
+
+  function switchWorkspace(workspaceKey: string) {
+    const next = workspaces.find((workspace) => workspace.key === workspaceKey);
+    if (!next) return;
+    setActiveKey(next.key);
+    setActiveResourceId(next.openResourceIds[0] ?? "");
+    setTabletopContextMenu(null);
+  }
+
+  function requestWorkspacePackageClose(workspaceKey: string) {
+    const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
+    if (!workspace) return;
+    setTabletopContextMenu(null);
+    setDialog({ kind: "close-workspace", workspaceKey, name: workspace.document.package.name });
+  }
+
+  async function closeWorkspacePackage(workspaceKey: string) {
+    const remaining = workspaces.filter((workspace) => workspace.key !== workspaceKey);
+    try {
+      await creatorWorkspaceRepository.remove(workspaceKey);
+    } catch (error) {
+      setDialog(null);
+      setNotice(error instanceof Error ? error.message : "资源包关闭失败");
+      return;
+    }
+    setWorkspaces(remaining);
+    if (active?.key === workspaceKey) {
+      const next = remaining[0];
+      setActiveKey(next?.key ?? "");
+      setActiveResourceId(next?.openResourceIds[0] ?? "");
+    }
+    setTabletopContextMenu(null);
+    setDialog(null);
+  }
+
+  function activateWorkspaceResource(resourceId: string) {
+    if (!active) return;
+    const next = previewWorkspaceResource(active, resourceId);
+    const createdPreview = next.previewResourceId === resourceId && active.previewResourceId !== resourceId;
+    setWorkspaces((current) => current.map((workspace) => {
+      if (workspace.key === active.key) return next;
+      if (createdPreview && workspace.previewResourceId) {
+        return closeWorkspaceResourceTab(workspace, workspace.previewResourceId).workspace;
+      }
+      return workspace;
+    }));
+    setActiveKey(active.key);
+    setActiveResourceId(resourceId);
+  }
+
+  function pinWorkspaceTab(resourceId: string) {
+    if (!active) return;
+    replaceActive(pinWorkspaceResource(active, resourceId));
+    setActiveResourceId(resourceId);
+  }
+
+  function closeWorkspaceTab(workspaceKey: string, resourceId: string) {
+    const owner = workspaces.find((workspace) => workspace.key === workspaceKey);
+    if (!owner) return;
+    const result = closeWorkspaceResourceTab(owner, resourceId);
+    setWorkspaces((current) => current.map((workspace) => workspace.key === workspaceKey ? result.workspace : workspace));
+    if (workspaceKey === active?.key && resourceId === activeResourceId) {
+      if (result.nextResourceId) setActiveResourceId(result.nextResourceId);
+      else {
+        const fallback = workspaces
+          .filter((workspace) => workspace.key !== workspaceKey)
+          .flatMap((workspace) => workspace.openResourceIds.map((id) => ({ workspace, id })))[0];
+        setActiveKey(fallback?.workspace.key ?? workspaceKey);
+        setActiveResourceId(fallback?.id ?? "");
+      }
+    }
+  }
+
+  function moveWorkspaceTreeNode(node: WorkspaceNodeRef, parentId: string | null, index?: number): string | null {
+    if (!active) return "没有打开的工作区";
+    try {
+      replaceActive(moveWorkspaceNode(active, node, parentId, index));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "无法移动节点";
+    }
+  }
+
+  function renameWorkspaceTreeFolder(folderId: string, name: string): string | null {
+    if (!active) return "没有打开的工作区";
+    try {
+      replaceActive(renameWorkspaceFolder(active, folderId, name));
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "无法重命名文件夹";
+    }
+  }
+
+  function requestWorkspaceNodeDeletion(node: WorkspaceNodeRef) {
+    if (!active) return;
+    const name = node.kind === "folder"
+      ? active.folders.find((folder) => folder.id === node.id)?.name ?? "文件夹"
+      : resourceTitle(active.document.resources.find((candidate) => candidate.id === node.id)!);
+    setDialog({ kind: "delete-workspace-node", node, name });
+  }
+
+  function duplicateResource(resourceId: string) {
+    if (!active) return;
+    const result = duplicateWorkspaceResource(active, resourceId);
+    replaceActive(result.workspace);
+    setActiveResourceId(result.resourceId);
+    setTabletopContextMenu(null);
+  }
+
+  function confirmWorkspaceNodeDeletion(node: WorkspaceNodeRef) {
+    if (!active) return;
+    const next = deleteWorkspaceNode(active, node);
+    replaceActive(next);
+    if (!next.document.resources.some((candidate) => candidate.id === activeResourceId)) {
+      setActiveResourceId(next.openResourceIds[0] ?? "");
+    }
+    setTabletopContextMenu(null);
+    setDialog(null);
   }
 
   function updateData(update: (draft: AdversaryData) => void) {
@@ -762,6 +971,67 @@ export function CreatorWorkspacePrototype() {
     setNotice(`已导出完整 .pbres · ${next.document.snapshotDigest.slice(0, 18)}…`);
   }
 
+  function openPublicationDialog() {
+    if (!active) return;
+    const coverAssetId = Object.values(resource?.media ?? {})[0] ?? active.document.assets[0]?.id ?? "";
+    setPublicationTitle(active.document.package.name);
+    setPublicationSummary(active.document.package.description);
+    setPublicationLanguage("中文");
+    setPublicationTags(resource?.template.id === weaponTemplate.id ? "武器、Daggerheart" : "敌人、Daggerheart");
+    setPublicationRightsConfirmed(true);
+    setPublicationCover({ assetId: coverAssetId, url: assetUrls.get(coverAssetId) ?? "" });
+    setDialog({ kind: "publish" });
+  }
+
+  async function replacePublicationCover(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const { asset, bytes } = await imageAsset(file);
+      setPublicationCover({ assetId: asset.id, asset, bytes, url: URL.createObjectURL(file) });
+    } catch {
+      setDialog({
+        kind: "diagnostics",
+        title: "封面未接受 · 零写入",
+        diagnostics: [{
+          code: "creator.publication-cover.unsupported",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication/cover",
+          params: { expected: "image/webp" },
+        }],
+      });
+    }
+  }
+
+  async function publishWorkspace() {
+    if (!active) return;
+    const result = await preparePublicationCandidate(active, {
+      title: publicationTitle,
+      summary: publicationSummary,
+      language: publicationLanguage,
+      tags: publicationTags.split(/[、,]/).map((tag) => tag.trim()).filter(Boolean),
+      coverAssetId: publicationCover.assetId,
+    }, publicationCover.asset && publicationCover.bytes
+      ? { asset: publicationCover.asset, bytes: publicationCover.bytes }
+      : undefined);
+    if (!result.ok) {
+      setDialog({ kind: "diagnostics", title: "发布门禁未通过", diagnostics: result.diagnostics });
+      return;
+    }
+    replaceActive({
+      ...active,
+      document: result.candidate.document,
+      media: result.candidate.media,
+      dirty: false,
+      dirtyResourceIds: [],
+    });
+    setDialog(null);
+    setNotice(`发布候选已生成 · ${result.candidate.document.package.version} · ${result.candidate.metadata.title}`);
+  }
+
   async function createWorkspaceFromDialog() {
     const next = await createBlankWorkspace(newName);
     setWorkspaces((current) => [...current, next]);
@@ -815,7 +1085,7 @@ export function CreatorWorkspacePrototype() {
     setNotice("本地修改已另存为新 Package ID；导入版本已载入");
   }
 
-  if (!active || !resource || !previewResource || (!adversary && !weapon)) {
+  if (!active) {
     return (
       <main className="creator-prototype" style={designStyle}>
         <header className="platform-appbar">
@@ -845,8 +1115,6 @@ export function CreatorWorkspacePrototype() {
     );
   }
 
-  const adversaryResources = active.document.resources.filter((candidate) => isTemplate(candidate, adversaryTemplate));
-  const weaponResources = active.document.resources.filter((candidate) => isTemplate(candidate, weaponTemplate));
   const instanceAdversary = selectedInstance && selectedInstance.resource.template.id === adversaryTemplate.id
     ? selectedInstance.resource.data as AdversaryData
     : undefined;
@@ -914,41 +1182,70 @@ export function CreatorWorkspacePrototype() {
             <button type="button" title="新建资源包" aria-label="新建资源包" onClick={() => setDialog({ kind: "new" })}><Icon name="packagePlus" /></button>
             <button type="button" title="导入资源包" aria-label="导入资源包" onClick={() => importRef.current?.click()}><Icon name="upload" /></button>
             <button type="button" title="导出资源包" aria-label="导出资源包" onClick={exportPackage}><Icon name="download" /></button>
+            <button type="button" title="发布到资源市场" aria-label="发布到资源市场" onClick={openPublicationDialog}><Icon name="package" /></button>
             <button type="button" title="新建资源" aria-label="新建资源" onClick={() => setDialog({ kind: "new-resource" })}><Icon name="filePlus" /></button>
-            <button type="button" title="新建文件夹" aria-label="新建文件夹"><Icon name="folderPlus" /></button>
+            <button type="button" title="新建文件夹" aria-label="新建文件夹" onClick={() => replaceActive(createWorkspaceFolder(active))}><Icon name="folderPlus" /></button>
           </div></header>
           <label className="explorer-search"><Icon name="search" /><input aria-label="筛选资源" placeholder="筛选资源" /></label>
-          <div className="package-root"><Icon name="chevronDown" /><Icon name="package" /><strong>{active.document.package.name}</strong><button aria-label="资源包菜单"><Icon name="ellipsis" /></button></div>
-          <div className="resource-tree">
-            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>敌人</b><small>{adversaryResources.length}</small></div>
-            {adversaryResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} draggable={appMode === "gm"} onClick={() => setActiveResourceId(candidate.id)} onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = "copy";
-              event.dataTransfer.setData("application/x-pbdh-resource", candidate.id);
-            }} onContextMenu={(event) => {
-              event.preventDefault();
-              setActiveResourceId(candidate.id);
-              setTabletopContextMenu({ kind: "resource", resourceId: candidate.id, x: event.clientX, y: event.clientY, sendOpen: false });
-            }}><i /><span className="template-mark adversary"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
-            <div className="folder-row"><span /><Icon name="chevronDown" /><Icon name="folder" /><b>武器</b><small>{weaponResources.length}</small></div>
-            {weaponResources.map((candidate) => <button type="button" className={`file-row ${candidate.id === resource.id ? "is-current" : ""}`} key={candidate.id} draggable={appMode === "gm"} onClick={() => setActiveResourceId(candidate.id)} onDragStart={(event) => {
-              event.dataTransfer.effectAllowed = "copy";
-              event.dataTransfer.setData("application/x-pbdh-resource", candidate.id);
-            }} onContextMenu={(event) => {
-              event.preventDefault();
-              setActiveResourceId(candidate.id);
-              setTabletopContextMenu({ kind: "resource", resourceId: candidate.id, x: event.clientX, y: event.clientY, sendOpen: false });
-            }}><i /><span className="template-mark weapon"><ResourceIcon resource={candidate} /></span><b>{resourceTitle(candidate)}</b></button>)}
-            <div className="folder-row"><span /><Icon name="chevronRight" /><Icon name="folder" /><b>自定义</b><small>0</small></div>
+          <div className="workspace-package-list">
+            {workspaces.map((workspace) => <section className={`workspace-package${workspace.key === active.key ? " is-current" : ""}`} key={workspace.key}>
+              <div className={`package-root${workspace.key === active.key ? " is-current" : ""}`} onContextMenu={(event) => {
+                event.preventDefault();
+                switchWorkspace(workspace.key);
+                setTabletopContextMenu({ kind: "workspace", workspaceKey: workspace.key, x: event.clientX, y: event.clientY });
+              }}>
+                <button type="button" className="package-root-main" onClick={() => switchWorkspace(workspace.key)}>
+                  <Icon name={workspace.key === active.key ? "chevronDown" : "chevronRight"} /><Icon name="package" /><strong>{workspace.document.package.name}</strong>
+                </button>
+                <button type="button" aria-label={`${workspace.document.package.name}菜单`} onClick={(event) => {
+                  switchWorkspace(workspace.key);
+                  const bounds = event.currentTarget.getBoundingClientRect();
+                  setTabletopContextMenu({ kind: "workspace", workspaceKey: workspace.key, x: bounds.left, y: bounds.bottom });
+                }}><Icon name="ellipsis" /></button>
+              </div>
+              {workspace.key === active.key && <div className="resource-tree">
+                <WorkspaceTree
+                  workspace={active}
+                  activeResourceId={activeResourceId}
+                  onActivateResource={activateWorkspaceResource}
+                  onPinResource={pinWorkspaceTab}
+                  onSelectFolder={(folderId) => replaceActive(selectWorkspaceFolder(active, folderId))}
+                  onToggleFolder={(folderId) => replaceActive(toggleWorkspaceFolder(active, folderId))}
+                  onRenameFolder={renameWorkspaceTreeFolder}
+                  onMoveNode={moveWorkspaceTreeNode}
+                  onDeleteNode={requestWorkspaceNodeDeletion}
+                  onResourceContextMenu={(resourceId, x, y) => {
+                    activateWorkspaceResource(resourceId);
+                    setTabletopContextMenu({ kind: "resource", resourceId, x, y, sendOpen: false });
+                  }}
+                  onRootContextMenu={(x, y) => setTabletopContextMenu({ kind: "workspace", workspaceKey: active.key, x, y })}
+                  resourceTitle={resourceTitle}
+                  renderResourceIcon={(candidate) => <ResourceIcon resource={candidate} />}
+                />
+              </div>}
+            </section>)}
           </div>
           <footer><span>{active.document.resources.length} 个资源</span><span>名称 ↑</span></footer>
         </aside>
 
         {appMode === "creator" && <section className="creator-workbench">
           <nav className="resource-tabs" aria-label="打开的资源">
-            <button type="button" className="is-current"><ResourceIcon resource={resource} /><span>{resourceTitle(resource)}</span>{active.dirty && <i aria-label="已修改">●</i>}<Icon name="x" /></button>
-            {active.document.resources.filter((candidate) => candidate.id !== resource.id).slice(0, 2).map((candidate) => <button type="button" className="is-preview" key={candidate.id} onClick={() => setActiveResourceId(candidate.id)}><ResourceIcon resource={candidate} /><em>{resourceTitle(candidate)}</em><Icon name="x" /></button>)}
+            {workspaces.flatMap((workspace) => workspace.openResourceIds.flatMap((resourceId) => {
+              const candidate = workspace.document.resources.find((item) => item.id === resourceId);
+              if (!candidate) return [];
+              const current = workspace.key === active.key && candidate.id === activeResourceId;
+              return <div className={`resource-tab${current ? " is-current" : ""}${candidate.id === workspace.previewResourceId ? " is-preview" : ""}`} key={`${workspace.key}:${candidate.id}`}>
+                <button type="button" className="resource-tab-main" onClick={() => { switchWorkspace(workspace.key); setActiveResourceId(candidate.id); }} onDoubleClick={() => {
+                  switchWorkspace(workspace.key);
+                  setWorkspaces((currentWorkspaces) => currentWorkspaces.map((item) => item.key === workspace.key ? pinWorkspaceResource(item, candidate.id) : item));
+                }}>
+                  <ResourceIcon resource={candidate} /><span>{resourceTitle(candidate)}</span>{workspace.dirtyResourceIds.includes(candidate.id) && <i aria-label="已修改">●</i>}
+                </button>
+                <button type="button" className="resource-tab-close" aria-label={`关闭 ${resourceTitle(candidate)}`} onClick={() => closeWorkspaceTab(workspace.key, candidate.id)}><Icon name="x" /></button>
+              </div>;
+            }))}
           </nav>
-          <div className="workbench-body">
+          {resource ? <div className="workbench-body" onPointerDown={() => pinWorkspaceTab(resource.id)}>
             {adversary && <AdversaryEditor
               data={adversary}
               openFeatureMenu={openFeatureMenu}
@@ -962,18 +1259,15 @@ export function CreatorWorkspacePrototype() {
 
             {weapon && <WeaponEditor data={weapon} onField={updateWeaponField} />}
 
-            <aside className={`preview-panel ${weapon ? "without-media" : ""}`}>
+            <aside className="preview-panel">
               <header><h1>实时预览</h1><div>
                 <div className="card-mode" role="group" aria-label="卡面模式">
-                  {weapon && <button type="button" aria-pressed="true">纯文字</button>}
-                  {adversary && <>
                   {(["text", "split", "image"] as const).map((mode) => <button
                     type="button"
                     key={mode}
                     aria-pressed={resource.presentation.mode === mode}
                     onClick={() => updatePresentation((presentation) => { presentation.mode = mode; })}
                   >{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}
-                  </>}
                 </div>
                 <button
                   type="button"
@@ -982,15 +1276,14 @@ export function CreatorWorkspacePrototype() {
                   aria-checked={resource.presentation.fixedRatio}
                   onClick={() => updatePresentation((presentation) => { presentation.fixedRatio = !presentation.fixedRatio; })}
                 ><span>固定比例</span><i /></button>
-                <button type="button"><Icon name="maximize" />适配</button><strong>70%</strong>
               </div></header>
-              <div className="preview-stage"><div className="card-scale">
+              <AutoFitPreview>
                 {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererRevision} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
                 {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererRevision} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
-              </div></div>
-              {adversary && <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />替换</button></footer>}
+              </AutoFitPreview>
+              <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button></footer>
             </aside>
-          </div>
+          </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
         </section>}
 
         {appMode === "gm" && activeTabletop && <section className="gm-workbench" data-design-frame={creatorWorkspaceDesign.gmTabletop.frame}>
@@ -1112,22 +1405,37 @@ export function CreatorWorkspacePrototype() {
                 onDeleteFeature={(index, name) => requestFeatureDeletion(index, name, "instance")}
               />}
               {instanceWeapon && <WeaponEditor data={instanceWeapon} onField={(field, value) => updateInstanceWeapon((draft) => { draft[field] = value; })} />}
-              <aside className={`preview-panel ${instanceWeapon ? "without-media" : ""}`}>
+              <aside className="preview-panel">
                 <header><h1>实时预览</h1><div>
                   <div className="card-mode" role="group" aria-label="卡面模式">
-                    {instanceWeapon && <button type="button" aria-pressed="true">纯文字</button>}
-                    {instanceAdversary && (["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={selectedInstance.resource.presentation.mode === mode} onClick={() => replaceInstanceResource(selectedInstance, (copy) => { copy.presentation.mode = mode; })}>{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}
+                    {(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={selectedInstance.resource.presentation.mode === mode} onClick={() => replaceInstanceResource(selectedInstance, (copy) => { copy.presentation.mode = mode; })}>{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}
                   </div>
                   <button type="button" className="fixed-ratio" role="switch" aria-checked={selectedInstance.resource.presentation.fixedRatio} onClick={() => replaceInstanceResource(selectedInstance, (copy) => { copy.presentation.fixedRatio = !copy.presentation.fixedRatio; })}><span>固定比例</span><i /></button>
-                  <button type="button"><Icon name="maximize" />适配</button><strong>70%</strong>
                 </div></header>
-                <div className="preview-stage"><div className="card-scale">{renderTabletopInstance(selectedInstance)}</div></div>
-                {instanceAdversary && <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "portrait 已声明" : "纯文字模式"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer>}
+                <AutoFitPreview>{renderTabletopInstance(selectedInstance)}</AutoFitPreview>
+                <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer>
               </aside>
             </div>
           </>}
         </section>}
       </div>
+
+      {tabletopContextMenu?.kind === "workspace" && <div
+        className="context-menu workspace-context-menu"
+        role="menu"
+        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 210)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 260)) }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new" }); }}>新建资源包</button>
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); importRef.current?.click(); }}>导入 .pbres</button>
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); void exportPackage(); }}>导出 .pbres</button>
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); openPublicationDialog(); }}>发布到资源市场</button>
+        <i />
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new-resource" }); }}>新建资源</button>
+        <button type="button" role="menuitem" onClick={() => { replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); }}>新建文件夹</button>
+        <i />
+        <button type="button" role="menuitem" onClick={() => requestWorkspacePackageClose(tabletopContextMenu.workspaceKey)}>关闭资源包</button>
+      </div>}
 
       {tabletopContextMenu?.kind === "resource" && <div
         className="context-menu resource-context-menu"
@@ -1136,15 +1444,16 @@ export function CreatorWorkspacePrototype() {
         onPointerDown={(event) => event.stopPropagation()}
       >
         <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
-          setActiveResourceId(tabletopContextMenu.resourceId);
+          activateWorkspaceResource(tabletopContextMenu.resourceId);
           setAppMode("creator");
           setTabletopContextMenu(null);
         }}>打开</button>
         <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
-          setActiveResourceId(tabletopContextMenu.resourceId);
+          pinWorkspaceTab(tabletopContextMenu.resourceId);
           setAppMode("creator");
           setTabletopContextMenu(null);
         }}>在新标签页打开</button>
+        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => duplicateResource(tabletopContextMenu.resourceId)}>复制</button>
         <div className="context-submenu-anchor" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: true } : current)}>
           <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={tabletopContextMenu.sendOpen}>发送到桌面<Icon name="chevronRight" /></button>
           {tabletopContextMenu.sendOpen && <div className="context-menu send-to-tabletop-menu" role="menu">
@@ -1153,6 +1462,7 @@ export function CreatorWorkspacePrototype() {
             <button type="button" role="menuitem" className="create" onClick={() => createTabletopAndFocus(tabletopContextMenu.resourceId)}>＋ 新建桌面</button>
           </div>}
         </div>
+        <button type="button" role="menuitem" className="delete" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => requestWorkspaceNodeDeletion({ kind: "resource", id: tabletopContextMenu.resourceId })}>删除</button>
       </div>}
 
       {tabletopContextMenu?.kind === "instance" && <div
@@ -1181,13 +1491,24 @@ export function CreatorWorkspacePrototype() {
 
       <input ref={importRef} hidden type="file" accept=".pbres" onChange={importPackage} />
       <input ref={portraitRef} hidden type="file" accept="image/webp" onChange={replacePortraitFromFile} />
+      <input ref={publicationCoverRef} hidden type="file" accept="image/webp" onChange={replacePublicationCover} />
 
-      {dialog && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true">
+      {dialog && <div className="dialog-backdrop" role="presentation"><section className={`dialog${dialog.kind === "publish" ? " publish-dialog" : ""}`} role="dialog" aria-modal="true">
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
           <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
+        {dialog.kind === "publish" && <>
+          <h2>发布到资源市场</h2>
+          <div className="publication-package-summary"><Icon name="package" /><span><strong>{active?.document.package.name}</strong><small>版本 {active?.document.package.version} · {active?.document.resources.length} 项资源</small></span><b>完整资源包</b></div>
+          <div className="publication-fields">
+            <div className="publication-cover-field"><strong>封面</strong><div className="publication-cover-preview">{publicationCover.url ? <img src={publicationCover.url} alt="资源包封面" /> : <Icon name="image" />}</div><button type="button" onClick={() => publicationCoverRef.current?.click()}><Icon name="upload" />上传</button></div>
+            <div className="publication-copy-fields"><Field label="标题" value={publicationTitle} onChange={setPublicationTitle} /><TextareaField label="简介" value={publicationSummary} onChange={setPublicationSummary} /><div className="publication-meta-fields"><Field label="内容语言" value={publicationLanguage} onChange={setPublicationLanguage} /><Field label="发现标签" value={publicationTags} onChange={setPublicationTags} /></div></div>
+          </div>
+          <label className="publication-license"><input type="checkbox" checked={publicationRightsConfirmed} onChange={(event) => setPublicationRightsConfirmed(event.target.checked)} /><span><strong>我拥有公开内容与媒体所需权利</strong><small>{active?.document.license.label}</small></span></label>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!publicationRightsConfirmed} onClick={publishWorkspace}>发布当前版本</button></div>
+        </>}
         {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
           <li key={`${item.code}:${item.location}`}><b>{item.code}</b><code>{item.location || "/"}</code></li>)}</ul>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>保留现状</button></div></>}
@@ -1201,6 +1522,10 @@ export function CreatorWorkspacePrototype() {
             <button type="button" className="danger" onClick={() => commitIncoming(dialog.incoming)}>覆盖 · 丢弃本地修改</button></div></>}
         {dialog.kind === "delete-feature" && <><h2>删除特性</h2><p>删除“{dialog.name || "未命名特性"}”？此操作会立即从当前资源中移除该特性。</p>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => deleteFeature(dialog.index, dialog.target)}>删除</button></div></>}
+        {dialog.kind === "delete-workspace-node" && <><h2>删除{dialog.node.kind === "folder" ? "文件夹" : "资源"}</h2><p>删除“{dialog.name}”？{dialog.node.kind === "folder" ? "文件夹内的资源也会一并删除。" : ""}</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => confirmWorkspaceNodeDeletion(dialog.node)}>删除</button></div></>}
+        {dialog.kind === "close-workspace" && <><h2>关闭资源包</h2><p>关闭“{dialog.name}”？对应的本地工作区数据将被删除。</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void closeWorkspacePackage(dialog.workspaceKey)}>关闭并删除</button></div></>}
       </section></div>}
     </main>
   );

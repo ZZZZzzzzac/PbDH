@@ -20,14 +20,16 @@
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
-    "generate:design": "node scripts/generate-adversary-card-design.mjs && node scripts/generate-weapon-card-design.mjs && node scripts/generate-player-design.mjs",
-    "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-weapon-card-design.mjs --check && node scripts/generate-player-design.mjs --check",
+    "sync:platform-app-bar": "node scripts/sync-platform-app-bar-design.mjs",
+    "generate:design": "node scripts/generate-adversary-card-design.mjs && node scripts/generate-weapon-card-design.mjs && node scripts/generate-player-design.mjs && node scripts/generate-market-design.mjs",
+    "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-weapon-card-design.mjs --check && node scripts/generate-player-design.mjs --check && node scripts/generate-market-design.mjs --check",
     "test:ts": "vitest run tests",
     "test:python": "node scripts/python.mjs -m pytest tests",
     "typecheck": "tsc --noEmit",
     "build:creator": "npm run build -w @pbdh/creator",
     "build:player": "npm run build -w @pbdh/player",
-    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:creator && npm run build:player"
+    "build:market": "npm run build -w @pbdh/market",
+    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:creator && npm run build:player && npm run build:market"
   },
   "dependencies": {
     "dexie": "4.4.4",

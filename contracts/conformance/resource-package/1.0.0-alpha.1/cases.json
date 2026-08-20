@@ -14,7 +14,12 @@
   {
     "name": "accepts-daggerheart-core-primary-weapon",
     "document": "valid/daggerheart-core-primary-weapon.json",
-    "media": [],
+    "media": [
+      {
+        "assetId": "sha256:a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd",
+        "path": "media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp"
+      }
+    ],
     "mutation": { "kind": "none" },
     "expected": []
   },

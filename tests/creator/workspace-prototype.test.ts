@@ -11,13 +11,24 @@ import {
   addTemplateResource,
   adversaryData,
   clearAdversaryFeature,
+  closeWorkspaceResourceTab,
   createBlankWorkspace,
+  createWorkspaceFolder,
   createWorkspace,
+  deleteWorkspaceNode,
   deleteAdversaryFeature,
+  duplicateWorkspaceResource,
   forkCurrentWorkspace,
   planImport,
+  pinWorkspaceResource,
   prepareWorkspaceExport,
+  previewWorkspaceResource,
   removePortrait,
+  renameWorkspaceFolder,
+  moveWorkspaceNode,
+  selectWorkspaceFolder,
+  toggleWorkspaceFolder,
+  treeItemsInFolder,
   updateAdversaryData,
   updateResourcePresentation,
   updateWeaponData,
@@ -34,12 +45,14 @@ const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
 )))]]);
 
 describe("Creator Workspace prototype state model", () => {
-  test("covers empty list to explicit new Workspace with a valid formal Contract", async () => {
+  test("creates an empty Workspace draft and requires a resource before Contract export", async () => {
     const workspace = await createBlankWorkspace("本地敌人包");
     expect(workspace.document.package.name).toBe("本地敌人包");
-    expect(workspace.document.resources).toHaveLength(1);
-    expect(workspace.document.resources[0]?.media).toEqual({});
-    expect(await validateResourcePackageCandidate(workspace.document, workspace.media)).toEqual([]);
+    expect(workspace.document.resources).toEqual([]);
+    expect(workspace.openResourceIds).toEqual([]);
+    expect(await validateResourcePackageCandidate(workspace.document, workspace.media)).toContainEqual(
+      expect.objectContaining({ severity: "error", location: "/resources" }),
+    );
   });
 
   test("editing marks the Workspace dirty and preserves the canonical resource shape", () => {
@@ -48,6 +61,17 @@ describe("Creator Workspace prototype state model", () => {
     expect(edited.dirty).toBe(true);
     expect(adversaryData(edited).名称).toBe("伤痕牛头人");
     expect(adversaryData(workspace).名称).toBe("牛头人破坏者");
+    expect(edited.dirtyResourceIds).toEqual([workspace.document.resources[0]!.id]);
+  });
+
+  test("opening and pinning resources does not create a modification marker", () => {
+    const workspace = createWorkspace({ document, media });
+    const resourceId = workspace.document.resources[0]!.id;
+    const opened = previewWorkspaceResource(workspace, resourceId);
+    const pinned = pinWorkspaceResource(opened, resourceId);
+
+    expect(pinned.dirty).toBe(false);
+    expect(pinned.dirtyResourceIds).toEqual([]);
   });
 
   test("creates a blank weapon from the registered Template and edits every authoring field", () => {
@@ -72,6 +96,105 @@ describe("Creator Workspace prototype state model", () => {
     expect(weaponData(edited, created.resourceId)).toEqual(values);
     expect(adversaryData(edited).名称).toBe("牛头人破坏者");
     expect(edited.dirty).toBe(true);
+  });
+
+  test("stores resources in user folders rather than grouping them by Template", () => {
+    const source = selectWorkspaceFolder(createWorkspace({ document, media }), null);
+    const folderWorkspace = createWorkspaceFolder(source, null, "第一幕");
+    const folderId = folderWorkspace.folders.find((folder) => folder.name === "第一幕")!.id;
+    const selected = selectWorkspaceFolder(folderWorkspace, folderId);
+    const created = addTemplateResource(selected, weaponTemplate.id, weaponTemplate.version);
+
+    expect(created.workspace.resourceLocations.find((item) => item.resourceId === created.resourceId)).toMatchObject({ parentId: folderId });
+    expect(created.workspace.document.resources.find((item) => item.id === created.resourceId)?.path).toBe("第一幕/resource-2.json");
+    expect(created.workspace.folders.some((folder) => folder.name === "武器")).toBe(false);
+  });
+
+  test("moves and reorders mixed folders and resources with the imported Cards semantics", () => {
+    const rootDocument = structuredClone(document);
+    rootDocument.resources[0]!.path = "牛头人破坏者.json";
+    let workspace = selectWorkspaceFolder(createWorkspace({ document: rootDocument, media }), null);
+    workspace = createWorkspaceFolder(workspace, null, "场景");
+    const folderId = workspace.folders.find((folder) => folder.name === "场景")!.id;
+    const resourceId = workspace.document.resources[0]!.id;
+    workspace = moveWorkspaceNode(workspace, { kind: "resource", id: resourceId }, null, 0);
+    workspace = moveWorkspaceNode(workspace, { kind: "folder", id: folderId }, null, 0);
+
+    expect(treeItemsInFolder(workspace, null).map((item) => `${item.kind}:${item.id}`)).toEqual([
+      `folder:${folderId}`,
+      `resource:${resourceId}`,
+    ]);
+    expect(workspace.document.resources[0]!.path).toBe("牛头人破坏者.json");
+  });
+
+  test("toggles folders and deletes resources while closing their tabs", () => {
+    let workspace = selectWorkspaceFolder(createWorkspace({ document, media }), null);
+    workspace = createWorkspaceFolder(workspace, null, "临时");
+    const folderId = workspace.folders.find((folder) => folder.name === "临时")!.id;
+    workspace = toggleWorkspaceFolder(workspace, folderId);
+    expect(workspace.folders.find((folder) => folder.id === folderId)?.collapsed).toBe(true);
+
+    const resourceId = workspace.document.resources[0]!.id;
+    workspace = deleteWorkspaceNode(workspace, { kind: "resource", id: resourceId });
+    expect(workspace.document.resources).toHaveLength(0);
+    expect(workspace.openResourceIds).not.toContain(resourceId);
+  });
+
+  test("renames folders and updates descendant resource paths", () => {
+    let workspace = createWorkspaceFolder(createWorkspace({ document, media }), null, "旧名称");
+    const folderId = workspace.currentFolderId!;
+    workspace = selectWorkspaceFolder(workspace, folderId);
+    const created = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    workspace = renameWorkspaceFolder(created.workspace, folderId, "新名称");
+
+    expect(workspace.document.resources.find((item) => item.id === created.resourceId)?.path).toBe("新名称/resource-2.json");
+  });
+
+  test("uses temporary tabs, pins them, and chooses an adjacent tab when closing", () => {
+    const source = createWorkspace({ document, media });
+    const created = addTemplateResource(source, weaponTemplate.id, weaponTemplate.version);
+    const firstId = source.document.resources[0]!.id;
+    const secondId = created.resourceId;
+    let workspace = closeWorkspaceResourceTab(created.workspace, firstId).workspace;
+    workspace = previewWorkspaceResource(workspace, firstId);
+    expect(workspace.previewResourceId).toBe(firstId);
+    workspace = pinWorkspaceResource(workspace, firstId);
+    expect(workspace.previewResourceId).toBeNull();
+
+    const closed = closeWorkspaceResourceTab(workspace, firstId);
+    expect(closed.workspace.openResourceIds).not.toContain(firstId);
+    expect(closed.nextResourceId).toBe(secondId);
+  });
+
+  test("duplicates a resource beside its source with an independent ID and path", () => {
+    const workspace = createWorkspace({ document, media });
+    const source = workspace.document.resources[0]!;
+    const duplicated = duplicateWorkspaceResource(workspace, source.id);
+    const copy = duplicated.workspace.document.resources.find((resource) => resource.id === duplicated.resourceId)!;
+
+    expect(copy.id).not.toBe(source.id);
+    expect(copy.path).not.toBe(source.path);
+    expect(copy.data).toEqual(source.data);
+    expect(duplicated.workspace.dirtyResourceIds).toContain(copy.id);
+    expect(duplicated.workspace.openResourceIds).toContain(copy.id);
+  });
+
+  test("replaces a temporary tab in place and selects the resource folder", () => {
+    let workspace = createWorkspace({ document, media });
+    const second = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    workspace = closeWorkspaceResourceTab(second.workspace, second.resourceId).workspace;
+    workspace = createWorkspaceFolder(workspace, null, "第二幕");
+    const folderId = workspace.currentFolderId!;
+    const third = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    workspace = closeWorkspaceResourceTab(third.workspace, third.resourceId).workspace;
+
+    workspace = previewWorkspaceResource(workspace, second.resourceId);
+    const previewIndex = workspace.openResourceIds.indexOf(second.resourceId);
+    workspace = previewWorkspaceResource(workspace, third.resourceId);
+
+    expect(workspace.openResourceIds.indexOf(third.resourceId)).toBe(previewIndex);
+    expect(workspace.openResourceIds).not.toContain(second.resourceId);
+    expect(workspace.currentFolderId).toBe(folderId);
   });
 
   test("clears or deletes a feature without mutating the source Workspace", () => {

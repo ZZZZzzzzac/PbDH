@@ -39,20 +39,26 @@ export const weaponRendererRevision: RendererRevisionCapability<
   templateId: "武器",
   templateVersion: "1.0.0-alpha.1",
   requiredMediaSlots: [],
-  optionalMediaSlots: [],
+  optionalMediaSlots: ["portrait"],
   defaultState(data) {
     return weaponTemplate.tabletop.defaultState(data) as WeaponRuntimeState;
   },
   validateState: isWeaponState,
   styles: weaponRendererStyles,
-  render({ data, presentation }) {
+  render({ data, presentation, assets }) {
     const description = splitDescription(data.描述);
+    const portrait = assets.portrait;
+    const mode = presentation.mode;
     const cardClass = [
       "weapon-card",
+      `is-${mode}`,
       presentation.fixedRatio ? "" : "is-fluid",
     ].filter(Boolean).join(" ");
     return (
-      <article className={cardClass} data-renderer-revision="weapon-card-r1">
+      <article className={cardClass} data-renderer-revision="weapon-card-r1" data-presentation-mode={mode}>
+        {mode === "image" ? <div className="weapon-art is-image-only">
+          {portrait ? <img src={portrait} alt={data.名称} /> : <div className="weapon-image-missing" role="status">缺少主图</div>}
+        </div> : <>
         <header className="weapon-header">
           <div className="weapon-meta">
             <span className="weapon-type">{data.类型}</span>
@@ -61,6 +67,7 @@ export const weaponRendererRevision: RendererRevisionCapability<
           <h1 className="weapon-title">{data.名称}</h1>
           <p className="weapon-summary">{data.属性} · {data.距离} · {data.负荷}</p>
         </header>
+        {mode === "split" && <div className="weapon-art">{portrait ? <img src={portrait} alt="" /> : <div className="weapon-image-missing" role="status">缺少主图</div>}</div>}
         <div className="weapon-body">
           <section className="weapon-stats" aria-label="武器数据">
             <div className="weapon-stat"><b>{data.属性}</b><span>属性</span></div>
@@ -78,6 +85,7 @@ export const weaponRendererRevision: RendererRevisionCapability<
           </section>
           <p className="weapon-footer">DAGGERHEART CORE · 武器</p>
         </div>
+        </>}
       </article>
     );
   },
