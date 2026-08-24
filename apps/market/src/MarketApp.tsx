@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import { AccountControl } from "@pbdh/platform-auth/provider";
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
   adversaryRendererRevision,
@@ -68,7 +69,7 @@ function PlatformAppBar({ onMarket, onPublications }: { onMarket: () => void; on
     <div className="platform-actions">
       <button type="button" aria-label="通知"><Icon name="bell" /></button>
       <button type="button" aria-label="设置"><Icon name="settings" /></button>
-      <button type="button" className="account" onClick={onPublications}><Icon name="user" />账号</button>
+      <AccountControl className="account" icon={<Icon name="user" />} manageLabel="我的出版物" onManage={onPublications} />
       <button type="button" className="mobile-menu-button" aria-label="主页面" onClick={() => setMobileOpen((value) => !value)}><Icon name="menu" /></button>
     </div>
     {mobileOpen && <nav className="mobile-app-menu" aria-label="移动端主页面">

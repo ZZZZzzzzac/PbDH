@@ -29,6 +29,10 @@ test("core entry points reject frontend dependencies", () => {
     validateImport("packages/tabletop/src/core/commands.ts", "@pbdh/tabletop/react"),
     ["tabletop/core must remain React-free"],
   );
+  assert.deepEqual(
+    validateImport("packages/platform-auth/src/core/session.ts", "@pbdh/platform-auth/provider"),
+    ["platform-auth/core must remain React-provider-free"],
+  );
 });
 
 test("renderer cannot reverse-import the template registry", () => {

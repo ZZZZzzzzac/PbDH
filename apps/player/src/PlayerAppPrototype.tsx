@@ -5,6 +5,7 @@ import type {
   ResourcePackageLogicalDocument,
   SystemPackageDocument,
 } from "@pbdh/contract-runtime";
+import { AccountControl } from "@pbdh/platform-auth/provider";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import { adversaryRendererRevision } from "@pbdh/templates/frontend";
 import type { AdversaryData } from "@pbdh/templates/core";
@@ -147,7 +148,7 @@ export function PlayerAppPrototype() {
       <div className="platform-brand"><b>PB</b><strong>PBDH</strong></div>
       <nav className="platform-nav" aria-label="主页面"><button className="current">玩家车卡器</button><button>卡片工坊</button><button>GM 桌面</button><button>资源市场</button></nav>
       <nav className="player-actions" aria-label="玩家功能"><button>玩家功能⌄</button><button>玩家存档⌄</button><button>导入导出⌄</button><button onClick={() => setManagerOpen(true)}>系统包⌄</button></nav>
-      <div className="platform-account"><button aria-label="通知">○</button><button aria-label="设置">⚙</button><button>账号</button></div>
+      <div className="platform-account"><button aria-label="通知">○</button><button aria-label="设置">⚙</button><AccountControl /></div>
     </header>
 
     <div className="player-shell">

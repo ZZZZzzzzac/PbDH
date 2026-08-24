@@ -18,6 +18,7 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore } from "@pbdh/local-storage";
+import { AccountControl } from "@pbdh/platform-auth/provider";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import {
   createTabletopDocument,
@@ -1094,7 +1095,7 @@ export function CreatorWorkspacePrototype() {
             <button type="button">玩家车卡器</button><button type="button" className="is-current">卡片工坊</button>
             <button type="button">GM 桌面</button><button type="button">资源市场</button>
           </nav>
-          <div className="platform-actions"><button aria-label="通知"><Icon name="bell" /></button><button aria-label="设置"><Icon name="settings" /></button><button className="account"><Icon name="user" />账号</button></div>
+          <div className="platform-actions"><button aria-label="通知"><Icon name="bell" /></button><button aria-label="设置"><Icon name="settings" /></button><AccountControl className="account" icon={<Icon name="user" />} /></div>
         </header>
         <section className="empty-workspace">
           <h1>没有打开的资源包</h1>
@@ -1173,7 +1174,7 @@ export function CreatorWorkspacePrototype() {
         <div className="platform-actions">
           <button type="button" aria-label="通知"><Icon name="bell" /></button>
           <button type="button" aria-label="设置"><Icon name="settings" /></button>
-          <button type="button" className="account"><Icon name="user" />账号</button>
+          <AccountControl className="account" icon={<Icon name="user" />} />
         </div>
       </header>
       <div className="creator-workspace">

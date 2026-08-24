@@ -1,0 +1,39 @@
+.pbdh-account-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #2b2521;
+  background: rgb(24 20 17 / 48%);
+}
+
+.pbdh-account-dialog {
+  position: relative;
+  width: min(360px, calc(100vw - 48px));
+  padding: 24px;
+  border: 1px solid #cfc5b9;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 18px 50px rgb(32 24 19 / 28%);
+}
+
+.pbdh-account-dialog h2 { margin: 0 0 18px; font-size: 18px; }
+.pbdh-account-dialog p { margin: 0 0 16px; color: #675d55; font-size: 13px; line-height: 1.55; }
+.pbdh-account-dialog button, .pbdh-account-dialog input { font: inherit; }
+.pbdh-account-dialog button { cursor: pointer; }
+.pbdh-account-close { position: absolute; inset: 10px 10px auto auto; width: 28px; height: 28px; border: 0; border-radius: 4px; color: #766b62; background: transparent; font-size: 20px; }
+.pbdh-account-close:hover { background: #eee9e1; }
+.pbdh-account-field { display: grid; gap: 6px; margin-bottom: 14px; font-size: 12px; font-weight: 700; }
+.pbdh-account-field input { height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid #cfc5b9; border-radius: 5px; color: #2b2521; background: #fff; outline: 0; }
+.pbdh-account-field input:focus { border-color: #9b403d; box-shadow: 0 0 0 2px rgb(155 64 61 / 12%); }
+.pbdh-account-dialog button.primary { min-height: 34px; padding: 0 14px; border: 1px solid #7d2f2c; border-radius: 5px; color: #fffaf4; background: #8f3734; font-weight: 700; }
+.pbdh-account-actions { display: flex; gap: 8px; }
+.pbdh-account-actions > button:not(.primary), .pbdh-account-mode { min-height: 34px; padding: 0 12px; border: 1px solid #cfc5b9; border-radius: 5px; color: #433b35; background: #f8f4ed; }
+.pbdh-account-mode { margin-top: 12px; }
+.pbdh-account-message { padding: 8px 10px; border-left: 3px solid #a8403d; background: #f7ece9; color: #7d2f2c !important; }
+.pbdh-account-heading { display: flex; align-items: center; gap: 8px; }
+.pbdh-account-heading h2 { margin-bottom: 8px; }
+.pbdh-account-heading span { padding: 2px 6px; border-radius: 3px; color: #fff8ed; background: #7d2f2c; font-size: 10px; font-weight: 800; }
+.pbdh-account-id { user-select: all; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px !important; }

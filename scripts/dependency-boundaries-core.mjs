@@ -49,6 +49,12 @@ export function validateImport(importerPath, specifier) {
     violations.push("tabletop/core must remain React-free");
   }
 
+  const inPlatformAuthCore = importer.startsWith("packages/platform-auth/core/")
+    || importer.startsWith("packages/platform-auth/src/core/");
+  if (inPlatformAuthCore && (browserPackages.has(specifier) || specifier.includes("/provider"))) {
+    violations.push("platform-auth/core must remain React-provider-free");
+  }
+
   if (importer.startsWith("packages/resource-renderer/")
     && importsPackage(specifier, "@pbdh/templates")) {
     violations.push("resource-renderer must receive resolved templates by injection");
