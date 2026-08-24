@@ -31,7 +31,16 @@ export function createAuthApi(fetcher: typeof fetch = fetch, baseUrl = "") {
       },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
-    const payload = await response.json() as { error?: { code?: string; message?: string } } & T;
+    let payload: { error?: { code?: string; message?: string } } & T;
+    try {
+      payload = JSON.parse(await response.text()) as typeof payload;
+    } catch {
+      throw new AuthApiError(
+        "AUTH_RESPONSE_INVALID",
+        "账号服务返回了无效响应，请稍后重试。",
+        response.status,
+      );
+    }
     if (!response.ok) {
       throw new AuthApiError(
         payload.error?.code ?? "AUTH_REQUEST_FAILED",

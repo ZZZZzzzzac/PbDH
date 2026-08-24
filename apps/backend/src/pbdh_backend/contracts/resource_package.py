@@ -7,7 +7,7 @@ from typing import Any
 
 
 FAMILY = "resource-package"
-VERSION = "1.0.0-alpha.1"
+LEGACY_VERSION = "1.0.0-alpha.1"
 DIGEST_DOMAIN = "pbdh-resource-package-digest-v1"
 
 
@@ -80,12 +80,13 @@ def _diagnostic(
     code: str,
     location: str,
     params: Mapping[str, Any],
+    version: str,
 ) -> dict[str, Any]:
     return {
         "code": code,
         "severity": "error",
         "family": FAMILY,
-        "version": VERSION,
+        "version": version,
         "location": location,
         "params": dict(params),
     }
@@ -100,6 +101,7 @@ def validate_resource_package_semantics(
     media: Mapping[str, bytes],
 ) -> list[dict[str, Any]]:
     diagnostics: list[dict[str, Any]] = []
+    version = str(document.get("contractVersion", LEGACY_VERSION))
     resource_ids: set[str] = set()
     targets: set[tuple[str, str]] = set()
     asset_ids: set[str] = set()
@@ -111,6 +113,7 @@ def validate_resource_package_semantics(
                 "resource-package.resource-id.duplicate",
                 f"/resources/{index}/id",
                 {"id": resource_id},
+                version,
             ))
         resource_ids.add(resource_id)
 
@@ -124,6 +127,7 @@ def validate_resource_package_semantics(
                     "systemPackageId": target["systemPackageId"],
                     "version": target["version"],
                 },
+                version,
             ))
         targets.add(key)
 
@@ -134,6 +138,7 @@ def validate_resource_package_semantics(
                 "resource-package.asset-id.duplicate",
                 f"/assets/{index}/id",
                 {"id": asset_id},
+                version,
             ))
         asset_ids.add(asset_id)
         media_bytes = media.get(asset_id)
@@ -142,6 +147,7 @@ def validate_resource_package_semantics(
                 "resource-package.media.bytes-missing",
                 f"/assets/{index}/id",
                 {"assetId": asset_id},
+                version,
             ))
             continue
         actual_id = f"sha256:{hashlib.sha256(media_bytes).hexdigest()}"
@@ -150,12 +156,14 @@ def validate_resource_package_semantics(
                 "resource-package.media.digest-mismatch",
                 f"/assets/{index}/id",
                 {"actual": actual_id, "expected": asset_id},
+                version,
             ))
         if str(len(media_bytes)) != asset["byteLength"]:
             diagnostics.append(_diagnostic(
                 "resource-package.media.byte-length-mismatch",
                 f"/assets/{index}/byteLength",
                 {"actual": str(len(media_bytes)), "expected": asset["byteLength"]},
+                version,
             ))
 
     for resource_index, resource in enumerate(document["resources"]):
@@ -165,6 +173,7 @@ def validate_resource_package_semantics(
                     "resource-package.media.asset-undeclared",
                     f"/resources/{resource_index}/media/{_pointer_segment(slot)}",
                     {"assetId": asset_id},
+                    version,
                 ))
 
     if not diagnostics:
@@ -174,6 +183,7 @@ def validate_resource_package_semantics(
                 "resource-package.snapshot-digest.mismatch",
                 "/snapshotDigest",
                 {"actual": actual, "expected": document["snapshotDigest"]},
+                version,
             ))
 
     return sorted(diagnostics, key=lambda item: (item["location"], item["code"]))

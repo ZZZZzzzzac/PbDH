@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "@pbdh/local-storage": "0.0.0",
+    "@pbdh/media-admission": "0.0.0",
     "@pbdh/platform-auth": "0.0.0",
+    "@pbdh/platform-ui": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",
     "@pbdh/tabletop": "0.0.0",

@@ -1,5 +1,5 @@
 export type PublicationStatus = "available" | "withdrawn";
-export type PublicationKind = "enemy" | "weapon";
+export type PublicationKind = "enemy" | "weapon" | "mixed";
 export type HandoffTarget = "player" | "creator" | "gm";
 
 export type PublicationResource = {
@@ -35,6 +35,7 @@ export type Publication = {
   archiveUrl: string;
   archiveName: string;
   resources: PublicationResource[];
+  mediaUrls?: Record<string, string>;
 };
 
 export type PublicationDisplayMetadata = Pick<
@@ -128,6 +129,22 @@ export function createHandoffIntent(
     autoInstall: false,
     autoPlace: false,
   };
+}
+
+export function createCreatorHandoffUrl(
+  intent: HandoffIntent,
+  creatorBaseUrl: string | URL,
+): URL {
+  if (intent.target !== "creator" && intent.target !== "gm") {
+    throw new Error("handoff.target.not-creator-hosted");
+  }
+  const url = new URL(creatorBaseUrl);
+  url.searchParams.set("pbdhHandoff", "publication");
+  url.searchParams.set("target", intent.target);
+  url.searchParams.set("publicationId", intent.publicationId);
+  url.searchParams.set("snapshotDigest", intent.snapshotDigest);
+  if (intent.focusLocator) url.searchParams.set("focusResourceId", intent.focusLocator.resourceId);
+  return url;
 }
 
 export function toggleFilterValue(values: readonly string[], value: string) {

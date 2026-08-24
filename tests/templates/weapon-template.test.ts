@@ -6,6 +6,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { describe, expect, test } from "vitest";
 
 import {
+  legacyWeaponTemplate,
   templateRegistry,
   weaponTemplate,
   type WeaponData,
@@ -22,19 +23,30 @@ function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
 }
 
-const resource = readJson<{ resources: Array<{
+const legacyResource = readJson<{ resources: Array<{
   template: { id: string; version: string };
   data: WeaponData;
   media: Record<string, string>;
 }> }>(
   "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
 ).resources[0]!;
+const resource = readJson<{ resources: Array<{
+  template: { id: string; version: string };
+  data: WeaponData;
+  media: Record<string, string>;
+}> }>(
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
+).resources[0]!;
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validateData = ajv.compile(weaponTemplate.schema as AnySchema);
 
-describe("武器 Template 1.0.0-alpha.1 Core", () => {
+describe("武器 Template Core", () => {
   test("resolves only the exact trusted Template version", () => {
-    expect(resource.template).toEqual({ id: "武器", version: "1.0.0-alpha.1" });
+    expect(legacyResource.template).toEqual({ id: "武器", version: "1.0.0-alpha.1" });
+    expect(templateRegistry.resolve(legacyResource.template.id, legacyResource.template.version)).toBe(
+      legacyWeaponTemplate,
+    );
+    expect(resource.template).toEqual({ id: "武器", version: "1.0.0" });
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       weaponTemplate,
     );
@@ -104,7 +116,7 @@ describe("武器 Template Authoring 与支持清单", () => {
       rendererRevisions: new Set(["enemy-card-r1"]),
     })).toEqual({
       templates: [
-        { id: "敌人", version: "1.0.0-alpha.1", rendererRevision: "enemy-card-r1" },
+        { id: "敌人", version: "1.0.0", rendererRevision: "enemy-card-r1" },
       ],
     });
     expect(buildTemplateSupportManifest({
@@ -113,8 +125,8 @@ describe("武器 Template Authoring 与支持清单", () => {
       rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r1"]),
     })).toEqual({
       templates: [
-        { id: "敌人", version: "1.0.0-alpha.1", rendererRevision: "enemy-card-r1" },
-        { id: "武器", version: "1.0.0-alpha.1", rendererRevision: "weapon-card-r1" },
+        { id: "敌人", version: "1.0.0", rendererRevision: "enemy-card-r1" },
+        { id: "武器", version: "1.0.0", rendererRevision: "weapon-card-r1" },
       ],
     });
   });

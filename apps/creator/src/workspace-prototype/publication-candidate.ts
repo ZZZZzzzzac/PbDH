@@ -23,6 +23,8 @@ export type PublicationCover = {
   bytes: Uint8Array;
 };
 
+export type PublicationLicense = ResourcePackageLogicalDocument["license"];
+
 export type PublicationCandidate = {
   document: ResourcePackageLogicalDocument;
   media: Map<string, Uint8Array>;
@@ -37,18 +39,22 @@ export async function preparePublicationCandidate(
   workspace: CreatorWorkspace,
   metadata: PublicationMetadata,
   cover?: PublicationCover,
+  license?: PublicationLicense,
 ): Promise<PublicationCandidateResult> {
   const prepared = await prepareWorkspaceExport(workspace);
   const document = structuredClone(prepared.document);
   const media = new Map(prepared.media);
+
+  if (license) document.license = structuredClone(license);
 
   if (cover) {
     const existingAssetIndex = document.assets.findIndex((asset) => asset.id === cover.asset.id);
     if (existingAssetIndex >= 0) document.assets[existingAssetIndex] = structuredClone(cover.asset);
     else document.assets.push(structuredClone(cover.asset));
     media.set(cover.asset.id, new Uint8Array(cover.bytes));
-    document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, media);
   }
+
+  document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, media);
 
   const diagnostics = await validateResourcePackageCandidate(document, media);
   if (diagnostics.some((item) => item.severity === "error")) {

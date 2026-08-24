@@ -19,6 +19,7 @@ def read_json(relative_path: str) -> object:
 CATALOG = read_json("contracts/catalog.json")
 RESOURCE_PACKAGE_SCHEMA_PATH = "resource-package/0.0.0-dev.1/schema.json"
 RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH = "resource-package/1.0.0-alpha.1/schema.json"
+RESOURCE_PACKAGE_STABLE_SCHEMA_PATH = "resource-package/1.0.0/schema.json"
 SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH = "system-package/1.0.0-alpha.1/schema.json"
 TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH = "tabletop-document/1.0.0-alpha.1/schema.json"
 SCHEMAS = {
@@ -27,6 +28,9 @@ SCHEMAS = {
     ),
     RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH: read_json(
         f"contracts/{RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH}"
+    ),
+    RESOURCE_PACKAGE_STABLE_SCHEMA_PATH: read_json(
+        f"contracts/{RESOURCE_PACKAGE_STABLE_SCHEMA_PATH}"
     ),
     SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH: read_json(
         f"contracts/{SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH}"
@@ -64,7 +68,7 @@ def test_catalog_rejects_duplicate_exact_versions() -> None:
 def test_catalog_queries_exact_version_state() -> None:
     runtime = ContractRuntime(CATALOG, SCHEMAS)
     assert runtime.get_version_state("resource-package", "0.0.0-dev.1") == "development"
-    assert runtime.get_version_state("resource-package", "1.0.0") is None
+    assert runtime.get_version_state("resource-package", "1.0.0") == "development"
 
 
 @pytest.mark.parametrize(

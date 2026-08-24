@@ -94,4 +94,15 @@ describe("platform auth API", () => {
     await expect(createAuthApi(fetcher).loadProfile("token", "session"))
       .rejects.toEqual(new AuthApiError("AUTH_SESSION_REPLACED", "会话已被替换。", 409));
   });
+
+  it("maps an empty gateway response to a stable Chinese error", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 502 }));
+
+    await expect(createAuthApi(fetcher).loadConfig())
+      .rejects.toEqual(new AuthApiError(
+        "AUTH_RESPONSE_INVALID",
+        "账号服务返回了无效响应，请稍后重试。",
+        502,
+      ));
+  });
 });

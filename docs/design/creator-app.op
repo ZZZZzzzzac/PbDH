@@ -31907,6 +31907,249 @@
               ]
             }
           ]
+        },
+        {
+          "type": "frame",
+          "id": "n2621",
+          "name": "#39 / Creator 发布结果反馈",
+          "x": 3360.0,
+          "y": 0.0,
+          "width": 760.0,
+          "height": 360.0,
+          "layout": "vertical",
+          "gap": 16.0,
+          "padding": [
+            28.0,
+            32.0
+          ],
+          "cornerRadius": 8.0,
+          "fill": [
+            {
+              "type": "solid",
+              "color": "#F3EFE7"
+            }
+          ],
+          "stroke": {
+            "thickness": 1.0,
+            "fill": [
+              {
+                "type": "solid",
+                "color": "#D4C8B5"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "text",
+              "id": "n2622",
+              "name": "#39 发布反馈 / 标题",
+              "width": "fit_content",
+              "height": "fit_content",
+              "content": "Creator 发布结果反馈",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 24.0,
+              "fontWeight": 800,
+              "lineHeight": 1.3,
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#21150F"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n2623",
+              "name": "发布反馈 / 首次发布",
+              "width": "fill_container",
+              "height": 58.0,
+              "layout": "horizontal",
+              "gap": 10.0,
+              "padding": [
+                0.0,
+                14.0
+              ],
+              "alignItems": "center",
+              "cornerRadius": 6.0,
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#FBF8F3"
+                }
+              ],
+              "stroke": {
+                "thickness": 1.0,
+                "fill": [
+                  {
+                    "type": "solid",
+                    "color": "#CFC5B9"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "n2624",
+                  "name": "发布反馈 / 首次发布 / 图标",
+                  "iconFontName": "check-circle",
+                  "width": 17.0,
+                  "height": 17.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#365D4C"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "n2625",
+                  "name": "发布反馈 / 首次发布 / 文字",
+                  "width": "fit_content",
+                  "height": "fit_content",
+                  "content": "已发布“牛头人敌人资源包”",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12.5,
+                  "fontWeight": 650,
+                  "lineHeight": 1.4,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#2E2924"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n2626",
+              "name": "发布反馈 / 更新已有",
+              "width": "fill_container",
+              "height": 58.0,
+              "layout": "horizontal",
+              "gap": 10.0,
+              "padding": [
+                0.0,
+                14.0
+              ],
+              "alignItems": "center",
+              "cornerRadius": 6.0,
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#FBF8F3"
+                }
+              ],
+              "stroke": {
+                "thickness": 1.0,
+                "fill": [
+                  {
+                    "type": "solid",
+                    "color": "#CFC5B9"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "n2627",
+                  "name": "发布反馈 / 更新已有 / 图标",
+                  "iconFontName": "refresh-cw",
+                  "width": 17.0,
+                  "height": 17.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#365D4C"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "n2628",
+                  "name": "发布反馈 / 更新已有 / 文字",
+                  "width": "fit_content",
+                  "height": "fit_content",
+                  "content": "已更新已有的“牛头人敌人资源包”",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12.5,
+                  "fontWeight": 650,
+                  "lineHeight": 1.4,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#2E2924"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n2629",
+              "name": "发布反馈 / 内容相同",
+              "width": "fill_container",
+              "height": 58.0,
+              "layout": "horizontal",
+              "gap": 10.0,
+              "padding": [
+                0.0,
+                14.0
+              ],
+              "alignItems": "center",
+              "cornerRadius": 6.0,
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#FBF8F3"
+                }
+              ],
+              "stroke": {
+                "thickness": 1.0,
+                "fill": [
+                  {
+                    "type": "solid",
+                    "color": "#CFC5B9"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "n2630",
+                  "name": "发布反馈 / 内容相同 / 图标",
+                  "iconFontName": "check",
+                  "width": 17.0,
+                  "height": 17.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#365D4C"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "n2631",
+                  "name": "发布反馈 / 内容相同 / 文字",
+                  "width": "fit_content",
+                  "height": "fit_content",
+                  "content": "发布内容与已有“牛头人敌人资源包”完全一致，已跳过",
+                  "fontFamily": "Noto Sans SC",
+                  "fontSize": 12.5,
+                  "fontWeight": 650,
+                  "lineHeight": 1.4,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#2E2924"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },

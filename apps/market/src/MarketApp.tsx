@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
-import { AccountControl } from "@pbdh/platform-auth/provider";
+import { useAuth } from "@pbdh/platform-auth/provider";
+import { PlatformAppBar } from "@pbdh/platform-ui";
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
-  adversaryRendererRevision,
-  weaponRendererRevision,
+  adversaryRendererFor,
+  weaponRendererFor,
 } from "@pbdh/templates/frontend";
 import type { AdversaryData, WeaponData } from "@pbdh/templates/core";
 
 import { marketDesignSource } from "../design.generated.ts";
-import { catalogOptions, fixtureAssetUrls, publications } from "./catalog.ts";
+import { catalogOptions } from "./catalog-options.ts";
 import { Icon } from "./Icons.tsx";
+import { loadPublication, loadPublications } from "./market-api.ts";
 import {
   canManagePublication,
+  createCreatorHandoffUrl,
   createHandoffIntent,
   emptyCatalogFilters,
   filterPublications,
@@ -52,31 +55,18 @@ const targetLabels: Record<HandoffTarget, string> = {
   gm: "GM 桌面",
 };
 
-const currentAccountId = "01a01d94-6088-7c18-a4b7-2097f36b0001";
-
-function PlatformAppBar({ onMarket, onPublications }: { onMarket: () => void; onPublications: () => void }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  return <header className="platform-appbar">
-    <button className="platform-brand" type="button" onClick={onMarket} aria-label="PbDH 首页">
-      <b>P</b><strong>PbDH</strong>
-    </button>
-    <nav className="platform-nav" aria-label="主页面">
-      <button type="button">玩家车卡器</button>
-      <button type="button">卡片工坊</button>
-      <button type="button">GM 桌面</button>
-      <button type="button" className="is-current" onClick={onMarket}>资源市场</button>
-    </nav>
-    <div className="platform-actions">
-      <button type="button" aria-label="通知"><Icon name="bell" /></button>
-      <button type="button" aria-label="设置"><Icon name="settings" /></button>
-      <AccountControl className="account" icon={<Icon name="user" />} manageLabel="我的出版物" onManage={onPublications} />
-      <button type="button" className="mobile-menu-button" aria-label="主页面" onClick={() => setMobileOpen((value) => !value)}><Icon name="menu" /></button>
-    </div>
-    {mobileOpen && <nav className="mobile-app-menu" aria-label="移动端主页面">
-      <button type="button">玩家车卡器</button><button type="button">卡片工坊</button>
-      <button type="button">GM 桌面</button><button type="button" className="is-current" onClick={onMarket}>资源市场</button><button type="button" onClick={() => { setMobileOpen(false); onPublications(); }}>我的出版物</button>
-    </nav>}
-  </header>;
+function creatorAppBaseUrl(): URL {
+  const configured = import.meta.env.VITE_CREATOR_APP_URL as string | undefined;
+  if (configured?.trim()) return new URL(configured, window.location.origin);
+  if (import.meta.env.DEV) {
+    const url = new URL(window.location.href);
+    url.port = "5173";
+    url.pathname = "/";
+    url.search = "";
+    url.hash = "";
+    return url;
+  }
+  return new URL("/creator/", window.location.origin);
 }
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -145,19 +135,61 @@ function FilterControls({
 }
 
 function PublicationCard({ publication, onOpen }: { publication: Publication; onOpen: () => void }) {
-  return <article className="publication-card">
-    <button type="button" className="publication-cover" onClick={onOpen} aria-label={`打开${publication.title}`}>
+  return <article
+    className="publication-card"
+    role="link"
+    tabIndex={0}
+    aria-label={`打开${publication.title}`}
+    onClick={onOpen}
+    onKeyDown={(event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onOpen();
+      }
+    }}
+  >
+    <div className="publication-cover">
       <img src={publication.cover.url} alt={publication.cover.alt} draggable={false} />
-    </button>
+    </div>
     <div className="publication-summary">
-      <div className="publication-kind-row"><span className={`kind-badge ${publication.kind}`}>{publication.templateIds.join(" / ")}</span><b>v{publication.packageVersion}</b></div>
-      <button type="button" className="publication-title" onClick={onOpen}>{publication.title}</button>
+      <div className="publication-kind-row"><div>{publication.templateIds.map((templateId) => <span className={`kind-badge ${publication.kind}`} key={templateId}>{templateId}</span>)}</div><b>v{publication.packageVersion}</b></div>
+      <strong className="publication-title">{publication.title}</strong>
       <span className="publication-author">{publication.author}</span>
       <p>{publication.summary}</p>
-      <div className="publication-tags"><span>{publication.language}</span><span>{publication.systemLabel.replace(" Core", "")}</span></div>
+      <div className="publication-tags"><span>{publication.language}</span><span>{publication.systemLabel.replace(" Core", "")}</span>{publication.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
       <footer><strong>{publication.resourceCount} 项资源</strong><time dateTime={publication.updatedAt}>2 天前</time></footer>
     </div>
   </article>;
+}
+
+function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const value = draft.trim();
+    if (value && !tags.includes(value)) onChange([...tags, value]);
+    setDraft("");
+  };
+  return <div className="market-tag-field">
+    <span>发现标签</span>
+    <div className="market-tag-editor">
+      {tags.map((tag) => <span className="market-tag" key={tag}>{tag}<button type="button" aria-label={`删除标签${tag}`} onClick={() => onChange(tags.filter((item) => item !== tag))}>×</button></span>)}
+      <input
+        value={draft}
+        aria-label="新增标签"
+        placeholder="输入后按回车"
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={add}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            add();
+          } else if (event.key === "Backspace" && !draft && tags.length > 0) {
+            onChange(tags.slice(0, -1));
+          }
+        }}
+      />
+    </div>
+  </div>;
 }
 
 function Discovery({
@@ -216,26 +248,28 @@ function Discovery({
 
 function CanonicalPreview({ publication, resourceId }: { publication: Publication; resourceId: string }) {
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
-  const emptyAssets = useMemo(() => new Map(), []);
+  const assets = useMemo(() => new Map(
+    Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
+  ), [publication.mediaUrls]);
   return <div className="canonical-preview">
     <header><strong>{resource.name}</strong><button type="button"><Icon name="maximize" />放大</button></header>
     <div className="canonical-stage">
       <div className="canonical-scale">
-        {publication.kind === "enemy"
+        {resource.templateId === "敌人"
           ? <CanonicalCardSurface
               resource={resource.source as SurfaceResource<AdversaryData>}
               expectedRendererRevision="enemy-card-r1"
-              renderer={adversaryRendererRevision}
-              assets={fixtureAssetUrls}
+              renderer={adversaryRendererFor((resource.source as SurfaceResource<AdversaryData>).template.version)}
+              assets={assets}
               label={`${resource.name}规范卡面`}
             />
-          : <CanonicalCardSurface
+          : resource.templateId === "武器" ? <CanonicalCardSurface
               resource={resource.source as SurfaceResource<WeaponData>}
               expectedRendererRevision="weapon-card-r1"
-              renderer={weaponRendererRevision}
-              assets={emptyAssets}
+              renderer={weaponRendererFor((resource.source as SurfaceResource<WeaponData>).template.version)}
+              assets={assets}
               label={`${resource.name}规范卡面`}
-            />}
+            /> : <p>当前版本尚不能预览此模板。</p>}
       </div>
     </div>
   </div>;
@@ -245,13 +279,15 @@ function AcquisitionActions({
   publication,
   onHandoff,
   onDownload,
+  includeDownload = true,
 }: {
   publication: Publication;
   onHandoff: (target: HandoffTarget) => void;
   onDownload: () => void;
+  includeDownload?: boolean;
 }) {
   return <div className="acquisition-actions">
-    <a className="primary-button" href={publication.archiveUrl} download={publication.archiveName} onClick={onDownload}><Icon name="download" />下载 .pbres</a>
+    {includeDownload && <a className="primary-button" href={publication.archiveUrl} download={publication.archiveName} onClick={onDownload}><Icon name="download" />下载 .pbres</a>}
     <button type="button" onClick={() => onHandoff("player")}><Icon name="user" />安装到玩家</button>
     <button type="button" onClick={() => onHandoff("creator")}><Icon name="cards" />导入卡片工坊</button>
     <button type="button" onClick={() => onHandoff("gm")}><Icon name="grid" />发送到桌面…</button>
@@ -303,7 +339,7 @@ function PublicationDetail({
       </aside>
     </div>
     {publication.status === "available" && <button className="mobile-acquire" type="button" onClick={() => setMobileActions(true)}>取得资源包</button>}
-    {publication.status === "available" && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions publication={publication} onHandoff={(target) => { setMobileActions(false); onHandoff(target); }} onDownload={onDownload} /></section></div>}
+    {publication.status === "available" && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions publication={publication} onHandoff={(target) => { setMobileActions(false); onHandoff(target); }} onDownload={onDownload} includeDownload={false} /></section></div>}
   </div>;
 }
 
@@ -313,27 +349,25 @@ function HandoffDialog({ intent, publication, onClose, onComplete }: { intent: H
     <section className="handoff-dialog" role="dialog" aria-modal="true" aria-labelledby="handoff-title" onMouseDown={(event) => event.stopPropagation()}>
       <header><h2 id="handoff-title">交接到{targetLabels[intent.target]}</h2><button type="button" aria-label="关闭" onClick={onClose}><Icon name="x" /></button></header>
       <dl><dt>取得内容</dt><dd>完整资源包</dd>{focused && <><dt>聚焦资源</dt><dd>{focused.name}</dd></>}<dt>目标入口</dt><dd>{routeLabels[intent.targetRoute]}</dd>{intent.target === "gm" && <><dt>放置</dt><dd>进入桌面后手动放置</dd></>}</dl>
-      <footer><a href={publication.archiveUrl} download={publication.archiveName}><Icon name="download" />下载 .pbres</a><button type="button" onClick={onClose}>取消</button><button type="button" className="primary-button" onClick={onComplete}>继续</button></footer>
+      <footer><button type="button" onClick={onClose}>取消</button><button type="button" className="primary-button" onClick={onComplete}>继续</button></footer>
     </section>
   </div>;
 }
 
 function HandoffFailureDialog({
   intent,
-  publication,
   onClose,
   onRetry,
 }: {
   intent: HandoffIntent;
-  publication: Publication;
   onClose: () => void;
   onRetry: () => void;
 }) {
   return <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="handoff-dialog handoff-failure-dialog" role="alertdialog" aria-modal="true" aria-labelledby="handoff-failure-title" onMouseDown={(event) => event.stopPropagation()}>
       <header><h2 id="handoff-failure-title">无法打开{targetLabels[intent.target]}</h2><button type="button" aria-label="关闭" onClick={onClose}><Icon name="x" /></button></header>
-      <p>目标应用未响应。</p>
-      <footer><a href={publication.archiveUrl} download={publication.archiveName}><Icon name="download" />下载 .pbres</a><button type="button" onClick={onClose}>关闭</button><button type="button" className="primary-button" onClick={onRetry}>重试</button></footer>
+      <p>未能打开目标应用，请允许本站打开新标签页后重试。</p>
+      <footer><button type="button" onClick={onClose}>关闭</button><button type="button" className="primary-button" onClick={onRetry}>重试</button></footer>
     </section>
   </div>;
 }
@@ -355,7 +389,7 @@ function PublicationManagementDialog({
   const [title, setTitle] = useState(publication.title);
   const [summary, setSummary] = useState(publication.summary);
   const [language, setLanguage] = useState(publication.language);
-  const [tags, setTags] = useState(publication.tags.join("、"));
+  const [tags, setTags] = useState(publication.tags);
 
   return <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="publication-management-dialog" role="dialog" aria-modal="true" aria-labelledby="publication-management-title" onMouseDown={(event) => event.stopPropagation()}>
@@ -364,12 +398,12 @@ function PublicationManagementDialog({
         ? <div className="publication-management-fields">
             <label><span>标题</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
             <label><span>简介</span><textarea value={summary} onChange={(event) => setSummary(event.target.value)} /></label>
-            <div><label><span>内容语言</span><input value={language} onChange={(event) => setLanguage(event.target.value)} /></label><label><span>发现标签</span><input value={tags} onChange={(event) => setTags(event.target.value)} /></label></div>
+            <div><label><span>内容语言</span><input value={language} onChange={(event) => setLanguage(event.target.value)} /></label><TagEditor tags={tags} onChange={setTags} /></div>
           </div>
         : <dl><dt>当前版本</dt><dd>{publication.packageVersion}</dd><dt>公开时间</dt><dd>{publication.updatedAt}</dd><dt>快照摘要</dt><dd className="digest-value">{publication.snapshotDigest}</dd></dl>}
       <footer>
         {editing
-          ? <><button type="button" onClick={() => setEditing(false)}>取消</button><button type="button" className="primary-button" onClick={() => onSave({ title, summary, language, tags: tags.split(/[、,]/).map((tag) => tag.trim()).filter(Boolean) })}>保存展示信息</button></>
+          ? <><button type="button" onClick={() => setEditing(false)}>取消</button><button type="button" className="primary-button" onClick={() => onSave({ title, summary, language, tags })}>保存展示信息</button></>
           : <><button type="button" onClick={onClose}>关闭</button><button type="button" onClick={() => setEditing(true)}>编辑展示信息</button>{publication.status === "available" ? <button type="button" className="danger-button" onClick={onWithdraw}>撤回出版物</button> : <button type="button" className="primary-button" onClick={onRestore}>恢复出版物</button>}</>}
       </footer>
     </section>
@@ -397,7 +431,8 @@ function PublicationLibraryDialog({ publications: ownedPublications, onClose, on
 }
 
 export function MarketApp() {
-  const [catalog, setCatalog] = useState<Publication[]>(() => structuredClone(publications));
+  const auth = useAuth();
+  const [catalog, setCatalog] = useState<Publication[]>([]);
   const [view, setView] = useState<ViewState>({ page: "discovery" });
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<CatalogFilters>(emptyCatalogFilters);
@@ -412,10 +447,16 @@ export function MarketApp() {
   const managedPublication = catalog.find((item) => item.id === managedPublicationId);
   const publicationPendingWithdrawal = catalog.find((item) => item.id === withdrawPublicationId);
 
-  function openPublication(item: Publication) {
-    const normalized = query.trim().toLocaleLowerCase("zh-CN");
-    const focused = normalized ? item.resources.find((resource) => [resource.name, resource.path].join(" ").toLocaleLowerCase("zh-CN").includes(normalized)) : undefined;
-    setView({ page: "detail", publicationId: item.id, ...(focused ? { resourceId: focused.id } : {}) });
+  async function openPublication(item: Publication) {
+    try {
+      const detailed = await loadPublication(item.id);
+      setCatalog((current) => current.map((candidate) => candidate.id === detailed.id ? detailed : candidate));
+      const normalized = query.trim().toLocaleLowerCase("zh-CN");
+      const focused = normalized ? detailed.resources.find((resource) => [resource.name, resource.path].join(" ").toLocaleLowerCase("zh-CN").includes(normalized)) : undefined;
+      setView({ page: "detail", publicationId: detailed.id, ...(focused ? { resourceId: focused.id } : {}) });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "无法打开该出版物");
+    }
   }
 
   function openHandoff(target: HandoffTarget) {
@@ -425,6 +466,15 @@ export function MarketApp() {
 
   function completeHandoff() {
     if (!handoff) return;
+    if (handoff.target === "creator" || handoff.target === "gm") {
+      const targetWindow = window.open(createCreatorHandoffUrl(handoff, creatorAppBaseUrl()), "pbdh-creator");
+      if (targetWindow) {
+        targetWindow.focus();
+        setHandoff(null);
+        setNotice(handoff.target === "gm" ? "已交接到 GM 桌面" : "已交接到卡片工坊");
+        return;
+      }
+    }
     setHandoffFailure(handoff);
     setHandoff(null);
   }
@@ -462,21 +512,36 @@ export function MarketApp() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+    void loadPublications().then((loaded) => {
+      if (!cancelled) setCatalog(loaded);
+    }).catch((error) => {
+      if (!cancelled) setNotice(error instanceof Error ? error.message : "资源市场暂不可用");
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(() => setNotice(null), 2800);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
   return <main className="market-app" style={{ "--market-appbar-height": `${marketDesignSource.appBar.height}px` } as React.CSSProperties} data-design-source={marketDesignSource.document}>
-    <PlatformAppBar onMarket={() => setView({ page: "discovery" })} onPublications={() => setPublicationLibraryOpen(true)} />
+    <PlatformAppBar
+      activePage="market"
+      onNavigate={{ market: () => setView({ page: "discovery" }) }}
+      accountManageLabel="我的出版物"
+      onAccountManage={() => setPublicationLibraryOpen(true)}
+    />
     {publication
-      ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => setView({ page: "discovery" })} onSelectResource={(resourceId) => setView({ page: "detail", publicationId: publication.id, resourceId })} onHandoff={openHandoff} onDownload={() => setNotice("正在下载完整资源包")} onManage={() => setManagedPublicationId(publication.id)} canManage={canManagePublication(publication, currentAccountId)} />
+      ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => setView({ page: "discovery" })} onSelectResource={(resourceId) => setView({ page: "detail", publicationId: publication.id, resourceId })} onHandoff={openHandoff} onDownload={() => setNotice("正在下载完整资源包")} onManage={() => setManagedPublicationId(publication.id)} canManage={Boolean(auth.credentials && canManagePublication(publication, auth.credentials.accountId))} />
       : <Discovery query={query} filters={filters} results={results} catalog={catalog} onQuery={setQuery} onFilters={setFilters} onOpen={openPublication} />}
     {handoff && publication && <HandoffDialog intent={handoff} publication={publication} onClose={() => setHandoff(null)} onComplete={completeHandoff} />}
-    {handoffFailure && publication && <HandoffFailureDialog intent={handoffFailure} publication={publication} onClose={() => setHandoffFailure(null)} onRetry={() => { setHandoff(handoffFailure); setHandoffFailure(null); }} />}
+    {handoffFailure && publication && <HandoffFailureDialog intent={handoffFailure} onClose={() => setHandoffFailure(null)} onRetry={() => { setHandoff(handoffFailure); setHandoffFailure(null); }} />}
     {managedPublication && <PublicationManagementDialog key={`${managedPublication.id}:${managedPublication.status}`} publication={managedPublication} onClose={() => setManagedPublicationId(null)} onSave={updateManagedPublication} onWithdraw={() => { setManagedPublicationId(null); setWithdrawPublicationId(managedPublication.id); }} onRestore={restoreManagedPublication} />}
     {publicationPendingWithdrawal && <WithdrawPublicationDialog publication={publicationPendingWithdrawal} onClose={() => setWithdrawPublicationId(null)} onConfirm={confirmWithdrawal} />}
-    {publicationLibraryOpen && <PublicationLibraryDialog publications={publicationsOwnedBy(catalog, currentAccountId)} onClose={() => setPublicationLibraryOpen(false)} onOpen={(publicationId) => { setPublicationLibraryOpen(false); setManagedPublicationId(publicationId); }} />}
+    {publicationLibraryOpen && <PublicationLibraryDialog publications={auth.credentials ? publicationsOwnedBy(catalog, auth.credentials.accountId) : []} onClose={() => setPublicationLibraryOpen(false)} onOpen={(publicationId) => { setPublicationLibraryOpen(false); setManagedPublicationId(publicationId); }} />}
     {notice && <div className="market-toast" role="status"><Icon name="check" />{notice}</div>}
   </main>;
 }

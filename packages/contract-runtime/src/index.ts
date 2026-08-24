@@ -3,6 +3,8 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 export {
   computeResourcePackageSnapshotDigest,
+  LEGACY_RESOURCE_PACKAGE_VERSION,
+  RESOURCE_PACKAGE_VERSION,
   validateResourcePackageSemantics,
 } from "./resource-package.ts";
 export type {

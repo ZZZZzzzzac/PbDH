@@ -27,34 +27,6 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
   background: var(--canvas);
 }
 
-.platform-appbar {
-  position: relative;
-  z-index: 30;
-  height: var(--market-appbar-height);
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 220px;
-  align-items: center;
-  padding: 0 18px;
-  color: #fffdf8;
-  background: #1b1714;
-  border-bottom: 1px solid #302925;
-}
-.platform-brand { width: fit-content; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; color: inherit; background: transparent; }
-.platform-brand b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; background: #641f1d; font-size: 14px; font-weight: 800; }
-.platform-brand strong { font-size: 16px; font-weight: 800; }
-.platform-nav { height: 56px; display: flex; justify-content: center; gap: 4px; }
-.platform-nav button { position: relative; height: 56px; padding: 0 14px; border: 0; color: #c8bcae; background: transparent; font-size: 12px; font-weight: 600; }
-.platform-nav button::after { content: ""; position: absolute; inset: auto 0 0; height: 2px; background: transparent; }
-.platform-nav button:hover { color: #fffdf8; }
-.platform-nav button.is-current { color: #fffdf8; font-weight: 750; }
-.platform-nav button.is-current::after { background: #d65458; }
-.platform-actions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-.platform-actions button { height: 30px; min-width: 30px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0; border: 0; border-radius: 6px; color: #c8bcae; background: transparent; }
-.platform-actions button:hover { color: #fffdf8; background: #302925; }
-.platform-actions svg { width: 15px; height: 15px; }
-.platform-actions .account { padding: 0 10px; color: #fffdf8; background: #3a2920; font-size: 11px; font-weight: 650; }
-.mobile-menu-button, .mobile-app-menu { display: none !important; }
-
 .market-discovery { min-height: calc(100vh - var(--market-appbar-height)); display: grid; grid-template-columns: 250px minmax(0, 1fr); }
 .market-sidebar { position: relative; z-index: 20; display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--panel); border-right: 1px solid var(--border); }
 .market-search { height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid var(--border); border-radius: 5px; background: #fff; }
@@ -83,15 +55,17 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
 .market-results h1 { margin: 0; font-size: 22px; line-height: 1.25; }
 .market-results > header span { color: var(--muted); font-size: 11.5px; }
 .publication-grid { display: grid; grid-template-columns: repeat(2, 366.656px); gap: 14px; align-content: start; }
-.publication-card { width: 366.656px; height: 270px; display: grid; grid-template-columns: 171.818px minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--paper); overflow: hidden; }
+.publication-card { width: 366.656px; height: 270px; display: grid; grid-template-columns: 171.818px minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--paper); overflow: hidden; cursor: pointer; }
 .publication-card:first-child { border: 2px solid var(--accent); padding: 13px; }
 .publication-card:hover { border-color: #b78a87; box-shadow: 0 5px 15px rgba(50,31,25,.07); }
+.publication-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .publication-cover { width: 171.818px; height: 240px; padding: 0; border: 0; border-radius: 5px; background: #ded6cc; overflow: hidden; }
 .publication-card:first-child .publication-cover { height: 240px; }
 .publication-cover img { width: 100%; height: 100%; display: block; object-fit: cover; user-select: none; transition: transform .18s ease; }
 .publication-cover:hover img { transform: scale(1.025); }
 .publication-summary { min-width: 0; height: 100%; display: flex; flex-direction: column; gap: 9px; padding: 4px 0; }
 .publication-kind-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.publication-kind-row > div { display: flex; flex-wrap: wrap; gap: 5px; }
 .publication-kind-row > b { color: var(--muted); font-size: 10px; font-weight: 650; white-space: nowrap; }
 .kind-badge { height: 24px; display: inline-flex; align-items: center; padding: 0 8px; border-radius: 4px; color: #a23c3c; background: #f4dedc; font-size: 11px; font-weight: 650; }
 .kind-badge.weapon { color: #9a3e45; }
@@ -171,8 +145,7 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
 .handoff-dialog header button:hover { background: #eee8df; }
 .handoff-dialog dl { margin-top: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 6px; background: #f5f0e9; }
 .handoff-dialog > footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-.handoff-dialog > footer button, .handoff-dialog > footer a { height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink); background: var(--paper); font-size: 12px; font-weight: 650; text-decoration: none; }
-.handoff-dialog > footer a { margin-right: auto; }
+.handoff-dialog > footer button { height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink); background: var(--paper); font-size: 12px; font-weight: 650; }
 .handoff-dialog > footer .primary-button { border-color: var(--accent); color: #fff; background: var(--accent); }
 .handoff-failure-dialog > p { margin: 18px 0 0; padding: 14px 16px; border: 1px solid #d7a7a5; border-radius: 6px; color: #8f3036; background: #f4dedc; font-size: 12.5px; }
 .publication-management-dialog, .withdraw-dialog { width: min(520px, 100%); padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); box-shadow: 0 18px 44px rgba(28,22,18,.22); }
@@ -194,6 +167,13 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
 .publication-management-fields input { height: 34px; padding: 0 9px; }
 .publication-management-fields textarea { height: 86px; padding: 8px 9px; resize: vertical; }
 .publication-management-fields input:focus, .publication-management-fields textarea:focus { border-color: #b87d7f; box-shadow: 0 0 0 2px rgba(143,48,54,.08); }
+.market-tag-field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 650; }
+.market-tag-editor { min-height: 34px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px; background: #fff; }
+.market-tag-editor:focus-within { border-color: #b87d7f; box-shadow: 0 0 0 2px rgba(143,48,54,.08); }
+.market-tag-editor input { min-width: 90px; flex: 1; height: 24px; padding: 0 3px; border: 0; box-shadow: none; }
+.market-tag-editor input:focus { box-shadow: none; }
+.market-tag { height: 24px; display: inline-flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; border-radius: 4px; color: var(--muted); background: #e8e2da; font-size: 10.5px; font-weight: 650; }
+.market-tag button { width: 16px; height: 16px; padding: 0; border: 0; color: var(--muted); background: transparent; font-size: 14px; line-height: 1; }
 .publication-management-dialog > footer, .withdraw-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .publication-management-dialog > footer button, .withdraw-dialog > footer button { height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--paper); font-size: 12px; font-weight: 650; }
 .publication-management-dialog > footer .primary-button { border-color: var(--accent); color: #fff; background: var(--accent); }
@@ -223,13 +203,6 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
 }
 
 @media (max-width: 760px) {
-  .platform-appbar { grid-template-columns: 1fr auto; padding: 0 14px; }
-  .platform-brand strong { font-size: 13px; }
-  .platform-nav, .platform-actions > button:not(.mobile-menu-button) { display: none; }
-  .platform-actions .mobile-menu-button { display: grid !important; color: #fff; }
-  .mobile-app-menu { position: absolute; z-index: 60; inset: 54px 10px auto auto; width: 170px; display: flex !important; flex-direction: column; padding: 6px; border: 1px solid #4b4038; border-radius: 6px; background: #211c18; box-shadow: 0 12px 24px rgba(0,0,0,.24); }
-  .mobile-app-menu button { height: 36px; padding: 0 10px; border: 0; border-radius: 4px; color: #d7ccc0; background: transparent; text-align: left; font-size: 12px; }
-  .mobile-app-menu button.is-current { color: #fff; background: #3a2920; }
   .market-discovery { display: block; }
   .market-sidebar { display: none; }
   .mobile-search-row { height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--paper); }
@@ -262,7 +235,6 @@ svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1
   .acquisition-sheet .acquisition-actions { align-items: stretch; }
   .acquisition-sheet .acquisition-actions > * { min-height: 42px; justify-content: flex-start; }
   .handoff-dialog > footer { flex-wrap: wrap; }
-  .handoff-dialog > footer a { width: 100%; margin: 0 0 4px; justify-content: center; }
 }
 
 @media (max-width: 390px) {

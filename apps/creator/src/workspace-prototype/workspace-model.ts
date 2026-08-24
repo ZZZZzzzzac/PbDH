@@ -1,5 +1,6 @@
 import {
   computeResourcePackageSnapshotDigest,
+  RESOURCE_PACKAGE_VERSION,
   type ResourcePresentation,
   type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
@@ -94,21 +95,22 @@ export function workspaceResource(
   return resource;
 }
 
-function assertTemplate(resource: WorkspaceResource, id: string, version: string): void {
-  if (resource.template.id !== id || resource.template.version !== version) {
-    throw new Error(`Expected ${id}@${version}, received ${resource.template.id}@${resource.template.version}`);
+function assertTemplate(resource: WorkspaceResource, id: string): void {
+  const template = templateRegistry.resolve(resource.template.id, resource.template.version);
+  if (!template || template.id !== id) {
+    throw new Error(`Expected registered ${id} Template, received ${resource.template.id}@${resource.template.version}`);
   }
 }
 
 export function adversaryData(workspace: CreatorWorkspace, resourceId?: string): AdversaryData {
   const resource = workspaceResource(workspace, resourceId);
-  assertTemplate(resource, adversaryTemplate.id, adversaryTemplate.version);
+  assertTemplate(resource, adversaryTemplate.id);
   return resource.data as AdversaryData;
 }
 
 export function weaponData(workspace: CreatorWorkspace, resourceId?: string): WeaponData {
   const resource = workspaceResource(workspace, resourceId);
-  assertTemplate(resource, weaponTemplate.id, weaponTemplate.version);
+  assertTemplate(resource, weaponTemplate.id);
   return resource.data as WeaponData;
 }
 
@@ -514,7 +516,7 @@ function uuidV7(): string {
 export async function createBlankWorkspace(name: string): Promise<CreatorWorkspace> {
   const packageId = uuidV7();
   const document: ResourcePackageLogicalDocument = {
-    contractVersion: "1.0.0-alpha.1",
+    contractVersion: RESOURCE_PACKAGE_VERSION,
     package: {
       id: packageId,
       version: "1.0.0",

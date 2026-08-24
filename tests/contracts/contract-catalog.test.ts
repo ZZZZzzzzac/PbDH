@@ -21,12 +21,16 @@ function readJson(relativePath: string): unknown {
 const catalog = readJson("contracts/catalog.json") as ContractCatalog;
 const resourcePackageSchemaPath = "resource-package/0.0.0-dev.1/schema.json";
 const resourcePackageAlphaSchemaPath = "resource-package/1.0.0-alpha.1/schema.json";
+const resourcePackageSchemaPathV1 = "resource-package/1.0.0/schema.json";
 const systemPackageAlphaSchemaPath = "system-package/1.0.0-alpha.1/schema.json";
 const tabletopDocumentAlphaSchemaPath = "tabletop-document/1.0.0-alpha.1/schema.json";
 const schemas = {
   [resourcePackageSchemaPath]: readJson(`contracts/${resourcePackageSchemaPath}`) as AnySchema,
   [resourcePackageAlphaSchemaPath]: readJson(
     `contracts/${resourcePackageAlphaSchemaPath}`,
+  ) as AnySchema,
+  [resourcePackageSchemaPathV1]: readJson(
+    `contracts/${resourcePackageSchemaPathV1}`,
   ) as AnySchema,
   [systemPackageAlphaSchemaPath]: readJson(
     `contracts/${systemPackageAlphaSchemaPath}`,
@@ -69,7 +73,7 @@ describe("Contract Catalog", () => {
   test("queries exact version state", () => {
     const runtime = new ContractRuntime(catalog, schemas);
     expect(runtime.getVersionState("resource-package", "0.0.0-dev.1")).toBe("development");
-    expect(runtime.getVersionState("resource-package", "1.0.0")).toBeUndefined();
+    expect(runtime.getVersionState("resource-package", "1.0.0")).toBe("development");
   });
 });
 

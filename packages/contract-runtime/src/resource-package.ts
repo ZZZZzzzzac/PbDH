@@ -1,13 +1,14 @@
 import type { ContractDiagnostic } from "./index.ts";
 
 const FAMILY = "resource-package";
-const VERSION = "1.0.0-alpha.1";
+export const RESOURCE_PACKAGE_VERSION = "1.0.0";
+export const LEGACY_RESOURCE_PACKAGE_VERSION = "1.0.0-alpha.1";
 const DIGEST_DOMAIN = "pbdh-resource-package-digest-v1";
 
 type JsonValue = null | boolean | string | JsonValue[] | { [key: string]: JsonValue };
 
 export type ResourcePackageLogicalDocument = {
-  contractVersion: typeof VERSION;
+  contractVersion: typeof RESOURCE_PACKAGE_VERSION | typeof LEGACY_RESOURCE_PACKAGE_VERSION;
   package: {
     id: string;
     version: string;
@@ -154,11 +155,12 @@ export async function computeResourcePackageSnapshotDigest(
 }
 
 function semanticDiagnostic(
+  version: ResourcePackageLogicalDocument["contractVersion"],
   code: string,
   location: string,
   params: Record<string, unknown>,
 ): ContractDiagnostic {
-  return { code, severity: "error", family: FAMILY, version: VERSION, location, params };
+  return { code, severity: "error", family: FAMILY, version, location, params };
 }
 
 function sortDiagnostics(diagnostics: ContractDiagnostic[]): ContractDiagnostic[] {
@@ -180,7 +182,7 @@ export async function validateResourcePackageSemantics(
 
   document.resources.forEach((resource, index) => {
     if (resourceIds.has(resource.id)) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.resource-id.duplicate",
         `/resources/${index}/id`,
         { id: resource.id },
@@ -192,7 +194,7 @@ export async function validateResourcePackageSemantics(
   document.targets.forEach((target, index) => {
     const key = `${target.systemPackageId}@${target.version}`;
     if (targets.has(key)) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.target.duplicate",
         `/targets/${index}`,
         { systemPackageId: target.systemPackageId, version: target.version },
@@ -203,7 +205,7 @@ export async function validateResourcePackageSemantics(
 
   for (const [index, asset] of document.assets.entries()) {
     if (assetIds.has(asset.id)) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.asset-id.duplicate",
         `/assets/${index}/id`,
         { id: asset.id },
@@ -212,7 +214,7 @@ export async function validateResourcePackageSemantics(
     assetIds.add(asset.id);
     const bytes = media.get(asset.id);
     if (!bytes) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.media.bytes-missing",
         `/assets/${index}/id`,
         { assetId: asset.id },
@@ -221,14 +223,14 @@ export async function validateResourcePackageSemantics(
     }
     const actualId = `sha256:${await sha256(bytes)}`;
     if (actualId !== asset.id) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.media.digest-mismatch",
         `/assets/${index}/id`,
         { actual: actualId, expected: asset.id },
       ));
     }
     if (String(bytes.byteLength) !== asset.byteLength) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.media.byte-length-mismatch",
         `/assets/${index}/byteLength`,
         { actual: String(bytes.byteLength), expected: asset.byteLength },
@@ -239,7 +241,7 @@ export async function validateResourcePackageSemantics(
   document.resources.forEach((resource, resourceIndex) => {
     for (const [slot, assetId] of Object.entries(resource.media)) {
       if (!assetIds.has(assetId)) {
-        diagnostics.push(semanticDiagnostic(
+        diagnostics.push(semanticDiagnostic(document.contractVersion,
           "resource-package.media.asset-undeclared",
           `/resources/${resourceIndex}/media/${slot.replaceAll("~", "~0").replaceAll("/", "~1")}`,
           { assetId },
@@ -251,7 +253,7 @@ export async function validateResourcePackageSemantics(
   if (diagnostics.length === 0) {
     const actual = await computeResourcePackageSnapshotDigest(document, media);
     if (actual !== document.snapshotDigest) {
-      diagnostics.push(semanticDiagnostic(
+      diagnostics.push(semanticDiagnostic(document.contractVersion,
         "resource-package.snapshot-digest.mismatch",
         "/snapshotDigest",
         { actual, expected: document.snapshotDigest },

@@ -9,6 +9,28 @@ def backend_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def project_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def read_environment_file(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        name, separator, value = line.partition("=")
+        if not separator or not name.strip():
+            continue
+        cleaned = value.strip()
+        if len(cleaned) >= 2 and cleaned[0] == cleaned[-1] and cleaned[0] in "\"'":
+            cleaned = cleaned[1:-1]
+        values[name.strip()] = cleaned
+    return values
+
+
 def default_database_path() -> Path:
     configured_root = os.environ.get("LOCALAPPDATA") or os.environ.get("XDG_DATA_HOME")
     root = Path(configured_root) if configured_root else Path.home() / ".local" / "share"
@@ -24,6 +46,7 @@ class Settings:
     supabase_jwt_secret: str | None = None
     supabase_audience: str = "authenticated"
     admin_auth_subject: str | None = None
+    publication_mode: str = "development"
 
     @property
     def auth_configured(self) -> bool:
@@ -33,17 +56,23 @@ class Settings:
         return bool(self.admin_auth_subject and subject == self.admin_auth_subject)
 
     @classmethod
-    def from_environment(cls) -> "Settings":
+    def from_environment(cls, environment_file: Path | None = None) -> "Settings":
+        local = read_environment_file(environment_file or project_root() / ".env.local")
+
+        def value(name: str, default: str | None = None) -> str | None:
+            return os.environ.get(name, local.get(name, default))
+
         return cls(
-            database_path=Path(os.environ.get("PBDH_DATABASE_PATH", default_database_path())),
+            database_path=Path(value("PBDH_DATABASE_PATH") or default_database_path()),
             migrations_path=Path(
-                os.environ.get("PBDH_MIGRATIONS_PATH", backend_root() / "migrations")
+                value("PBDH_MIGRATIONS_PATH") or backend_root() / "migrations"
             ),
-            supabase_url=clean_optional(os.environ.get("SUPABASE_URL")),
-            supabase_anon_key=clean_optional(os.environ.get("SUPABASE_ANON_KEY")),
-            supabase_jwt_secret=clean_optional(os.environ.get("SUPABASE_JWT_SECRET")),
-            supabase_audience=os.environ.get("SUPABASE_AUDIENCE", "authenticated"),
-            admin_auth_subject=clean_optional(os.environ.get("PBDH_ADMIN_AUTH_SUBJECT")),
+            supabase_url=clean_optional(value("SUPABASE_URL")),
+            supabase_anon_key=clean_optional(value("SUPABASE_ANON_KEY")),
+            supabase_jwt_secret=clean_optional(value("SUPABASE_JWT_SECRET")),
+            supabase_audience=value("SUPABASE_AUDIENCE", "authenticated") or "authenticated",
+            admin_auth_subject=clean_optional(value("PBDH_ADMIN_AUTH_SUBJECT")),
+            publication_mode=value("PBDH_PUBLICATION_MODE", "development") or "development",
         )
 
 

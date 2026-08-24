@@ -3,8 +3,10 @@ import { describe, expect, test } from "vitest";
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
 import weaponPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
 import { publications } from "../../apps/market/src/catalog.ts";
+import { pbresArchiveName } from "../../apps/market/src/market-api.ts";
 import {
   canManagePublication,
+  createCreatorHandoffUrl,
   createHandoffIntent,
   emptyCatalogFilters,
   filterPublications,
@@ -137,6 +139,18 @@ describe("Market handoff intents", () => {
     });
   });
 
+  test("serializes Creator-hosted handoff as an explicit package ingress URL", () => {
+    const url = createCreatorHandoffUrl(
+      createHandoffIntent(enemy, "gm", "resource-minotaur"),
+      "http://localhost:5173/",
+    );
+    expect(url.origin).toBe("http://localhost:5173");
+    expect(url.searchParams.get("target")).toBe("gm");
+    expect(url.searchParams.get("publicationId")).toBe(enemy.id);
+    expect(url.searchParams.get("focusResourceId")).toBe("resource-minotaur");
+    expect(url.searchParams.get("snapshotDigest")).toBe(enemy.snapshotDigest);
+  });
+
   test("rejects withdrawn acquisition and forged focus locators", () => {
     expect(() => createHandoffIntent(publication({ status: "withdrawn" }), "player")).toThrow("publication.withdrawn");
     expect(() => createHandoffIntent(enemy, "creator", "missing")).toThrow("focus.resource.not-found");
@@ -144,6 +158,12 @@ describe("Market handoff intents", () => {
 });
 
 describe("Market publication lifecycle", () => {
+  test("uses a readable and filesystem-safe package name for downloads", () => {
+    expect(pbresArchiveName(" 牛头人/武器包 ")).toBe("牛头人-武器包.pbres");
+    expect(pbresArchiveName("CON")).toBe("CON-资源包.pbres");
+    expect(pbresArchiveName("... ")).toBe("资源包.pbres");
+  });
+
   test("selects owned publications by stable account ID rather than display name", () => {
     const owned = publication({ id: "owned", ownerAccountId: "account-owner", author: "同名作者" });
     const other = publication({ id: "other", ownerAccountId: "account-other", author: "同名作者" });

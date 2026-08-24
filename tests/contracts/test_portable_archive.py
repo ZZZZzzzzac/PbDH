@@ -42,9 +42,10 @@ RUNTIME = ContractRuntime(CATALOG, SCHEMAS)
 
 
 def validate(document: dict[str, Any], media: dict[str, bytes]) -> list[dict[str, Any]]:
+    version = document.get("contractVersion", "1.0.0-alpha.1")
     diagnostics = RUNTIME.validate({
         "family": "resource-package",
-        "version": "1.0.0-alpha.1",
+        "version": version,
         "mode": "development",
         "candidate": document,
     })
@@ -91,6 +92,24 @@ def test_directory_profile_round_trip() -> None:
     assert result["diagnostics"] == []
     assert result["candidate"]["document"] == DOCUMENT
     assert result["candidate"]["media"][ASSET_ID] == MEDIA[ASSET_ID]
+
+
+def test_stable_directory_and_pbres_round_trip() -> None:
+    fixture_root = ROOT / "contracts/conformance/resource-package/1.0.0"
+    document = read_json(fixture_root / "valid/minotaur-wrecker.json")
+    asset_id = document["assets"][0]["id"]
+    media = {asset_id: (fixture_root / f"media/{asset_id.removeprefix('sha256:')}.webp").read_bytes()}
+
+    directory_result = load_resource_package_directory(
+        write_resource_package_directory(document, media),
+        validate,
+    )
+    assert directory_result["diagnostics"] == []
+    assert directory_result["candidate"] == {"document": document, "media": media}
+
+    archive_result = load_pbres(write_pbres(document, media), validate)
+    assert archive_result["diagnostics"] == []
+    assert archive_result["candidate"] == {"document": document, "media": media}
 
 
 def test_directory_profile_round_trips_empty_directories() -> None:

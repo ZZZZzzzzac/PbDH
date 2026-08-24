@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import {
-  adversaryRendererRevision,
+  adversaryRendererFor,
   type AdversaryRuntimeState,
 } from "@pbdh/templates/frontend";
 import type { AdversaryData } from "@pbdh/templates/core";
@@ -60,7 +60,7 @@ function ScaledSurface({ scenario, scale }: { scenario: RendererLabScenario; sca
         <CanonicalCardSurface
           resource={input.resource}
           expectedRendererRevision="enemy-card-r1"
-          renderer={adversaryRendererRevision}
+          renderer={adversaryRendererFor(input.resource.template.version)}
           assets={input.assets}
           state={input.state}
           label="牛头人破坏者规范卡面"

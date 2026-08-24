@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
     "build": "vite build"
   },
   "dependencies": {
     "@pbdh/platform-auth": "0.0.0",
+    "@pbdh/platform-ui": "0.0.0",
     "@pbdh/local-storage": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",

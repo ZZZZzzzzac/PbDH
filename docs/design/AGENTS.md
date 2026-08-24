@@ -4,6 +4,14 @@
 
 本目录存放已进入实现阶段的 OpenPencil `.op` 文件。GitHub PRD 负责产品能力、行为与验收边界；本目录的 `.op` 负责已覆盖界面的视觉、布局、组件层级与状态表现。
 
+## OpenPencil 工具入口
+
+- 当前工作机的 OpenPencil CLI 固定为 `C:\Program Files\OpenPencil\op.exe`；它未加入 `PATH`，不得因为直接执行 `op` 失败就判断 CLI 未安装。
+- PowerShell 中统一使用 `$opCli = 'C:\Program Files\OpenPencil\op.exe'`，再以 `& $opCli <command>` 调用。开始修改前先运行 `& $opCli --version` 与 `& $opCli status` 确认入口和服务状态。
+- OpenPencil 设计 Skill 位于 `C:\Users\zinge\.codex\skills\openpencil-design\SKILL.md`。涉及 `.op` 读取、创建或修改时必须先完整读取该 Skill，并按其中的 CLI、节点语义、Text 可编辑性和 `design:refine` 规则执行。
+- 优先通过 CLI 操作已打开的 OpenPencil 文档；需要无人值守处理时使用 `& $opCli start --headless --file <absolute-path>`。不得把浏览器自动化作为默认替代方案。
+- CLI 或 Skill 确实不可用时必须明确报告，不得静默维护第二套手写设计真相源。
+
 ## 文件与命名
 
 - 一个产品入口一个文件：`creator-app.op`、`player-app.op`、`market.op`。
@@ -38,8 +46,9 @@
 - “发送到桌面”等需要二次选择的资源操作使用 IDE 式级联右键菜单：悬停主菜单项后在鼠标右侧浮动展开子菜单，子菜单直接列出已有桌面和“新建桌面”；不得先打开模态窗口。主菜单与子菜单均浮于内容上方，不参与页面布局或挤压相邻控件。
 - Market 使用公开目录与 Publication 详情布局，不复制 Creator 的 IDE 工作区。搜索结果可以从包内资源进入详情，但取得操作始终以完整 Resource Package 为单位；单资源入口只保留当前资源的聚焦定位。
 - Market Publication 详情只展示用户可判断的当前版本、作者、更新时间、许可、内容语言、目标系统和包内资源；不得提供历史版本选择、资源编辑、`.pbres` 上传或本地安装状态。
-- Market 的取得入口固定为匿名“下载 .pbres”、交接 Player、导入卡片工坊和“发送到桌面”。跨 App 唤起失败时保留下载操作；目标 App 的候选校验、冲突确认、资源路由和桌面选择必须绘制为目标 App 自己的界面状态。
+- Market 的取得入口固定为匿名“下载 .pbres”、交接 Player、导入卡片工坊和“发送到桌面”。下载只保留在 Publication 详情的一级取得操作中，交接确认与失败等二级窗口不得重复显示下载入口；目标 App 的候选校验、冲突确认、资源路由和桌面选择必须绘制为目标 App 自己的界面状态。
 - Market 的 Creator 发布界面只接收当前完整资源包快照，展示元数据编辑与快照发布分离。发布、更新、撤回、恢复和失败状态必须明确显示当前公开版本；不得暗示远端更新会修改或召回本地副本。
+- Creator 发布完成后必须显示明确结果反馈，区分首次发布、更新已有出版物和内容完全相同而跳过；失败继续使用可行动诊断，不得把成功静默处理。
 - Market 响应式设计必须保留搜索、详情、匿名下载和全部 App 交接入口。移动端将筛选与次级操作收入浮层，但不得降级为只读页面。
 - Platform App Bar 在 Player、Creator/GM 与 Market 中使用同一结构：高度 `56px`，左右各保留 `220px` 固定区，中间放主页面导航；当前页面使用底部 `2px` 酒红标记，禁止各 App 改成独立胶囊标签、改变导航位置或新增全局搜索框。
 - `creator-app.op` 中首个 `Creator / 顶部应用栏` 是 Platform App Bar 结构源；修改后运行 `npm run sync:platform-app-bar` 投影到 Player 与 Market，再运行各自设计生成器。目标文件只允许调整当前页面状态，不得独立修改结构和视觉常量。

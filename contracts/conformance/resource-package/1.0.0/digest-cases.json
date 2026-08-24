@@ -1,0 +1,35 @@
+[
+  {
+    "name": "minotaur-wrecker-known-answer",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "targets": null,
+    "expected": "sha256:4c9283bd802f810f92930779d6c05c68485851cd7f55cab21304b2b94bc7a284"
+  },
+  {
+    "name": "target-order-is-canonical",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "targets": [
+      {
+        "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
+        "version": "2.0.0"
+      },
+      {
+        "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+        "version": "1.0.0-alpha.1"
+      }
+    ],
+    "expected": "sha256:7eab56555fbaad253e8484fadb6bcdc36e75cc47f019766ebbc4f69be85703f5"
+  }
+]

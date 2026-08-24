@@ -10,3 +10,11 @@ Python/FastAPI 模块化单体。
 ## 持久化
 
 Issue #38 已确认首个 Backend 持久化使用 SQLite、外键、WAL 和事务。运行期数据库路径来自配置，不进入 Git；测试必须使用临时数据库。任何后续 schema 变更仍须先获得用户确认。
+
+Issue #39 追加 Market Publication、Package ID 所有权、公开资源索引和内容寻址媒体表。Supabase 仍只负责外部身份认证；结构化出版物与媒体字节保存在 Platform Backend 自有数据库。
+
+`PBDH_PUBLICATION_MODE` 默认为 `development`，允许开发环境验证生命周期仍为 `development` 的 `1.0.0` Contract 与 Template。正式部署必须显式设为 `production`；此模式会拒绝所有尚未发布的 Contract 或 Template。
+
+## 本地启动
+
+根目录的 `npm run dev:backend` 会自动加载 Git 忽略的 `.env.local`，并在 `127.0.0.1:8001` 提供本地 API。Player、Creator 与 Market 的 Vite 开发代理统一指向该端口。本地 Supabase 身份配置、管理员 Auth Subject、数据库路径和发布模式统一放在 `.env.local`；不得把实际值写入受 Git 追踪的文件。

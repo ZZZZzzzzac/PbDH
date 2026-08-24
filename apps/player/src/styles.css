@@ -4,21 +4,10 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 button, input, select { font: inherit; }
 button { color: inherit; }
 .player-app { min-height: 100vh; background: #f3efe7; }
-.platform-appbar { height: 58px; display: flex; align-items: center; gap: 18px; padding: 0 18px; color: #fffdf8; background: #21150f; border-bottom: 1px solid #4a382d; }
-.platform-brand { display: flex; align-items: center; gap: 8px; min-width: 112px; }
-.platform-brand b { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; background: #641f1d; font-size: 11px; }
-.platform-brand strong { font-size: 14px; letter-spacing: .08em; }
-.platform-appbar nav { display: flex; align-items: stretch; height: 100%; }
-.platform-appbar button { border: 0; background: transparent; color: #d9cfc3; cursor: pointer; }
-.platform-nav button { position: relative; padding: 0 13px; font-size: 13px; }
-.platform-nav button.current { color: #fffdf8; font-weight: 700; }
-.platform-nav button.current::after { content: ""; position: absolute; inset: auto 10px 0; height: 3px; background: #a8403d; }
-.player-actions { margin-left: auto; border-left: 1px solid #4a382d; }
-.player-actions button { padding: 0 9px; font-size: 12px; }
-.platform-account { display: flex; gap: 4px; }
-.platform-account button { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 6px; }
-.platform-account button:hover, .player-actions button:hover { background: #382820; color: #fffdf8; }
-.player-shell { display: grid; grid-template-columns: 210px minmax(560px, 1fr) 340px; min-height: calc(100vh - 58px); gap: 12px; padding: 12px; }
+.player-actions { height: 56px; display: flex; align-items: stretch; border-left: 1px solid #4a382d; }
+.player-actions button { padding: 0 9px; border: 0; color: #d9cfc3; background: transparent; font-size: 12px; cursor: pointer; }
+.player-actions button:hover { color: #fffdf8; background: #382820; }
+.player-shell { display: grid; grid-template-columns: 210px minmax(560px, 1fr) 340px; min-height: calc(100vh - 56px); gap: 12px; padding: 12px; }
 .sheet-index, .character-sheet, .native-resources { border: 1px solid #d4c8b5; border-radius: 8px; background: #fffdf8; }
 .sheet-index { display: flex; flex-direction: column; padding: 14px; }
 .sheet-index h2, .native-resources h2 { margin: 0 0 12px; font-size: 14px; }

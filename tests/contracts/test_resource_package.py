@@ -13,7 +13,10 @@ from pbdh_backend.contracts import (
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
+FIXTURE_ROOTS = [
+    ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1",
+    ROOT / "contracts/conformance/resource-package/1.0.0",
+]
 
 
 def read_json(path: Path) -> Any:
@@ -30,9 +33,9 @@ SCHEMAS = {
 RUNTIME = ContractRuntime(CATALOG, SCHEMAS)
 
 
-def load_media(fixtures: list[dict[str, str]]) -> dict[str, bytes]:
+def load_media(fixture_root: Path, fixtures: list[dict[str, str]]) -> dict[str, bytes]:
     return {
-        fixture["assetId"]: (FIXTURE_ROOT / fixture["path"]).read_bytes()
+        fixture["assetId"]: (fixture_root / fixture["path"]).read_bytes()
         for fixture in fixtures
     }
 
@@ -56,37 +59,52 @@ def apply_mutation(document: dict[str, Any], mutation: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize(
-    "conformance_case",
-    read_json(FIXTURE_ROOT / "cases.json"),
-    ids=lambda item: item["name"],
+    "fixture_root, conformance_case",
+    [
+        (fixture_root, conformance_case)
+        for fixture_root in FIXTURE_ROOTS
+        for conformance_case in read_json(fixture_root / "cases.json")
+    ],
+    ids=lambda item: item["name"] if isinstance(item, dict) else item.name,
 )
-def test_resource_package_conformance(conformance_case: dict[str, Any]) -> None:
-    document = read_json(FIXTURE_ROOT / conformance_case["document"])
+def test_resource_package_conformance(
+    fixture_root: Path,
+    conformance_case: dict[str, Any],
+) -> None:
+    document = read_json(fixture_root / conformance_case["document"])
     apply_mutation(document, conformance_case["mutation"])
+    version = document["contractVersion"]
     diagnostics = RUNTIME.validate({
         "family": "resource-package",
-        "version": "1.0.0-alpha.1",
+        "version": version,
         "mode": "development",
         "candidate": document,
     })
     if not diagnostics:
         diagnostics = validate_resource_package_semantics(
             document,
-            load_media(conformance_case["media"]),
+            load_media(fixture_root, conformance_case["media"]),
         )
     assert diagnostics == conformance_case["expected"]
 
 
 @pytest.mark.parametrize(
-    "digest_case",
-    read_json(FIXTURE_ROOT / "digest-cases.json"),
-    ids=lambda item: item["name"],
+    "fixture_root, digest_case",
+    [
+        (fixture_root, digest_case)
+        for fixture_root in FIXTURE_ROOTS
+        for digest_case in read_json(fixture_root / "digest-cases.json")
+    ],
+    ids=lambda item: item["name"] if isinstance(item, dict) else item.name,
 )
-def test_resource_package_digest_known_answers(digest_case: dict[str, Any]) -> None:
-    document = read_json(FIXTURE_ROOT / digest_case["document"])
+def test_resource_package_digest_known_answers(
+    fixture_root: Path,
+    digest_case: dict[str, Any],
+) -> None:
+    document = read_json(fixture_root / digest_case["document"])
     if digest_case["targets"] is not None:
         document["targets"] = copy.deepcopy(digest_case["targets"])
-    media = load_media(digest_case["media"])
+    media = load_media(fixture_root, digest_case["media"])
     assert compute_resource_package_snapshot_digest(document, media) == digest_case["expected"]
 
     document["targets"].reverse()

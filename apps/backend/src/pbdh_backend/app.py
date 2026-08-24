@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
@@ -10,7 +12,14 @@ from pbdh_backend.database import Database
 from pbdh_backend.identity.repository import IdentityRepository
 from pbdh_backend.identity.router import router as identity_router
 from pbdh_backend.identity.tokens import SupabaseJwtVerifier, TokenVerifier
+from pbdh_backend.publications.repository import PublicationRepository
+from pbdh_backend.publications.router import router as publications_router
+from pbdh_backend.publications.service import PublicationService
 from pbdh_backend.settings import Settings
+
+
+def project_root() -> Path:
+    return Path(__file__).resolve().parents[4]
 
 
 def create_app(
@@ -25,8 +34,15 @@ def create_app(
         redoc_url=None,
     )
     database = Database(resolved.database_path, resolved.migrations_path)
+    publication_repository = PublicationRepository(database)
     application.state.settings = resolved
     application.state.identity_repository = IdentityRepository(database)
+    application.state.publication_repository = publication_repository
+    application.state.publication_service = PublicationService(
+        publication_repository,
+        project_root(),
+        resolved.publication_mode,
+    )
     application.state.token_verifier = token_verifier or (
         SupabaseJwtVerifier(
             resolved.supabase_url,
@@ -39,6 +55,7 @@ def create_app(
     application.add_exception_handler(ApiError, handle_api_error)
     application.add_exception_handler(RequestValidationError, handle_request_validation)
     application.include_router(identity_router)
+    application.include_router(publications_router)
 
     @application.get("/api/health", tags=["system"])
     def health() -> dict[str, str]:

@@ -1,0 +1,33 @@
+{
+  "catalogVersion": 1,
+  "templates": [
+    {
+      "id": "敌人",
+      "version": "1.0.0-alpha.1",
+      "state": "development",
+      "schema": "src/core/adversary/1.0.0-alpha.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "敌人",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/adversary/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "武器",
+      "version": "1.0.0-alpha.1",
+      "state": "development",
+      "schema": "src/core/weapon/1.0.0-alpha.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "武器",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/weapon/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    }
+  ]
+}

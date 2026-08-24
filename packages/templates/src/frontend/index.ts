@@ -1,21 +1,26 @@
-export { adversaryAuthoringLayout } from "./adversary/1.0.0-alpha.1/authoring-layout.ts";
+export { adversaryAuthoringLayout } from "./adversary/1.0.0/authoring-layout.ts";
+export { adversaryAuthoringLayout as legacyAdversaryAuthoringLayout } from "./adversary/1.0.0-alpha.1/authoring-layout.ts";
 export {
   adversaryCardDesignSource,
   adversaryRendererRevision,
   adversaryRendererStyles,
   type AdversaryRuntimeState,
-} from "./adversary/1.0.0-alpha.1/renderer.tsx";
+} from "./adversary/1.0.0/renderer.tsx";
+export { adversaryRendererRevision as legacyAdversaryRendererRevision } from "./adversary/1.0.0-alpha.1/renderer.tsx";
 export {
   buildTemplateSupportManifest,
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
-export { weaponAuthoringLayout } from "./weapon/1.0.0-alpha.1/authoring-layout.ts";
+export { adversaryRendererFor, weaponRendererFor } from "./renderer-registry.ts";
+export { weaponAuthoringLayout } from "./weapon/1.0.0/authoring-layout.ts";
+export { weaponAuthoringLayout as legacyWeaponAuthoringLayout } from "./weapon/1.0.0-alpha.1/authoring-layout.ts";
 export {
   weaponCardDesignSource,
   weaponRendererRevision,
   weaponRendererStyles,
   type WeaponRuntimeState,
-} from "./weapon/1.0.0-alpha.1/renderer.tsx";
+} from "./weapon/1.0.0/renderer.tsx";
+export { weaponRendererRevision as legacyWeaponRendererRevision } from "./weapon/1.0.0-alpha.1/renderer.tsx";
 export type {
   AuthoringControl,
   AuthoringField,

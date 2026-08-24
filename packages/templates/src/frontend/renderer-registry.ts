@@ -1,0 +1,28 @@
+import {
+  adversaryRendererRevision as legacyAdversaryRendererRevision,
+} from "./adversary/1.0.0-alpha.1/renderer.tsx";
+import { adversaryRendererRevision } from "./adversary/1.0.0/renderer.tsx";
+import {
+  weaponRendererRevision as legacyWeaponRendererRevision,
+} from "./weapon/1.0.0-alpha.1/renderer.tsx";
+import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
+
+export function adversaryRendererFor(version: string) {
+  if (version === legacyAdversaryRendererRevision.templateVersion) {
+    return legacyAdversaryRendererRevision;
+  }
+  if (version === adversaryRendererRevision.templateVersion) {
+    return adversaryRendererRevision;
+  }
+  throw new Error(`Unsupported adversary Renderer version: ${version}`);
+}
+
+export function weaponRendererFor(version: string) {
+  if (version === legacyWeaponRendererRevision.templateVersion) {
+    return legacyWeaponRendererRevision;
+  }
+  if (version === weaponRendererRevision.templateVersion) {
+    return weaponRendererRevision;
+  }
+  throw new Error(`Unsupported weapon Renderer version: ${version}`);
+}

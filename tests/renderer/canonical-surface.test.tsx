@@ -22,7 +22,7 @@ import {
 
 const root = process.cwd();
 const packageFixture = JSON.parse(readFileSync(
-  path.join(root, "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json"),
+  path.join(root, "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json"),
   "utf8",
 )) as {
   assets: Array<{ id: string }>;

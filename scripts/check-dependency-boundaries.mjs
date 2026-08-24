@@ -18,7 +18,9 @@ const workspaceDirectories = [
   "packages/resource-conversion",
   "packages/tabletop",
   "packages/local-storage",
+  "packages/media-admission",
   "packages/platform-auth",
+  "packages/platform-ui",
 ];
 
 async function collectSourceFiles(relativeDirectory) {

@@ -6,21 +6,25 @@ import {
 } from "@pbdh/contract-runtime";
 
 import catalogJson from "../../../../contracts/catalog.json";
-import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0-alpha.1/schema.json";
+import legacyResourcePackageSchema from "../../../../contracts/resource-package/1.0.0-alpha.1/schema.json";
+import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0/schema.json";
 
 const resourceFamily = (catalogJson as ContractCatalog).families.find(
   (family) => family.id === "resource-package",
 );
-const version = resourceFamily?.versions.find(
-  (candidate) => candidate.version === "1.0.0-alpha.1",
-);
+const versions = resourceFamily?.versions.filter(
+  (candidate) => candidate.version === "1.0.0-alpha.1" || candidate.version === "1.0.0",
+) ?? [];
 
-if (!version) throw new Error("Missing Resource Package Contract 1.0.0-alpha.1");
+if (versions.length !== 2) throw new Error("Missing supported Resource Package Contracts");
 
 const runtime = new ContractRuntime({
   catalogVersion: 1,
-  families: [{ id: "resource-package", versions: [version] }],
-}, { [version.schema]: resourcePackageSchema });
+  families: [{ id: "resource-package", versions }],
+}, {
+  "resource-package/1.0.0-alpha.1/schema.json": legacyResourcePackageSchema,
+  "resource-package/1.0.0/schema.json": resourcePackageSchema,
+});
 
 export const validateResourcePackageCandidate: ResourcePackageCandidateValidator = async (
   document,

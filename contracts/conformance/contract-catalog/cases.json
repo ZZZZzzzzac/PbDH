@@ -73,7 +73,7 @@
     "name": "unknown exact version fails",
     "request": {
       "family": "resource-package",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "mode": "development",
       "candidate": {}
     },
@@ -82,7 +82,7 @@
         "code": "contract.version.unsupported",
         "severity": "error",
         "family": "resource-package",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "location": "",
         "params": {}
       }

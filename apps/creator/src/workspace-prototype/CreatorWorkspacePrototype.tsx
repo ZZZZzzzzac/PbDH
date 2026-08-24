@@ -18,7 +18,14 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore } from "@pbdh/local-storage";
-import { AccountControl } from "@pbdh/platform-auth/provider";
+import {
+  createBrowserImageAdmission,
+  publicationCoverPolicy,
+  resourceImagePolicy,
+  type ImageAdmissionPolicy,
+} from "@pbdh/media-admission";
+import { useAuth } from "@pbdh/platform-auth/provider";
+import { PlatformAppBar } from "@pbdh/platform-ui";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import {
   createTabletopDocument,
@@ -31,9 +38,9 @@ import {
 } from "@pbdh/tabletop/core";
 import { TabletopSurface } from "@pbdh/tabletop/react";
 import {
-  adversaryRendererRevision,
+  adversaryRendererFor,
   weaponAuthoringLayout,
-  weaponRendererRevision,
+  weaponRendererFor,
 } from "@pbdh/templates/frontend";
 import {
   adversaryTemplate,
@@ -44,12 +51,19 @@ import {
   type WeaponData,
 } from "@pbdh/templates/core";
 
-import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
-import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
+import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 
 import { creatorWorkspaceDesign } from "./design.generated.ts";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
+import {
+  parseCreatorMarketHandoff,
+  withoutCreatorMarketHandoff,
+  type CreatorMarketHandoff,
+} from "./market-handoff.ts";
 import { preparePublicationCandidate } from "./publication-candidate.ts";
+import { PublicationApiError, publishCandidate } from "./publication-api.ts";
+import { publicationErrorMessage, publicationSuccessMessage } from "./publication-feedback.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
@@ -90,8 +104,9 @@ type Dialog =
   | { kind: "publish" }
   | { kind: "diagnostics"; title: string; diagnostics: ContractDiagnostic[] }
   | { kind: "no-op"; name: string }
-  | { kind: "update"; incoming: ResourcePackageCandidate }
-  | { kind: "conflict"; incoming: ResourcePackageCandidate }
+  | { kind: "update"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
+  | { kind: "conflict"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
+  | { kind: "handoff-tabletop"; resourceId?: string }
   | { kind: "delete-feature"; index: number; name: string; target: "workspace" | "instance" }
   | { kind: "delete-workspace-node"; node: WorkspaceNodeRef; name: string }
   | { kind: "close-workspace"; workspaceKey: string; name: string }
@@ -198,6 +213,72 @@ function TextareaField({
       <textarea value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
+}
+
+function TagEditor({
+  tags,
+  onChange,
+}: {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const value = draft.trim();
+    if (value && !tags.includes(value)) onChange([...tags, value]);
+    setDraft("");
+  };
+  return <div className="compact-field publication-tag-field">
+    <span>发现标签</span>
+    <div className="publication-tag-editor">
+      {tags.map((tag) => <span className="publication-tag" key={tag}>{tag}<button type="button" aria-label={`删除标签${tag}`} onClick={() => onChange(tags.filter((item) => item !== tag))}>×</button></span>)}
+      <input
+        value={draft}
+        aria-label="新增标签"
+        placeholder="输入后按回车"
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={add}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            add();
+          } else if (event.key === "Backspace" && !draft && tags.length > 0) {
+            onChange(tags.slice(0, -1));
+          }
+        }}
+      />
+    </div>
+  </div>;
+}
+
+const publicationLicenses = {
+  "public-domain": {
+    label: "公有领域",
+    declaration: "作者声明该资源属于公有领域。",
+  },
+  "cc0-1.0": {
+    label: "CC0 1.0",
+    declaration: "Creative Commons CC0 1.0 Universal",
+  },
+  "cc-by-4.0": {
+    label: "CC BY 4.0",
+    declaration: "Creative Commons Attribution 4.0 International",
+  },
+  "cc-by-sa-4.0": {
+    label: "CC BY-SA 4.0",
+    declaration: "Creative Commons Attribution-ShareAlike 4.0 International",
+  },
+  "all-rights-reserved": {
+    label: "保留所有权利",
+    declaration: "All rights reserved.",
+  },
+} as const;
+
+type PublicationLicenseId = keyof typeof publicationLicenses;
+
+function publicationLicenseId(label: string): PublicationLicenseId {
+  return (Object.entries(publicationLicenses).find(([, license]) => license.label === label)?.[0]
+    ?? "public-domain") as PublicationLicenseId;
 }
 
 const iconPaths: Record<string, string[]> = {
@@ -347,24 +428,22 @@ function bytesToUrlMap(candidate: ResourcePackageCandidate): Map<string, string>
   ]));
 }
 
-async function imageAsset(file: File) {
-  if (file.type !== "image/webp") throw new Error("只接受 WebP portrait");
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const digest = await crypto.subtle.digest("SHA-256", bytes.slice().buffer);
-  const id = `sha256:${Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("")}`;
-  const bitmap = await createImageBitmap(file);
+const imageAdmission = createBrowserImageAdmission();
+
+async function imageAsset(file: File, policy: ImageAdmissionPolicy) {
+  const admitted = await imageAdmission.admit(file, policy);
   const asset = {
-    id,
+    id: admitted.id,
     mediaType: "image/webp" as const,
-    byteLength: String(bytes.byteLength),
-    width: String(bitmap.width),
-    height: String(bitmap.height),
+    byteLength: String(admitted.byteLength),
+    width: String(admitted.width),
+    height: String(admitted.height),
   };
-  bitmap.close();
-  return { asset, bytes };
+  return { asset, bytes: admitted.bytes, blob: admitted.blob };
 }
 
 export function CreatorWorkspacePrototype() {
+  const auth = useAuth();
   const startEmpty = new URLSearchParams(window.location.search).get("state") === "empty";
   const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>(startEmpty ? [] : [initialWorkspace]);
   const [activeKey, setActiveKey] = useState(startEmpty ? "" : initialWorkspace.key);
@@ -375,8 +454,8 @@ export function CreatorWorkspacePrototype() {
   const [publicationTitle, setPublicationTitle] = useState(initialDocument.package.name);
   const [publicationSummary, setPublicationSummary] = useState(initialDocument.package.description);
   const [publicationLanguage, setPublicationLanguage] = useState("中文");
-  const [publicationTags, setPublicationTags] = useState("敌人、Daggerheart");
-  const [publicationRightsConfirmed, setPublicationRightsConfirmed] = useState(true);
+  const [publicationTags, setPublicationTags] = useState<string[]>(["敌人", "Daggerheart"]);
+  const [publicationLicense, setPublicationLicense] = useState<PublicationLicenseId>("public-domain");
   const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({
     assetId: initialAssetId,
     url: minotaurImageUrl,
@@ -406,7 +485,8 @@ export function CreatorWorkspacePrototype() {
   }>(null);
   const suppressCanvasContextMenuRef = useRef(false);
   const tabletopViewportRef = useRef<HTMLDivElement>(null);
-  const [, setNotice] = useState("仅本机 · 原型状态保存在当前页面内存");
+  const marketHandoffStartedRef = useRef(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const tabletopImportRef = useRef<HTMLInputElement>(null);
   const portraitRef = useRef<HTMLInputElement>(null);
@@ -452,6 +532,55 @@ export function CreatorWorkspacePrototype() {
       });
     return () => { cancelled = true; };
   }, [creatorWorkspaceRepository]);
+
+  useEffect(() => {
+    if (!workspaceStorageReady || marketHandoffStartedRef.current) return;
+    const handoff = parseCreatorMarketHandoff(window.location.href);
+    if (!handoff) return;
+    marketHandoffStartedRef.current = true;
+    const cleanedUrl = withoutCreatorMarketHandoff(window.location.href);
+    window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
+    fetch(`/api/publications/${encodeURIComponent(handoff.publicationId)}/download`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("无法取得市场资源包");
+        return new Uint8Array(await response.arrayBuffer());
+      })
+      .then((bytes) => loadPbres(bytes, validateResourcePackageCandidate))
+      .then((result) => {
+        if (!result.candidate) {
+          setDialog({ kind: "diagnostics", title: "市场导入失败 · 零写入", diagnostics: result.diagnostics });
+          return;
+        }
+        if (result.candidate.document.snapshotDigest !== handoff.snapshotDigest) {
+          setDialog({
+            kind: "diagnostics",
+            title: "市场导入失败 · 零写入",
+            diagnostics: [{
+              code: "creator.market-handoff.snapshot-mismatch",
+              severity: "error",
+              family: "creator-prototype",
+              version: "1",
+              location: "/snapshotDigest",
+              params: {},
+            }],
+          });
+          return;
+        }
+        acceptIncoming(result.candidate, handoff);
+      })
+      .catch((error) => setDialog({
+        kind: "diagnostics",
+        title: "市场导入失败 · 零写入",
+        diagnostics: [{
+          code: "creator.market-handoff.request-failed",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication",
+          params: { message: error instanceof Error ? error.message : "unknown" },
+        }],
+      }));
+  }, [workspaceStorageReady]);
 
   useEffect(() => {
     if (!workspaceStorageReady) return;
@@ -535,6 +664,12 @@ export function CreatorWorkspacePrototype() {
       window.removeEventListener("keydown", closeOnEscape);
     };
   }, [tabletopContextMenu]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(null), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
 
   useEffect(() => {
     const viewport = tabletopViewportRef.current;
@@ -915,7 +1050,24 @@ export function CreatorWorkspacePrototype() {
     setDialog({ kind: "delete-feature", index, name, target });
   }
 
-  function commitIncoming(candidate: ResourcePackageCandidate) {
+  function finishMarketHandoff(workspace: CreatorWorkspace, handoff: CreatorMarketHandoff) {
+    const focusedResourceId = workspace.document.resources.some((item) => item.id === handoff.focusResourceId)
+      ? handoff.focusResourceId
+      : workspace.document.resources[0]?.id;
+    setActiveKey(workspace.key);
+    setActiveResourceId(focusedResourceId ?? "");
+    if (handoff.target === "gm") {
+      setAppMode("gm");
+      setDialog({ kind: "handoff-tabletop", resourceId: focusedResourceId });
+      setNotice(`已从资源市场载入 ${workspace.document.package.name}`);
+    } else {
+      setAppMode("creator");
+      setDialog(null);
+      setNotice(`已从资源市场导入 ${workspace.document.package.name}`);
+    }
+  }
+
+  function commitIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
     const next = createWorkspace(candidate);
     setAssetUrls((current) => new Map([...current, ...bytesToUrlMap(candidate)]));
     setWorkspaces((current) => {
@@ -925,8 +1077,25 @@ export function CreatorWorkspacePrototype() {
     });
     setActiveKey(next.key);
     setActiveResourceId(next.document.resources[0]?.id ?? "");
-    setDialog(null);
-    setNotice(`已载入 ${next.document.package.name}`);
+    if (handoff) finishMarketHandoff(next, handoff);
+    else {
+      setDialog(null);
+      setNotice(`已载入 ${next.document.package.name}`);
+    }
+  }
+
+  function acceptIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
+    const existing = workspaces.find((workspace) =>
+      workspace.document.package.id === candidate.document.package.id);
+    const plan = planImport(existing, candidate);
+    if (plan === "insert") commitIncoming(candidate, handoff);
+    if (plan === "no-op") {
+      setActiveKey(existing!.key);
+      if (handoff) finishMarketHandoff(existing!, handoff);
+      else setDialog({ kind: "no-op", name: candidate.document.package.name });
+    }
+    if (plan === "update") setDialog({ kind: "update", incoming: candidate, ...(handoff ? { handoff } : {}) });
+    if (plan === "conflict") setDialog({ kind: "conflict", incoming: candidate, ...(handoff ? { handoff } : {}) });
   }
 
   async function importPackage(event: ChangeEvent<HTMLInputElement>) {
@@ -938,16 +1107,7 @@ export function CreatorWorkspacePrototype() {
       setDialog({ kind: "diagnostics", title: "导入失败 · 零写入", diagnostics: result.diagnostics });
       return;
     }
-    const existing = workspaces.find((workspace) =>
-      workspace.document.package.id === result.candidate!.document.package.id);
-    const plan = planImport(existing, result.candidate);
-    if (plan === "insert") commitIncoming(result.candidate);
-    if (plan === "no-op") {
-      setActiveKey(existing!.key);
-      setDialog({ kind: "no-op", name: result.candidate.document.package.name });
-    }
-    if (plan === "update") setDialog({ kind: "update", incoming: result.candidate });
-    if (plan === "conflict") setDialog({ kind: "conflict", incoming: result.candidate });
+    acceptIncoming(result.candidate);
   }
 
   async function exportPackage() {
@@ -978,8 +1138,8 @@ export function CreatorWorkspacePrototype() {
     setPublicationTitle(active.document.package.name);
     setPublicationSummary(active.document.package.description);
     setPublicationLanguage("中文");
-    setPublicationTags(resource?.template.id === weaponTemplate.id ? "武器、Daggerheart" : "敌人、Daggerheart");
-    setPublicationRightsConfirmed(true);
+    setPublicationTags(resource?.template.id === weaponTemplate.id ? ["武器", "Daggerheart"] : ["敌人", "Daggerheart"]);
+    setPublicationLicense(publicationLicenseId(active.document.license.label));
     setPublicationCover({ assetId: coverAssetId, url: assetUrls.get(coverAssetId) ?? "" });
     setDialog({ kind: "publish" });
   }
@@ -989,8 +1149,8 @@ export function CreatorWorkspacePrototype() {
     event.target.value = "";
     if (!file) return;
     try {
-      const { asset, bytes } = await imageAsset(file);
-      setPublicationCover({ assetId: asset.id, asset, bytes, url: URL.createObjectURL(file) });
+      const { asset, bytes, blob } = await imageAsset(file, publicationCoverPolicy);
+      setPublicationCover({ assetId: asset.id, asset, bytes, url: URL.createObjectURL(blob) });
     } catch {
       setDialog({
         kind: "diagnostics",
@@ -1001,7 +1161,7 @@ export function CreatorWorkspacePrototype() {
           family: "creator-prototype",
           version: "1",
           location: "/publication/cover",
-          params: { expected: "image/webp" },
+          params: { expected: "JPEG, PNG or WebP" },
         }],
       });
     }
@@ -1013,13 +1173,46 @@ export function CreatorWorkspacePrototype() {
       title: publicationTitle,
       summary: publicationSummary,
       language: publicationLanguage,
-      tags: publicationTags.split(/[、,]/).map((tag) => tag.trim()).filter(Boolean),
+      tags: publicationTags,
       coverAssetId: publicationCover.assetId,
     }, publicationCover.asset && publicationCover.bytes
       ? { asset: publicationCover.asset, bytes: publicationCover.bytes }
-      : undefined);
+      : undefined, publicationLicenses[publicationLicense]);
     if (!result.ok) {
       setDialog({ kind: "diagnostics", title: "发布门禁未通过", diagnostics: result.diagnostics });
+      return;
+    }
+    if (!auth.credentials) {
+      setDialog({
+        kind: "diagnostics",
+        title: "需要登录",
+        diagnostics: [{
+          code: "AUTH_REQUIRED",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication",
+          params: {},
+        }],
+      });
+      return;
+    }
+    try {
+      const published = await publishCandidate(result.candidate, auth.credentials);
+      setNotice(publicationSuccessMessage(result.candidate.document.package.name, published.publication));
+    } catch (error) {
+      setDialog({
+        kind: "diagnostics",
+        title: "发布失败",
+        diagnostics: [{
+          code: error instanceof PublicationApiError ? error.code : "PUBLICATION_REQUEST_FAILED",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication",
+          params: { message: error instanceof Error ? error.message : "unknown" },
+        }],
+      });
       return;
     }
     replaceActive({
@@ -1030,7 +1223,6 @@ export function CreatorWorkspacePrototype() {
       dirtyResourceIds: [],
     });
     setDialog(null);
-    setNotice(`发布候选已生成 · ${result.candidate.document.package.version} · ${result.candidate.metadata.title}`);
   }
 
   async function createWorkspaceFromDialog() {
@@ -1047,9 +1239,9 @@ export function CreatorWorkspacePrototype() {
     event.target.value = "";
     if (!file || !active) return;
     try {
-      const { asset, bytes } = await imageAsset(file);
+      const { asset, bytes, blob } = await imageAsset(file, resourceImagePolicy);
       const next = replacePortrait(active, asset, bytes, resource?.id);
-      setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(file)));
+      setAssetUrls((current) => new Map(current).set(asset.id, URL.createObjectURL(blob)));
       replaceActive(next);
       setNotice("portrait 已替换；规范卡面同步更新");
     } catch (error) {
@@ -1076,27 +1268,20 @@ export function CreatorWorkspacePrototype() {
     setDialog(null);
   }
 
-  async function saveAsideThenImport(incoming: ResourcePackageCandidate) {
+  async function saveAsideThenImport(incoming: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
     const existing = workspaces.find((workspace) =>
       workspace.document.package.id === incoming.document.package.id);
-    if (!existing) return commitIncoming(incoming);
+    if (!existing) return commitIncoming(incoming, handoff);
     const fork = await forkCurrentWorkspace(existing);
     setWorkspaces((current) => [...current.filter((workspace) => workspace.key !== existing.key), fork]);
-    commitIncoming(incoming);
+    commitIncoming(incoming, handoff);
     setNotice("本地修改已另存为新 Package ID；导入版本已载入");
   }
 
   if (!active) {
     return (
       <main className="creator-prototype" style={designStyle}>
-        <header className="platform-appbar">
-          <div className="platform-brand"><b>PB</b><strong>PBDH</strong></div>
-          <nav className="platform-nav" aria-label="主页面">
-            <button type="button">玩家车卡器</button><button type="button" className="is-current">卡片工坊</button>
-            <button type="button">GM 桌面</button><button type="button">资源市场</button>
-          </nav>
-          <div className="platform-actions"><button aria-label="通知"><Icon name="bell" /></button><button aria-label="设置"><Icon name="settings" /></button><AccountControl className="account" icon={<Icon name="user" />} /></div>
-        </header>
+        <PlatformAppBar activePage="creator" />
         <section className="empty-workspace">
           <h1>没有打开的资源包</h1>
           <div><button type="button" className="primary" onClick={() => setDialog({ kind: "new" })}>新建资源包</button>
@@ -1109,7 +1294,7 @@ export function CreatorWorkspacePrototype() {
         </section></div>}
         {dialog?.kind === "diagnostics" && <div className="dialog-backdrop"><section className="dialog" role="dialog" aria-modal="true">
           <h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
-            <li key={`${item.code}:${item.location}`}><b>{item.code}</b><code>{item.location || "/"}</code></li>)}</ul>
+            <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}</b></li>)}</ul>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>关闭</button></div>
         </section></div>}
       </main>
@@ -1136,7 +1321,7 @@ export function CreatorWorkspacePrototype() {
       return <CanonicalCardSurface
         resource={instance.resource as TabletopInstance["resource"] & { data: AdversaryData }}
         expectedRendererRevision={adversaryTemplate.rendererRevision}
-        renderer={adversaryRendererRevision}
+        renderer={adversaryRendererFor(instance.resource.template.version)}
         assets={instanceAssets}
         state={instance.state}
         onStateCommand={(commandId, value) => applyTabletopCommand({
@@ -1152,7 +1337,7 @@ export function CreatorWorkspacePrototype() {
       return <CanonicalCardSurface
         resource={instance.resource as TabletopInstance["resource"] & { data: WeaponData }}
         expectedRendererRevision={weaponTemplate.rendererRevision}
-        renderer={weaponRendererRevision}
+        renderer={weaponRendererFor(instance.resource.template.version)}
         assets={instanceAssets}
         state={instance.state}
         label={`${(instance.resource.data as WeaponData).名称}桌面实例`}
@@ -1163,20 +1348,10 @@ export function CreatorWorkspacePrototype() {
 
   return (
     <main className="creator-prototype" style={designStyle} data-design-source={creatorWorkspaceDesign.document}>
-      <header className="platform-appbar">
-        <div className="platform-brand"><b>PB</b><strong>PBDH</strong></div>
-        <nav className="platform-nav" aria-label="主页面">
-          <button type="button">玩家车卡器</button>
-          <button type="button" className={appMode === "creator" ? "is-current" : ""} onClick={() => setAppMode("creator")}>卡片工坊</button>
-          <button type="button" className={appMode === "gm" ? "is-current" : ""} onClick={() => setAppMode("gm")}>GM 桌面</button>
-          <button type="button">资源市场</button>
-        </nav>
-        <div className="platform-actions">
-          <button type="button" aria-label="通知"><Icon name="bell" /></button>
-          <button type="button" aria-label="设置"><Icon name="settings" /></button>
-          <AccountControl className="account" icon={<Icon name="user" />} />
-        </div>
-      </header>
+      <PlatformAppBar
+        activePage={appMode}
+        onNavigate={{ creator: () => setAppMode("creator"), gm: () => setAppMode("gm") }}
+      />
       <div className="creator-workspace">
         <aside className="resource-explorer">
           <header className="explorer-toolbar"><strong>资源管理器</strong><div>
@@ -1279,8 +1454,8 @@ export function CreatorWorkspacePrototype() {
                 ><span>固定比例</span><i /></button>
               </div></header>
               <AutoFitPreview>
-                {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererRevision} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
-                {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererRevision} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
+                {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererFor(adversaryPreviewResource.template.version)} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
+                {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererFor(weaponPreviewResource.template.version)} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
               </AutoFitPreview>
               <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button></footer>
             </aside>
@@ -1491,8 +1666,8 @@ export function CreatorWorkspacePrototype() {
       <input ref={tabletopImportRef} hidden type="file" accept=".pbtab" onChange={importTabletop} />
 
       <input ref={importRef} hidden type="file" accept=".pbres" onChange={importPackage} />
-      <input ref={portraitRef} hidden type="file" accept="image/webp" onChange={replacePortraitFromFile} />
-      <input ref={publicationCoverRef} hidden type="file" accept="image/webp" onChange={replacePublicationCover} />
+      <input ref={portraitRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={replacePortraitFromFile} />
+      <input ref={publicationCoverRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={replacePublicationCover} />
 
       {dialog && <div className="dialog-backdrop" role="presentation"><section className={`dialog${dialog.kind === "publish" ? " publish-dialog" : ""}`} role="dialog" aria-modal="true">
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
@@ -1500,27 +1675,29 @@ export function CreatorWorkspacePrototype() {
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
           <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
+        {dialog.kind === "handoff-tabletop" && <><h2>选择桌面</h2>
+          <div className="resource-type-choices">{tabletops.map((tabletop) => <button type="button" key={tabletop.id} onClick={() => { focusTabletop(tabletop.id, dialog.resourceId); setDialog(null); }}><span>▦</span>{tabletop.name}</button>)}<button type="button" onClick={() => { createTabletopAndFocus(dialog.resourceId); setDialog(null); }}>＋ 新建桌面</button></div>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
         {dialog.kind === "publish" && <>
           <h2>发布到资源市场</h2>
           <div className="publication-package-summary"><Icon name="package" /><span><strong>{active?.document.package.name}</strong><small>版本 {active?.document.package.version} · {active?.document.resources.length} 项资源</small></span><b>完整资源包</b></div>
           <div className="publication-fields">
             <div className="publication-cover-field"><strong>封面</strong><div className="publication-cover-preview">{publicationCover.url ? <img src={publicationCover.url} alt="资源包封面" /> : <Icon name="image" />}</div><button type="button" onClick={() => publicationCoverRef.current?.click()}><Icon name="upload" />上传</button></div>
-            <div className="publication-copy-fields"><Field label="标题" value={publicationTitle} onChange={setPublicationTitle} /><TextareaField label="简介" value={publicationSummary} onChange={setPublicationSummary} /><div className="publication-meta-fields"><Field label="内容语言" value={publicationLanguage} onChange={setPublicationLanguage} /><Field label="发现标签" value={publicationTags} onChange={setPublicationTags} /></div></div>
+            <div className="publication-copy-fields"><Field label="标题" value={publicationTitle} onChange={setPublicationTitle} /><TextareaField label="简介" value={publicationSummary} onChange={setPublicationSummary} /><div className="publication-meta-fields"><Field label="内容语言" value={publicationLanguage} onChange={setPublicationLanguage} /><label className="compact-field"><span>许可类型</span><select value={publicationLicense} onChange={(event) => setPublicationLicense(event.target.value as PublicationLicenseId)}>{Object.entries(publicationLicenses).map(([id, license]) => <option key={id} value={id}>{license.label}</option>)}</select></label></div><TagEditor tags={publicationTags} onChange={setPublicationTags} /></div>
           </div>
-          <label className="publication-license"><input type="checkbox" checked={publicationRightsConfirmed} onChange={(event) => setPublicationRightsConfirmed(event.target.checked)} /><span><strong>我拥有公开内容与媒体所需权利</strong><small>{active?.document.license.label}</small></span></label>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!publicationRightsConfirmed} onClick={publishWorkspace}>发布当前版本</button></div>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={publishWorkspace}>发布当前版本</button></div>
         </>}
         {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
-          <li key={`${item.code}:${item.location}`}><b>{item.code}</b><code>{item.location || "/"}</code></li>)}</ul>
+          <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}</b></li>)}</ul>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>保留现状</button></div></>}
         {dialog.kind === "no-op" && <><h2>NO-OP · 同版本 / 同 Digest</h2><p>{dialog.name} 已是当前完整 Snapshot，不创建副本、不覆盖。</p>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>打开现有 Workspace</button></div></>}
         {dialog.kind === "update" && <><h2>更新现有 Workspace</h2><p>当前 Workspace 未修改；导入内容 Digest 不同。确认后才替换。</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={() => commitIncoming(dialog.incoming)}>更新现有</button></div></>}
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={() => commitIncoming(dialog.incoming, dialog.handoff)}>更新现有</button></div></>}
         {dialog.kind === "conflict" && <><h2>dirty 同 ID 冲突</h2><p>当前 Workspace 有本地修改，禁止自动合并。</p>
           <div className="conflict-choices"><button type="button" onClick={() => setDialog(null)}>取消（零写入）</button>
-            <button type="button" onClick={() => saveAsideThenImport(dialog.incoming)}>另存 · 新 Package ID / 1.0.0</button>
-            <button type="button" className="danger" onClick={() => commitIncoming(dialog.incoming)}>覆盖 · 丢弃本地修改</button></div></>}
+            <button type="button" onClick={() => saveAsideThenImport(dialog.incoming, dialog.handoff)}>另存 · 新 Package ID / 1.0.0</button>
+            <button type="button" className="danger" onClick={() => commitIncoming(dialog.incoming, dialog.handoff)}>覆盖 · 丢弃本地修改</button></div></>}
         {dialog.kind === "delete-feature" && <><h2>删除特性</h2><p>删除“{dialog.name || "未命名特性"}”？此操作会立即从当前资源中移除该特性。</p>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => deleteFeature(dialog.index, dialog.target)}>删除</button></div></>}
         {dialog.kind === "delete-workspace-node" && <><h2>删除{dialog.node.kind === "folder" ? "文件夹" : "资源"}</h2><p>删除“{dialog.name}”？{dialog.node.kind === "folder" ? "文件夹内的资源也会一并删除。" : ""}</p>
@@ -1528,6 +1705,7 @@ export function CreatorWorkspacePrototype() {
         {dialog.kind === "close-workspace" && <><h2>关闭资源包</h2><p>关闭“{dialog.name}”？对应的本地工作区数据将被删除。</p>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void closeWorkspacePackage(dialog.workspaceKey)}>关闭并删除</button></div></>}
       </section></div>}
+      {notice && <div className="creator-toast" role="status"><Icon name="check" />{notice}</div>}
     </main>
   );
 }

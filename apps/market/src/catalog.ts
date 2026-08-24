@@ -6,6 +6,7 @@ import weaponPackage from "../../../contracts/conformance/resource-package/1.0.0
 import weaponCoverUrl from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp?url";
 
 import type { Publication, PublicationResource } from "./market-model.ts";
+export { catalogOptions } from "./catalog-options.ts";
 
 const systemId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 
@@ -92,21 +93,6 @@ export const publications: Publication[] = [
     resources: weaponResources,
   },
 ];
-
-export const catalogOptions = {
-  templateIds: [
-    { value: "敌人", label: "敌人" },
-    { value: "武器", label: "武器" },
-  ],
-  systems: [{ value: systemId, label: "Daggerheart Core" }],
-  languages: [{ value: "中文", label: "中文" }],
-  categories: [
-    { value: "敌人", label: "敌人" },
-    { value: "武器", label: "武器" },
-    { value: "装备", label: "装备" },
-    { value: "遭遇", label: "遭遇" },
-  ],
-} as const;
 
 export const fixtureAssetUrls = new Map([
   [minotaurPackage.assets[0].id, { status: "ready" as const, url: minotaurImageUrl }],

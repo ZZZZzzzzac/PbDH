@@ -17,7 +17,9 @@
     "packages/resource-conversion",
     "packages/tabletop",
     "packages/local-storage",
-    "packages/platform-auth"
+    "packages/media-admission",
+    "packages/platform-auth",
+    "packages/platform-ui"
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
@@ -30,7 +32,7 @@
     "build:creator": "npm run build -w @pbdh/creator",
     "build:player": "npm run build -w @pbdh/player",
     "build:market": "npm run build -w @pbdh/market",
-    "dev:backend": "node scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload",
+    "dev:backend": "node --env-file-if-exists=.env.local scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload --port 8001",
     "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:creator && npm run build:player && npm run build:market"
   },
   "dependencies": {

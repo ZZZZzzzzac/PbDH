@@ -43,6 +43,8 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `packages/tabletop/`：共享 Tabletop Core 与 React Surface；使用 `core` 和 `react` 子入口隔离
 - `packages/local-storage/`：浏览器本地持久化底座；拥有 PbDH IndexedDB schema 与通用文档/媒体存储实现，业务模块只通过各自 Repository 接口使用
 - `packages/platform-auth/`：浏览器端共享身份与活动会话客户端；使用无 React 的 `core` 入口和 React `provider` 入口，提供统一账号状态与 Platform App Bar 账号控件，不拥有业务文档或权限规则
+- `packages/platform-ui/`：所有前端共用的 Platform App Bar 与应用级外壳样式；各 App 只注入当前页面和导航动作，不复制顶部栏实现
+- `packages/media-admission/`：所有浏览器图片入口共用的安全解码、尺寸/比例/裁剪参数与 WebP 规范化边界；业务 App 只声明用途和裁剪选择，不自行编码图片
 - `tests/`：跨 App 集成测试与 Contract/Template 一致性测试；模块内部测试跟随所属模块
 - `scripts/`：一次性或开发辅助脚本
 - `docs/`：项目文档与 ADR
@@ -57,6 +59,8 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
 - `packages/local-storage` 只拥有浏览器存储机制与共享信封，不解释 Creator Workspace、GM Tabletop Document 或 Character Save payload；各领域 Repository 负责 Contract 校验与生命周期。
 - `packages/platform-auth/core` 只依赖外部身份 SDK 和 Platform Backend HTTP 边界；React provider 可依赖 core 与 React，不得依赖任何 App 或业务领域 package。
+- `packages/platform-ui` 可以依赖 `packages/platform-auth/provider`；业务 App 不得复制 Platform App Bar 的结构或样式。
+- `packages/media-admission` 是浏览器图片处理底座，不依赖任何 App、业务领域 package 或 React；Player、Creator 与 Market 通过同一入口提交图片。
 - App 组合根负责解析 Template 并注入 Renderer、Tabletop 与 Conversion；共享模块不得通过全局 Registry 反向寻找宿主能力。
 - `apps/backend` 只能使用 `contracts/` 与无 React 的 `packages/templates/core` 等服务端安全入口，禁止依赖 React、DOM 或浏览器专用代码。
 - 建立代码后必须用自动化依赖边界检查守住以上规则；新增例外前先修订本节和对应 ADR。

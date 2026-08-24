@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E6%AD%A6%E5%99%A8/1.0.0/schema.json",
+  "title": "武器 Template Data",
+  "type": "object",
+  "required": ["名称", "类型", "属性", "距离", "伤害", "负荷", "伤害类型", "描述", "位阶"],
+  "properties": {
+    "名称": { "type": "string" },
+    "类型": { "type": "string" },
+    "属性": { "type": "string" },
+    "距离": { "type": "string" },
+    "伤害": { "type": "string" },
+    "负荷": { "type": "string" },
+    "伤害类型": { "type": "string" },
+    "描述": { "type": "string" },
+    "位阶": { "type": "string" }
+  },
+  "additionalProperties": false
+}
