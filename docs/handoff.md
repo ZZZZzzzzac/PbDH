@@ -6,8 +6,9 @@
 
 - 分支：`main`
 - 功能基线提交：`cead992a328bbd36ff2cfb49333781bd42fa245d`（`feat: complete Creator workspace and Market prototype`）
-- 路线状态：阶段 5 已完成，阶段 6 尚未开始，详见 `docs/roadmap.md`。
+- 路线状态：阶段 5 已完成，阶段 6 进行中，详见 `docs/roadmap.md`。
 - Market 设计原型实现项 [#33](https://github.com/ZZZZzzzzac/PbDH/issues/33) 已完成人工验收并关闭。
+- 阶段 6 实现项 [#38—#45](https://github.com/ZZZZzzzzac/PbDH/issues/38) 已发布并完成 triage；当前处理 HITL #38。
 
 ## 本轮完成
 
@@ -25,10 +26,11 @@
 
 ## 下一步
 
-1. 为阶段 6 拆分真实端到端实现 Issue，明确 Backend、文件/快照边界、App ingress、持久化和 E2E 验收。
-2. 先实施敌人 `Creator → Market → GM`：真实发布、匿名取得、目标桌面选择、显式放置、实例操作和恢复。
-3. 再实施主武器 `Creator → Market → Player`：真实发布、安装、Daggerheart Core 原生路由、显式选择、最终字段写入和 Character Save 恢复。
-4. 发现设计假设错误时先同步对应 `.op`、ADR 或 Issue 权威，再改实现。
+1. 确认 #38 的 SQLite identity schema 与 Supabase 配置边界；这是数据库 schema 与认证配置红线。
+2. 实施并人工验收 #38 统一账号会话与接管。
+3. 按 #39—#45 的依赖顺序贯通两条真实端到端路径。
+4. #41 只把 Market 的完整 `.pbres` 接入 Player Resource Manager 标准入口，不迁移或重写 `PbDH_sheet` 框架与武器模块。
+5. 发现设计假设错误时先同步对应 `.op`、ADR 或 Issue 权威，再改实现。
 
 ## 关键约束
 
