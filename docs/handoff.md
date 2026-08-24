@@ -1,13 +1,13 @@
 # PbDH 开发交接
 
-更新时间：2026-08-20
+更新时间：2026-08-24
 
 ## 当前落点
 
 - 分支：`main`
 - 功能基线提交：`cead992a328bbd36ff2cfb49333781bd42fa245d`（`feat: complete Creator workspace and Market prototype`）
-- 路线状态：阶段 5 进行中，详见 `docs/roadmap.md`。
-- Market 实现项 [#33](https://github.com/ZZZZzzzzac/PbDH/issues/33) 仍为 OPEN、`ready-for-human`。
+- 路线状态：阶段 5 已完成，阶段 6 尚未开始，详见 `docs/roadmap.md`。
+- Market 设计原型实现项 [#33](https://github.com/ZZZZzzzzac/PbDH/issues/33) 已完成人工验收并关闭。
 
 ## 本轮完成
 
@@ -25,10 +25,10 @@
 
 ## 下一步
 
-1. 人工回归 Creator：刷新持久化、空资源包、多资源包切换/关闭、目录拖拽、跨包标签、复制/删除、右键菜单、预览形态与自动缩放。
-2. 按 #33 人工验收两条交接：敌人 `Creator → Market → GM`；主武器 `Creator → Market → Player`。检查匿名取得、跨 App 回退、移动端、不同资源类型路由、GM 不自动放置。
-3. 发现问题先同步对应 `.op` 或 Issue 权威，再改实现。
-4. 验收完成后关闭 #33，进入路线图阶段 6 的真实端到端实现。
+1. 为阶段 6 拆分真实端到端实现 Issue，明确 Backend、文件/快照边界、App ingress、持久化和 E2E 验收。
+2. 先实施敌人 `Creator → Market → GM`：真实发布、匿名取得、目标桌面选择、显式放置、实例操作和恢复。
+3. 再实施主武器 `Creator → Market → Player`：真实发布、安装、Daggerheart Core 原生路由、显式选择、最终字段写入和 Character Save 恢复。
+4. 发现设计假设错误时先同步对应 `.op`、ADR 或 Issue 权威，再改实现。
 
 ## 关键约束
 
