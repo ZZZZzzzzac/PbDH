@@ -127,6 +127,10 @@ export class TabletopDocumentRepository {
     return toModel(candidate.document);
   }
 
+  async remove(documentId: string): Promise<void> {
+    await this.#store.remove("gm-tabletop-document", documentId);
+  }
+
   async #put(
     document: TabletopDocument,
     media: ReadonlyMap<string, Uint8Array>,

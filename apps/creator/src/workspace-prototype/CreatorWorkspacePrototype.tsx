@@ -51,12 +51,10 @@ import {
   type WeaponData,
 } from "@pbdh/templates/core";
 
-import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
-import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
-
 import { creatorWorkspaceDesign } from "./design.generated.ts";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
 import {
+  creatorMarketHandoffMismatch,
   parseCreatorMarketHandoff,
   withoutCreatorMarketHandoff,
   type CreatorMarketHandoff,
@@ -67,6 +65,7 @@ import { publicationErrorMessage, publicationSuccessMessage } from "./publicatio
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
+import { snapshotWorkspaceResourceForTabletop } from "./tabletop-placement.ts";
 import { WorkspaceTree } from "./WorkspaceTree.tsx";
 import {
   adversaryData,
@@ -106,14 +105,16 @@ type Dialog =
   | { kind: "no-op"; name: string }
   | { kind: "update"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
   | { kind: "conflict"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
-  | { kind: "handoff-tabletop"; resourceId?: string }
   | { kind: "delete-feature"; index: number; name: string; target: "workspace" | "instance" }
   | { kind: "delete-workspace-node"; node: WorkspaceNodeRef; name: string }
   | { kind: "close-workspace"; workspaceKey: string; name: string }
+  | { kind: "new-tabletop" }
+  | { kind: "rename-tabletop"; tabletopId: string }
+  | { kind: "delete-tabletop"; tabletopId: string; name: string }
   | null;
 
 type TabletopContextMenu =
-  | { kind: "resource"; resourceId: string; x: number; y: number; sendOpen: boolean }
+  | { kind: "resource"; resourceId: string; x: number; y: number }
   | { kind: "instance"; instanceId: string; x: number; y: number }
   | { kind: "canvas"; x: number; y: number }
   | { kind: "workspace"; workspaceKey: string; x: number; y: number }
@@ -126,9 +127,6 @@ type PublicationCoverDraft = {
   bytes?: Uint8Array;
 };
 
-const initialDocument = minotaurPackage as ResourcePackageLogicalDocument;
-const initialWorkspace = createWorkspace({ document: initialDocument, media: new Map() });
-const initialAssetId = initialDocument.assets[0]!.id;
 const gmCapabilities = new Set<TabletopCapability>([
   "place",
   "move",
@@ -138,44 +136,6 @@ const gmCapabilities = new Set<TabletopCapability>([
   "edit-instance-resource",
   "template-state-command",
 ]);
-
-function tabletopResourceCopy(
-  workspace: CreatorWorkspace,
-  resource: WorkspaceResource,
-): TabletopInstanceResourceCopy {
-  return {
-    source: { packageId: workspace.document.package.id, resourceId: resource.id },
-    template: structuredClone(resource.template),
-    presentation: structuredClone(resource.presentation),
-    data: structuredClone(resource.data) as Record<string, unknown>,
-    labels: [],
-    media: structuredClone(resource.media),
-  };
-}
-
-function placeInitialInstance(
-  document: TabletopDocumentModel,
-  instanceId: string,
-  position: { x: number; y: number },
-): TabletopDocumentModel {
-  const resource = initialWorkspace.document.resources[0]!;
-  return executeTabletopCommand(document, {
-    type: "place",
-    instanceId,
-    resource: tabletopResourceCopy(initialWorkspace, resource),
-    state: adversaryTemplate.tabletop.defaultState(resource.data as AdversaryData),
-    position,
-    assets: initialWorkspace.document.assets.filter((asset) =>
-      Object.values(resource.media).includes(asset.id)),
-  }, { capabilities: gmCapabilities }).document;
-}
-
-function initialTabletopDocuments(): TabletopDocumentModel[] {
-  let temple = createTabletopDocument("01989f4e-7b2c-7000-8000-000000000001", "陨落神殿");
-  temple = placeInitialInstance(temple, "01989f4e-7b2c-7000-8000-000000000002", { x: 48, y: 88 });
-  temple = placeInitialInstance(temple, "01989f4e-7b2c-7000-8000-000000000003", { x: 448, y: 220 });
-  return [temple, createTabletopDocument("01989f4e-7b2c-7000-8000-000000000004", "黑湾伏击")];
-}
 
 function Field({
   label,
@@ -281,8 +241,9 @@ function publicationLicenseId(label: string): PublicationLicenseId {
     ?? "public-domain") as PublicationLicenseId;
 }
 
-const iconPaths: Record<string, string[]> = {
+const iconPaths = {
   bell: ["M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9", "M13.7 21a2 2 0 0 1-3.4 0"],
+  check: ["m5 12 4 4L19 6"],
   chevronDown: ["m6 9 6 6 6-6"],
   chevronRight: ["m9 18 6-6-6-6"],
   download: ["M12 3v12", "m7 10 5 5 5-5", "M5 21h14"],
@@ -301,7 +262,7 @@ const iconPaths: Record<string, string[]> = {
   upload: ["M12 21V9", "m7 14 5-5 5 5", "M5 3h14"],
   user: ["M20 21a8 8 0 0 0-16 0", "M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"],
   x: ["M18 6 6 18", "m6 6 12 12"],
-};
+} satisfies Record<string, string[]>;
 
 function Icon({ name }: { name: keyof typeof iconPaths }) {
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -444,31 +405,24 @@ async function imageAsset(file: File, policy: ImageAdmissionPolicy) {
 
 export function CreatorWorkspacePrototype() {
   const auth = useAuth();
-  const startEmpty = new URLSearchParams(window.location.search).get("state") === "empty";
-  const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>(startEmpty ? [] : [initialWorkspace]);
-  const [activeKey, setActiveKey] = useState(startEmpty ? "" : initialWorkspace.key);
-  const [activeResourceId, setActiveResourceId] = useState(startEmpty ? "" : initialDocument.resources[0]!.id);
-  const [assetUrls, setAssetUrls] = useState(() => new Map([[initialAssetId, minotaurImageUrl]]));
+  const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
+  const [activeKey, setActiveKey] = useState("");
+  const [activeResourceId, setActiveResourceId] = useState("");
+  const [assetUrls, setAssetUrls] = useState<Map<string, string>>(() => new Map());
   const [dialog, setDialog] = useState<Dialog>(null);
   const [newName, setNewName] = useState("牛头人敌人资源包");
-  const [publicationTitle, setPublicationTitle] = useState(initialDocument.package.name);
-  const [publicationSummary, setPublicationSummary] = useState(initialDocument.package.description);
+  const [publicationTitle, setPublicationTitle] = useState("");
+  const [publicationSummary, setPublicationSummary] = useState("");
   const [publicationLanguage, setPublicationLanguage] = useState("中文");
   const [publicationTags, setPublicationTags] = useState<string[]>(["敌人", "Daggerheart"]);
   const [publicationLicense, setPublicationLicense] = useState<PublicationLicenseId>("public-domain");
-  const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({
-    assetId: initialAssetId,
-    url: minotaurImageUrl,
-  });
+  const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({ assetId: "", url: "" });
   const [openFeatureMenu, setOpenFeatureMenu] = useState<number | null>(null);
   const [appMode, setAppMode] = useState<"creator" | "gm">("creator");
-  const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>(initialTabletopDocuments);
-  const [openTabletopIds, setOpenTabletopIds] = useState([
-    "01989f4e-7b2c-7000-8000-000000000001",
-    "01989f4e-7b2c-7000-8000-000000000004",
-  ]);
-  const [activeTabletopId, setActiveTabletopId] = useState("01989f4e-7b2c-7000-8000-000000000001");
-  const [selectedInstanceId, setSelectedInstanceId] = useState("01989f4e-7b2c-7000-8000-000000000002");
+  const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
+  const [activeTabletopId, setActiveTabletopId] = useState("");
+  const [tabletopNameDraft, setTabletopNameDraft] = useState("");
+  const [selectedInstanceId, setSelectedInstanceId] = useState("");
   const [tabletopView, setTabletopView] = useState<"canvas" | "instance-editor">("canvas");
   const [canvasZoom, setCanvasZoom] = useState(0.8);
   const [tabletopContextMenu, setTabletopContextMenu] = useState<TabletopContextMenu>(null);
@@ -486,6 +440,8 @@ export function CreatorWorkspacePrototype() {
   const suppressCanvasContextMenuRef = useRef(false);
   const tabletopViewportRef = useRef<HTMLDivElement>(null);
   const marketHandoffStartedRef = useRef(false);
+  const workspaceWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [notice, setNotice] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const tabletopImportRef = useRef<HTMLInputElement>(null);
@@ -495,22 +451,8 @@ export function CreatorWorkspacePrototype() {
   const creatorWorkspaceRepository = useMemo(() => new CreatorWorkspaceRepository(localDocumentStore), [localDocumentStore]);
   const tabletopRepository = useMemo(() => new TabletopDocumentRepository(localDocumentStore), [localDocumentStore]);
   const active = workspaces.find((workspace) => workspace.key === activeKey) ?? workspaces[0];
-  const activeTabletop = tabletops.find((tabletop) =>
-    tabletop.id === activeTabletopId && openTabletopIds.includes(tabletop.id));
+  const activeTabletop = tabletops.find((tabletop) => tabletop.id === activeTabletopId);
   const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
-
-  useEffect(() => {
-    fetch(minotaurImageUrl)
-      .then((response) => response.arrayBuffer())
-      .then((buffer) => {
-        setWorkspaces((current) => current.map((workspace) => workspace.key === initialWorkspace.key
-          && workspace.document.assets.some((asset) => asset.id === initialAssetId)
-          && !workspace.media.has(initialAssetId)
-          ? { ...workspace, media: new Map(workspace.media).set(initialAssetId, new Uint8Array(buffer)) }
-          : workspace));
-      })
-      .catch(() => setNotice("portrait 字节未就绪；预览可用，导出暂不可用"));
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -534,7 +476,7 @@ export function CreatorWorkspacePrototype() {
   }, [creatorWorkspaceRepository]);
 
   useEffect(() => {
-    if (!workspaceStorageReady || marketHandoffStartedRef.current) return;
+    if (!workspaceStorageReady || !tabletopStorageReady || marketHandoffStartedRef.current) return;
     const handoff = parseCreatorMarketHandoff(window.location.href);
     if (!handoff) return;
     marketHandoffStartedRef.current = true;
@@ -551,12 +493,13 @@ export function CreatorWorkspacePrototype() {
           setDialog({ kind: "diagnostics", title: "市场导入失败 · 零写入", diagnostics: result.diagnostics });
           return;
         }
-        if (result.candidate.document.snapshotDigest !== handoff.snapshotDigest) {
+        const mismatch = creatorMarketHandoffMismatch(handoff, result.candidate);
+        if (mismatch) {
           setDialog({
             kind: "diagnostics",
             title: "市场导入失败 · 零写入",
             diagnostics: [{
-              code: "creator.market-handoff.snapshot-mismatch",
+              code: mismatch,
               severity: "error",
               family: "creator-prototype",
               version: "1",
@@ -580,15 +523,18 @@ export function CreatorWorkspacePrototype() {
           params: { message: error instanceof Error ? error.message : "unknown" },
         }],
       }));
-  }, [workspaceStorageReady]);
+  }, [tabletopStorageReady, workspaceStorageReady]);
 
   useEffect(() => {
     if (!workspaceStorageReady) return;
     const timeout = window.setTimeout(() => {
       const selected = workspaces.find((workspace) => workspace.key === activeKey);
-      Promise.all(workspaces.map((workspace) => creatorWorkspaceRepository.save(workspace)))
-        .then(() => selected ? creatorWorkspaceRepository.save(selected) : undefined)
-        .catch((error) => setNotice(error instanceof Error ? error.message : "工作区保存失败"));
+      const write = workspaceWriteQueueRef.current.then(async () => {
+        await Promise.all(workspaces.map((workspace) => creatorWorkspaceRepository.save(workspace)));
+        if (selected) await creatorWorkspaceRepository.save(selected);
+      });
+      workspaceWriteQueueRef.current = write.catch(() => undefined);
+      write.catch((error) => setNotice(error instanceof Error ? error.message : "工作区保存失败"));
     }, 120);
     return () => window.clearTimeout(timeout);
   }, [activeKey, creatorWorkspaceRepository, workspaceStorageReady, workspaces]);
@@ -601,7 +547,6 @@ export function CreatorWorkspacePrototype() {
         const models = stored.map((item) => item.model);
         const media = new Map(stored.flatMap((item) => [...item.media]));
         setTabletops(models);
-        setOpenTabletopIds(models.map((item) => item.id));
         setActiveTabletopId(models[0]!.id);
         setSelectedInstanceId("");
         setTabletopMedia(media);
@@ -642,9 +587,12 @@ export function CreatorWorkspacePrototype() {
   useEffect(() => {
     if (!tabletopStorageReady) return;
     const timeout = window.setTimeout(() => {
-      Promise.all(tabletops.map((tabletop) =>
-        tabletopRepository.save(tabletop, allTabletopMedia)))
-        .catch((error) => setNotice(error instanceof Error ? error.message : "桌面保存失败"));
+      const write = tabletopWriteQueueRef.current.then(async () => {
+        await Promise.all(tabletops.map((tabletop) =>
+          tabletopRepository.save(tabletop, allTabletopMedia)));
+      });
+      tabletopWriteQueueRef.current = write.catch(() => undefined);
+      write.catch((error) => setNotice(error instanceof Error ? error.message : "桌面保存失败"));
     }, 120);
     return () => window.clearTimeout(timeout);
   }, [allTabletopMedia, tabletopRepository, tabletopStorageReady, tabletops]);
@@ -732,11 +680,11 @@ export function CreatorWorkspacePrototype() {
     "--gm-selected-border": creatorWorkspaceDesign.gmTabletop.canvas.selectedBorder,
     "--gm-canvas-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.canvasWidth}px`,
     "--gm-instance-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.instanceWidth}px`,
-    "--gm-send-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.sendToTabletopWidth}px`,
   } as CSSProperties;
 
   function replaceActive(next: CreatorWorkspace) {
-    setWorkspaces((current) => current.map((workspace) => workspace.key === active!.key ? next : workspace));
+    if (!active) return;
+    setWorkspaces((current) => current.map((workspace) => workspace.key === active.key ? next : workspace));
     setActiveKey(next.key);
   }
 
@@ -756,14 +704,9 @@ export function CreatorWorkspacePrototype() {
   }
 
   async function closeWorkspacePackage(workspaceKey: string) {
+    const closing = workspaces.find((workspace) => workspace.key === workspaceKey);
+    if (!closing) return;
     const remaining = workspaces.filter((workspace) => workspace.key !== workspaceKey);
-    try {
-      await creatorWorkspaceRepository.remove(workspaceKey);
-    } catch (error) {
-      setDialog(null);
-      setNotice(error instanceof Error ? error.message : "资源包关闭失败");
-      return;
-    }
     setWorkspaces(remaining);
     if (active?.key === workspaceKey) {
       const next = remaining[0];
@@ -772,6 +715,21 @@ export function CreatorWorkspacePrototype() {
     }
     setTabletopContextMenu(null);
     setDialog(null);
+
+    const removal = workspaceWriteQueueRef.current.then(() => creatorWorkspaceRepository.remove(workspaceKey));
+    workspaceWriteQueueRef.current = removal.catch(() => undefined);
+    try {
+      await removal;
+    } catch (error) {
+      setWorkspaces((current) => current.some((workspace) => workspace.key === workspaceKey)
+        ? current
+        : [...current, closing]);
+      setActiveKey(workspaceKey);
+      setActiveResourceId(closing.openResourceIds[0] ?? "");
+      setNotice(error instanceof Error ? error.message : "资源包关闭失败");
+      return;
+    }
+    setNotice("资源包已关闭并删除");
   }
 
   function activateWorkspaceResource(resourceId: string) {
@@ -934,36 +892,82 @@ export function CreatorWorkspacePrototype() {
     if (!source) return;
     const template = templateRegistry.resolve(source.template.id, source.template.version);
     if (!template) return;
+    let snapshot;
+    try {
+      snapshot = snapshotWorkspaceResourceForTabletop(active, resourceId);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "无法复制桌面资源");
+      return;
+    }
     const instanceId = crypto.randomUUID();
     const sequence = activeTabletop.instances.length;
+    setTabletopMedia((current) => new Map([...current, ...snapshot.media]));
     applyTabletopCommand({
       type: "place",
       instanceId,
-      resource: tabletopResourceCopy(active, source),
+      resource: snapshot.resource,
       state: template.tabletop.defaultState(source.data as never),
       position: position ?? { x: 56 + (sequence % 3) * 380, y: 88 + Math.floor(sequence / 3) * 180 },
-      assets: active.document.assets.filter((asset) =>
-        Object.values(source.media).includes(asset.id)),
+      assets: snapshot.assets,
     });
     setSelectedInstanceId(instanceId);
     setTabletopView("canvas");
     setTabletopContextMenu(null);
   }
 
-  function focusTabletop(tabletopId: string, resourceId?: string) {
-    setOpenTabletopIds((current) => current.includes(tabletopId) ? current : [...current, tabletopId]);
-    setActiveTabletopId(tabletopId);
-    if (resourceId) setActiveResourceId(resourceId);
-    setSelectedInstanceId("");
-    setTabletopView("canvas");
-    setAppMode("gm");
-    setTabletopContextMenu(null);
+  function requestTabletopCreation() {
+    setTabletopNameDraft(`新桌面 ${tabletops.length + 1}`);
+    setDialog({ kind: "new-tabletop" });
   }
 
-  function createTabletopAndFocus(resourceId?: string) {
+  function createTabletopFromDialog() {
+    const name = tabletopNameDraft.trim();
+    if (!name) return;
     const id = crypto.randomUUID();
-    setTabletops((current) => [...current, createTabletopDocument(id, `新桌面 ${current.length + 1}`)]);
-    focusTabletop(id, resourceId);
+    setTabletops((current) => [...current, createTabletopDocument(id, name)]);
+    setActiveTabletopId(id);
+    setSelectedInstanceId("");
+    setTabletopView("canvas");
+    setTabletopContextMenu(null);
+    setDialog(null);
+  }
+
+  function requestTabletopRename() {
+    if (!activeTabletop) return;
+    setTabletopNameDraft(activeTabletop.name);
+    setTabletopContextMenu(null);
+    setDialog({ kind: "rename-tabletop", tabletopId: activeTabletop.id });
+  }
+
+  function renameTabletopFromDialog(tabletopId: string) {
+    const name = tabletopNameDraft.trim();
+    if (!name) return;
+    setTabletops((current) => current.map((tabletop) =>
+      tabletop.id === tabletopId ? { ...tabletop, name } : tabletop));
+    setDialog(null);
+    setNotice(`桌面已重命名为“${name}”`);
+  }
+
+  async function deleteTabletop(tabletopId: string) {
+    const remaining = tabletops.filter((tabletop) => tabletop.id !== tabletopId);
+    const nextActiveId = activeTabletopId === tabletopId
+      ? remaining[0]?.id ?? ""
+      : activeTabletopId;
+    setTabletops(remaining);
+    setActiveTabletopId(nextActiveId);
+    setSelectedInstanceId("");
+    setTabletopView("canvas");
+    setTabletopContextMenu(null);
+    setDialog(null);
+
+    const removal = tabletopWriteQueueRef.current.then(() => tabletopRepository.remove(tabletopId));
+    tabletopWriteQueueRef.current = removal.catch(() => undefined);
+    try {
+      await removal;
+      setNotice("桌面已删除");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "桌面删除失败");
+    }
   }
 
   function duplicateSelectedInstance() {
@@ -1023,7 +1027,6 @@ export function CreatorWorkspacePrototype() {
     setTabletops((current) => current.some((item) => item.id === model.id)
       ? current.map((item) => item.id === model.id ? model : item)
       : [...current, model]);
-    setOpenTabletopIds((current) => current.includes(model.id) ? current : [...current, model.id]);
     setActiveTabletopId(model.id);
     setSelectedInstanceId("");
     setTabletopView("canvas");
@@ -1058,8 +1061,8 @@ export function CreatorWorkspacePrototype() {
     setActiveResourceId(focusedResourceId ?? "");
     if (handoff.target === "gm") {
       setAppMode("gm");
-      setDialog({ kind: "handoff-tabletop", resourceId: focusedResourceId });
-      setNotice(`已从资源市场载入 ${workspace.document.package.name}`);
+      setDialog(null);
+      setNotice(`已从资源市场导入 ${workspace.document.package.name}`);
     } else {
       setAppMode("creator");
       setDialog(null);
@@ -1077,11 +1080,13 @@ export function CreatorWorkspacePrototype() {
     });
     setActiveKey(next.key);
     setActiveResourceId(next.document.resources[0]?.id ?? "");
-    if (handoff) finishMarketHandoff(next, handoff);
-    else {
-      setDialog(null);
-      setNotice(`已载入 ${next.document.package.name}`);
-    }
+    setDialog(null);
+    const write = workspaceWriteQueueRef.current.then(() => creatorWorkspaceRepository.save(next));
+    workspaceWriteQueueRef.current = write.catch(() => undefined);
+    write.then(() => {
+      if (handoff) finishMarketHandoff(next, handoff);
+      else setNotice(`已载入 ${next.document.package.name}`);
+    }).catch((error) => setNotice(error instanceof Error ? error.message : "工作区保存失败"));
   }
 
   function acceptIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
@@ -1278,29 +1283,6 @@ export function CreatorWorkspacePrototype() {
     setNotice("本地修改已另存为新 Package ID；导入版本已载入");
   }
 
-  if (!active) {
-    return (
-      <main className="creator-prototype" style={designStyle}>
-        <PlatformAppBar activePage="creator" />
-        <section className="empty-workspace">
-          <h1>没有打开的资源包</h1>
-          <div><button type="button" className="primary" onClick={() => setDialog({ kind: "new" })}>新建资源包</button>
-            <button type="button" onClick={() => importRef.current?.click()}>导入 .pbres</button></div>
-        </section>
-        <input ref={importRef} hidden type="file" accept=".pbres" onChange={importPackage} />
-        {dialog?.kind === "new" && <div className="dialog-backdrop"><section className="dialog" role="dialog" aria-modal="true">
-          <h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div>
-        </section></div>}
-        {dialog?.kind === "diagnostics" && <div className="dialog-backdrop"><section className="dialog" role="dialog" aria-modal="true">
-          <h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
-            <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}</b></li>)}</ul>
-          <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>关闭</button></div>
-        </section></div>}
-      </main>
-    );
-  }
-
   const instanceAdversary = selectedInstance && selectedInstance.resource.template.id === adversaryTemplate.id
     ? selectedInstance.resource.data as AdversaryData
     : undefined;
@@ -1357,21 +1339,21 @@ export function CreatorWorkspacePrototype() {
           <header className="explorer-toolbar"><strong>资源管理器</strong><div>
             <button type="button" title="新建资源包" aria-label="新建资源包" onClick={() => setDialog({ kind: "new" })}><Icon name="packagePlus" /></button>
             <button type="button" title="导入资源包" aria-label="导入资源包" onClick={() => importRef.current?.click()}><Icon name="upload" /></button>
-            <button type="button" title="导出资源包" aria-label="导出资源包" onClick={exportPackage}><Icon name="download" /></button>
-            <button type="button" title="发布到资源市场" aria-label="发布到资源市场" onClick={openPublicationDialog}><Icon name="package" /></button>
-            <button type="button" title="新建资源" aria-label="新建资源" onClick={() => setDialog({ kind: "new-resource" })}><Icon name="filePlus" /></button>
-            <button type="button" title="新建文件夹" aria-label="新建文件夹" onClick={() => replaceActive(createWorkspaceFolder(active))}><Icon name="folderPlus" /></button>
+            <button type="button" title="导出资源包" aria-label="导出资源包" disabled={!active} onClick={exportPackage}><Icon name="download" /></button>
+            <button type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active} onClick={openPublicationDialog}><Icon name="package" /></button>
+            <button type="button" title="新建资源" aria-label="新建资源" disabled={!active} onClick={() => setDialog({ kind: "new-resource" })}><Icon name="filePlus" /></button>
+            <button type="button" title="新建文件夹" aria-label="新建文件夹" disabled={!active} onClick={() => active && replaceActive(createWorkspaceFolder(active))}><Icon name="folderPlus" /></button>
           </div></header>
           <label className="explorer-search"><Icon name="search" /><input aria-label="筛选资源" placeholder="筛选资源" /></label>
           <div className="workspace-package-list">
-            {workspaces.map((workspace) => <section className={`workspace-package${workspace.key === active.key ? " is-current" : ""}`} key={workspace.key}>
-              <div className={`package-root${workspace.key === active.key ? " is-current" : ""}`} onContextMenu={(event) => {
+            {workspaces.map((workspace) => <section className={`workspace-package${workspace.key === active?.key ? " is-current" : ""}`} key={workspace.key}>
+              <div className={`package-root${workspace.key === active?.key ? " is-current" : ""}`} onContextMenu={(event) => {
                 event.preventDefault();
                 switchWorkspace(workspace.key);
                 setTabletopContextMenu({ kind: "workspace", workspaceKey: workspace.key, x: event.clientX, y: event.clientY });
               }}>
                 <button type="button" className="package-root-main" onClick={() => switchWorkspace(workspace.key)}>
-                  <Icon name={workspace.key === active.key ? "chevronDown" : "chevronRight"} /><Icon name="package" /><strong>{workspace.document.package.name}</strong>
+                  <Icon name={workspace.key === active?.key ? "chevronDown" : "chevronRight"} /><Icon name="package" /><strong>{workspace.document.package.name}</strong>
                 </button>
                 <button type="button" aria-label={`${workspace.document.package.name}菜单`} onClick={(event) => {
                   switchWorkspace(workspace.key);
@@ -1379,7 +1361,7 @@ export function CreatorWorkspacePrototype() {
                   setTabletopContextMenu({ kind: "workspace", workspaceKey: workspace.key, x: bounds.left, y: bounds.bottom });
                 }}><Icon name="ellipsis" /></button>
               </div>
-              {workspace.key === active.key && <div className="resource-tree">
+              {active && workspace.key === active.key && <div className="resource-tree">
                 <WorkspaceTree
                   workspace={active}
                   activeResourceId={activeResourceId}
@@ -1392,7 +1374,7 @@ export function CreatorWorkspacePrototype() {
                   onDeleteNode={requestWorkspaceNodeDeletion}
                   onResourceContextMenu={(resourceId, x, y) => {
                     activateWorkspaceResource(resourceId);
-                    setTabletopContextMenu({ kind: "resource", resourceId, x, y, sendOpen: false });
+                    setTabletopContextMenu({ kind: "resource", resourceId, x, y });
                   }}
                   onRootContextMenu={(x, y) => setTabletopContextMenu({ kind: "workspace", workspaceKey: active.key, x, y })}
                   resourceTitle={resourceTitle}
@@ -1401,7 +1383,7 @@ export function CreatorWorkspacePrototype() {
               </div>}
             </section>)}
           </div>
-          <footer><span>{active.document.resources.length} 个资源</span><span>名称 ↑</span></footer>
+          <footer><span>{active?.document.resources.length ?? 0} 个资源</span><span>名称 ↑</span></footer>
         </aside>
 
         {appMode === "creator" && <section className="creator-workbench">
@@ -1409,7 +1391,7 @@ export function CreatorWorkspacePrototype() {
             {workspaces.flatMap((workspace) => workspace.openResourceIds.flatMap((resourceId) => {
               const candidate = workspace.document.resources.find((item) => item.id === resourceId);
               if (!candidate) return [];
-              const current = workspace.key === active.key && candidate.id === activeResourceId;
+              const current = workspace.key === active?.key && candidate.id === activeResourceId;
               return <div className={`resource-tab${current ? " is-current" : ""}${candidate.id === workspace.previewResourceId ? " is-preview" : ""}`} key={`${workspace.key}:${candidate.id}`}>
                 <button type="button" className="resource-tab-main" onClick={() => { switchWorkspace(workspace.key); setActiveResourceId(candidate.id); }} onDoubleClick={() => {
                   switchWorkspace(workspace.key);
@@ -1462,28 +1444,26 @@ export function CreatorWorkspacePrototype() {
           </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
         </section>}
 
-        {appMode === "gm" && activeTabletop && <section className="gm-workbench" data-design-frame={creatorWorkspaceDesign.gmTabletop.frame}>
+        {appMode === "gm" && <section className="gm-workbench" data-design-frame={creatorWorkspaceDesign.gmTabletop.frame}>
           <nav className="tabletop-tabs" aria-label="打开的桌面">
-            {tabletops.filter((tabletop) => openTabletopIds.includes(tabletop.id)).map((tabletop) => <div
-              className={`tabletop-tab ${tabletop.id === activeTabletop.id ? "is-current" : ""}`}
+            {tabletops.map((tabletop) => <div
+              className={`tabletop-tab ${tabletop.id === activeTabletop?.id ? "is-current" : ""}`}
               key={tabletop.id}
             ><button type="button" className="tabletop-tab-main" onClick={() => { setActiveTabletopId(tabletop.id); setSelectedInstanceId(""); setTabletopView("canvas"); }}><span>▦</span><b>{tabletop.name}</b></button><button
               type="button"
               className="tabletop-tab-close"
-              aria-label={`关闭 ${tabletop.name}`}
-              disabled={openTabletopIds.length === 1}
+              aria-label={`删除 ${tabletop.name}`}
+              title="删除桌面"
               onClick={() => {
-                const remaining = openTabletopIds.filter((id) => id !== tabletop.id);
-                setOpenTabletopIds(remaining);
-                if (tabletop.id === activeTabletop.id) setActiveTabletopId(remaining[0]!);
-                setSelectedInstanceId("");
-                setTabletopView("canvas");
+                setDialog({ kind: "delete-tabletop", tabletopId: tabletop.id, name: tabletop.name });
               }}
             ><Icon name="x" /></button></div>)}
-            <button type="button" className="new-tabletop" aria-label="新建桌面" onClick={() => createTabletopAndFocus()}>＋</button>
+            <button type="button" className="new-tabletop" aria-label="新建桌面" onClick={requestTabletopCreation}>＋</button>
           </nav>
 
-          {tabletopView === "canvas" && <div
+          {!activeTabletop && <div className="gm-tabletop-empty"><strong>还没有桌面</strong><button type="button" onClick={requestTabletopCreation}>＋ 新建桌面</button></div>}
+
+          {activeTabletop && tabletopView === "canvas" && <div
             ref={tabletopViewportRef}
             className="tabletop-viewport"
             onPointerDown={(event) => {
@@ -1608,7 +1588,7 @@ export function CreatorWorkspacePrototype() {
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); openPublicationDialog(); }}>发布到资源市场</button>
         <i />
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new-resource" }); }}>新建资源</button>
-        <button type="button" role="menuitem" onClick={() => { replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); }}>新建文件夹</button>
+        <button type="button" role="menuitem" onClick={() => { if (active) replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); }}>新建文件夹</button>
         <i />
         <button type="button" role="menuitem" onClick={() => requestWorkspacePackageClose(tabletopContextMenu.workspaceKey)}>关闭资源包</button>
       </div>}
@@ -1616,29 +1596,22 @@ export function CreatorWorkspacePrototype() {
       {tabletopContextMenu?.kind === "resource" && <div
         className="context-menu resource-context-menu"
         role="menu"
-        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 440)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 220)) }}
+        style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 230)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 190)) }}
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
+        <button type="button" role="menuitem" onClick={() => {
           activateWorkspaceResource(tabletopContextMenu.resourceId);
           setAppMode("creator");
           setTabletopContextMenu(null);
         }}>打开</button>
-        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => {
+        <button type="button" role="menuitem" onClick={() => {
           pinWorkspaceTab(tabletopContextMenu.resourceId);
           setAppMode("creator");
           setTabletopContextMenu(null);
         }}>在新标签页打开</button>
-        <button type="button" role="menuitem" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => duplicateResource(tabletopContextMenu.resourceId)}>复制</button>
-        <div className="context-submenu-anchor" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: true } : current)}>
-          <button type="button" role="menuitem" aria-haspopup="menu" aria-expanded={tabletopContextMenu.sendOpen}>发送到桌面<Icon name="chevronRight" /></button>
-          {tabletopContextMenu.sendOpen && <div className="context-menu send-to-tabletop-menu" role="menu">
-            {tabletops.map((tabletop) => <button type="button" role="menuitem" key={tabletop.id} className={tabletop.id === activeTabletop?.id ? "is-current" : ""} onClick={() => focusTabletop(tabletop.id, tabletopContextMenu.resourceId)}><span>▦</span>{tabletop.name}</button>)}
-            <i />
-            <button type="button" role="menuitem" className="create" onClick={() => createTabletopAndFocus(tabletopContextMenu.resourceId)}>＋ 新建桌面</button>
-          </div>}
-        </div>
-        <button type="button" role="menuitem" className="delete" onMouseEnter={() => setTabletopContextMenu((current) => current?.kind === "resource" ? { ...current, sendOpen: false } : current)} onClick={() => requestWorkspaceNodeDeletion({ kind: "resource", id: tabletopContextMenu.resourceId })}>删除</button>
+        <i />
+        <button type="button" role="menuitem" onClick={() => duplicateResource(tabletopContextMenu.resourceId)}>复制</button>
+        <button type="button" role="menuitem" className="delete" onClick={() => requestWorkspaceNodeDeletion({ kind: "resource", id: tabletopContextMenu.resourceId })}>删除</button>
       </div>}
 
       {tabletopContextMenu?.kind === "instance" && <div
@@ -1658,9 +1631,16 @@ export function CreatorWorkspacePrototype() {
         style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 240)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 150)) }}
         onPointerDown={(event) => event.stopPropagation()}
       >
+        <button type="button" role="menuitem" onClick={requestTabletopRename}>重命名</button>
+        <i />
         <button type="button" role="menuitem" onClick={() => tabletopImportRef.current?.click()}>导入 .pbtab</button>
         <button type="button" role="menuitem" onClick={exportTabletop}>导出 .pbtab</button>
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); window.print(); }}>打印</button>
+        <i />
+        <button type="button" role="menuitem" className="delete" onClick={() => {
+          if (activeTabletop) setDialog({ kind: "delete-tabletop", tabletopId: activeTabletop.id, name: activeTabletop.name });
+          setTabletopContextMenu(null);
+        }}>删除桌面</button>
       </div>}
 
       <input ref={tabletopImportRef} hidden type="file" accept=".pbtab" onChange={importTabletop} />
@@ -1674,9 +1654,6 @@ export function CreatorWorkspacePrototype() {
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
           <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
-        {dialog.kind === "handoff-tabletop" && <><h2>选择桌面</h2>
-          <div className="resource-type-choices">{tabletops.map((tabletop) => <button type="button" key={tabletop.id} onClick={() => { focusTabletop(tabletop.id, dialog.resourceId); setDialog(null); }}><span>▦</span>{tabletop.name}</button>)}<button type="button" onClick={() => { createTabletopAndFocus(dialog.resourceId); setDialog(null); }}>＋ 新建桌面</button></div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
         {dialog.kind === "publish" && <>
           <h2>发布到资源市场</h2>
@@ -1704,6 +1681,12 @@ export function CreatorWorkspacePrototype() {
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => confirmWorkspaceNodeDeletion(dialog.node)}>删除</button></div></>}
         {dialog.kind === "close-workspace" && <><h2>关闭资源包</h2><p>关闭“{dialog.name}”？对应的本地工作区数据将被删除。</p>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void closeWorkspacePackage(dialog.workspaceKey)}>关闭并删除</button></div></>}
+        {dialog.kind === "new-tabletop" && <><h2>新建桌面</h2><Field className="dialog-field" label="名称" value={tabletopNameDraft} onChange={setTabletopNameDraft} />
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!tabletopNameDraft.trim()} onClick={createTabletopFromDialog}>创建</button></div></>}
+        {dialog.kind === "rename-tabletop" && <><h2>重命名桌面</h2><Field className="dialog-field" label="名称" value={tabletopNameDraft} onChange={setTabletopNameDraft} />
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!tabletopNameDraft.trim()} onClick={() => renameTabletopFromDialog(dialog.tabletopId)}>保存</button></div></>}
+        {dialog.kind === "delete-tabletop" && <><h2>删除桌面</h2><p>删除“{dialog.name}”？对应的本地桌面数据将被删除。</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void deleteTabletop(dialog.tabletopId)}>删除</button></div></>}
       </section></div>}
       {notice && <div className="creator-toast" role="status"><Icon name="check" />{notice}</div>}
     </main>

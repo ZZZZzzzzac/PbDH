@@ -247,8 +247,8 @@ const gmMenusPage = unique(document.pages, "20 GM Dialogs & Menus");
 const gmMenuNodes = descendants(gmMenusPage);
 const gmCanvasMenu = unique(gmMenuNodes, "空白桌面 / 右键菜单");
 const gmInstanceMenu = unique(gmMenuNodes, "桌面实例 / 右键菜单");
-const gmSendToTabletopMenu = unique(gmMenuNodes, "资源右键 / 发送到桌面 / 子菜单");
-const gmSendToTabletopNew = unique(gmMenuNodes, "资源右键 / 发送到桌面 / 新建桌面");
+const gmResourceMenu = unique(gmMenuNodes, "资源右键 / 主菜单");
+const gmNamingDialog = unique(gmMenuNodes, "桌面命名");
 
 if (columns.layout !== "horizontal" || resourceNav.width !== 250 || workspaceBody.layout !== "horizontal") {
   throw new Error("Creator Workspace must retain the reviewed IDE navigation and editor/preview layout");
@@ -278,9 +278,10 @@ if (gmColumns.layout !== "horizontal" || gmResourceNav.width !== resourceNav.wid
 if (gmWorkspaceNodes.some((node) => node.name === "画布 / 工具栏")) {
   throw new Error("GM Tabletop must use whiteboard gestures without a canvas tool-mode toolbar");
 }
-if (gmInstanceMenu.children?.length !== 3 || gmCanvasMenu.children?.length < 3
-  || gmSendToTabletopMenu.children?.length < 2 || gmSendToTabletopNew.children?.length !== 2) {
-  throw new Error("GM Tabletop context and cascading menus must retain their reviewed actions");
+if (gmInstanceMenu.children?.length !== 3 || gmCanvasMenu.children?.length < 4
+  || gmResourceMenu.children?.length !== 5 || gmNamingDialog.children?.length !== 3
+  || gmMenuNodes.some((node) => node.name?.includes("发送到桌面"))) {
+  throw new Error("GM Tabletop naming and context menus must retain their reviewed actions without a send-to-tabletop submenu");
 }
 const gmCanvasRefs = descendants(gmCanvas).filter((node) => node.type === "ref");
 if (gmCanvasRefs.length !== 2 || gmCanvasRefs.some((node) => node.ref !== card.id)) {
@@ -387,7 +388,6 @@ const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-desi
     menus: {
       canvasWidth: gmCanvasMenu.width,
       instanceWidth: gmInstanceMenu.width,
-      sendToTabletopWidth: gmSendToTabletopMenu.width,
     },
     instanceEditor: {
       toolbarHeight: gmInstanceToolbar.height,

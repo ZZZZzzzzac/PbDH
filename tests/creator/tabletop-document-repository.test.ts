@@ -67,6 +67,19 @@ describe("GM Tabletop Document Repository", () => {
     expect(stored?.document.instances[0]?.resourceCopy.data.名称).toBe("牛头人破坏者");
   });
 
+  test("persists a renamed tabletop document", async () => {
+    const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
+    const model = createTabletopDocument(
+      "01989f4e-7b2c-7000-8000-000000000010",
+      "新桌面 1",
+    );
+
+    await repository.save(model, new Map());
+    await repository.save({ ...model, name: "深林伏击" }, new Map());
+
+    expect((await repository.list())[0]?.model.name).toBe("深林伏击");
+  });
+
   test("rejects invalid import before writing", async () => {
     const value = database();
     const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(value));
@@ -78,5 +91,22 @@ describe("GM Tabletop Document Repository", () => {
     await expect(repository.import({ document: invalid, media: new Map() }))
       .rejects.toThrow("Invalid Tabletop Document import");
     expect(await value.localDocuments.count()).toBe(0);
+  });
+
+  test("removes a tabletop document so reopening does not restore it", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const repository = new TabletopDocumentRepository(store);
+    const model = createTabletopDocument(
+      "01989f4e-7b2c-7000-8000-000000000020",
+      "待删除桌面",
+    );
+
+    await repository.save(model, new Map());
+    expect(await store.get("gm-tabletop-document", model.id)).toBeDefined();
+
+    await repository.remove(model.id);
+    expect(await store.get("gm-tabletop-document", model.id)).toBeUndefined();
+    expect(await repository.list()).toEqual([]);
   });
 });

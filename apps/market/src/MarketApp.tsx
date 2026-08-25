@@ -46,7 +46,6 @@ const routeLabels: Record<HandoffIntent["targetRoute"], string> = {
   weapons: "Daggerheart Core / 武器",
   "other-resources": "其他资源",
   "creator-ingress": "卡片工坊 / 资源包导入",
-  "tabletop-selection": "卡片工坊 / 桌面选择",
 };
 
 const targetLabels: Record<HandoffTarget, string> = {
@@ -348,7 +347,7 @@ function HandoffDialog({ intent, publication, onClose, onComplete }: { intent: H
   return <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="handoff-dialog" role="dialog" aria-modal="true" aria-labelledby="handoff-title" onMouseDown={(event) => event.stopPropagation()}>
       <header><h2 id="handoff-title">交接到{targetLabels[intent.target]}</h2><button type="button" aria-label="关闭" onClick={onClose}><Icon name="x" /></button></header>
-      <dl><dt>取得内容</dt><dd>完整资源包</dd>{focused && <><dt>聚焦资源</dt><dd>{focused.name}</dd></>}<dt>目标入口</dt><dd>{routeLabels[intent.targetRoute]}</dd>{intent.target === "gm" && <><dt>放置</dt><dd>进入桌面后手动放置</dd></>}</dl>
+      <dl><dt>取得内容</dt><dd>完整资源包</dd>{focused && <><dt>聚焦资源</dt><dd>{focused.name}</dd></>}<dt>目标入口</dt><dd>{routeLabels[intent.targetRoute]}</dd>{intent.target === "gm" && <><dt>放置</dt><dd>从共享工作区拖入桌面</dd></>}</dl>
       <footer><button type="button" onClick={onClose}>取消</button><button type="button" className="primary-button" onClick={onComplete}>继续</button></footer>
     </section>
   </div>;
@@ -471,7 +470,7 @@ export function MarketApp() {
       if (targetWindow) {
         targetWindow.focus();
         setHandoff(null);
-        setNotice(handoff.target === "gm" ? "已交接到 GM 桌面" : "已交接到卡片工坊");
+        setNotice(handoff.target === "gm" ? "已打开 GM 桌面并导入共享工作区" : "已打开卡片工坊");
         return;
       }
     }

@@ -10795,7 +10795,7 @@
                             {
                               "type": "icon_font",
                               "id": "n2240",
-                              "name": "桌面标签 / 陨落神殿 / 关闭",
+                              "name": "桌面标签 / 陨落神殿 / 删除",
                               "iconFontName": "x",
                               "width": 12.0,
                               "height": 12.0,
@@ -10864,7 +10864,7 @@
                             {
                               "type": "icon_font",
                               "id": "n2244",
-                              "name": "桌面标签 / 黑湾伏击 / 关闭",
+                              "name": "桌面标签 / 黑湾伏击 / 删除",
                               "iconFontName": "x",
                               "width": 12.0,
                               "height": 12.0,
@@ -12926,7 +12926,7 @@
                             {
                               "type": "icon_font",
                               "id": "n2393",
-                              "name": "桌面标签 / 陨落神殿 / 关闭",
+                              "name": "桌面标签 / 陨落神殿 / 删除",
                               "iconFontName": "x",
                               "width": 12.0,
                               "height": 12.0,
@@ -12995,7 +12995,7 @@
                             {
                               "type": "icon_font",
                               "id": "n2397",
-                              "name": "桌面标签 / 黑湾伏击 / 关闭",
+                              "name": "桌面标签 / 黑湾伏击 / 删除",
                               "iconFontName": "x",
                               "width": 12.0,
                               "height": 12.0,
@@ -21719,7 +21719,7 @@
                           "locked": false,
                           "width": "fill_container",
                           "height": "fit_content",
-                          "content": "资源右键菜单悬停展开桌面列表与新建桌面；选择目标只聚焦来源，不自动放置",
+                          "content": "Creator 与 GM 直接浏览同一工作区；资源只通过拖拽放入当前桌面",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 10.0,
                           "fontWeight": 650,
@@ -26115,7 +26115,7 @@
                     {
                       "type": "frame",
                       "id": "n1865",
-                      "name": "流程 B / 发送与放置 / 步骤 2 / 发送到桌面",
+                      "name": "流程 B / 发送与放置 / 步骤 2 / 切换 GM 桌面",
                       "width": "fill_container",
                       "height": 84.0,
                       "layout": "horizontal",
@@ -26194,7 +26194,7 @@
                               "locked": false,
                               "width": "fill_container",
                               "height": "fit_content",
-                              "content": "发送到桌面",
+                              "content": "切换 GM 桌面",
                               "fontFamily": "Noto Sans SC",
                               "fontSize": 12.0,
                               "fontWeight": 800,
@@ -26214,7 +26214,7 @@
                               "locked": false,
                               "width": "fill_container",
                               "height": "fit_content",
-                              "content": "选择已有桌面，或显式新建目标。",
+                              "content": "共享工作区保持可见，不选择目标桌面。",
                               "fontFamily": "Noto Sans SC",
                               "fontSize": 10.0,
                               "fontWeight": 500,
@@ -30495,7 +30495,7 @@
                           "locked": false,
                           "width": "fill_container",
                           "height": "fit_content",
-                          "content": "“发送到桌面”只打开陨落神殿并聚焦牛头人破坏者。",
+                          "content": "切换到 GM 页面后，工作区资源保持可见；当前桌面仍有 0 个实例。",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 10.0,
                           "fontWeight": 500,
@@ -32211,22 +32211,22 @@
                 {
                   "type": "frame",
                   "id": "n2592",
-                  "name": "资源右键 / 发送到桌面 / 级联状态",
-                  "width": 500.0,
-                  "height": 280.0,
+                  "name": "资源右键 / 标准状态",
+                  "width": 240.0,
+                  "height": 220.0,
                   "layout": "none",
                   "clipContent": false,
                   "children": [
                     {
                       "type": "text",
                       "id": "n2593",
-                      "name": "资源右键 / 发送到桌面 / 状态标题",
+                      "name": "资源右键 / 状态标题",
                       "x": 0.0,
                       "y": 0.0,
                       "locked": false,
-                      "width": 460.0,
+                      "width": 240.0,
                       "height": "fit_content",
-                      "content": "资源右键 · 发送到桌面",
+                      "content": "资源右键菜单",
                       "fontFamily": "Noto Sans SC",
                       "fontSize": 14.0,
                       "fontWeight": 800,
@@ -32246,7 +32246,7 @@
                       "x": 0.0,
                       "y": 36.0,
                       "width": 220.0,
-                      "height": 184.0,
+                      "height": 150.0,
                       "layout": "vertical",
                       "gap": 2.0,
                       "padding": 6.0,
@@ -32363,64 +32363,6 @@
                         },
                         {
                           "type": "frame",
-                          "id": "n2599",
-                          "name": "资源右键 / 主菜单 / 发送到桌面 / 悬停",
-                          "width": "fill_container",
-                          "height": 32.0,
-                          "layout": "horizontal",
-                          "gap": 8.0,
-                          "padding": [
-                            0.0,
-                            9.0
-                          ],
-                          "justifyContent": "space_between",
-                          "alignItems": "center",
-                          "cornerRadius": 4.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#E8E2D9"
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "n2600",
-                              "name": "资源右键 / 主菜单 / 发送到桌面 / 文字",
-                              "locked": false,
-                              "width": "fill_container",
-                              "height": "fit_content",
-                              "content": "发送到桌面",
-                              "fontFamily": "Noto Sans SC",
-                              "fontSize": 10.0,
-                              "fontWeight": 750,
-                              "lineHeight": 1.4,
-                              "textGrowth": "fixed-width",
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#21150F"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "icon_font",
-                              "id": "n2601",
-                              "name": "资源右键 / 主菜单 / 发送到桌面 / 展开图标",
-                              "iconFontName": "chevron-right",
-                              "width": 13.0,
-                              "height": 13.0,
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#725443"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
                           "id": "n2602",
                           "name": "资源右键 / 主菜单 / 分割线",
                           "width": "fill_container",
@@ -32436,7 +32378,7 @@
                         {
                           "type": "frame",
                           "id": "n2603",
-                          "name": "资源右键 / 主菜单 / 重命名",
+                          "name": "资源右键 / 主菜单 / 复制",
                           "width": "fill_container",
                           "height": 32.0,
                           "layout": "horizontal",
@@ -32456,11 +32398,11 @@
                             {
                               "type": "text",
                               "id": "n2604",
-                              "name": "资源右键 / 主菜单 / 重命名 / 文字",
+                              "name": "资源右键 / 主菜单 / 复制 / 文字",
                               "locked": false,
                               "width": "fill_container",
                               "height": "fit_content",
-                              "content": "重命名",
+                              "content": "复制",
                               "fontFamily": "Noto Sans SC",
                               "fontSize": 10.0,
                               "fontWeight": 650,
@@ -32512,288 +32454,6 @@
                                 {
                                   "type": "solid",
                                   "color": "#8A2525"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "n2607",
-                      "name": "资源右键 / 发送到桌面 / 子菜单",
-                      "x": 222.0,
-                      "y": 102.0,
-                      "width": 210.0,
-                      "height": 153.0,
-                      "layout": "vertical",
-                      "gap": 2.0,
-                      "padding": 6.0,
-                      "cornerRadius": 7.0,
-                      "fill": [
-                        {
-                          "type": "solid",
-                          "color": "#FFFDF8"
-                        }
-                      ],
-                      "stroke": {
-                        "thickness": 1.0,
-                        "fill": [
-                          {
-                            "type": "solid",
-                            "color": "#C9C1B6"
-                          }
-                        ]
-                      },
-                      "effects": [
-                        {
-                          "type": "shadow",
-                          "offsetX": 0.0,
-                          "offsetY": 5.0,
-                          "blur": 14.0,
-                          "spread": -2.0,
-                          "color": "#21150F26"
-                        }
-                      ],
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "n2608",
-                          "name": "资源右键 / 发送到桌面 / 陨落神殿",
-                          "width": "fill_container",
-                          "height": 32.0,
-                          "layout": "horizontal",
-                          "gap": 8.0,
-                          "padding": [
-                            0.0,
-                            9.0
-                          ],
-                          "alignItems": "center",
-                          "cornerRadius": 4.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#E8D4D1"
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "icon_font",
-                              "id": "n2609",
-                              "name": "资源右键 / 发送到桌面 / 陨落神殿 / 图标",
-                              "iconFontName": "layout-dashboard",
-                              "width": 13.0,
-                              "height": 13.0,
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#641F1D"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "text",
-                              "id": "n2610",
-                              "name": "资源右键 / 发送到桌面 / 陨落神殿 / 文字",
-                              "locked": false,
-                              "width": "fill_container",
-                              "height": "fit_content",
-                              "content": "陨落神殿",
-                              "fontFamily": "Noto Sans SC",
-                              "fontSize": 10.0,
-                              "fontWeight": 750,
-                              "lineHeight": 1.4,
-                              "textGrowth": "fixed-width",
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#21150F"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "n2611",
-                          "name": "资源右键 / 发送到桌面 / 黑湾伏击",
-                          "width": "fill_container",
-                          "height": 32.0,
-                          "layout": "horizontal",
-                          "gap": 8.0,
-                          "padding": [
-                            0.0,
-                            9.0
-                          ],
-                          "alignItems": "center",
-                          "cornerRadius": 4.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#FFFDF8"
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "icon_font",
-                              "id": "n2612",
-                              "name": "资源右键 / 发送到桌面 / 黑湾伏击 / 图标",
-                              "iconFontName": "layout-dashboard",
-                              "width": 13.0,
-                              "height": 13.0,
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#725443"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "text",
-                              "id": "n2613",
-                              "name": "资源右键 / 发送到桌面 / 黑湾伏击 / 文字",
-                              "locked": false,
-                              "width": "fill_container",
-                              "height": "fit_content",
-                              "content": "黑湾伏击",
-                              "fontFamily": "Noto Sans SC",
-                              "fontSize": 10.0,
-                              "fontWeight": 650,
-                              "lineHeight": 1.4,
-                              "textGrowth": "fixed-width",
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#3C332D"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "n2614",
-                          "name": "资源右键 / 发送到桌面 / 遗迹入口",
-                          "width": "fill_container",
-                          "height": 32.0,
-                          "layout": "horizontal",
-                          "gap": 8.0,
-                          "padding": [
-                            0.0,
-                            9.0
-                          ],
-                          "alignItems": "center",
-                          "cornerRadius": 4.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#FFFDF8"
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "icon_font",
-                              "id": "n2615",
-                              "name": "资源右键 / 发送到桌面 / 遗迹入口 / 图标",
-                              "iconFontName": "layout-dashboard",
-                              "width": 13.0,
-                              "height": 13.0,
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#725443"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "text",
-                              "id": "n2616",
-                              "name": "资源右键 / 发送到桌面 / 遗迹入口 / 文字",
-                              "locked": false,
-                              "width": "fill_container",
-                              "height": "fit_content",
-                              "content": "遗迹入口",
-                              "fontFamily": "Noto Sans SC",
-                              "fontSize": 10.0,
-                              "fontWeight": 650,
-                              "lineHeight": 1.4,
-                              "textGrowth": "fixed-width",
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#3C332D"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "n2617",
-                          "name": "资源右键 / 发送到桌面 / 分割线",
-                          "width": "fill_container",
-                          "height": 1.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#DED6CC"
-                            }
-                          ],
-                          "children": []
-                        },
-                        {
-                          "type": "frame",
-                          "id": "n2618",
-                          "name": "资源右键 / 发送到桌面 / 新建桌面",
-                          "width": "fill_container",
-                          "height": 32.0,
-                          "layout": "horizontal",
-                          "gap": 8.0,
-                          "padding": [
-                            0.0,
-                            9.0
-                          ],
-                          "alignItems": "center",
-                          "cornerRadius": 4.0,
-                          "fill": [
-                            {
-                              "type": "solid",
-                              "color": "#FFFDF8"
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "icon_font",
-                              "id": "n2619",
-                              "name": "资源右键 / 发送到桌面 / 新建桌面 / 图标",
-                              "iconFontName": "plus",
-                              "width": 13.0,
-                              "height": 13.0,
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#641F1D"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "text",
-                              "id": "n2620",
-                              "name": "资源右键 / 发送到桌面 / 新建桌面 / 文字",
-                              "locked": false,
-                              "width": "fill_container",
-                              "height": "fit_content",
-                              "content": "新建桌面",
-                              "fontFamily": "Noto Sans SC",
-                              "fontSize": 10.0,
-                              "fontWeight": 750,
-                              "lineHeight": 1.4,
-                              "textGrowth": "fixed-width",
-                              "fill": [
-                                {
-                                  "type": "solid",
-                                  "color": "#641F1D"
                                 }
                               ]
                             }
@@ -33414,6 +33074,333 @@
                                   "width": "fill_container",
                                   "height": "fit_content",
                                   "content": "关闭",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 750,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFDF8"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n2632",
+                      "name": "桌面命名",
+                      "width": 430.0,
+                      "height": 240.0,
+                      "layout": "vertical",
+                      "clipContent": true,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "effects": [
+                        {
+                          "type": "shadow",
+                          "offsetX": 0.0,
+                          "offsetY": 8.0,
+                          "blur": 24.0,
+                          "spread": -4.0,
+                          "color": "#21150F33"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n2633",
+                          "name": "桌面命名 / 标题栏",
+                          "width": "fill_container",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            16.0
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n2634",
+                              "name": "桌面命名 / 标题",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "桌面名称",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 16.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n2635",
+                              "name": "桌面命名 / 关闭",
+                              "iconFontName": "x",
+                              "width": 17.0,
+                              "height": 17.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#E9DED2"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n2636",
+                          "name": "桌面命名 / 内容",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 10.0,
+                          "padding": 16.0,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n2637",
+                              "name": "桌面命名 / 字段名",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "名称",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 700,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n2638",
+                              "name": "桌面命名 / 名称输入",
+                              "width": "fill_container",
+                              "height": 38.0,
+                              "layout": "horizontal",
+                              "gap": 8.0,
+                              "padding": [
+                                0.0,
+                                10.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n2639",
+                                  "name": "桌面命名 / 名称输入 / 图标",
+                                  "iconFontName": "layout-dashboard",
+                                  "width": 16.0,
+                                  "height": 16.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#725443"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n2640",
+                                  "name": "桌面命名 / 名称输入 / 文字",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "陨落神殿",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 750,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n2641",
+                          "name": "桌面命名 / 操作栏",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            16.0
+                          ],
+                          "justifyContent": "end",
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FAF7F1"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#D4C8B5"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n2642",
+                              "name": "桌面命名 / 取消",
+                              "width": "fit_content",
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                13.0
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F7F4EF"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n2643",
+                                  "name": "桌面命名 / 取消 / 文字",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "取消",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 750,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#3C332D"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n2644",
+                              "name": "桌面命名 / 保存",
+                              "width": "fit_content",
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                13.0
+                              ],
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#641F1D"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n2645",
+                                  "name": "桌面命名 / 保存 / 文字",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "保存",
                                   "fontFamily": "Noto Sans SC",
                                   "fontSize": 10.0,
                                   "fontWeight": 750,

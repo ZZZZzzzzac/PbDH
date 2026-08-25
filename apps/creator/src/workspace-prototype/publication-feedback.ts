@@ -7,6 +7,9 @@ const publicationMessages: Record<string, string> = {
   PUBLICATION_CANDIDATE_INVALID: "资源包未通过发布校验，请检查内容后重试。",
   PUBLICATION_REQUEST_FAILED: "发布失败，请稍后重试。",
   "creator.market-handoff.snapshot-mismatch": "市场资源包版本校验失败，请返回资源市场后重试。",
+  "creator.market-handoff.package-id-mismatch": "市场资源包身份校验失败，请返回资源市场后重试。",
+  "creator.market-handoff.package-version-mismatch": "市场资源包版本校验失败，请返回资源市场后重试。",
+  "creator.market-handoff.focus-resource-not-found": "市场资源定位已失效，请返回资源市场后重试。",
   "creator.market-handoff.request-failed": "无法从资源市场取得资源包，请确认服务已启动后重试。",
 };
 

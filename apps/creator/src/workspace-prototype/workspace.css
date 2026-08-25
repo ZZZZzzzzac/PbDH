@@ -104,7 +104,7 @@
 .feature-menu > button.delete { color: #9b252a; }
 .feature-menu > button.delete:hover, .feature-menu > button.delete:focus-visible { background: #f7e2e2; }
 .context-menu { position: fixed; z-index: 2000; display: grid; gap: 2px; padding: 6px; border: 1px solid #c9c1b6; border-radius: 7px; background: #fffdf8; box-shadow: 0 5px 14px -2px #21150f26; }
-.context-menu > button, .context-submenu-anchor > button, .send-to-tabletop-menu > button { width: 100%; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 9px; border: 0; border-radius: 4px; color: #3c332d; background: #fffdf8; font-size: 10px; font-weight: 650; text-align: left; white-space: nowrap; }
+.context-menu > button { width: 100%; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 9px; border: 0; border-radius: 4px; color: #3c332d; background: #fffdf8; font-size: 10px; font-weight: 650; text-align: left; white-space: nowrap; }
 .context-menu button:hover, .context-menu button:focus-visible, .context-menu button.is-current { background: #e8e2d9; outline: 0; }
 .context-menu button.delete { color: #8a2525; background: #f3d9d7; }
 .context-menu > i { display: block; height: 1px; margin: 2px 0; background: #ded6cc; }
@@ -113,12 +113,6 @@
 .resource-context-menu { width: 220px; }
 .instance-context-menu { width: var(--gm-instance-menu-width); }
 .canvas-context-menu { width: var(--gm-canvas-menu-width); }
-.context-submenu-anchor { position: relative; }
-.context-submenu-anchor > button { justify-content: space-between; }
-.context-submenu-anchor > button .icon { width: 13px; height: 13px; }
-.send-to-tabletop-menu { position: absolute; top: -6px; left: calc(100% - 4px); width: var(--gm-send-menu-width); max-height: min(420px, calc(100vh - 24px)); overflow-y: auto; }
-.send-to-tabletop-menu > i { display: block; height: 1px; margin: 2px 0; background: #ded6cc; }
-.send-to-tabletop-menu > button.create { color: #641f1d; font-weight: 750; }
 .feature-name { width: 242px; height: 32px; } .feature-name > span { width: 46px; font-weight: 750; } .feature-name input { width: 188px; height: 30px; color: #6f2024; font-weight: 650; }
 .feature-type { width: 152px; height: 32px; } .feature-type > span { width: 34px; font-weight: 750; } .feature-type input { width: 110px; height: 30px; }
 .description-line { align-items: start; min-height: 48px; }
@@ -168,6 +162,8 @@
 .tabletop-tab.is-current b { font-weight: 750; }
 .tabletop-tab.is-current .tabletop-tab-main > span { color: #641f1d; }
 .tabletop-tabs button.new-tabletop { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-right: 1px solid var(--gm-tabs-border); color: #62574e; background: #ded8cf; font-size: 16px; }
+.gm-tabletop-empty { display: grid; place-content: center; justify-items: center; gap: 12px; color: #62574e; background: var(--gm-canvas-bg); font-size: 12px; }
+.gm-tabletop-empty button { height: 32px; padding: 0 14px; border: 1px solid #b6aa9d; border-radius: 6px; color: #3c332d; background: #f7f4ef; font-size: 11px; font-weight: 700; }
 .instance-editor-toolbar { height: var(--gm-instance-toolbar-height); display: flex; align-items: center; justify-content: space-between; padding: 0 8px; background: #ece7df; border-bottom: 1px solid #c9c1b6; }
 .instance-editor-toolbar button { height: 30px; min-width: 30px; padding: 0 10px; border: 1px solid #c9c1b6; border-radius: 6px; color: #3c332d; background: #f7f4ef; font-size: 10px; font-weight: 700; }
 .instance-editor-toolbar button:disabled { cursor: default; opacity: .45; }

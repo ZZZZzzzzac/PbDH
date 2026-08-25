@@ -7,6 +7,8 @@ import "./styles.css";
 import "./workspace-prototype/workspace.css";
 import "@pbdh/platform-auth/styles.css";
 
+window.name = "pbdh-creator";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider><CreatorWorkspacePrototype /></AuthProvider>

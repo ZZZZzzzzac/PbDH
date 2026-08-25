@@ -131,9 +131,9 @@ describe("Market handoff intents", () => {
     expect(createHandoffIntent(enemy, "player").targetRoute).toBe("other-resources");
   });
 
-  test("GM handoff enters Creator ingress and target selection without auto placement", () => {
+  test("GM handoff uses the same shared Creator workspace ingress without auto placement", () => {
     expect(createHandoffIntent(enemy, "gm", "resource-minotaur")).toMatchObject({
-      targetRoute: "tabletop-selection",
+      targetRoute: "creator-ingress",
       autoInstall: false,
       autoPlace: false,
     });
@@ -147,6 +147,8 @@ describe("Market handoff intents", () => {
     expect(url.origin).toBe("http://localhost:5173");
     expect(url.searchParams.get("target")).toBe("gm");
     expect(url.searchParams.get("publicationId")).toBe(enemy.id);
+    expect(url.searchParams.get("packageId")).toBe(enemy.packageId);
+    expect(url.searchParams.get("packageVersion")).toBe(enemy.packageVersion);
     expect(url.searchParams.get("focusResourceId")).toBe("resource-minotaur");
     expect(url.searchParams.get("snapshotDigest")).toBe(enemy.snapshotDigest);
   });

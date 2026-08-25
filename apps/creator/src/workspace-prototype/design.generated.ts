@@ -98,8 +98,7 @@ export const creatorWorkspaceDesign = {
     },
     "menus": {
       "canvasWidth": 230,
-      "instanceWidth": 180,
-      "sendToTabletopWidth": 210
+      "instanceWidth": 180
     },
     "instanceEditor": {
       "toolbarHeight": 42,

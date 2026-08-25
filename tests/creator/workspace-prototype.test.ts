@@ -315,7 +315,7 @@ describe("Creator Workspace prototype state model", () => {
         tabs: { height: 36 },
         zoomStatus: { width: 72, height: 28 },
         canvas: { background: "#D8D1C7", selectedBorder: "#A8403D" },
-        menus: { canvasWidth: 230, instanceWidth: 180, sendToTabletopWidth: 210 },
+        menus: { canvasWidth: 230, instanceWidth: 180 },
         instanceEditor: { editorWidth: 560, previewBackground: "#D8D1C7" },
       },
     });
@@ -349,9 +349,30 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain("event.button !== 1 && event.button !== 2");
     expect(creatorSource).toContain("if (!event.ctrlKey) return");
     expect(creatorSource).toContain("application/x-pbdh-resource");
-    expect(creatorSource).toContain("send-to-tabletop-menu");
+    expect(creatorSource).not.toContain("发送到桌面");
+    expect(creatorSource).toContain("requestTabletopRename");
+    expect(creatorSource).toContain('dialog.kind === "new-tabletop"');
     expect(surfaceSource).toContain("onPointerMove={moveDrag}");
     expect(surfaceSource).toContain("onInstanceContextMenu");
     expect(surfaceSource).toContain("onDragStart={(event) => event.preventDefault()}");
+  });
+
+  test("keeps every tabletop tab open until deletion and imports Market packages into an empty workspace", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+
+    expect(creatorSource).not.toContain("openTabletopIds");
+    expect(creatorSource).not.toContain("handoff-tabletop");
+    expect(creatorSource).toContain("creatorWorkspaceRepository.save(next)");
+  });
+
+  test("claims the named Creator browsing context used by Market handoff", () => {
+    const creatorMain = readFileSync(path.join(root, "apps/creator/src/main.tsx"), "utf8");
+    const marketSource = readFileSync(path.join(root, "apps/market/src/MarketApp.tsx"), "utf8");
+
+    expect(creatorMain).toContain('window.name = "pbdh-creator"');
+    expect(marketSource).toContain('window.open(createCreatorHandoffUrl(handoff, creatorAppBaseUrl()), "pbdh-creator")');
   });
 });

@@ -94,7 +94,7 @@ export type HandoffIntent = {
   snapshotDigest: string;
   acquisition: "complete-resource-package";
   focusLocator?: { resourceId: string };
-  targetRoute: "weapons" | "other-resources" | "creator-ingress" | "tabletop-selection";
+  targetRoute: "weapons" | "other-resources" | "creator-ingress";
   autoInstall: false;
   autoPlace: false;
 };
@@ -112,8 +112,7 @@ export function createHandoffIntent(
   }
 
   let targetRoute: HandoffIntent["targetRoute"];
-  if (target === "creator") targetRoute = "creator-ingress";
-  else if (target === "gm") targetRoute = "tabletop-selection";
+  if (target === "creator" || target === "gm") targetRoute = "creator-ingress";
   else targetRoute = publication.kind === "weapon" ? "weapons" : "other-resources";
 
   return {
@@ -142,6 +141,8 @@ export function createCreatorHandoffUrl(
   url.searchParams.set("pbdhHandoff", "publication");
   url.searchParams.set("target", intent.target);
   url.searchParams.set("publicationId", intent.publicationId);
+  url.searchParams.set("packageId", intent.packageId);
+  url.searchParams.set("packageVersion", intent.packageVersion);
   url.searchParams.set("snapshotDigest", intent.snapshotDigest);
   if (intent.focusLocator) url.searchParams.set("focusResourceId", intent.focusLocator.resourceId);
   return url;
