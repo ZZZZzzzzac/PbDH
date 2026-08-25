@@ -1,0 +1,218 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import {
+  computeResourcePackageSnapshotDigest,
+  writePbres,
+  type ResourcePackageLogicalDocument,
+  type SystemPackageDocument,
+} from "@pbdh/contract-runtime";
+import { describe, expect, test } from "vitest";
+
+import {
+  parsePlayerMarketHandoff,
+  playerMarketArchiveUrl,
+  playerMarketHandoffMismatch,
+  withoutPlayerMarketHandoff,
+  type PlayerMarketHandoff,
+} from "../../apps/player/src/resources/market-handoff.ts";
+import { applyResourceSelection } from "../../apps/player/src/resources/apply-resource-selection.ts";
+import { prepareResourcePackageInstall } from "../../apps/player/src/resources/prepare-resource-package-install.ts";
+import { listResourcePickerCandidates } from "../../apps/player/src/resources/resource-picker.ts";
+
+const root = process.cwd();
+const document = JSON.parse(readFileSync(path.join(
+  root,
+  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+), "utf8")) as ResourcePackageLogicalDocument;
+const system = JSON.parse(readFileSync(path.join(
+  root,
+  "contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json",
+), "utf8")) as SystemPackageDocument;
+const asset = document.assets[0]!;
+const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
+  root,
+  "contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+)))]]);
+const bytes = writePbres(document, media);
+const adversaryDocument = JSON.parse(readFileSync(path.join(
+  root,
+  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
+), "utf8")) as ResourcePackageLogicalDocument;
+const adversaryBytes = new Uint8Array(readFileSync(path.join(
+  root,
+  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+)));
+const handoff: PlayerMarketHandoff = {
+  target: "player",
+  publicationId: "publication-weapon",
+  packageId: document.package.id,
+  packageVersion: document.package.version,
+  snapshotDigest: document.snapshotDigest,
+  focusResourceId: document.resources[0]!.id,
+};
+
+describe("Player Market handoff ingress", () => {
+  test("parses and removes only an explicit Player publication handoff", () => {
+    const url = new URL("http://localhost:5175/?keep=1");
+    url.searchParams.set("pbdhHandoff", "publication");
+    url.searchParams.set("target", "player");
+    url.searchParams.set("publicationId", handoff.publicationId);
+    url.searchParams.set("packageId", handoff.packageId);
+    url.searchParams.set("packageVersion", handoff.packageVersion);
+    url.searchParams.set("snapshotDigest", handoff.snapshotDigest);
+    url.searchParams.set("focusResourceId", handoff.focusResourceId!);
+
+    expect(parsePlayerMarketHandoff(url)).toEqual(handoff);
+    expect(playerMarketArchiveUrl(handoff)).toBe(`/api/publications/${handoff.publicationId}/download`);
+    expect(withoutPlayerMarketHandoff(url).search).toBe("?keep=1");
+    url.searchParams.set("target", "creator");
+    expect(parsePlayerMarketHandoff(url)).toBeNull();
+  });
+
+  test("rejects a downloaded snapshot that does not match the stable Market locator", () => {
+    expect(playerMarketHandoffMismatch({ ...handoff, snapshotDigest: "sha256:other" }, { document, media }))
+      .toBe("player.market-handoff.snapshot-mismatch");
+  });
+
+  test("uses the same candidate preparation for file and Market bytes", async () => {
+    const fromFile = await prepareResourcePackageInstall({ bytes, currentSystem: system, library: new Map() });
+    const fromMarket = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: handoff,
+    });
+
+    expect(fromFile).toMatchObject({ kind: "ready", plan: { kind: "insert" } });
+    expect(fromMarket).toMatchObject({
+      kind: "ready",
+      plan: {
+        kind: "insert",
+        routes: [{ destination: "native", nativeEntry: { id: "weapons", label: "武器" } }],
+      },
+    });
+  });
+
+  test("routes a Creator-style Market weapon archive with no targets to Player weapons", async () => {
+    const creatorDocument = structuredClone(document);
+    creatorDocument.targets = [];
+    creatorDocument.resources[0]!.template.version = "1.0.0";
+    creatorDocument.snapshotDigest = await computeResourcePackageSnapshotDigest(creatorDocument, media);
+    const creatorBytes = writePbres(creatorDocument, media);
+    const result = await prepareResourcePackageInstall({
+      bytes: creatorBytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: {
+        target: "player",
+        publicationId: "publication-creator-weapon",
+        packageId: creatorDocument.package.id,
+        packageVersion: creatorDocument.package.version,
+        snapshotDigest: creatorDocument.snapshotDigest,
+        focusResourceId: creatorDocument.resources[0]!.id,
+      },
+    });
+
+    expect(result).toMatchObject({
+      kind: "ready",
+      plan: {
+        kind: "insert",
+        routes: [{ destination: "native", nativeEntry: { id: "weapons", label: "武器" } }],
+      },
+    });
+  });
+
+  test("routes a real Market adversary archive to other resources", async () => {
+    const result = await prepareResourcePackageInstall({
+      bytes: adversaryBytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: {
+        target: "player",
+        publicationId: "publication-adversary",
+        packageId: adversaryDocument.package.id,
+        packageVersion: adversaryDocument.package.version,
+        snapshotDigest: adversaryDocument.snapshotDigest,
+        focusResourceId: adversaryDocument.resources[0]!.id,
+      },
+    });
+
+    expect(result).toMatchObject({
+      kind: "ready",
+      plan: { kind: "insert", routes: [{ destination: "other-resources" }] },
+    });
+  });
+
+  test("materializes a routed Market weapon through the formal System Package Dependency", async () => {
+    const prepared = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: handoff,
+    });
+    if (prepared.kind !== "ready" || prepared.plan.kind !== "insert") throw new Error("expected insert plan");
+    const installed = {
+      document: prepared.plan.candidate.document,
+      media: prepared.plan.candidate.media,
+      routes: prepared.plan.routes,
+    };
+    const [candidate] = listResourcePickerCandidates(
+      new Map([[installed.document.package.id, installed]]),
+      "weapons",
+    );
+    if (!candidate) throw new Error("expected routed weapon candidate");
+
+    const applied = applyResourceSelection({
+      characterData: { characterName: "阿斯特里德" },
+      currentSystem: system,
+      sourceModuleId: "pick-primary-weapon",
+      selectedResource: candidate.resource,
+    });
+
+    expect(applied.diagnostics).toEqual([]);
+    expect(applied.characterData).toEqual({
+      characterName: "阿斯特里德",
+      "primary-weapon-name": "**阔剑**｜敏捷｜近战｜d8 物理｜单手",
+      "primary-weapon-description": "可靠：你的攻击掷骰+1。",
+    });
+    expect(applied.characterData).not.toHaveProperty("resourceSelections");
+  });
+
+  test("keeps repeated installation of the same Market snapshot as a no-op", async () => {
+    const first = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: handoff,
+    });
+    if (first.kind !== "ready" || first.plan.kind !== "insert") throw new Error("expected insert plan");
+    const installed = {
+      document: first.plan.candidate.document,
+      media: first.plan.candidate.media,
+      routes: first.plan.routes,
+    };
+    const repeated = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map([[document.package.id, installed]]),
+      expectedMarketHandoff: handoff,
+    });
+
+    expect(repeated).toMatchObject({ kind: "ready", plan: { kind: "no-op" } });
+  });
+
+  test("reports mismatched Market bytes before creating an install plan", async () => {
+    const result = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: { ...handoff, packageId: "package-other" },
+    });
+
+    expect(result).toMatchObject({
+      kind: "invalid",
+      diagnostics: [{ code: "player.market-handoff.package-id-mismatch" }],
+    });
+  });
+});

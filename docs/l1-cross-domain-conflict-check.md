@@ -49,7 +49,7 @@
 | --- | --- | --- |
 | 产品与部署 | 通过 | `GM Tabletop` 是独立 L1，但只作为 Creator App 的特殊 Tabletop Document 标签页实现；没有独立 GM App、入口或部署物。 |
 | Workspace 与 Tabletop | 通过 | Creator/GM 共用左侧 Creator Workspace 和其危险操作警告；Tabletop Document 独立。桌面实例命令直接生效，无 undo/redo 或命令历史。 |
-| Resource Package 安装与路由 | 通过 | Target System Package References 为 `0..N`；所有结构有效包可安装。任一目标 ID/`MAJOR` 匹配且命中 Resource Compatibility 才进入原生入口，其余进入 Other Resources。 |
+| Resource Package 安装与路由 | 通过 | Target System Package References 为可选分发与发现元数据；所有结构有效包可安装。资源 Template 命中当前 System Package 的 Resource Compatibility 时进入原生入口，其余进入 Other Resources。 |
 | Player 资源应用 | 通过 | System Package 声明 Dependency，玩家触发选择，Player App 框架原子执行并写 Character Data；存档只保留最终值，不保留来源、选择或资源依赖。 |
 | 快照与下游独立性 | 通过 | 上游资源、Publication、Workspace 或已安装包变化不会自动修改 Character Data 最终值或 Tabletop Instance Resource Copy；反向编辑也不会写回上游。 |
 | 账号与云文档 | 通过 | 一个 PbDH Account；Character Save、Creator Workspace、GM Tabletop Document 共用 Cloud Document 机制，但保持独立 ID、payload、revision、删除和恢复生命周期。 |
@@ -80,9 +80,9 @@ Player 把 Tabletop 数据嵌入 Character Data；GM 使用独立 Tabletop Docum
 
 Character Save、Creator Workspace 与 GM Tabletop Document 共用本地先写、outbox、base revision、单活动会话、30 天回收站和恢复协议；登录前本地文档必须显式复制到云，payload 与领域生命周期保持独立。
 
-### C6：Target 是多目标原生路由元数据
+### C6：Template compatibility 决定 Player 原生路由
 
-Resource Package 可声明零个或多个精确目标引用。Target 不限制安装或 Other Resources 使用；Player 只用任一匹配目标决定是否继续检查 System Package Resource Compatibility。安装仓库只保存一份 Package Snapshot，切换 Current System Package 重算路由视图。
+Resource Package 可声明零个或多个精确目标引用，作为可选分发与发现元数据。Target 不限制安装、Other Resources 使用或原生路由；Player 逐资源按当前 System Package 对精确 Template ID 与版本范围的 Resource Compatibility 声明决定原生入口。安装仓库只保存一份 Package Snapshot，切换 Current System Package 重算路由视图。
 
 ### C7：资源选择是一次性 Player 写入
 
@@ -98,7 +98,7 @@ Creator App 与 GM Tabletop 保持两个 L1 验收边界，但只有 `apps/creat
 
 ## 后续门禁
 
-1. Resource Package Contract 首版直接采用 Target `0..N`，并以 fixtures 锁定集合规范化、任一目标匹配、Other Resources 降级和 SemVer 分类；发布后不得再把单值改数组而不走 Contract 版本规则。
+1. Resource Package Contract 首版直接采用 Target `0..N`，并以 fixtures 锁定集合规范化与可选分发元数据语义；Player 路由 fixtures 只按精确 Template ID、版本范围和本地实现可用性验证原生入口与 Other Resources 降级，不得用 Target 限制安装、访问或路由。
 2. Player Resource Manager 的 Interface 只暴露一份安装快照和按 Current System Package 计算的路由视图，避免把系统隔离复杂度泄漏到每个调用方，保持 Module 的 Depth 与路由规则的 Locality。
 3. Player 资源应用测试必须穿过同一个 Player Runtime Seam，证明 System Package 声明由 Player 框架执行、最终值原子写入且无选择来源持久化；不得用 App 私有 Adapter 绕过。
 4. Creator/GM 联合测试分别验证共享 Workspace 警告与直接 Tabletop 命令，不能把一个 L1 的确认机制复制到另一个 L1。

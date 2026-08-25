@@ -8,8 +8,8 @@
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 5 已完成；#23—#33、#35—#40 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Market 敌人交接到 GM 与本地恢复 #40 已通过人工端到端验收。
-- 下一步：实施 Market 武器交接到 Player Resource Manager #41。
+- 产品实现：阶段 5 已完成；#23—#33、#35—#41 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Market 敌人交接到 GM 与本地恢复 #40、Market 武器交接到 Player Resource Manager #41 均已通过人工端到端验收。
+- 下一步：实施 Publication 更新、撤回、恢复与主动拉取 #42。
 
 ## 推进模型
 
@@ -136,7 +136,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ### 4.2 System Authoring Workflow
 
-5. `System Package 创作与资源兼容声明`（#12，已发布并完成 triage，`ready-for-human`）：建立首条纵切所需的最小 System Package 创作与运行时声明能力，产出一个真实 Daggerheart System Package，供 Player 验证 Resource Package 的多目标原生路由与 Resource Compatibility；不把 Loader、CLI 或 Preview 实现组件升格为产品能力。
+5. `System Package 创作与资源兼容声明`（#12，已发布并完成 triage，`ready-for-human`）：建立首条纵切所需的最小 System Package 创作与运行时声明能力，产出一个真实 Daggerheart System Package，供 Player 验证按精确 Resource Template ID 与版本范围声明的原生路由兼容性；不把 Loader、CLI 或 Preview 实现组件升格为产品能力。
 
 ### 4.3 Creator App
 
@@ -145,7 +145,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ### 4.4 Player App
 
-8. `Player 资源取得与兼容路由`（#15，已发布并完成 triage，`ready-for-human`）：导入同一个 `.pbres`；所有结构有效的资源包均可安装，任一目标系统引用匹配且命中 Resource Compatibility 时进入原生资源区域，没有目标、目标不匹配、不兼容或无法执行精确 Template 时进入“其他资源”。
+8. `Player 资源取得与兼容路由`（#15，已发布并完成 triage，`ready-for-human`）：导入同一个 `.pbres`；所有结构有效的资源包均可安装，资源 Template 命中当前 System Package 的 Resource Compatibility 时进入原生资源区域，不兼容或无法执行精确 Template 时进入“其他资源”；目标系统引用只作可选分发与发现元数据。
 9. `Character Save 云连续性`（#16，已发布并完成 triage，`ready-for-human`）：Character Data 与嵌入的玩家桌面状态作为同一个 Character Save 同步；玩家在资源库选择后由 Player 框架执行 System Package Dependency 并保存最终字段值，不保存游戏资源引用、Resource Package 依赖或资源选中状态；不建立独立玩家桌面云文档，也不同步 Resource Package 安装状态。
 
 ### 4.5 GM Tabletop
@@ -189,7 +189,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 6：完成敌人与武器两条资源纵切
 
-阶段状态：进行中。实现 Issue #38—#45 已发布并完成 triage；#38—#40 已完成，#43、#45 为 HITL，#41—#42、#44 为 AFK。当前处理 #41。
+阶段状态：进行中。实现 Issue #38—#45 已发布并完成 triage；#38—#41 已完成，#43、#45 为 HITL，#42、#44 为 AFK。当前处理 #42。
 
 实施并联合验收两条真实路径。敌人卡验证 Creator、Market 与 GM，武器卡验证 Creator、Market 与 Player：
 

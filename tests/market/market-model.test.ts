@@ -8,6 +8,7 @@ import {
   canManagePublication,
   createCreatorHandoffUrl,
   createHandoffIntent,
+  createPlayerHandoffUrl,
   emptyCatalogFilters,
   filterPublications,
   publicationsOwnedBy,
@@ -131,6 +132,16 @@ describe("Market handoff intents", () => {
     expect(createHandoffIntent(enemy, "player").targetRoute).toBe("other-resources");
   });
 
+  test("routes the focused weapon in a mixed package to Player weapons", () => {
+    const mixed = publication({
+      kind: "mixed",
+      templateIds: ["敌人", "武器"],
+      resources: [...enemy.resources, ...weapon.resources],
+    });
+    expect(createHandoffIntent(mixed, "player", "resource-broadsword").targetRoute).toBe("weapons");
+    expect(createHandoffIntent(mixed, "player", "resource-minotaur").targetRoute).toBe("other-resources");
+  });
+
   test("GM handoff uses the same shared Creator workspace ingress without auto placement", () => {
     expect(createHandoffIntent(enemy, "gm", "resource-minotaur")).toMatchObject({
       targetRoute: "creator-ingress",
@@ -151,6 +162,23 @@ describe("Market handoff intents", () => {
     expect(url.searchParams.get("packageVersion")).toBe(enemy.packageVersion);
     expect(url.searchParams.get("focusResourceId")).toBe("resource-minotaur");
     expect(url.searchParams.get("snapshotDigest")).toBe(enemy.snapshotDigest);
+  });
+
+  test("serializes Player handoff with stable publication and package locators only", () => {
+    const url = createPlayerHandoffUrl(
+      createHandoffIntent(weapon, "player", "resource-broadsword"),
+      "http://localhost:5175/",
+    );
+    expect(url.origin).toBe("http://localhost:5175");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      pbdhHandoff: "publication",
+      target: "player",
+      publicationId: weapon.id,
+      packageId: weapon.packageId,
+      packageVersion: weapon.packageVersion,
+      snapshotDigest: weapon.snapshotDigest,
+      focusResourceId: "resource-broadsword",
+    });
   });
 
   test("rejects withdrawn acquisition and forged focus locators", () => {

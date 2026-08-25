@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   commitResourcePackageInstall,
+  commitResourcePackageRemoval,
   planResourcePackageInstall,
   type InstalledResourcePackage,
   type ResourceLibrary,
@@ -84,6 +85,17 @@ describe("Player Resource Library", () => {
     expect(library.get(current.document.package.id)?.document.package.version)
       .toBe(baseDocument.package.version);
     expect(next.get(current.document.package.id)?.document.package.version).toBe("1.1.0");
+  });
+
+  test("removes a whole package from a new map and keeps the previous library immutable", () => {
+    const current = installed();
+    const library: ResourceLibrary = new Map([[current.document.package.id, current]]);
+
+    const next = commitResourcePackageRemoval(library, current.document.package.id);
+
+    expect(next).not.toBe(library);
+    expect(next.has(current.document.package.id)).toBe(false);
+    expect(library.has(current.document.package.id)).toBe(true);
   });
 
   test("routes every resource independently when a package contains multiple Templates", () => {

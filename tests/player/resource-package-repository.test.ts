@@ -13,6 +13,7 @@ import {
   DexieResourcePackageRepository,
   PbDHLocalDatabase,
 } from "../../apps/player/src/resources/resource-package-repository.ts";
+import { restorePlayerResourceLibrary } from "../../apps/player/src/PlayerAppPrototype.tsx";
 
 const root = process.cwd();
 const databases: PbDHLocalDatabase[] = [];
@@ -55,6 +56,31 @@ describe("Dexie Resource Package Repository", () => {
       candidate.media.get(candidate.document.assets[0]!.id),
     );
     expect(installed?.source).toBe("file");
+  });
+
+  test("restores a Market-installed package and media without a Market request", async () => {
+    const store = repository().repository;
+    const candidate = fixture();
+
+    await store.replace(candidate, "market");
+    const [restored] = await store.list();
+
+    expect(restored?.source).toBe("market");
+    expect(restored?.document.snapshotDigest).toBe(candidate.document.snapshotDigest);
+    expect(restored?.media.get(candidate.document.assets[0]!.id)).toEqual(
+      candidate.media.get(candidate.document.assets[0]!.id),
+    );
+  });
+
+  test("restores only packages installed in IndexedDB", async () => {
+    const store = repository().repository;
+    const marketPackage = fixture();
+    await store.replace(marketPackage, "market");
+
+    const restored = await restorePlayerResourceLibrary(store);
+
+    expect(restored.size).toBe(1);
+    expect(restored.has(marketPackage.document.package.id)).toBe(true);
   });
 
   test("rejects an incomplete update and preserves the previous snapshot", async () => {

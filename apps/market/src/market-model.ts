@@ -107,13 +107,16 @@ export function createHandoffIntent(
   if (publication.status !== "available") {
     throw new Error("publication.withdrawn");
   }
-  if (focusedResourceId && !publication.resources.some((resource) => resource.id === focusedResourceId)) {
-    throw new Error("focus.resource.not-found");
-  }
+  const focusedResource = focusedResourceId
+    ? publication.resources.find((resource) => resource.id === focusedResourceId)
+    : undefined;
+  if (focusedResourceId && !focusedResource) throw new Error("focus.resource.not-found");
 
   let targetRoute: HandoffIntent["targetRoute"];
   if (target === "creator" || target === "gm") targetRoute = "creator-ingress";
-  else targetRoute = publication.kind === "weapon" ? "weapons" : "other-resources";
+  else targetRoute = focusedResource?.templateId === "武器" || (!focusedResource && publication.kind === "weapon")
+    ? "weapons"
+    : "other-resources";
 
   return {
     kind: "publication-handoff",
@@ -140,6 +143,22 @@ export function createCreatorHandoffUrl(
   const url = new URL(creatorBaseUrl);
   url.searchParams.set("pbdhHandoff", "publication");
   url.searchParams.set("target", intent.target);
+  url.searchParams.set("publicationId", intent.publicationId);
+  url.searchParams.set("packageId", intent.packageId);
+  url.searchParams.set("packageVersion", intent.packageVersion);
+  url.searchParams.set("snapshotDigest", intent.snapshotDigest);
+  if (intent.focusLocator) url.searchParams.set("focusResourceId", intent.focusLocator.resourceId);
+  return url;
+}
+
+export function createPlayerHandoffUrl(
+  intent: HandoffIntent,
+  playerBaseUrl: string | URL,
+): URL {
+  if (intent.target !== "player") throw new Error("handoff.target.not-player");
+  const url = new URL(playerBaseUrl);
+  url.searchParams.set("pbdhHandoff", "publication");
+  url.searchParams.set("target", "player");
   url.searchParams.set("publicationId", intent.publicationId);
   url.searchParams.set("packageId", intent.packageId);
   url.searchParams.set("packageVersion", intent.packageVersion);

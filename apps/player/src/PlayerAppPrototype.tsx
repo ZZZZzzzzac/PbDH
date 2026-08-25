@@ -1,19 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import type {
-  ResourcePackageCandidate,
-  ResourcePackageLogicalDocument,
-  SystemPackageDocument,
-} from "@pbdh/contract-runtime";
+import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 import { PlatformAppBar } from "@pbdh/platform-ui";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import { adversaryRendererFor } from "@pbdh/templates/frontend";
 import type { AdversaryData } from "@pbdh/templates/core";
 
-import primaryWeaponPackageJson from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
 import systemJson from "../../../contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json";
 
-import { ResourceManager } from "./resource-manager/ResourceManager.tsx";
+import {
+  ResourceManager,
+  type ResourcePackageIngress,
+} from "./resource-manager/ResourceManager.tsx";
 import { ResourcePickerDialog } from "./resource-manager/ResourcePickerDialog.tsx";
 import {
   applyResourceSelection,
@@ -21,23 +19,37 @@ import {
 } from "./resources/apply-resource-selection.ts";
 import {
   commitResourcePackageInstall,
+  commitResourcePackageRemoval,
   type ResourcePackageInstallPlan,
 } from "./resources/resource-library.ts";
-import { DexieResourcePackageRepository } from "./resources/resource-package-repository.ts";
+import {
+  parsePlayerMarketHandoff,
+  playerMarketArchiveUrl,
+  withoutPlayerMarketHandoff,
+} from "./resources/market-handoff.ts";
+import {
+  DexieResourcePackageRepository,
+  type ResourcePackageRepository,
+} from "./resources/resource-package-repository.ts";
 import { routeResourcePackage } from "./resources/route-resource-package.ts";
 import type { InstalledResourcePackage, ResourceLibrary } from "./resources/resource-library.ts";
 
 const currentSystem = systemJson as SystemPackageDocument;
-const primaryWeaponDocument = primaryWeaponPackageJson as ResourcePackageLogicalDocument;
-const primaryWeaponInstalled: InstalledResourcePackage = {
-  document: primaryWeaponDocument,
-  media: new Map(),
-  routes: routeResourcePackage({ currentSystem, resourcePackage: primaryWeaponDocument }),
-};
 const primaryWeaponPicker = currentSystem.modules.find(
   (module): module is Extract<SystemPackageDocument["modules"][number], { type: "resourcePicker" }> =>
     module.type === "resourcePicker" && module.id === "pick-primary-weapon",
 );
+
+export async function restorePlayerResourceLibrary(
+  repository: ResourcePackageRepository,
+): Promise<ResourceLibrary> {
+  const stored = await repository.list();
+  return new Map(stored.map((candidate) => [candidate.document.package.id, {
+      document: candidate.document,
+      media: candidate.media,
+      routes: routeResourcePackage({ currentSystem, resourcePackage: candidate.document }),
+    }] as const));
+}
 
 type WeaponData = {
   名称: string;
@@ -53,18 +65,19 @@ type WeaponData = {
 
 export function PlayerAppPrototype() {
   const repository = useMemo(() => new DexieResourcePackageRepository(), []);
-  const [library, setLibrary] = useState<ResourceLibrary>(() => new Map([
-    [primaryWeaponDocument.package.id, primaryWeaponInstalled],
-  ]));
+  const [library, setLibrary] = useState<ResourceLibrary>(() => new Map());
+  const [libraryReady, setLibraryReady] = useState(false);
+  const [incomingPackage, setIncomingPackage] = useState<ResourcePackageIngress>();
+  const marketHandoffStartedRef = useRef(false);
   const [managerOpen, setManagerOpen] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerError, setPickerError] = useState<string>();
   const [characterData, setCharacterData] = useState<CharacterData>({});
-  const [openResource, setOpenResource] = useState(() => ({
-    installed: primaryWeaponInstalled,
-    resourceId: primaryWeaponDocument.resources[0]!.id,
-  }));
-  const resource = openResource.installed.document.resources.find(
+  const [openResource, setOpenResource] = useState<{
+    installed: InstalledResourcePackage;
+    resourceId: string;
+  }>();
+  const resource = openResource?.installed.document.resources.find(
     (candidate) => candidate.id === openResource.resourceId,
   );
   const previewResource = resource?.template.id === "敌人"
@@ -73,36 +86,25 @@ export function PlayerAppPrototype() {
   const weapon = resource?.template.id === "武器"
     ? resource.data as unknown as WeaponData
     : undefined;
-  const route = openResource.installed.routes.find((candidate) =>
+  const route = openResource?.installed.routes.find((candidate) =>
     candidate.resource.id === openResource.resourceId);
-  const resourceArea = route?.nativeEntry?.label ?? "其他资源";
+  const resourceArea = resource ? route?.nativeEntry?.label ?? "其他资源" : "资源";
   const [assets, setAssets] = useState(new Map<string, { status: "ready"; url: string }>());
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        let stored = await repository.list();
-        if (!stored.some((candidate) => candidate.document.package.id === primaryWeaponDocument.package.id)) {
-          const candidate: ResourcePackageCandidate = {
-            document: primaryWeaponDocument,
-            media: new Map(),
-          };
-          await repository.replace(candidate, "bundled");
-          stored = await repository.list();
-        }
+        const restored = await restorePlayerResourceLibrary(repository);
         if (cancelled) return;
-        const restored = new Map(stored.map((candidate) => [candidate.document.package.id, {
-          document: candidate.document,
-          media: candidate.media,
-          routes: routeResourcePackage({ currentSystem, resourcePackage: candidate.document }),
-        }]));
         setLibrary(restored);
-        const first = restored.get(primaryWeaponDocument.package.id) ?? restored.values().next().value;
+        const first = restored.values().next().value;
         const firstResource = first?.document.resources[0];
-        if (first && firstResource) setOpenResource({ installed: first, resourceId: firstResource.id });
+        setOpenResource(first && firstResource ? { installed: first, resourceId: firstResource.id } : undefined);
       } catch (error) {
         console.error("无法恢复本地资源库", error);
+      } finally {
+        if (!cancelled) setLibraryReady(true);
       }
     })();
     return () => {
@@ -111,7 +113,41 @@ export function PlayerAppPrototype() {
   }, [repository]);
 
   useEffect(() => {
-    if (!resource) {
+    if (!libraryReady || marketHandoffStartedRef.current) return;
+    const handoff = parsePlayerMarketHandoff(window.location.href);
+    if (!handoff) return;
+    marketHandoffStartedRef.current = true;
+    const cleanedUrl = withoutPlayerMarketHandoff(window.location.href);
+    window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
+    setManagerOpen(true);
+    const ingressId = `market:${handoff.publicationId}:${handoff.snapshotDigest}`;
+    void fetch(playerMarketArchiveUrl(handoff))
+      .then(async (response) => {
+        if (!response.ok) throw new Error("无法取得市场资源包");
+        return new Uint8Array(await response.arrayBuffer());
+      })
+      .then((bytes) => setIncomingPackage({
+        id: ingressId,
+        source: "market",
+        bytes,
+        expectedMarketHandoff: handoff,
+      }))
+      .catch((error) => setIncomingPackage({
+        id: ingressId,
+        source: "market",
+        diagnostics: [{
+          code: "player.market-handoff.request-failed",
+          severity: "error",
+          family: "player",
+          version: "1",
+          location: "/publication",
+          params: { message: error instanceof Error ? error.message : "unknown" },
+        }],
+      }));
+  }, [libraryReady]);
+
+  useEffect(() => {
+    if (!resource || !openResource) {
       setAssets(new Map());
       return;
     }
@@ -134,13 +170,26 @@ export function PlayerAppPrototype() {
         if (asset.url.startsWith("blob:")) URL.revokeObjectURL(asset.url);
       }
     };
-  }, [openResource.installed, resource]);
+  }, [openResource, resource]);
 
   async function commitInstall(
     plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>,
+    source: "file" | "market",
   ) {
-    await repository.replace(plan.candidate, "file");
+    await repository.replace(plan.candidate, source);
     setLibrary((current) => commitResourcePackageInstall(current, plan));
+  }
+
+  async function removePackage(packageId: string) {
+    await repository.remove(packageId);
+    const next = commitResourcePackageRemoval(library, packageId);
+    setLibrary(next);
+    setOpenResource((current) => {
+      if (current?.installed.document.package.id !== packageId) return current;
+      const first = next.values().next().value;
+      const firstResource = first?.document.resources[0];
+      return first && firstResource ? { installed: first, resourceId: firstResource.id } : undefined;
+    });
   }
 
   return <main className="player-app">
@@ -164,7 +213,7 @@ export function PlayerAppPrototype() {
       </aside>
     </div>
 
-    {managerOpen && <ResourceManager currentSystem={currentSystem} library={library} onCommitInstall={commitInstall} onClose={() => setManagerOpen(false)} onOpenResource={(installed, resourceId) => { setOpenResource({ installed, resourceId }); setManagerOpen(false); }} />}
+    {managerOpen && <ResourceManager currentSystem={currentSystem} library={library} onCommitInstall={commitInstall} onRemovePackage={removePackage} incomingPackage={incomingPackage} onIncomingPackageHandled={(id) => setIncomingPackage((current) => current?.id === id ? undefined : current)} onClose={() => setManagerOpen(false)} onOpenResource={(installed, resourceId) => { setOpenResource({ installed, resourceId }); setManagerOpen(false); }} />}
     {pickerOpen && primaryWeaponPicker?.type === "resourcePicker" && <ResourcePickerDialog library={library} module={primaryWeaponPicker} error={pickerError} onClose={() => setPickerOpen(false)} onCommit={(candidate) => {
       const result = applyResourceSelection({
         characterData,

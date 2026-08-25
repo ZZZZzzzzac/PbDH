@@ -1,6 +1,6 @@
 # Route Resource Packages with Optional Multiple System Targets
 
-Status: accepted
+Status: superseded in Player routing by ADR-0058
 
 A Resource Package may declare zero or more Target System Package References. Each reference contains one stable System Package ID and one exact SemVer version. An empty collection means that the package makes no native-system claim; it does not make the package invalid. Multiple references let one immutable Resource Package Snapshot declare native integration candidates for several rule systems without copying or forking the package.
 

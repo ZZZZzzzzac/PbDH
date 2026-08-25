@@ -6,4 +6,6 @@ import { PlayerAppPrototype } from "./PlayerAppPrototype.tsx";
 import "./styles.css";
 import "@pbdh/platform-auth/styles.css";
 
+window.name = "pbdh-player";
+
 createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><PlayerAppPrototype /></AuthProvider></StrictMode>);

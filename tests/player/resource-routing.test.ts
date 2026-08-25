@@ -30,7 +30,7 @@ function routeWithTargets(targets: ResourcePackageLogicalDocument["targets"]) {
 }
 
 describe("Player Resource Compatibility routing", () => {
-  test("routes a matching target and compatible Template to native entry", () => {
+  test("routes a compatible Template to its native entry", () => {
     expect(routeWithTargets(resourcePackage.targets)).toMatchObject([
       {
         destination: "native",
@@ -39,30 +39,29 @@ describe("Player Resource Compatibility routing", () => {
     ]);
   });
 
-  test("supports zero, single, and multiple targets with any-target matching", () => {
-    expect(routeWithTargets([])[0]).toMatchObject({
-      destination: "other-resources",
-      reason: "no-targets",
-    });
-    expect(routeWithTargets([
-      { systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660099", version: "1.0.0" },
-    ])[0]).toMatchObject({
-      destination: "other-resources",
-      reason: "target-mismatch",
-    });
-    expect(routeWithTargets([
-      { systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660099", version: "1.0.0" },
-      ...resourcePackage.targets,
-    ])[0]?.destination).toBe("native");
+  test("target metadata does not gate Template compatibility", () => {
+    for (const targets of [
+      [],
+      [{ systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660099", version: "1.0.0" }],
+      [{ systemPackageId: system.package.id, version: "2.0.0" }],
+      [
+        { systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660099", version: "1.0.0" },
+        ...resourcePackage.targets,
+      ],
+    ]) {
+      expect(routeWithTargets(targets)[0]?.destination).toBe("native");
+    }
   });
 
-  test("requires matching System ID and SemVer MAJOR", () => {
-    expect(routeWithTargets([
-      { systemPackageId: system.package.id, version: "2.0.0" },
-    ])[0]).toMatchObject({ destination: "other-resources", reason: "target-mismatch" });
-    expect(routeWithTargets([
-      { systemPackageId: system.package.id, version: "1.99.0" },
-    ])[0]?.destination).toBe("native");
+  test("routes the exact Creator weapon pattern with no targets", () => {
+    const creatorPackage = structuredClone(resourcePackage);
+    creatorPackage.targets = [];
+    creatorPackage.resources[0]!.template.version = "1.0.0";
+
+    expect(routeResourcePackage({ currentSystem: system, resourcePackage: creatorPackage })[0]).toMatchObject({
+      destination: "native",
+      nativeEntry: { id: "weapons", label: "武器" },
+    });
   });
 
   test("falls back when target matches but Template compatibility does not", () => {

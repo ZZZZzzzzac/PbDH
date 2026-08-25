@@ -50,3 +50,12 @@ export function commitResourcePackageInstall(
   });
   return next;
 }
+
+export function commitResourcePackageRemoval(
+  library: ResourceLibrary,
+  packageId: string,
+): ResourceLibrary {
+  const next = new Map(library);
+  next.delete(packageId);
+  return next;
+}

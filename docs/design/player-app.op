@@ -216,7 +216,7 @@
                       "name": "覆盖表 / 原生路由 / 场景",
                       "locked": false,
                       "width": 290.0,
-                      "content": "目标匹配且声明兼容",
+                      "content": "模板身份与版本兼容",
                       "fontFamily": "Noto Sans SC",
                       "fontSize": 13.0,
                       "fontWeight": 600

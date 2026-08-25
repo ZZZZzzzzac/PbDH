@@ -18,6 +18,7 @@ import {
   canManagePublication,
   createCreatorHandoffUrl,
   createHandoffIntent,
+  createPlayerHandoffUrl,
   emptyCatalogFilters,
   filterPublications,
   publicationsOwnedBy,
@@ -66,6 +67,20 @@ function creatorAppBaseUrl(): URL {
     return url;
   }
   return new URL("/creator/", window.location.origin);
+}
+
+function playerAppBaseUrl(): URL {
+  const configured = import.meta.env.VITE_PLAYER_APP_URL as string | undefined;
+  if (configured?.trim()) return new URL(configured, window.location.origin);
+  if (import.meta.env.DEV) {
+    const url = new URL(window.location.href);
+    url.port = "5175";
+    url.pathname = "/";
+    url.search = "";
+    url.hash = "";
+    return url;
+  }
+  return new URL("/player/", window.location.origin);
 }
 
 function SearchField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -471,6 +486,14 @@ export function MarketApp() {
         targetWindow.focus();
         setHandoff(null);
         setNotice(handoff.target === "gm" ? "已打开 GM 桌面并导入共享工作区" : "已打开卡片工坊");
+        return;
+      }
+    } else {
+      const targetWindow = window.open(createPlayerHandoffUrl(handoff, playerAppBaseUrl()), "pbdh-player");
+      if (targetWindow) {
+        targetWindow.focus();
+        setHandoff(null);
+        setNotice("已打开玩家车卡器");
         return;
       }
     }
