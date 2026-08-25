@@ -16,6 +16,13 @@ export {
   weaponRendererStyles,
   type WeaponRuntimeState,
 } from "./weapon/1.0.0-alpha.1/renderer.tsx";
+export { weaponAuthoringLayoutV2 } from "./weapon/1.0.0-alpha.2/authoring-layout.ts";
+export {
+  weaponCardDesignSourceV2,
+  weaponRendererRevisionV2,
+  weaponRendererStylesV2,
+  type WeaponRuntimeStateV2,
+} from "./weapon/1.0.0-alpha.2/renderer.tsx";
 export type {
   AuthoringControl,
   AuthoringField,
