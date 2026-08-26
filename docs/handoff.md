@@ -5,9 +5,10 @@
 ## 当前落点
 
 - 分支：`main`
-- Web 功能线本地检查点：`147a2c1`（`开发中`）；格式转换器远程检查点：`6302109`（`feat: add third-party conversion engines`）。
+- 当前代码检查点：本文件所在提交；已合并 Web 功能线与格式转换器工作线。
 - 路线状态：阶段 5 已完成；阶段 6 的 #38—#41 已完成，#42 已完成自动化验证并等待人工验收，详见 `docs/roadmap.md`。
-- 目标：继续逐 Template 完成第三方资源转换；资源格式为 `.pbres`、RinkCX、基德、dhsheet、ZZZ，人物格式为 `.pbcha`、dhsheet、ZZZ。
+- 资源转换核心阶段已告一段落；下一转换工作是 Creator 产品接入。人物格式 `.pbcha`、dhsheet、ZZZ
+  保持开发期测试 Profile，等待正式 Character Save Contract 后再继续。
 
 ## 权威上下文
 
@@ -24,29 +25,27 @@
 - 固定并抽取 RinkCX、基德、dhsheet、ZZZ 的最小读取测试引擎；`.pbres` 使用本仓库权威 Reader/Writer。
 - 建立 `.pbcha`、dhsheet、ZZZ 的临时人物卡双向转换测试链；正式 Character Save Schema 尚未建立。
 - 已完成资源 Template：敌人、武器、护甲、物品、职业、子职业、种族、社群、领域卡、环境。
-- `武器@1.0.0-alpha.2` 新增游戏`描述`与`风味描述`分离及对应前端 Renderer；其余新增类型使用
-  `0.0.0-dev.1` 临时 Core Template，不进入生产前端支持清单。
+- `武器@1.0.0-alpha.2` 新增游戏`描述`与`风味描述`分离及对应前端 Renderer；护甲、物品、职业、
+  子职业、种族、社群、领域卡和环境使用 `0.0.0-dev.1` 临时 Core Template，不进入生产前端支持清单。
 - `.pbres` 读取现可恢复所有上述 Template 的具体资源种类。
-- 未裁定的基德 `ingredient/meal/material` 已恢复为未映射资源，避免伪装成合法“物品”。
+- 新增内置 `自由@1.0.0` Template、Authoring Layout 与基础 Renderer；数据固定为
+  `名称 + 类型 + 简介 + 内容块[]`。
+- 基德 16 个暂不兼容的独有卡型已显式映射到自由模板；不再为它们逐个建立专用 Template，
+  也不再伪装成武器、物品等既有资源。
 
 ## 已验证
 
-- 提交前 `npm run verify` 通过：31 个 TypeScript 测试文件、225 个测试；43 个 Python 测试；
-  类型检查与 Creator、Player、Market 构建通过。
-- 已知非阻塞警告：Creator 构建 chunk 超过 500 kB；Git 在 Windows 提示部分 LF 将转 CRLF。
+- 本轮 `npm run verify` 通过：41 个 TypeScript 测试文件、281 个测试；69 个 Python 测试；
+  依赖边界、设计检查、类型检查与 Platform 构建通过。
+- 已知非阻塞警告：Platform 构建 chunk 超过 500 kB；Git 在 Windows 提示部分 LF 将转 CRLF。
 
 ## 下一步
 
 1. 人工验收 #42；通过后进入敌人路径的 Creator 与 GM 云恢复 #43。
-2. 用户尚未批准下一个转换模板。上次给出的建议是基德“专属卡（`story`）”：规范字段为名称、
-   触发、游戏效果`描述`、`风味描述`；基德精确映射，dhsheet/ZZZ 使用开放扩展记录，RinkCX 拒绝。
-   先取得用户确认再实现。
-3. 继续坚持“一次一个模板”：先从固定 revision 源码确认原生结构，再给用户字段与损失裁定，
+2. 不再逐个处理基德独有的 `story`、载具、异常、据点、食材等 16 类；它们统一走自由模板。
+3. 对真正需要专用语义的新类型继续坚持“一次一个模板”：先从固定 revision 源码确认原生结构，再给用户字段与损失裁定，
    获批后实现 Template、Adapter、目标引擎测试、文档并运行 `npm run verify`。
-4. 基德尚未裁定的扩展类型包括 `calamity`、`ingredient`、`meal`、`transformation`、`material`、
-   `vehicle`、`madness`、`clue`、`prophecy`、`question`、`quest`、`wheelchair`、`anomaly`、
-   `stronghold`、`landmark` 等；不得仅因字段相近就映射到现有 Template。
-5. 所有资源模板完成后，再回到人物卡临时 Profile，逐字段对照正式 Character Save Contract；
+4. 所有计划中的专用资源模板完成后，再回到人物卡临时 Profile，逐字段对照正式 Character Save Contract；
    当前临时 Profile 不得进入生产持久化或正式导出。
 
 ## 用户已确认的总规则

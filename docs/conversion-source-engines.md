@@ -32,9 +32,10 @@
 - 转换会话内的来源 DTO，用于尚未经过逐 Template 损失裁定的往返证明。
 
 来源 DTO 和完整报告不得持久化到 Resource Package、Workspace、Market 或云数据。当前敌人、
-武器、护甲、物品、职业、子职业、种族、社群、领域卡和环境已注册 Template 映射；其中护甲、
-物品、职业、子职业、种族、社群、领域卡和环境仍使用开发期临时 Template。其他类型停留在转换信封中，等待对应 Template 或显式 Free Template
-映射，不能伪装成合法资源。
+武器、护甲、物品、职业、子职业、种族、社群、领域卡和环境已注册专用 Template 映射；其中护甲、
+物品、职业、子职业、种族、社群、领域卡和环境仍使用开发期临时 Template。基德独有且暂不兼容的
+16 类使用显式自由 Template 映射；其他未知类型继续停留在转换信封中，不能仅因字段相近而伪装成
+合法资源。
 
 ## 人物卡转换边界
 
@@ -146,9 +147,23 @@ System Package 的 Character Format Adapter 拥有。
 - dhsheet 使用已声明中文“环境”类型的 `variant`，ZZZ 使用开放的“环境”记录，两者完整携带规范字段；
 - RinkCX 英文原名按既有裁定静默忽略；该临时 Template 不进入完整前端支持清单。
 
+“自由模板”使用 `自由@1.0.0`，裁定如下：
+
+- 规范字段固定为`名称`、`类型`、`简介`与有序`内容`块；每个内容块只含`标题`与`正文`；
+- 基德的 `story`、`calamity`、`ingredient`、`meal`、`transformation`、`material`、
+  `vehicle`、`madness`、`clue`、`prophecy`、`question`、`quest`、`wheelchair`、
+  `anomaly`、`stronghold`、`landmark` 暂不建立专用 Template，显式映射到自由模板；
+- 基德结构化数组按原顺序格式化为可见文本行；所有卡面可见业务字段均进入内容块，不把
+  creator、owner、来源 ID、来源 DTO 或未知隐藏字段写入游戏资源；
+- 同一转换会话内依靠来源 DTO 可无损导回原基德格式；持久化为自由资源后不承诺重新构造
+  基德原始结构；
+- dhsheet 使用 `variant` 自定义类型，ZZZ 使用开放记录，两者完整携带自由模板字段；RinkCX
+  不支持自由资源，转换保持拒绝；
+- 未在上述清单中的未知类型必须继续返回未映射或稳定失败，不能自动进入自由模板。
+
 当前仍需逐 Template 或人物模块裁定的项目包括：
 
-- 基德的 28 类、dhsheet 六分组与 ZZZ 开放类型之间存在拆分、合并和扁平化；
+- 基德已专用映射的类型、自由映射的 16 类、dhsheet 六分组与 ZZZ 开放类型之间存在拆分、合并和扁平化；
 - ZZZ `{data, position}` 与 dhsheet `StandardCard[20]` 的卡牌身份、布局和槽位不等价。
 
 同来源往返必须保留未识别的未来字段。跨来源转换只有在对应决策已编码并有目标引擎测试

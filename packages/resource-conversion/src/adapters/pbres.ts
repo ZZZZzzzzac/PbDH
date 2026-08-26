@@ -72,6 +72,7 @@ function kindFor(templateId: string): ResourceKind {
   if (templateId === "社群") return "community";
   if (templateId === "领域卡") return "domain";
   if (templateId === "环境") return "environment";
+  if (templateId === "自由") return "free";
   return "free";
 }
 

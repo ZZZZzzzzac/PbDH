@@ -4,6 +4,7 @@ import {
   temporaryCommunityTemplate,
   temporaryDomainTemplate,
   temporaryEnvironmentTemplate,
+  freeTemplate,
   templateRegistry,
   temporaryArmorTemplate,
   temporaryItemTemplate,
@@ -113,6 +114,18 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
       };
     }) : [];
     return { id: temporaryEnvironmentTemplate.id, version: temporaryEnvironmentTemplate.version, data };
+  }
+  if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
+    const data: JsonObject = {
+      名称: resource.name,
+      类型: text(resource.fields.类型),
+      简介: text(resource.fields.简介),
+      内容: resource.fields.内容.map((value) => {
+        const block = isObject(value) ? value : {};
+        return { 标题: text(block.标题), 正文: text(block.正文) };
+      }),
+    };
+    return { id: freeTemplate.id, version: freeTemplate.version, data };
   }
   return undefined;
 }

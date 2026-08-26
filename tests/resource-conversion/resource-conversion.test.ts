@@ -538,17 +538,82 @@ describe("registered Template mapping and native pbres", () => {
     }
   });
 
-  test("unadjudicated Kid ingredient is not disguised as a legal item", async () => {
+  test("Kid-only card types map their visible fields to the Free Template", async () => {
+    const sources: Array<Record<string, JsonValue>> = [
+      { type: "story", trigger: "造成伤害时", effect: "伤害+2" },
+      { type: "calamity", effect: "天空坠落" },
+      { type: "ingredient", flavors: [{ name: "咸", die: "d4" }], feature: "提升菜肴效果" },
+      { type: "meal", components: [{ name: "月盐", die: "d4" }], effect: "恢复生命", die: "1d6" },
+      { type: "transformation", features: [{ name: "利爪", description: "伤害+1" }] },
+      { type: "material", source: "巨龙", part: "鳞片", features: [{ name: "耐火", description: "抵抗火焰" }] },
+      { type: "vehicle", armaments: [{ name: "弩炮", damage: "2d10" }], features: [{ name: "坚固", description: "护甲+1" }] },
+      { type: "madness", effect: "看到幻象", cureCondition: "完成休息" },
+      { type: "clue", content: "门锁被撬开", note: "来自现场" },
+      { type: "prophecy", content: "双月重合", successEffect: "王国得救", failureEffect: "灾厄降临" },
+      { type: "question", questionType: "背景", options: ["你失去了谁？", "你在逃避什么？"] },
+      { type: "quest", questGiver: "镇长", dangerLevel: "高", deadline: "三天", objectives: "救回村民", reward: "100金币" },
+      { type: "wheelchair", frameType: "轻型", tier: "2", trait: "敏捷", range: "近战", damage: "d8", burden: "单手", evasionMod: "+1", feature: "机动", actions: "冲刺", consequences: "标记压力" },
+      { type: "anomaly", containmentClass: "欧几里得", source: "裂隙", procedures: "避光保存", effects: "制造幻影", drawback: "消耗压力" },
+      { type: "stronghold", functions: "提供休息", restrictions: "位置固定" },
+      { type: "landmark", appearance: "黑色高塔", functions: "指引方向", notes: "夜间发光" },
+    ];
+    for (const [index, source] of sources.entries()) {
+      const imported = await resourceConversionRegistry.import("kid", input({
+        id: `free-${index}`, name: `自由资源${index}`, description: "可见简介", creator: "测试", owner: "测试", ...source,
+      }));
+      expect(imported.ok).toBe(true);
+      if (!imported.ok) throw new Error("import failed");
+      const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
+      expect(mapped.unmapped).toEqual([]);
+      expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.0" });
+      expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}`, 简介: "可见简介" });
+      expect(mapped.candidates[0]?.data.内容).toEqual(expect.any(Array));
+      expect((mapped.candidates[0]?.data.内容 as JsonValue[]).length).toBeGreaterThan(0);
+      expect(mapped.candidates[0]?.diagnostics).toEqual([]);
+    }
+  });
+
+  test("Free Template survives dhsheet and ZZZ while RinkCX rejects it", async () => {
     const imported = await resourceConversionRegistry.import("kid", input({
-      id: "ingredient", type: "ingredient", name: "月盐", description: "银色晶体。",
-      creator: "测试", owner: "测试", flavors: [{ name: "咸", die: "d4" }], feature: "提升菜肴效果。",
+      id: "story", type: "story", name: "复仇誓言", description: "你不会忘记那一天。",
+      creator: "测试", owner: "测试", trigger: "造成伤害时", effect: "伤害+2",
     }));
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) throw new Error("import failed");
+    const kidExport = await resourceConversionRegistry.export("kid", imported.batch);
+    expect(kidExport.ok).toBe(true);
+    if (!kidExport.ok) throw new Error("Kid export failed");
+    expect(kidEngineRead(kidExport.artifact.bytes)).toMatchObject({
+      type: "story", trigger: "造成伤害时", effect: "伤害+2",
+    });
+    const expected = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]?.data;
+    for (const formatId of ["dhsheet", "zzz"] as const) {
+      const exported = await resourceConversionRegistry.export(formatId, imported.batch);
+      expect(exported.ok).toBe(true);
+      if (!exported.ok) throw new Error("export failed");
+      if (formatId === "dhsheet") dhsheetEngineImport(exported.artifact.bytes, false);
+      else zzzEngineRead(exported.artifact.bytes);
+      const reimported = await resourceConversionRegistry.import(formatId, {
+        bytes: exported.artifact.bytes, fileName: exported.artifact.fileName,
+      });
+      expect(reimported.ok).toBe(true);
+      if (!reimported.ok) throw new Error("re-import failed");
+      expect(mapBatchToRegisteredCandidates(reimported.batch.resources).candidates[0]?.data).toEqual(expected);
+    }
+    const rinkcx = await resourceConversionRegistry.export("rinkcx", imported.batch);
+    expect(rinkcx.ok).toBe(false);
+    expect(rinkcx.report.diagnostics).toContainEqual(expect.objectContaining({ code: "rinkcx.kind.unsupported" }));
+  });
+
+  test("unknown open records do not enter the Free Template without an explicit visible mapping", async () => {
+    const imported = await resourceConversionRegistry.import("zzz", input([{
+      名称: "未知记录", 类型: "未来类型", 私有结构: { value: "不能自动持久化" },
+    }]));
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
     expect(mapped.candidates).toEqual([]);
     expect(mapped.unmapped).toHaveLength(1);
-    expect(mapped.unmapped[0]?.kind).toBe("free");
   });
 
   test("item Contract remains complete in dhsheet and ZZZ records", async () => {
@@ -1023,6 +1088,33 @@ describe("registered Template mapping and native pbres", () => {
     if (!exported.ok) throw new Error("pbres export failed");
     const read = await loadPbres(exported.artifact.bytes, validatePbresConversionCandidate);
     expect(read.candidate?.document.package.id).toBe(imported.batch.nativePackage?.package.id);
+  });
+
+  test("pbres restores the exact Free Template identity", async () => {
+    const bytes = new Uint8Array(readFileSync(path.join(
+      process.cwd(), "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+    )));
+    const loaded = await loadPbres(bytes, validatePbresConversionCandidate);
+    expect(loaded.candidate).toBeDefined();
+    if (!loaded.candidate) throw new Error("fixture did not load");
+    const document = structuredClone(loaded.candidate.document);
+    const resource = document.resources[0]!;
+    resource.template = { id: "自由", version: "1.0.0" };
+    resource.data = {
+      名称: "复仇誓言", 类型: "专属", 简介: "你不会忘记那一天。",
+      内容: [{ 标题: "触发条件", 正文: "造成伤害时" }, { 标题: "效果", 正文: "伤害+2" }],
+    };
+    document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, loaded.candidate.media);
+    const imported = await resourceConversionRegistry.import("pbres", {
+      bytes: writePbres(document, loaded.candidate.media), fileName: "free.pbres", container: "pbres",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) throw new Error("pbres import failed");
+    expect(imported.batch.resources[0]?.kind).toBe("free");
+    expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]).toMatchObject({
+      template: { id: "自由", version: "1.0.0" },
+      data: resource.data,
+    });
   });
 
   test("pbres rejects resource data that violates its exact registered Template", async () => {

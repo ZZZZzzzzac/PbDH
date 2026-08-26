@@ -11,7 +11,13 @@ export {
   buildTemplateSupportManifest,
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
-export { adversaryRendererFor, weaponRendererFor } from "./renderer-registry.ts";
+export { adversaryRendererFor, freeRendererFor, weaponRendererFor } from "./renderer-registry.ts";
+export { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";
+export {
+  freeRendererRevision,
+  freeRendererStyles,
+  type FreeRuntimeState,
+} from "./free/1.0.0/renderer.tsx";
 export { weaponAuthoringLayout } from "./weapon/1.0.0/authoring-layout.ts";
 export { weaponAuthoringLayout as legacyWeaponAuthoringLayout } from "./weapon/1.0.0-alpha.1/authoring-layout.ts";
 export {

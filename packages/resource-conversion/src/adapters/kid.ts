@@ -34,6 +34,106 @@ const subclassLevels = [
   { field: "advancedFeature", level: "进阶" },
   { field: "masteryFeature", level: "精通" },
 ] as const;
+const freeTypeLabels: Record<string, string> = {
+  story: "专属",
+  calamity: "灾厄",
+  ingredient: "食材",
+  meal: "料理",
+  transformation: "转变卡",
+  material: "材料",
+  vehicle: "载具",
+  madness: "疯狂",
+  clue: "线索",
+  prophecy: "预言",
+  question: "问题",
+  quest: "任务",
+  wheelchair: "战斗轮椅",
+  anomaly: "异常",
+  stronghold: "据点",
+  landmark: "地标",
+};
+
+type FreeField = {
+  field: string;
+  title: string;
+  itemFields?: Array<{ field: string; label: string }>;
+};
+
+const freeFields: Record<string, FreeField[]> = {
+  story: [{ field: "trigger", title: "触发条件" }, { field: "effect", title: "效果" }],
+  calamity: [{ field: "effect", title: "灾厄效果" }],
+  ingredient: [
+    { field: "flavors", title: "味型配置", itemFields: [{ field: "name", label: "味型" }, { field: "die", label: "骰子" }] },
+    { field: "feature", title: "特性" },
+  ],
+  meal: [
+    { field: "components", title: "食材构成", itemFields: [{ field: "name", label: "食材" }, { field: "die", label: "骰子" }] },
+    { field: "die", title: "总对应骰" }, { field: "effect", title: "额外效果" },
+  ],
+  transformation: [{ field: "features", title: "转变特性", itemFields: [{ field: "name", label: "名称" }, { field: "description", label: "描述" }] }],
+  material: [
+    { field: "source", title: "来源" }, { field: "part", title: "部位" },
+    { field: "features", title: "材料特性", itemFields: [{ field: "name", label: "名称" }, { field: "description", label: "描述" }] },
+  ],
+  vehicle: [
+    { field: "armaments", title: "武装", itemFields: [{ field: "name", label: "名称" }, { field: "damage", label: "伤害" }] },
+    { field: "features", title: "载具特性", itemFields: [{ field: "name", label: "名称" }, { field: "description", label: "描述" }] },
+  ],
+  madness: [{ field: "effect", title: "效果" }, { field: "cureCondition", title: "失效条件" }],
+  clue: [{ field: "content", title: "内容" }, { field: "note", title: "备注" }],
+  prophecy: [
+    { field: "content", title: "预言内容" }, { field: "successEffect", title: "应验效果" },
+    { field: "failureEffect", title: "失败效果" },
+  ],
+  question: [
+    { field: "questionType", title: "问题类型" },
+    { field: "options", title: "填写内容", itemFields: [] },
+  ],
+  quest: [
+    { field: "questGiver", title: "任务发布者" }, { field: "dangerLevel", title: "危险等级" },
+    { field: "deadline", title: "期限" }, { field: "objectives", title: "目标" }, { field: "reward", title: "奖励" },
+  ],
+  wheelchair: [
+    { field: "frameType", title: "框架类型" }, { field: "tier", title: "位阶" },
+    { field: "trait", title: "属性" }, { field: "range", title: "距离" },
+    { field: "damage", title: "伤害" }, { field: "burden", title: "负荷" },
+    { field: "evasionMod", title: "闪避修正" }, { field: "feature", title: "特性" },
+    { field: "actions", title: "动作" }, { field: "consequences", title: "后果" },
+  ],
+  anomaly: [
+    { field: "containmentClass", title: "收容等级" }, { field: "source", title: "发生源头" },
+    { field: "procedures", title: "收容措施" }, { field: "effects", title: "异常效应" },
+    { field: "drawback", title: "代价与负面后果" },
+  ],
+  stronghold: [{ field: "functions", title: "据点功能" }, { field: "restrictions", title: "特殊限制" }],
+  landmark: [
+    { field: "appearance", title: "外观" }, { field: "functions", title: "功能" }, { field: "notes", title: "特殊备注" },
+  ],
+};
+
+function freeFieldBody(value: unknown, itemFields?: FreeField["itemFields"]): string {
+  if (!Array.isArray(value)) return text(value);
+  if (itemFields?.length === 0) return value.map(text).filter(Boolean).join("\n");
+  return value.map((item) => {
+    const object = isObject(item) ? item : {};
+    return (itemFields ?? []).map(({ field, label }) => {
+      const fieldValue = text(object[field]);
+      return fieldValue ? `${label}：${fieldValue}` : "";
+    }).filter(Boolean).join("；");
+  }).filter(Boolean).join("\n");
+}
+
+function freeFieldsFor(raw: JsonObject, type: string): JsonObject {
+  return {
+    名称: text(raw.name),
+    类型: freeTypeLabels[type] ?? type,
+    简介: text(raw.description),
+    内容: (freeFields[type] ?? []).map(({ field, title, itemFields }) => ({
+      标题: title,
+      正文: freeFieldBody(raw[field], itemFields),
+    })).filter((block) => block.正文),
+  };
+}
 
 function subclassName(value: unknown): string {
   return text(value).replace(/[\s\-－—]*(?:基础|进阶|精通)$/u, "").trim();
@@ -55,6 +155,7 @@ function kindFor(type: string): ResourceKind {
 
 function fieldsFor(raw: JsonObject): JsonObject {
   const type = text(raw.type);
+  if (freeTypeLabels[type]) return freeFieldsFor(raw, type);
   const common: JsonObject = {
     名称: text(raw.name),
     类型: type,

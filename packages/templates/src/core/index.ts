@@ -5,6 +5,7 @@ import { temporaryArmorTemplate } from "./armor/0.0.0-dev.1/capability.ts";
 import { temporaryCommunityTemplate } from "./community/0.0.0-dev.1/capability.ts";
 import { temporaryDomainTemplate } from "./domain/0.0.0-dev.1/capability.ts";
 import { temporaryEnvironmentTemplate } from "./environment/0.0.0-dev.1/capability.ts";
+import { freeTemplate } from "./free/1.0.0/capability.ts";
 import { temporaryItemTemplate } from "./item/0.0.0-dev.1/capability.ts";
 import { temporaryProfessionTemplate } from "./profession/0.0.0-dev.1/capability.ts";
 import { temporarySubclassTemplate } from "./subclass/0.0.0-dev.1/capability.ts";
@@ -29,6 +30,8 @@ export { temporaryDomainTemplate } from "./domain/0.0.0-dev.1/capability.ts";
 export type { TemporaryDomainData } from "./domain/0.0.0-dev.1/capability.ts";
 export { temporaryEnvironmentTemplate } from "./environment/0.0.0-dev.1/capability.ts";
 export type { TemporaryEnvironmentData, TemporaryEnvironmentFeature } from "./environment/0.0.0-dev.1/capability.ts";
+export { freeTemplate } from "./free/1.0.0/capability.ts";
+export type { FreeContentBlock, FreeData } from "./free/1.0.0/capability.ts";
 export { temporaryItemTemplate } from "./item/0.0.0-dev.1/capability.ts";
 export type { TemporaryItemData } from "./item/0.0.0-dev.1/capability.ts";
 export { temporaryProfessionTemplate } from "./profession/0.0.0-dev.1/capability.ts";
@@ -57,6 +60,7 @@ export const templateRegistry = new TemplateRegistry([
   temporaryCommunityTemplate,
   temporaryDomainTemplate,
   temporaryEnvironmentTemplate,
+  freeTemplate,
   temporaryItemTemplate,
   temporaryProfessionTemplate,
   temporarySubclassTemplate,

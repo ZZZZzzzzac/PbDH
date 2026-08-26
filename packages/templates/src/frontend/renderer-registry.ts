@@ -2,6 +2,7 @@ import {
   adversaryRendererRevision as legacyAdversaryRendererRevision,
 } from "./adversary/1.0.0-alpha.1/renderer.tsx";
 import { adversaryRendererRevision } from "./adversary/1.0.0/renderer.tsx";
+import { freeRendererRevision } from "./free/1.0.0/renderer.tsx";
 import {
   weaponRendererRevision as legacyWeaponRendererRevision,
 } from "./weapon/1.0.0-alpha.1/renderer.tsx";
@@ -25,4 +26,9 @@ export function weaponRendererFor(version: string) {
     return weaponRendererRevision;
   }
   throw new Error(`Unsupported weapon Renderer version: ${version}`);
+}
+
+export function freeRendererFor(version: string) {
+  if (version === freeRendererRevision.templateVersion) return freeRendererRevision;
+  throw new Error(`Unsupported free Renderer version: ${version}`);
 }
