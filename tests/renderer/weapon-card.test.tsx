@@ -10,11 +10,12 @@ import {
   RendererRevisionRegistry,
 } from "../../packages/resource-renderer/src/core.ts";
 import { CanonicalCardSurface } from "../../packages/resource-renderer/src/react.tsx";
-import type { WeaponData } from "../../packages/templates/src/core/index.ts";
+import { weaponTemplateV2, type WeaponData } from "../../packages/templates/src/core/index.ts";
 import {
   weaponCardDesignSource,
   weaponRendererRevision,
   weaponRendererStyles,
+  weaponRendererRevisionV2,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const root = process.cwd();
@@ -154,5 +155,33 @@ describe("weapon-card-r1 Canonical Surface", () => {
     expect(registry.resolve("weapon-card-r1")).toBe(weaponRendererRevision);
     expect(registry.resolve("weapon-card-r2")).toBeUndefined();
     expect(registry.list()).toEqual(["weapon-card-r1"]);
+  });
+});
+
+describe("weapon-card-r2 flavor surface", () => {
+  test("renders flavor separately from the gameplay feature", () => {
+    const candidate = {
+      template: { id: weaponTemplateV2.id, version: weaponTemplateV2.version },
+      presentation: weaponTemplateV2.defaultPresentation,
+      data: {
+        ...weaponTemplateV2.defaultData,
+        名称: "月刃",
+        描述: "可靠：攻击掷骰+1。",
+        风味描述: "刀身映着冷白月光。",
+      },
+      media: {},
+    };
+    const result = prepareCanonicalSurface({
+      resource: candidate,
+      expectedRendererRevision: "weapon-card-r2",
+      renderer: weaponRendererRevisionV2,
+      assets: new Map(),
+    });
+    expect(result.status).toBe("ready");
+    if (result.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
+    expect(markup).toContain("刀身映着冷白月光。");
+    expect(markup).toContain("攻击掷骰+1。");
+    expect(markup).toContain("data-renderer-revision=\"weapon-card-r2\"");
   });
 });

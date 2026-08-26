@@ -9,12 +9,14 @@ import {
   legacyWeaponTemplate,
   templateRegistry,
   weaponTemplate,
+  weaponTemplateV2,
   type WeaponData,
 } from "../../packages/templates/src/core/index.ts";
 import {
   adversaryAuthoringLayout,
   buildTemplateSupportManifest,
   weaponAuthoringLayout,
+  weaponAuthoringLayoutV2,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const root = process.cwd();
@@ -50,7 +52,7 @@ describe("武器 Template Core", () => {
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       weaponTemplate,
     );
-    expect(templateRegistry.resolve("武器", "1.0.0-alpha.2")).toBeUndefined();
+    expect(templateRegistry.resolve("武器", "1.0.0-alpha.2")).toBe(weaponTemplateV2);
     expect(templateRegistry.resolve("主武器", "1.0.0-alpha.1")).toBeUndefined();
   });
 
@@ -95,6 +97,43 @@ describe("武器 Template Core", () => {
     expect(weaponTemplate.tabletop.commands).toEqual([]);
     expect(weaponTemplate.tabletop.replacements).toEqual([]);
     expect(weaponTemplate.upgradeFrom).toBeNull();
+  });
+});
+
+describe("武器 Template 1.0.0-alpha.2 风味描述", () => {
+  const validateV2 = ajv.compile(weaponTemplateV2.schema as AnySchema);
+
+  test("keeps gameplay feature and flavor description as separate fields", () => {
+    const data = {
+      ...weaponTemplateV2.defaultData,
+      名称: "月刃",
+      描述: "可靠：攻击掷骰+1。",
+      风味描述: "刀身映着冷白月光。",
+    };
+    expect(validateV2(data), JSON.stringify(validateV2.errors)).toBe(true);
+    expect(weaponTemplateV2.project(data).searchText).toContain("可靠：攻击掷骰+1。");
+    expect(weaponTemplateV2.project(data).searchText).toContain("刀身映着冷白月光。");
+  });
+
+  test("upgrades alpha.1 without reinterpreting its gameplay description", () => {
+    expect(weaponTemplateV2.upgradeFrom?.version).toBe("1.0.0-alpha.1");
+    expect(weaponTemplateV2.upgradeFrom?.upgrade(resource.data)).toEqual({
+      ...resource.data,
+      风味描述: "",
+    });
+  });
+
+  test("has complete authoring and renderer support", () => {
+    const fields = new Set(weaponAuthoringLayoutV2.sections.flatMap((section) =>
+      section.fields.map((field) => field.path)));
+    expect(fields).toEqual(new Set(Object.keys((weaponTemplateV2.schema as { properties: object }).properties)));
+    expect(buildTemplateSupportManifest({
+      templates: templateRegistry.list(),
+      authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout, weaponAuthoringLayoutV2],
+      rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r1", "weapon-card-r2"]),
+    }).templates).toContainEqual({
+      id: "武器", version: "1.0.0-alpha.2", rendererRevision: "weapon-card-r2",
+    });
   });
 });
 

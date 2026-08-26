@@ -1,0 +1,145 @@
+import {
+  ContractRuntime,
+  loadPbres,
+  validateResourcePackageSemantics,
+  writePbres,
+  type ContractCatalog,
+  type ContractDiagnostic,
+  type ResourcePackageLogicalDocument,
+  type ResourcePackageCandidateValidator,
+} from "@pbdh/contract-runtime";
+
+import { asJsonObject, exportFailure, isJsonValue, report, text } from "../shared.ts";
+import { validateTemplateData } from "../template-validation.ts";
+import type { JsonObject, JsonValue, ResourceFormatAdapter, ResourceKind, TemporaryResource } from "../types.ts";
+
+import catalogJson from "../../../../contracts/catalog.json";
+import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0-alpha.1/schema.json";
+
+const upstreamRevision = "pbdh.resource-package@1.0.0-alpha.1";
+const resourceFamily = (catalogJson as ContractCatalog).families.find((family) => family.id === "resource-package");
+const contractVersion = resourceFamily?.versions.find((version) => version.version === "1.0.0-alpha.1");
+if (!contractVersion) throw new Error("Missing Resource Package Contract 1.0.0-alpha.1");
+const contractRuntime = new ContractRuntime({
+  catalogVersion: 1,
+  families: [{ id: "resource-package", versions: [contractVersion] }],
+}, { [contractVersion.schema]: resourcePackageSchema });
+
+function templateContractDiagnostic(
+  resourceIndex: number,
+  diagnostic: ReturnType<typeof validateTemplateData>[number],
+): ContractDiagnostic {
+  return {
+    code: diagnostic.code,
+    severity: diagnostic.severity,
+    family: "resource-package",
+    version: "1.0.0-alpha.1",
+    location: `/resources/${resourceIndex}/data${diagnostic.path ?? ""}`,
+    params: diagnostic.details ?? {},
+  };
+}
+
+export const validatePbresConversionCandidate: ResourcePackageCandidateValidator = async (document, media) => {
+  const schemaDiagnostics = contractRuntime.validate({
+    family: "resource-package",
+    version: document.contractVersion,
+    mode: "development",
+    candidate: document,
+  });
+  if (schemaDiagnostics.length > 0) return schemaDiagnostics;
+  const semanticDiagnostics = await validateResourcePackageSemantics(document, media);
+  if (semanticDiagnostics.length > 0) return semanticDiagnostics;
+  return document.resources.flatMap((resource, index) => {
+    const data = asJsonObject(resource.data);
+    if (!data) return [templateContractDiagnostic(index, {
+      code: "conversion.template-data.invalid",
+      severity: "error",
+      message: "Template data 必须是对象。",
+    })];
+    return validateTemplateData(resource.template.id, resource.template.version, data)
+      .map((diagnostic) => templateContractDiagnostic(index, diagnostic));
+  });
+};
+
+function kindFor(templateId: string): ResourceKind {
+  if (templateId === "敌人") return "adversary";
+  if (templateId === "武器") return "weapon";
+  if (templateId === "护甲") return "armor";
+  if (templateId === "物品") return "item";
+  if (templateId === "职业") return "class";
+  if (templateId === "子职业") return "subclass";
+  if (templateId === "种族") return "ancestry";
+  if (templateId === "社群") return "community";
+  if (templateId === "领域卡") return "domain";
+  if (templateId === "环境") return "environment";
+  return "free";
+}
+
+export const pbresAdapter: ResourceFormatAdapter = {
+  id: "pbres",
+  upstreamRevision,
+  async import(input) {
+    const loaded = await loadPbres(input.bytes, validatePbresConversionCandidate);
+    if (!loaded.candidate) {
+      return {
+        ok: false,
+        report: report("pbres", "import", 0, loaded.diagnostics.map((item) => ({
+          code: item.code,
+          severity: item.severity,
+          message: `${item.code} @ ${item.location}`,
+          path: item.location,
+          details: isJsonValue(item.params) ? item.params as JsonObject : undefined,
+        }))),
+      };
+    }
+    const document = loaded.candidate.document;
+    const resources: TemporaryResource[] = document.resources.map((resource, index) => ({
+      sourceId: resource.id,
+      kind: kindFor(resource.template.id),
+      name: text(asJsonObject(resource.data)?.名称) || resource.id,
+      fields: asJsonObject(resource.data) ?? { value: resource.data },
+      source: {
+        formatId: "pbres",
+        upstreamRevision,
+        path: `/resources/${index}`,
+        raw: structuredClone(resource) as JsonValue,
+      },
+    }));
+    return {
+      ok: true,
+      batch: {
+        name: document.package.name,
+        version: document.package.version,
+        resources,
+        sourceDocument: { formatId: "pbres", upstreamRevision, container: "pbres" },
+        nativePackage: document,
+        media: loaded.candidate.media,
+      },
+      report: report("pbres", "import", resources.length, loaded.diagnostics.map((item) => ({
+        code: item.code, severity: item.severity, message: item.code, path: item.location,
+      }))),
+    };
+  },
+  export(batch) {
+    if (!batch.nativePackage) return exportFailure("pbres", [{
+      code: "pbres.materialization.required",
+      severity: "error",
+      message: "第三方候选必须先由调用方分配 Resource Package 与 Resource ID，再导出 .pbres。",
+    }]);
+    let bytes: Uint8Array;
+    try {
+      bytes = writePbres(batch.nativePackage as ResourcePackageLogicalDocument, batch.media);
+    } catch (error) {
+      return exportFailure("pbres", [{
+        code: "pbres.write.failed",
+        severity: "error",
+        message: error instanceof Error ? error.message : "pbres 写出失败。",
+      }]);
+    }
+    return {
+      ok: true,
+      artifact: { bytes, fileName: `${batch.nativePackage.package.name}.pbres`, container: "pbres", mediaType: "application/zip" },
+      report: report("pbres", "export", batch.resources.length),
+    };
+  },
+};
