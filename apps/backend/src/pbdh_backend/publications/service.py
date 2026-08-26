@@ -68,15 +68,20 @@ class PublicationService:
             metadata,
             allow_same_version_replace=self._mode == "development",
         )
-        publication = self._repository.get_publication(write.publication_id)
+        publication = self._repository.get_owned_publication(write.publication_id, account_id)
         if publication is None:
             raise RuntimeError("Publication disappeared after commit")
         publication["created"] = write.created
         publication["idempotent"] = write.idempotent
         return publication
 
-    def download(self, publication_id: str) -> bytes | None:
-        candidate = self._repository.get_archive_candidate(publication_id)
+    def download(
+        self,
+        publication_id: str,
+        account_id: str | None = None,
+        allow_all: bool = False,
+    ) -> bytes | None:
+        candidate = self._repository.get_archive_candidate(publication_id, account_id, allow_all)
         if candidate is None:
             return None
         return write_pbres(*candidate)

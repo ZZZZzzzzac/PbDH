@@ -3,20 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build"
+  "exports": {
+    "./surface": "./src/surface.ts"
   },
   "dependencies": {
     "@pbdh/local-storage": "0.0.0",
     "@pbdh/media-admission": "0.0.0",
     "@pbdh/platform-auth": "0.0.0",
     "@pbdh/platform-ui": "0.0.0",
+    "@pbdh/publication-ui": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",
     "@pbdh/tabletop": "0.0.0",
     "@pbdh/templates": "0.0.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react": "19.2.7"
   }
 }

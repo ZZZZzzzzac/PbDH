@@ -53,7 +53,7 @@ export const publications: Publication[] = [
     license: minotaurPackage.license.label,
     updatedAt: "2026-08-18",
     resourceCount: enemyResources.length,
-    status: "available",
+    status: "published",
     cover: {
       assetId: minotaurPackage.assets[0].id,
       url: minotaurImageUrl,
@@ -82,7 +82,7 @@ export const publications: Publication[] = [
     license: weaponPackage.license.label,
     updatedAt: "2026-08-18",
     resourceCount: weaponResources.length,
-    status: "available",
+    status: "published",
     cover: {
       assetId: weaponPackage.assets[0].id,
       url: weaponCoverUrl,

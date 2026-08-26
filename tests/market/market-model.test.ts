@@ -6,6 +6,7 @@ import { publications } from "../../apps/market/src/catalog.ts";
 import { pbresArchiveName } from "../../apps/market/src/market-api.ts";
 import {
   canManagePublication,
+  canAcquirePublication,
   createCreatorHandoffUrl,
   createHandoffIntent,
   createPlayerHandoffUrl,
@@ -37,7 +38,7 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     license: "CC BY 4.0",
     updatedAt: "2026-08-18",
     resourceCount: 1,
-    status: "available",
+    status: "published",
     cover: { assetId: "sha256:cover", url: "cover.webp", alt: "封面" },
     archiveUrl: "package.pbres",
     archiveName: "package.pbres",
@@ -89,9 +90,9 @@ describe("Market catalog filters", () => {
     expect(filterPublications([enemy, weapon], "黑曜", emptyCatalogFilters)).toEqual([weapon]);
   });
 
-  test("withdrawn publications leave public discovery", () => {
-    const withdrawn = publication({ id: "withdrawn", status: "withdrawn" });
-    expect(filterPublications([enemy, withdrawn], "", emptyCatalogFilters)).toEqual([enemy]);
+  test("keeps authorized unpublished publications in the supplied catalog", () => {
+    const unpublished = publication({ id: "unpublished", status: "unpublished" });
+    expect(filterPublications([enemy, unpublished], "", emptyCatalogFilters)).toEqual([enemy, unpublished]);
   });
 
   test("uses a declared Resource Package Asset for every publication cover", () => {
@@ -153,9 +154,10 @@ describe("Market handoff intents", () => {
   test("serializes Creator-hosted handoff as an explicit package ingress URL", () => {
     const url = createCreatorHandoffUrl(
       createHandoffIntent(enemy, "gm", "resource-minotaur"),
-      "http://localhost:5173/",
+      "http://localhost:5173/gm",
     );
     expect(url.origin).toBe("http://localhost:5173");
+    expect(url.pathname).toBe("/gm");
     expect(url.searchParams.get("target")).toBe("gm");
     expect(url.searchParams.get("publicationId")).toBe(enemy.id);
     expect(url.searchParams.get("packageId")).toBe(enemy.packageId);
@@ -167,9 +169,10 @@ describe("Market handoff intents", () => {
   test("serializes Player handoff with stable publication and package locators only", () => {
     const url = createPlayerHandoffUrl(
       createHandoffIntent(weapon, "player", "resource-broadsword"),
-      "http://localhost:5175/",
+      "http://localhost:5173/player",
     );
-    expect(url.origin).toBe("http://localhost:5175");
+    expect(url.origin).toBe("http://localhost:5173");
+    expect(url.pathname).toBe("/player");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       pbdhHandoff: "publication",
       target: "player",
@@ -181,9 +184,17 @@ describe("Market handoff intents", () => {
     });
   });
 
-  test("rejects withdrawn acquisition and forged focus locators", () => {
-    expect(() => createHandoffIntent(publication({ status: "withdrawn" }), "player")).toThrow("publication.withdrawn");
+  test("rejects unpublished acquisition and forged focus locators", () => {
+    expect(() => createHandoffIntent(publication({ status: "unpublished" }), "player")).toThrow("publication.unpublished");
     expect(() => createHandoffIntent(enemy, "creator", "missing")).toThrow("focus.resource.not-found");
+  });
+
+  test("allows authors and administrators to acquire an unpublished publication", () => {
+    const unpublished = publication({ status: "unpublished" });
+
+    expect(canAcquirePublication(unpublished, false)).toBe(false);
+    expect(canAcquirePublication(unpublished, true)).toBe(true);
+    expect(canAcquirePublication(enemy, false)).toBe(true);
   });
 });
 
@@ -201,6 +212,7 @@ describe("Market publication lifecycle", () => {
     expect(publicationsOwnedBy([owned, other], "account-owner")).toEqual([owned]);
     expect(canManagePublication(owned, "account-owner")).toBe(true);
     expect(canManagePublication(other, "account-owner")).toBe(false);
+    expect(canManagePublication(other, "account-admin", true)).toBe(true);
   });
 
   test("edits display metadata without replacing the current package snapshot", () => {
@@ -226,15 +238,15 @@ describe("Market publication lifecycle", () => {
 
   test("withdraws and restores the same publication identity", () => {
     const current = publication();
-    const withdrawn = setPublicationStatus(current, "withdrawn");
-    const restored = setPublicationStatus(withdrawn, "available");
+    const unpublished = setPublicationStatus(current, "unpublished");
+    const restored = setPublicationStatus(unpublished, "published");
 
-    expect(withdrawn.status).toBe("withdrawn");
+    expect(unpublished.status).toBe("unpublished");
     expect(restored).toMatchObject({
       id: current.id,
       packageId: current.packageId,
       snapshotDigest: current.snapshotDigest,
-      status: "available",
+      status: "published",
     });
   });
 });

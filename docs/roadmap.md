@@ -8,8 +8,8 @@
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 5 已完成；#23—#33、#35—#41 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Market 敌人交接到 GM 与本地恢复 #40、Market 武器交接到 Player Resource Manager #41 均已通过人工端到端验收。
-- 下一步：实施 Publication 更新、撤回、恢复与主动拉取 #42。
+- 产品实现：阶段 5 已完成；#23—#33、#35—#41 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Market 敌人交接到 GM 与本地恢复 #40、Market 武器交接到 Player Resource Manager #41 均已通过人工端到端验收；Publication 更新、取消发布、重新发布与主动拉取 #42 已完成自动化验证，等待人工验收。
+- 下一步：人工验收 #42；通过后进入敌人路径的 Creator 与 GM 云恢复 #43。
 
 ## 推进模型
 
@@ -266,7 +266,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 ### 8.5 Market 完成
 
 - 完成 `公共资源发现`、`出版生命周期`、`资源取得与 App 交接`、`最小市场治理` 四个 L2。
-- 完成包级/资源级搜索、稳定链接、作者页、人工精选、撤回/恢复、举报/下架、账号注销和响应式体验。
+- 完成包级/资源级搜索、稳定链接、作者页、人工精选、取消发布/重新发布、举报/下架、账号注销和响应式体验。
 - 保持第一版免费、单作者、无社区功能、无历史版本下载、无 Market 直接上传或编辑资源。
 
 ### 8.6 Contracts & Template Platform 完成
@@ -286,7 +286,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 4. 路径穿越、ZIP 炸弹、Unicode/大小写碰撞、恶意媒体、权限绕过和原子失败等安全测试。
 5. 常规与压力语料下的性能、按需渲染、搜索分页、云同步和媒体生命周期测试。
 6. 桌面、平板和手机的响应式、键盘操作、可访问性、打印和视觉基线验收。
-7. Publication 撤回或下架后，已下载文件和既有有效 Cloud Document 仍按已接受规则恢复媒体。
+7. Publication 取消发布或平台下架后，已下载文件和既有有效 Cloud Document 仍按已接受规则恢复媒体。
 8. 账号注销、个人资料移除、Publication custody、文档永久删除和媒体引用释放。
 9. 旧 Sheet/Cards 数据迁移、关键用户行为回归、备份恢复、部署、日志、监控和故障演练。
 10. C4、`CONTEXT.md`、ADR、GitHub PRD、Contract 和实现仍表达同一组产品及依赖边界。

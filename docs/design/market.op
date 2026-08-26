@@ -609,7 +609,7 @@
                           "id": "market-text-31",
                           "name": "覆盖表 / 出版生命周期 / US 14–16 / 界面",
                           "locked": false,
-                          "content": "撤回、恢复、既有本地副本不召回",
+                          "content": "取消发布、重新发布、既有本地副本不召回",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 11.5,
                           "fontWeight": 400,
@@ -887,7 +887,7 @@
                           "id": "market-text-47",
                           "name": "覆盖表 / 出版生命周期 / US 19–20 / 界面",
                           "locked": false,
-                          "content": "失败零公开写入；敌人首发—更新—撤回—恢复",
+                          "content": "失败零公开写入；敌人首发—更新—取消发布—重新发布",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 11.5,
                           "fontWeight": 400,
@@ -1648,7 +1648,7 @@
                           "id": "market-text-90",
                           "name": "覆盖表 / 取得与交接 / US 13–15 / 界面",
                           "locked": false,
-                          "content": "撤回不召回；许可不门禁；交接失败保留下载",
+                          "content": "取消发布不召回；许可不门禁；交接失败保留下载",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 11.5,
                           "fontWeight": 400,
@@ -1992,7 +1992,7 @@
                           "id": "market-text-109",
                           "name": "覆盖表 / #33 人工验收 / 桌面 / 界面",
                           "locked": false,
-                          "content": "匿名列表、详情、下载、发布、更新、撤回与跨 App 回退",
+                          "content": "匿名列表、详情、下载、发布、更新、取消发布与跨 App 回退",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 11.5,
                           "fontWeight": 400,
@@ -2855,7 +2855,7 @@
                               "name": "Creator 发布 / 4 / 动作",
                               "locked": false,
                               "width": "fill_container",
-                              "content": "更新、撤回或恢复 Publication。",
+                              "content": "更新、取消发布或重新发布 Publication。",
                               "fontFamily": "Noto Sans SC",
                               "fontSize": 11.5,
                               "fontWeight": 400,
@@ -4366,12 +4366,13 @@
               "type": "frame",
               "id": "market-frame-268",
               "name": "Platform / 共用顶部应用栏",
+              "role": "navbar",
               "width": "fill_container",
-              "height": 56,
+              "height": 56.0,
               "layout": "horizontal",
               "padding": [
-                0,
-                18
+                0.0,
+                18.0
               ],
               "justifyContent": "space_between",
               "alignItems": "center",
@@ -4382,7 +4383,7 @@
                 }
               ],
               "stroke": {
-                "thickness": 1,
+                "thickness": 1.0,
                 "fill": [
                   {
                     "type": "solid",
@@ -4395,22 +4396,22 @@
                   "type": "frame",
                   "id": "market-frame-268-shared-1",
                   "name": "Platform / 品牌",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 10,
+                  "gap": 10.0,
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "frame",
                       "id": "market-frame-268-shared-2",
                       "name": "Platform / 品牌标记",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 7,
+                      "cornerRadius": 7.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -4422,11 +4423,12 @@
                           "type": "text",
                           "id": "market-frame-268-shared-3",
                           "name": "Platform / 品牌缩写",
-                          "width": 22,
+                          "locked": false,
+                          "width": 22.0,
                           "height": "fit_content",
                           "content": "P",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 14,
+                          "fontSize": 14.0,
                           "fontWeight": 800,
                           "lineHeight": 1.3,
                           "textAlign": "center",
@@ -4435,8 +4437,7 @@
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     },
@@ -4444,11 +4445,12 @@
                       "type": "text",
                       "id": "market-frame-268-shared-4",
                       "name": "Platform / 品牌名",
-                      "width": 110,
+                      "locked": false,
+                      "width": 110.0,
                       "height": "fit_content",
                       "content": "PbDH",
                       "fontFamily": "Noto Sans SC",
-                      "fontSize": 16,
+                      "fontSize": 16.0,
                       "fontWeight": 800,
                       "lineHeight": 1.3,
                       "fill": [
@@ -4456,8 +4458,7 @@
                           "type": "solid",
                           "color": "#FFFDF8"
                         }
-                      ],
-                      "locked": false
+                      ]
                     }
                   ]
                 },
@@ -4466,9 +4467,9 @@
                   "id": "market-frame-268-shared-5",
                   "name": "Platform / 主页面导航",
                   "width": "fit_content",
-                  "height": 56,
+                  "height": 56.0,
                   "layout": "horizontal",
-                  "gap": 4,
+                  "gap": 4.0,
                   "alignItems": "center",
                   "children": [
                     {
@@ -4476,7 +4477,7 @@
                       "id": "market-frame-268-shared-6",
                       "name": "主页面 / 玩家车卡器",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -4485,11 +4486,11 @@
                           "id": "market-frame-268-shared-7",
                           "name": "主页面 / 玩家车卡器 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -4497,19 +4498,19 @@
                               "type": "text",
                               "id": "market-frame-268-shared-8",
                               "name": "主页面 / 玩家车卡器 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "玩家车卡器",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -4518,7 +4519,7 @@
                           "id": "market-frame-268-shared-9",
                           "name": "主页面 / 玩家车卡器 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4534,7 +4535,7 @@
                       "id": "market-frame-268-shared-10",
                       "name": "主页面 / 卡片工坊",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -4543,11 +4544,11 @@
                           "id": "market-frame-268-shared-11",
                           "name": "主页面 / 卡片工坊 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -4555,19 +4556,19 @@
                               "type": "text",
                               "id": "market-frame-268-shared-12",
                               "name": "主页面 / 卡片工坊 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "卡片工坊",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -4576,7 +4577,7 @@
                           "id": "market-frame-268-shared-13",
                           "name": "主页面 / 卡片工坊 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4592,7 +4593,7 @@
                       "id": "market-frame-268-shared-14",
                       "name": "主页面 / GM 桌面",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -4601,11 +4602,11 @@
                           "id": "market-frame-268-shared-15",
                           "name": "主页面 / GM 桌面 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -4613,19 +4614,19 @@
                               "type": "text",
                               "id": "market-frame-268-shared-16",
                               "name": "主页面 / GM 桌面 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "GM 桌面",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -4634,7 +4635,7 @@
                           "id": "market-frame-268-shared-17",
                           "name": "主页面 / GM 桌面 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4650,7 +4651,7 @@
                       "id": "market-frame-268-shared-18",
                       "name": "主页面 / 资源市场 / 当前",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -4659,11 +4660,11 @@
                           "id": "market-frame-268-shared-19",
                           "name": "主页面 / 资源市场 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -4671,19 +4672,19 @@
                               "type": "text",
                               "id": "market-frame-268-shared-20",
                               "name": "主页面 / 资源市场 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "资源市场",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 750,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -4692,7 +4693,7 @@
                           "id": "market-frame-268-shared-21",
                           "name": "主页面 / 资源市场 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4709,10 +4710,10 @@
                   "type": "frame",
                   "id": "market-frame-268-shared-22",
                   "name": "Platform / 全局操作",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 8,
+                  "gap": 8.0,
                   "justifyContent": "end",
                   "alignItems": "center",
                   "children": [
@@ -4720,20 +4721,20 @@
                       "type": "frame",
                       "id": "market-frame-268-shared-23",
                       "name": "全局按钮 / 通知",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-268-shared-24",
                           "name": "全局按钮 / 通知 / 图标",
                           "iconFontName": "bell",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4747,20 +4748,20 @@
                       "type": "frame",
                       "id": "market-frame-268-shared-25",
                       "name": "全局按钮 / 设置",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-268-shared-26",
                           "name": "全局按钮 / 设置 / 图标",
                           "iconFontName": "settings",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4775,15 +4776,15 @@
                       "id": "market-frame-268-shared-27",
                       "name": "全局按钮 / 账号",
                       "width": "fit_content",
-                      "height": 30,
+                      "height": 30.0,
                       "layout": "horizontal",
-                      "gap": 7,
+                      "gap": 7.0,
                       "padding": [
-                        0,
-                        10
+                        0.0,
+                        10.0
                       ],
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -4796,8 +4797,8 @@
                           "id": "market-frame-268-shared-28",
                           "name": "全局按钮 / 账号 / 图标",
                           "iconFontName": "user",
-                          "width": 14,
-                          "height": 14,
+                          "width": 14.0,
+                          "height": 14.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -4809,26 +4810,25 @@
                           "type": "text",
                           "id": "market-frame-268-shared-29",
                           "name": "全局按钮 / 账号 / 文字",
+                          "locked": false,
                           "width": "fit_content",
                           "height": "fit_content",
                           "content": "账号",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 11,
+                          "fontSize": 11.0,
                           "fontWeight": 650,
                           "fill": [
                             {
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     }
                   ]
                 }
-              ],
-              "role": "navbar"
+              ]
             },
             {
               "type": "frame",
@@ -6909,12 +6909,13 @@
               "type": "frame",
               "id": "market-frame-422",
               "name": "Platform / 共用顶部应用栏",
+              "role": "navbar",
               "width": "fill_container",
-              "height": 56,
+              "height": 56.0,
               "layout": "horizontal",
               "padding": [
-                0,
-                18
+                0.0,
+                18.0
               ],
               "justifyContent": "space_between",
               "alignItems": "center",
@@ -6925,7 +6926,7 @@
                 }
               ],
               "stroke": {
-                "thickness": 1,
+                "thickness": 1.0,
                 "fill": [
                   {
                     "type": "solid",
@@ -6938,22 +6939,22 @@
                   "type": "frame",
                   "id": "market-frame-422-shared-1",
                   "name": "Platform / 品牌",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 10,
+                  "gap": 10.0,
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "frame",
                       "id": "market-frame-422-shared-2",
                       "name": "Platform / 品牌标记",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 7,
+                      "cornerRadius": 7.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -6965,11 +6966,12 @@
                           "type": "text",
                           "id": "market-frame-422-shared-3",
                           "name": "Platform / 品牌缩写",
-                          "width": 22,
+                          "locked": false,
+                          "width": 22.0,
                           "height": "fit_content",
                           "content": "P",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 14,
+                          "fontSize": 14.0,
                           "fontWeight": 800,
                           "lineHeight": 1.3,
                           "textAlign": "center",
@@ -6978,8 +6980,7 @@
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     },
@@ -6987,11 +6988,12 @@
                       "type": "text",
                       "id": "market-frame-422-shared-4",
                       "name": "Platform / 品牌名",
-                      "width": 110,
+                      "locked": false,
+                      "width": 110.0,
                       "height": "fit_content",
                       "content": "PbDH",
                       "fontFamily": "Noto Sans SC",
-                      "fontSize": 16,
+                      "fontSize": 16.0,
                       "fontWeight": 800,
                       "lineHeight": 1.3,
                       "fill": [
@@ -6999,8 +7001,7 @@
                           "type": "solid",
                           "color": "#FFFDF8"
                         }
-                      ],
-                      "locked": false
+                      ]
                     }
                   ]
                 },
@@ -7009,9 +7010,9 @@
                   "id": "market-frame-422-shared-5",
                   "name": "Platform / 主页面导航",
                   "width": "fit_content",
-                  "height": 56,
+                  "height": 56.0,
                   "layout": "horizontal",
-                  "gap": 4,
+                  "gap": 4.0,
                   "alignItems": "center",
                   "children": [
                     {
@@ -7019,7 +7020,7 @@
                       "id": "market-frame-422-shared-6",
                       "name": "主页面 / 玩家车卡器",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -7028,11 +7029,11 @@
                           "id": "market-frame-422-shared-7",
                           "name": "主页面 / 玩家车卡器 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -7040,19 +7041,19 @@
                               "type": "text",
                               "id": "market-frame-422-shared-8",
                               "name": "主页面 / 玩家车卡器 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "玩家车卡器",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -7061,7 +7062,7 @@
                           "id": "market-frame-422-shared-9",
                           "name": "主页面 / 玩家车卡器 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7077,7 +7078,7 @@
                       "id": "market-frame-422-shared-10",
                       "name": "主页面 / 卡片工坊",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -7086,11 +7087,11 @@
                           "id": "market-frame-422-shared-11",
                           "name": "主页面 / 卡片工坊 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -7098,19 +7099,19 @@
                               "type": "text",
                               "id": "market-frame-422-shared-12",
                               "name": "主页面 / 卡片工坊 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "卡片工坊",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -7119,7 +7120,7 @@
                           "id": "market-frame-422-shared-13",
                           "name": "主页面 / 卡片工坊 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7135,7 +7136,7 @@
                       "id": "market-frame-422-shared-14",
                       "name": "主页面 / GM 桌面",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -7144,11 +7145,11 @@
                           "id": "market-frame-422-shared-15",
                           "name": "主页面 / GM 桌面 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -7156,19 +7157,19 @@
                               "type": "text",
                               "id": "market-frame-422-shared-16",
                               "name": "主页面 / GM 桌面 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "GM 桌面",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -7177,7 +7178,7 @@
                           "id": "market-frame-422-shared-17",
                           "name": "主页面 / GM 桌面 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7193,7 +7194,7 @@
                       "id": "market-frame-422-shared-18",
                       "name": "主页面 / 资源市场 / 当前",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -7202,11 +7203,11 @@
                           "id": "market-frame-422-shared-19",
                           "name": "主页面 / 资源市场 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -7214,19 +7215,19 @@
                               "type": "text",
                               "id": "market-frame-422-shared-20",
                               "name": "主页面 / 资源市场 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "资源市场",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 750,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -7235,7 +7236,7 @@
                           "id": "market-frame-422-shared-21",
                           "name": "主页面 / 资源市场 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7252,10 +7253,10 @@
                   "type": "frame",
                   "id": "market-frame-422-shared-22",
                   "name": "Platform / 全局操作",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 8,
+                  "gap": 8.0,
                   "justifyContent": "end",
                   "alignItems": "center",
                   "children": [
@@ -7263,20 +7264,20 @@
                       "type": "frame",
                       "id": "market-frame-422-shared-23",
                       "name": "全局按钮 / 通知",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-422-shared-24",
                           "name": "全局按钮 / 通知 / 图标",
                           "iconFontName": "bell",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7290,20 +7291,20 @@
                       "type": "frame",
                       "id": "market-frame-422-shared-25",
                       "name": "全局按钮 / 设置",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-422-shared-26",
                           "name": "全局按钮 / 设置 / 图标",
                           "iconFontName": "settings",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7318,15 +7319,15 @@
                       "id": "market-frame-422-shared-27",
                       "name": "全局按钮 / 账号",
                       "width": "fit_content",
-                      "height": 30,
+                      "height": 30.0,
                       "layout": "horizontal",
-                      "gap": 7,
+                      "gap": 7.0,
                       "padding": [
-                        0,
-                        10
+                        0.0,
+                        10.0
                       ],
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -7339,8 +7340,8 @@
                           "id": "market-frame-422-shared-28",
                           "name": "全局按钮 / 账号 / 图标",
                           "iconFontName": "user",
-                          "width": 14,
-                          "height": 14,
+                          "width": 14.0,
+                          "height": 14.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -7352,26 +7353,25 @@
                           "type": "text",
                           "id": "market-frame-422-shared-29",
                           "name": "全局按钮 / 账号 / 文字",
+                          "locked": false,
                           "width": "fit_content",
                           "height": "fit_content",
                           "content": "账号",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 11,
+                          "fontSize": 11.0,
                           "fontWeight": 650,
                           "fill": [
                             {
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     }
                   ]
                 }
-              ],
-              "role": "navbar"
+              ]
             },
             {
               "type": "frame",
@@ -9372,6 +9372,159 @@
                               ]
                             }
                           ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n1",
+                          "name": "Publication 管理 / 作者或管理员 / 分隔线",
+                          "role": "divider",
+                          "width": "fill_container",
+                          "height": 1.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#D8D0C7"
+                            }
+                          ],
+                          "children": []
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n2",
+                          "name": "Publication 管理 / 作者或管理员 / 操作栏",
+                          "width": "fill_container",
+                          "height": 42.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "alignItems": "end",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n3",
+                              "name": "Publication 管理 / 编辑展示信息",
+                              "role": "button",
+                              "width": "fill_container",
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 5.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FBF8F3"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#D8D0C7"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n4",
+                                  "name": "Publication 管理 / 编辑展示信息 / 图标",
+                                  "iconFontName": "pencil",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#211C18"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n5",
+                                  "name": "Publication 管理 / 编辑展示信息 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "编辑展示信息",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#211C18"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n6",
+                              "name": "Publication 管理 / 取消发布",
+                              "role": "button",
+                              "width": "fill_container",
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 5.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F8E6E4"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#D7AAA6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n7",
+                                  "name": "Publication 管理 / 取消发布 / 图标",
+                                  "iconFontName": "archive-x",
+                                  "width": 14.0,
+                                  "height": 14.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#8F3036"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n8",
+                                  "name": "Publication 管理 / 取消发布 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "取消发布",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#8F3036"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
                         }
                       ]
                     }
@@ -9401,7 +9554,7 @@
             {
               "type": "frame",
               "id": "market-frame-569",
-              "name": "Creator 发布 / 对话框",
+              "name": "Publication / 共用发布信息窗口",
               "x": 380.0,
               "y": 150.0,
               "width": 680.0,
@@ -10367,7 +10520,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "reusable": true
             },
             {
               "type": "frame",
@@ -10405,12 +10559,13 @@
                   "type": "frame",
                   "id": "market-frame-596",
                   "name": "Platform / 共用顶部应用栏",
+                  "role": "navbar",
                   "width": "fill_container",
-                  "height": 56,
+                  "height": 56.0,
                   "layout": "horizontal",
                   "padding": [
-                    0,
-                    18
+                    0.0,
+                    18.0
                   ],
                   "justifyContent": "space_between",
                   "alignItems": "center",
@@ -10421,7 +10576,7 @@
                     }
                   ],
                   "stroke": {
-                    "thickness": 1,
+                    "thickness": 1.0,
                     "fill": [
                       {
                         "type": "solid",
@@ -10434,22 +10589,22 @@
                       "type": "frame",
                       "id": "market-frame-596-shared-1",
                       "name": "Platform / 品牌",
-                      "width": 220,
+                      "width": 220.0,
                       "height": "fit_content",
                       "layout": "horizontal",
-                      "gap": 10,
+                      "gap": 10.0,
                       "alignItems": "center",
                       "children": [
                         {
                           "type": "frame",
                           "id": "market-frame-596-shared-2",
                           "name": "Platform / 品牌标记",
-                          "width": 30,
-                          "height": 30,
+                          "width": 30.0,
+                          "height": 30.0,
                           "layout": "horizontal",
                           "justifyContent": "center",
                           "alignItems": "center",
-                          "cornerRadius": 7,
+                          "cornerRadius": 7.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -10461,11 +10616,12 @@
                               "type": "text",
                               "id": "market-frame-596-shared-3",
                               "name": "Platform / 品牌缩写",
-                              "width": 22,
+                              "locked": false,
+                              "width": 22.0,
                               "height": "fit_content",
                               "content": "P",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 14,
+                              "fontSize": 14.0,
                               "fontWeight": 800,
                               "lineHeight": 1.3,
                               "textAlign": "center",
@@ -10474,8 +10630,7 @@
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -10483,11 +10638,12 @@
                           "type": "text",
                           "id": "market-frame-596-shared-4",
                           "name": "Platform / 品牌名",
-                          "width": 110,
+                          "locked": false,
+                          "width": 110.0,
                           "height": "fit_content",
                           "content": "PbDH",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 16,
+                          "fontSize": 16.0,
                           "fontWeight": 800,
                           "lineHeight": 1.3,
                           "fill": [
@@ -10495,8 +10651,7 @@
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     },
@@ -10505,9 +10660,9 @@
                       "id": "market-frame-596-shared-5",
                       "name": "Platform / 主页面导航",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "horizontal",
-                      "gap": 4,
+                      "gap": 4.0,
                       "alignItems": "center",
                       "children": [
                         {
@@ -10515,7 +10670,7 @@
                           "id": "market-frame-596-shared-6",
                           "name": "主页面 / 玩家车卡器",
                           "width": "fit_content",
-                          "height": 56,
+                          "height": 56.0,
                           "layout": "vertical",
                           "justifyContent": "space_between",
                           "children": [
@@ -10524,11 +10679,11 @@
                               "id": "market-frame-596-shared-7",
                               "name": "主页面 / 玩家车卡器 / 内容",
                               "width": "fit_content",
-                              "height": 54,
+                              "height": 54.0,
                               "layout": "horizontal",
                               "padding": [
-                                0,
-                                14
+                                0.0,
+                                14.0
                               ],
                               "alignItems": "center",
                               "children": [
@@ -10536,19 +10691,19 @@
                                   "type": "text",
                                   "id": "market-frame-596-shared-8",
                                   "name": "主页面 / 玩家车卡器 / 文字",
+                                  "locked": false,
                                   "width": "fit_content",
                                   "height": "fit_content",
                                   "content": "玩家车卡器",
                                   "fontFamily": "Noto Sans SC",
-                                  "fontSize": 12,
+                                  "fontSize": 12.0,
                                   "fontWeight": 600,
                                   "fill": [
                                     {
                                       "type": "solid",
                                       "color": "#C8BCAE"
                                     }
-                                  ],
-                                  "locked": false
+                                  ]
                                 }
                               ]
                             },
@@ -10557,7 +10712,7 @@
                               "id": "market-frame-596-shared-9",
                               "name": "主页面 / 玩家车卡器 / 当前标记",
                               "width": "fill_container",
-                              "height": 2,
+                              "height": 2.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10573,7 +10728,7 @@
                           "id": "market-frame-596-shared-10",
                           "name": "主页面 / 卡片工坊 / 当前",
                           "width": "fit_content",
-                          "height": 56,
+                          "height": 56.0,
                           "layout": "vertical",
                           "justifyContent": "space_between",
                           "children": [
@@ -10582,11 +10737,11 @@
                               "id": "market-frame-596-shared-11",
                               "name": "主页面 / 卡片工坊 / 内容",
                               "width": "fit_content",
-                              "height": 54,
+                              "height": 54.0,
                               "layout": "horizontal",
                               "padding": [
-                                0,
-                                14
+                                0.0,
+                                14.0
                               ],
                               "alignItems": "center",
                               "children": [
@@ -10594,19 +10749,19 @@
                                   "type": "text",
                                   "id": "market-frame-596-shared-12",
                                   "name": "主页面 / 卡片工坊 / 文字",
+                                  "locked": false,
                                   "width": "fit_content",
                                   "height": "fit_content",
                                   "content": "卡片工坊",
                                   "fontFamily": "Noto Sans SC",
-                                  "fontSize": 12,
+                                  "fontSize": 12.0,
                                   "fontWeight": 750,
                                   "fill": [
                                     {
                                       "type": "solid",
                                       "color": "#FFFDF8"
                                     }
-                                  ],
-                                  "locked": false
+                                  ]
                                 }
                               ]
                             },
@@ -10615,7 +10770,7 @@
                               "id": "market-frame-596-shared-13",
                               "name": "主页面 / 卡片工坊 / 当前标记",
                               "width": "fill_container",
-                              "height": 2,
+                              "height": 2.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10631,7 +10786,7 @@
                           "id": "market-frame-596-shared-14",
                           "name": "主页面 / GM 桌面",
                           "width": "fit_content",
-                          "height": 56,
+                          "height": 56.0,
                           "layout": "vertical",
                           "justifyContent": "space_between",
                           "children": [
@@ -10640,11 +10795,11 @@
                               "id": "market-frame-596-shared-15",
                               "name": "主页面 / GM 桌面 / 内容",
                               "width": "fit_content",
-                              "height": 54,
+                              "height": 54.0,
                               "layout": "horizontal",
                               "padding": [
-                                0,
-                                14
+                                0.0,
+                                14.0
                               ],
                               "alignItems": "center",
                               "children": [
@@ -10652,19 +10807,19 @@
                                   "type": "text",
                                   "id": "market-frame-596-shared-16",
                                   "name": "主页面 / GM 桌面 / 文字",
+                                  "locked": false,
                                   "width": "fit_content",
                                   "height": "fit_content",
                                   "content": "GM 桌面",
                                   "fontFamily": "Noto Sans SC",
-                                  "fontSize": 12,
+                                  "fontSize": 12.0,
                                   "fontWeight": 600,
                                   "fill": [
                                     {
                                       "type": "solid",
                                       "color": "#C8BCAE"
                                     }
-                                  ],
-                                  "locked": false
+                                  ]
                                 }
                               ]
                             },
@@ -10673,7 +10828,7 @@
                               "id": "market-frame-596-shared-17",
                               "name": "主页面 / GM 桌面 / 当前标记",
                               "width": "fill_container",
-                              "height": 2,
+                              "height": 2.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10689,7 +10844,7 @@
                           "id": "market-frame-596-shared-18",
                           "name": "主页面 / 资源市场",
                           "width": "fit_content",
-                          "height": 56,
+                          "height": 56.0,
                           "layout": "vertical",
                           "justifyContent": "space_between",
                           "children": [
@@ -10698,11 +10853,11 @@
                               "id": "market-frame-596-shared-19",
                               "name": "主页面 / 资源市场 / 内容",
                               "width": "fit_content",
-                              "height": 54,
+                              "height": 54.0,
                               "layout": "horizontal",
                               "padding": [
-                                0,
-                                14
+                                0.0,
+                                14.0
                               ],
                               "alignItems": "center",
                               "children": [
@@ -10710,19 +10865,19 @@
                                   "type": "text",
                                   "id": "market-frame-596-shared-20",
                                   "name": "主页面 / 资源市场 / 文字",
+                                  "locked": false,
                                   "width": "fit_content",
                                   "height": "fit_content",
                                   "content": "资源市场",
                                   "fontFamily": "Noto Sans SC",
-                                  "fontSize": 12,
+                                  "fontSize": 12.0,
                                   "fontWeight": 600,
                                   "fill": [
                                     {
                                       "type": "solid",
                                       "color": "#C8BCAE"
                                     }
-                                  ],
-                                  "locked": false
+                                  ]
                                 }
                               ]
                             },
@@ -10731,7 +10886,7 @@
                               "id": "market-frame-596-shared-21",
                               "name": "主页面 / 资源市场 / 当前标记",
                               "width": "fill_container",
-                              "height": 2,
+                              "height": 2.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10748,10 +10903,10 @@
                       "type": "frame",
                       "id": "market-frame-596-shared-22",
                       "name": "Platform / 全局操作",
-                      "width": 220,
+                      "width": 220.0,
                       "height": "fit_content",
                       "layout": "horizontal",
-                      "gap": 8,
+                      "gap": 8.0,
                       "justifyContent": "end",
                       "alignItems": "center",
                       "children": [
@@ -10759,20 +10914,20 @@
                           "type": "frame",
                           "id": "market-frame-596-shared-23",
                           "name": "全局按钮 / 通知",
-                          "width": 30,
-                          "height": 30,
+                          "width": 30.0,
+                          "height": 30.0,
                           "layout": "horizontal",
                           "justifyContent": "center",
                           "alignItems": "center",
-                          "cornerRadius": 6,
+                          "cornerRadius": 6.0,
                           "children": [
                             {
                               "type": "icon_font",
                               "id": "market-frame-596-shared-24",
                               "name": "全局按钮 / 通知 / 图标",
                               "iconFontName": "bell",
-                              "width": 15,
-                              "height": 15,
+                              "width": 15.0,
+                              "height": 15.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10786,20 +10941,20 @@
                           "type": "frame",
                           "id": "market-frame-596-shared-25",
                           "name": "全局按钮 / 设置",
-                          "width": 30,
-                          "height": 30,
+                          "width": 30.0,
+                          "height": 30.0,
                           "layout": "horizontal",
                           "justifyContent": "center",
                           "alignItems": "center",
-                          "cornerRadius": 6,
+                          "cornerRadius": 6.0,
                           "children": [
                             {
                               "type": "icon_font",
                               "id": "market-frame-596-shared-26",
                               "name": "全局按钮 / 设置 / 图标",
                               "iconFontName": "settings",
-                              "width": 15,
-                              "height": 15,
+                              "width": 15.0,
+                              "height": 15.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10814,15 +10969,15 @@
                           "id": "market-frame-596-shared-27",
                           "name": "全局按钮 / 账号",
                           "width": "fit_content",
-                          "height": 30,
+                          "height": 30.0,
                           "layout": "horizontal",
-                          "gap": 7,
+                          "gap": 7.0,
                           "padding": [
-                            0,
-                            10
+                            0.0,
+                            10.0
                           ],
                           "alignItems": "center",
-                          "cornerRadius": 6,
+                          "cornerRadius": 6.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -10835,8 +10990,8 @@
                               "id": "market-frame-596-shared-28",
                               "name": "全局按钮 / 账号 / 图标",
                               "iconFontName": "user",
-                              "width": 14,
-                              "height": 14,
+                              "width": 14.0,
+                              "height": 14.0,
                               "fill": [
                                 {
                                   "type": "solid",
@@ -10848,26 +11003,25 @@
                               "type": "text",
                               "id": "market-frame-596-shared-29",
                               "name": "全局按钮 / 账号 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "账号",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 11,
+                              "fontSize": 11.0,
                               "fontWeight": 650,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         }
                       ]
                     }
-                  ],
-                  "role": "navbar"
+                  ]
                 },
                 {
                   "type": "frame",
@@ -11577,7 +11731,7 @@
                 {
                   "type": "frame",
                   "id": "market-frame-647",
-                  "name": "状态 / 已撤回",
+                  "name": "状态 / 未发布",
                   "width": 420.0,
                   "height": 250.0,
                   "layout": "vertical",
@@ -11603,7 +11757,7 @@
                     {
                       "type": "frame",
                       "id": "market-frame-638",
-                      "name": "状态 / 已撤回 / 状态栏",
+                      "name": "状态 / 未发布 / 状态栏",
                       "width": "fill_container",
                       "height": 34.0,
                       "layout": "horizontal",
@@ -11613,7 +11767,7 @@
                         {
                           "type": "frame",
                           "id": "market-frame-636",
-                          "name": "状态 / 已撤回 / 状态标记",
+                          "name": "状态 / 未发布 / 状态标记",
                           "width": 30.0,
                           "height": 30.0,
                           "layout": "horizontal",
@@ -11630,7 +11784,7 @@
                             {
                               "type": "icon_font",
                               "id": "market-icon-635",
-                              "name": "状态 / 已撤回 / 状态图标",
+                              "name": "状态 / 未发布 / 状态图标",
                               "iconFontName": "triangle-alert",
                               "width": 16.0,
                               "height": 16.0,
@@ -11646,9 +11800,9 @@
                         {
                           "type": "text",
                           "id": "market-text-637",
-                          "name": "状态 / 已撤回 / 标题",
+                          "name": "状态 / 未发布 / 标题",
                           "locked": false,
-                          "content": "出版物已撤回",
+                          "content": "出版物未发布",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 15.0,
                           "fontWeight": 700,
@@ -11665,7 +11819,7 @@
                     {
                       "type": "text",
                       "id": "market-text-639",
-                      "name": "状态 / 已撤回 / 正文",
+                      "name": "状态 / 未发布 / 正文",
                       "locked": false,
                       "width": "fill_container",
                       "content": "新的查看与取得已停止。已有文件、玩家资源、工作区与桌面副本继续可用。",
@@ -11684,7 +11838,7 @@
                     {
                       "type": "frame",
                       "id": "market-frame-646",
-                      "name": "状态 / 已撤回 / 操作栏",
+                      "name": "状态 / 未发布 / 操作栏",
                       "width": "fill_container",
                       "height": "fill_container",
                       "layout": "horizontal",
@@ -11694,7 +11848,7 @@
                         {
                           "type": "frame",
                           "id": "market-frame-642",
-                          "name": "状态 / 已撤回 / 恢复",
+                          "name": "状态 / 未发布 / 重新发布",
                           "role": "button",
                           "width": "fit_content",
                           "height": 34.0,
@@ -11726,7 +11880,7 @@
                             {
                               "type": "icon_font",
                               "id": "market-icon-640",
-                              "name": "状态 / 已撤回 / 恢复 / 图标",
+                              "name": "状态 / 未发布 / 重新发布 / 图标",
                               "iconFontName": "rotate-ccw",
                               "width": 15.0,
                               "height": 15.0,
@@ -11740,9 +11894,9 @@
                             {
                               "type": "text",
                               "id": "market-text-641",
-                              "name": "状态 / 已撤回 / 恢复 / 文字",
+                              "name": "状态 / 未发布 / 重新发布 / 文字",
                               "locked": false,
-                              "content": "恢复",
+                              "content": "重新发布",
                               "fontFamily": "Noto Sans SC",
                               "fontSize": 12.5,
                               "fontWeight": 650,
@@ -11759,7 +11913,7 @@
                         {
                           "type": "frame",
                           "id": "market-frame-645",
-                          "name": "状态 / 已撤回 / 返回管理",
+                          "name": "状态 / 未发布 / 返回管理",
                           "role": "button",
                           "width": "fit_content",
                           "height": 34.0,
@@ -11791,7 +11945,7 @@
                             {
                               "type": "icon_font",
                               "id": "market-icon-643",
-                              "name": "状态 / 已撤回 / 返回管理 / 图标",
+                              "name": "状态 / 未发布 / 返回管理 / 图标",
                               "iconFontName": "arrow-left",
                               "width": 15.0,
                               "height": 15.0,
@@ -11805,7 +11959,7 @@
                             {
                               "type": "text",
                               "id": "market-text-644",
-                              "name": "状态 / 已撤回 / 返回管理 / 文字",
+                              "name": "状态 / 未发布 / 返回管理 / 文字",
                               "locked": false,
                               "content": "返回管理",
                               "fontFamily": "Noto Sans SC",
@@ -15087,7 +15241,7 @@
           "x": 0.0,
           "y": 0.0,
           "width": 1440.0,
-          "height": 1444.0,
+          "height": 1666.0,
           "layout": "none",
           "fill": [
             {
@@ -16482,7 +16636,7 @@
                 {
                   "type": "frame",
                   "id": "market-frame-896",
-                  "name": "发布管理 / 撤回",
+                  "name": "发布管理 / 取消发布",
                   "role": "button",
                   "width": "fit_content",
                   "height": 34.0,
@@ -16514,7 +16668,7 @@
                     {
                       "type": "icon_font",
                       "id": "market-icon-894",
-                      "name": "发布管理 / 撤回 / 图标",
+                      "name": "发布管理 / 取消发布 / 图标",
                       "iconFontName": "archive-x",
                       "width": 15.0,
                       "height": 15.0,
@@ -16528,9 +16682,9 @@
                     {
                       "type": "text",
                       "id": "market-text-895",
-                      "name": "发布管理 / 撤回 / 文字",
+                      "name": "发布管理 / 取消发布 / 文字",
                       "locked": false,
-                      "content": "撤回出版物",
+                      "content": "取消发布",
                       "fontFamily": "Noto Sans SC",
                       "fontSize": 12.5,
                       "fontWeight": 650,
@@ -16854,7 +17008,7 @@
             {
               "type": "frame",
               "id": "market-frame-925",
-              "name": "撤回确认 / 对话框",
+              "name": "取消发布确认 / 对话框",
               "x": 760.0,
               "y": 590.0,
               "width": 520.0,
@@ -16882,9 +17036,9 @@
                 {
                   "type": "text",
                   "id": "market-text-914",
-                  "name": "撤回确认 / 标题",
+                  "name": "取消发布确认 / 标题",
                   "locked": false,
-                  "content": "撤回荒野遭遇集？",
+                  "content": "取消发布荒野遭遇集？",
                   "fontFamily": "Noto Sans SC",
                   "fontSize": 19.0,
                   "fontWeight": 700,
@@ -16899,7 +17053,7 @@
                 {
                   "type": "text",
                   "id": "market-text-915",
-                  "name": "撤回确认 / 正文",
+                  "name": "取消发布确认 / 正文",
                   "locked": false,
                   "width": "fill_container",
                   "content": "出版物将停止新的搜索、查看和取得。已有下载、玩家资源、工作区与桌面副本不会被召回。",
@@ -16918,7 +17072,7 @@
                 {
                   "type": "frame",
                   "id": "market-frame-918",
-                  "name": "撤回确认 / 当前版本",
+                  "name": "取消发布确认 / 当前版本",
                   "width": "fill_container",
                   "height": 58.0,
                   "layout": "horizontal",
@@ -16945,7 +17099,7 @@
                     {
                       "type": "text",
                       "id": "market-text-916",
-                      "name": "撤回确认 / 当前版本 / 名称",
+                      "name": "取消发布确认 / 当前版本 / 名称",
                       "locked": false,
                       "content": "当前公开版本",
                       "fontFamily": "Noto Sans SC",
@@ -16962,7 +17116,7 @@
                     {
                       "type": "text",
                       "id": "market-text-917",
-                      "name": "撤回确认 / 当前版本 / 数值",
+                      "name": "取消发布确认 / 当前版本 / 数值",
                       "locked": false,
                       "content": "1.2.0",
                       "fontFamily": "Noto Sans SC",
@@ -16981,7 +17135,7 @@
                 {
                   "type": "frame",
                   "id": "market-frame-924",
-                  "name": "撤回确认 / 操作栏",
+                  "name": "取消发布确认 / 操作栏",
                   "width": "fill_container",
                   "height": "fill_container",
                   "layout": "horizontal",
@@ -16992,7 +17146,7 @@
                     {
                       "type": "frame",
                       "id": "market-frame-920",
-                      "name": "撤回确认 / 取消",
+                      "name": "取消发布确认 / 返回",
                       "role": "button",
                       "width": "fit_content",
                       "height": 34.0,
@@ -17024,9 +17178,9 @@
                         {
                           "type": "text",
                           "id": "market-text-919",
-                          "name": "撤回确认 / 取消 / 文字",
+                          "name": "取消发布确认 / 返回 / 文字",
                           "locked": false,
-                          "content": "取消",
+                          "content": "返回",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 12.5,
                           "fontWeight": 650,
@@ -17043,7 +17197,7 @@
                     {
                       "type": "frame",
                       "id": "market-frame-923",
-                      "name": "撤回确认 / 确认",
+                      "name": "取消发布确认 / 确认",
                       "role": "button",
                       "width": "fit_content",
                       "height": 34.0,
@@ -17075,7 +17229,7 @@
                         {
                           "type": "icon_font",
                           "id": "market-icon-921",
-                          "name": "撤回确认 / 确认 / 图标",
+                          "name": "取消发布确认 / 确认 / 图标",
                           "iconFontName": "archive-x",
                           "width": 15.0,
                           "height": 15.0,
@@ -17089,9 +17243,9 @@
                         {
                           "type": "text",
                           "id": "market-text-922",
-                          "name": "撤回确认 / 确认 / 文字",
+                          "name": "取消发布确认 / 确认 / 文字",
                           "locked": false,
-                          "content": "撤回出版物",
+                          "content": "取消发布",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 12.5,
                           "fontWeight": 650,
@@ -17159,12 +17313,13 @@
               "type": "frame",
               "id": "market-frame-953",
               "name": "Platform / 共用顶部应用栏",
+              "role": "navbar",
               "width": "fill_container",
-              "height": 56,
+              "height": 56.0,
               "layout": "horizontal",
               "padding": [
-                0,
-                18
+                0.0,
+                18.0
               ],
               "justifyContent": "space_between",
               "alignItems": "center",
@@ -17175,7 +17330,7 @@
                 }
               ],
               "stroke": {
-                "thickness": 1,
+                "thickness": 1.0,
                 "fill": [
                   {
                     "type": "solid",
@@ -17188,22 +17343,22 @@
                   "type": "frame",
                   "id": "market-frame-953-shared-1",
                   "name": "Platform / 品牌",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 10,
+                  "gap": 10.0,
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "frame",
                       "id": "market-frame-953-shared-2",
                       "name": "Platform / 品牌标记",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 7,
+                      "cornerRadius": 7.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -17215,11 +17370,12 @@
                           "type": "text",
                           "id": "market-frame-953-shared-3",
                           "name": "Platform / 品牌缩写",
-                          "width": 22,
+                          "locked": false,
+                          "width": 22.0,
                           "height": "fit_content",
                           "content": "P",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 14,
+                          "fontSize": 14.0,
                           "fontWeight": 800,
                           "lineHeight": 1.3,
                           "textAlign": "center",
@@ -17228,8 +17384,7 @@
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     },
@@ -17237,11 +17392,12 @@
                       "type": "text",
                       "id": "market-frame-953-shared-4",
                       "name": "Platform / 品牌名",
-                      "width": 110,
+                      "locked": false,
+                      "width": 110.0,
                       "height": "fit_content",
                       "content": "PbDH",
                       "fontFamily": "Noto Sans SC",
-                      "fontSize": 16,
+                      "fontSize": 16.0,
                       "fontWeight": 800,
                       "lineHeight": 1.3,
                       "fill": [
@@ -17249,8 +17405,7 @@
                           "type": "solid",
                           "color": "#FFFDF8"
                         }
-                      ],
-                      "locked": false
+                      ]
                     }
                   ]
                 },
@@ -17259,9 +17414,9 @@
                   "id": "market-frame-953-shared-5",
                   "name": "Platform / 主页面导航",
                   "width": "fit_content",
-                  "height": 56,
+                  "height": 56.0,
                   "layout": "horizontal",
-                  "gap": 4,
+                  "gap": 4.0,
                   "alignItems": "center",
                   "children": [
                     {
@@ -17269,7 +17424,7 @@
                       "id": "market-frame-953-shared-6",
                       "name": "主页面 / 玩家车卡器",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -17278,11 +17433,11 @@
                           "id": "market-frame-953-shared-7",
                           "name": "主页面 / 玩家车卡器 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -17290,19 +17445,19 @@
                               "type": "text",
                               "id": "market-frame-953-shared-8",
                               "name": "主页面 / 玩家车卡器 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "玩家车卡器",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -17311,7 +17466,7 @@
                           "id": "market-frame-953-shared-9",
                           "name": "主页面 / 玩家车卡器 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17327,7 +17482,7 @@
                       "id": "market-frame-953-shared-10",
                       "name": "主页面 / 卡片工坊",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -17336,11 +17491,11 @@
                           "id": "market-frame-953-shared-11",
                           "name": "主页面 / 卡片工坊 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -17348,19 +17503,19 @@
                               "type": "text",
                               "id": "market-frame-953-shared-12",
                               "name": "主页面 / 卡片工坊 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "卡片工坊",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -17369,7 +17524,7 @@
                           "id": "market-frame-953-shared-13",
                           "name": "主页面 / 卡片工坊 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17385,7 +17540,7 @@
                       "id": "market-frame-953-shared-14",
                       "name": "主页面 / GM 桌面",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -17394,11 +17549,11 @@
                           "id": "market-frame-953-shared-15",
                           "name": "主页面 / GM 桌面 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -17406,19 +17561,19 @@
                               "type": "text",
                               "id": "market-frame-953-shared-16",
                               "name": "主页面 / GM 桌面 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "GM 桌面",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -17427,7 +17582,7 @@
                           "id": "market-frame-953-shared-17",
                           "name": "主页面 / GM 桌面 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17443,7 +17598,7 @@
                       "id": "market-frame-953-shared-18",
                       "name": "主页面 / 资源市场 / 当前",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -17452,11 +17607,11 @@
                           "id": "market-frame-953-shared-19",
                           "name": "主页面 / 资源市场 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -17464,19 +17619,19 @@
                               "type": "text",
                               "id": "market-frame-953-shared-20",
                               "name": "主页面 / 资源市场 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "资源市场",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 750,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -17485,7 +17640,7 @@
                           "id": "market-frame-953-shared-21",
                           "name": "主页面 / 资源市场 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17502,10 +17657,10 @@
                   "type": "frame",
                   "id": "market-frame-953-shared-22",
                   "name": "Platform / 全局操作",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 8,
+                  "gap": 8.0,
                   "justifyContent": "end",
                   "alignItems": "center",
                   "children": [
@@ -17513,20 +17668,20 @@
                       "type": "frame",
                       "id": "market-frame-953-shared-23",
                       "name": "全局按钮 / 通知",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-953-shared-24",
                           "name": "全局按钮 / 通知 / 图标",
                           "iconFontName": "bell",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17540,20 +17695,20 @@
                       "type": "frame",
                       "id": "market-frame-953-shared-25",
                       "name": "全局按钮 / 设置",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "market-frame-953-shared-26",
                           "name": "全局按钮 / 设置 / 图标",
                           "iconFontName": "settings",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17568,15 +17723,15 @@
                       "id": "market-frame-953-shared-27",
                       "name": "全局按钮 / 账号",
                       "width": "fit_content",
-                      "height": 30,
+                      "height": 30.0,
                       "layout": "horizontal",
-                      "gap": 7,
+                      "gap": 7.0,
                       "padding": [
-                        0,
-                        10
+                        0.0,
+                        10.0
                       ],
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -17589,8 +17744,8 @@
                           "id": "market-frame-953-shared-28",
                           "name": "全局按钮 / 账号 / 图标",
                           "iconFontName": "user",
-                          "width": 14,
-                          "height": 14,
+                          "width": 14.0,
+                          "height": 14.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -17602,26 +17757,25 @@
                           "type": "text",
                           "id": "market-frame-953-shared-29",
                           "name": "全局按钮 / 账号 / 文字",
+                          "locked": false,
                           "width": "fit_content",
                           "height": "fit_content",
                           "content": "账号",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 11,
+                          "fontSize": 11.0,
                           "fontWeight": 650,
                           "fill": [
                             {
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     }
                   ]
                 }
-              ],
-              "role": "navbar"
+              ]
             },
             {
               "type": "frame",
@@ -17840,7 +17994,7 @@
                           "id": "market-text-962",
                           "name": "组件 / 危险操作 / 文字",
                           "locked": false,
-                          "content": "撤回出版物",
+                          "content": "取消发布",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 12.5,
                           "fontWeight": 650,
@@ -18001,7 +18155,7 @@
                     {
                       "type": "frame",
                       "id": "market-frame-973",
-                      "name": "组件 / 已撤回",
+                      "name": "组件 / 未发布",
                       "role": "badge",
                       "width": "fit_content",
                       "height": 24.0,
@@ -18022,9 +18176,9 @@
                         {
                           "type": "text",
                           "id": "market-text-972",
-                          "name": "组件 / 已撤回 / 文字",
+                          "name": "组件 / 未发布 / 文字",
                           "locked": false,
-                          "content": "已撤回",
+                          "content": "未发布",
                           "fontFamily": "Noto Sans SC",
                           "fontSize": 11.5,
                           "fontWeight": 650,

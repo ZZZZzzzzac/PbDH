@@ -1,6 +1,7 @@
 import path from "node:path";
 
 const appPackages = new Set([
+  "@pbdh/platform",
   "@pbdh/player",
   "@pbdh/creator",
   "@pbdh/market",
@@ -27,10 +28,29 @@ export function validateImport(importerPath, specifier) {
   const targetPath = resolveRelativeImport(importer, specifier);
   const violations = [];
   const inSharedPackage = importer.startsWith("packages/");
-  const targetsApp = appPackages.has(specifier) || targetPath?.startsWith("apps/");
+  const targetsAppPackage = [...appPackages].some((packageName) => importsPackage(specifier, packageName));
+  const importerApp = /^apps\/([^/]+)\//.exec(importer)?.[1];
+  const targetApp = targetPath ? /^apps\/([^/]+)\//.exec(targetPath)?.[1] : undefined;
+  const targetsApp = targetsAppPackage || Boolean(targetApp);
+  const targetsPeerApp = targetsAppPackage || Boolean(targetApp && targetApp !== importerApp);
+  const inPlatformShell = importer.startsWith("apps/platform/");
+  const inLeafFrontendApp = ["apps/player/", "apps/creator/", "apps/market/"]
+    .some((prefix) => importer.startsWith(prefix));
 
   if (inSharedPackage && targetsApp) {
     violations.push("shared packages must not depend on apps");
+  }
+
+  if (inLeafFrontendApp && targetsPeerApp) {
+    violations.push("frontend app surfaces must not depend on the Platform Shell or peer apps");
+  }
+
+  if (inPlatformShell && targetsPeerApp && ![
+    "@pbdh/player",
+    "@pbdh/creator",
+    "@pbdh/market",
+  ].some((packageName) => importsPackage(specifier, packageName))) {
+    violations.push("Platform Shell may compose only Player, Creator, and Market app surfaces");
   }
 
   if (importer.startsWith("apps/backend/") && browserPackages.has(specifier)) {

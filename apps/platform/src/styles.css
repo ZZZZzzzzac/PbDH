@@ -1,0 +1,14 @@
+:root {
+  color: #211914;
+  background: #eee8de;
+  font-family: "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
+body { min-height: 100vh; background: #eee8de; }
+button, input, select, textarea { color: inherit; font: inherit; }
+button { cursor: pointer; }
+.pbdh-platform-surfaces, .pbdh-platform-surface { min-height: calc(100vh - 56px); }
+.pbdh-platform-surface[hidden] { display: none !important; }

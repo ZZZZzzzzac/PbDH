@@ -4,7 +4,10 @@ import { readFile } from "node:fs/promises";
 
 import { afterEach, describe, expect, test } from "vitest";
 
-import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
+import {
+  computeResourcePackageSnapshotDigest,
+  type ResourcePackageLogicalDocument,
+} from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 import {
   createTabletopDocument,
@@ -14,7 +17,11 @@ import {
 import { adversaryTemplate } from "@pbdh/templates/core";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
-import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import {
+  createWorkspace,
+  planImport,
+} from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-prototype/market-handoff.ts";
 import { snapshotWorkspaceResourceForTabletop } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 
@@ -40,9 +47,10 @@ describe("Market enemy handoff to local GM tabletop", () => {
       `../../contracts/conformance/resource-package/1.0.0/media/${assetId.slice("sha256:".length)}.webp`,
       import.meta.url,
     )));
+    const sourceMedia = new Map([[assetId, bytes]]);
     const workspace = createWorkspace({
       document: structuredClone(minotaurPackage) as ResourcePackageLogicalDocument,
-      media: new Map([[assetId, bytes]]),
+      media: sourceMedia,
     });
     const resourceId = workspace.document.resources[0]!.id;
     const snapshot = snapshotWorkspaceResourceForTabletop(workspace, resourceId);
@@ -76,6 +84,21 @@ describe("Market enemy handoff to local GM tabletop", () => {
       templateCommands: () => adversaryTemplate.tabletop.commands,
     }).document;
 
+    const updatedDocument = structuredClone(minotaurPackage) as ResourcePackageLogicalDocument;
+    (updatedDocument.resources[0]!.data as Record<string, unknown>).名称 = "牛头人破坏者·新版";
+    updatedDocument.snapshotDigest = await computeResourcePackageSnapshotDigest(updatedDocument, sourceMedia);
+    const updateCandidate = { document: updatedDocument, media: sourceMedia };
+    expect(creatorMarketHandoffMismatch({
+      target: "gm",
+      publicationId: "publication-minotaur",
+      packageId: updatedDocument.package.id,
+      packageVersion: updatedDocument.package.version,
+      snapshotDigest: updatedDocument.snapshotDigest,
+      focusResourceId: updatedDocument.resources[0]!.id,
+    }, updateCandidate)).toBeNull();
+    expect(planImport(workspace, updateCandidate)).toBe("update");
+    const updatedWorkspace = createWorkspace(updateCandidate);
+
     (workspace.document.resources[0]!.data as Record<string, unknown>).名称 = "来源已修改";
     workspace.media.clear();
 
@@ -87,6 +110,8 @@ describe("Market enemy handoff to local GM tabletop", () => {
     const instance = restored!.model.instances[0]!;
 
     expect(instance.resource.data.名称).toBe("牛头人破坏者");
+    expect((updatedWorkspace.document.resources[0]!.data as Record<string, unknown>).名称)
+      .toBe("牛头人破坏者·新版");
     expect(instance.position).toEqual({ x: 260, y: 180 });
     expect(instance.scale).toBe(1.25);
     expect(instance.state.currentHp).toBe("5");

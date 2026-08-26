@@ -1,4 +1,9 @@
 import type { Publication, PublicationKind, PublicationResource } from "./market-model.ts";
+import type { AuthStatus } from "@pbdh/platform-auth/core";
+import {
+  platformRequestHeaders,
+  type PlatformCredentials,
+} from "@pbdh/platform-auth/provider";
 
 type ApiResourceSummary = {
   id: string;
@@ -24,6 +29,7 @@ type ApiPublication = {
   license: { label: string; declaration: string };
   resourceCount: number;
   resources: ApiResourceSummary[];
+  status: "published" | "unpublished";
   document?: {
     package?: { name: string };
     assets: Array<{ id: string }>;
@@ -32,6 +38,24 @@ type ApiPublication = {
 };
 
 type ApiErrorPayload = { error?: { code?: string; message?: string } };
+
+export type PublicationMetadataInput = {
+  title: string;
+  summary: string;
+  language: string;
+  tags: string[];
+  coverAssetId: string;
+};
+
+export class MarketApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 export async function loadPublications(fetcher: typeof fetch = fetch): Promise<Publication[]> {
   const response = await fetcher("/api/publications", { headers: { Accept: "application/json" } });
@@ -50,6 +74,159 @@ export async function loadPublication(
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
   if (!response.ok || !payload.publication) throw new Error(payload.error?.message ?? "无法打开该出版物。");
   return publicationFromApi(payload.publication);
+}
+
+export async function loadManageablePublications(
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+  createObjectUrl: (blob: Blob) => string = URL.createObjectURL,
+): Promise<Publication[]> {
+  const response = await fetcher("/api/publications/manageable", {
+    headers: authenticatedHeaders(credentials),
+  });
+  const payload = await response.json() as ApiErrorPayload & { publications?: ApiPublication[] };
+  if (!response.ok || !payload.publications) throw apiError(response, payload, "无法读取可管理的资源包。");
+  return Promise.all(payload.publications.map((publication) =>
+    publicationFromManageableApi(publication, credentials, fetcher, createObjectUrl)
+  ));
+}
+
+export async function loadManageablePublication(
+  publicationId: string,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+  createObjectUrl: (blob: Blob) => string = URL.createObjectURL,
+): Promise<Publication> {
+  const response = await fetcher(`/api/publications/${encodeURIComponent(publicationId)}/manage`, {
+    headers: authenticatedHeaders(credentials),
+  });
+  const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法打开该资源包。");
+  return publicationFromManageableApi(payload.publication, credentials, fetcher, createObjectUrl);
+}
+
+export async function loadVisiblePublications(
+  status: AuthStatus,
+  credentials: PlatformCredentials | null,
+  fetcher: typeof fetch = fetch,
+  createObjectUrl: (blob: Blob) => string = URL.createObjectURL,
+  onPrivateCatalogError?: (error: unknown) => void,
+): Promise<Publication[] | null> {
+  if (status === "loading" || status === "working") return null;
+  if (!credentials) return loadPublications(fetcher);
+  const [publicResult, manageableResult] = await Promise.allSettled([
+    loadPublications(fetcher),
+    loadManageablePublications(credentials, fetcher, createObjectUrl),
+  ]);
+  if (publicResult.status === "rejected") throw publicResult.reason;
+  const publications = publicResult.value;
+  if (manageableResult.status === "rejected") {
+    onPrivateCatalogError?.(manageableResult.reason);
+    return publications;
+  }
+  const manageable = manageableResult.value;
+  const visible = new Map(publications.map((publication) => [publication.id, publication]));
+  for (const publication of manageable) visible.set(publication.id, publication);
+  return [...visible.values()];
+}
+
+export async function loadPublicationArchive(
+  publicationId: string,
+  credentials: PlatformCredentials | null,
+  fetcher: typeof fetch = fetch,
+): Promise<Blob> {
+  const headers = credentials
+    ? platformRequestHeaders(credentials, { Accept: "application/vnd.pbdh.resource-package+zip" })
+    : new Headers({ Accept: "application/vnd.pbdh.resource-package+zip" });
+  const response = await fetcher(`/api/publications/${encodeURIComponent(publicationId)}/download`, { headers });
+  if (!response.ok) throw new Error("无法下载该资源包。");
+  return response.blob();
+}
+
+export function unpublishPublication(
+  publicationId: string,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<Publication> {
+  return mutatePublication(publicationId, "unpublish", "POST", undefined, credentials, fetcher);
+}
+
+export function republishPublication(
+  publicationId: string,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<Publication> {
+  return mutatePublication(publicationId, "republish", "POST", undefined, credentials, fetcher);
+}
+
+export function updatePublicationMetadata(
+  publicationId: string,
+  metadata: PublicationMetadataInput,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<Publication> {
+  return mutatePublication(publicationId, "metadata", "PATCH", metadata, credentials, fetcher);
+}
+
+async function mutatePublication(
+  publicationId: string,
+  action: "unpublish" | "republish" | "metadata",
+  method: "POST" | "PATCH",
+  body: PublicationMetadataInput | undefined,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch,
+): Promise<Publication> {
+  if (!credentials.canWrite) {
+    throw new MarketApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
+  }
+  const response = await fetcher(
+    `/api/publications/${encodeURIComponent(publicationId)}/${action}`,
+    {
+      method,
+      headers: authenticatedHeaders(credentials, body !== undefined),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    },
+  );
+  const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新出版物。");
+  return publicationFromApi(payload.publication);
+}
+
+function authenticatedHeaders(credentials: PlatformCredentials, json = false): Headers {
+  const headers = platformRequestHeaders(credentials, { Accept: "application/json" });
+  if (json) headers.set("Content-Type", "application/json");
+  return headers;
+}
+
+async function publicationFromManageableApi(
+  source: ApiPublication,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch,
+  createObjectUrl: (blob: Blob) => string,
+): Promise<Publication> {
+  const publication = publicationFromApi(source);
+  const assetIds = source.document?.assets.map((asset) => asset.id) ?? [source.coverAssetId];
+  const mediaEntries = await Promise.all(assetIds.map(async (assetId) => {
+    const response = await fetcher(mediaUrl(source.publicationId, assetId), {
+      headers: platformRequestHeaders(credentials, { Accept: "image/webp,image/*" }),
+    });
+    if (!response.ok) throw new Error("无法读取资源包媒体。");
+    return [assetId, createObjectUrl(await response.blob())] as const;
+  }));
+  const mediaUrls = Object.fromEntries(mediaEntries);
+  return {
+    ...publication,
+    cover: { ...publication.cover, url: mediaUrls[source.coverAssetId] ?? publication.cover.url },
+    mediaUrls,
+  };
+}
+
+function apiError(response: Response, payload: ApiErrorPayload, fallback: string): MarketApiError {
+  return new MarketApiError(
+    payload.error?.message ?? fallback,
+    payload.error?.code ?? "MARKET_REQUEST_FAILED",
+    response.status,
+  );
 }
 
 function publicationFromApi(source: ApiPublication): Publication {
@@ -91,7 +268,7 @@ function publicationFromApi(source: ApiPublication): Publication {
     license: source.license.label,
     updatedAt: source.updatedAt,
     resourceCount: source.resourceCount,
-    status: "available",
+    status: source.status,
     cover: {
       assetId: source.coverAssetId,
       url: mediaUrl(source.publicationId, source.coverAssetId),

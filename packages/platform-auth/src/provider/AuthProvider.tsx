@@ -36,6 +36,16 @@ export type PlatformCredentials = {
   canWrite: boolean;
 };
 
+export function platformRequestHeaders(
+  credentials: PlatformCredentials,
+  initial?: HeadersInit,
+): Headers {
+  const headers = new Headers(initial);
+  headers.set("Authorization", `Bearer ${credentials.accessToken}`);
+  headers.set("X-PbDH-Session", credentials.siteSessionId);
+  return headers;
+}
+
 export type AuthContextValue = {
   status: AuthStatus;
   authAvailable: boolean;

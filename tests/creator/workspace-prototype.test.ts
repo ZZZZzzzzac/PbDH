@@ -368,11 +368,12 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain("creatorWorkspaceRepository.save(next)");
   });
 
-  test("claims the named Creator browsing context used by Market handoff", () => {
-    const creatorMain = readFileSync(path.join(root, "apps/creator/src/main.tsx"), "utf8");
+  test("routes Market handoff through the Platform Shell", () => {
     const marketSource = readFileSync(path.join(root, "apps/market/src/MarketApp.tsx"), "utf8");
+    const platformSource = readFileSync(path.join(root, "apps/platform/src/PlatformApp.tsx"), "utf8");
 
-    expect(creatorMain).toContain('window.name = "pbdh-creator"');
-    expect(marketSource).toContain('window.open(createCreatorHandoffUrl(handoff, creatorAppBaseUrl()), "pbdh-creator")');
+    expect(marketSource).not.toContain("window.open");
+    expect(marketSource).toContain("onHandoffNavigate(handoff.target, url)");
+    expect(platformSource).toContain("onHandoffNavigate={navigateHandoff}");
   });
 });

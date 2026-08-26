@@ -20,6 +20,21 @@ test("backend cannot import React", () => {
   );
 });
 
+test("Platform Shell is the only frontend app-to-app composition seam", () => {
+  assert.deepEqual(
+    validateImport("apps/platform/src/PlatformApp.tsx", "@pbdh/player/surface"),
+    [],
+  );
+  assert.deepEqual(
+    validateImport("apps/player/src/PlayerAppPrototype.tsx", "@pbdh/market"),
+    ["frontend app surfaces must not depend on the Platform Shell or peer apps"],
+  );
+  assert.deepEqual(
+    validateImport("apps/platform/src/PlatformApp.tsx", "@pbdh/backend"),
+    ["Platform Shell may compose only Player, Creator, and Market app surfaces"],
+  );
+});
+
 test("core entry points reject frontend dependencies", () => {
   assert.deepEqual(
     validateImport("packages/templates/src/core/schema.ts", "react"),

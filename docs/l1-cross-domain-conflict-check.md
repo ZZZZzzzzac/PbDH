@@ -55,7 +55,7 @@
 | 账号与云文档 | 通过 | 一个 PbDH Account；Character Save、Creator Workspace、GM Tabletop Document 共用 Cloud Document 机制，但保持独立 ID、payload、revision、删除和恢复生命周期。 |
 | 游戏语义 | 通过 | 平台只理解 ID、Contract、Template、Module、事件和不透明值等平台语义；字段含义和格式由 Template/System Package 声明。 |
 | 角色频率与复杂度 | 通过 | Player > GM > Creator > System Package Author > Platform Administrator；低频工作流保持直接、文件优先和可审查。 |
-| License、Fork 与 Market custody | 通过 | License 只保存展示；Fork 仅由 Market 显式改编并最终发布触发；Publication 撤回不召回已取得快照或有效文档媒体。 |
+| License、Fork 与 Market custody | 通过 | License 只保存展示；Fork 仅由 Market 显式改编并最终发布触发；Publication 取消发布不召回已取得快照或有效文档媒体。 |
 | Contract、Template 与 Renderer | 通过 | Contract Families 独立版本化；精确 Template 和 Renderer Revision 不可变；所有宿主共享 Canonical Renderer，宿主不重解释资源字段。 |
 
 ## 已确认的跨域决定
@@ -70,7 +70,7 @@ Player 把 Tabletop 数据嵌入 Character Data；GM 使用独立 Tabletop Docum
 
 ### C3：既有文档媒体不可被上游召回
 
-有效 Character Save、Creator Workspace 或 GM Tabletop Document 对已取得 Market 媒体建立持久、非所有权、非配额的私有读取引用。Publication 撤回、下架或作者注销只停止新的公共取得；最后一条有效引用释放后才可回收。
+有效 Character Save、Creator Workspace 或 GM Tabletop Document 对已取得 Market 媒体建立持久、非所有权、非配额的私有读取引用。Publication 取消发布、平台下架或作者注销只停止新的公共取得；最后一条有效引用释放后才可回收。
 
 ### C4：Fork 只由明确 Market 改编触发
 

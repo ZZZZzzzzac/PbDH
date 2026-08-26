@@ -80,6 +80,27 @@ def active_account(
     return AuthenticatedAccount(account, session_id)
 
 
+def optional_active_account(
+    request: Request,
+    authorization: Annotated[str | None, Header()] = None,
+    session_id: Annotated[str | None, Header(alias="X-PbDH-Session")] = None,
+    identity_repository: IdentityRepository = Depends(repository),
+) -> AuthenticatedAccount | None:
+    if not authorization and not session_id:
+        return None
+    if not authorization or not authorization.startswith("Bearer "):
+        raise ApiError(401, "AUTH_REQUIRED", "请先登录。")
+    if not session_id:
+        raise ApiError(401, "AUTH_SESSION_REQUIRED", "缺少平台会话，请重新登录。")
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise ApiError(401, "AUTH_REQUIRED", "请先登录。")
+    identity = verifier(request).verify(token)
+    account = identity_repository.get_or_create_account(identity.subject)
+    identity_repository.require_active_session(account.account_id, session_id)
+    return AuthenticatedAccount(account, session_id)
+
+
 @router.get("/config")
 def auth_config(resolved: Settings = Depends(settings)) -> dict[str, object]:
     return {

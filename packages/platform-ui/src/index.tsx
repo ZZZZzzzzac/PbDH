@@ -1,4 +1,12 @@
-import { useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { AccountControl } from "@pbdh/platform-auth/provider";
 
@@ -12,6 +20,53 @@ const pages: Array<{ id: PlatformPage; label: string }> = [
   { id: "gm", label: "GM 桌面" },
   { id: "market", label: "资源市场" },
 ];
+
+type AppBarRegistration = { token: symbol; actions: ReactNode };
+type RegisterAppBarActions = (page: PlatformPage, actions: ReactNode) => () => void;
+
+const AppBarActionsContext = createContext<RegisterAppBarActions | null>(null);
+
+export function PlatformChrome({
+  activePage,
+  onNavigate,
+  children,
+}: {
+  activePage: PlatformPage;
+  onNavigate(page: PlatformPage): void;
+  children: ReactNode;
+}) {
+  const [registrations, setRegistrations] = useState<Partial<Record<PlatformPage, AppBarRegistration>>>({});
+  const register = useCallback<RegisterAppBarActions>((page, actions) => {
+    const token = Symbol(page);
+    setRegistrations((current) => ({ ...current, [page]: { token, actions } }));
+    return () => setRegistrations((current) => {
+      if (current[page]?.token !== token) return current;
+      const next = { ...current };
+      delete next[page];
+      return next;
+    });
+  }, []);
+  const navigation = useMemo(() => ({
+    player: () => onNavigate("player"),
+    creator: () => onNavigate("creator"),
+    gm: () => onNavigate("gm"),
+    market: () => onNavigate("market"),
+  }), [onNavigate]);
+
+  return <AppBarActionsContext.Provider value={register}>
+    <PlatformAppBar
+      activePage={activePage}
+      onNavigate={navigation}
+      extraActions={registrations[activePage]?.actions}
+    />
+    {children}
+  </AppBarActionsContext.Provider>;
+}
+
+export function usePlatformAppBarActions(page: PlatformPage, actions: ReactNode): void {
+  const register = useContext(AppBarActionsContext);
+  useEffect(() => register?.(page, actions), [actions, page, register]);
+}
 
 export function PlatformAppBar({
   activePage,

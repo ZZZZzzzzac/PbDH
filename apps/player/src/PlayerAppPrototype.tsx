@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
-import { PlatformAppBar } from "@pbdh/platform-ui";
+import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
+import { usePlatformAppBarActions } from "@pbdh/platform-ui";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import { adversaryRendererFor } from "@pbdh/templates/frontend";
 import type { AdversaryData } from "@pbdh/templates/core";
@@ -63,12 +64,19 @@ type WeaponData = {
   位阶: string;
 };
 
-export function PlayerAppPrototype() {
+export function PlayerAppPrototype({
+  handoffUrl = window.location.href,
+  onHandoffConsumed,
+}: {
+  handoffUrl?: string;
+  onHandoffConsumed?(cleanedUrl: URL): void;
+} = {}) {
+  const auth = useAuth();
   const repository = useMemo(() => new DexieResourcePackageRepository(), []);
   const [library, setLibrary] = useState<ResourceLibrary>(() => new Map());
   const [libraryReady, setLibraryReady] = useState(false);
   const [incomingPackage, setIncomingPackage] = useState<ResourcePackageIngress>();
-  const marketHandoffStartedRef = useRef(false);
+  const marketHandoffStartedRef = useRef<string | null>(null);
   const [managerOpen, setManagerOpen] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerError, setPickerError] = useState<string>();
@@ -90,6 +98,13 @@ export function PlayerAppPrototype() {
     candidate.resource.id === openResource.resourceId);
   const resourceArea = resource ? route?.nativeEntry?.label ?? "其他资源" : "资源";
   const [assets, setAssets] = useState(new Map<string, { status: "ready"; url: string }>());
+  const appBarActions = useMemo(() => <nav className="player-actions" aria-label="玩家功能">
+    <button>玩家功能⌄</button>
+    <button>玩家存档⌄</button>
+    <button>导入导出⌄</button>
+    <button onClick={() => setManagerOpen(true)}>系统包⌄</button>
+  </nav>, []);
+  usePlatformAppBarActions("player", appBarActions);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,15 +128,18 @@ export function PlayerAppPrototype() {
   }, [repository]);
 
   useEffect(() => {
-    if (!libraryReady || marketHandoffStartedRef.current) return;
-    const handoff = parsePlayerMarketHandoff(window.location.href);
+    if (!libraryReady || marketHandoffStartedRef.current === handoffUrl) return;
+    const handoff = parsePlayerMarketHandoff(handoffUrl);
     if (!handoff) return;
-    marketHandoffStartedRef.current = true;
-    const cleanedUrl = withoutPlayerMarketHandoff(window.location.href);
-    window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
+    marketHandoffStartedRef.current = handoffUrl;
+    const cleanedUrl = withoutPlayerMarketHandoff(handoffUrl);
+    if (onHandoffConsumed) onHandoffConsumed(cleanedUrl);
+    else window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
     setManagerOpen(true);
     const ingressId = `market:${handoff.publicationId}:${handoff.snapshotDigest}`;
-    void fetch(playerMarketArchiveUrl(handoff))
+    void fetch(playerMarketArchiveUrl(handoff), auth.credentials
+      ? { headers: platformRequestHeaders(auth.credentials) }
+      : undefined)
       .then(async (response) => {
         if (!response.ok) throw new Error("无法取得市场资源包");
         return new Uint8Array(await response.arrayBuffer());
@@ -144,7 +162,7 @@ export function PlayerAppPrototype() {
           params: { message: error instanceof Error ? error.message : "unknown" },
         }],
       }));
-  }, [libraryReady]);
+  }, [auth.credentials, handoffUrl, libraryReady, onHandoffConsumed]);
 
   useEffect(() => {
     if (!resource || !openResource) {
@@ -193,11 +211,6 @@ export function PlayerAppPrototype() {
   }
 
   return <main className="player-app">
-    <PlatformAppBar
-      activePage="player"
-      extraActions={<nav className="player-actions" aria-label="玩家功能"><button>玩家功能⌄</button><button>玩家存档⌄</button><button>导入导出⌄</button><button onClick={() => setManagerOpen(true)}>系统包⌄</button></nav>}
-    />
-
     <div className="player-shell">
       <aside className="sheet-index"><h2>人物卡</h2><button className="selected">阿斯特里德</button><button>新建人物</button><footer><button onClick={() => setManagerOpen(true)}>资源管理器</button></footer></aside>
       <section className="character-sheet"><header><div><small>DAGGERHEART</small><h1>阿斯特里德</h1></div><span>等级 3</span></header>

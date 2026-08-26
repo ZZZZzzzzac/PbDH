@@ -8,6 +8,7 @@
     "node": ">=22"
   },
   "workspaces": [
+    "apps/platform",
     "apps/player",
     "apps/creator",
     "apps/market",
@@ -19,7 +20,8 @@
     "packages/local-storage",
     "packages/media-admission",
     "packages/platform-auth",
-    "packages/platform-ui"
+    "packages/platform-ui",
+    "packages/publication-ui"
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
@@ -29,11 +31,10 @@
     "test:ts": "vitest run tests",
     "test:python": "node scripts/python.mjs -m pytest tests",
     "typecheck": "tsc --noEmit",
-    "build:creator": "npm run build -w @pbdh/creator",
-    "build:player": "npm run build -w @pbdh/player",
-    "build:market": "npm run build -w @pbdh/market",
+    "dev:platform": "npm run dev -w @pbdh/platform",
+    "build:platform": "npm run build -w @pbdh/platform",
     "dev:backend": "node --env-file-if-exists=.env.local scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload --port 8001",
-    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:creator && npm run build:player && npm run build:market"
+    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:platform"
   },
   "dependencies": {
     "dexie": "4.4.4",

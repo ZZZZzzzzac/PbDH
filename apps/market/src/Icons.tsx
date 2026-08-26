@@ -17,6 +17,7 @@ const paths: Record<string, React.ReactNode> = {
   menu: <path d="M4 6h16M4 12h16M4 18h16"/>,
   x: <path d="M6 6l12 12M18 6 6 18"/>,
   check: <path d="m5 12 4 4L19 6"/>,
+  pencil: <><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.5 7.5 3 3"/></>,
 };
 
 export function Icon({ name, ...props }: { name: keyof typeof paths } & SVGProps<SVGSVGElement>) {

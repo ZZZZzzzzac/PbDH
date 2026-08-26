@@ -1,9 +1,7 @@
-:root { font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif; color: #21150f; background: #f3efe7; font-synthesis: none; }
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 1180px; min-height: 100vh; }
-button, input, select { font: inherit; }
-button { color: inherit; }
-.player-app { min-height: 100vh; background: #f3efe7; }
+.player-app { min-width: 1180px; min-height: calc(100vh - 56px); color: #21150f; background: #f3efe7; font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif; font-synthesis: none; }
+.player-app, .player-app * { box-sizing: border-box; }
+.player-app button, .player-app input, .player-app select { font: inherit; }
+.player-app button { color: inherit; }
 .player-actions { height: 56px; display: flex; align-items: stretch; border-left: 1px solid #4a382d; }
 .player-actions button { padding: 0 9px; border: 0; color: #d9cfc3; background: transparent; font-size: 12px; cursor: pointer; }
 .player-actions button:hover { color: #fffdf8; background: #382820; }

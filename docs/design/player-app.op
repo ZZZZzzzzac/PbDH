@@ -457,7 +457,7 @@
                       "name": "覆盖表 / 离线与许可 / 场景",
                       "locked": false,
                       "width": 290.0,
-                      "content": "离线 / Publication 撤回 / License",
+                      "content": "离线 / Publication 取消发布 / License",
                       "fontFamily": "Noto Sans SC",
                       "fontSize": 13.0,
                       "fontWeight": 600
@@ -1022,12 +1022,15 @@
               "type": "frame",
               "id": "player-platform-app-bar",
               "name": "Platform / 共用顶部应用栏",
-              "width": 1440,
-              "height": 56,
+              "role": "navbar",
+              "x": 0.0,
+              "y": 0.0,
+              "width": 1440.0,
+              "height": 56.0,
               "layout": "horizontal",
               "padding": [
-                0,
-                18
+                0.0,
+                18.0
               ],
               "justifyContent": "space_between",
               "alignItems": "center",
@@ -1038,7 +1041,7 @@
                 }
               ],
               "stroke": {
-                "thickness": 1,
+                "thickness": 1.0,
                 "fill": [
                   {
                     "type": "solid",
@@ -1051,22 +1054,22 @@
                   "type": "frame",
                   "id": "player-platform-app-bar-shared-1",
                   "name": "Platform / 品牌",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 10,
+                  "gap": 10.0,
                   "alignItems": "center",
                   "children": [
                     {
                       "type": "frame",
                       "id": "player-platform-app-bar-shared-2",
                       "name": "Platform / 品牌标记",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 7,
+                      "cornerRadius": 7.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -1078,11 +1081,12 @@
                           "type": "text",
                           "id": "player-platform-app-bar-shared-3",
                           "name": "Platform / 品牌缩写",
-                          "width": 22,
+                          "locked": false,
+                          "width": 22.0,
                           "height": "fit_content",
                           "content": "P",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 14,
+                          "fontSize": 14.0,
                           "fontWeight": 800,
                           "lineHeight": 1.3,
                           "textAlign": "center",
@@ -1091,8 +1095,7 @@
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     },
@@ -1100,11 +1103,12 @@
                       "type": "text",
                       "id": "player-platform-app-bar-shared-4",
                       "name": "Platform / 品牌名",
-                      "width": 110,
+                      "locked": false,
+                      "width": 110.0,
                       "height": "fit_content",
                       "content": "PbDH",
                       "fontFamily": "Noto Sans SC",
-                      "fontSize": 16,
+                      "fontSize": 16.0,
                       "fontWeight": 800,
                       "lineHeight": 1.3,
                       "fill": [
@@ -1112,8 +1116,7 @@
                           "type": "solid",
                           "color": "#FFFDF8"
                         }
-                      ],
-                      "locked": false
+                      ]
                     }
                   ]
                 },
@@ -1122,9 +1125,9 @@
                   "id": "player-platform-app-bar-shared-5",
                   "name": "Platform / 主页面导航",
                   "width": "fit_content",
-                  "height": 56,
+                  "height": 56.0,
                   "layout": "horizontal",
-                  "gap": 4,
+                  "gap": 4.0,
                   "alignItems": "center",
                   "children": [
                     {
@@ -1132,7 +1135,7 @@
                       "id": "player-platform-app-bar-shared-6",
                       "name": "主页面 / 玩家车卡器 / 当前",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -1141,11 +1144,11 @@
                           "id": "player-platform-app-bar-shared-7",
                           "name": "主页面 / 玩家车卡器 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -1153,19 +1156,19 @@
                               "type": "text",
                               "id": "player-platform-app-bar-shared-8",
                               "name": "主页面 / 玩家车卡器 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "玩家车卡器",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 750,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#FFFDF8"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -1174,7 +1177,7 @@
                           "id": "player-platform-app-bar-shared-9",
                           "name": "主页面 / 玩家车卡器 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1190,7 +1193,7 @@
                       "id": "player-platform-app-bar-shared-10",
                       "name": "主页面 / 卡片工坊",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -1199,11 +1202,11 @@
                           "id": "player-platform-app-bar-shared-11",
                           "name": "主页面 / 卡片工坊 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -1211,19 +1214,19 @@
                               "type": "text",
                               "id": "player-platform-app-bar-shared-12",
                               "name": "主页面 / 卡片工坊 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "卡片工坊",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -1232,7 +1235,7 @@
                           "id": "player-platform-app-bar-shared-13",
                           "name": "主页面 / 卡片工坊 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1248,7 +1251,7 @@
                       "id": "player-platform-app-bar-shared-14",
                       "name": "主页面 / GM 桌面",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -1257,11 +1260,11 @@
                           "id": "player-platform-app-bar-shared-15",
                           "name": "主页面 / GM 桌面 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -1269,19 +1272,19 @@
                               "type": "text",
                               "id": "player-platform-app-bar-shared-16",
                               "name": "主页面 / GM 桌面 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "GM 桌面",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -1290,7 +1293,7 @@
                           "id": "player-platform-app-bar-shared-17",
                           "name": "主页面 / GM 桌面 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1306,7 +1309,7 @@
                       "id": "player-platform-app-bar-shared-18",
                       "name": "主页面 / 资源市场",
                       "width": "fit_content",
-                      "height": 56,
+                      "height": 56.0,
                       "layout": "vertical",
                       "justifyContent": "space_between",
                       "children": [
@@ -1315,11 +1318,11 @@
                           "id": "player-platform-app-bar-shared-19",
                           "name": "主页面 / 资源市场 / 内容",
                           "width": "fit_content",
-                          "height": 54,
+                          "height": 54.0,
                           "layout": "horizontal",
                           "padding": [
-                            0,
-                            14
+                            0.0,
+                            14.0
                           ],
                           "alignItems": "center",
                           "children": [
@@ -1327,19 +1330,19 @@
                               "type": "text",
                               "id": "player-platform-app-bar-shared-20",
                               "name": "主页面 / 资源市场 / 文字",
+                              "locked": false,
                               "width": "fit_content",
                               "height": "fit_content",
                               "content": "资源市场",
                               "fontFamily": "Noto Sans SC",
-                              "fontSize": 12,
+                              "fontSize": 12.0,
                               "fontWeight": 600,
                               "fill": [
                                 {
                                   "type": "solid",
                                   "color": "#C8BCAE"
                                 }
-                              ],
-                              "locked": false
+                              ]
                             }
                           ]
                         },
@@ -1348,7 +1351,7 @@
                           "id": "player-platform-app-bar-shared-21",
                           "name": "主页面 / 资源市场 / 当前标记",
                           "width": "fill_container",
-                          "height": 2,
+                          "height": 2.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1365,10 +1368,10 @@
                   "type": "frame",
                   "id": "player-platform-app-bar-shared-22",
                   "name": "Platform / 全局操作",
-                  "width": 220,
+                  "width": 220.0,
                   "height": "fit_content",
                   "layout": "horizontal",
-                  "gap": 8,
+                  "gap": 8.0,
                   "justifyContent": "end",
                   "alignItems": "center",
                   "children": [
@@ -1376,20 +1379,20 @@
                       "type": "frame",
                       "id": "player-platform-app-bar-shared-23",
                       "name": "全局按钮 / 通知",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "player-platform-app-bar-shared-24",
                           "name": "全局按钮 / 通知 / 图标",
                           "iconFontName": "bell",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1403,20 +1406,20 @@
                       "type": "frame",
                       "id": "player-platform-app-bar-shared-25",
                       "name": "全局按钮 / 设置",
-                      "width": 30,
-                      "height": 30,
+                      "width": 30.0,
+                      "height": 30.0,
                       "layout": "horizontal",
                       "justifyContent": "center",
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "children": [
                         {
                           "type": "icon_font",
                           "id": "player-platform-app-bar-shared-26",
                           "name": "全局按钮 / 设置 / 图标",
                           "iconFontName": "settings",
-                          "width": 15,
-                          "height": 15,
+                          "width": 15.0,
+                          "height": 15.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1431,15 +1434,15 @@
                       "id": "player-platform-app-bar-shared-27",
                       "name": "全局按钮 / 账号",
                       "width": "fit_content",
-                      "height": 30,
+                      "height": 30.0,
                       "layout": "horizontal",
-                      "gap": 7,
+                      "gap": 7.0,
                       "padding": [
-                        0,
-                        10
+                        0.0,
+                        10.0
                       ],
                       "alignItems": "center",
-                      "cornerRadius": 6,
+                      "cornerRadius": 6.0,
                       "fill": [
                         {
                           "type": "solid",
@@ -1452,8 +1455,8 @@
                           "id": "player-platform-app-bar-shared-28",
                           "name": "全局按钮 / 账号 / 图标",
                           "iconFontName": "user",
-                          "width": 14,
-                          "height": 14,
+                          "width": 14.0,
+                          "height": 14.0,
                           "fill": [
                             {
                               "type": "solid",
@@ -1465,28 +1468,25 @@
                           "type": "text",
                           "id": "player-platform-app-bar-shared-29",
                           "name": "全局按钮 / 账号 / 文字",
+                          "locked": false,
                           "width": "fit_content",
                           "height": "fit_content",
                           "content": "账号",
                           "fontFamily": "Noto Sans SC",
-                          "fontSize": 11,
+                          "fontSize": 11.0,
                           "fontWeight": 650,
                           "fill": [
                             {
                               "type": "solid",
                               "color": "#FFFDF8"
                             }
-                          ],
-                          "locked": false
+                          ]
                         }
                       ]
                     }
                   ]
                 }
-              ],
-              "role": "navbar",
-              "x": 0,
-              "y": 0
+              ]
             },
             {
               "type": "frame",

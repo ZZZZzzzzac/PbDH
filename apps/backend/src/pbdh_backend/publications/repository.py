@@ -19,6 +19,18 @@ class PublicationVersionConflict(Exception):
     pass
 
 
+class PublicationNotFound(Exception):
+    pass
+
+
+class PublicationPermissionDenied(Exception):
+    pass
+
+
+class PublicationCoverInvalid(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class PublicationWrite:
     publication_id: str
@@ -174,6 +186,99 @@ class PublicationRepository:
         finally:
             connection.close()
 
+    def update_metadata(
+        self,
+        publication_id: str,
+        account_id: str,
+        metadata: Mapping[str, Any],
+        allow_all: bool = False,
+    ) -> dict[str, Any]:
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT p.logical_document_json, o.account_id "
+                "FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "WHERE p.publication_id = ?",
+                (publication_id,),
+            ).fetchone()
+            if current is None:
+                raise PublicationNotFound(publication_id)
+            if current["account_id"] != account_id and not allow_all:
+                raise PublicationPermissionDenied(publication_id)
+            document = json.loads(current["logical_document_json"])
+            if metadata["coverAssetId"] not in {
+                asset["id"] for asset in document["assets"]
+            }:
+                raise PublicationCoverInvalid(metadata["coverAssetId"])
+            connection.execute(
+                "UPDATE publications SET title = ?, summary = ?, language = ?, "
+                "tags_json = ?, cover_asset_id = ?, "
+                "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
+                "WHERE publication_id = ?",
+                (
+                    metadata["title"],
+                    metadata["summary"],
+                    metadata["language"],
+                    json.dumps(metadata["tags"], ensure_ascii=False, separators=(",", ":")),
+                    metadata["coverAssetId"],
+                    publication_id,
+                ),
+            )
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+        publication = self.get_manageable_publication(publication_id, account_id, allow_all)
+        if publication is None:
+            raise RuntimeError("Publication disappeared after metadata update")
+        return publication
+
+    def set_status(
+        self,
+        publication_id: str,
+        account_id: str,
+        status: str,
+        allow_all: bool = False,
+    ) -> dict[str, Any]:
+        if status not in ("published", "unpublished"):
+            raise ValueError(f"Invalid publication status: {status}")
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT o.account_id, p.status FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "WHERE p.publication_id = ?",
+                (publication_id,),
+            ).fetchone()
+            if current is None:
+                raise PublicationNotFound(publication_id)
+            if current["account_id"] != account_id and not allow_all:
+                raise PublicationPermissionDenied(publication_id)
+            if current["status"] != status:
+                connection.execute(
+                    "UPDATE publications SET status = ?, "
+                    "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
+                    "WHERE publication_id = ?",
+                    (status, publication_id),
+                )
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+        publication = self.get_manageable_publication(publication_id, account_id, allow_all)
+        if publication is None:
+            raise RuntimeError("Publication disappeared after status update")
+        return publication
+
     def list_publications(self, query: str | None = None) -> list[dict[str, Any]]:
         connection = self._database.connect()
         try:
@@ -182,9 +287,10 @@ class PublicationRepository:
                 "SELECT p.*, o.account_id, a.username FROM publications p "
                 "JOIN package_ownership o ON o.package_id = p.package_id "
                 "JOIN accounts a ON a.account_id = o.account_id "
-                "WHERE ? = '' OR p.title LIKE ? OR p.summary LIKE ? OR p.tags_json LIKE ? "
+                "WHERE p.status = 'published' AND ("
+                "? = '' OR p.title LIKE ? OR p.summary LIKE ? OR p.tags_json LIKE ? "
                 "OR EXISTS (SELECT 1 FROM publication_resources r "
-                "WHERE r.publication_id = p.publication_id AND r.search_text LIKE ?) "
+                "WHERE r.publication_id = p.publication_id AND r.search_text LIKE ?)) "
                 "ORDER BY p.updated_at DESC, p.publication_id",
                 (terms, *(f"%{terms}%",) * 4),
             ).fetchall()
@@ -199,7 +305,7 @@ class PublicationRepository:
                 "SELECT p.*, o.account_id, a.username FROM publications p "
                 "JOIN package_ownership o ON o.package_id = p.package_id "
                 "JOIN accounts a ON a.account_id = o.account_id "
-                "WHERE p.publication_id = ?",
+                "WHERE p.publication_id = ? AND p.status = 'published'",
                 (publication_id,),
             ).fetchone()
             if row is None:
@@ -210,29 +316,87 @@ class PublicationRepository:
         finally:
             connection.close()
 
-    def get_media(self, publication_id: str, asset_id: str) -> tuple[str, bytes] | None:
+    def list_manageable_publications(
+        self, account_id: str, allow_all: bool
+    ) -> list[dict[str, Any]]:
+        connection = self._database.connect()
+        try:
+            rows = connection.execute(
+                "SELECT p.*, o.account_id, a.username FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "JOIN accounts a ON a.account_id = o.account_id "
+                "WHERE ? = 1 OR o.account_id = ? "
+                "ORDER BY p.updated_at DESC, p.publication_id",
+                (allow_all, account_id),
+            ).fetchall()
+            return [self._public_row(row) for row in rows]
+        finally:
+            connection.close()
+
+    def get_owned_publication(
+        self, publication_id: str, account_id: str
+    ) -> dict[str, Any] | None:
+        return self.get_manageable_publication(publication_id, account_id, False)
+
+    def get_manageable_publication(
+        self, publication_id: str, account_id: str, allow_all: bool
+    ) -> dict[str, Any] | None:
+        connection = self._database.connect()
+        try:
+            row = connection.execute(
+                "SELECT p.*, o.account_id, a.username FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "JOIN accounts a ON a.account_id = o.account_id "
+                "WHERE p.publication_id = ? AND (? = 1 OR o.account_id = ?)",
+                (publication_id, allow_all, account_id),
+            ).fetchone()
+            if row is None:
+                return None
+            result = self._public_row(row)
+            result["document"] = json.loads(row["logical_document_json"])
+            return result
+        finally:
+            connection.close()
+
+    def get_media(
+        self,
+        publication_id: str,
+        asset_id: str,
+        account_id: str | None = None,
+        allow_all: bool = False,
+    ) -> tuple[str, bytes] | None:
         connection = self._database.connect()
         try:
             row = connection.execute(
                 "SELECT b.media_type, b.bytes FROM media_blobs b "
                 "JOIN publication_media m ON m.asset_id = b.asset_id "
-                "WHERE m.publication_id = ? AND m.asset_id = ?",
-                (publication_id, asset_id),
+                "JOIN publications p ON p.publication_id = m.publication_id "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "WHERE m.publication_id = ? AND m.asset_id = ? "
+                "AND (p.status = 'published' OR ? = 1 OR o.account_id = ?)",
+                (publication_id, asset_id, allow_all, account_id or ""),
             ).fetchone()
             return None if row is None else (row["media_type"], row["bytes"])
         finally:
             connection.close()
 
     def get_archive_candidate(
-        self, publication_id: str
+        self,
+        publication_id: str,
+        account_id: str | None = None,
+        allow_all: bool = False,
     ) -> tuple[dict[str, Any], dict[str, bytes]] | None:
-        publication = self.get_publication(publication_id)
+        publication = (
+            self.get_manageable_publication(publication_id, account_id, allow_all)
+            if account_id is not None
+            else self.get_publication(publication_id)
+        )
         if publication is None:
             return None
         document = publication["document"]
         media: dict[str, bytes] = {}
         for asset in document["assets"]:
-            found = self.get_media(publication_id, asset["id"])
+            found = self.get_media(publication_id, asset["id"], account_id, allow_all)
             if found is None:
                 raise RuntimeError(f"Publication media missing: {asset['id']}")
             media[asset["id"]] = found[1]
@@ -258,6 +422,7 @@ class PublicationRepository:
             },
             "createdAt": row["created_at"],
             "updatedAt": row["updated_at"],
+            "status": row["status"],
             "templateIds": sorted({
                 resource["template"]["id"] for resource in document["resources"]
             }),

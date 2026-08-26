@@ -19,6 +19,7 @@ import {
 import { applyResourceSelection } from "../../apps/player/src/resources/apply-resource-selection.ts";
 import { prepareResourcePackageInstall } from "../../apps/player/src/resources/prepare-resource-package-install.ts";
 import { listResourcePickerCandidates } from "../../apps/player/src/resources/resource-picker.ts";
+import { commitResourcePackageInstall } from "../../apps/player/src/resources/resource-library.ts";
 
 const root = process.cwd();
 const document = JSON.parse(readFileSync(path.join(
@@ -54,7 +55,7 @@ const handoff: PlayerMarketHandoff = {
 
 describe("Player Market handoff ingress", () => {
   test("parses and removes only an explicit Player publication handoff", () => {
-    const url = new URL("http://localhost:5175/?keep=1");
+    const url = new URL("http://localhost:5173/player?keep=1");
     url.searchParams.set("pbdhHandoff", "publication");
     url.searchParams.set("target", "player");
     url.searchParams.set("publicationId", handoff.publicationId);
@@ -200,6 +201,40 @@ describe("Player Market handoff ingress", () => {
     });
 
     expect(repeated).toMatchObject({ kind: "ready", plan: { kind: "no-op" } });
+  });
+
+  test("keeps the installed snapshot unchanged until a newer Market handoff is explicitly committed", async () => {
+    const first = await prepareResourcePackageInstall({
+      bytes,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: handoff,
+    });
+    if (first.kind !== "ready" || first.plan.kind !== "insert") throw new Error("expected insert plan");
+    const installedLibrary = commitResourcePackageInstall(new Map(), first.plan);
+    const installed = installedLibrary.get(document.package.id)!;
+
+    const updatedDocument = structuredClone(document);
+    (updatedDocument.resources[0]!.data as Record<string, unknown>).名称 = "阔剑·修订";
+    updatedDocument.snapshotDigest = await computeResourcePackageSnapshotDigest(updatedDocument, media);
+    const updatedBytes = writePbres(updatedDocument, media);
+    const update = await prepareResourcePackageInstall({
+      bytes: updatedBytes,
+      currentSystem: system,
+      library: installedLibrary,
+      expectedMarketHandoff: {
+        ...handoff,
+        snapshotDigest: updatedDocument.snapshotDigest,
+      },
+    });
+
+    expect(update).toMatchObject({ kind: "ready", plan: { kind: "update" } });
+    expect(installedLibrary.get(document.package.id)).toBe(installed);
+    expect((installed.document.resources[0]!.data as Record<string, unknown>).名称).toBe("阔剑");
+    if (update.kind !== "ready" || update.plan.kind !== "update") throw new Error("expected update plan");
+    const updatedLibrary = commitResourcePackageInstall(installedLibrary, update.plan);
+    expect((updatedLibrary.get(document.package.id)!.document.resources[0]!.data as Record<string, unknown>).名称)
+      .toBe("阔剑·修订");
   });
 
   test("reports mismatched Market bytes before creating an install plan", async () => {

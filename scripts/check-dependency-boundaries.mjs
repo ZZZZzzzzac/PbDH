@@ -9,6 +9,7 @@ import {
 const root = process.cwd();
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx"]);
 const workspaceDirectories = [
+  "apps/platform",
   "apps/player",
   "apps/creator",
   "apps/market",
@@ -21,6 +22,7 @@ const workspaceDirectories = [
   "packages/media-admission",
   "packages/platform-auth",
   "packages/platform-ui",
+  "packages/publication-ui",
 ];
 
 async function collectSourceFiles(relativeDirectory) {

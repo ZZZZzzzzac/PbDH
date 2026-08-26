@@ -5,14 +5,23 @@ import re
 from typing import Annotated
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic.alias_generators import to_camel
 
 from pbdh_backend.api_errors import ApiError
-from pbdh_backend.identity.router import AuthenticatedAccount, active_account
+from pbdh_backend.identity.router import (
+    AuthenticatedAccount,
+    active_account,
+    optional_active_account,
+    settings,
+)
 from pbdh_backend.publications.repository import (
     PackageOwnershipConflict,
+    PublicationCoverInvalid,
+    PublicationNotFound,
+    PublicationPermissionDenied,
     PublicationRepository,
     PublicationVersionConflict,
 )
@@ -20,19 +29,24 @@ from pbdh_backend.publications.service import (
     PublicationService,
     PublicationValidationError,
 )
+from pbdh_backend.settings import Settings
 
 
 router = APIRouter(prefix="/api/publications", tags=["publications"])
 
 
 class PublicationMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        extra="forbid",
+        populate_by_name=True,
+    )
 
     title: str = Field(min_length=1, max_length=120)
     summary: str = Field(max_length=500)
     language: str = Field(min_length=2, max_length=35)
     tags: list[str] = Field(max_length=20)
-    cover_asset_id: str = Field(alias="coverAssetId", pattern=r"^sha256:[0-9a-f]{64}$")
+    cover_asset_id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
 
 
 def service(request: Request) -> PublicationService:
@@ -89,6 +103,116 @@ def list_publications(
     return {"publications": publication_repository.list_publications(q)}
 
 
+@router.get("/manageable")
+def list_manageable_publications(
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
+    return {
+        "publications": publication_repository.list_manageable_publications(
+            authenticated.account.account_id,
+            resolved.is_admin_subject(authenticated.account.auth_subject),
+        )
+    }
+
+
+@router.patch("/{publication_id}/metadata")
+def update_publication_metadata(
+    publication_id: str,
+    payload: Annotated[dict[str, object], Body()],
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
+    try:
+        parsed = PublicationMetadata.model_validate(payload)
+    except ValidationError as error:
+        raise ApiError(422, "PUBLICATION_METADATA_INVALID", "发布信息不完整或格式错误。") from error
+    try:
+        publication = publication_repository.update_metadata(
+            publication_id,
+            authenticated.account.account_id,
+            parsed.model_dump(by_alias=True),
+            resolved.is_admin_subject(authenticated.account.auth_subject),
+        )
+    except PublicationNotFound as error:
+        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该出版物。") from error
+    except PublicationPermissionDenied as error:
+        raise ApiError(403, "PUBLICATION_PERMISSION_DENIED", "只有该出版物的作者或平台管理员可以修改展示信息。") from error
+    except PublicationCoverInvalid as error:
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面必须来自当前资源包资产。") from error
+    return {"publication": publication}
+
+
+@router.post("/{publication_id}/unpublish")
+def unpublish_publication(
+    publication_id: str,
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
+    return {
+        "publication": _set_publication_status(
+            publication_repository,
+            publication_id,
+            authenticated.account.account_id,
+            "unpublished",
+            resolved.is_admin_subject(authenticated.account.auth_subject),
+        )
+    }
+
+
+@router.post("/{publication_id}/republish")
+def republish_publication(
+    publication_id: str,
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
+    return {
+        "publication": _set_publication_status(
+            publication_repository,
+            publication_id,
+            authenticated.account.account_id,
+            "published",
+            resolved.is_admin_subject(authenticated.account.auth_subject),
+        )
+    }
+
+
+@router.get("/{publication_id}/manage")
+def get_manageable_publication(
+    publication_id: str,
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
+    publication = publication_repository.get_manageable_publication(
+        publication_id,
+        authenticated.account.account_id,
+        resolved.is_admin_subject(authenticated.account.auth_subject),
+    )
+    if publication is None:
+        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该资源包。")
+    return {"publication": publication}
+
+
+def _set_publication_status(
+    publication_repository: PublicationRepository,
+    publication_id: str,
+    account_id: str,
+    status: str,
+    allow_all: bool,
+) -> dict[str, object]:
+    try:
+        return publication_repository.set_status(publication_id, account_id, status, allow_all)
+    except PublicationNotFound as error:
+        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该出版物。") from error
+    except PublicationPermissionDenied as error:
+        raise ApiError(403, "PUBLICATION_PERMISSION_DENIED", "只有该出版物的作者或平台管理员可以修改发布状态。") from error
+
+
 @router.get("/{publication_id}")
 def get_publication(
     publication_id: str,
@@ -103,13 +227,21 @@ def get_publication(
 @router.get("/{publication_id}/download")
 def download_publication(
     publication_id: str,
+    authenticated: AuthenticatedAccount | None = Depends(optional_active_account),
     publication_service: PublicationService = Depends(service),
     publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
 ) -> Response:
-    archive = publication_service.download(publication_id)
+    account_id = authenticated.account.account_id if authenticated else None
+    allow_all = bool(authenticated and resolved.is_admin_subject(authenticated.account.auth_subject))
+    archive = publication_service.download(publication_id, account_id, allow_all)
     if archive is None:
         raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该资源包。")
-    publication = publication_repository.get_publication(publication_id)
+    publication = (
+        publication_repository.get_manageable_publication(publication_id, account_id, allow_all)
+        if account_id is not None
+        else publication_repository.get_publication(publication_id)
+    )
     package_name = publication["title"] if publication else "资源包"
     if publication:
         package_name = (
@@ -144,9 +276,13 @@ def _safe_archive_name(package_name: str) -> str:
 def get_publication_media(
     publication_id: str,
     asset_id: str,
+    authenticated: AuthenticatedAccount | None = Depends(optional_active_account),
     publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
 ) -> Response:
-    media = publication_repository.get_media(publication_id, asset_id)
+    account_id = authenticated.account.account_id if authenticated else None
+    allow_all = bool(authenticated and resolved.is_admin_subject(authenticated.account.auth_subject))
+    media = publication_repository.get_media(publication_id, asset_id, account_id, allow_all)
     if media is None:
         raise ApiError(404, "PUBLICATION_MEDIA_NOT_FOUND", "没有找到该公开媒体。")
     return Response(media[1], media_type=media[0])

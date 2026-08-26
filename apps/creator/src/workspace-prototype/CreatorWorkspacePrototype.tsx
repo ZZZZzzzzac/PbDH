@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -24,8 +25,8 @@ import {
   resourceImagePolicy,
   type ImageAdmissionPolicy,
 } from "@pbdh/media-admission";
-import { useAuth } from "@pbdh/platform-auth/provider";
-import { PlatformAppBar } from "@pbdh/platform-ui";
+import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
+import { PublicationDialog } from "@pbdh/publication-ui";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import {
   createTabletopDocument,
@@ -173,42 +174,6 @@ function TextareaField({
       <textarea value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
-}
-
-function TagEditor({
-  tags,
-  onChange,
-}: {
-  tags: string[];
-  onChange: (tags: string[]) => void;
-}) {
-  const [draft, setDraft] = useState("");
-  const add = () => {
-    const value = draft.trim();
-    if (value && !tags.includes(value)) onChange([...tags, value]);
-    setDraft("");
-  };
-  return <div className="compact-field publication-tag-field">
-    <span>发现标签</span>
-    <div className="publication-tag-editor">
-      {tags.map((tag) => <span className="publication-tag" key={tag}>{tag}<button type="button" aria-label={`删除标签${tag}`} onClick={() => onChange(tags.filter((item) => item !== tag))}>×</button></span>)}
-      <input
-        value={draft}
-        aria-label="新增标签"
-        placeholder="输入后按回车"
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={add}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            add();
-          } else if (event.key === "Backspace" && !draft && tags.length > 0) {
-            onChange(tags.slice(0, -1));
-          }
-        }}
-      />
-    </div>
-  </div>;
 }
 
 const publicationLicenses = {
@@ -403,7 +368,19 @@ async function imageAsset(file: File, policy: ImageAdmissionPolicy) {
   return { asset, bytes: admitted.bytes, blob: admitted.blob };
 }
 
-export function CreatorWorkspacePrototype() {
+export type CreatorAppMode = "creator" | "gm";
+
+export function CreatorWorkspacePrototype({
+  mode,
+  onModeChange,
+  handoffUrl = window.location.href,
+  onHandoffConsumed,
+}: {
+  mode?: CreatorAppMode;
+  onModeChange?(mode: CreatorAppMode): void;
+  handoffUrl?: string;
+  onHandoffConsumed?(cleanedUrl: URL): void;
+} = {}) {
   const auth = useAuth();
   const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
   const [activeKey, setActiveKey] = useState("");
@@ -418,7 +395,12 @@ export function CreatorWorkspacePrototype() {
   const [publicationLicense, setPublicationLicense] = useState<PublicationLicenseId>("public-domain");
   const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({ assetId: "", url: "" });
   const [openFeatureMenu, setOpenFeatureMenu] = useState<number | null>(null);
-  const [appMode, setAppMode] = useState<"creator" | "gm">("creator");
+  const [localAppMode, setLocalAppMode] = useState<CreatorAppMode>("creator");
+  const appMode = mode ?? localAppMode;
+  const changeAppMode = useCallback((nextMode: CreatorAppMode) => {
+    setLocalAppMode(nextMode);
+    if (mode !== nextMode) onModeChange?.(nextMode);
+  }, [mode, onModeChange]);
   const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
   const [activeTabletopId, setActiveTabletopId] = useState("");
   const [tabletopNameDraft, setTabletopNameDraft] = useState("");
@@ -439,7 +421,7 @@ export function CreatorWorkspacePrototype() {
   }>(null);
   const suppressCanvasContextMenuRef = useRef(false);
   const tabletopViewportRef = useRef<HTMLDivElement>(null);
-  const marketHandoffStartedRef = useRef(false);
+  const marketHandoffStartedRef = useRef<string | null>(null);
   const workspaceWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [notice, setNotice] = useState<string | null>(null);
@@ -476,13 +458,16 @@ export function CreatorWorkspacePrototype() {
   }, [creatorWorkspaceRepository]);
 
   useEffect(() => {
-    if (!workspaceStorageReady || !tabletopStorageReady || marketHandoffStartedRef.current) return;
-    const handoff = parseCreatorMarketHandoff(window.location.href);
+    if (!workspaceStorageReady || !tabletopStorageReady || marketHandoffStartedRef.current === handoffUrl) return;
+    const handoff = parseCreatorMarketHandoff(handoffUrl);
     if (!handoff) return;
-    marketHandoffStartedRef.current = true;
-    const cleanedUrl = withoutCreatorMarketHandoff(window.location.href);
-    window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
-    fetch(`/api/publications/${encodeURIComponent(handoff.publicationId)}/download`)
+    marketHandoffStartedRef.current = handoffUrl;
+    const cleanedUrl = withoutCreatorMarketHandoff(handoffUrl);
+    if (onHandoffConsumed) onHandoffConsumed(cleanedUrl);
+    else window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
+    fetch(`/api/publications/${encodeURIComponent(handoff.publicationId)}/download`, auth.credentials
+      ? { headers: platformRequestHeaders(auth.credentials) }
+      : undefined)
       .then(async (response) => {
         if (!response.ok) throw new Error("无法取得市场资源包");
         return new Uint8Array(await response.arrayBuffer());
@@ -523,7 +508,7 @@ export function CreatorWorkspacePrototype() {
           params: { message: error instanceof Error ? error.message : "unknown" },
         }],
       }));
-  }, [tabletopStorageReady, workspaceStorageReady]);
+  }, [auth.credentials, handoffUrl, onHandoffConsumed, tabletopStorageReady, workspaceStorageReady]);
 
   useEffect(() => {
     if (!workspaceStorageReady) return;
@@ -1060,11 +1045,11 @@ export function CreatorWorkspacePrototype() {
     setActiveKey(workspace.key);
     setActiveResourceId(focusedResourceId ?? "");
     if (handoff.target === "gm") {
-      setAppMode("gm");
+      changeAppMode("gm");
       setDialog(null);
       setNotice(`已从资源市场导入 ${workspace.document.package.name}`);
     } else {
-      setAppMode("creator");
+      changeAppMode("creator");
       setDialog(null);
       setNotice(`已从资源市场导入 ${workspace.document.package.name}`);
     }
@@ -1330,10 +1315,6 @@ export function CreatorWorkspacePrototype() {
 
   return (
     <main className="creator-prototype" style={designStyle} data-design-source={creatorWorkspaceDesign.document}>
-      <PlatformAppBar
-        activePage={appMode}
-        onNavigate={{ creator: () => setAppMode("creator"), gm: () => setAppMode("gm") }}
-      />
       <div className="creator-workspace">
         <aside className="resource-explorer">
           <header className="explorer-toolbar"><strong>资源管理器</strong><div>
@@ -1601,12 +1582,12 @@ export function CreatorWorkspacePrototype() {
       >
         <button type="button" role="menuitem" onClick={() => {
           activateWorkspaceResource(tabletopContextMenu.resourceId);
-          setAppMode("creator");
+          changeAppMode("creator");
           setTabletopContextMenu(null);
         }}>打开</button>
         <button type="button" role="menuitem" onClick={() => {
           pinWorkspaceTab(tabletopContextMenu.resourceId);
-          setAppMode("creator");
+          changeAppMode("creator");
           setTabletopContextMenu(null);
         }}>在新标签页打开</button>
         <i />
@@ -1649,21 +1630,26 @@ export function CreatorWorkspacePrototype() {
       <input ref={portraitRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={replacePortraitFromFile} />
       <input ref={publicationCoverRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={replacePublicationCover} />
 
-      {dialog && <div className="dialog-backdrop" role="presentation"><section className={`dialog${dialog.kind === "publish" ? " publish-dialog" : ""}`} role="dialog" aria-modal="true">
+      {dialog?.kind === "publish" && <PublicationDialog
+        heading="发布到资源市场"
+        submitLabel="发布当前版本"
+        packageName={active?.document.package.name ?? ""}
+        packageVersion={active?.document.package.version ?? ""}
+        resourceCount={active?.document.resources.length ?? 0}
+        coverUrl={publicationCover.url}
+        value={{ title: publicationTitle, summary: publicationSummary, language: publicationLanguage, tags: publicationTags, licenseId: publicationLicense }}
+        licenseOptions={Object.entries(publicationLicenses).map(([id, license]) => ({ id, label: license.label }))}
+        onChange={(value) => { setPublicationTitle(value.title); setPublicationSummary(value.summary); setPublicationLanguage(value.language); setPublicationTags(value.tags); setPublicationLicense(value.licenseId as PublicationLicenseId); }}
+        onChooseCover={() => publicationCoverRef.current?.click()}
+        onClose={() => setDialog(null)}
+        onSubmit={() => void publishWorkspace()}
+      />}
+      {dialog && dialog.kind !== "publish" && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true">
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
           <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
-        {dialog.kind === "publish" && <>
-          <h2>发布到资源市场</h2>
-          <div className="publication-package-summary"><Icon name="package" /><span><strong>{active?.document.package.name}</strong><small>版本 {active?.document.package.version} · {active?.document.resources.length} 项资源</small></span><b>完整资源包</b></div>
-          <div className="publication-fields">
-            <div className="publication-cover-field"><strong>封面</strong><div className="publication-cover-preview">{publicationCover.url ? <img src={publicationCover.url} alt="资源包封面" /> : <Icon name="image" />}</div><button type="button" onClick={() => publicationCoverRef.current?.click()}><Icon name="upload" />上传</button></div>
-            <div className="publication-copy-fields"><Field label="标题" value={publicationTitle} onChange={setPublicationTitle} /><TextareaField label="简介" value={publicationSummary} onChange={setPublicationSummary} /><div className="publication-meta-fields"><Field label="内容语言" value={publicationLanguage} onChange={setPublicationLanguage} /><label className="compact-field"><span>许可类型</span><select value={publicationLicense} onChange={(event) => setPublicationLicense(event.target.value as PublicationLicenseId)}>{Object.entries(publicationLicenses).map(([id, license]) => <option key={id} value={id}>{license.label}</option>)}</select></label></div><TagEditor tags={publicationTags} onChange={setPublicationTags} /></div>
-          </div>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={publishWorkspace}>发布当前版本</button></div>
-        </>}
         {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
           <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}</b></li>)}</ul>
           <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>保留现状</button></div></>}

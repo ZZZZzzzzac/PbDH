@@ -1,4 +1,4 @@
-export type PublicationStatus = "available" | "withdrawn";
+export type PublicationStatus = "published" | "unpublished";
 export type PublicationKind = "enemy" | "weapon" | "mixed";
 export type HandoffTarget = "player" | "creator" | "gm";
 
@@ -68,7 +68,6 @@ export function filterPublications(
 ) {
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
   return publications.filter((publication) => {
-    if (publication.status !== "available") return false;
     if (!intersects(filters.templateIds, publication.templateIds)) return false;
     if (!intersects(filters.systems, [publication.system])) return false;
     if (!intersects(filters.languages, [publication.language])) return false;
@@ -103,9 +102,10 @@ export function createHandoffIntent(
   publication: Publication,
   target: HandoffTarget,
   focusedResourceId?: string,
+  allowUnpublished = false,
 ): HandoffIntent {
-  if (publication.status !== "available") {
-    throw new Error("publication.withdrawn");
+  if (!canAcquirePublication(publication, allowUnpublished)) {
+    throw new Error("publication.unpublished");
   }
   const focusedResource = focusedResourceId
     ? publication.resources.find((resource) => resource.id === focusedResourceId)
@@ -131,6 +131,13 @@ export function createHandoffIntent(
     autoInstall: false,
     autoPlace: false,
   };
+}
+
+export function canAcquirePublication(
+  publication: Publication,
+  canManage: boolean,
+): boolean {
+  return publication.status === "published" || canManage;
 }
 
 export function createCreatorHandoffUrl(
@@ -195,6 +202,10 @@ export function publicationsOwnedBy(
   return publications.filter((publication) => publication.ownerAccountId === accountId);
 }
 
-export function canManagePublication(publication: Publication, accountId: string): boolean {
-  return publication.ownerAccountId === accountId;
+export function canManagePublication(
+  publication: Publication,
+  accountId: string,
+  isAdmin = false,
+): boolean {
+  return isAdmin || publication.ownerAccountId === accountId;
 }
