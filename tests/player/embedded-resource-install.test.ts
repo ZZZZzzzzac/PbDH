@@ -39,8 +39,8 @@ describe("系统包内置 .pbres 安装", () => {
       fetchFile,
     });
 
-    expect(first.installedPackageIds).toHaveLength(8);
-    expect(repository.packages).toHaveLength(8);
+    expect(first.installedPackageIds).toHaveLength(1);
+    expect(repository.packages).toHaveLength(1);
     expect(repository.packages.reduce((total, candidate) =>
       total + candidate.document.resources.length, 0)).toBe(625);
     expect(second).toMatchObject({
@@ -49,6 +49,36 @@ describe("系统包内置 .pbres 安装", () => {
       pendingUpdates: [],
       rejected: [],
     });
+  });
+
+  it("内置资源低于最低版本时自动替换为系统包版本", async () => {
+    const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const embedded = systemPackage.embeddedResources[0]!;
+    const repository = new MemoryRepository();
+    const fetchFile: typeof fetch = async (url) => {
+      const relativePath = decodeURIComponent(String(url).replace("https://preset.invalid/", ""));
+      return new Response(await readFile(path.join(packageRoot, relativePath)), { status: 200 });
+    };
+    await installMissingEmbeddedResourcePackages({
+      systemPackage,
+      systemPackageBaseUrl: "https://preset.invalid",
+      repository,
+      fetchFile,
+    });
+    repository.packages[0]!.document.package.version = "1.0.0";
+    repository.packages[0]!.document.snapshotDigest = `sha256:${"0".repeat(64)}`;
+
+    const result = await installMissingEmbeddedResourcePackages({
+      systemPackage,
+      systemPackageBaseUrl: "https://preset.invalid",
+      repository,
+      fetchFile,
+    });
+
+    expect(result.installedPackageIds).toEqual([embedded.packageId]);
+    expect(result.pendingUpdates).toEqual([]);
+    expect(repository.packages[0]?.document.package.version).toBe(embedded.version);
+    expect(repository.packages[0]?.document.snapshotDigest).toBe(embedded.snapshotDigest);
   });
 });
 

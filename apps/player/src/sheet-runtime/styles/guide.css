@@ -8,7 +8,7 @@
 .guide-mask-region {
   position: fixed;
   z-index: 50;
-  background: var(--framework-overlay);
+  background: var(--framework-overlay, rgba(0, 0, 0, 0.72));
   pointer-events: auto;
 }
 
@@ -32,10 +32,10 @@
   max-height: calc(100vh - 24px);
   overflow: auto;
   padding: 18px;
-  border: 1px solid var(--framework-text-strong);
+  border: 1px solid var(--framework-text-strong, #211c18);
   border-radius: 8px;
-  background: var(--framework-surface);
-  color: var(--framework-text);
+  background: var(--framework-surface, #fffdf8);
+  color: var(--framework-text, #211c18);
   box-shadow: 0 20px 60px rgba(18, 25, 27, 0.34);
   pointer-events: auto;
 }
@@ -53,7 +53,7 @@
 
 .guide-progress {
   margin: 0;
-  color: var(--framework-text-muted);
+  color: var(--framework-text-muted, #756b63);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -84,9 +84,9 @@
 
 .guide-target-unavailable {
   padding: 10px 12px;
-  border-left: 4px solid var(--framework-warning-border);
-  background: var(--framework-warning-surface);
-  color: var(--framework-warning);
+  border-left: 4px solid var(--framework-warning-border, #c28a18);
+  background: var(--framework-warning-surface, #fff4d6);
+  color: var(--framework-warning, #72500d);
 }
 
 .guide-actions {
@@ -97,9 +97,9 @@
   gap: 8px;
   flex-wrap: wrap;
   padding: 6px;
-  border: 1px solid var(--framework-text-strong);
+  border: 1px solid var(--framework-text-strong, #211c18);
   border-radius: 8px;
-  background: var(--framework-surface);
+  background: var(--framework-surface, #fffdf8);
   box-shadow: 0 8px 24px rgba(18, 25, 27, 0.28);
   pointer-events: auto;
 }

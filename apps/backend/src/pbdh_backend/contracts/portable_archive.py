@@ -13,7 +13,6 @@ from typing import Any
 FAMILY = "resource-package"
 VERSION = "1.0.0-alpha.1"
 ROOT_PATH = "package.json"
-MAX_ARCHIVE_BYTES = 16 * 1024 * 1024
 MAX_ENTRIES = 1024
 MAX_PATH_BYTES = 512
 MAX_FILE_BYTES = 8 * 1024 * 1024
@@ -380,13 +379,6 @@ def write_pbres(
 
 def load_pbres(archive_bytes: bytes, validate: CandidateValidator) -> dict[str, Any]:
     diagnostics: list[Diagnostic] = []
-    if len(archive_bytes) > MAX_ARCHIVE_BYTES:
-        diagnostics.append(_diagnostic(
-            "resource-package.archive.bytes-exceeded",
-            "",
-            {"actual": len(archive_bytes), "limit": MAX_ARCHIVE_BYTES},
-        ))
-        return {"candidate": None, "diagnostics": diagnostics}
     try:
         archive = zipfile.ZipFile(io.BytesIO(archive_bytes))
         infos = archive.infolist()

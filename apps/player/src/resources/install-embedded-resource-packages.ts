@@ -50,7 +50,7 @@ export async function installMissingEmbeddedResourcePackages(input: {
       result.rejected.push({ packageId: embedded.packageId, code: admission.code });
       continue;
     }
-    if (admission.action === "required-update" || admission.action === "prompt-update") {
+    if (admission.action === "prompt-update") {
       result.pendingUpdates.push({ packageId: embedded.packageId, action: admission.action });
       continue;
     }

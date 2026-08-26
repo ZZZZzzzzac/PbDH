@@ -15,7 +15,6 @@ import type {
 const FAMILY = "resource-package";
 const VERSION = "1.0.0-alpha.1";
 const ROOT_PATH = "package.json";
-const MAX_ARCHIVE_BYTES = 16 * 1024 * 1024;
 const MAX_ENTRIES = 1024;
 const MAX_PATH_BYTES = 512;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -444,14 +443,6 @@ function inspectZip(bytes: Uint8Array): {
   diagnostics: ContractDiagnostic[];
 } {
   const diagnostics: ContractDiagnostic[] = [];
-  if (bytes.byteLength > MAX_ARCHIVE_BYTES) {
-    diagnostics.push(diagnostic(
-      "resource-package.archive.bytes-exceeded",
-      "",
-      { actual: bytes.byteLength, limit: MAX_ARCHIVE_BYTES },
-    ));
-    return { entries: [], diagnostics };
-  }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let eocd = -1;
   const minimum = Math.max(0, bytes.byteLength - 65_557);

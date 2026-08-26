@@ -43,9 +43,9 @@
 
 ## 当前进度
 
-- Daggerheart Core 已生成 8 个原生 `.pbres`，共 625 个资源和 280 个唯一媒体资产；每个归档均不超过 16 MiB。
+- Daggerheart Core 已生成为单个 `daggerheart-core.pbres`，包含 625 个资源和 280 个唯一媒体资产；`.pbres` 不再受压缩归档总字节数限制。
 - Player 首次加载会安装缺失的内置资源包；相同摘要保持幂等，更高本地版本不会被预置包覆盖。
-- 迁移后的 System Package loader 已能用上述 8 个 `.pbres` 组装通过旧 Runtime 完整校验的 8 个资源库，不再读取旧 `resources/*.json`。
+- 迁移后的 System Package loader 已能用上述单个 `.pbres` 组装通过旧 Runtime 完整校验的 8 个资源库，不再读取旧 `resources/*.json`。
 - Platform Player Surface 已挂载完整 `SheetRenderer`、人物列表、自动保存、创建向导、问卷创建、打印与当前资源管理器；不复制旧独立顶栏。
 - Runtime Storage 已接入正式 Character Save Repository；人物字段、自包含桌面副本和媒体按同一 revision 保存，云恢复后缺少来源 `.pbres` 仍可显示、复制和再次保存。
 - 登录前本地人物通过显式“同步到云”进入云端；登录后新建或导入人物进入 outbox。账号切换、冲突三动作、云端删除与回收站使用统一 Cloud Document Service。

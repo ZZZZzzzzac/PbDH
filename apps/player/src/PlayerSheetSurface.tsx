@@ -176,8 +176,8 @@ export function PlayerSheetSurface({
   const runValidationChecks = useRuntimeStore((state) => state.runValidationChecks);
   const runPreOutputValidation = useRuntimeStore((state) => state.runPreOutputValidation);
   const validationIssues = useRuntimeStore((state) => state.validationIssues);
-  const activeCharacterSaveName = characterSaves.find((save) =>
-    save.id === activeCharacterSaveId)?.name ?? "未命名角色";
+  const activeCharacterSave = characterSaves.find((save) => save.id === activeCharacterSaveId);
+  const activeCharacterSaveName = activeCharacterSave?.name ?? "未命名角色";
   const {
     printMode,
     validationDialogOpen,
@@ -511,31 +511,69 @@ export function PlayerSheetSurface({
   }
 
   const appBarActions = useMemo(() => (
-    <nav className="player-actions" aria-label="玩家功能">
-      <select
-        aria-label="当前人物存档"
-        value={activeCharacterSaveId ?? ""}
-        onChange={(event) => void switchCharacterSave(event.target.value)}
-      >
-        {characterSaves.map((save) => <option key={save.id} value={save.id}>{save.name}</option>)}
-      </select>
-      <button onClick={() => void handleCreateSave()}>新建人物</button>
-      <button disabled={!activeCharacterSaveId} onClick={() => void handleRenameSave()}>重命名</button>
-      <button disabled={!activeCharacterSaveId} onClick={() => void duplicateCharacterSave(activeCharacterSaveId!)}>复制</button>
-      <button disabled={!activeCharacterSaveId} onClick={() => void handleDeleteSave()}>删除</button>
-      <button onClick={() => setManagerOpen(true)}>资源管理器</button>
-      {auth.credentials ? <button disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button> : null}
-      <button onClick={() => characterFileInputRef.current?.click()}>导入人物</button>
-      <button disabled={!activeCharacterSaveId} onClick={() => void exportActiveCharacter()}>导出人物</button>
-      {currentPackage?.characterCreationGuide ? (
-        <button ref={guideButtonRef} disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
-      ) : null}
-      {currentPackage?.questionnaireCharacterCreation ? (
-        <button disabled={!characterData} onClick={() => void startQuestionnaire()}>问卷创建</button>
-      ) : null}
-      <button disabled={!characterData} onClick={() => void beginOutput("print")}>打印</button>
+    <nav className="player-toolbar" aria-label="玩家工具栏">
+      <div className="player-menu">
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span></button>
+        <div className="player-menu-panel" role="menu">
+          <button type="button" role="menuitem" onClick={() => setManagerOpen(true)}>资源管理器</button>
+          {auth.credentials ? (
+            <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button>
+          ) : null}
+          {currentPackage?.characterCreationGuide ? (
+            <button ref={guideButtonRef} type="button" role="menuitem" disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
+          ) : null}
+          {currentPackage?.questionnaireCharacterCreation ? (
+            <button type="button" role="menuitem" disabled={!characterData} onClick={() => void startQuestionnaire()}>问卷创建</button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="player-menu">
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家存档</span></button>
+        <div className="player-menu-panel" role="menu">
+          <div className="player-menu-current" title={activeCharacterSaveName}>
+            <small>当前存档</small><strong>{activeCharacterSaveName}</strong>
+            <span>{activeCharacterSave?.syncScope === "local-only" ? "本地" : activeCharacterSave?.syncState === "conflict" ? "冲突" : activeCharacterSave?.syncState === "pending" ? "待同步" : "已同步"}</span>
+          </div>
+          <label className="player-menu-field">
+            <span>切换存档</span>
+            <select
+              aria-label="当前人物存档"
+              value={activeCharacterSaveId ?? ""}
+              onChange={(event) => void switchCharacterSave(event.target.value)}
+              disabled={characterSaves.length === 0}
+            >
+              {characterSaves.map((save) => <option key={save.id} value={save.id}>{save.name}</option>)}
+            </select>
+          </label>
+          <button type="button" role="menuitem" onClick={() => void handleCreateSave()}>新建人物</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void handleRenameSave()}>重命名</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void duplicateCharacterSave(activeCharacterSaveId!)}>复制</button>
+          <button className="danger" type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void handleDeleteSave()}>删除</button>
+        </div>
+      </div>
+
+      <div className="player-menu">
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>导入导出</span></button>
+        <div className="player-menu-panel" role="menu">
+          <button type="button" role="menuitem" onClick={() => characterFileInputRef.current?.click()}>导入人物</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void exportActiveCharacter()}>导出人物</button>
+          <button type="button" role="menuitem" disabled={!characterData} onClick={() => void beginOutput("print")}>打印</button>
+        </div>
+      </div>
+
+      <div className="player-menu">
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>系统包</span></button>
+        <div className="player-menu-panel is-right" role="menu">
+          <div className="player-menu-current">
+            <small>当前系统包</small><strong>{currentSystem.package.name}</strong>
+            <span>v{currentSystem.package.version}</span>
+           </div>
+           <div className="player-menu-summary"><span>资源包</span><strong>{library.size}</strong></div>
+         </div>
+      </div>
     </nav>
-  ), [activeCharacterSaveId, auth.credentials, characterData, characterSaves, currentPackage, duplicateCharacterSave, switchCharacterSave]);
+  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, characterData, characterSaves, currentPackage, duplicateCharacterSave, library.size, switchCharacterSave]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
@@ -563,26 +601,6 @@ export function PlayerSheetSurface({
       />
       {currentPackage ? (
         <div className="player-runtime-layout">
-          <aside className="sheet-index" aria-label="人物存档">
-            <header><h2>人物存档</h2><button aria-label="新建人物" onClick={() => void handleCreateSave()}>＋</button></header>
-            <div className="character-save-list">
-              {characterSaves.map((save) => (
-                <div className={`character-save-row${save.id === activeCharacterSaveId ? " selected" : ""}`} key={save.id}>
-                  <button className="character-save-main" onClick={() => void switchCharacterSave(save.id)}>
-                    <span className="character-save-symbol">◇</span>
-                    <span><strong>{save.name}</strong><small>{new Date(save.updatedAt).toLocaleString("zh-CN")}</small></span>
-                  </button>
-                  <button
-                    className={`character-save-status ${save.syncScope === "local-only" ? "is-local" : save.syncState === "conflict" ? "is-conflict" : save.syncState === "pending" ? "is-pending" : "is-clean"}`}
-                    onClick={() => save.id === activeCharacterSaveId && auth.credentials ? void syncActiveCharacter() : undefined}
-                  >
-                    {save.syncScope === "local-only" ? "本地" : save.syncState === "conflict" ? "冲突" : save.syncState === "pending" ? "待同步" : "已同步"}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <footer><button onClick={() => setManagerOpen(true)}>资源管理器</button></footer>
-          </aside>
           <main className="player-runtime-sheet">
             <SheetRenderer systemPackage={currentPackage} requestedPageId={guideTargetPageId} outputMode={printMode} />
           </main>

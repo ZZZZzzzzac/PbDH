@@ -6,9 +6,41 @@ import systemJson from "../../apps/player/src/daggerheart-core-system.generated.
 import type { StoredCharacterSave } from "../../apps/player/src/character-saves/character-save-repository.ts";
 import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import type { SystemPackage as SheetSystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
+import type { PresetSystemPackage } from "../../apps/player/src/sheet-runtime/loaders/presetSystemPackageLoader.ts";
 import { PlatformRuntimeStorage } from "../../apps/player/src/sheet-runtime/storage/platformRuntimeStorage.ts";
+import { configureRuntimeEnvironment, createRuntimeEnvironment } from "../../apps/player/src/sheet-runtime/store/runtimeEnvironment.ts";
+import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 
 describe("Platform Runtime Storage", () => {
+  it("首次切换预置系统包时先建立缓存边界，再创建默认人物", async () => {
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, {
+      storage,
+      loadPresetSystemPackage: async () => ({
+        ok: true,
+        package: sheetSystemPackage,
+        packageAssets: [],
+        issues: [],
+      }),
+    });
+    const runtime = createRuntimeStore(environment);
+
+    await runtime.getState().switchToPresetSystemPackage(minimalPreset(currentSystem), true);
+
+    expect(runtime.getState().bootStatus).toBe("ready");
+    expect(runtime.getState().packageIssues).toEqual([]);
+    expect(repository.saves.size).toBe(1);
+  });
+
   it("使用统一 Character Save 仓库完成保存、重命名、恢复和删除", async () => {
     const repository = new MemoryCharacterSaveStore();
     const localStorage = new MemoryStorage();
@@ -102,4 +134,18 @@ function minimalSheetSystemPackage(currentSystem: SystemPackageDocument): SheetS
     pages: [],
     modules: [],
   } as SheetSystemPackage;
+}
+
+function minimalPreset(currentSystem: SystemPackageDocument): PresetSystemPackage {
+  return {
+    id: currentSystem.package.id,
+    urlPath: "daggerheart",
+    name: currentSystem.package.name,
+    version: currentSystem.package.version,
+    releaseVersion: "test",
+    directory: "daggerheart-core",
+    inventoryPath: ".pbdh-runtime-files.json",
+    fileCount: 0,
+    metadataFileCount: 0,
+  };
 }

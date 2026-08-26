@@ -30,7 +30,7 @@ export type {
 
 const runtimeEnvironment = createRuntimeEnvironment();
 
-function createRuntimeStore(environment: RuntimeEnvironment) {
+export function createRuntimeStore(environment: RuntimeEnvironment) {
   return create<RuntimeState>()((...store) => ({
     ...createPackageSlice(environment)(...store),
     ...createResourceExtensionSlice(environment)(...store),

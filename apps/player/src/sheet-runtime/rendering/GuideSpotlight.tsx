@@ -181,7 +181,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
         {!step.目标 ? actions : null}
       </section> : null}
     </div>,
-    document.body,
+    document.querySelector<HTMLElement>(".app-shell") ?? document.body,
   );
 }
 

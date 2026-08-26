@@ -265,7 +265,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
           <div className="resource-search"><input aria-label="搜索资源" placeholder="搜索名称" value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} /><span>{resources.length} / {selected.document.resources.length}</span></div>
           <div className="resource-table"><div className="resource-table-head"><span /><b>名称</b><b>类型</b><b>使用位置</b></div>{resources.map((resource) => {
             const label = routeLabel(selected, resource.id);
-            return <button className="resource-row" key={resource.id} onDoubleClick={() => onOpenResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
+            return <button className="manager-resource-row" key={resource.id} onDoubleClick={() => onOpenResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
           })}</div>
           <footer className="detail-actions"><button disabled={removingPackageId === selected.document.package.id} onClick={() => void removeSelectedPackage()}>{removingPackageId === selected.document.package.id ? "正在移除" : "移除"}</button><button className="primary" disabled={!resources[0]} onClick={() => resources[0] && onOpenResource(selected, resources[0].id)}>浏览资源</button></footer>
         </> : <div className="empty-library"><h2>没有已安装的资源包</h2><button className="primary" onClick={() => inputRef.current?.click()}>安装资源包</button></div>}</section>

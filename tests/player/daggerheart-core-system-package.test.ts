@@ -32,7 +32,7 @@ const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
 const runtime = new ContractRuntime(catalog, schemas);
 
 describe("migrated Daggerheart Core System Package", () => {
-  test("uses valid native Resource Packages split by System Package library", async () => {
+  test("uses one valid native Resource Package for all System Package libraries", async () => {
     const system = readJson<SystemPackageDocument>(path.join(packageRoot, "system.json"));
     expect(runtime.validate({
       family: "system-package",
@@ -41,12 +41,13 @@ describe("migrated Daggerheart Core System Package", () => {
       candidate: system,
     })).toEqual([]);
     expect(validateSystemPackageSemantics(system)).toEqual([]);
-    expect(system.embeddedResources).toHaveLength(8);
+    expect(system.embeddedResources).toHaveLength(1);
+    expect(system.embeddedResources[0]?.path).toBe("resources/daggerheart-core.pbres");
 
     const candidates = [];
     for (const embedded of system.embeddedResources) {
       const archive = new Uint8Array(readFileSync(path.join(packageRoot, ...embedded.path.split("/"))));
-      expect(archive.byteLength).toBeLessThanOrEqual(16 * 1024 * 1024);
+      expect(archive.byteLength).toBeGreaterThan(20_000_000);
       const loaded = await loadPbres(archive, validateResourcePackageCandidate);
       expect(loaded.diagnostics).toEqual([]);
       expect(loaded.candidate?.document.snapshotDigest).toBe(embedded.snapshotDigest);
@@ -57,6 +58,9 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(new Set(candidates.flatMap((candidate) => candidate.document.resources.map((resource) => resource.template.id)))).toEqual(
       new Set(["种族", "社群", "职业", "子职业", "武器", "护甲", "物品", "领域卡"]),
     );
+    const resources = candidates.flatMap((candidate) => candidate.document.resources);
+    expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);
+    expect(resources.filter((resource) => !resource.media.portrait).every((resource) => resource.presentation.mode === "text")).toBe(true);
   });
 
   test("keeps old Sheet resource documents out of the public runtime", () => {

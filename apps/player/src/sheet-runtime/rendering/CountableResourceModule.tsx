@@ -35,6 +35,12 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const setCurrent = (nextCurrent: number) => setState({ current: clampInt(nextCurrent, min, max) });
   const setMax = (nextMax: number | null) => setState({ max: nextMax });
   const markerPresentation = module.显示方式 === "标记";
+  const configuredMarkers = [module.当前值标记, module.剩余值标记].filter(
+    (marker): marker is NonNullable<typeof marker> => marker !== undefined,
+  );
+  const imageMarkerPresentation = markerPresentation
+    && configuredMarkers.length > 0
+    && configuredMarkers.every((marker) => marker.类型 === "图片");
   const markerGroupRef = useRef<HTMLSpanElement>(null);
   const normalizedState = { current, max };
   const transitionConfig = { min, step, editableMax };
@@ -48,7 +54,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const decrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "decrement") : setCurrent(current - step),
     () => applyMarkerAction("maximum", "decrement"),
-    markerPresentation,
+    markerPresentation && !imageMarkerPresentation,
   );
   const incrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "increment") : setCurrent(current + step),
@@ -89,8 +95,9 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
         {markerPresentation ? (
           <span
             ref={markerGroupRef}
-            className="counter-value-group marker-group"
-            data-part="marker-group"
+             className="counter-value-group marker-group"
+             data-part="marker-group"
+             data-marker-layout={imageMarkerPresentation ? "image" : "text"}
             data-countable-unbounded={max === null ? "true" : undefined}
             role="img"
             aria-label={`${module.标签}：当前值 ${current}，${max === null ? "无上限" : `上限 ${max}`}`}

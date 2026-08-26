@@ -17,7 +17,7 @@ const packageRoot = path.resolve("apps/player/public/system-packages/daggerheart
 const currentSystem = systemJson as SystemPackageDocument;
 
 describe("Daggerheart Core Sheet Runtime 加载", () => {
-  it("从原生 .pbres 组装完整的 Sheet Runtime 资源库", async () => {
+  it("从带包级封面的原生 .pbres 组装完整资源库且不报告未使用图片", async () => {
     const installedPackages = new Map();
     for (const embedded of currentSystem.embeddedResources) {
       const archive = await loadPbres(
@@ -26,6 +26,13 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
       );
       expect(archive.candidate).not.toBeNull();
       const candidate = archive.candidate!;
+      const coverAssetId = `sha256:${"f".repeat(64)}`;
+      candidate.document.assets.push({
+        ...candidate.document.assets[0]!,
+        id: coverAssetId,
+        byteLength: "1",
+      });
+      candidate.media.set(coverAssetId, new Uint8Array([1]));
       installedPackages.set(candidate.document.package.id, {
         ...candidate,
         routes: routeResourcePackage({
@@ -58,6 +65,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.package.pages.length).toBeGreaterThan(1);
     expect(loaded.package.resourceLibraries?.reduce((total, library) =>
       total + library.entries.length, 0)).toBe(625);
+    expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);
   });

@@ -190,60 +190,11 @@
   ],
   "embeddedResources": [
     {
-      "path": "resources/ancestries.pbres",
+      "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:f69ec68a3401514ecde6aab97f5a88b02fd87e7837c4cdf304974adc4377c5d1"
-    },
-    {
-      "path": "resources/communities.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660003",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:591051e16326233bdadc1cfa63ef06e5315758839a21366aaa579fa5890df38a"
-    },
-    {
-      "path": "resources/classes.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660004",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:a9360206e1736b5274ca5db0252bf98a1cac81f4c832566e4aca017ee50b12ea"
-    },
-    {
-      "path": "resources/subclasses.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660005",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:19242353780b2d3d4d468e2c1ecef5e835aa3a298c9bb0d7ef5d483e138aa180"
-    },
-    {
-      "path": "resources/weapons.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660006",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:c8d2702a50fe49bed924151b28c4c4d6980853cbc64f758ab8f4240b0fc21550"
-    },
-    {
-      "path": "resources/armor.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660007",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:66830568802239f59f3b2d6a6a6642523f8dc4a22719f4e2d91315e340cebff6"
-    },
-    {
-      "path": "resources/loot.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660008",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:4212c66571192b7dbf5d90e3850bf4c38e4d2c10fe2204fa275ef17825a8e9ac"
-    },
-    {
-      "path": "resources/domain-cards.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660009",
-      "version": "1.0.0",
-      "minimumVersion": "1.0.0",
-      "snapshotDigest": "sha256:64e9996dd6d7729bfde6a704e0daa397f5556f7574dc0facb75b87e60af75349"
+      "version": "1.0.1",
+      "minimumVersion": "1.0.1",
+      "snapshotDigest": "sha256:14f1d5a2edc7df4eb903aaf46693c46512e4ba7f899c9e0148b10bf6d54f0f01"
     }
   ]
 }

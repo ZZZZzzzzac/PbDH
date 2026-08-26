@@ -251,16 +251,10 @@ export function getResourceLibraryFields(
     return library.fields;
   }
 
-  const templatesByKey = new Map(templates.map((template) => [template.键, template]));
-  const inferredKeys = new Set(library.fields.map((field) => field.key));
-  const mergedFields = library.fields.map((field) =>
-    resolveResourceLibraryField(library, field.key, templatesByKey.get(field.key), field),
+  const inferredByKey = new Map(library.fields.map((field) => [field.key, field]));
+  return templates.map((template) =>
+    resolveResourceLibraryField(library, template.键, template, inferredByKey.get(template.键)),
   );
-  const templateOnlyFields = templates
-    .filter((template) => !inferredKeys.has(template.键))
-    .map((template) => resolveResourceLibraryField(library, template.键, template));
-
-  return [...mergedFields, ...templateOnlyFields];
 }
 
 function resolveResourceLibraryField(

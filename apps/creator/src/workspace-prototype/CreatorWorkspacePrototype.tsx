@@ -70,7 +70,10 @@ import {
   withoutCreatorMarketHandoff,
   type CreatorMarketHandoff,
 } from "./market-handoff.ts";
-import { preparePublicationCandidate } from "./publication-candidate.ts";
+import {
+  defaultPublicationCoverAssetId,
+  preparePublicationCandidate,
+} from "./publication-candidate.ts";
 import { PublicationApiError, publishCandidate } from "./publication-api.ts";
 import { publicationErrorMessage, publicationSuccessMessage } from "./publication-feedback.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
@@ -1362,7 +1365,7 @@ export function CreatorWorkspacePrototype({
 
   function openPublicationDialog() {
     if (!active) return;
-    const coverAssetId = Object.values(resource?.media ?? {})[0] ?? active.document.assets[0]?.id ?? "";
+    const coverAssetId = defaultPublicationCoverAssetId(active.document);
     setPublicationTitle(active.document.package.name);
     setPublicationSummary(active.document.package.description);
     setPublicationLanguage("中文");

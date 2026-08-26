@@ -84,6 +84,7 @@ function toSheetResourceEntry(
   const common = {
     ID: entryId,
     ...data,
+    卡牌显示方式: resource.presentation.mode,
     卡图: resolveMedia(resource.media.portrait),
     卡背: resolveMedia(resource.media.back),
   };
@@ -169,16 +170,26 @@ export function buildSheetEmbeddedResourceEntry(input: {
 export function buildSheetRuntimeMediaAssets(
   installedPackages: PlatformResourceLibrary,
 ): RuntimePackageAsset[] {
-  return [...installedPackages.values()].flatMap((resourcePackage) =>
-    resourcePackage.document.assets.map((asset) => {
-      const bytes = resourcePackage.media.get(asset.id);
-      if (!bytes) throw new Error(`已安装资源包缺少媒体：${asset.id}`);
-      return {
-        路径: sheetRuntimeMediaPath(resourcePackage.document.package.id, asset.id),
-        类型: asset.mediaType,
-        bytes: new Uint8Array(bytes),
-      };
+  return [...installedPackages.values()].flatMap((resourcePackage) => {
+    const runtimeAssetIds = new Set(resourcePackage.routes.flatMap((route) => {
+      if (route.destination !== "native" || !route.nativeEntry) return [];
+      return [route.resource.media.portrait, route.resource.media.back]
+        .filter((assetId): assetId is string => typeof assetId === "string");
     }));
+    return resourcePackage.document.assets
+      .filter((asset) => runtimeAssetIds.has(asset.id))
+      .map((asset) => {
+        const bytes = resourcePackage.media.get(asset.id);
+        if (!bytes) throw new Error(`已安装资源包缺少媒体：${asset.id}`);
+        return {
+          路径: sheetRuntimeMediaPath(resourcePackage.document.package.id, asset.id),
+          类型: asset.mediaType,
+          sourceType: "resourceExtension" as const,
+          sourceId: resourcePackage.document.package.id,
+          bytes: new Uint8Array(bytes),
+        };
+      });
+  });
 }
 
 export function sheetRuntimeMediaPath(packageId: string, assetId: string): string {

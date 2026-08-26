@@ -30,6 +30,18 @@
   font-size: var(--countable-marker-size, inherit);
 }
 
+.marker-group[data-marker-layout="image"] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  font-size: var(--countable-marker-size, inherit);
+}
+
+.marker-group[data-marker-layout="image"] .marker-cell {
+  font-size: var(--countable-marker-size, inherit);
+}
+
 .marker-group[data-text-fit="overflow"] {
   flex-wrap: nowrap;
   justify-content: flex-start;

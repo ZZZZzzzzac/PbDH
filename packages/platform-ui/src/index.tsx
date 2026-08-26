@@ -132,7 +132,7 @@ export function PlatformAppBar({
         onClick={() => navigate(page.id)}
       >{page.label}</button>)}
     </nav>
-    {extraActions && <div className="pbdh-platform-extra">{extraActions}</div>}
+    <div className="pbdh-platform-extra">{extraActions}</div>
     <div className="pbdh-platform-actions">
       <button type="button" aria-label="通知"><BarIcon kind="bell" /></button>
       <button type="button" aria-label="设置"><BarIcon kind="settings" /></button>

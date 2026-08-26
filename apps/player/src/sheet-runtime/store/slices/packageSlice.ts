@@ -151,25 +151,28 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         }));
         return;
       }
-      const loaded = await activatePackage(
-        environment,
-        validation.package,
-        validation.issues,
-        set,
-        "idle",
-        validation.packageAssets ?? [],
-      );
-      if (!loaded) return;
+      let packageCacheStatus: StorageStatus = "saved";
       try {
         await environment.dependencies.storage.saveCurrentSystemPackage(
           validation.package,
           validation.packageAssets ?? [],
           presetCacheMetadata(preset),
         );
-        set({ storageStatus: "saved" });
       } catch (error) {
         console.error("saveCurrentSystemPackage (preset) failed", error);
-        set({ storageStatus: "error", importNotice: "预制系统包已切换，但浏览器无法缓存该系统包。" });
+        packageCacheStatus = "error";
+      }
+      const loaded = await activatePackage(
+        environment,
+        validation.package,
+        validation.issues,
+        set,
+        packageCacheStatus,
+        validation.packageAssets ?? [],
+      );
+      if (!loaded) return;
+      if (packageCacheStatus === "error") {
+        set({ importNotice: "预制系统包已切换，但浏览器无法缓存该系统包。" });
       }
     },
 

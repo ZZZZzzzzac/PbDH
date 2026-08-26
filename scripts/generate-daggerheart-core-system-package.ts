@@ -22,17 +22,9 @@ const generatedSystemDocumentPath = path.resolve("apps/player/src/daggerheart-co
 const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-preset.generated.json");
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
-const packageVersion = "1.0.0";
-const resourcePackageIds: Record<string, string> = {
-  ancestries: "01a0132c-4eef-7703-94ac-ec8d1a660002",
-  communities: "01a0132c-4eef-7703-94ac-ec8d1a660003",
-  classes: "01a0132c-4eef-7703-94ac-ec8d1a660004",
-  subclasses: "01a0132c-4eef-7703-94ac-ec8d1a660005",
-  weapons: "01a0132c-4eef-7703-94ac-ec8d1a660006",
-  armor: "01a0132c-4eef-7703-94ac-ec8d1a660007",
-  loot: "01a0132c-4eef-7703-94ac-ec8d1a660008",
-  "domain-cards": "01a0132c-4eef-7703-94ac-ec8d1a660009",
-};
+const systemPackageVersion = "1.0.0";
+const resourcePackageVersion = "1.0.1";
+const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 
 const libraries = [
   library("ancestries", "种族", "种族", "0.0.0-dev.1", transformAncestry),
@@ -48,7 +40,8 @@ const libraries = [
 const sourceResourceAssetPaths = new Set<string>();
 const generatedLibraries: Array<{
   definition: typeof libraries[number];
-  document: ResourcePackageLogicalDocument;
+  assets: ResourcePackageLogicalDocument["assets"];
+  resources: ResourcePackageLogicalDocument["resources"];
   media: Map<string, Uint8Array>;
 }> = [];
 
@@ -75,39 +68,58 @@ for (const definition of libraries) {
       id: entry.ID,
       path: `${definition.label}/${portableName(entry.ID)}.json`,
       template: { id: definition.templateId, version: definition.templateVersion },
-      presentation: template.defaultPresentation,
+      presentation: {
+        ...template.defaultPresentation,
+        mode: resourceMedia.portrait ? "image" : "text",
+      },
       data: data as ResourceData,
       media: resourceMedia,
     });
   }
-  let document: ResourcePackageLogicalDocument = {
-    contractVersion: "1.0.0",
-    package: {
-      id: resourcePackageIds[definition.id]!,
-      version: packageVersion,
-      name: `Daggerheart Core · ${definition.label}`,
-      description: `Daggerheart Core 系统包随附的${definition.label}资源。`,
-    },
-    targets: [{ systemPackageId, version: packageVersion }],
-    license: {
-      label: "系统包内置资源",
-      declaration: "由 Daggerheart Core 系统包提供。",
-    },
-    forkSource: null,
+  generatedLibraries.push({
+    definition,
     assets: [...assets.values()].sort((left, right) => left.id.localeCompare(right.id)),
     resources: resources.sort((left, right) => left.path.localeCompare(right.path)),
-    emptyDirectories: [],
-    snapshotDigest: `sha256:${"0".repeat(64)}`,
-  };
-  document = { ...document, snapshotDigest: await computeResourcePackageSnapshotDigest(document, media) };
-  generatedLibraries.push({ definition, document, media });
+    media,
+  });
 }
+
+const coreMedia = new Map<string, Uint8Array>();
+for (const { media } of generatedLibraries) {
+  for (const [assetId, bytes] of media) coreMedia.set(assetId, bytes);
+}
+let coreDocument: ResourcePackageLogicalDocument = {
+  contractVersion: "1.0.0",
+  package: {
+    id: resourcePackageId,
+    version: resourcePackageVersion,
+    name: "Daggerheart Core",
+    description: "Daggerheart Core 系统包随附的完整游戏资源。",
+  },
+  targets: [{ systemPackageId, version: systemPackageVersion }],
+  license: {
+    label: "系统包内置资源",
+    declaration: "由 Daggerheart Core 系统包提供。",
+  },
+  forkSource: null,
+  assets: [...new Map(generatedLibraries.flatMap(({ assets }) =>
+    assets.map((asset) => [asset.id, asset] as const))).values()]
+    .sort((left, right) => left.id.localeCompare(right.id)),
+  resources: generatedLibraries.flatMap(({ resources }) => resources)
+    .sort((left, right) => left.path.localeCompare(right.path)),
+  emptyDirectories: [],
+  snapshotDigest: `sha256:${"0".repeat(64)}`,
+};
+coreDocument = {
+  ...coreDocument,
+  snapshotDigest: await computeResourcePackageSnapshotDigest(coreDocument, coreMedia),
+};
 
 const systemDocument: SystemPackageDocument = {
   contractVersion: "1.0.0-alpha.1",
   package: {
     id: systemPackageId,
-    version: packageVersion,
+    version: systemPackageVersion,
     name: "Daggerheart",
     description: "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。",
   },
@@ -156,13 +168,13 @@ const systemDocument: SystemPackageDocument = {
       },
     ],
   }],
-  embeddedResources: generatedLibraries.map(({ definition, document }) => ({
-    path: `resources/${definition.id}.pbres`,
-    packageId: document.package.id,
-    version: document.package.version,
-    minimumVersion: document.package.version,
-    snapshotDigest: document.snapshotDigest,
-  })),
+  embeddedResources: [{
+    path: "resources/daggerheart-core.pbres",
+    packageId: coreDocument.package.id,
+    version: coreDocument.package.version,
+    minimumVersion: coreDocument.package.version,
+    snapshotDigest: coreDocument.snapshotDigest,
+  }],
 };
 
 await mkdir(outputRoot, { recursive: true });
@@ -175,16 +187,14 @@ for (const definition of libraries) {
   await writeFile(path.join(outputRoot, "runtime-libraries", `${definition.id}.json`), "[]\n", "utf8");
 }
 await mkdir(path.join(outputRoot, "resources"), { recursive: true });
-for (const { definition, document, media } of generatedLibraries) {
-  await writeFile(
-    path.join(outputRoot, "resources", `${definition.id}.pbres`),
-    writePbres(document, media),
-  );
-}
+await writeFile(
+  path.join(outputRoot, "resources", "daggerheart-core.pbres"),
+  writePbres(coreDocument, coreMedia),
+);
 
 const manifest = JSON.parse(await readFile(path.join(sourceRoot, "manifest.json"), "utf8")) as Record<string, unknown>;
 manifest.ID = systemPackageId;
-manifest.版本 = packageVersion;
+manifest.版本 = systemPackageVersion;
 manifest.resourceLibraries = libraries.map((definition) => ({
   ID: definition.id,
   名称: definition.label,
@@ -207,7 +217,7 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   id: systemPackageId,
   urlPath: "daggerheart",
   name: "匕首心",
-  version: packageVersion,
+  version: systemPackageVersion,
   releaseVersion: "0.0.0-dev",
   directory: "daggerheart-core",
   inventoryPath: runtimeInventoryName,
@@ -217,13 +227,13 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
 }, null, 2)}\n`, "utf8");
 
 console.log(JSON.stringify({
-  archives: generatedLibraries.map(({ definition, document, media }) => ({
-    id: definition.id,
-    assets: document.assets.length,
-    bytes: [...media.values()].reduce((total, value) => total + value.byteLength, 0),
-    resources: document.resources.length,
-    snapshotDigest: document.snapshotDigest,
-  })),
+  archive: {
+    id: "daggerheart-core",
+    assets: coreDocument.assets.length,
+    bytes: [...coreMedia.values()].reduce((total, value) => total + value.byteLength, 0),
+    resources: coreDocument.resources.length,
+    snapshotDigest: coreDocument.snapshotDigest,
+  },
 }, null, 2));
 
 function library<T extends SourceEntry>(
