@@ -1,0 +1,102 @@
+{
+  "ID": "daggerheart-core",
+  "名称": "匕首心",
+  "版本": "1.0.0",
+  "schemaVersion": "0.2.0",
+  "加载展示": {
+    "标语": "正在掷二元骰...",
+    "强调色": "#a83a24"
+  },
+  "skins": [
+    {
+      "ID": "skin-KimiK3",
+      "名称": "松烟纸墨",
+      "css": "skins/skin-KimiK3/skin.css",
+      "推荐框架配色": "light",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-KimiK3/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-KimiK3/character-main.html" },
+          { "ID": "character-story", "html": "skins/skin-KimiK3/character-story.html" }
+        ]
+      }
+    },
+    {
+      "ID": "skin-black-hours",
+      "名称": "黑时祷书",
+      "css": "skins/skin-black-hours/skin.css",
+      "推荐框架配色": "dark",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-black-hours/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-black-hours/character-main.html" }
+        ]
+      }
+    }
+  ],
+  "defaultSkin": "skin-KimiK3",
+  "pages": "pages.json",
+  "shell": {
+    "html": "layouts/shell.html",
+    "css": "layouts/shell.css"
+  },
+  "modules": "modules.json",
+  "dependencies": "dependencies.json",
+  "characterCreationGuide": "guides/character-creation.json",
+  "questionnaireCharacterCreation": {
+    "ID": "daggerheart-class-domain-recommendation",
+    "名称": "职业与领域推荐问卷",
+    "html": "questionnaires/class-domain-recommendation.html"
+  },
+  "resourceFormatAdapters": "adapters/resource-formats.json",
+  "characterFormatAdapters": "adapters/character-formats.json",
+  "characterTextExports": "exports/character-text.json",
+  "validationChecks": [
+    {
+      "ID": "character-consistency",
+      "脚本": "checks/character-consistency.js"
+    }
+  ],
+  "resourceLibraries": [
+    {
+      "ID": "ancestries",
+      "名称": "种族",
+      "路径": "resources/ancestries.json"
+    },
+    {
+      "ID": "communities",
+      "名称": "社群",
+      "路径": "resources/communities.json"
+    },
+    {
+      "ID": "classes",
+      "名称": "职业",
+      "路径": "resources/classes.json"
+    },
+    {
+      "ID": "subclasses",
+      "名称": "子职",
+      "路径": "resources/subclasses.json"
+    },
+    {
+      "ID": "weapons",
+      "名称": "武器",
+      "路径": "resources/weapons.json"
+    },
+    {
+      "ID": "armor",
+      "名称": "护甲",
+      "路径": "resources/armor.json"
+    },
+    {
+      "ID": "loot",
+      "名称": "物品与消耗品",
+      "路径": "resources/loot.json"
+    },
+    {
+      "ID": "domain-cards",
+      "名称": "领域卡",
+      "路径": "resources/domain-cards.json"
+    }
+  ]
+}

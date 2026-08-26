@@ -83,13 +83,18 @@
       "required": ["source", "template", "presentation", "data", "labels", "media"],
       "properties": {
         "source": {
-          "type": "object",
-          "required": ["packageId", "resourceId"],
-          "properties": {
-            "packageId": { "$ref": "#/$defs/uuid" },
-            "resourceId": { "type": "string", "minLength": 1, "maxLength": 128 }
-          },
-          "additionalProperties": false
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["packageId", "resourceId"],
+              "properties": {
+                "packageId": { "$ref": "#/$defs/uuid" },
+                "resourceId": { "type": "string", "minLength": 1, "maxLength": 128 }
+              },
+              "additionalProperties": false
+            }
+          ]
         },
         "template": { "$ref": "#/$defs/templateReference" },
         "presentation": { "$ref": "#/$defs/presentation" },

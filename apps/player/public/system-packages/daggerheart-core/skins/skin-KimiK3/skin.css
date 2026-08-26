@@ -1,0 +1,726 @@
+/* skin-KimiK3 「松烟纸墨」— 线装书版式：宣纸为底、松烟为墨、朱砂为印、书口版心配鱼尾。 */
+:scope {
+  color-scheme: light;
+
+  --dh-surface: #f5efe0;
+  --dh-ink: #29251d;
+  --dh-line: #cabd9f;
+  --dh-line-soft: #ded4ba;
+  --dh-line-muted: #d8cdb2;
+  --dh-line-strong: #6d6248;
+  --dh-shell-surface: #ece3cb;
+  --dh-shell-line: #b3a37c;
+  --dh-beast-ink: #29251d;
+  --dh-beast-text-secondary: #57503f;
+  --dh-beast-text-muted: #403a2c;
+  --dh-beast-accent: #a83a24;
+  --dh-beast-line: #6d6248;
+  --dh-beast-line-soft: #cabd9f;
+  --dh-companion-ink: #2e2a20;
+  --dh-companion-line: #7a6f52;
+  --dh-companion-line-soft: #cabd9f;
+  --dh-companion-line-muted: #d0c5aa;
+  --dh-on-strong: #faf6ea;
+  --dh-font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --dh-font-sans: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+
+  --skin-cinnabar: #a83a24;
+  --skin-cinnabar-deep: #8f2a1a;
+  --skin-pine: #3c5a49;
+  --skin-pine-deep: #2c4437;
+  --skin-paper-hi: #fbf7ec;
+
+  --framework-canvas: #e7ddc4;
+  --framework-surface: #fbf7ec;
+  --framework-surface-subtle: #f4edda;
+  --framework-surface-muted: #ece2c9;
+  --framework-text: #29251d;
+  --framework-text-strong: #1c1913;
+  --framework-text-secondary: #4f4836;
+  --framework-text-muted: #6f6650;
+  --framework-border: #cabd9f;
+  --framework-border-strong: #a2946f;
+  --framework-border-subtle: #ddd3b8;
+  --framework-accent: #3c5a49;
+  --framework-accent-active: #4a7059;
+  --framework-on-accent: #faf6ea;
+  --framework-focus: #a83a24;
+  --framework-disabled-surface: #ddd3b8;
+  --framework-disabled-text: #837a63;
+  --framework-danger: #8f2a1a;
+  --framework-danger-strong: #7c2415;
+  --framework-danger-border: #bd6a56;
+  --framework-danger-surface: #f9ede6;
+  --framework-success: #2f5d3a;
+  --framework-success-border: #5f8c68;
+  --framework-warning: #7c5410;
+  --framework-warning-border: #b98a2e;
+  --framework-warning-surface: #f7edd6;
+  --framework-shadow: rgba(74, 62, 34, 0.18);
+  --framework-shadow-strong: rgba(74, 62, 34, 0.34);
+  --framework-overlay: rgba(40, 34, 20, 0.55);
+}
+
+.daggerheart-workspace {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(168, 58, 36, 0.05), transparent 24rem),
+    radial-gradient(circle at 85% 100%, rgba(60, 90, 73, 0.07), transparent 28rem),
+    linear-gradient(160deg, #e9dfc6, #e3d8bc 58%, #e7dcc2);
+}
+
+.daggerheart-sheet-pane {
+  border-color: #b3a37c;
+  border-radius: 0.25rem;
+  box-shadow:
+    0 0 0 0.3rem rgba(251, 247, 236, 0.55),
+    0 0 0 calc(0.3rem + 1px) rgba(109, 98, 72, 0.5),
+    0 0.9rem 2.2rem rgba(74, 62, 34, 0.22);
+}
+
+.daggerheart-sheet {
+  background:
+    url("assets/skins/skin-KimiK3/ink-wash-mountains.svg") bottom / 100% auto no-repeat,
+    linear-gradient(rgba(109, 98, 72, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109, 98, 72, 0.028) 1px, transparent 1px),
+    linear-gradient(155deg, #f6f0e1, #f3ecda 52%, #f5efdf);
+  background-size: 100% auto, 1.4rem 1.4rem, 1.4rem 1.4rem, auto;
+  font-family: var(--dh-font-sans);
+}
+
+/*
+ * 书口版心：绝对定位竖条，不占版面高度。
+ * 右侧 7mm 内边距为它让位，同时放宽双栏最小宽度，保住 A4 横向余量。
+ */
+.kimi-thread-book {
+  position: relative;
+  gap: 0.26rem;
+  padding-right: 7mm;
+}
+
+.book-fold-edge {
+  position: absolute;
+  top: 2mm;
+  bottom: 2mm;
+  right: 1.1mm;
+  width: 4.4mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.8mm;
+  padding: 2.4mm 0;
+  border-left: 0.25mm solid var(--dh-line-strong);
+  border-right: 0.25mm solid var(--dh-line-strong);
+  pointer-events: none;
+}
+
+.fold-fishtail {
+  flex: 0 0 auto;
+  width: 0;
+  height: 0;
+  border-left: 1.7mm solid transparent;
+  border-right: 1.7mm solid transparent;
+}
+
+.fold-fishtail-top {
+  border-top: 2.5mm solid var(--dh-ink);
+}
+
+.fold-fishtail-bottom {
+  border-bottom: 2.5mm solid var(--dh-ink);
+}
+
+.fold-caption {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  writing-mode: vertical-rl;
+  font-family: var(--dh-font-serif);
+  font-size: 0.7rem;
+  letter-spacing: 0.42em;
+  color: var(--dh-line-strong);
+}
+
+.fold-volume {
+  flex: 0 0 auto;
+  padding: 0.35mm 0.2mm;
+  border-top: 0.2mm solid var(--dh-line-strong);
+  border-bottom: 0.2mm solid var(--dh-line-strong);
+  writing-mode: vertical-rl;
+  font-family: var(--dh-font-serif);
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  color: var(--skin-cinnabar);
+}
+
+@media screen and (min-width: 801px) {
+  .kimi-thread-book .sheet-body-layout {
+    grid-template-columns: minmax(23rem, 1.15fr) minmax(20rem, 1.05fr);
+  }
+}
+
+.kimi-thread-book .identity-panel {
+  padding: 0.2rem;
+}
+
+.kimi-thread-book .class-feature-region {
+  min-height: 14.5rem;
+}
+
+.identity-panel,
+.upper-stat-layout,
+.sheet-region,
+.story-overview,
+.question-column,
+.advancement-region {
+  border: 1px solid rgba(109, 98, 72, 0.5);
+  border-radius: 0.2rem;
+  background: linear-gradient(170deg, rgba(251, 247, 236, 0.85), rgba(244, 237, 218, 0.85));
+  box-shadow:
+    inset 0 0 0 1px rgba(251, 247, 236, 0.7),
+    0 0.15rem 0.5rem rgba(74, 62, 34, 0.08);
+}
+
+/* 书签式题签：素纸签条 + 朱砂名印，横排。 */
+.brand-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--dh-line-strong);
+  border-radius: 0.1rem;
+  background:
+    linear-gradient(170deg, rgba(251, 247, 236, 0.6), rgba(236, 226, 201, 0.6)),
+    var(--skin-paper-hi);
+  color: var(--dh-ink);
+  box-shadow:
+    inset 0 0 0 0.12rem var(--skin-paper-hi),
+    inset 0 0 0 calc(0.12rem + 1px) var(--dh-line);
+}
+
+.brand-slip {
+  font-family: var(--dh-font-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1;
+}
+
+.brand-seal {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.2rem;
+  background: linear-gradient(150deg, #b0402a, #96301c);
+  color: #faf3e2;
+  font-family: var(--dh-font-serif);
+  font-size: 0.46rem;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 1px rgba(250, 243, 226, 0.55);
+}
+
+/* 题签两侧的界行。 */
+.kimi-thread-book .identity-fields {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  padding: 0 0.25rem;
+  border-left: 1px solid var(--dh-line-soft);
+  border-right: 1px solid var(--dh-line-soft);
+}
+
+.sheet-region > .section-title,
+.inventory-title-row > .section-title,
+.equipment-slot-title {
+  border-bottom: 1px solid var(--dh-line-strong);
+  color: var(--skin-cinnabar);
+  font-family: var(--dh-font-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.sheet-region > .section-title::before,
+.inventory-title-row > .section-title::before,
+.equipment-slot-title::before {
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.4em;
+  background: var(--skin-cinnabar);
+  content: "";
+}
+
+.advancement-grid article,
+.equipment-slot {
+  border-color: rgba(109, 98, 72, 0.45);
+}
+
+.advancement-grid article {
+  border-radius: 0.15rem;
+  background: rgba(251, 247, 236, 0.55);
+}
+
+[data-module-type] {
+  border-color: var(--framework-border);
+}
+
+[data-module-type] [data-part="label"] {
+  color: #57503f;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: #bfb28d;
+  background: rgba(255, 253, 246, 0.9);
+  color: #29251d;
+  caret-color: var(--skin-cinnabar);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: #7a6f52;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+[data-module-type] button:focus-visible {
+  outline: 2px solid var(--skin-cinnabar);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.22rem rgba(168, 58, 36, 0.16);
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="longText"] [data-markdown-preview] {
+  background: rgba(255, 253, 246, 0.65);
+  color: #29251d;
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"],
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid var(--skin-pine-deep);
+  border-radius: 0.15rem;
+  background: linear-gradient(165deg, #456351, #35503f);
+  color: #f2eddc;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.12), 0 0.12rem 0.3rem rgba(44, 68, 55, 0.3);
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled),
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  border-color: #22352b;
+  background: linear-gradient(165deg, #52755f, #3f5d4a);
+  color: #ffffff;
+}
+
+[data-module-type="countableResource"] [data-part="marker"] {
+  filter: drop-shadow(0 0 0.2rem rgba(168, 58, 36, 0.25));
+}
+
+.class-field [data-module-type="resourcePicker"] [data-part="button"] {
+  width: auto;
+  min-width: 3.35rem;
+  padding: 0 0.2rem;
+  gap: 0.12rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.inventory-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.2rem 0 0.125rem;
+}
+
+.inventory-title-row > .section-title {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.2rem 0.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.inventory-title-row [data-module-id="pick-inventory-item"] {
+  min-height: 0;
+}
+
+.inventory-title-row [data-module-id="pick-inventory-item"] [data-part="button"] {
+  width: 1.65rem;
+  min-width: 1.65rem;
+  min-height: 1.35rem;
+  height: 1.35rem;
+}
+
+.item-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.currency-row [data-module-type="countableResource"] {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  order: 2;
+  border-right: 0;
+  border-left: 1px solid var(--framework-border-subtle);
+}
+
+.currency-row [data-part="maximum"] {
+  display: none;
+}
+
+[data-module-id="class-hope-feature"] [data-part="label"],
+[data-module-id="class-feature"] [data-part="label"] {
+  display: none;
+}
+
+[data-template-page-id="character-main"] .level-field,
+[data-template-page-id="character-main"] .trait-summary > [data-module-slot-id] {
+  border-radius: 0.15rem;
+  background: rgba(236, 226, 201, 0.5);
+}
+
+[data-template-page-id="character-main"] .level-field [data-part="input"],
+[data-template-page-id="character-main"] .trait-summary [data-part="input"] {
+  font-family: var(--dh-font-serif);
+}
+
+[data-template-page-id="character-story"] .question-column h2 {
+  padding-bottom: 0.18rem;
+  border-bottom: 1px solid var(--dh-line-strong);
+  color: var(--skin-cinnabar);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.22em;
+}
+
+[data-template-page-id="character-story"] .advancement-region > h2 {
+  color: var(--skin-cinnabar);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.3em;
+}
+
+[data-template-page-id="character-story"] .advancement-grid h3 {
+  color: var(--skin-pine-deep);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.1em;
+}
+
+.beast-reference-page {
+  background:
+    url("assets/skins/skin-KimiK3/ink-wash-mountains.svg") bottom / 100% auto no-repeat,
+    radial-gradient(circle at 50% 0%, rgba(168, 58, 36, 0.045), transparent 45%),
+    linear-gradient(160deg, #f6f0e1, #f2ebda);
+}
+
+.beast-tier h2 {
+  color: var(--skin-cinnabar);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.2em;
+}
+
+.beast-form {
+  border-left-color: var(--skin-pine);
+  border-radius: 0.1rem;
+  background: rgba(251, 247, 236, 0.7);
+  box-shadow: 0 0.1rem 0.35rem rgba(74, 62, 34, 0.08);
+}
+
+.beast-form h3 {
+  color: var(--skin-pine-deep);
+}
+
+.beast-feature-name {
+  color: var(--skin-cinnabar);
+}
+
+.companion-page {
+  background:
+    url("assets/skins/skin-KimiK3/ink-wash-mountains.svg") bottom / 100% auto no-repeat,
+    radial-gradient(circle at 80% 8%, rgba(60, 90, 73, 0.06), transparent 40%),
+    linear-gradient(160deg, #f6f0e1, #f2ebda);
+}
+
+.companion-title {
+  border-left: 0.8mm solid var(--skin-cinnabar);
+  background: linear-gradient(110deg, #33301f, #2e2a20 65%, var(--skin-pine-deep));
+  color: #faf3e2;
+}
+
+.companion-evasion > span {
+  background: var(--skin-cinnabar);
+  color: #faf3e2;
+}
+
+.companion-section h2 {
+  border-color: #7a6f52;
+  background: var(--skin-paper-hi);
+  color: var(--skin-pine-deep);
+  font-family: var(--dh-font-serif);
+}
+
+.companion-section h2::before,
+.companion-section h2::after {
+  background: var(--skin-cinnabar);
+}
+
+/* 卡牌桌面题签横幅：打印时隐藏，不占 A4 牌面空间。 */
+.card-table-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.32rem 0.5rem;
+  border: 1px solid var(--skin-pine-deep);
+  border-radius: 0.15rem;
+  background: linear-gradient(165deg, #456351, #35503f);
+  color: #f2eddc;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.12), 0 0.12rem 0.35rem rgba(44, 68, 55, 0.28);
+}
+
+.card-table-banner-seal {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  background: linear-gradient(150deg, #b0402a, #96301c);
+  color: #faf3e2;
+  font-family: var(--dh-font-serif);
+  font-size: 0.8rem;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(250, 243, 226, 0.55);
+}
+
+.card-table-banner-title {
+  font-family: var(--dh-font-serif);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+}
+
+.card-table-banner-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(250, 243, 226, 0.55), rgba(250, 243, 226, 0));
+}
+
+[data-module-type="cardTable"] [data-part="surface"] {
+  border-color: var(--skin-pine-deep);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(250, 246, 234, 0.07), transparent 48%),
+    linear-gradient(150deg, #3c5a49, #2f493a 60%, var(--skin-pine-deep));
+  box-shadow: inset 0 0 2.2rem rgba(20, 32, 25, 0.5);
+}
+
+.play-card-name,
+.play-card-description {
+  color: #29251d;
+}
+
+.play-card-tag {
+  border-color: #a2946f;
+  background: #f2ead2;
+  color: #463f2c;
+}
+
+[data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
+  border-color: var(--skin-pine-deep);
+  background: var(--skin-paper-hi);
+  color: var(--skin-pine-deep);
+}
+
+@media screen and (max-width: 800px) {
+  .daggerheart-sheet-pane {
+    border-radius: 0.2rem;
+  }
+
+  .identity-panel,
+  .upper-stat-layout,
+  .sheet-region,
+  .story-overview,
+  .question-column,
+  .advancement-region {
+    border-radius: 0.15rem;
+  }
+
+  .kimi-thread-book {
+    padding-right: 0.5rem;
+  }
+
+  .book-fold-edge {
+    display: none;
+  }
+}
+
+@media print {
+  :scope {
+    --dh-surface: #ffffff;
+    --dh-ink: #29251d;
+    --dh-line: #b3a78a;
+    --dh-line-soft: #d3c9ae;
+    --dh-line-muted: #c9bfa4;
+    --dh-line-strong: #57503f;
+    --dh-shell-surface: #ffffff;
+    --dh-shell-line: #a2946f;
+    --dh-beast-ink: #29251d;
+    --dh-beast-text-secondary: #4f4836;
+    --dh-beast-text-muted: #403a2c;
+    --dh-beast-accent: #8f2a1a;
+    --dh-beast-line: #57503f;
+    --dh-beast-line-soft: #b3a78a;
+    --dh-companion-ink: #2e2a20;
+    --dh-companion-line: #57503f;
+    --dh-companion-line-soft: #b3a78a;
+    --dh-companion-line-muted: #c9bfa4;
+    --dh-on-strong: #ffffff;
+    --framework-surface: #ffffff;
+    --framework-surface-subtle: #faf7ef;
+    --framework-surface-muted: #f2ecdb;
+    --framework-text: #29251d;
+    --framework-text-strong: #1c1913;
+    --framework-text-secondary: #4f4836;
+    --framework-text-muted: #5f5742;
+    --framework-border: #b3a78a;
+    --framework-border-strong: #7a6f52;
+    --framework-border-subtle: #d3c9ae;
+    --framework-accent: #35503f;
+    --framework-on-accent: #ffffff;
+  }
+
+  .kimi-thread-book .sheet-body-layout {
+    grid-template-columns: minmax(23rem, 1.15fr) minmax(20rem, 1.05fr);
+  }
+
+  .daggerheart-workspace,
+  .daggerheart-sheet,
+  .beast-reference-page,
+  .companion-page {
+    background: #ffffff;
+  }
+
+  .daggerheart-sheet-pane,
+  .identity-panel,
+  .upper-stat-layout,
+  .sheet-region,
+  .story-overview,
+  .question-column,
+  .advancement-region,
+  .advancement-grid article,
+  .beast-form {
+    border-color: #b3a78a;
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .book-fold-edge {
+    border-left-color: #57503f;
+    border-right-color: #57503f;
+  }
+
+  .fold-fishtail-top {
+    border-top-color: #29251d;
+  }
+
+  .fold-fishtail-bottom {
+    border-bottom-color: #29251d;
+  }
+
+  .fold-caption {
+    color: #57503f;
+  }
+
+  .fold-volume {
+    border-top-color: #57503f;
+    border-bottom-color: #57503f;
+    color: #8f2a1a;
+  }
+
+  .brand-panel {
+    border-color: #57503f;
+    background: #ffffff;
+    box-shadow:
+      inset 0 0 0 0.12rem #ffffff,
+      inset 0 0 0 calc(0.12rem + 1px) #b3a78a;
+  }
+
+  .brand-slip {
+    color: #29251d;
+  }
+
+  .brand-seal {
+    border: 1px solid #8f2a1a;
+    background: #ffffff;
+    color: #8f2a1a;
+    box-shadow: none;
+  }
+
+  .card-table-banner {
+    display: none;
+  }
+
+  .sheet-region > .section-title,
+  .equipment-slot-title,
+  [data-template-page-id="character-story"] .question-column h2,
+  [data-template-page-id="character-story"] .advancement-region > h2,
+  .beast-tier h2 {
+    color: #8f2a1a;
+    text-shadow: none;
+  }
+
+  [data-template-page-id="character-story"] .advancement-grid h3 {
+    color: #35503f;
+  }
+
+  [data-module-type] [data-part="label"] {
+    color: #4f4836;
+  }
+
+  [data-module-type] :is([data-part="input"], [data-part="maximum-input"]),
+  [data-module-type="freeText"] [data-markdown-preview],
+  [data-module-type="longText"] [data-markdown-preview] {
+    border-color: #b3a78a;
+    background: #ffffff;
+    color: #29251d;
+  }
+
+  [data-template-page-id="character-main"] .level-field,
+  [data-template-page-id="character-main"] .trait-summary > [data-module-slot-id] {
+    background: #ffffff;
+  }
+
+  .beast-form {
+    border-left-color: #35503f;
+  }
+
+  .beast-form h3,
+  .companion-section h2 {
+    color: #35503f;
+  }
+
+  .companion-title {
+    border-left-color: #8f2a1a;
+    background: #2e2a20;
+    color: #ffffff;
+  }
+
+  .companion-evasion > span {
+    background: #2e2a20;
+    color: #ffffff;
+  }
+
+  .companion-section h2 {
+    background: #ffffff;
+  }
+
+  .companion-section h2::before,
+  .companion-section h2::after {
+    background: #8f2a1a;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"] {
+    border-color: #b3a78a;
+    background: #ffffff;
+    box-shadow: none;
+  }
+}

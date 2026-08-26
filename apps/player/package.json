@@ -7,14 +7,22 @@
     "./surface": "./src/surface.ts"
   },
   "dependencies": {
+    "@pbdh/cloud-documents": "0.0.0",
     "@pbdh/platform-auth": "0.0.0",
     "@pbdh/platform-ui": "0.0.0",
     "@pbdh/local-storage": "0.0.0",
+    "@pbdh/media-admission": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",
     "@pbdh/templates": "0.0.0",
+    "acorn": "8.17.0",
     "dexie": "4.4.4",
     "fflate": "0.8.3",
-    "react": "19.2.7"
+    "lucide-react": "1.23.0",
+    "react": "19.2.7",
+    "react-markdown": "10.1.0",
+    "remark-directive": "4.0.0",
+    "zod": "4.4.3",
+    "zustand": "5.0.14"
   }
 }

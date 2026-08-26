@@ -1,0 +1,7 @@
+.restricted-markdown-color[data-markdown-color="red"] { color: var(--restricted-markdown-red); }
+.restricted-markdown-color[data-markdown-color="orange"] { color: var(--restricted-markdown-orange); }
+.restricted-markdown-color[data-markdown-color="yellow"] { color: var(--restricted-markdown-yellow); }
+.restricted-markdown-color[data-markdown-color="green"] { color: var(--restricted-markdown-green); }
+.restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
+.restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
+.restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }

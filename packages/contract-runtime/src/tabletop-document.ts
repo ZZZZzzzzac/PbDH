@@ -11,7 +11,7 @@ export type TabletopAsset = {
 };
 
 export type TabletopResourceCopy = {
-  source: { packageId: string; resourceId: string };
+  source: { packageId: string; resourceId: string } | null;
   template: { id: string; version: string };
   presentation: {
     width: string;

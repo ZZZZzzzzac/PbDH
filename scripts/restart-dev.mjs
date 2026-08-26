@@ -24,7 +24,7 @@ const services = [
     command: "npm.cmd run dev -w @pbdh/platform -- --port 5173 --strictPort",
     healthUrls: [
       "http://localhost:5173/src/PlatformApp.tsx",
-      `http://localhost:5173/@fs/${fileServerRoot}/apps/player/src/PlayerAppPrototype.tsx`,
+      `http://localhost:5173/@fs/${fileServerRoot}/apps/player/src/PlayerSheetSurface.tsx`,
       `http://localhost:5173/@fs/${fileServerRoot}/apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx`,
       `http://localhost:5173/@fs/${fileServerRoot}/apps/market/src/MarketApp.tsx`,
     ],

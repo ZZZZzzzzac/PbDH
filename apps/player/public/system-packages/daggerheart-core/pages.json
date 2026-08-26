@@ -1,0 +1,52 @@
+[
+  {
+    "ID": "character-main",
+    "名称": "人物卡",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/character-main.html",
+      "css": "layouts/base.css"
+    }
+  },
+  {
+    "ID": "character-story",
+    "名称": "背景与关系",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/character-story.html",
+      "css": "layouts/base.css"
+    }
+  },
+  {
+    "ID": "beast-forms-t1-t2",
+    "名称": "野兽形态 T1-T2",
+    "默认隐藏": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/beast-forms-t1-t2.html",
+      "css": "layouts/beast-forms.css"
+    }
+  },
+  {
+    "ID": "beast-forms-t3-t4",
+    "名称": "野兽形态 T3-T4",
+    "默认隐藏": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/beast-forms-t3-t4.html",
+      "css": "layouts/beast-forms.css"
+    }
+  },
+  {
+    "ID": "ranger-companion",
+    "名称": "游侠动物伙伴",
+    "默认隐藏": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/ranger-companion.html",
+      "css": "layouts/ranger-companion.css"
+    }
+  }
+]

@@ -1,0 +1,132 @@
+.validation-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 32px);
+  background: var(--framework-shadow-strong);
+}
+
+.validation-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(720px, 100%);
+  max-height: min(560px, 90vh);
+  border: 1px solid var(--framework-border-strong);
+  background: var(--framework-surface);
+  box-shadow: 0 20px 60px var(--framework-shadow);
+}
+
+.validation-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--framework-border-subtle);
+}
+
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.validation-dialog-header h2 {
+  font-size: 1rem;
+}
+
+.validation-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.validation-dialog-body ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.validation-empty {
+  margin: 0;
+  color: var(--framework-success);
+}
+
+.validation-issue {
+  line-height: 1.45;
+}
+
+.validation-error {
+  color: var(--framework-danger-strong);
+}
+
+.validation-warning {
+  color: var(--framework-warning);
+}
+
+.validation-info {
+  color: var(--framework-success);
+}
+
+.validation-source {
+  margin-left: 8px;
+  color: var(--framework-text-muted);
+  font-size: 0.86rem;
+}
+
+.questionnaire-selection-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 24px;
+}
+
+.questionnaire-selection-list li {
+  padding-left: 4px;
+  line-height: 1.45;
+}
+
+.questionnaire-selection-list span {
+  display: block;
+  color: var(--framework-text-muted);
+}
+
+.questionnaire-empty-selection,
+.questionnaire-missing-resources {
+  margin: 16px 0 0;
+}
+
+.questionnaire-missing-resources {
+  padding: 14px 16px;
+  border: 1px solid var(--framework-warning-border);
+  border-radius: 10px;
+  background: var(--framework-warning-surface);
+}
+
+.questionnaire-missing-resources h3,
+.questionnaire-missing-resources p {
+  margin: 0;
+}
+
+.questionnaire-missing-resources h3 {
+  color: var(--framework-warning);
+}
+
+.questionnaire-missing-resources p {
+  margin-top: 6px;
+}
+
+.questionnaire-missing-resources ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+}
+
+.questionnaire-missing-resources span {
+  display: block;
+  color: var(--framework-text-muted);
+}

@@ -13,7 +13,7 @@ import {
   DexieResourcePackageRepository,
   PbDHLocalDatabase,
 } from "../../apps/player/src/resources/resource-package-repository.ts";
-import { restorePlayerResourceLibrary } from "../../apps/player/src/PlayerAppPrototype.tsx";
+import { restorePlayerResourceLibrary } from "../../apps/player/src/PlayerSheetSurface.tsx";
 
 const root = process.cwd();
 const databases: PbDHLocalDatabase[] = [];

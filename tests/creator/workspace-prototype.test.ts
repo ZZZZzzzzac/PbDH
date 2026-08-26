@@ -384,8 +384,9 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain('usePlatformAccountManagement("gm", "云端回收站", openCloudTrash)');
     expect(creatorSource).toContain("<strong>回收站为空</strong>");
     expect(creatorSource).not.toContain('role="menuitem" onClick={() => void openCloudTrash()}>云端回收站');
-    expect(platformUiSource).toContain("accountManageLabel={registrations[activePage]?.accountManageLabel}");
-    expect(platformUiSource).toContain("onAccountManage={registrations[activePage]?.onAccountManage}");
+    expect(platformUiSource).toContain("accountManageLabel={accountManagement?.accountManageLabel}");
+    expect(platformUiSource).toContain("onAccountManage={accountManagement?.onAccountManage}");
+    expect(platformUiSource).toContain("AppBarRegistration[]");
   });
 
   test("routes Market handoff through the Platform Shell", () => {

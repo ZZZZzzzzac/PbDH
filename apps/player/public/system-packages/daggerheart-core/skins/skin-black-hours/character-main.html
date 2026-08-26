@@ -1,0 +1,143 @@
+<main class="daggerheart-sheet character-main-page">
+  <header class="identity-panel" aria-label="角色身份">
+    <div class="brand-panel" aria-label="匕首之心">
+      <span class="brand-monogram">匕</span>
+      <span class="brand-word">匕首之心</span>
+    </div>
+    <div class="identity-fields">
+      <div class="character-name-field"><pb-module id="character-name"></pb-module></div>
+      <div class="picker-field class-field" data-guide-region-id="guide-class">
+        <pb-module id="class-name"></pb-module>
+        <pb-module id="pick-class"></pb-module>
+        <pb-module id="pick-subclass"></pb-module>
+      </div>
+      <div class="picker-field ancestry-field" data-guide-region-id="guide-ancestry"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
+      <div class="picker-field community-field" data-guide-region-id="guide-community"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
+    </div>
+    <div class="level-field"><pb-module id="level"></pb-module></div>
+  </header>
+
+  <section class="upper-stat-layout" aria-label="防御与属性">
+    <div class="defense-summary">
+      <pb-module id="evasion"></pb-module>
+      <pb-module id="armor-value"></pb-module>
+      <pb-module id="major-threshold"></pb-module>
+      <pb-module id="severe-threshold"></pb-module>
+    </div>
+    <div class="trait-summary" data-guide-region-id="guide-traits">
+      <pb-module id="agility"></pb-module>
+      <pb-module id="strength"></pb-module>
+      <pb-module id="finesse"></pb-module>
+      <pb-module id="instinct"></pb-module>
+      <pb-module id="presence"></pb-module>
+      <pb-module id="knowledge"></pb-module>
+    </div>
+  </section>
+
+  <div class="sheet-body-layout">
+    <div class="sheet-left-column sheet-main-left">
+      <section class="sheet-region resource-region" aria-label="生命压力与阈值" data-guide-region-id="guide-resources">
+        <div class="resource-row">
+          <pb-module id="hp"></pb-module>
+          <pb-module id="stress"></pb-module>
+          <pb-module id="armor-slots"></pb-module>
+          <pb-module id="hope"></pb-module>
+        </div>
+        <h2 class="section-title">希望特性</h2>
+        <pb-module id="class-hope-feature"></pb-module>
+      </section>
+
+      <section class="sheet-region experience-region" aria-label="经历" data-guide-region-id="guide-experiences">
+        <h2 class="section-title">经历</h2>
+        <div class="experience-list">
+          <div><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
+          <div><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
+          <div><pb-module id="experience-3"></pb-module><pb-module id="experience-modifier-3"></pb-module></div>
+          <div><pb-module id="experience-4"></pb-module><pb-module id="experience-modifier-4"></pb-module></div>
+          <div><pb-module id="experience-5"></pb-module><pb-module id="experience-modifier-5"></pb-module></div>
+        </div>
+      </section>
+
+      <section class="sheet-region class-feature-region" aria-label="职业特性">
+        <h2 class="section-title">职业特性</h2>
+        <pb-module id="class-feature"></pb-module>
+      </section>
+
+    </div>
+
+    <div class="sheet-right-column sheet-main-right">
+      <section class="sheet-region equipment-region" aria-label="装备" data-guide-region-id="guide-equipment">
+        <div class="region-heading-row">
+          <h2>装备</h2>
+          <pb-module id="proficiency"></pb-module>
+        </div>
+
+        <article class="equipment-slot">
+          <h3 class="equipment-slot-title">主武器</h3>
+          <div class="equipment-grid">
+            <div class="equipment-fields weapon-fields">
+              <pb-module id="primary-weapon-name"></pb-module><pb-module id="pick-primary-weapon"></pb-module>
+            </div>
+            <pb-module id="primary-weapon-description"></pb-module>
+          </div>
+        </article>
+
+        <article class="equipment-slot">
+          <h3 class="equipment-slot-title">副武器</h3>
+          <div class="equipment-grid">
+            <div class="equipment-fields weapon-fields">
+              <pb-module id="secondary-weapon-name"></pb-module><pb-module id="pick-secondary-weapon"></pb-module>
+            </div>
+            <pb-module id="secondary-weapon-description"></pb-module>
+          </div>
+        </article>
+
+        <article class="equipment-slot">
+          <h3 class="equipment-slot-title">护甲</h3>
+          <div class="equipment-grid">
+            <div class="equipment-fields armor-fields">
+              <pb-module id="armor-name"></pb-module><pb-module id="pick-armor"></pb-module>
+            </div>
+            <pb-module id="armor-description"></pb-module>
+          </div>
+        </article>
+      </section>
+
+      <section class="sheet-region inventory-region" aria-label="背包与备用武器" data-guide-region-id="guide-inventory">
+      <h2 class="section-title">物品栏</h2>
+      <div class="item-list">
+        <pb-module id="inventory"></pb-module>
+        <pb-module id="pick-inventory-item"></pb-module>
+      </div>
+
+      <h2 class="section-title">金币区</h2>
+      <div class="currency-row" aria-label="金币">
+        <pb-module id="handful-gold"></pb-module>
+        <pb-module id="bag-gold"></pb-module>
+        <pb-module id="chest-gold"></pb-module>
+      </div>
+
+      <h2 class="section-title">备用武器</h2>
+      <div class="backup-weapons">
+          <article class="equipment-slot">
+            <div class="equipment-grid">
+              <div class="equipment-fields backup-weapon-fields">
+                <pb-module id="backup-weapon-1-name"></pb-module><pb-module id="pick-backup-weapon-1"></pb-module>
+              </div>
+              <pb-module id="backup-weapon-1-description"></pb-module>
+            </div>
+          </article>
+
+          <article class="equipment-slot">
+            <div class="equipment-grid">
+              <div class="equipment-fields backup-weapon-fields">
+                <pb-module id="backup-weapon-2-name"></pb-module><pb-module id="pick-backup-weapon-2"></pb-module>
+              </div>
+              <pb-module id="backup-weapon-2-description"></pb-module>
+            </div>
+          </article>
+      </div>
+      </section>
+    </div>
+  </div>
+</main>

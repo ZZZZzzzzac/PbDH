@@ -1,0 +1,19 @@
+<main class="daggerheart-workspace">
+  <section class="daggerheart-sheet-pane" aria-label="人物卡页面">
+    <pb-page-outlet></pb-page-outlet>
+  </section>
+  <section class="daggerheart-card-pane" data-print-page="true" aria-label="持久卡牌桌面" data-guide-region-id="guide-domain-cards">
+    <header class="card-table-banner">
+      <span class="card-table-banner-seal">牌</span>
+      <span class="card-table-banner-title">卡牌桌面</span>
+      <span class="card-table-banner-rule"></span>
+    </header>
+    <div class="card-picker-grid">
+      <pb-module id="pick-domain-card"></pb-module>
+      <pb-module id="pick-other-resources"></pb-module>
+    </div>
+    <div class="daggerheart-card-table-slot">
+      <pb-module id="character-card-table"></pb-module>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,65 @@
+<main class="companion-page">
+  <header class="companion-header">
+    <div class="companion-title"><strong>游侠</strong><span>动物伙伴</span></div>
+    <div class="companion-name-field"><pb-module id="companion-name"></pb-module></div>
+    <div class="companion-evasion">
+      <span>闪避值</span>
+      <pb-module id="companion-evasion"></pb-module>
+      <small>初始为 10</small>
+    </div>
+  </header>
+
+  <section class="companion-portrait"><pb-module id="companion-portrait"></pb-module></section>
+
+  <p class="companion-introduction">
+    与游戏主持人讨论，决定你的伙伴是什么样的动物。给它起一个名字，并在上面的空框里画出或粘贴它的肖像。根据你的伙伴所受的训练以及你们共同的过去，为它创作两个经历。最后，描述它造成伤害的方式（它的标准攻击）并记录在“攻击与伤害”部分。它初始的伤害骰是 1d6，射程是近战。
+  </p>
+
+  <section class="companion-experiences">
+    <div class="companion-experience-editor">
+      <h2>伙伴经历</h2>
+      <p>以两项 +2 经历开始。每当你获得新的经历，你的伙伴同样获得一个新的经历。所有新的经历都以 +2 开始。</p>
+      <div class="companion-experience-list">
+        <div><pb-module id="companion-experience-1"></pb-module><pb-module id="companion-experience-modifier-1"></pb-module></div>
+        <div><pb-module id="companion-experience-2"></pb-module><pb-module id="companion-experience-modifier-2"></pb-module></div>
+        <div><pb-module id="companion-experience-3"></pb-module><pb-module id="companion-experience-modifier-3"></pb-module></div>
+        <div><pb-module id="companion-experience-4"></pb-module><pb-module id="companion-experience-modifier-4"></pb-module></div>
+        <div><pb-module id="companion-experience-5"></pb-module><pb-module id="companion-experience-modifier-5"></pb-module></div>
+      </div>
+    </div>
+    <div class="companion-experience-examples">
+      <h3>伙伴经历范例</h3>
+      <p>勇猛干扰者、攀爬专家、寻回能手、友善亲和、森林守卫者、救人威胁、凶暴恐吓、至死不渝、导航专家、灵巧迅捷、不抛弃任何人、高度警惕、保护者、皇家伙伴、侦察兵猴、服务型动物、可靠坐骑、守夜者、追踪大师、无迹可寻</p>
+    </div>
+  </section>
+
+  <p class="companion-action-rule">
+    进行一次施法掷骰，与你的伙伴建立联系并命令其采取行动。<strong>花费 1 希望点</strong>，将一项适用的伙伴经历加入掷骰中。<strong>希望成功</strong>时，如果你的下一次行动是基于伙伴的成功，则你在掷骰中获得<strong>优势</strong>。
+  </p>
+
+  <div class="companion-lower-grid">
+    <div class="companion-combat-column">
+      <section class="companion-section companion-attack-section">
+        <h2>攻击与伤害</h2>
+        <div class="companion-attack-fields">
+          <pb-module id="companion-attack-die"></pb-module>
+          <div class="companion-attack-range">攻击距离<pb-module id="companion-attack-range"></pb-module></div>
+        </div>
+        <p>当你命令你的伙伴进行攻击时，其获得通常只适用于你的任何增益（例如“游侠专注”的效果）。在成功命中时，其伤害掷骰使用你的熟练值和其自身的伤害骰。</p>
+      </section>
+
+      <section class="companion-section companion-stress-section">
+        <h2>压力</h2>
+        <pb-module id="companion-stress"></pb-module>
+        <p>当你的伙伴受到任何数量的伤害时，其<strong>标记 1 压力点</strong>。当其标记最后一个压力点时，伙伴会退出场景（通过躲藏、逃跑或类似行动），并且直到你下一次长休开始前不可用，届时伙伴将回到你身边并清除 1 压力点。</p>
+        <p>当你选择一个可以清除自身压力点的休整行动时，你的伙伴也会清除等量的压力点。</p>
+      </section>
+    </div>
+
+    <section class="companion-section companion-upgrade-section">
+      <h2>伙伴升级</h2>
+      <p>当你的角色升级时，从下列选项中选择一个可用的伙伴选项，并将其标记在你的伙伴卡上。</p>
+      <pb-module id="companion-upgrades"></pb-module>
+    </section>
+  </div>
+</main>

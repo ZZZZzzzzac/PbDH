@@ -1,0 +1,1100 @@
+[
+  {
+    "ID": "character-name",
+    "类型": "freeText",
+    "标签": "姓名"
+  },
+  {
+    "ID": "ancestry-name",
+    "类型": "freeText",
+    "标签": "种族"
+  },
+  {
+    "ID": "community-name",
+    "类型": "freeText",
+    "标签": "社群"
+  },
+  {
+    "ID": "class-name",
+    "类型": "freeText",
+    "标签": "职业"
+  },
+  {
+    "ID": "subclass-name",
+    "类型": "freeText",
+    "标签": "子职"
+  },
+  {
+    "ID": "level",
+    "类型": "freeText",
+    "标签": "等级",
+    "默认值": "1"
+  },
+  {
+    "ID": "evasion",
+    "类型": "freeText",
+    "标签": "闪避"
+  },
+  {
+    "ID": "agility",
+    "类型": "freeText",
+    "标签": "敏捷"
+  },
+  {
+    "ID": "strength",
+    "类型": "freeText",
+    "标签": "力量"
+  },
+  {
+    "ID": "finesse",
+    "类型": "freeText",
+    "标签": "灵巧"
+  },
+  {
+    "ID": "instinct",
+    "类型": "freeText",
+    "标签": "本能"
+  },
+  {
+    "ID": "presence",
+    "类型": "freeText",
+    "标签": "风度"
+  },
+  {
+    "ID": "knowledge",
+    "类型": "freeText",
+    "标签": "知识"
+  },
+  {
+    "ID": "major-threshold",
+    "类型": "freeText",
+    "标签": "重度"
+  },
+  {
+    "ID": "severe-threshold",
+    "类型": "freeText",
+    "标签": "严重"
+  },
+  {
+    "ID": "hp",
+    "类型": "countableResource",
+    "标签": "生命",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-unmarked.svg" }
+  },
+  {
+    "ID": "stress",
+    "类型": "countableResource",
+    "标签": "压力",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
+  },
+  {
+    "ID": "hope",
+    "类型": "countableResource",
+    "标签": "希望",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 2,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.svg" }
+  },
+  {
+    "ID": "armor-slots",
+    "类型": "countableResource",
+    "标签": "护甲",
+    "最小值": 0,
+    "最大值": 0,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-unmarked.svg" }
+  },
+  {
+    "ID": "proficiency",
+    "类型": "countableResource",
+    "标签": "熟练度",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 1,
+    "步长": 1,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-unmarked.svg" }
+  },
+  {
+    "ID": "handful-gold",
+    "类型": "countableResource",
+    "标签": "把",
+    "最小值": 0,
+    "最大值": 9,
+    "默认值": 1,
+    "步长": 1
+  },
+  {
+    "ID": "bag-gold",
+    "类型": "countableResource",
+    "标签": "袋",
+    "最小值": 0,
+    "最大值": 9,
+    "默认值": 0,
+    "步长": 1
+  },
+  {
+    "ID": "chest-gold",
+    "类型": "countableResource",
+    "标签": "箱",
+    "最小值": 0,
+    "默认值": 0,
+    "步长": 1
+  },
+  {
+    "ID": "pick-ancestry",
+    "类型": "resourceComposer",
+    "按钮文本": "选择种族",
+    "来源槽位": [
+      {
+        "ID": "ancestry-a",
+        "标签": "特性 A 来源",
+        "资源库ID": "ancestries",
+        "字段模板": [
+          { "键": "类型", "默认显示": false },
+          { "键": "卡图", "默认显示": false },
+          { "键": "卡背", "默认显示": false }
+        ]
+      },
+      {
+        "ID": "ancestry-b",
+        "标签": "特性 B 来源",
+        "资源库ID": "ancestries",
+        "字段模板": [
+          { "键": "类型", "默认显示": false },
+          { "键": "卡图", "默认显示": false },
+          { "键": "卡背", "默认显示": false }
+        ]
+      }
+    ],
+    "输出字段": [
+      { "字段": "种族A名称", "来源槽位ID": "ancestry-a", "来源字段": "名称" },
+      { "字段": "种族B名称", "来源槽位ID": "ancestry-b", "来源字段": "名称" },
+      { "字段": "特性A", "来源槽位ID": "ancestry-a", "来源字段": "特性A" },
+      { "字段": "特性B", "来源槽位ID": "ancestry-b", "来源字段": "特性B" },
+      { "字段": "卡图", "来源槽位ID": "ancestry-a", "来源字段": "卡图" },
+      { "字段": "卡背", "来源槽位ID": "ancestry-a", "来源字段": "卡背" }
+    ],
+    "选择关系输出": {
+      "字段": "卡牌显示方式",
+      "全部相同时": "image",
+      "全部相同时来源字段": "卡牌显示方式",
+      "不全相同时": "text"
+    },
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
+  },
+  {
+    "ID": "pick-community",
+    "类型": "resourcePicker",
+    "按钮文本": "选择社群",
+    "资源库": [
+      {
+        "ID": "communities",
+        "字段模板": [
+          { "键": "类型", "默认显示": false },
+          { "键": "卡图", "默认显示": false },
+          { "键": "卡背", "默认显示": false }
+        ]
+      }
+    ],
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
+  },
+  {
+    "ID": "character-card-table",
+    "类型": "cardTable",
+    "标签": "角色卡牌",
+    "资源来源": [
+      {
+        "类型": "resourceComposer",
+        "ID": "pick-ancestry",
+        "卡牌展示": {
+          "名称模板": "{{种族A名称}} / {{种族B名称}}",
+          "描述模板": "{{特性A}}\n{{特性B}}",
+          "标签字段": []
+        }
+      },
+      { "类型": "resourceLibrary", "ID": "communities" },
+      { "类型": "resourceLibrary", "ID": "subclasses" },
+      { "类型": "resourceLibrary", "ID": "domain-cards" },
+      { "类型": "otherResourceLibraries", "ID": "其他" }
+    ],
+    "状态选项": [
+      "配置",
+      "宝库"
+    ],
+    "状态外观": {
+      "宝库": { "描边颜色": "#385f71", "徽标": "宝库" }
+    },
+    "显示方式": "image",
+    "卡背字段": "卡背",
+    "显示方式字段": "卡牌显示方式",
+    "背面卡牌ID字段": "背面卡牌ID"
+  },
+  {
+    "ID": "pick-class",
+    "类型": "resourcePicker",
+    "按钮文本": "职业",
+    "资源库": [
+      {
+        "ID": "classes",
+        "字段模板": [
+          { "键": "关系问题1", "默认显示": false },
+          { "键": "关系问题2", "默认显示": false },
+          { "键": "关系问题3", "默认显示": false },
+          { "键": "背景问题1", "默认显示": false },
+          { "键": "背景问题2", "默认显示": false },
+          { "键": "背景问题3", "默认显示": false },
+          { "键": "推荐初始属性", "默认显示": false },
+          { "键": "推荐初始武器", "默认显示": false },
+          { "键": "推荐初始护甲", "默认显示": false },
+          { "键": "职业物品", "默认显示": false },
+          { "键": "类型", "默认显示": false },
+          { "键": "描述", "默认显示": false },
+          { "键": "原名", "默认显示": false }
+        ]
+      }
+    ]
+  },
+  {
+    "ID": "pick-subclass",
+    "类型": "resourcePicker",
+    "按钮文本": "子职",
+    "资源库": [
+      {
+        "ID": "subclasses",
+        "字段模板": [
+          { "键": "类型", "默认显示": false },
+          { "键": "卡图", "默认显示": false },
+          { "键": "卡背", "默认显示": false }
+        ],
+        "默认查询": {
+          "sort": {
+            "field": "等级",
+            "direction": "asc"
+          }
+        }
+      }
+    ],
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
+  },
+  {
+    "ID": "class-hope-feature",
+    "类型": "longText",
+    "标签": "希望特性",
+    "行数": 4
+  },
+  {
+    "ID": "class-feature",
+    "类型": "longText",
+    "标签": "职业特性",
+    "行数": 17
+  },
+  {
+    "ID": "experience-1",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 1"
+  },
+  {
+    "ID": "experience-modifier-1",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-2",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 2"
+  },
+  {
+    "ID": "experience-modifier-2",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-3",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 3"
+  },
+  {
+    "ID": "experience-modifier-3",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-4",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 4"
+  },
+  {
+    "ID": "experience-modifier-4",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-5",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 5"
+  },
+  {
+    "ID": "experience-modifier-5",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "background-question-1",
+    "类型": "longText",
+    "标签": "背景问题一",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "background-question-2",
+    "类型": "longText",
+    "标签": "背景问题二",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "background-question-3",
+    "类型": "longText",
+    "标签": "背景问题三",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-question-1",
+    "类型": "longText",
+    "标签": "关系问题一",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-question-2",
+    "类型": "longText",
+    "标签": "关系问题二",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-question-3",
+    "类型": "longText",
+    "标签": "关系问题三",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-primary-weapon",
+    "类型": "resourcePicker",
+    "按钮文本": "选择主武器",
+    "资源库": [
+      {
+        "ID": "weapons",
+        "默认查询": {
+          "filters": {
+            "类型": [
+              "主武器"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "ID": "primary-weapon-name",
+    "类型": "freeText",
+    "标签": "主武器",
+    "隐藏标签": true,
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
+  },
+  {
+    "ID": "primary-weapon-description",
+    "类型": "longText",
+    "标签": "主武器描述",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-secondary-weapon",
+    "类型": "resourcePicker",
+    "按钮文本": "选择副武器",
+    "资源库": [
+      {
+        "ID": "weapons",
+        "默认查询": {
+          "filters": {
+            "类型": [
+              "副武器"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "ID": "secondary-weapon-name",
+    "类型": "freeText",
+    "标签": "副武器",
+    "隐藏标签": true,
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
+  },
+  {
+    "ID": "secondary-weapon-description",
+    "类型": "longText",
+    "标签": "副武器描述",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-backup-weapon-1",
+    "类型": "resourcePicker",
+    "按钮文本": "选择备用武器一",
+    "资源库": [
+      {
+        "ID": "weapons"
+      }
+    ]
+  },
+  {
+    "ID": "backup-weapon-1-name",
+    "类型": "freeText",
+    "标签": "备用武器一",
+    "隐藏标签": true,
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
+  },
+  {
+    "ID": "backup-weapon-1-description",
+    "类型": "longText",
+    "标签": "备用武器一描述",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-backup-weapon-2",
+    "类型": "resourcePicker",
+    "按钮文本": "选择备用武器二",
+    "资源库": [
+      {
+        "ID": "weapons"
+      }
+    ]
+  },
+  {
+    "ID": "backup-weapon-2-name",
+    "类型": "freeText",
+    "标签": "备用武器二",
+    "隐藏标签": true,
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
+  },
+  {
+    "ID": "backup-weapon-2-description",
+    "类型": "longText",
+    "标签": "备用武器二描述",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-armor",
+    "类型": "resourcePicker",
+    "按钮文本": "选择护甲",
+    "资源库": [
+      {
+        "ID": "armor"
+      }
+    ]
+  },
+  {
+    "ID": "armor-name",
+    "类型": "freeText",
+    "标签": "护甲",
+    "隐藏标签": true,
+    "占位文本": "名称｜重度/严重阈值｜护甲值"
+  },
+  {
+    "ID": "armor-value",
+    "类型": "freeText",
+    "标签": "护甲值"
+  },
+  {
+    "ID": "armor-description",
+    "类型": "longText",
+    "标签": "护甲描述",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "pick-inventory-item",
+    "类型": "resourcePicker",
+    "按钮文本": "添加物品",
+    "资源库": [
+      {
+        "ID": "loot"
+      }
+    ],
+    "多选": true
+  },
+  {
+    "ID": "inventory",
+    "类型": "longText",
+    "标签": "",
+    "默认值": "- 火把（用于照亮黑暗房间）\n- 50英尺长的绳索（用于攀爬墙壁或沿悬崖速降）\n- 基本补给品（帐篷、睡袋、火绒盒、口粮等）\n- 一瓶小型治疗药剂（恢复 1d4 生命点）或一瓶小型精力药剂（清除 1d4 压力点）",
+    "占位文本": "记录携带物品",
+    "行数": 8
+  },
+  {
+    "ID": "pick-domain-card",
+    "类型": "resourcePicker",
+    "按钮文本": "选择领域卡",
+    "资源库": [
+      {
+        "ID": "domain-cards",
+        "字段模板": [
+          {"键": "背面卡牌ID", "默认显示": false },
+          {"键": "原名", "默认显示": false },
+          {"键": "类型", "默认显示": false },
+          {"键": "卡图", "默认显示": false },
+          {"键": "卡背", "默认显示": false }
+        ],
+        "默认查询": {
+          "sort": {
+            "field": "等级",
+            "direction": "asc"
+          }
+        }
+      }
+    ],
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
+  },
+  {
+    "ID": "character-avatar",
+    "类型": "imageField",
+    "标签": "角色头像",
+    "替代文本": "角色头像"
+  },
+  {
+    "ID": "background-answer-1",
+    "类型": "longText",
+    "标签": "背景回答 1",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-answer-1",
+    "类型": "longText",
+    "标签": "关系回答 1",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "background-answer-2",
+    "类型": "longText",
+    "标签": "背景回答 2",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-answer-2",
+    "类型": "longText",
+    "标签": "关系回答 2",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "background-answer-3",
+    "类型": "longText",
+    "标签": "背景回答 3",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "connection-answer-3",
+    "类型": "longText",
+    "标签": "关系回答 3",
+    "行数": 2,
+    "隐藏标签": true
+  },
+  {
+    "ID": "event-log",
+    "类型": "longText",
+    "标签": "事件记录",
+    "行数": 8,
+    "占位文本": "记录角色经历的重要事件"
+  },
+  {
+    "ID": "background-story",
+    "类型": "longText",
+    "标签": "背景故事",
+    "行数": 8,
+    "占位文本": "记录角色的背景故事"
+  },
+  {
+    "ID": "advancement-tier-2-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 阶段奖励",
+    "内容": "当你到达 2 级时，获得一项额外的 +2 经历，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-2-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 升级规则",
+    "内容": "从下面列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-2",
+    "类型": "checkboxResource",
+    "标签": "T2 升级记录",
+    "选项": [
+      {
+        "ID": "traits-1",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-2",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-3",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "hp-1",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "hp-2",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "stress-1",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "stress-2",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "experiences",
+        "标签": "选择你的两项经历 +1"
+      },
+      {
+        "ID": "domain-card",
+        "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 4 级）"
+      },
+      {
+        "ID": "evasion",
+        "标签": "闪避值 +1"
+      }
+    ]
+  },
+  {
+    "ID": "advancement-tier-2-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
+  },
+  {
+    "ID": "advancement-tier-3-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 阶段奖励",
+    "内容": "当你到达 5 级时，获得一项额外的 +2 经历，然后清除你所有角色属性上的标记，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-3-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 升级规则",
+    "内容": "从下面列表或之前的升级列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-3",
+    "类型": "checkboxResource",
+    "标签": "T3 升级记录",
+    "选项": [
+      {
+        "ID": "traits-1",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-2",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-3",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "hp-1",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "hp-2",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "stress-1",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "stress-2",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "experiences",
+        "标签": "选择你的两项经历 +1"
+      },
+      {
+        "ID": "domain-card",
+        "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 7 级）"
+      },
+      {
+        "ID": "subclass",
+        "标签": "升级你的子职并划掉兼职选项"
+      },
+      {
+        "ID": "evasion",
+        "标签": "闪避值 +1"
+      },
+      {
+        "ID": "proficiency-1",
+        "标签": "熟练值 +1（一次性占用两个可选项）",
+        "分组": "proficiency"
+      },
+      {
+        "ID": "proficiency-2",
+        "标签": "熟练值 +1（一次性占用两个可选项）",
+        "分组": "proficiency"
+      },
+      {
+        "ID": "multiclass-1",
+        "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼职选项",
+        "分组": "multiclass"
+      },
+      {
+        "ID": "multiclass-2",
+        "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼职选项",
+        "分组": "multiclass"
+      }
+    ]
+  },
+  {
+    "ID": "advancement-tier-3-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
+  },
+  {
+    "ID": "advancement-tier-4-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 阶段奖励",
+    "内容": "当你到达 8 级时，获得一项额外的 +2 经历，然后清除你所有角色属性上的标记，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-4-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 升级规则",
+    "内容": "从下面列表或之前的升级列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-4",
+    "类型": "checkboxResource",
+    "标签": "T4 升级记录",
+    "选项": [
+      {
+        "ID": "traits-1",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-2",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "traits-3",
+        "标签": "两项未标记的角色属性 +1，然后标记它们",
+        "分组": "traits"
+      },
+      {
+        "ID": "hp-1",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "hp-2",
+        "标签": "总生命值 +1",
+        "分组": "hp"
+      },
+      {
+        "ID": "stress-1",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "stress-2",
+        "标签": "总压力槽 +1",
+        "分组": "stress"
+      },
+      {
+        "ID": "experiences",
+        "标签": "选择你的两项经历 +1"
+      },
+      {
+        "ID": "domain-card",
+        "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 10 级）"
+      },
+      {
+        "ID": "subclass",
+        "标签": "升级你的子职并划掉兼职选项"
+      },
+      {
+        "ID": "evasion",
+        "标签": "闪避值 +1"
+      },
+      {
+        "ID": "proficiency-1",
+        "标签": "熟练值 +1（一次性占用两个可选项）",
+        "分组": "proficiency"
+      },
+      {
+        "ID": "proficiency-2",
+        "标签": "熟练值 +1（一次性占用两个可选项）",
+        "分组": "proficiency"
+      },
+      {
+        "ID": "multiclass-1",
+        "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼职选项",
+        "分组": "multiclass"
+      },
+      {
+        "ID": "multiclass-2",
+        "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼职选项",
+        "分组": "multiclass"
+      }
+    ]
+  },
+  {
+    "ID": "advancement-tier-4-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
+  },
+  {
+    "ID": "companion-name",
+    "类型": "freeText",
+    "标签": "伙伴名称",
+    "隐藏标签": true,
+    "占位文本": "伙伴名称"
+  },
+  {
+    "ID": "companion-evasion",
+    "类型": "freeText",
+    "标签": "伙伴闪避值",
+    "隐藏标签": true,
+    "默认值": "10",
+    "占位文本": "闪避值"
+  },
+  {
+    "ID": "companion-portrait",
+    "类型": "imageField",
+    "标签": "伙伴画像",
+    "替代文本": "伙伴画像"
+  },
+  {
+    "ID": "companion-experience-1",
+    "类型": "freeText",
+    "标签": "伙伴经历 1",
+    "隐藏标签": true,
+    "占位文本": "伙伴经历 1"
+  },
+  {
+    "ID": "companion-experience-modifier-1",
+    "类型": "freeText",
+    "标签": "伙伴经历 1 修正",
+    "隐藏标签": true,
+    "占位文本": "修正"
+  },
+  {
+    "ID": "companion-experience-2",
+    "类型": "freeText",
+    "标签": "伙伴经历 2",
+    "隐藏标签": true,
+    "占位文本": "伙伴经历 2"
+  },
+  {
+    "ID": "companion-experience-modifier-2",
+    "类型": "freeText",
+    "标签": "伙伴经历 2 修正",
+    "隐藏标签": true,
+    "占位文本": "修正"
+  },
+  {
+    "ID": "companion-experience-3",
+    "类型": "freeText",
+    "标签": "伙伴经历 3",
+    "隐藏标签": true,
+    "占位文本": "伙伴经历 3"
+  },
+  {
+    "ID": "companion-experience-modifier-3",
+    "类型": "freeText",
+    "标签": "伙伴经历 3 修正",
+    "隐藏标签": true,
+    "占位文本": "修正"
+  },
+  {
+    "ID": "companion-experience-4",
+    "类型": "freeText",
+    "标签": "伙伴经历 4",
+    "隐藏标签": true,
+    "占位文本": "伙伴经历 4"
+  },
+  {
+    "ID": "companion-experience-modifier-4",
+    "类型": "freeText",
+    "标签": "伙伴经历 4 修正",
+    "隐藏标签": true,
+    "占位文本": "修正"
+  },
+  {
+    "ID": "companion-experience-5",
+    "类型": "freeText",
+    "标签": "伙伴经历 5",
+    "隐藏标签": true,
+    "占位文本": "伙伴经历 5"
+  },
+  {
+    "ID": "companion-experience-modifier-5",
+    "类型": "freeText",
+    "标签": "伙伴经历 5 修正",
+    "隐藏标签": true,
+    "占位文本": "修正"
+  },
+  {
+    "ID": "companion-attack-die",
+    "类型": "checkboxResource",
+    "标签": "标准攻击伤害骰",
+    "选项": [
+      { "ID": "d6", "标签": "d6", "默认选中": true },
+      { "ID": "d8", "标签": "d8" },
+      { "ID": "d10", "标签": "d10" },
+      { "ID": "d12", "标签": "d12" }
+    ]
+  },
+  {
+    "ID": "companion-attack-range",
+    "类型": "freeText",
+    "标签": "攻击距离",
+    "隐藏标签": true,
+    "默认值": "近战",
+    "占位文本": "攻击距离"
+  },
+  {
+    "ID": "companion-stress",
+    "类型": "countableResource",
+    "标签": "压力",
+    "最小值": 0,
+    "最大值": 3,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "标记尺寸": 17,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
+  },
+  {
+    "ID": "companion-upgrades",
+    "类型": "checkboxResource",
+    "标签": "伙伴升级记录",
+    "选项": [
+      { "ID": "wise-1", "标签": "灵慧：伙伴的一项经历永久获得 +1 加值。", "分组": "wise" },
+      { "ID": "wise-2", "标签": "灵慧：伙伴的一项经历永久获得 +1 加值。", "分组": "wise" },
+      { "ID": "wise-3", "标签": "灵慧：伙伴的一项经历永久获得 +1 加值。", "分组": "wise" },
+      { "ID": "light-in-dark", "标签": "黑暗中的光芒：可以将其用作你的角色可以标记的一个额外希望槽。" },
+      { "ID": "creature-comfort", "标签": "动物抚慰：每次休息一次，当你用片刻宁静来给予你的伙伴爱意与关切，你可以获得 1 希望点，或者你们双方都可以清除 1 压力点。" },
+      { "ID": "armored", "标签": "铠甲：当你的伙伴受到伤害时，你可以标记你的 1 护甲槽，而不是让伙伴标记 1 压力点。" },
+      { "ID": "trained-1", "标签": "历练：增加你的伙伴的伤害骰或范围一个等级（d6 变为 d8，近距离变为远距离，等等）。", "分组": "trained" },
+      { "ID": "trained-2", "标签": "历练：增加你的伙伴的伤害骰或范围一个等级（d6 变为 d8，近距离变为远距离，等等）。", "分组": "trained" },
+      { "ID": "trained-3", "标签": "历练：增加你的伙伴的伤害骰或范围一个等级（d6 变为 d8，近距离变为远距离，等等）。", "分组": "trained" },
+      { "ID": "resilient-1", "标签": "坚韧：你的伙伴获得一个额外的压力槽。", "分组": "resilient" },
+      { "ID": "resilient-2", "标签": "坚韧：你的伙伴获得一个额外的压力槽。", "分组": "resilient" },
+      { "ID": "resilient-3", "标签": "坚韧：你的伙伴获得一个额外的压力槽。", "分组": "resilient" },
+      { "ID": "protective", "标签": "保护：当你标记最后一个生命点时，你的伙伴会冲到你身边安慰你，掷出等同于它们未标记的压力槽数量的 d6，并标记它们。如果任何骰子掷出 6，你的伙伴会帮助你站起来，恢复你的最后一个生命点，然后回到场景中。" },
+      { "ID": "aware-1", "标签": "警觉：伙伴的闪避值永久获得 +2 加值。", "分组": "aware" },
+      { "ID": "aware-2", "标签": "警觉：伙伴的闪避值永久获得 +2 加值。", "分组": "aware" },
+      { "ID": "aware-3", "标签": "警觉：伙伴的闪避值永久获得 +2 加值。", "分组": "aware" }
+    ]
+  },
+  {
+    "ID": "pick-other-resources",
+    "类型": "resourcePicker",
+    "按钮文本": "选择其他资源",
+    "资源库": "其他",
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
+  }
+]

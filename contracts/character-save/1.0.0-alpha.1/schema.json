@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/character-save/1.0.0-alpha.1/schema.json",
+  "title": "Character Save logical document",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "documentId",
+    "name",
+    "createdAt",
+    "updatedAt",
+    "systemPackage",
+    "characterData"
+  ],
+  "properties": {
+    "contractVersion": { "const": "1.0.0-alpha.1" },
+    "documentId": { "$ref": "#/$defs/uuid" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "createdAt": { "$ref": "#/$defs/timestamp" },
+    "updatedAt": { "$ref": "#/$defs/timestamp" },
+    "systemPackage": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/semver" }
+      },
+      "additionalProperties": false
+    },
+    "characterData": {
+      "type": "object",
+      "required": ["values", "tabletop", "assets"],
+      "properties": {
+        "values": {
+          "type": "object",
+          "propertyNames": { "minLength": 1, "maxLength": 128 },
+          "additionalProperties": { "$ref": "#/$defs/jsonValue" }
+        },
+        "tabletop": {
+          "type": "object",
+          "required": ["instances"],
+          "properties": {
+            "instances": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/instance" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "assets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/asset" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{3})?Z$"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "mediaType", "byteLength", "width", "height"],
+      "properties": {
+        "id": { "$ref": "#/$defs/assetId" },
+        "mediaType": { "const": "image/webp" },
+        "byteLength": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "width": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "height": { "type": "string", "pattern": "^[1-9][0-9]*$" }
+      },
+      "additionalProperties": false
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } },
+        { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }
+      ]
+    },
+    "templateReference": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/semver" }
+      },
+      "additionalProperties": false
+    },
+    "presentation": {
+      "type": "object",
+      "required": ["width", "height", "unit", "mode", "fixedRatio"],
+      "properties": {
+        "width": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "height": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+        "unit": { "const": "mm" },
+        "mode": { "enum": ["text", "split", "image"] },
+        "fixedRatio": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "resourceCopy": {
+      "type": "object",
+      "required": ["source", "template", "presentation", "data", "labels", "media"],
+      "properties": {
+        "source": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["packageId", "resourceId"],
+              "properties": {
+                "packageId": { "$ref": "#/$defs/uuid" },
+                "resourceId": { "type": "string", "minLength": 1, "maxLength": 128 }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "template": { "$ref": "#/$defs/templateReference" },
+        "presentation": { "$ref": "#/$defs/presentation" },
+        "data": { "$ref": "#/$defs/jsonValue" },
+        "labels": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "media": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/assetId" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "geometry": {
+      "type": "object",
+      "required": ["x", "y", "layer", "rotation", "flipped", "scale"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "layer": { "type": "integer", "minimum": 0 },
+        "rotation": { "type": "number" },
+        "flipped": { "type": "boolean" },
+        "scale": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "instance": {
+      "type": "object",
+      "required": ["instanceId", "resourceCopy", "state", "geometry"],
+      "properties": {
+        "instanceId": { "$ref": "#/$defs/uuid" },
+        "resourceCopy": { "$ref": "#/$defs/resourceCopy" },
+        "state": {
+          "type": "object",
+          "propertyNames": { "minLength": 1 },
+          "additionalProperties": { "type": "string" }
+        },
+        "geometry": { "$ref": "#/$defs/geometry" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

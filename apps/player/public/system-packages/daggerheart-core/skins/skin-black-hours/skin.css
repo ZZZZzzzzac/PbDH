@@ -1,0 +1,957 @@
+/* skin-black-hours 「黑时祷书」— 黑染羊皮纸上的金银泥金抄本：哥特藤蔓角饰、菱格织锦、朱砂标题。 */
+:scope {
+  color-scheme: dark;
+
+  --dh-surface: #10131c;
+  --dh-ink: #eae3cf;
+  --dh-line: #3d4459;
+  --dh-line-soft: #2b3145;
+  --dh-line-muted: #333a4f;
+  --dh-line-strong: #8a7442;
+  --dh-shell-surface: #0b0d14;
+  --dh-shell-line: #54461f;
+  --dh-beast-ink: #eae3cf;
+  --dh-beast-text-secondary: #c0b797;
+  --dh-beast-text-muted: #a89e82;
+  --dh-beast-accent: #d9b25f;
+  --dh-beast-line: #6d5c33;
+  --dh-beast-line-soft: #3d4459;
+  --dh-companion-ink: #eae3cf;
+  --dh-companion-line: #6d5c33;
+  --dh-companion-line-soft: #3d4459;
+  --dh-companion-line-muted: #333a4f;
+  --dh-on-strong: #14161f;
+  --dh-font-serif: "Palatino Linotype", "Book Antiqua", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --dh-font-sans: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+
+  --skin-gold: #c9a558;
+  --skin-gold-bright: #e8cc82;
+  --skin-gold-deep: #8a6d34;
+  --skin-rubric: #c05a4e;
+  --skin-rubric-deep: #8f4238;
+  --skin-silver: #a9b2c6;
+  --skin-vellum-hi: #1a1f2e;
+  --skin-vellum: #12151f;
+  --skin-vellum-deep: #0c0e15;
+
+  --framework-canvas: #0a0c12;
+  --framework-surface: #161a26;
+  --framework-surface-subtle: #1c2130;
+  --framework-surface-muted: #232941;
+  --framework-text: #eae3cf;
+  --framework-text-strong: #f4edd9;
+  --framework-text-secondary: #c6bda1;
+  --framework-text-muted: #9a9177;
+  --framework-border: #3d4459;
+  --framework-border-strong: #8a7442;
+  --framework-border-subtle: #2b3145;
+  --framework-accent: #c9a558;
+  --framework-accent-active: #e8cc82;
+  --framework-on-accent: #14161f;
+  --framework-focus: #e8cc82;
+  --framework-disabled-surface: #232941;
+  --framework-disabled-text: #6f6a58;
+  --framework-danger: #d9837a;
+  --framework-danger-strong: #eba198;
+  --framework-danger-border: #a5554d;
+  --framework-danger-surface: #33202a;
+  --framework-success: #94bd95;
+  --framework-success-border: #6f9670;
+  --framework-warning: #d9bd7c;
+  --framework-warning-border: #a58644;
+  --framework-warning-surface: #2e2818;
+  --framework-shadow: rgba(0, 0, 0, 0.4);
+  --framework-shadow-strong: rgba(0, 0, 0, 0.6);
+  --framework-overlay: rgba(4, 6, 10, 0.75);
+}
+
+/* ===== 工作区与外壳 ===== */
+
+.daggerheart-workspace {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201, 165, 88, 0.07), transparent 70%),
+    radial-gradient(ellipse 40% 32% at 88% 100%, rgba(88, 70, 118, 0.08), transparent 70%),
+    linear-gradient(165deg, #0b0d14, #0d1018 55%, #0a0c11);
+}
+
+.daggerheart-sheet-pane {
+  border-color: var(--skin-gold-deep);
+  border-radius: 0.25rem;
+  box-shadow:
+    0 0 0 1px rgba(232, 204, 130, 0.12),
+    0 1rem 2.5rem rgba(0, 0, 0, 0.5);
+}
+
+/* 卡牌桌面横幅：火漆印 + 泥金题字，打印时隐藏不占 A4 牌面。 */
+.codex-card-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.32rem 0.5rem;
+  border: 1px solid var(--skin-gold-deep);
+  border-radius: 0.15rem;
+  background:
+    url("assets/skins/skin-black-hours/diaper-pattern.svg") 0 0 / 3.5rem 3.5rem repeat,
+    linear-gradient(165deg, #1b1524, #14101c);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 204, 130, 0.1),
+    0 0.12rem 0.35rem rgba(0, 0, 0, 0.4);
+}
+
+.codex-wax-seal {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a34a42, #6e2a26 72%);
+  color: var(--skin-gold-bright);
+  font-size: 0.8rem;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 0 2px rgba(24, 10, 10, 0.55),
+    inset 0 0 0 3.5px rgba(201, 165, 88, 0.55),
+    0 0.1rem 0.3rem rgba(0, 0, 0, 0.5);
+}
+
+.codex-card-banner-title {
+  color: var(--skin-gold-bright);
+  font-family: var(--dh-font-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+}
+
+.codex-card-banner-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 165, 88, 0.65), rgba(201, 165, 88, 0));
+}
+
+/* ===== 页面基底：菱格织锦 + 双描金框 ===== */
+
+.daggerheart-sheet {
+  background:
+    url("assets/skins/skin-black-hours/diaper-pattern.svg") 0 0 / 3.5rem 3.5rem repeat,
+    radial-gradient(ellipse 90% 30% at 50% 0%, rgba(201, 165, 88, 0.05), transparent 70%),
+    linear-gradient(165deg, #141824, #10131c 45%, #0e1119);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 165, 88, 0.35),
+    inset 0 0 0 3px #10131c,
+    inset 0 0 0 4px rgba(201, 165, 88, 0.18);
+  font-family: var(--dh-font-sans);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.identity-panel,
+.upper-stat-layout,
+.sheet-region,
+.story-overview,
+.question-column,
+.advancement-region {
+  border: 1px solid rgba(138, 109, 52, 0.55);
+  border-radius: 0.2rem;
+  background: linear-gradient(170deg, rgba(26, 31, 46, 0.88), rgba(18, 21, 31, 0.88));
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 204, 130, 0.08),
+    0 0.2rem 0.6rem rgba(0, 0, 0, 0.35);
+}
+
+/* ===== 泥金题签与朱砂题眉 ===== */
+
+.brand-panel {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.3rem;
+  border: 1px solid var(--skin-gold);
+  border-radius: 0.12rem;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201, 165, 88, 0.16), transparent 72%),
+    linear-gradient(160deg, #1b1524, #14101c);
+  color: var(--skin-gold-bright);
+  box-shadow:
+    inset 0 0 0 2px #12101a,
+    inset 0 0 0 3px rgba(201, 165, 88, 0.5);
+}
+
+.brand-panel::before,
+.brand-panel::after {
+  position: absolute;
+  top: 0.1rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  background-size: contain;
+  background-repeat: no-repeat;
+  content: "";
+  pointer-events: none;
+}
+
+.brand-panel::before {
+  left: 0.1rem;
+  background-image: url("assets/skins/skin-black-hours/corner-flourish.svg");
+}
+
+.brand-panel::after {
+  right: 0.1rem;
+  background-image: url("assets/skins/skin-black-hours/corner-flourish-right.svg");
+}
+
+.brand-monogram {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--skin-gold);
+  background: linear-gradient(150deg, #7c3532, #5e2826);
+  color: var(--skin-gold-bright);
+  font-family: var(--dh-font-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    inset 0 0 0 2px rgba(20, 16, 26, 0.9),
+    inset 0 0 0 3px rgba(201, 165, 88, 0.4);
+}
+
+.brand-word {
+  position: relative;
+  font-family: var(--dh-font-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  line-height: 1;
+}
+
+.sheet-region > .section-title,
+.equipment-slot-title {
+  border-bottom: 1px solid rgba(138, 109, 52, 0.8);
+  color: var(--skin-gold);
+  font-family: var(--dh-font-serif);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 0.5rem rgba(201, 165, 88, 0.25);
+}
+
+.sheet-region > .section-title::before {
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  margin-right: 0.55em;
+  background: var(--skin-gold);
+  content: "";
+  transform: rotate(45deg) translateY(-0.05em);
+}
+
+.equipment-slot-title {
+  color: var(--skin-rubric);
+  font-size: 0.72rem;
+}
+
+.equipment-slot-title::before {
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-right: 0.5em;
+  background: var(--skin-rubric);
+  content: "";
+  transform: rotate(45deg) translateY(-0.05em);
+}
+
+/* ===== 等级金环与属性尖拱 ===== */
+
+[data-template-page-id="character-main"] .level-field {
+  border: 1px solid rgba(138, 109, 52, 0.7);
+  border-radius: 0.15rem;
+  background:
+    radial-gradient(circle at 50% 62%, rgba(201, 165, 88, 0.12), transparent 75%),
+    rgba(18, 21, 31, 0.6);
+}
+
+[data-template-page-id="character-main"] .level-field [data-part="label"] {
+  border-bottom-color: rgba(138, 109, 52, 0.5);
+  color: var(--skin-gold);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.3em;
+}
+
+[data-template-page-id="character-main"] .level-field [data-part="input"] {
+  color: var(--skin-gold-bright);
+  font-family: var(--dh-font-serif);
+  text-shadow: 0 0 0.6rem rgba(201, 165, 88, 0.3);
+}
+
+[data-template-page-id="character-main"] .trait-summary > [data-module-slot-id] {
+  border: 1px solid rgba(138, 109, 52, 0.45);
+  border-radius: 0.6rem 0.6rem 0.15rem 0.15rem;
+  background: linear-gradient(180deg, rgba(201, 165, 88, 0.09), rgba(18, 21, 31, 0.5) 55%);
+  overflow: hidden;
+}
+
+[data-template-page-id="character-main"] .trait-summary [data-part="label"] {
+  border-bottom-color: rgba(138, 109, 52, 0.4);
+  color: #cdbd92;
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.12em;
+}
+
+[data-template-page-id="character-main"] .trait-summary [data-part="input"] {
+  color: var(--skin-gold-bright);
+  font-family: var(--dh-font-serif);
+}
+
+[data-template-page-id="character-main"] .defense-summary > [data-module-slot-id] {
+  border: 1px solid rgba(120, 132, 160, 0.4);
+  border-radius: 0.15rem;
+  background: rgba(18, 21, 31, 0.5);
+}
+
+[data-template-page-id="character-main"] .defense-summary [data-part="label"] {
+  color: var(--skin-silver);
+  letter-spacing: 0.06em;
+}
+
+/* ===== 模块控件 ===== */
+
+[data-module-type] {
+  border-color: var(--framework-border);
+}
+
+[data-module-type] [data-part="label"] {
+  color: #c6bda1;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.resource-row [data-module-type="countableResource"] {
+  border-color: rgba(138, 109, 52, 0.5);
+}
+
+.resource-row [data-part="label"] {
+  color: #cdbd92;
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.08em;
+}
+
+/* 金币区：单位置于数字之后，隐藏上限只保留当前值。 */
+.currency-row [data-module-type="countableResource"] {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  order: 2;
+  border-right: 0;
+  border-left: 1px solid var(--framework-border-subtle);
+}
+
+.currency-row [data-part="maximum"] {
+  display: none;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: #4a5268;
+  background: rgba(10, 12, 19, 0.55);
+  color: #eae3cf;
+  caret-color: var(--skin-gold-bright);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: var(--skin-gold-deep);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+[data-module-type] button:focus-visible {
+  outline: 2px solid var(--skin-gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 0.22rem rgba(201, 165, 88, 0.18);
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="longText"] [data-markdown-preview] {
+  background: rgba(10, 12, 19, 0.45);
+  color: #eae3cf;
+}
+
+[data-module-type="readOnlyDisplay"] [data-part="value"] {
+  color: #c6bda1;
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"],
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid var(--skin-gold-deep);
+  border-radius: 0.15rem;
+  background: linear-gradient(165deg, #33290f, #241d0b);
+  color: var(--skin-gold-bright);
+  box-shadow:
+    inset 0 1px rgba(232, 204, 130, 0.18),
+    0 0.12rem 0.3rem rgba(0, 0, 0, 0.4);
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled),
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  border-color: var(--skin-gold);
+  background: linear-gradient(165deg, #403512, #2e250d);
+  color: #f6e3ae;
+}
+
+[data-module-type="countableResource"] [data-part="marker"] {
+  filter: drop-shadow(0 0 0.25rem rgba(201, 165, 88, 0.3));
+}
+
+[data-module-id="class-hope-feature"] [data-part="label"],
+[data-module-id="class-feature"] [data-part="label"] {
+  display: none;
+}
+
+.equipment-slot {
+  border-top-color: rgba(138, 109, 52, 0.45);
+}
+
+/* ===== 故事页 ===== */
+
+[data-template-page-id="character-story"] .question-column h2 {
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(138, 109, 52, 0.8);
+  color: var(--skin-gold);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.26em;
+  text-shadow: 0 0 0.5rem rgba(201, 165, 88, 0.25);
+}
+
+[data-template-page-id="character-story"] .advancement-region > h2 {
+  color: var(--skin-gold);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.34em;
+  text-shadow: 0 0 0.5rem rgba(201, 165, 88, 0.25);
+}
+
+[data-template-page-id="character-story"] .advancement-grid article {
+  border-color: rgba(138, 109, 52, 0.5);
+  border-radius: 0.15rem;
+  background: rgba(24, 28, 42, 0.6);
+}
+
+[data-template-page-id="character-story"] .advancement-grid h3 {
+  color: var(--skin-rubric);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.12em;
+}
+
+[data-module-type="imageField"] [data-part="surface"],
+[data-module-type="imageField"] [data-part="image"] {
+  background: rgba(10, 12, 19, 0.6);
+}
+
+[data-module-type="imageField"] [data-part="image-fallback"] {
+  color: var(--skin-gold-deep);
+}
+
+/* ===== 野兽形态参考页 ===== */
+
+.beast-reference-page {
+  background:
+    url("assets/skins/skin-black-hours/diaper-pattern.svg") 0 0 / 3.5rem 3.5rem repeat,
+    radial-gradient(circle at 50% 0%, rgba(201, 165, 88, 0.05), transparent 48%),
+    linear-gradient(160deg, #141824, #10131c 55%, #0e1119);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.beast-tier h2 {
+  border-bottom-color: var(--skin-gold-deep);
+  color: var(--skin-rubric);
+  font-family: var(--dh-font-serif);
+  letter-spacing: 0.2em;
+}
+
+.beast-form {
+  border-color: #3d4459;
+  border-left-color: var(--skin-gold);
+  border-radius: 0.1rem;
+  background: rgba(24, 28, 42, 0.75);
+  box-shadow: 0 0.15rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+.beast-form h3 {
+  color: var(--skin-gold-bright);
+}
+
+.beast-form header p {
+  color: var(--skin-silver);
+}
+
+.beast-feature-name {
+  color: var(--skin-gold);
+}
+
+/* ===== 游侠动物伙伴页 ===== */
+
+.companion-page {
+  background:
+    url("assets/skins/skin-black-hours/diaper-pattern.svg") 0 0 / 3.5rem 3.5rem repeat,
+    radial-gradient(circle at 82% 6%, rgba(201, 165, 88, 0.05), transparent 42%),
+    linear-gradient(160deg, #141824, #10131c 55%, #0e1119);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.companion-title {
+  border-left: 1mm solid var(--skin-rubric);
+  background: linear-gradient(115deg, #3a2c10, #2a2008 62%, #33270d);
+  color: #f2e3b6;
+}
+
+.companion-evasion > span {
+  background: var(--skin-rubric-deep);
+  color: #f6ead6;
+}
+
+.companion-name-field {
+  border-bottom-color: var(--skin-gold-deep);
+}
+
+.companion-section h2 {
+  border-color: var(--skin-gold-deep);
+  background: #12151f;
+  color: var(--skin-gold);
+  font-family: var(--dh-font-serif);
+}
+
+.companion-section h2::before,
+.companion-section h2::after {
+  background: var(--skin-rubric);
+}
+
+.companion-upgrade-section {
+  border-left-color: var(--skin-gold-deep);
+}
+
+.companion-portrait [data-part="surface"],
+.companion-portrait [data-part="image"] {
+  background: #10131c;
+}
+
+/* ===== 卡牌桌面 ===== */
+
+[data-module-type="cardTable"] [data-part="surface"] {
+  border-color: var(--skin-gold-deep);
+  background:
+    radial-gradient(circle at 50% 40%, rgba(201, 165, 88, 0.07), transparent 55%),
+    url("assets/skins/skin-black-hours/diaper-pattern.svg") 0 0 / 3.5rem 3.5rem repeat,
+    linear-gradient(150deg, #191410, #120f0c 60%, #16120e);
+  box-shadow: inset 0 0 2.5rem rgba(0, 0, 0, 0.6);
+}
+
+/* 文本卡默认浅色卡面：卡牌文字与标签固定深色，不随 Skin 框架文字色变。 */
+.play-card-name,
+.play-card-description {
+  color: #2b2317;
+}
+
+.play-card-tag {
+  border-color: #a98c4f;
+  background: #f0e5c8;
+  color: #5f4c22;
+}
+
+.play-card-description-overflow {
+  border-color: rgba(90, 70, 30, 0.5);
+  background: #f0e5c8;
+  color: #5f4c22;
+}
+
+[data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
+  border-color: var(--skin-gold-deep);
+  background: #241d0b;
+  color: var(--skin-gold-bright);
+}
+
+/* ===== 窄屏 ===== */
+
+@media screen and (max-width: 800px) {
+  .brand-panel::before,
+  .brand-panel::after {
+    width: 1.3rem;
+    height: 1.3rem;
+  }
+}
+
+/* ===== 输出准备态：浅羊皮纸配色（与浏览器打印同构） ===== */
+
+.print-mode :scope {
+  color-scheme: light;
+
+  --dh-surface: #fbf7ea;
+  --dh-ink: #2a2418;
+  --dh-line: #c5b78f;
+  --dh-line-soft: #ddd3b6;
+  --dh-line-muted: #cfc3a0;
+  --dh-line-strong: #6f5b2e;
+  --dh-shell-surface: #fbf7ea;
+  --dh-shell-line: #8a7442;
+  --dh-beast-ink: #2a2418;
+  --dh-beast-text-secondary: #57503a;
+  --dh-beast-text-muted: #45402f;
+  --dh-beast-accent: #7a5c1e;
+  --dh-beast-line: #57503a;
+  --dh-beast-line-soft: #c5b78f;
+  --dh-companion-ink: #2a2418;
+  --dh-companion-line: #57503a;
+  --dh-companion-line-soft: #c5b78f;
+  --dh-companion-line-muted: #cfc3a0;
+  --dh-on-strong: #fbf7ea;
+  --skin-gold: #7a5c1e;
+  --skin-gold-bright: #8a6a24;
+  --skin-gold-deep: #6f5b2e;
+  --skin-rubric: #8f3a30;
+  --skin-rubric-deep: #7c3229;
+  --skin-silver: #5c6678;
+  --skin-vellum-hi: #f5efdd;
+  --skin-vellum: #fbf7ea;
+  --skin-vellum-deep: #f3ecd8;
+  --framework-surface: #fffdf6;
+  --framework-surface-subtle: #faf5e8;
+  --framework-surface-muted: #f1e9d4;
+  --framework-text: #2a2418;
+  --framework-text-strong: #1f1a10;
+  --framework-text-secondary: #4f4832;
+  --framework-text-muted: #6b6248;
+  --framework-border: #c5b78f;
+  --framework-border-strong: #8a7442;
+  --framework-border-subtle: #ddd3b6;
+  --framework-accent: #7a5c1e;
+  --framework-accent-active: #8a6a24;
+  --framework-on-accent: #fffdf6;
+  --framework-focus: #8f3a30;
+}
+
+.print-mode :scope .daggerheart-workspace {
+  background: #ffffff;
+}
+
+.print-mode :scope .daggerheart-sheet-pane {
+  box-shadow: none;
+}
+
+.print-mode :scope .codex-card-banner {
+  display: none;
+}
+
+.print-mode :scope .daggerheart-sheet {
+  background: linear-gradient(#fdfaf0, #fbf6e8);
+  box-shadow:
+    inset 0 0 0 1px rgba(111, 91, 46, 0.5),
+    inset 0 0 0 3px #fdfaf0,
+    inset 0 0 0 4px rgba(111, 91, 46, 0.3);
+}
+
+.print-mode :scope .identity-panel,
+.print-mode :scope .upper-stat-layout,
+.print-mode :scope .sheet-region,
+.print-mode :scope .story-overview,
+.print-mode :scope .question-column,
+.print-mode :scope .advancement-region,
+.print-mode :scope [data-template-page-id="character-story"] .advancement-grid article,
+.print-mode :scope .beast-form {
+  border-color: #b3a478;
+  background: #fffdf6;
+  box-shadow: none;
+}
+
+.print-mode :scope .brand-panel {
+  border-color: #6f5b2e;
+  background: #fffdf6;
+  box-shadow:
+    inset 0 0 0 2px #fffdf6,
+    inset 0 0 0 3px rgba(111, 91, 46, 0.6);
+}
+
+.print-mode :scope .brand-monogram {
+  border-color: #6f5b2e;
+  background: linear-gradient(150deg, #8f3a30, #7c3229);
+  color: #f6ead6;
+  box-shadow: none;
+}
+
+.print-mode :scope .sheet-region > .section-title,
+.print-mode :scope .equipment-slot-title,
+.print-mode :scope [data-template-page-id="character-story"] .question-column h2,
+.print-mode :scope [data-template-page-id="character-story"] .advancement-region > h2,
+.print-mode :scope .beast-tier h2 {
+  text-shadow: none;
+}
+
+.print-mode :scope [data-template-page-id="character-main"] .level-field,
+.print-mode :scope [data-template-page-id="character-main"] .trait-summary > [data-module-slot-id],
+.print-mode :scope [data-template-page-id="character-main"] .defense-summary > [data-module-slot-id] {
+  background: #fffdf6;
+}
+
+.print-mode :scope [data-template-page-id="character-main"] .level-field [data-part="input"] {
+  text-shadow: none;
+}
+
+.print-mode :scope [data-module-type] {
+  border-color: #c5b78f;
+  background: #fffdf6;
+}
+
+.print-mode :scope [data-module-type] [data-part="label"] {
+  color: #4f4832;
+}
+
+.print-mode :scope .resource-row [data-part="label"],
+.print-mode :scope [data-template-page-id="character-main"] .trait-summary [data-part="label"],
+.print-mode :scope [data-template-page-id="character-main"] .level-field [data-part="label"] {
+  color: #6f5b2e;
+}
+
+.print-mode :scope [data-template-page-id="character-main"] .defense-summary [data-part="label"] {
+  color: #5c6678;
+}
+
+.print-mode :scope [data-module-type="readOnlyDisplay"] [data-part="value"] {
+  color: #4f4832;
+}
+
+.print-mode :scope :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"],
+.print-mode :scope [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  color: #f6e3ae;
+}
+
+.print-mode :scope [data-module-type] :is([data-part="input"], [data-part="maximum-input"]),
+.print-mode :scope [data-module-type="freeText"] [data-markdown-preview],
+.print-mode :scope [data-module-type="longText"] [data-markdown-preview] {
+  border-color: #b3a478;
+  background: #fffdf6;
+  color: #2a2418;
+}
+
+.print-mode :scope [data-module-type="countableResource"] [data-part="marker"] {
+  filter: none;
+}
+
+.print-mode :scope .beast-reference-page,
+.print-mode :scope .companion-page {
+  background: #fdfaf0;
+}
+
+.print-mode :scope .companion-title {
+  border-left-color: #8f3a30;
+  background: linear-gradient(115deg, #6f5b2e, #5c4a24);
+  color: #fbf7ea;
+}
+
+.print-mode :scope .companion-evasion > span {
+  background: #6f5b2e;
+  color: #fbf7ea;
+}
+
+.print-mode :scope .companion-section h2 {
+  background: #fffdf6;
+}
+
+.print-mode :scope .companion-portrait [data-part="surface"],
+.print-mode :scope .companion-portrait [data-part="image"] {
+  background: #fdfaf0;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"] {
+  border-color: #b3a478;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+/* ===== 浏览器打印：与输出准备态同一份浅羊皮纸配色 ===== */
+
+@media print {
+  :scope {
+    color-scheme: light;
+
+    --dh-surface: #fbf7ea;
+    --dh-ink: #2a2418;
+    --dh-line: #c5b78f;
+    --dh-line-soft: #ddd3b6;
+    --dh-line-muted: #cfc3a0;
+    --dh-line-strong: #6f5b2e;
+    --dh-shell-surface: #fbf7ea;
+    --dh-shell-line: #8a7442;
+    --dh-beast-ink: #2a2418;
+    --dh-beast-text-secondary: #57503a;
+    --dh-beast-text-muted: #45402f;
+    --dh-beast-accent: #7a5c1e;
+    --dh-beast-line: #57503a;
+    --dh-beast-line-soft: #c5b78f;
+    --dh-companion-ink: #2a2418;
+    --dh-companion-line: #57503a;
+    --dh-companion-line-soft: #c5b78f;
+    --dh-companion-line-muted: #cfc3a0;
+    --dh-on-strong: #fbf7ea;
+    --skin-gold: #7a5c1e;
+    --skin-gold-bright: #8a6a24;
+    --skin-gold-deep: #6f5b2e;
+    --skin-rubric: #8f3a30;
+    --skin-rubric-deep: #7c3229;
+    --skin-silver: #5c6678;
+    --skin-vellum-hi: #f5efdd;
+    --skin-vellum: #fbf7ea;
+    --skin-vellum-deep: #f3ecd8;
+    --framework-surface: #fffdf6;
+    --framework-surface-subtle: #faf5e8;
+    --framework-surface-muted: #f1e9d4;
+    --framework-text: #2a2418;
+    --framework-text-strong: #1f1a10;
+    --framework-text-secondary: #4f4832;
+    --framework-text-muted: #6b6248;
+    --framework-border: #c5b78f;
+    --framework-border-strong: #8a7442;
+    --framework-border-subtle: #ddd3b6;
+    --framework-accent: #7a5c1e;
+    --framework-accent-active: #8a6a24;
+    --framework-on-accent: #fffdf6;
+    --framework-focus: #8f3a30;
+  }
+
+  .daggerheart-workspace {
+    background: #ffffff;
+  }
+
+  .daggerheart-sheet-pane {
+    box-shadow: none;
+  }
+
+  .codex-card-banner {
+    display: none;
+  }
+
+  .daggerheart-sheet {
+    background: linear-gradient(#fdfaf0, #fbf6e8);
+    box-shadow:
+      inset 0 0 0 1px rgba(111, 91, 46, 0.5),
+      inset 0 0 0 3px #fdfaf0,
+      inset 0 0 0 4px rgba(111, 91, 46, 0.3);
+  }
+
+  .identity-panel,
+  .upper-stat-layout,
+  .sheet-region,
+  .story-overview,
+  .question-column,
+  .advancement-region,
+  [data-template-page-id="character-story"] .advancement-grid article,
+  .beast-form {
+    border-color: #b3a478;
+    background: #fffdf6;
+    box-shadow: none;
+  }
+
+  .brand-panel {
+    border-color: #6f5b2e;
+    background: #fffdf6;
+    box-shadow:
+      inset 0 0 0 2px #fffdf6,
+      inset 0 0 0 3px rgba(111, 91, 46, 0.6);
+  }
+
+  .brand-monogram {
+    border-color: #6f5b2e;
+    background: linear-gradient(150deg, #8f3a30, #7c3229);
+    color: #f6ead6;
+    box-shadow: none;
+  }
+
+  .sheet-region > .section-title,
+  .equipment-slot-title,
+  [data-template-page-id="character-story"] .question-column h2,
+  [data-template-page-id="character-story"] .advancement-region > h2,
+  .beast-tier h2 {
+    text-shadow: none;
+  }
+
+  [data-template-page-id="character-main"] .level-field,
+  [data-template-page-id="character-main"] .trait-summary > [data-module-slot-id],
+  [data-template-page-id="character-main"] .defense-summary > [data-module-slot-id] {
+    background: #fffdf6;
+  }
+
+  [data-template-page-id="character-main"] .level-field [data-part="input"] {
+    text-shadow: none;
+  }
+
+  [data-module-type] {
+    border-color: #c5b78f;
+    background: #fffdf6;
+  }
+
+  [data-module-type] [data-part="label"] {
+    color: #4f4832;
+  }
+
+  .resource-row [data-part="label"],
+  [data-template-page-id="character-main"] .trait-summary [data-part="label"],
+  [data-template-page-id="character-main"] .level-field [data-part="label"] {
+    color: #6f5b2e;
+  }
+
+  [data-template-page-id="character-main"] .defense-summary [data-part="label"] {
+    color: #5c6678;
+  }
+
+  [data-module-type="readOnlyDisplay"] [data-part="value"] {
+    color: #4f4832;
+  }
+
+  :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"],
+  [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+    color: #f6e3ae;
+  }
+
+  [data-module-type] :is([data-part="input"], [data-part="maximum-input"]),
+  [data-module-type="freeText"] [data-markdown-preview],
+  [data-module-type="longText"] [data-markdown-preview] {
+    border-color: #b3a478;
+    background: #fffdf6;
+    color: #2a2418;
+  }
+
+  [data-module-type="countableResource"] [data-part="marker"] {
+    filter: none;
+  }
+
+  .beast-reference-page,
+  .companion-page {
+    background: #fdfaf0;
+  }
+
+  .companion-title {
+    border-left-color: #8f3a30;
+    background: linear-gradient(115deg, #6f5b2e, #5c4a24);
+    color: #fbf7ea;
+  }
+
+  .companion-evasion > span {
+    background: #6f5b2e;
+    color: #fbf7ea;
+  }
+
+  .companion-section h2 {
+    background: #fffdf6;
+  }
+
+  .companion-portrait [data-part="surface"],
+  .companion-portrait [data-part="image"] {
+    background: #fdfaf0;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"] {
+    border-color: #b3a478;
+    background: #ffffff;
+    box-shadow: none;
+  }
+}

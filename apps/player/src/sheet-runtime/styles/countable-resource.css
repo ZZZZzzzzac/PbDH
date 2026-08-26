@@ -1,0 +1,151 @@
+.counter {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  width: 100%;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px;
+}
+.counter-value-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.marker-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: var(--countable-marker-size, inherit);
+}
+
+.marker-group[data-text-fit="overflow"] {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.marker-group > [data-part="current-markers"],
+.marker-group > [data-part="remaining-markers"] {
+  display: contents;
+}
+
+.marker-cell {
+  display: inline-flex;
+  flex: 0 0 1em;
+  width: 1em;
+  height: 1em;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.marker-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.marker-image-fallback {
+  line-height: 1;
+}
+
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
+  display: none;
+}
+
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group,
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-text-fit="overflow"] {
+  height: auto;
+  min-height: calc(5.8mm + 4px);
+  padding-block: 2px;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  overflow: visible;
+  white-space: normal;
+}
+
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell {
+  flex: 0 0 5.8mm;
+  width: 5.8mm;
+  height: 5.8mm;
+}
+
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell::before {
+  display: inline-block;
+  flex: 0 0 5.5mm;
+  content: "□";
+  font-family: "Segoe UI Symbol", sans-serif;
+  font-size: 5.5mm;
+  line-height: 1;
+}
+
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-countable-unbounded="true"] .marker-cell {
+  display: none;
+}
+
+.stepper {
+  display: inline-grid;
+  place-items: center;
+  width: auto;
+  min-width: 28px;
+  height: 28px;
+  padding-inline: 2px;
+  border: 0;
+  background: var(--framework-surface);
+  color: var(--framework-text-strong);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--countable-stepper-font-size, inherit);
+}
+
+.stepper:disabled {
+  border-color: var(--framework-border-strong);
+  color: var(--framework-disabled-text);
+  cursor: not-allowed;
+}
+
+.stepper:focus-visible {
+  outline: 3px solid var(--framework-focus);
+  outline-offset: 2px;
+}
+
+.number-input {
+  field-sizing: content;
+  width: auto;
+  min-width: 0;
+  min-height: 28px;
+  border: 0;
+  padding-inline: 2px;
+  text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
+}
+
+.counter .value {
+  color: var(--framework-text-muted);
+  font-size: var(--countable-identifier-font-size, inherit);
+  white-space: nowrap;
+}
+
+.max-input {
+  width: 36px;
+  min-height: 24px;
+  border: 1px solid var(--framework-border-subtle);
+  text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
+}

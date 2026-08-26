@@ -1,0 +1,109 @@
+.player-sheet-runtime {
+  --framework-canvas: #eef1f2;
+  --framework-surface: #ffffff;
+  --framework-surface-subtle: #f8faf9;
+  --framework-surface-muted: #edf6f1;
+  --framework-text: #202426;
+  --framework-text-strong: #243438;
+  --framework-text-secondary: #425056;
+  --framework-text-muted: #607075;
+  --framework-border: #cdd5d7;
+  --framework-border-strong: #c4ccce;
+  --framework-border-subtle: #d8dfe1;
+  --framework-accent: #31565e;
+  --framework-accent-active: #27634f;
+  --framework-on-accent: #ffffff;
+  --framework-focus: #e0b441;
+  --framework-disabled-surface: #d8dfe1;
+  --framework-disabled-text: #657277;
+  --framework-danger: #8c2822;
+  --framework-danger-strong: #7b2721;
+  --framework-danger-border: #b85c56;
+  --framework-danger-surface: #fffafa;
+  --framework-success: #23543c;
+  --framework-success-border: #4f8c6b;
+  --framework-warning: #68460f;
+  --framework-warning-border: #c58b2b;
+  --framework-warning-surface: #fff8e8;
+  --framework-shadow: rgba(32, 36, 38, 0.22);
+  --framework-shadow-strong: rgba(32, 36, 38, 0.42);
+  --framework-overlay: rgba(18, 25, 27, 0.68);
+  --restricted-markdown-red: #a8443e;
+  --restricted-markdown-orange: #a35f24;
+  --restricted-markdown-yellow: #8a741f;
+  --restricted-markdown-green: #39704f;
+  --restricted-markdown-blue: #356a83;
+  --restricted-markdown-purple: #71558a;
+  --restricted-markdown-gray: #667074;
+  color: var(--framework-text);
+  background: var(--framework-canvas);
+  font-family: "Aptos", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.app-shell[data-framework-color-scheme="dark"] {
+  --framework-canvas: #12191b;
+  --framework-surface: #1c2629;
+  --framework-surface-subtle: #243033;
+  --framework-surface-muted: #293a3d;
+  --framework-text: #edf2f1;
+  --framework-text-strong: #f7f9f8;
+  --framework-text-secondary: #c6d0d2;
+  --framework-text-muted: #a7b5b8;
+  --framework-border: #435154;
+  --framework-border-strong: #5b6b6f;
+  --framework-border-subtle: #354347;
+  --framework-accent: #75aeb8;
+  --framework-accent-active: #83c4aa;
+  --framework-on-accent: #101719;
+  --framework-focus: #f4c95d;
+  --framework-disabled-surface: #334044;
+  --framework-disabled-text: #89979a;
+  --framework-danger: #ef8c84;
+  --framework-danger-strong: #ffaaa4;
+  --framework-danger-border: #d97670;
+  --framework-danger-surface: #3b2424;
+  --framework-success: #9bd5b7;
+  --framework-success-border: #69a887;
+  --framework-warning: #f4d58a;
+  --framework-warning-border: #d5a84f;
+  --framework-warning-surface: #3b3020;
+  --framework-shadow: rgba(0, 0, 0, 0.36);
+  --framework-shadow-strong: rgba(0, 0, 0, 0.56);
+  --framework-overlay: rgba(5, 9, 10, 0.78);
+  color-scheme: dark;
+}
+
+.player-sheet-runtime,
+.player-sheet-runtime * {
+  box-sizing: border-box;
+}
+
+.player-sheet-runtime {
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(90deg, rgba(32, 36, 38, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(32, 36, 38, 0.04) 1px, transparent 1px),
+    var(--framework-canvas);
+  background-size: 28px 28px;
+}
+
+.app-shell {
+  color: var(--framework-text);
+  background: var(--framework-canvas);
+}
+
+.player-sheet-runtime button,
+.player-sheet-runtime input,
+.player-sheet-runtime textarea {
+  font: inherit;
+}
+
+.player-sheet-runtime h1,
+.player-sheet-runtime h2 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0;
+}

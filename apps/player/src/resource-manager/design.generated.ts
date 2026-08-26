@@ -48,3 +48,43 @@ export const playerResourceManagerDesign = {
     "errorText": "#9F2E28"
   }
 } as const;
+
+export const playerCharacterSaveDesign = {
+  "document": "docs/design/player-app.op",
+  "page": "21 Character Saves",
+  "frame": "#44-US1 / Player / Character Saves / 存档列表与状态",
+  "canvas": {
+    "background": "#EEEAE4"
+  },
+  "appBar": {
+    "height": 56,
+    "background": "#1B1714"
+  },
+  "saveList": {
+    "width": 286,
+    "background": "#F3F0EA",
+    "border": "#C9C1B6"
+  },
+  "localSyncAction": {
+    "background": "#FAF7F1",
+    "text": "#21150F"
+  },
+  "conflict": {
+    "width": 700,
+    "height": 486,
+    "actions": [
+      "人物存档冲突 / 另存副本",
+      "人物存档冲突 / 使用云端",
+      "人物存档冲突 / 使用本机"
+    ]
+  },
+  "missingSystem": {
+    "width": 620,
+    "background": "#FFFDF8"
+  },
+  "account": {
+    "popupWidth": 360,
+    "recycleBinEntry": "平台账号弹窗 / 云端回收站入口",
+    "emptyState": "云端回收站 / 空状态"
+  }
+} as const;

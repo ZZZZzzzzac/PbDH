@@ -1,0 +1,181 @@
+.module-slot {
+  min-width: 0;
+}
+
+.module-slot:is(
+  [data-module-slot-type="resourcePicker"],
+  [data-module-slot-type="resourceComposer"]
+) {
+  display: flex;
+  align-items: stretch;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--framework-border);
+  background: var(--framework-surface);
+}
+
+.container-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.container[data-label-hidden="true"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+fieldset.container {
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  min-height: 30px;
+  padding: 0 4px;
+  border-right: 1px solid var(--framework-border-subtle);
+  color: var(--framework-text-secondary);
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  padding-left: 5px;
+  background: var(--framework-surface);
+  color: var(--framework-text);
+  font-size: 0.92rem;
+}
+
+.container-stack .label {
+  min-height: 24px;
+  border-right: 0;
+  border-bottom: 1px solid var(--framework-border-subtle);
+}
+
+.textarea {
+  min-height: 48px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  line-height: 1.2;
+  resize: vertical;
+}
+
+[data-module-type="longText"] [data-part="input"] {
+  height: var(--long-text-height, calc(4.8rem + 6px));
+  min-height: 0;
+  max-height: var(--long-text-height, calc(4.8rem + 6px));
+  overflow: auto;
+}
+
+[data-module-type="longText"] textarea[data-part="input"] {
+  resize: none;
+}
+
+.display-text {
+  margin: 0;
+  padding: 6px 8px 8px;
+  color: var(--framework-text);
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.read-only-image {
+  position: static;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--framework-disabled-surface);
+}
+
+.container:focus-within {
+  position: relative;
+  z-index: 2;
+}
+
+[data-markdown-editor="true"] {
+  display: flex;
+  min-width: 0;
+}
+
+[data-module-type="freeText"] > [data-markdown-editor="true"] {
+  align-self: stretch;
+  /* 用固定行高倍率(1.2em)代替 1lh，避免中文行高比数字/拉丁大时把输入框撑高。 */
+  min-height: calc(1.2em + 10px);
+}
+
+[data-module-type="freeText"] > [data-markdown-editor="true"] > [data-part="input"],
+[data-module-type="freeText"] > [data-part="input"] {
+  align-self: stretch;
+  height: 100%;
+  min-height: calc(1.2em + 10px);
+  line-height: 1.2;
+  text-align: center;
+}
+
+[data-module-type="freeText"] > [data-markdown-preview="true"]:not([hidden]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.markdown-preview {
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+[data-module-type="freeText"] [data-markdown-preview] p {
+  white-space: nowrap;
+  overflow: hidden;
+  overflow-wrap: normal;
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-inline-start: 1.25em;
+}
+
+.markdown-preview:focus-visible {
+  outline: 3px solid var(--framework-focus);
+  outline-offset: 2px;
+}
+
+.input:focus-visible {
+  outline: 3px solid var(--framework-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .label {
+    min-height: 34px;
+    border-right: 0;
+    border-bottom: 1px solid var(--framework-border-subtle);
+  }
+}

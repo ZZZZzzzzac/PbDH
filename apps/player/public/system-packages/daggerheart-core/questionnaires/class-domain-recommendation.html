@@ -1,0 +1,1299 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>匕首心 领域/职业测试</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:rgba(255,255,255,0.04);
+    --muted:rgba(255,255,255,0.75);
+    --accent:#6366F1;
+    /* 领域颜色定义 */
+    --arcane: #8b5cf6;      /* 奥术 - 紫罗兰色 */
+    --blade: #ef4444;       /* 利刃 - 正红色 */
+    --bone: #f8fafc;        /* 骸骨 - 白色 */
+    --codex: #3b82f6;        /* 典籍 - 蓝色 */
+    --grace: #ec4899;       /* 优雅 - 粉红色 */
+    --midnight: #94a3b8;    /* 午夜 - 灰黑色（调整为亮灰色确保可见） */
+    --sage: #10b981;        /* 贤者 - 绿色 */
+    --splendor: #f59e0b;    /* 辉耀 - 金黄色 */
+    --valor: #f97316;       /* 勇气 - 橙黄色 */
+    --dread: #574e91;      /* 恐怖 - 深紫色 */
+    --blood: #dc2626;       /* 鲜血 - 血红色 */
+  }
+
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    color:#e6eef8;
+    background:linear-gradient(180deg,#0b1020 0%,#0f1724 60%,#000 100%);
+    min-height:100vh;
+    padding:28px;
+  }
+  .container{
+    max-width:980px;
+    margin:0 auto;
+    background:var(--panel);
+    border-radius:16px;
+    padding:22px;
+    box-shadow:0 10px 30px rgba(2,6,23,0.6);
+  }
+  h1{margin:0 0 6px;font-size:28px}
+  p.lead{margin:0 0 18px;color:var(--muted)}
+  form{display:block}
+  fieldset{
+    border:1px solid rgba(255,255,255,0.03);
+    padding:12px;
+    border-radius:10px;
+    margin-bottom:12px;
+    background:rgba(255,255,255,0.02);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+  fieldset.answered {
+    border-color: rgba(99,102,241,0.3);
+    background: rgba(99,102,241,0.03);
+  }
+  legend{
+    font-weight:600;
+    margin-bottom:6px;
+    font-size:16px;
+    padding:0 8px;
+    background:var(--panel);
+    width:auto;
+    transition: color 0.3s ease;
+  }
+  fieldset.answered legend {
+    color: var(--accent);
+  }
+
+  /* 选项样式 - 每行一个 */
+  .options-container{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:8px;
+  }
+  .choice{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:12px;
+    border-radius:8px;
+    cursor:pointer;
+    border:1px solid rgba(255,255,255,0.05);
+    transition:all 0.2s ease;
+    background:rgba(255,255,255,0.02);
+  }
+  .choice:hover{
+    border-color:rgba(99,102,241,0.3);
+    background:rgba(99,102,241,0.02);
+  }
+  .choice.selected{
+    border-color:rgba(99,102,241,0.9);
+    background:rgba(99,102,241,0.08);
+  }
+  .choice input{
+    flex-shrink:0;
+    margin-top:2px;
+    accent-color:var(--accent);
+  }
+  .choice-text{
+    flex:1;
+    font-size:15px;
+    line-height:1.4;
+  }
+  .choice-letter{
+    font-weight:600;
+    color:var(--accent);
+    margin-right:6px;
+  }
+
+  .btn{
+    display:inline-block;
+    padding:12px 20px;
+    border-radius:8px;
+    border:0;
+    cursor:pointer;
+    font-weight:600;
+    font-size:15px;
+    margin-right:10px;
+    transition:all 0.2s ease;
+  }
+  .btn.primary{
+    background:var(--accent);
+    color:white;
+  }
+  .btn.primary:hover{
+    background:#4f46e5;
+    transform:translateY(-1px);
+  }
+  .btn.ghost{
+    background:rgba(255,255,255,0.05);
+    color:#e6eef8;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .btn.ghost:hover{
+    background:rgba(255,255,255,0.1);
+    transform:translateY(-1px);
+  }
+  .result{
+    margin-top:18px;
+    padding:18px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.05);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+    margin-top:12px;
+  }
+  .card{
+    padding:14px;
+    border-radius:8px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.03);
+    transition:all 0.2s ease;
+  }
+  .card:hover{
+    border-color:rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.03);
+  }
+  footer{
+    margin-top:24px;
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding-top:16px;
+    border-top:1px solid rgba(255,255,255,0.05);
+  }
+  footer a{
+    color:#818cf8;
+    text-decoration:none;
+  }
+  footer a:hover{
+    text-decoration:underline;
+  }
+
+  /* 问题计数器 */
+  .question-counter{
+    display:inline-block;
+    background:rgba(99,102,241,0.1);
+    color:var(--accent);
+    font-size:12px;
+    padding:2px 8px;
+    border-radius:12px;
+    margin-left:8px;
+  }
+
+  /* 领域颜色类 */
+  .domain-arcane{color:var(--arcane);}
+  .domain-blade{color:var(--blade);}
+  .domain-bone{color:var(--bone);}
+  .domain-codex{color:var(--codex);}
+  .domain-grace{color:var(--grace);}
+  .domain-midnight{color:var(--midnight);}
+  .domain-sage{color:var(--sage);}
+  .domain-splendor{color:var(--splendor);}
+  .domain-valor{color:var(--valor);}
+  .domain-dread{color:var(--dread);}
+  .domain-blood{color:var(--blood);}
+
+  /* 结果中的领域标签 */
+  .domain-name{
+    font-weight:600;
+    padding:2px 6px;
+    border-radius:4px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+
+  /* 优先级标签 */
+  .priority-tag {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-right: 8px;
+    font-weight: 600;
+  }
+  .priority-1 { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+  .priority-2 { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+  .priority-3 { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+  .priority-4 { background: rgba(99, 102, 241, 0.2); color: #6366F1; }
+  .priority-5 { background: rgba(99, 102, 241, 0.15); color: rgba(99, 102, 241, 0.8); }
+  .priority-6 { background: rgba(99, 102, 241, 0.1); color: rgba(99, 102, 241, 0.6); }
+
+  /* 未回答问题列表 */
+  .unanswered-list {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+  .unanswered-list h4 {
+    color: #ef4444;
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .unanswered-list ul {
+    margin: 0;
+    padding-left: 20px;
+    color: rgba(255,255,255,0.8);
+  }
+  .unanswered-list li {
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .unanswered-list a {
+    color: #818cf8;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .unanswered-list a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width:600px){
+    body{padding:12px;}
+    .container{padding:16px;}
+    .choice{padding:10px;}
+    .btn{display:block;width:100%;margin-bottom:8px;}
+    .btn.primary{margin-bottom:12px;}
+    legend{font-size:15px;}
+  }
+</style>
+</head>
+<body>
+  <div class="container" id="app">
+    <h1>匕首心Daggerheart 领域/职业测试</h1>
+    <p class="lead">请为每个问题选择最符合你的选项。点击"提交并计算结果"查看推荐。结果仅供角色创建时参考。<br>提醒：如果你想扮演自己，就用你自身的角度出发选择，如果你想代入你想扮演的角色，那就用角色思考的角度出发。
+    </p>
+
+    <form id="quizForm"></form>
+
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05);">
+      <button id="calcBtn" class="btn primary">提交并计算结果</button>
+      <button id="resetBtn" class="btn ghost" type="button">重置所有答案</button>
+      <div style="margin-top:12px;color:rgba(255,255,255,0.5);font-size:13px;">
+        <span id="answeredCount">0</span> / <span id="totalQuestions">30</span> 个问题已回答
+      </div>
+    </div>
+
+    <div id="resultArea"></div>
+
+    <footer>
+  作者：PolearmMaster丨匕首心规则交流群：791858682、583981590丨
+  <a href="https://lcnw6r5edbf2.feishu.cn/wiki/NwsAwL4JpiFsx2kXhCwc5FzWnsh" target="_blank">匕首心非官方中文资料站</a>丨
+  <a href="https://daggerheart.huijiwiki.com/wiki/%E9%A6%96%E9%A1%B5" target="_blank">匕首心非官方中文维基</a>
+</footer>
+  </div>
+
+<script>
+/* 领域颜色映射 */
+const domainColors = {
+  "奥术": "var(--arcane)",
+  "利刃": "var(--blade)",
+  "骸骨": "var(--bone)",
+  "典籍": "var(--codex)",
+  "优雅": "var(--grace)",
+  "午夜": "var(--midnight)",
+  "贤者": "var(--sage)",
+  "辉耀": "var(--splendor)",
+  "勇气": "var(--valor)",
+  "恐怖": "var(--dread)",
+  "鲜血": "var(--blood)"
+};
+
+/* 扩展后的 Questions 数据 - 缩减到30道题，每个问题4个选项，确保领域不重复 */
+const questions = [
+  {
+    id: 1,
+    q: "学习新事物时，你通常采用的方法是：",
+    options: [
+      {text: "跟随直觉尝试，在实践中摸索规律", domains:["奥术","勇气","恐怖"]},
+      {text: "先学习理论知识，建立系统框架", domains:["典籍","骸骨"]},
+      {text: "向经验丰富的人请教，吸收他人智慧", domains:["贤者","辉耀","利刃","优雅"]},
+      {text: "设定小目标逐步攻克，测试自己的极限", domains:["鲜血","午夜"]}
+    ]
+  },
+  {
+    id: 2,
+    q: "团队出现意见分歧，你更倾向于：",
+    options: [
+      {text: "主动调解矛盾，促进团队和谐", domains:["优雅","辉耀","勇气"]},
+      {text: "分析各方观点，寻找最优解", domains:["典籍","午夜","贤者"]},
+      {text: "保持中立观察，等待最佳介入时机", domains:["骸骨","恐怖","鲜血"]},
+      {text: "果断选择立场，推动快速决策", domains:["利刃","奥术"]}
+    ]
+  },
+  {
+    id: 3,
+    q: "对于个人突破，你认为最重要的是：",
+    options: [
+      {text: "挑战极限，即使付出一定代价", domains:["鲜血","勇气","恐怖"]},
+      {text: "循序渐进，保证可持续性", domains:["贤者","辉耀","典籍"]},
+      {text: "寻找灵感，依靠天赋和顿悟", domains:["奥术","优雅","午夜"]},
+      {text: "系统规划，精准执行每一步", domains:["骸骨","利刃"]}
+    ]
+  },
+  {
+    id: 4,
+    q: "面对未知风险，你的第一反应是：",
+    options: [
+      {text: "感到兴奋，视作探索机会", domains:["奥术","恐怖"]},
+      {text: "谨慎评估，制定应对方案", domains:["典籍","骸骨","贤者"]},
+      {text: "观察他人反应，收集更多信息", domains:["午夜","优雅","勇气"]},
+      {text: "立即行动，抢占先机", domains:["利刃","辉耀","鲜血"]}
+    ]
+  },
+  {
+    id: 5,
+    q: "帮助他人时，你更看重：",
+    options: [
+      {text: "情感上的理解与支持", domains:["辉耀","贤者","优雅"]},
+      {text: "实际问题的解决效率", domains:["利刃","典籍","骸骨"]},
+      {text: "传授方法，让对方能独立解决问题", domains:["勇气","奥术","午夜"]},
+      {text: "能够从对方得到什么回报或好处", domains:["恐怖","鲜血"]}
+    ]
+  },
+  {
+    id: 6,
+    q: "在陌生环境中，你的本能是：",
+    options: [
+      {text: "主动探索，快速熟悉", domains:["鲜血","勇气","奥术","利刃"]},
+      {text: "保持警觉，先观察再行动", domains:["午夜","恐怖","骸骨"]},
+      {text: "寻找熟悉的事物或模式", domains:["典籍","优雅"]},
+      {text: "随波逐流，顺从大多数人的做法", domains:["贤者","辉耀"]}
+    ]
+  },
+  {
+    id: 7,
+    q: "与人交往时，你更注重：",
+    options: [
+      {text: "自己展现的情感共鸣和感染力", domains:["优雅","辉耀","勇气"]},
+      {text: "信息传递的准确性和逻辑性", domains:["典籍","骸骨"]},
+      {text: "了解对方的真实意图", domains:["恐怖","鲜血","午夜"]},
+      {text: "能否与对方建立信任和默契", domains:["利刃","奥术","贤者"]}
+    ]
+  },
+  {
+    id: 8,
+    q: "为重要目标奋斗，你能接受：",
+    options: [
+      {text: "暂时的牺牲和消耗", domains:["鲜血","勇气"]},
+      {text: "平衡发展，避免极端", domains:["贤者","辉耀","优雅"]},
+      {text: "利用非常规手段", domains:["午夜","奥术","骸骨","恐怖"]},
+      {text: "严格的自我约束", domains:["典籍","利刃"]}
+    ]
+  },
+  {
+    id: 9,
+    q: "面对突发危机，你的应对风格是：",
+    options: [
+      {text: "立即行动，展现决断力", domains:["勇气","利刃","鲜血"]},
+      {text: "冷静分析，寻找最优解", domains:["典籍","骸骨","贤者"]},
+      {text: "调动内在力量或直觉", domains:["奥术","恐怖","辉耀"]},
+      {text: "观察局势，等待最佳时机", domains:["午夜","优雅"]}
+    ]
+  },
+  {
+    id: 10,
+    q: "你希望自己对世界的影响是：",
+    options: [
+      {text: "带来温暖、希望和治愈", domains:["辉耀","贤者","优雅"]},
+      {text: "揭示真相、规律和本质", domains:["典籍","午夜","骸骨","恐怖"]},
+      {text: "激发他人的潜能和勇气", domains:["勇气","利刃"]},
+      {text: "探索未知的边界和可能", domains:["鲜血","奥术"]}
+    ]
+  },
+  {
+    id: 11,
+    q: "掌握复杂技能时，你偏好：",
+    options: [
+      {text: "在实践中快速试错学习", domains:["奥术","鲜血"]},
+      {text: "系统学习理论和方法论", domains:["典籍","骸骨","优雅"]},
+      {text: "模仿大师", domains:["贤者","辉耀"]},
+      {text: "突破常规，用自己的方式去理解", domains:["午夜","利刃","勇气","恐怖"]}
+    ]
+  },
+  {
+    id: 12,
+    q: "当面对一个复杂的谜题时，你会：",
+    options: [
+      {text: "穷举各种可能性，凭直觉寻找突破口", domains:["奥术","鲜血"]},
+      {text: "系统分析，列出所有已知条件和逻辑关系", domains:["典籍","骸骨","午夜"]},
+      {text: "寻求他人帮助", domains:["优雅","辉耀","贤者"]},
+      {text: "从最不寻常的角度入手，挑战常规思路", domains:["利刃","勇气","恐怖"]}
+    ]
+  },
+  {
+    id: 13,
+    q: "表达自己观点时，你侧重于：",
+    options: [
+      {text: "如何打动和影响听众", domains:["优雅","贤者","辉耀"]},
+      {text: "如何准确传达信息", domains:["典籍","利刃","骸骨"]},
+      {text: "建立深层的情感连接", domains:["奥术","午夜","恐怖"]},
+      {text: "展现坚定的信念和立场", domains:["勇气","鲜血"]}
+    ]
+  },
+  {
+    id: 14,
+    q: "在团队中，你通常扮演：",
+    options: [
+      {text: "精神领袖或情感纽带", domains:["优雅","勇气"]},
+      {text: "战术执行或技术支持", domains:["骸骨","利刃","典籍"]},
+      {text: "观察者和策略制定者", domains:["午夜","恐怖","贤者"]},
+      {text: "激励者和推动者", domains:["鲜血","奥术","辉耀"]}
+    ]
+  },
+  {
+    id: 15,
+    q: "当你的同伴陷入棘手的情景时，你的本能是：",
+    options: [
+      {text: "立即提供安慰和支持", domains:["辉耀","贤者","优雅"]},
+      {text: "分析原因，寻找解决方案", domains:["典籍","骸骨"]},
+      {text: "直接越过他，亲自替他解决问题", domains:["恐怖","鲜血","午夜","奥术"]},
+      {text: "给予对方自己走出困局的勇气和自信", domains:["勇气","利刃"]}
+    ]
+  },
+  {
+    id: 16,
+    q: "在高压力工作下，你的状态是：",
+    options: [
+      {text: "压力激发潜能和专注力", domains:["鲜血","勇气","恐怖"]},
+      {text: "保持节奏，避免过度消耗", domains:["贤者","辉耀","优雅"]},
+      {text: "依靠直觉和灵感突破", domains:["奥术","午夜","利刃"]},
+      {text: "严格执行预定计划", domains:["骸骨","典籍"]}
+    ]
+  },
+  {
+    id: 17,
+    q: "你认为成长主要源于：",
+    options: [
+      {text: "内在天赋和直觉引导", domains:["奥术","贤者","恐怖"]},
+      {text: "后天训练和知识积累", domains:["典籍","骸骨","利刃"]},
+      {text: "挑战和逆境中的磨炼", domains:["勇气","鲜血","午夜"]},
+      {text: "与他人的互动和学习", domains:["辉耀","优雅"]}
+    ]
+  },
+  {
+    id: 18,
+    q: "处理人际关系时，你倾向于：",
+    options: [
+      {text: "真诚直接，以心换心", domains:["辉耀","勇气"]},
+      {text: "观察分析，把握分寸", domains:["午夜","典籍","恐怖"]},
+      {text: "用魅力和技巧建立联系", domains:["奥术","利刃","优雅"]},
+      {text: "保持适当距离和神秘感", domains:["骸骨","鲜血","贤者"]}
+    ]
+  },
+  {
+    id: 19,
+    q: "最让你感到不适的是：",
+    options: [
+      {text: "停滞不前，毫无变化", domains:["奥术","鲜血","利刃"]},
+      {text: "完全失控，无法预测", domains:["恐怖","午夜","贤者"]},
+      {text: "虚伪和表面的关系", domains:["优雅","勇气"]},
+      {text: "没有目标和方向", domains:["典籍","骸骨","辉耀"]}
+    ]
+  },
+  {
+    id: 20,
+    q: "保护重要的人，你选择：",
+    options: [
+      {text: "挺身而出，正面守护", domains:["勇气","辉耀","利刃"]},
+      {text: "暗中消除威胁", domains:["午夜","恐怖","鲜血"]},
+      {text: "提升他们的自我保护能力", domains:["典籍","骸骨","优雅"]},
+      {text: "为他们创造安全的环境和条件", domains:["贤者","奥术"]}
+    ]
+  },
+  {
+    id: 21,
+    q: "当需要做出重大决定时，你最信赖：",
+    options: [
+      {text: "内心的直觉和预感", domains:["奥术","贤者"]},
+      {text: "事实数据和逻辑分析", domains:["典籍","骸骨","午夜"]},
+      {text: "情感和价值观的指引", domains:["辉耀","优雅","勇气"]},
+      {text: "过往的经验和教训", domains:["利刃","鲜血","恐怖"]}
+    ]
+  },
+  {
+    id: 22,
+    q: "面对更强者，你的态度是：",
+    options: [
+      {text: "直接挑战，测试极限", domains:["勇气","利刃","鲜血"]},
+      {text: "观察学习，等待时机", domains:["午夜","典籍","骸骨"]},
+      {text: "寻找合作的可能性", domains:["优雅","贤者","辉耀"]},
+      {text: "探索非常规的应对方式", domains:["恐怖","奥术"]}
+    ]
+  },
+  {
+    id: 23,
+    q: "关于秘密，你认为：",
+    options: [
+      {text: "是信任和亲密的表现", domains:["辉耀","贤者","优雅"]},
+      {text: "是信息和力量的来源", domains:["午夜","典籍","恐怖"]},
+      {text: "是危险而诱人的存在", domains:["奥术","鲜血","勇气"]},
+      {text: "需要谨慎处理和守护", domains:["骸骨","利刃",]}
+    ]
+  },
+  {
+    id: 24,
+    q: "当你独自面对广阔的自然景色时，你会：",
+    options: [
+      {text: "感到与万物连接，内心平静而充满力量", domains:["贤者","辉耀","奥术"]},
+      {text: "仔细观察自然现象，思考其中的规律和原理", domains:["典籍","骸骨","午夜"]},
+      {text: "激发创作灵感，想用艺术表达这种感受", domains:["优雅"]},
+      {text: "想要探索未知区域，挑战自然的极限", domains:["鲜血","利刃","恐怖","勇气"]}
+    ]
+  },
+  {
+    id: 25,
+    q: "竞争场合中，你的策略：",
+    options: [
+      {text: "主动进攻，争取主导", domains:["利刃","勇气"]},
+      {text: "稳健防守，伺机反击", domains:["骸骨","午夜","贤者","辉耀"]},
+      {text: "智取而非力敌", domains:["典籍","优雅","奥术"]},
+      {text: "利用对手的弱点和恐惧", domains:["恐怖","鲜血"]}
+    ]
+  },
+  {
+    id: 26,
+    q: "影响他人时，你通常会：",
+    options: [
+      {text: "展示情感和故事", domains:["优雅","辉耀","贤者"]},
+      {text: "展示逻辑和事实", domains:["典籍","利刃","骸骨"]},
+      {text: "展示榜样和行动的力量", domains:["勇气","鲜血"]},
+      {text: "展示后果和下场", domains:["午夜","奥术","恐怖"]}
+    ]
+  },
+  {
+    id: 27,
+    q: "对于生命的终结，你看法是：",
+    options: [
+      {text: "自然的循环，应坦然接受", domains:["贤者","优雅"]},
+      {text: "需要研究和理解的课题", domains:["典籍","恐怖","鲜血"]},
+      {text: "提醒所有人应该珍惜当下", domains:["勇气","利刃","辉耀"]},
+      {text: "代表新的开始和可能性", domains:["奥术","午夜","骸骨"]}
+    ]
+  },
+  {
+    id: 28,
+    q: "证明自我价值时，你强调：",
+    options: [
+      {text: "人格魅力和社交能力", domains:["优雅","辉耀"]},
+      {text: "专业技能和实际成果", domains:["利刃","典籍","骸骨"]},
+      {text: "内在智慧和洞察力", domains:["奥术","贤者","恐怖"]},
+      {text: "意志力和坚韧度", domains:["鲜血","午夜","勇气"]}
+    ]
+  },
+  {
+    id: 29,
+    q: "当你面对一个受伤的陌生人时，你会：",
+    options: [
+      {text: "立即施救，给予情感支持", domains:["辉耀","贤者","优雅"]},
+      {text: "冷静评估伤情，采取科学方法", domains:["典籍","骸骨","利刃"]},
+      {text: "寻求专业帮助，协调资源", domains:["勇气","午夜","奥术"]},
+      {text: "考虑潜在风险，保护自身安全", domains:["恐怖","鲜血"]}
+    ]
+  },
+  {
+    id: 30,
+    q: "个人时间安排，你更喜欢：",
+    options: [
+      {text: "集体社交活动", domains:["优雅","勇气","辉耀"]},
+      {text: "思考与学习", domains:["典籍","午夜","恐怖"]},
+      {text: "艺术创作", domains:["奥术","贤者"]},
+      {text: "运动与户外活动", domains:["鲜血","利刃","骸骨"]}
+    ]
+  }
+];
+
+/* 领域说明（包含颜色） */
+const domainDescriptions = {
+  "奥术":{
+    desc:"倾向于依赖直觉与原初能量。你喜欢突破常规、直接尝试，追求力量的瞬间爆发与可能性。",
+    color:"var(--arcane)"
+  },
+  "利刃":{
+    desc:"崇尚效率与果断。你在冲突中冷静而致命，偏爱以技巧与行动解决问题。",
+    color:"var(--blade)"
+  },
+  "骸骨":{
+    desc:"专注身体与战术。你有严密的自律、敏锐的观察力与对细节的执着。",
+    color:"var(--bone)"
+  },
+  "典籍":{
+    desc:"热爱知识与系统化思维。你通过学习与推演掌控事物的本质。",
+    color:"var(--codex)"
+  },
+  "优雅":{
+    desc:"擅长言语与魅力。你能用语言与气场影响他人，善于社交与美学表达。",
+    color:"var(--grace)"
+  },
+  "午夜":{
+    desc:"习惯于隐秘与观察。你在暗影中行动，擅长收集情报与利用信息差。",
+    color:"var(--midnight)"
+  },
+  "贤者":{
+    desc:"与自然同频。你尊重生命的律动，既温柔又潜藏野性。",
+    color:"var(--sage)"
+  },
+  "辉耀":{
+    desc:"治愈与守护的象征。你富有同情心，愿意为他人承担与疗愈。",
+    color:"var(--splendor)"
+  },
+  "勇气":{
+    desc:"坚定的守护者。你以责任感与无畏保护队友，是战斗中的支柱。",
+    color:"var(--valor)"
+  },
+  "恐怖":{
+    desc:"从恐惧中汲取力量。你擅长掌控局势，享受混乱与痛苦，为达成目的可以不择手段。",
+    color:"var(--dread)"
+  },
+  "鲜血":{
+    desc:"以牺牲换取力量。你意志坚定、目标专注，愿以自身为代价换来胜利。",
+    color:"var(--blood)"
+  }
+};
+
+/* 职业数据与领域匹配关系（增加主要领域） */
+const classes = {
+  "吟游诗人 BARD": {
+    description: "吟游诗人是诸界域中最富魅力的存在。这个职业的成员深谙蛊惑之道，精于各类表演形式——无论是引吭高歌、演奏乐器、编织故事还是插科打诨。无论面对观众献艺还是与人单独交谈，诗人们总能在社交场合如鱼得水。该职业者通常在学院或行会中结盟受训，但自恋之风始终在吟游诗人群体中盛行。虽然他们最擅长凝聚人心，但性情乖戾的诗人同样能轻易让冒险队伍分崩离析。",
+    domains: ["优雅","典籍"],
+    primary: "优雅"  // 主要领域
+  },
+  "德鲁伊 DRUID": {
+    description: "成为一名德鲁伊不仅仅是一种职业，更是那些渴望从自然之中学习魔法并且保护自然之人的使命。那些常常默默地耕耘植物的德鲁伊们，很可能被人们低估；但那些驾驭着狂野自然之力的德鲁伊，则可能成为令人畏惧的存在。德鲁伊们倾向于在小型团体中培养他们的能力，这些团体往往因特定的理念或地域而联结，但也有一些德鲁伊选择独自行动。经过多年的研习和奉献，德鲁伊可以学会变形成野兽，并塑造自然本身。",
+    domains: ["贤者","奥术"],
+    primary: "贤者"
+  },
+  "守护者 GUARDIAN": {
+    description: "守护者之名涵盖诸多武术职业，其本质更在于坚定不移的道德准则与磐石般的意志，而非具体战斗方式。虽然许多守护者会为了国家或事业加入军事组织，但他们更倾向于追随少数他们真正关心的人，而不是盲从大多数的意志。即便面对压倒性劣势，守护者仍会以惊人凶悍之势作战，将守护同伴视为至高使命。那些伤害守护者盟友的人将自食其果——因为守护者必将以牙还牙，以血还血。",
+    domains: ["勇气","利刃"],
+    primary: "勇气"
+  },
+  "游侠 RANGER": {
+    description: "游侠是技艺高超的猎手，尽管他们拥有出色的战斗能力，却鲜少投身军旅。通过对身体的锤炼与野性的深刻理解，游侠成为狡黠的战术大师，凭借机敏和耐心追捕猎物。许多游侠会与动物伙伴并肩追踪作战，彼此缔结强大的精神羁绊。通过在荒野中磨练技艺，游侠成为了追踪专家，他们既是布设陷阱困敌的专家，亦是正面强攻的好手。",
+    domains: ["骸骨","贤者"],
+    primary: "骸骨"
+  },
+  "游荡者 ROUGE": {
+    description: "无论是态度还是行为，游荡者都可算是无赖恶棍之流。他们被人熟知的身份常常是骗子和小偷，但这个职业中的顶尖高手却能大隐隐于市。他们运用敏锐的智慧和刀刃，既能通过社交操纵欺骗敌人，也能轻松地撬锁、翻窗，又或是不动声色出手攻击。这些魔法技艺大师操纵阴影和移动，为他们的节目单上增添了一系列灵验且致命的表演。游荡者经常会建立行会，以结识未来的同伙、承接任务、磨练秘密技能，向其他懂行的人证明自身的盗贼荣耀。",
+    domains: ["午夜","优雅"],
+    primary: "午夜"
+  },
+  "神使 SERAPH": {
+    description: "神使是充满神圣使命的神圣战士和治疗者。界域中存在着众多不同的神祇，因此也有许多不同类型的神使被这些神祇所任命。他们的信条通常与他们神祇的领域或目标一致，例如保护弱者、执行复仇、守护土地或圣物，或者维护特定的信仰。有些神使会与军队或地区结盟，这让他们的统治者颇为满意，但其他圣战士则会与凡人界域的愚行作斗争。最好成为神使的盟友而不是敌人，因为对于那些违逆他们使命的人来说，他们是可怖的敌人。",
+    domains: ["辉耀", "勇气"],
+    primary: "辉耀"
+  },
+  "术士 SORCERER": {
+    description: "并非所有天生施法者都选择精进技艺，但那些潜心钻研之人终将成为强大的术士。这些施法者的天赋往往通过血脉传承，即便家族成员对其浑然不觉或刻意回避。术士的能力涵盖元素操控、幻象编织等诸多领域，许多修行者会根据各自的天赋结盟。成为强大术士的关键不在于攫取力量，而在于学会培育并驾驭与生俱来的能力。一个误入歧途或缺乏约束的术士所施展的魔法，终将成为祸乱世间的危险力量。",
+    domains: ["奥术","午夜"],
+    primary: "奥术"
+  },
+  "战士 WARRIOR": {
+    description: "成为一名战士需要经年累月——往往耗费一生的时间——投入武器与战斗技艺的磨炼。当多数好战之人仅锤炼蛮力时，战士深谙敏捷的身手与机敏头脑的重要性，这使他们成为诸界域中最受追捧的斗士。战士常受雇于军队、佣兵团乃至王室卫队，但无法继续精进武艺的职位终将埋没他们的潜力。众所周知，战士们都有自己偏爱的武器；挡在他们和他们的锋刃之间将是一个致命的错误。",
+    domains: ["利刃","骸骨"],
+    primary: "利刃"
+  },
+  "法师 WIZARD": {
+    description: "无论通过学院研习还是个人修行，被称为法师之人皆需经年累月借助书籍、宝石、药剂与草药等工具来获取并锤炼浩瀚魔力。一些法师穷尽一生专精某学派的法术，而另一些人则从各种不同的学派中学习。许多法师都成为了他们社群中睿智而强大的存在，或为统治者建言献策，或治疗疾病提供药品，甚至统领战争议会。虽然这些法师都以收集魔法学识为共同目标，但与他们发生冲突最多的也往往是他们的法师同僚——关于奥术秘藏的获取、保管与分享的话题导致的激烈争论，已酿成无数血案。",
+    domains: ["典籍","辉耀"],
+    primary: "典籍"
+  },
+  "格斗家 BRAWLER": {
+    description: "作为徒手格斗的专家，格斗家们运用令人叹为观止的武术技艺，将自己的身体打造成致命的武器。无论是在正规学校系统学习，还是通过一次次战斗逐步磨练，这一过程都极为严苛，使格斗家们的身心协调如一，达到人武合一的境界。",
+    domains: ["勇气","骸骨"],
+    primary: "勇气"
+  },
+  "邪术师 WARLOCK": {
+    description: "那些为了强大的力量而将自己的生命，甚至灵魂，献给异界宗主的存在，被称为邪术师。通常，这些凡人在做出如此牺牲时正处于极度绝望的境地——为了保护自己或挚爱之人，协助族群，寻求复仇，提升地位，或是追逐某种野心。",
+    domains: ["恐怖","优雅"],
+    primary: "恐怖"
+  },
+  "女巫 WITCH": {
+    description: "女巫是与自然之力以及异界域实体建立联系的魔法使用者。女巫通过巫术技艺、仪式、咒语、草药、岩石、蜡烛及其他工具唤引力量，以实现自身意志与施展强大法术。",
+    domains: ["恐怖","贤者"],
+    primary: "恐怖"
+  },
+  "刺客 ASSASSIN": {
+    description: "刺客是突破防御、制造痛苦与致命打击的大师。当刺客标记某人作为死亡目标时，他们会以毫不迟疑的杀意追猎目标。",
+    domains: ["利刃","午夜"],
+    primary: "利刃"
+  },
+  "血猎人 BLOOD HUNTER": {
+    description: "掌握鲜血秘法，探索自身血液力量中蕴藏的秘密。血猎人是技艺精湛的实践者，他们孜孜不倦地追求新的魔法，以及自身体内等待发掘的强大力量。",
+    domains: ["鲜血","骸骨"],
+    primary: "鲜血"
+  },
+  "召唤师 SUMMONER": {
+    description: "以秘仪为引，以命血为媒，召唤来自异界的实体。借助所唤超然存在之力，召唤师不断求索，旨在寻找新的手段，为世间降下的恩赐与灾厄。",
+    domains: ["鲜血","辉耀"],
+    primary: "鲜血"
+  }
+};
+
+/* PbDH Stable Resource Entry IDs. The Void entries resolve when that Resource Extension is installed. */
+const classResourceIds = {
+  "吟游诗人 BARD": "职业:吟游诗人",
+  "德鲁伊 DRUID": "职业:德鲁伊",
+  "守护者 GUARDIAN": "职业:守护者",
+  "游侠 RANGER": "职业:游侠",
+  "游荡者 ROUGE": "职业:游荡者",
+  "神使 SERAPH": "职业:神使",
+  "术士 SORCERER": "职业:术士",
+  "战士 WARRIOR": "职业:战士",
+  "法师 WIZARD": "职业:法师",
+  "格斗家 BRAWLER": "虚空:职业:格斗家",
+  "邪术师 WARLOCK": "虚空:职业:邪术师",
+  "女巫 WITCH": "虚空:职业:女巫",
+  "刺客 ASSASSIN": "虚空:职业:刺客",
+  "血猎人 BLOOD HUNTER": "虚空:职业:血猎人",
+  "召唤师 SUMMONER": "虚空:职业:召唤师"
+};
+
+const allDomains = Object.keys(domainDescriptions);
+
+/* 渲染问卷 */
+const form = document.getElementById('quizForm');
+const answers = {};
+const totalQuestions = questions.length;
+
+// 存储问题元素引用，便于后续高亮
+const questionElements = {};
+
+function updateAnsweredCount() {
+  const answered = Object.keys(answers).length;
+  document.getElementById('answeredCount').textContent = answered;
+  document.getElementById('totalQuestions').textContent = totalQuestions;
+}
+
+// 更新问题高亮状态
+function updateQuestionHighlight(qid) {
+  const fieldset = questionElements[qid];
+  if (fieldset) {
+    if (answers[qid]) {
+      fieldset.classList.add('answered');
+    } else {
+      fieldset.classList.remove('answered');
+    }
+  }
+}
+
+// 获取未回答的问题列表
+function getUnansweredQuestions() {
+  const unanswered = [];
+  for (let i = 1; i <= totalQuestions; i++) {
+    if (!answers[i]) {
+      unanswered.push(i);
+    }
+  }
+  return unanswered;
+}
+
+// 跳转到指定问题
+function scrollToQuestion(qid) {
+  const fieldset = questionElements[qid];
+  if (fieldset) {
+    fieldset.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // 添加短暂的闪烁效果
+    fieldset.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.5)';
+    setTimeout(() => {
+      fieldset.style.boxShadow = '';
+    }, 1000);
+  }
+}
+
+// 创建带颜色的领域标签（仅用于结果页面）
+function createColoredDomainName(domain) {
+  const color = domainColors[domain] || 'var(--accent)';
+  return `<span class="domain-name" style="color: ${color}; border-color: ${color}60;">${domain}</span>`;
+}
+
+function makeChoiceElement(q) {
+  const fs = document.createElement('fieldset');
+  fs.id = `question-${q.id}`;
+  const legend = document.createElement('legend');
+  legend.innerHTML = q.q + ' <span class="question-counter">' + q.id + '/' + totalQuestions + '</span>';
+  fs.appendChild(legend);
+
+  const container = document.createElement('div');
+  container.className = 'options-container';
+
+  q.options.forEach((option, index) => {
+    const choiceLetter = String.fromCharCode(65 + index); // A, B, C, D
+    const label = document.createElement('label');
+    label.className = 'choice';
+    label.tabIndex = 0;
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'q' + q.id;
+    input.value = choiceLetter;
+
+    input.addEventListener('change', () => {
+      answers[q.id] = choiceLetter;
+      updateSelectionStyles(fs, q.id);
+      updateQuestionHighlight(q.id);
+      updateAnsweredCount();
+    });
+
+    label.appendChild(input);
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'choice-text';
+    textDiv.innerHTML = `<span class="choice-letter">${choiceLetter}.</span> ${option.text}`;
+
+    label.appendChild(textDiv);
+
+    label.addEventListener('click', (e) => {
+      if(e.target.tagName.toLowerCase() !== 'input') {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+
+    container.appendChild(label);
+  });
+
+  fs.appendChild(container);
+
+  // 存储问题元素引用
+  questionElements[q.id] = fs;
+
+  // 初始高亮状态
+  updateQuestionHighlight(q.id);
+
+  return fs;
+}
+
+function updateSelectionStyles(fieldset, qid) {
+  const labels = fieldset.querySelectorAll('label.choice');
+  labels.forEach(label => {
+    const input = label.querySelector('input');
+    if(input && input.checked) label.classList.add('selected');
+    else label.classList.remove('selected');
+  });
+}
+
+/* build form */
+questions.forEach(q => {
+  const el = makeChoiceElement(q);
+  form.appendChild(el);
+});
+
+// 初始化已回答数量显示
+updateAnsweredCount();
+
+/* calculate logic */
+function calculate() {
+  const scores = {};
+  allDomains.forEach(d => scores[d] = 0);
+
+  questions.forEach(q => {
+    const choice = answers[q.id];
+    if(!choice) return;
+
+    const choiceIndex = choice.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+    const picked = q.options[choiceIndex];
+
+    if(picked && picked.domains) {
+      picked.domains.forEach(d => { scores[d] = (scores[d] || 0) + 1; });
+    }
+  });
+
+  const ranked = Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({domain:k,score:v}));
+
+  // 获取前三名领域
+  const topDomain = ranked[0]?.domain;
+  const secondDomain = ranked[1]?.domain;
+  const thirdDomain = ranked[2]?.domain;
+
+  // 计算职业匹配度
+  const classScores = {};
+  Object.entries(classes).forEach(([className, classData]) => {
+    let score = 0;
+    classData.domains.forEach(domain => {
+      score += scores[domain] || 0;
+    });
+    const avgScore = score / classData.domains.length; // 计算平均分
+
+    // 主要领域匹配度加分
+    let bonus = 0;
+    if (classData.primary === topDomain) {
+      bonus = 5; // 主要领域与最适合领域匹配，大幅加分
+    } else if (classData.primary === secondDomain) {
+      bonus = 2; // 主要领域与第二适合领域匹配，适当加分
+    }
+
+    classScores[className] = avgScore + bonus;
+  });
+
+  // 排序职业（根据调整后的得分）
+  const rankedClasses = Object.entries(classScores)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, score], index) => ({
+      name,
+      score,
+      data: classes[name],
+      rank: index + 1
+    }));
+
+  return { scores, ranked, rankedClasses, topDomain, secondDomain, thirdDomain };
+}
+
+/* render result */
+const resultArea = document.getElementById('resultArea');
+function renderResult(res) {
+  resultArea.innerHTML = '';
+  if(!res) return;
+
+  const answeredCount = Object.keys(answers).length;
+  const unansweredQuestions = getUnansweredQuestions();
+
+  if (answeredCount < totalQuestions) {
+    const warning = document.createElement('div');
+    warning.className = 'result';
+
+    // 构建未回答问题列表HTML
+    let unansweredListHTML = '';
+    if (unansweredQuestions.length > 0) {
+      unansweredListHTML = `
+        <div class="unanswered-list">
+          <h4>⚠️ 以下题目未回答：</h4>
+          <ul>
+            ${unansweredQuestions.map(qid =>
+              `<li>第 ${qid} 题：<a onclick="scrollToQuestion(${qid})" title="点击跳转到该题">${questions.find(q => q.id === qid).q.substring(0, 40)}...</a></li>`
+            ).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    warning.innerHTML = `
+      <div style="color: var(--splendor); margin-bottom: 12px;">
+        ⚠️ 你只回答了 ${answeredCount}/${totalQuestions} 个问题
+      </div>
+      <p>建议完成所有问题以获得更准确的结果。是否继续查看当前结果？</p>
+      ${unansweredListHTML}
+      <div style="margin-top: 16px;">
+        <button id="continueBtn" class="btn primary" style="margin-right: 10px;">继续查看结果</button>
+        <button id="jumpToUnansweredBtn" class="btn ghost" ${unansweredQuestions.length === 0 ? 'disabled style="opacity:0.5"' : ''}>跳转到未回答题目</button>
+      </div>
+    `;
+    resultArea.appendChild(warning);
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      renderFullResult(res);
+    });
+
+    // 跳转到第一个未回答的题目
+    if (unansweredQuestions.length > 0) {
+      document.getElementById('jumpToUnansweredBtn').addEventListener('click', () => {
+        scrollToQuestion(unansweredQuestions[0]);
+      });
+    }
+  } else {
+    renderFullResult(res);
+  }
+}
+
+function renderFullResult(res) {
+  resultArea.innerHTML = '';
+  const top = res.ranked[0];
+  const second = res.ranked[1];
+  const third = res.ranked[2];
+
+  // 获取前三名领域
+  const topDomain = res.topDomain;
+  const secondDomain = res.secondDomain;
+  const thirdDomain = res.thirdDomain;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'result';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = '测试结果';
+  h2.style.marginTop='0';
+  wrap.appendChild(h2);
+
+  const best = document.createElement('div');
+  best.innerHTML = `
+    <h3>最适合你的领域：</h3>
+    <p style="font-size:20px;font-weight:700;margin:6px 0;">
+      ${top ? createColoredDomainName(top.domain) : '—'}
+    </p>
+    <p style="opacity:0.9;margin-top:8px;">
+      ${top ? domainDescriptions[top.domain].desc : ''}
+    </p>
+  `;
+  wrap.appendChild(best);
+
+  const others = document.createElement('div');
+  others.innerHTML = '<h3 style="margin-top:16px">你也可以试着寻求其他力量：</h3>';
+  const ul = document.createElement('ul');
+  ul.style.marginTop='8px';
+  ul.style.paddingLeft='20px';
+
+  if(second) {
+    const li = document.createElement('li');
+    li.style.marginBottom='8px';
+    li.innerHTML = `<strong>${createColoredDomainName(second.domain)}</strong> — ${domainDescriptions[second.domain].desc}`;
+    ul.appendChild(li);
+  }
+  if(third) {
+    const li2 = document.createElement('li');
+    li2.style.marginBottom='8px';
+    li2.innerHTML = `<strong>${createColoredDomainName(third.domain)}</strong> — ${domainDescriptions[third.domain].desc}`;
+    ul.appendChild(li2);
+  }
+  others.appendChild(ul);
+  wrap.appendChild(others);
+
+  // 职业推荐部分 - 新的六优先级排序系统
+  const classRecommendation = document.createElement('div');
+  classRecommendation.innerHTML = '<h3 style="margin-top:18px">职业推荐：</h3>';
+
+  const classGrid = document.createElement('div');
+  classGrid.className = 'grid';
+
+  // 获取所有职业并按新优先级排序
+  const allClasses = res.rankedClasses.map(c => c);
+
+  // 新的六优先级分组系统
+  const priorityGroups = [[], [], [], [], [], []]; // 6个优先级组
+
+  allClasses.forEach(classInfo => {
+    const classDomains = classInfo.data.domains;
+    const classPrimary = classInfo.data.primary;
+
+    // 检查优先级1：得分第一的领域+得分第二的领域构成的职业
+    if (classDomains.length === 2 &&
+        classDomains.includes(topDomain) &&
+        classDomains.includes(secondDomain)) {
+      priorityGroups[0].push(classInfo);
+    }
+    // 检查优先级2：得分第一的领域+得分第三的领域构成的职业
+    else if (classDomains.length === 2 &&
+             classDomains.includes(topDomain) &&
+             classDomains.includes(thirdDomain)) {
+      priorityGroups[1].push(classInfo);
+    }
+    // 检查优先级3：得分第二的领域+得分第三的领域构成的职业
+    else if (classDomains.length === 2 &&
+             classDomains.includes(secondDomain) &&
+             classDomains.includes(thirdDomain)) {
+      priorityGroups[2].push(classInfo);
+    }
+    // 检查优先级4：以得分第一的领域为主要领域的职业
+    else if (classPrimary === topDomain) {
+      priorityGroups[3].push(classInfo);
+    }
+    // 检查优先级5：以得分第二的领域为主要领域的职业
+    else if (classPrimary === secondDomain) {
+      priorityGroups[4].push(classInfo);
+    }
+    // 检查优先级6：以得分第三的领域为主要领域的职业
+    else if (classPrimary === thirdDomain) {
+      priorityGroups[5].push(classInfo);
+    }
+    // 其他职业（不属于任何优先级）不显示在推荐中
+  });
+
+  // 在每个优先级组内部按照最终得分排序
+  priorityGroups.forEach(group => {
+    group.sort((a, b) => b.score - a.score);
+  });
+
+  // 合并所有优先级组，按顺序取前3个职业
+  const sortedClasses = [];
+  for (let i = 0; i < priorityGroups.length; i++) {
+    if (sortedClasses.length >= 3) break;
+
+    // 为组内每个职业添加优先级标签
+    priorityGroups[i].forEach(classInfo => {
+      if (sortedClasses.length < 3) {
+        classInfo.priorityLevel = i + 1;
+        sortedClasses.push(classInfo);
+      }
+    });
+  }
+
+  // 添加优先级标签说明
+  if (sortedClasses.length > 0) {
+    const priorityNote = document.createElement('div');
+    priorityNote.style.color = 'var(--accent)';
+    priorityNote.style.fontSize = '14px';
+    priorityNote.style.marginBottom = '12px';
+    priorityNote.innerHTML = '💡 职业按照与你的领域匹配度从高到低排序。';
+    classRecommendation.appendChild(priorityNote);
+  }
+
+  // 显示前三个职业
+  sortedClasses.forEach((classInfo, index) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    // 根据优先级设置不同的样式
+    let priorityLabel = '';
+    let borderStyle = '';
+    let titleColor = '';
+
+    switch(classInfo.priorityLevel) {
+      case 1:
+        priorityLabel = `<span class="priority-tag priority-1">${topDomain} + ${secondDomain}</span>`;
+        borderStyle = '2px solid #10b981';
+        titleColor = '#10b981';
+        break;
+      case 2:
+        priorityLabel = `<span class="priority-tag priority-2">${topDomain} + ${thirdDomain}</span>`;
+        borderStyle = '2px solid #3b82f6';
+        titleColor = '#3b82f6';
+        break;
+      case 3:
+        priorityLabel = `<span class="priority-tag priority-3">${secondDomain} + ${thirdDomain}</span>`;
+        borderStyle = '2px solid #8b5cf6';
+        titleColor = '#8b5cf6';
+        break;
+      case 4:
+        priorityLabel = `<span class="priority-tag priority-4">主要领域: ${topDomain}</span>`;
+        borderStyle = '1px solid rgba(99,102,241,0.7)';
+        titleColor = 'rgba(99,102,241,0.9)';
+        break;
+      case 5:
+        priorityLabel = `<span class="priority-tag priority-5">主要领域: ${secondDomain}</span>`;
+        borderStyle = '1px solid rgba(99,102,241,0.4)';
+        titleColor = 'rgba(99,102,241,0.7)';
+        break;
+      case 6:
+        priorityLabel = `<span class="priority-tag priority-6">主要领域: ${thirdDomain}</span>`;
+        borderStyle = '1px solid rgba(99,102,241,0.3)';
+        titleColor = 'rgba(99,102,241,0.5)';
+        break;
+    }
+
+    card.style.border = borderStyle;
+    card.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;margin-bottom:8px;">
+        ${priorityLabel}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong style="color: ${titleColor}">${classInfo.name}</strong>
+      </div>
+      <div style="margin-top:8px;color:rgba(255,255,255,0.85)">${classInfo.data.description}</div>
+      <div style="margin-top:8px; font-size: 13px;">
+        关联领域：${classInfo.data.domains.map(d => createColoredDomainName(d)).join(' ')}
+      </div>
+    `;
+    classGrid.appendChild(card);
+  });
+
+  classRecommendation.appendChild(classGrid);
+  const recommendedClass = sortedClasses[0];
+  const recommendedClassId = recommendedClass ? classResourceIds[recommendedClass.name] : null;
+  if (recommendedClass && recommendedClassId) {
+    const applyButton = document.createElement('button');
+    applyButton.className = 'btn primary';
+    applyButton.type = 'button';
+    applyButton.style.marginTop = '12px';
+    applyButton.textContent = `将“${recommendedClass.name}”填入人物卡`;
+    applyButton.addEventListener('click', () => {
+      window.parent.postMessage({
+        type: 'pbdh-questionnaire-result',
+        result: {
+          protocolVersion: '1',
+          interactions: [{
+            type: 'resourceSelected',
+            sourceModuleId: 'pick-class',
+            libraryId: 'classes',
+            entryIds: [recommendedClassId]
+          }]
+        }
+      }, '*');
+    });
+    classRecommendation.appendChild(applyButton);
+  }
+  wrap.appendChild(classRecommendation);
+
+  const allTitle = document.createElement('h3');
+  allTitle.textContent='完整得分：';
+  allTitle.style.marginTop='20px';
+  wrap.appendChild(allTitle);
+
+  const grid = document.createElement('div');
+  grid.className='grid';
+  res.ranked.forEach(r => {
+    const card = document.createElement('div');
+    card.className='card';
+    const domainInfo = domainDescriptions[r.domain];
+    const color = domainInfo ? domainInfo.color : 'var(--accent)';
+
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong style="color:${color}">${r.domain}</strong>
+        <span style="opacity:0.85">${r.score} 分</span>
+      </div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.85)">
+        ${domainInfo ? domainInfo.desc : ''}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+
+  resultArea.appendChild(wrap);
+  resultArea.scrollIntoView({behavior:'smooth'});
+}
+
+/* button handlers */
+document.getElementById('calcBtn').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const res = calculate();
+  renderResult(res);
+});
+
+document.getElementById('resetBtn').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const inputs = document.querySelectorAll('input[type=radio]');
+  inputs.forEach(i=>{ i.checked = false; });
+  for(const k in answers) delete answers[k];
+  const labels = document.querySelectorAll('label.choice');
+  labels.forEach(l=>l.classList.remove('selected'));
+
+  // 清除所有问题高亮
+  Object.keys(questionElements).forEach(qid => {
+    updateQuestionHighlight(qid);
+  });
+
+  resultArea.innerHTML = '';
+  updateAnsweredCount();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+document.querySelectorAll('label.choice').forEach(label=>{
+  label.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' ') {
+      const input = label.querySelector('input');
+      if(input) {
+        input.checked = true;
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      e.preventDefault();
+    }
+  });
+});
+
+</script>
+</body>
+</html>

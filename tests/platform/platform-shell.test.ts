@@ -47,7 +47,7 @@ describe("Platform Shell composition", () => {
 
   it("composes surfaces that do not render their own global app bar", async () => {
     const surfaces = await Promise.all([
-      readSource("apps/player/src/PlayerAppPrototype.tsx"),
+      readSource("apps/player/src/PlayerSheetSurface.tsx"),
       readSource("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx"),
       readSource("apps/market/src/MarketApp.tsx"),
     ]);

@@ -20,7 +20,7 @@ export type TabletopInstanceResourceCopy = {
   source: {
     packageId: string;
     resourceId: string;
-  };
+  } | null;
   template: {
     id: string;
     version: string;

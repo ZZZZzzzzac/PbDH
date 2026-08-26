@@ -1,0 +1,15 @@
+{
+  "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+  "urlPath": "daggerheart",
+  "name": "匕首心",
+  "version": "1.0.0",
+  "releaseVersion": "0.0.0-dev",
+  "directory": "daggerheart-core",
+  "inventoryPath": ".pbdh-runtime-files.json",
+  "fileCount": 54,
+  "metadataFileCount": 40,
+  "loadingPresentation": {
+    "标语": "正在掷二元骰...",
+    "强调色": "#a83a24"
+  }
+}

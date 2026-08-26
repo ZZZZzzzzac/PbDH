@@ -1,0 +1,126 @@
+.guide-spotlight-root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.guide-mask-region {
+  position: fixed;
+  z-index: 50;
+  background: var(--framework-overlay);
+  pointer-events: auto;
+}
+
+.guide-target-ring {
+  position: fixed;
+  z-index: 51;
+  border: 3px solid #f4c95d;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px rgba(244, 201, 93, 0.25), 0 8px 28px rgba(18, 25, 27, 0.28);
+  pointer-events: none;
+}
+
+.guide-panel {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  gap: 16px;
+  width: fit-content;
+  min-width: min(320px, calc(100vw - 24px));
+  max-width: min(720px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--framework-text-strong);
+  border-radius: 8px;
+  background: var(--framework-surface);
+  color: var(--framework-text);
+  box-shadow: 0 20px 60px rgba(18, 25, 27, 0.34);
+  pointer-events: auto;
+}
+
+.guide-panel-default:not(.guide-panel-mobile) {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.guide-step-content {
+  display: grid;
+  gap: 8px;
+}
+
+.guide-progress {
+  margin: 0;
+  color: var(--framework-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.guide-panel h2,
+.guide-instructions,
+.guide-target-unavailable {
+  margin: 0;
+}
+
+.guide-instructions {
+  white-space: normal;
+  line-height: 1.6;
+}
+
+.guide-instructions > p {
+  margin: 0;
+}
+
+.guide-instructions > :is(ul, ol) {
+  margin-block: 0.35em;
+  padding-inline-start: 1.5em;
+}
+
+.guide-instructions li + li {
+  margin-top: 0.2em;
+}
+
+.guide-target-unavailable {
+  padding: 10px 12px;
+  border-left: 4px solid var(--framework-warning-border);
+  background: var(--framework-warning-surface);
+  color: var(--framework-warning);
+}
+
+.guide-actions {
+  position: fixed;
+  z-index: 61;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px;
+  border: 1px solid var(--framework-text-strong);
+  border-radius: 8px;
+  background: var(--framework-surface);
+  box-shadow: 0 8px 24px rgba(18, 25, 27, 0.28);
+  pointer-events: auto;
+}
+
+.guide-actions-default {
+  position: sticky;
+  bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .guide-panel-mobile {
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px;
+    width: auto;
+    max-height: min(44vh, 360px);
+  }
+}
+
+@media print {
+  .guide-spotlight-root {
+    display: none !important;
+  }
+}

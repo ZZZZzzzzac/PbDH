@@ -26,7 +26,7 @@ test("Platform Shell is the only frontend app-to-app composition seam", () => {
     [],
   );
   assert.deepEqual(
-    validateImport("apps/player/src/PlayerAppPrototype.tsx", "@pbdh/market"),
+    validateImport("apps/player/src/PlayerSheetSurface.tsx", "@pbdh/market"),
     ["frontend app surfaces must not depend on the Platform Shell or peer apps"],
   );
   assert.deepEqual(

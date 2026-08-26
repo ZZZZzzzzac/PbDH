@@ -8,7 +8,7 @@
         {
           "type": "frame",
           "id": "player-coverage-board",
-          "name": "#31 / Player / Resource Acquisition / PRD Coverage",
+          "name": "#31 #44 / Player / Resource Acquisition and Character Saves / PRD Coverage",
           "x": 0.0,
           "y": 0.0,
           "width": 1440.0,
@@ -31,7 +31,7 @@
               "id": "coverage-title",
               "name": "覆盖表 / 标题",
               "locked": false,
-              "content": "Player 资源取得与兼容路由",
+              "content": "Player 资源取得与人物存档",
               "fontFamily": "Noto Sans SC",
               "fontSize": 28.0,
               "fontWeight": 700,
@@ -47,7 +47,7 @@
               "id": "coverage-subtitle",
               "name": "覆盖表 / Issue",
               "locked": false,
-              "content": "#31 · 上层 PRD #15 / #4",
+              "content": "#31 / #44 · 上层 PRD #15 / #16",
               "fontFamily": "Noto Sans SC",
               "fontSize": 13.0,
               "fontWeight": 500,
@@ -479,6 +479,210 @@
                       "locked": false,
                       "width": 530.0,
                       "content": "11 States & Conflicts / 离线",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n678",
+                  "name": "覆盖表 / 本地存档首次同步",
+                  "role": "table-row",
+                  "width": "fill_container",
+                  "height": 52.0,
+                  "layout": "horizontal",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#F8F5F0"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n679",
+                      "name": "覆盖表 / 本地存档首次同步 / 场景",
+                      "locked": false,
+                      "width": 290.0,
+                      "height": "fit_content",
+                      "content": "登录前已有本地存档",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0,
+                      "fontWeight": 600
+                    },
+                    {
+                      "type": "text",
+                      "id": "n680",
+                      "name": "覆盖表 / 本地存档首次同步 / 决策",
+                      "locked": false,
+                      "width": 520.0,
+                      "height": "fit_content",
+                      "content": "用户显式同步；不因登录自动上传",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    },
+                    {
+                      "type": "text",
+                      "id": "n681",
+                      "name": "覆盖表 / 本地存档首次同步 / 画面",
+                      "locked": false,
+                      "width": 530.0,
+                      "height": "fit_content",
+                      "content": "21 Character Saves / 存档列表与首次同步",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n682",
+                  "name": "覆盖表 / 登录后新建存档",
+                  "role": "table-row",
+                  "width": "fill_container",
+                  "height": 52.0,
+                  "layout": "horizontal",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#FFFFFF"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n683",
+                      "name": "覆盖表 / 登录后新建存档 / 场景",
+                      "locked": false,
+                      "width": 290.0,
+                      "height": "fit_content",
+                      "content": "登录后创建人物存档",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0,
+                      "fontWeight": 600
+                    },
+                    {
+                      "type": "text",
+                      "id": "n684",
+                      "name": "覆盖表 / 登录后新建存档 / 决策",
+                      "locked": false,
+                      "width": 520.0,
+                      "height": "fit_content",
+                      "content": "本地先保存并显示待同步",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    },
+                    {
+                      "type": "text",
+                      "id": "n685",
+                      "name": "覆盖表 / 登录后新建存档 / 画面",
+                      "locked": false,
+                      "width": 530.0,
+                      "height": "fit_content",
+                      "content": "21 Character Saves / 存档列表",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n686",
+                  "name": "覆盖表 / 冲突与会话接管",
+                  "role": "table-row",
+                  "width": "fill_container",
+                  "height": 52.0,
+                  "layout": "horizontal",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#F8F5F0"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n687",
+                      "name": "覆盖表 / 冲突与会话接管 / 场景",
+                      "locked": false,
+                      "width": 290.0,
+                      "height": "fit_content",
+                      "content": "两处修改 / 账号在另一设备继续使用",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0,
+                      "fontWeight": 600
+                    },
+                    {
+                      "type": "text",
+                      "id": "n688",
+                      "name": "覆盖表 / 冲突与会话接管 / 决策",
+                      "locked": false,
+                      "width": 520.0,
+                      "height": "fit_content",
+                      "content": "冲突三动作；本地修改保留并停止云端写入",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    },
+                    {
+                      "type": "text",
+                      "id": "n689",
+                      "name": "覆盖表 / 冲突与会话接管 / 画面",
+                      "locked": false,
+                      "width": 530.0,
+                      "height": "fit_content",
+                      "content": "21 Character Saves / 同步与冲突",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n690",
+                  "name": "覆盖表 / 缺少规则与回收站",
+                  "role": "table-row",
+                  "width": "fill_container",
+                  "height": 52.0,
+                  "layout": "horizontal",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#FFFFFF"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "n691",
+                      "name": "覆盖表 / 缺少规则与回收站 / 场景",
+                      "locked": false,
+                      "width": 290.0,
+                      "height": "fit_content",
+                      "content": "恢复设备缺少规则 / 已删除存档",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0,
+                      "fontWeight": 600
+                    },
+                    {
+                      "type": "text",
+                      "id": "n692",
+                      "name": "覆盖表 / 缺少规则与回收站 / 决策",
+                      "locked": false,
+                      "width": 520.0,
+                      "height": "fit_content",
+                      "content": "存档保留不可打开；回收站只从账号进入",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 13.0
+                    },
+                    {
+                      "type": "text",
+                      "id": "n693",
+                      "name": "覆盖表 / 缺少规则与回收站 / 画面",
+                      "locked": false,
+                      "width": 530.0,
+                      "height": "fit_content",
+                      "content": "21 Character Saves / 账号入口与回收站",
                       "fontFamily": "Noto Sans SC",
                       "fontSize": 13.0
                     }
@@ -9363,11 +9567,3866 @@
           ]
         }
       ]
+    },
+    {
+      "id": "n486",
+      "name": "21 Character Saves",
+      "children": [
+        {
+          "type": "frame",
+          "id": "n488",
+          "name": "#44-US1 / Player / Character Saves / 存档列表与状态",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 1440.0,
+          "height": 1024.0,
+          "layout": "vertical",
+          "clipContent": true,
+          "fill": [
+            {
+              "type": "solid",
+              "color": "#EEEAE4"
+            }
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "n489",
+              "name": "Platform / 共用顶部应用栏",
+              "role": "navbar",
+              "width": "fill_container",
+              "height": 56.0,
+              "layout": "horizontal",
+              "padding": [
+                0.0,
+                18.0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#1B1714"
+                }
+              ],
+              "stroke": {
+                "thickness": 1.0,
+                "fill": [
+                  {
+                    "type": "solid",
+                    "color": "#302925"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n490",
+                  "name": "Platform / 品牌",
+                  "width": 220.0,
+                  "height": "fit_content",
+                  "layout": "horizontal",
+                  "gap": 10.0,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "n491",
+                      "name": "Platform / 品牌标志",
+                      "width": 24.0,
+                      "height": 24.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#641F1D"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "n492",
+                      "name": "Platform / 品牌名称",
+                      "locked": false,
+                      "width": "fit_content",
+                      "height": "fit_content",
+                      "content": "Daggerheart 中文工具",
+                      "fontFamily": "Noto Sans SC",
+                      "fontSize": 14.0,
+                      "fontWeight": 800,
+                      "lineHeight": 1.4,
+                      "textGrowth": "auto",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n493",
+                  "name": "Platform / 主页面导航",
+                  "width": "fit_content",
+                  "height": 56.0,
+                  "layout": "horizontal",
+                  "gap": 4.0,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n494",
+                      "name": "Platform / 导航 / 玩家车卡器",
+                      "role": "nav-link",
+                      "width": 104.0,
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#2C2420"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n495",
+                          "name": "Platform / 导航 / 玩家车卡器 / 文字区",
+                          "width": "fill_container",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n496",
+                              "name": "Platform / 导航 / 玩家车卡器 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "玩家车卡器",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 700,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n497",
+                          "name": "Platform / 导航 / 玩家车卡器 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#B94A45"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n498",
+                      "name": "Platform / 导航 / 卡片工坊",
+                      "role": "nav-link",
+                      "width": 104.0,
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#1B1714"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n499",
+                          "name": "Platform / 导航 / 卡片工坊 / 文字区",
+                          "width": "fill_container",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n500",
+                              "name": "Platform / 导航 / 卡片工坊 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "卡片工坊",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 500,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#CFC6BD"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n501",
+                          "name": "Platform / 导航 / 卡片工坊 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#1B1714"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n502",
+                      "name": "Platform / 导航 / GM 桌面",
+                      "role": "nav-link",
+                      "width": 104.0,
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#1B1714"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n503",
+                          "name": "Platform / 导航 / GM 桌面 / 文字区",
+                          "width": "fill_container",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n504",
+                              "name": "Platform / 导航 / GM 桌面 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "GM 桌面",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 500,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#CFC6BD"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n505",
+                          "name": "Platform / 导航 / GM 桌面 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#1B1714"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n506",
+                      "name": "Platform / 导航 / 资源市场",
+                      "role": "nav-link",
+                      "width": 104.0,
+                      "height": 56.0,
+                      "layout": "vertical",
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#1B1714"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n507",
+                          "name": "Platform / 导航 / 资源市场 / 文字区",
+                          "width": "fill_container",
+                          "height": 54.0,
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n508",
+                              "name": "Platform / 导航 / 资源市场 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "资源市场",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 500,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#CFC6BD"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "n509",
+                          "name": "Platform / 导航 / 资源市场 / 当前标记",
+                          "width": "fill_container",
+                          "height": 2.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#1B1714"
+                            }
+                          ],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n510",
+                  "name": "Platform / 全局操作",
+                  "width": 220.0,
+                  "height": "fit_content",
+                  "layout": "horizontal",
+                  "gap": 8.0,
+                  "justifyContent": "end",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n511",
+                      "name": "Platform / 账号按钮",
+                      "role": "button",
+                      "width": 154.0,
+                      "height": 34.0,
+                      "layout": "horizontal",
+                      "gap": 8.0,
+                      "padding": [
+                        0.0,
+                        10.0
+                      ],
+                      "alignItems": "center",
+                      "cornerRadius": 5.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#38271E"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n512",
+                          "name": "Platform / 账号图标",
+                          "iconFontName": "user",
+                          "width": 15.0,
+                          "height": 15.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#E4D9CF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n513",
+                          "name": "Platform / 账号名称",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "461569029",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 12.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n514",
+              "name": "Player / 人物卡主体",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "horizontal",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n515",
+                  "name": "Player / 人物存档列表",
+                  "width": 286.0,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#F3F0EA"
+                    }
+                  ],
+                  "stroke": {
+                    "thickness": 1.0,
+                    "fill": [
+                      {
+                        "type": "solid",
+                        "color": "#C9C1B6"
+                      }
+                    ]
+                  },
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n516",
+                      "name": "人物存档 / 标题栏",
+                      "width": "fill_container",
+                      "height": 48.0,
+                      "layout": "horizontal",
+                      "padding": [
+                        0.0,
+                        12.0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#E9E4DC"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n517",
+                          "name": "人物存档 / 标题",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "人物存档",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 15.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n518",
+                          "name": "人物存档 / 新建",
+                          "role": "icon-button",
+                          "width": 30.0,
+                          "height": 30.0,
+                          "layout": "horizontal",
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "cornerRadius": 5.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n519",
+                              "name": "人物存档 / 新建 / 图标",
+                              "iconFontName": "plus",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n520",
+                      "name": "人物存档 / 列表",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "vertical",
+                      "gap": 1.0,
+                      "padding": [
+                        8.0,
+                        7.0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n521",
+                          "name": "人物存档 / 瑟菈·暮林 / 行",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#641F1D"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n522",
+                              "name": "人物存档 / 瑟菈·暮林 / 图标",
+                              "iconFontName": "user-round",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n523",
+                              "name": "人物存档 / 瑟菈·暮林 / 名称区",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "layout": "vertical",
+                              "gap": 2.0,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n524",
+                                  "name": "人物存档 / 瑟菈·暮林 / 名称",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "瑟菈·暮林",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n525",
+                                  "name": "人物存档 / 瑟菈·暮林 / 更新时间",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "刚刚保存",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 400,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n526",
+                              "name": "人物存档 / 瑟菈·暮林 / 状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#DDE7DD"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n527",
+                                  "name": "人物存档 / 瑟菈·暮林 / 状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "已同步",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#2F6F4E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n528",
+                          "name": "人物存档 / 岩拳 / 行",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F3F0EA"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 0.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#F3F0EA"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n529",
+                              "name": "人物存档 / 岩拳 / 图标",
+                              "iconFontName": "user-round",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n530",
+                              "name": "人物存档 / 岩拳 / 名称区",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "layout": "vertical",
+                              "gap": 2.0,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n531",
+                                  "name": "人物存档 / 岩拳 / 名称",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "岩拳",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n532",
+                                  "name": "人物存档 / 岩拳 / 更新时间",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "1 分钟前",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 400,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n533",
+                              "name": "人物存档 / 岩拳 / 状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F4E5C3"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n534",
+                                  "name": "人物存档 / 岩拳 / 状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "待同步",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#8A5A17"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n535",
+                          "name": "人物存档 / 旧档案 / 行",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F3F0EA"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 0.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#F3F0EA"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n536",
+                              "name": "人物存档 / 旧档案 / 图标",
+                              "iconFontName": "user-round",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n537",
+                              "name": "人物存档 / 旧档案 / 名称区",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "layout": "vertical",
+                              "gap": 2.0,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n538",
+                                  "name": "人物存档 / 旧档案 / 名称",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "旧档案",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n539",
+                                  "name": "人物存档 / 旧档案 / 更新时间",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "仅保存在本机",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 400,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n540",
+                              "name": "人物存档 / 旧档案 / 状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#DFE7F2"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n541",
+                                  "name": "人物存档 / 旧档案 / 状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "本地",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#365A7A"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n542",
+                          "name": "人物存档 / 影刃 / 行",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F3F0EA"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 0.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#F3F0EA"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n543",
+                              "name": "人物存档 / 影刃 / 图标",
+                              "iconFontName": "user-round",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n544",
+                              "name": "人物存档 / 影刃 / 名称区",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "layout": "vertical",
+                              "gap": 2.0,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n545",
+                                  "name": "人物存档 / 影刃 / 名称",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "影刃",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n546",
+                                  "name": "人物存档 / 影刃 / 更新时间",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "两处都有修改",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 400,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n547",
+                              "name": "人物存档 / 影刃 / 状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#EEDAD7"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n548",
+                                  "name": "人物存档 / 影刃 / 状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "冲突",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#9F2E28"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n549",
+                          "name": "人物存档 / 远行者 / 行",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F3F0EA"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 0.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#F3F0EA"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n550",
+                              "name": "人物存档 / 远行者 / 图标",
+                              "iconFontName": "lock",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#9F2E28"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n551",
+                              "name": "人物存档 / 远行者 / 名称区",
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "layout": "vertical",
+                              "gap": 2.0,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n552",
+                                  "name": "人物存档 / 远行者 / 名称",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "远行者",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 650,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n553",
+                                  "name": "人物存档 / 远行者 / 更新时间",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "需要对应规则",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 10.0,
+                                  "fontWeight": 400,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n554",
+                              "name": "人物存档 / 远行者 / 状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#EEDAD7"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n555",
+                                  "name": "人物存档 / 远行者 / 状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "不可打开",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#9F2E28"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n556",
+                      "name": "人物存档 / 本地存档操作",
+                      "width": "fill_container",
+                      "height": 52.0,
+                      "layout": "horizontal",
+                      "padding": [
+                        8.0,
+                        10.0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#E9E4DC"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n557",
+                          "name": "人物存档 / 本地存档提示",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "1 个存档仅在本机",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 11.0,
+                          "fontWeight": 500,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#756A5E"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n558",
+                          "name": "人物存档 / 同步到云端",
+                          "role": "button",
+                          "width": 102.0,
+                          "height": 34.0,
+                          "layout": "horizontal",
+                          "gap": 7.0,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "cornerRadius": 6.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FAF7F1"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n559",
+                              "name": "人物存档 / 同步到云端 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "同步到云端",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 700,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n560",
+                  "name": "Player / 当前人物卡",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14.0,
+                  "padding": [
+                    18.0,
+                    28.0
+                  ],
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#E8E3DB"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n561",
+                      "name": "人物卡 / 工具栏",
+                      "width": "fill_container",
+                      "height": 44.0,
+                      "layout": "horizontal",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n562",
+                          "name": "人物卡 / 工具栏 / 左侧",
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "layout": "horizontal",
+                          "gap": 10.0,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n563",
+                              "name": "人物卡 / 当前名称",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "瑟菈·暮林",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 18.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n564",
+                              "name": "人物卡 / 云状态",
+                              "role": "badge",
+                              "width": "fit_content",
+                              "height": 24.0,
+                              "layout": "horizontal",
+                              "gap": 5.0,
+                              "padding": [
+                                0.0,
+                                8.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 12.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#DDE7DD"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n565",
+                                  "name": "人物卡 / 云状态 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "已同步",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#2F6F4E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n566",
+                          "name": "人物卡 / 工具栏 / 操作",
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n567",
+                              "name": "人物卡 / 导入",
+                              "role": "button",
+                              "width": 72.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FAF7F1"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n568",
+                                  "name": "人物卡 / 导入 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "导入",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n569",
+                              "name": "人物卡 / 导出",
+                              "role": "button",
+                              "width": 72.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FAF7F1"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n570",
+                                  "name": "人物卡 / 导出 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "导出",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n571",
+                      "name": "人物卡 / 内容",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "layout": "horizontal",
+                      "gap": 14.0,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n572",
+                          "name": "人物卡 / 基础区",
+                          "width": 420.0,
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 14.0,
+                          "padding": 20.0,
+                          "cornerRadius": 8.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n573",
+                              "name": "人物卡 / 姓名",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "瑟菈·暮林",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 27.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n574",
+                              "name": "人物卡 / 身份",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "精灵游侠 · 等级 3",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 600,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n575",
+                              "name": "人物卡 / 头像",
+                              "width": "fill_container",
+                              "height": 280.0,
+                              "layout": "vertical",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 8.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#D9D0C4"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n576",
+                                  "name": "人物卡 / 头像占位",
+                                  "iconFontName": "user-round",
+                                  "width": 54.0,
+                                  "height": 54.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n577",
+                              "name": "人物卡 / 生命  5 / 6",
+                              "width": "fill_container",
+                              "height": 38.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                12.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n578",
+                                  "name": "人物卡 / 生命  5 / 6 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "生命  5 / 6",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n579",
+                              "name": "人物卡 / 压力  2 / 6",
+                              "width": "fill_container",
+                              "height": 38.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                12.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n580",
+                                  "name": "人物卡 / 压力  2 / 6 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "压力  2 / 6",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n581",
+                              "name": "人物卡 / 闪避  12",
+                              "width": "fill_container",
+                              "height": 38.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                12.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n582",
+                                  "name": "人物卡 / 闪避  12 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "闪避  12",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n583",
+                              "name": "人物卡 / 护甲  3",
+                              "width": "fill_container",
+                              "height": 38.0,
+                              "layout": "horizontal",
+                              "padding": [
+                                0.0,
+                                12.0
+                              ],
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n584",
+                                  "name": "人物卡 / 护甲  3 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "护甲  3",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n585",
+                          "name": "人物卡 / 模块区",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 14.0,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n586",
+                              "name": "人物卡 / 属性",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8.0,
+                              "padding": 16.0,
+                              "cornerRadius": 8.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n587",
+                                  "name": "人物卡 / 属性 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "属性",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n588",
+                                  "name": "人物卡 / 属性 / 内容",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "敏捷 +2   力量 +1   本能 +2   学识 0",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n589",
+                              "name": "人物卡 / 主武器",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8.0,
+                              "padding": 16.0,
+                              "cornerRadius": 8.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n590",
+                                  "name": "人物卡 / 主武器 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "主武器",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n591",
+                                  "name": "人物卡 / 主武器 / 内容",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "长弓 · 双手 · 远距离 · 伤害 d8+2",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n592",
+                              "name": "人物卡 / 经历",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8.0,
+                              "padding": 16.0,
+                              "cornerRadius": 8.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n593",
+                                  "name": "人物卡 / 经历 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "经历",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n594",
+                                  "name": "人物卡 / 经历 / 内容",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "荒野向导 +2   追踪者 +1",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n595",
+                              "name": "人物卡 / 领域卡",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 8.0,
+                              "padding": 16.0,
+                              "cornerRadius": 8.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FFFDF8"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n596",
+                                  "name": "人物卡 / 领域卡 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "领域卡",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n597",
+                                  "name": "人物卡 / 领域卡 / 内容",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "骨感直觉   穿林箭",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "n598",
+          "name": "#44-US2 / Player / Character Saves / 同步与冲突",
+          "x": 1520.0,
+          "y": 0.0,
+          "width": 1600.0,
+          "height": 1024.0,
+          "layout": "vertical",
+          "gap": 20.0,
+          "padding": [
+            30.0,
+            40.0
+          ],
+          "fill": [
+            {
+              "type": "solid",
+              "color": "#EAE4DA"
+            }
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "n599",
+              "name": "#44 同步与冲突 / 标题",
+              "locked": false,
+              "width": 1000.0,
+              "height": "fit_content",
+              "content": "#44 人物存档同步与冲突",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 28.0,
+              "fontWeight": 800,
+              "lineHeight": 1.4,
+              "textGrowth": "fixed-width",
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#21150F"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n600",
+              "name": "#44 同步与冲突 / 双列",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "horizontal",
+              "gap": 26.0,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n601",
+                  "name": "#44 同步与冲突 / 左列",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 22.0,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n602",
+                      "name": "人物存档 / 首次同步对话框",
+                      "width": 520.0,
+                      "height": 286.0,
+                      "layout": "vertical",
+                      "gap": 16.0,
+                      "padding": 22.0,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "effects": [
+                        {
+                          "type": "shadow",
+                          "offsetX": 0.0,
+                          "offsetY": 8.0,
+                          "blur": 24.0,
+                          "spread": -4.0,
+                          "color": "#21150F33"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n603",
+                          "name": "首次同步 / 标题",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "同步人物存档",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 20.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n604",
+                          "name": "首次同步 / 存档名称",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "旧档案",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 15.0,
+                          "fontWeight": 700,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n605",
+                          "name": "首次同步 / 正文",
+                          "locked": false,
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "此存档目前只保存在本机。同步后可在其他设备继续使用。",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 13.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.4,
+                          "textGrowth": "fixed-width",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n606",
+                          "name": "首次同步 / 操作",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "justifyContent": "end",
+                          "alignItems": "end",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n607",
+                              "name": "首次同步 / 取消",
+                              "role": "button",
+                              "width": 82.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FAF7F1"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n608",
+                                  "name": "首次同步 / 取消 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "取消",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n609",
+                              "name": "首次同步 / 确认",
+                              "role": "button",
+                              "width": 92.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#641F1D"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n610",
+                                  "name": "首次同步 / 确认 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "同步",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFDF8"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n611",
+                      "name": "人物存档 / 缺少系统包状态",
+                      "width": 620.0,
+                      "height": 310.0,
+                      "layout": "vertical",
+                      "gap": 14.0,
+                      "padding": 22.0,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n612",
+                          "name": "缺少系统包 / 标题区",
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "layout": "horizontal",
+                          "gap": 10.0,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n613",
+                              "name": "缺少系统包 / 图标",
+                              "iconFontName": "lock",
+                              "width": 20.0,
+                              "height": 20.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#9F2E28"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n614",
+                              "name": "缺少系统包 / 标题",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "暂时无法打开“远行者”",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 19.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n615",
+                          "name": "缺少系统包 / 规则名称",
+                          "locked": false,
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "需要：Daggerheart 核心规则",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 13.0,
+                          "fontWeight": 700,
+                          "lineHeight": 1.4,
+                          "textGrowth": "fixed-width",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n616",
+                          "name": "缺少系统包 / 正文",
+                          "locked": false,
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "人物存档已经保留。安装对应规则后即可继续使用。",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 13.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.4,
+                          "textGrowth": "fixed-width",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n617",
+                          "name": "缺少系统包 / 操作",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "justifyContent": "end",
+                          "alignItems": "end",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n618",
+                              "name": "缺少系统包 / 关闭",
+                              "role": "button",
+                              "width": 92.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#641F1D"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n619",
+                                  "name": "缺少系统包 / 关闭 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "关闭",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFDF8"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n620",
+                  "name": "#44 同步与冲突 / 右列",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 22.0,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n621",
+                      "name": "人物存档 / 云同步冲突对话框",
+                      "width": 700.0,
+                      "height": 486.0,
+                      "layout": "vertical",
+                      "gap": 16.0,
+                      "padding": 22.0,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "effects": [
+                        {
+                          "type": "shadow",
+                          "offsetX": 0.0,
+                          "offsetY": 8.0,
+                          "blur": 24.0,
+                          "spread": -4.0,
+                          "color": "#21150F33"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n622",
+                          "name": "人物存档冲突 / 标题",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "“影刃”存在两处修改",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 20.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n623",
+                          "name": "人物存档冲突 / 版本对比",
+                          "width": "fill_container",
+                          "height": 218.0,
+                          "layout": "horizontal",
+                          "gap": 12.0,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n624",
+                              "name": "人物存档冲突 / 本机内容",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10.0,
+                              "padding": 16.0,
+                              "cornerRadius": 7.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n625",
+                                  "name": "人物存档冲突 / 本机内容 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "本机内容",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n626",
+                                  "name": "人物存档冲突 / 本机内容 / 时间",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "今天 15:42",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n627",
+                                  "name": "人物存档冲突 / 本机内容 / 摘要",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "等级 4 · 主武器：短剑",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n628",
+                              "name": "人物存档冲突 / 云端内容",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10.0,
+                              "padding": 16.0,
+                              "cornerRadius": 7.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n629",
+                                  "name": "人物存档冲突 / 云端内容 / 标题",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "云端内容",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 14.0,
+                                  "fontWeight": 800,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n630",
+                                  "name": "人物存档冲突 / 云端内容 / 时间",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "今天 15:37",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 11.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "n631",
+                                  "name": "人物存档冲突 / 云端内容 / 摘要",
+                                  "locked": false,
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "content": "等级 4 · 主武器：长弓",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 13.0,
+                                  "fontWeight": 500,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "fixed-width",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n632",
+                          "name": "人物存档冲突 / 保留副本",
+                          "locked": false,
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "另存副本会同时保留两份人物存档。",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 12.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.4,
+                          "textGrowth": "fixed-width",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#756A5E"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n633",
+                          "name": "人物存档冲突 / 操作",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "horizontal",
+                          "gap": 8.0,
+                          "justifyContent": "end",
+                          "alignItems": "end",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n634",
+                              "name": "人物存档冲突 / 另存副本",
+                              "role": "button",
+                              "width": 104.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FAF7F1"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n635",
+                                  "name": "人物存档冲突 / 另存副本 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "另存副本",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n636",
+                              "name": "人物存档冲突 / 使用云端",
+                              "role": "button",
+                              "width": 104.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#FAF7F1"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#C9C1B6"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n637",
+                                  "name": "人物存档冲突 / 使用云端 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "使用云端",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#21150F"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "n638",
+                              "name": "人物存档冲突 / 使用本机",
+                              "role": "button",
+                              "width": 104.0,
+                              "height": 34.0,
+                              "layout": "horizontal",
+                              "gap": 7.0,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "cornerRadius": 6.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#641F1D"
+                                }
+                              ],
+                              "stroke": {
+                                "thickness": 1.0,
+                                "fill": [
+                                  {
+                                    "type": "solid",
+                                    "color": "#641F1D"
+                                  }
+                                ]
+                              },
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "n639",
+                                  "name": "人物存档冲突 / 使用本机 / 文字",
+                                  "locked": false,
+                                  "width": "fit_content",
+                                  "height": "fit_content",
+                                  "content": "使用本机",
+                                  "fontFamily": "Noto Sans SC",
+                                  "fontSize": 12.0,
+                                  "fontWeight": 700,
+                                  "lineHeight": 1.4,
+                                  "textGrowth": "auto",
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FFFDF8"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n640",
+                      "name": "人物存档 / 会话停止写入状态条",
+                      "width": 700.0,
+                      "height": 88.0,
+                      "layout": "horizontal",
+                      "gap": 12.0,
+                      "padding": [
+                        0.0,
+                        16.0
+                      ],
+                      "alignItems": "center",
+                      "cornerRadius": 7.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n641",
+                          "name": "会话停止写入 / 图标",
+                          "iconFontName": "cloud-off",
+                          "width": 20.0,
+                          "height": 20.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#9F2E28"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n642",
+                          "name": "会话停止写入 / 文字区",
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "layout": "vertical",
+                          "gap": 2.0,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n643",
+                              "name": "会话停止写入 / 标题",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "此账号已在另一设备继续使用",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n644",
+                              "name": "会话停止写入 / 正文",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "本机修改仍已保存，云端同步已停止。",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 11.0,
+                              "fontWeight": 400,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n645",
+                          "name": "会话停止写入 / 切换账号",
+                          "role": "button",
+                          "width": 94.0,
+                          "height": 34.0,
+                          "layout": "horizontal",
+                          "gap": 7.0,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "cornerRadius": 6.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FAF7F1"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n646",
+                              "name": "会话停止写入 / 切换账号 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "切换账号",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 700,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "n647",
+          "name": "#44-US3 / Player / Character Saves / 账号入口与回收站",
+          "x": 3200.0,
+          "y": 0.0,
+          "width": 1600.0,
+          "height": 1024.0,
+          "layout": "vertical",
+          "gap": 20.0,
+          "padding": [
+            30.0,
+            40.0
+          ],
+          "fill": [
+            {
+              "type": "solid",
+              "color": "#F3EFE7"
+            }
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "n648",
+              "name": "#44 账号入口与回收站 / 标题",
+              "locked": false,
+              "width": 1100.0,
+              "height": "fit_content",
+              "content": "#44 账号入口与人物存档回收站",
+              "fontFamily": "Noto Sans SC",
+              "fontSize": 28.0,
+              "fontWeight": 800,
+              "lineHeight": 1.4,
+              "textGrowth": "fixed-width",
+              "fill": [
+                {
+                  "type": "solid",
+                  "color": "#21150F"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n649",
+              "name": "#44 账号入口与回收站 / 双列",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "horizontal",
+              "gap": 28.0,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "n650",
+                  "name": "Player / 账号入口示例",
+                  "width": 520.0,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 18.0,
+                  "padding": 28.0,
+                  "alignItems": "center",
+                  "cornerRadius": 8.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#EAE4DA"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n651",
+                      "name": "Player / 顶部应用栏账号按钮",
+                      "role": "button",
+                      "width": 180.0,
+                      "height": 34.0,
+                      "layout": "horizontal",
+                      "gap": 8.0,
+                      "padding": [
+                        0.0,
+                        12.0
+                      ],
+                      "alignItems": "center",
+                      "cornerRadius": 5.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#38271E"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n652",
+                          "name": "账号入口 / 用户图标",
+                          "iconFontName": "user",
+                          "width": 15.0,
+                          "height": 15.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#E4D9CF"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n653",
+                          "name": "账号入口 / 用户名",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "461569029",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 12.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FFFDF8"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n654",
+                      "name": "平台账号弹窗",
+                      "width": 360.0,
+                      "height": "fit_content",
+                      "layout": "vertical",
+                      "gap": 14.0,
+                      "padding": 20.0,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "effects": [
+                        {
+                          "type": "shadow",
+                          "offsetX": 0.0,
+                          "offsetY": 8.0,
+                          "blur": 24.0,
+                          "spread": -4.0,
+                          "color": "#21150F33"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "n655",
+                          "name": "平台账号弹窗 / 账号",
+                          "locked": false,
+                          "width": "fill_container",
+                          "height": "fit_content",
+                          "content": "461569029@qq.com",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 14.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.4,
+                          "textGrowth": "fixed-width",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n656",
+                          "name": "平台账号弹窗 / 状态",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "已登录",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 11.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#2F6F4E"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n657",
+                          "name": "平台账号弹窗 / 云端回收站入口",
+                          "role": "button",
+                          "width": "fill_container",
+                          "height": 38.0,
+                          "layout": "horizontal",
+                          "gap": 10.0,
+                          "padding": [
+                            0.0,
+                            10.0
+                          ],
+                          "alignItems": "center",
+                          "cornerRadius": 6.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F3F0EA"
+                            }
+                          ],
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "n658",
+                              "name": "平台账号弹窗 / 云端回收站图标",
+                              "iconFontName": "trash-2",
+                              "width": 16.0,
+                              "height": 16.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "n659",
+                              "name": "平台账号弹窗 / 云端回收站文字",
+                              "locked": false,
+                              "width": "fill_container",
+                              "height": "fit_content",
+                              "content": "云端回收站",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 13.0,
+                              "fontWeight": 650,
+                              "lineHeight": 1.4,
+                              "textGrowth": "fixed-width",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n660",
+                          "name": "平台账号弹窗 / 退出登录",
+                          "role": "button",
+                          "width": 110.0,
+                          "height": 34.0,
+                          "layout": "horizontal",
+                          "gap": 7.0,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "cornerRadius": 6.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#FAF7F1"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n661",
+                              "name": "平台账号弹窗 / 退出登录 / 文字",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "退出登录",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 12.0,
+                              "fontWeight": 700,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n662",
+                  "name": "人物存档 / 云端回收站示例",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 18.0,
+                  "padding": 28.0,
+                  "alignItems": "center",
+                  "cornerRadius": 8.0,
+                  "fill": [
+                    {
+                      "type": "solid",
+                      "color": "#EAE4DA"
+                    }
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "n663",
+                      "name": "云端回收站 / 人物存档列表",
+                      "width": 760.0,
+                      "height": 570.0,
+                      "layout": "vertical",
+                      "clipContent": true,
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "effects": [
+                        {
+                          "type": "shadow",
+                          "offsetX": 0.0,
+                          "offsetY": 8.0,
+                          "blur": 24.0,
+                          "spread": -4.0,
+                          "color": "#21150F33"
+                        }
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "n664",
+                          "name": "云端回收站 / 标题栏",
+                          "width": "fill_container",
+                          "height": 58.0,
+                          "layout": "horizontal",
+                          "padding": [
+                            0.0,
+                            20.0
+                          ],
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#F7F3ED"
+                            }
+                          ],
+                          "stroke": {
+                            "thickness": 1.0,
+                            "fill": [
+                              {
+                                "type": "solid",
+                                "color": "#C9C1B6"
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "n665",
+                              "name": "云端回收站 / 标题",
+                              "locked": false,
+                              "width": "fit_content",
+                              "height": "fit_content",
+                              "content": "云端回收站",
+                              "fontFamily": "Noto Sans SC",
+                              "fontSize": 18.0,
+                              "fontWeight": 800,
+                              "lineHeight": 1.4,
+                              "textGrowth": "auto",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#21150F"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "n666",
+                              "name": "云端回收站 / 关闭图标",
+                              "iconFontName": "x",
+                              "width": 18.0,
+                              "height": 18.0,
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#756A5E"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "n667",
+                          "name": "云端回收站 / 内容",
+                          "width": "fill_container",
+                          "height": "fill_container",
+                          "layout": "vertical",
+                          "gap": 1.0,
+                          "padding": 14.0,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n668",
+                              "name": "云端回收站 / 远行者 / 行",
+                              "width": "fill_container",
+                              "height": 66.0,
+                              "layout": "horizontal",
+                              "gap": 10.0,
+                              "padding": [
+                                0.0,
+                                12.0
+                              ],
+                              "alignItems": "center",
+                              "fill": [
+                                {
+                                  "type": "solid",
+                                  "color": "#F3F0EA"
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "type": "icon_font",
+                                  "id": "n669",
+                                  "name": "云端回收站 / 远行者 / 图标",
+                                  "iconFontName": "user-round",
+                                  "width": 16.0,
+                                  "height": 16.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#756A5E"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n670",
+                                  "name": "云端回收站 / 远行者 / 文字区",
+                                  "width": "fill_container",
+                                  "height": "fit_content",
+                                  "layout": "vertical",
+                                  "gap": 2.0,
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n671",
+                                      "name": "云端回收站 / 远行者 / 名称",
+                                      "locked": false,
+                                      "width": "fit_content",
+                                      "height": "fit_content",
+                                      "content": "远行者",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 13.0,
+                                      "fontWeight": 750,
+                                      "lineHeight": 1.4,
+                                      "textGrowth": "auto",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#21150F"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "n672",
+                                      "name": "云端回收站 / 远行者 / 时间",
+                                      "locked": false,
+                                      "width": "fit_content",
+                                      "height": "fit_content",
+                                      "content": "剩余 27 天",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 11.0,
+                                      "fontWeight": 400,
+                                      "lineHeight": 1.4,
+                                      "textGrowth": "auto",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#756A5E"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "n673",
+                                  "name": "云端回收站 / 远行者 / 恢复",
+                                  "role": "button",
+                                  "width": 76.0,
+                                  "height": 34.0,
+                                  "layout": "horizontal",
+                                  "gap": 7.0,
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "cornerRadius": 6.0,
+                                  "fill": [
+                                    {
+                                      "type": "solid",
+                                      "color": "#FAF7F1"
+                                    }
+                                  ],
+                                  "stroke": {
+                                    "thickness": 1.0,
+                                    "fill": [
+                                      {
+                                        "type": "solid",
+                                        "color": "#C9C1B6"
+                                      }
+                                    ]
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "n674",
+                                      "name": "云端回收站 / 远行者 / 恢复 / 文字",
+                                      "locked": false,
+                                      "width": "fit_content",
+                                      "height": "fit_content",
+                                      "content": "恢复",
+                                      "fontFamily": "Noto Sans SC",
+                                      "fontSize": 12.0,
+                                      "fontWeight": 700,
+                                      "lineHeight": 1.4,
+                                      "textGrowth": "auto",
+                                      "fill": [
+                                        {
+                                          "type": "solid",
+                                          "color": "#21150F"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "n675",
+                      "name": "云端回收站 / 空状态",
+                      "width": 760.0,
+                      "height": 230.0,
+                      "layout": "vertical",
+                      "gap": 12.0,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "cornerRadius": 9.0,
+                      "fill": [
+                        {
+                          "type": "solid",
+                          "color": "#FFFDF8"
+                        }
+                      ],
+                      "stroke": {
+                        "thickness": 1.0,
+                        "fill": [
+                          {
+                            "type": "solid",
+                            "color": "#C9C1B6"
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "n676",
+                          "name": "云端回收站空状态 / 图标",
+                          "iconFontName": "trash-2",
+                          "width": 34.0,
+                          "height": 34.0,
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#756A5E"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "n677",
+                          "name": "云端回收站空状态 / 标题",
+                          "locked": false,
+                          "width": "fit_content",
+                          "height": "fit_content",
+                          "content": "回收站为空",
+                          "fontFamily": "Noto Sans SC",
+                          "fontSize": 16.0,
+                          "fontWeight": 800,
+                          "lineHeight": 1.4,
+                          "textGrowth": "auto",
+                          "fill": [
+                            {
+                              "type": "solid",
+                              "color": "#21150F"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "children": [],
   "editorMeta": {
-    "activePageIndex": 0,
+    "activePageIndex": 6,
     "preserveAuthoredGeometry": false
   }
 }

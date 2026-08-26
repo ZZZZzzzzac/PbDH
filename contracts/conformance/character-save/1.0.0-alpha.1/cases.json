@@ -1,0 +1,60 @@
+[
+  {
+    "name": "accepts final weapon fields and a self-contained tabletop instance",
+    "mutation": null,
+    "expected": []
+  },
+  {
+    "name": "requires the bound system package",
+    "mutation": {
+      "op": "delete",
+      "path": ["systemPackage"]
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0-alpha.1",
+        "location": "/systemPackage",
+        "params": { "property": "systemPackage" }
+      }
+    ]
+  },
+  {
+    "name": "rejects resource selection state outside final values",
+    "mutation": {
+      "op": "set",
+      "path": ["characterData", "resourceSelections"],
+      "value": { "pick-primary-weapon": "minotaur-wrecker" }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0-alpha.1",
+        "location": "/characterData/resourceSelections",
+        "params": { "property": "resourceSelections" }
+      }
+    ]
+  },
+  {
+    "name": "rejects installed packages in the document",
+    "mutation": {
+      "op": "set",
+      "path": ["installedResourcePackages"],
+      "value": []
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0-alpha.1",
+        "location": "/installedResourcePackages",
+        "params": { "property": "installedResourcePackages" }
+      }
+    ]
+  }
+]

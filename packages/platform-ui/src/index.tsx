@@ -43,14 +43,20 @@ export function PlatformChrome({
   onNavigate(page: PlatformPage): void;
   children: ReactNode;
 }) {
-  const [registrations, setRegistrations] = useState<Partial<Record<PlatformPage, AppBarRegistration>>>({});
+  const [registrations, setRegistrations] = useState<Partial<Record<PlatformPage, AppBarRegistration[]>>>({});
   const register = useCallback<RegisterAppBarActions>((page, registration) => {
     const token = Symbol(page);
-    setRegistrations((current) => ({ ...current, [page]: { token, ...registration } }));
+    setRegistrations((current) => ({
+      ...current,
+      [page]: [...(current[page] ?? []), { token, ...registration }],
+    }));
     return () => setRegistrations((current) => {
-      if (current[page]?.token !== token) return current;
+      const pageRegistrations = current[page];
+      if (!pageRegistrations?.some((candidate) => candidate.token === token)) return current;
       const next = { ...current };
-      delete next[page];
+      const remaining = pageRegistrations.filter((candidate) => candidate.token !== token);
+      if (remaining.length > 0) next[page] = remaining;
+      else delete next[page];
       return next;
     });
   }, []);
@@ -61,13 +67,18 @@ export function PlatformChrome({
     market: () => onNavigate("market"),
   }), [onNavigate]);
 
+  const activeRegistrations = registrations[activePage] ?? [];
+  const actions = activeRegistrations.findLast((candidate) => candidate.actions !== undefined)?.actions;
+  const accountManagement = activeRegistrations.findLast((candidate) =>
+    candidate.accountManageLabel !== undefined && candidate.onAccountManage !== undefined);
+
   return <AppBarActionsContext.Provider value={register}>
     <PlatformAppBar
       activePage={activePage}
       onNavigate={navigation}
-      extraActions={registrations[activePage]?.actions}
-      accountManageLabel={registrations[activePage]?.accountManageLabel}
-      onAccountManage={registrations[activePage]?.onAccountManage}
+      extraActions={actions}
+      accountManageLabel={accountManagement?.accountManageLabel}
+      onAccountManage={accountManagement?.onAccountManage}
     />
     {children}
   </AppBarActionsContext.Provider>;

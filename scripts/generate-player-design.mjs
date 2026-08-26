@@ -46,6 +46,19 @@ const installDialogBar = unique(dialogNodes, "资源包安装确认 / 标题栏"
 const installPrimary = unique(dialogNodes, "安装确认 / 安装");
 const invalidState = unique(dialogNodes, "无效资源包 / 错误摘要");
 
+const characterSavePage = unique(document.pages, "21 Character Saves");
+const characterSaveNodes = descendants(characterSavePage);
+const characterSaveFrame = unique(characterSaveNodes, "#44-US1 / Player / Character Saves / 存档列表与状态");
+const characterSaveAppBar = unique(characterSaveNodes, "Platform / 共用顶部应用栏");
+const characterSaveList = unique(characterSaveNodes, "Player / 人物存档列表");
+const localSaveAction = unique(characterSaveNodes, "人物存档 / 同步到云端");
+const conflictDialog = unique(characterSaveNodes, "人物存档 / 云同步冲突对话框");
+const conflictActions = unique(characterSaveNodes, "人物存档冲突 / 操作");
+const missingSystemState = unique(characterSaveNodes, "人物存档 / 缺少系统包状态");
+const accountPopup = unique(characterSaveNodes, "平台账号弹窗");
+const recycleBinEntry = unique(characterSaveNodes, "平台账号弹窗 / 云端回收站入口");
+const emptyRecycleBin = unique(characterSaveNodes, "云端回收站 / 空状态");
+
 if (manager.layout !== "vertical" || managerBody.layout !== "horizontal" || packageList.width !== 330) {
   throw new Error("Player Resource Manager must retain the reviewed large-package layout");
 }
@@ -54,6 +67,15 @@ if (manager.width !== 1160 || manager.height !== 850 || managerBar.height !== 64
 }
 if (installDialog.width !== 660 || installDialog.children.some((node) => node.name.endsWith("副标题"))) {
   throw new Error("Player dialogs must keep the reviewed compact title-only header");
+}
+if (characterSaveFrame.width !== 1440 || characterSaveFrame.height !== 1024 || characterSaveAppBar.height !== 56) {
+  throw new Error("Player Character Save must use the shared Platform App Bar and reviewed desktop frame");
+}
+if (characterSaveList.width !== 286 || conflictActions.children.length !== 3) {
+  throw new Error("Player Character Save must retain the compact list and three conflict actions");
+}
+if (!accountPopup.children.includes(recycleBinEntry) || emptyRecycleBin.children.length !== 2) {
+  throw new Error("Player cloud recycle bin must remain account-scoped and include an explicit empty state");
 }
 
 const generated = `// 此文件由 scripts/generate-player-design.mjs 从 docs/design/player-app.op 生成，禁止手改。\n\nexport const playerResourceManagerDesign = ${JSON.stringify({
@@ -82,6 +104,32 @@ const generated = `// 此文件由 scripts/generate-player-design.mjs 从 docs/d
     primaryBackground: solid(installPrimary),
     errorBackground: solid(invalidState),
     errorText: solid(invalidState.children[0]),
+  },
+}, null, 2)} as const;\n\nexport const playerCharacterSaveDesign = ${JSON.stringify({
+  document: "docs/design/player-app.op",
+  page: characterSavePage.name,
+  frame: characterSaveFrame.name,
+  canvas: { background: solid(characterSaveFrame) },
+  appBar: { height: characterSaveAppBar.height, background: solid(characterSaveAppBar) },
+  saveList: {
+    width: characterSaveList.width,
+    background: solid(characterSaveList),
+    border: solid(characterSaveList, "stroke"),
+  },
+  localSyncAction: { background: solid(localSaveAction), text: solid(localSaveAction.children.at(-1)) },
+  conflict: {
+    width: conflictDialog.width,
+    height: conflictDialog.height,
+    actions: conflictActions.children.map((node) => node.name),
+  },
+  missingSystem: {
+    width: missingSystemState.width,
+    background: solid(missingSystemState),
+  },
+  account: {
+    popupWidth: accountPopup.width,
+    recycleBinEntry: recycleBinEntry.name,
+    emptyState: emptyRecycleBin.name,
   },
 }, null, 2)} as const;\n`;
 
