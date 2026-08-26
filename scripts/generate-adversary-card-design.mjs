@@ -249,6 +249,24 @@ const gmCanvasMenu = unique(gmMenuNodes, "空白桌面 / 右键菜单");
 const gmInstanceMenu = unique(gmMenuNodes, "桌面实例 / 右键菜单");
 const gmResourceMenu = unique(gmMenuNodes, "资源右键 / 主菜单");
 const gmNamingDialog = unique(gmMenuNodes, "桌面命名");
+const cloudPage = unique(document.pages, "21 Cloud Documents");
+const cloudNodes = descendants(cloudPage);
+const cloudStatesFrame = unique(cloudNodes, "#43 / Creator 与 GM 云同步状态");
+const cloudDialogsFrame = unique(cloudNodes, "#43 / 云同步对话框与回收站");
+const cloudLocal = unique(cloudNodes, "Creator 文档云状态 / 本地 / 状态");
+const cloudPending = unique(cloudNodes, "Creator 文档云状态 / 待同步 / 状态");
+const cloudClean = unique(cloudNodes, "Creator 文档云状态 / 已同步 / 状态");
+const cloudConflict = unique(cloudNodes, "Creator 文档云状态 / 冲突 / 状态");
+const cloudLocalMenu = unique(cloudNodes, "Creator / 本地文档菜单 / 浮层");
+const cloudGmMenu = unique(cloudNodes, "GM / 桌面空白右键 / 云入口");
+const cloudSyncDialog = unique(cloudNodes, "同步到云端对话框");
+const cloudConflictDialog = unique(cloudNodes, "云同步冲突对话框");
+const cloudTrashDialog = unique(cloudNodes, "云端回收站对话框");
+const cloudAccountDialog = unique(cloudNodes, "平台账号弹窗");
+const cloudAccountTrash = unique(cloudNodes, "平台账号弹窗 / 云端回收站");
+const cloudTrashEmpty = unique(cloudNodes, "云端回收站 / 空状态");
+const cloudTrashEmptyIcon = unique(cloudNodes, "云端回收站 / 空状态 / 图标框");
+const cloudTrashEmptyText = unique(cloudNodes, "云端回收站 / 空状态 / 文字");
 
 if (columns.layout !== "horizontal" || resourceNav.width !== 250 || workspaceBody.layout !== "horizontal") {
   throw new Error("Creator Workspace must retain the reviewed IDE navigation and editor/preview layout");
@@ -290,6 +308,18 @@ if (gmCanvasRefs.length !== 2 || gmCanvasRefs.some((node) => node.ref !== card.i
 if (gmInstanceBody.layout !== "horizontal" || gmInstanceForm.width !== weaponEditor.width
   || descendants(gmInstancePreview).filter((node) => node.type === "ref" && node.ref === card.id).length !== 1) {
   throw new Error("GM instance editing must reuse the enemy editor and one Canonical Card Surface");
+}
+if (cloudLocalMenu.layout !== "vertical" || cloudGmMenu.layout !== "vertical"
+  || cloudSyncDialog.layout !== "vertical" || cloudConflictDialog.layout !== "vertical"
+  || cloudTrashDialog.layout !== "vertical" || cloudAccountDialog.layout !== "vertical"
+  || cloudTrashEmpty.layout !== "vertical") {
+  throw new Error("Cloud Document menus and dialogs must retain the reviewed floating layouts");
+}
+if (descendants(cloudLocalMenu).some((node) => node.content === "云端回收站")
+  || descendants(cloudGmMenu).some((node) => node.content === "云端回收站")
+  || !descendants(cloudAccountTrash).some((node) => node.content === "云端回收站")
+  || cloudTrashEmptyText.content !== "回收站为空") {
+  throw new Error("Cloud recycle bin must live in the account dialog and retain an explicit empty state");
 }
 
 const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-design.mjs 从 docs/design/creator-app.op 生成，禁止手改.\n\nexport const creatorWorkspaceDesign = ${JSON.stringify({
@@ -396,6 +426,33 @@ const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-desi
       editorWidth: gmInstanceForm.width,
       previewBackground: solid(gmInstancePreview),
       previewBorder: solid(gmInstancePreview, "stroke"),
+    },
+  },
+  cloudDocuments: {
+    page: cloudPage.name,
+    statesFrame: cloudStatesFrame.name,
+    dialogsFrame: cloudDialogsFrame.name,
+    status: {
+      localBackground: solid(cloudLocal),
+      localForeground: solid(cloudLocal.children[0]),
+      pendingBackground: solid(cloudPending),
+      pendingForeground: solid(cloudPending.children[0]),
+      cleanBackground: solid(cloudClean),
+      cleanForeground: solid(cloudClean.children[0]),
+      conflictBackground: solid(cloudConflict),
+      conflictForeground: solid(cloudConflict.children[0]),
+    },
+    menus: {
+      workspaceWidth: cloudLocalMenu.width,
+      tabletopWidth: cloudGmMenu.width,
+      accountDialogWidth: cloudAccountDialog.width,
+    },
+    dialogs: {
+      syncWidth: cloudSyncDialog.width,
+      conflictWidth: cloudConflictDialog.width,
+      trashWidth: cloudTrashDialog.width,
+      trashEmptyBackground: solid(cloudTrashEmptyIcon),
+      trashEmptyForeground: solid(cloudTrashEmptyText),
     },
   },
 }, null, 2)} as const;\n`;

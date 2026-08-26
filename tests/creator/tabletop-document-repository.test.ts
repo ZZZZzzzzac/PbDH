@@ -109,4 +109,30 @@ describe("GM Tabletop Document Repository", () => {
     expect(await store.get("gm-tabletop-document", model.id)).toBeUndefined();
     expect(await repository.list()).toEqual([]);
   });
+
+  test("keeps a clean cloud revision clean until the tabletop content changes", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const repository = new TabletopDocumentRepository(store);
+    const model = createTabletopDocument(
+      "01989f4e-7b2c-7000-8000-000000000030",
+      "云端桌面",
+    );
+
+    await repository.save(model, new Map(), "account-1");
+    const first = await store.get("gm-tabletop-document", model.id);
+    expect(first?.sync.state).toBe("pending");
+
+    first!.sync = { scope: "cloud", state: "clean", baseRevision: "2", accountId: "account-1" };
+    await store.put(first!);
+    await repository.save(model, new Map(), "account-1");
+    expect((await store.get("gm-tabletop-document", model.id))?.sync.state).toBe("clean");
+
+    await repository.save({ ...model, name: "已重命名桌面" }, new Map(), "account-1");
+    expect((await store.get("gm-tabletop-document", model.id))?.sync).toMatchObject({
+      scope: "cloud",
+      state: "pending",
+      baseRevision: "2",
+    });
+  });
 });

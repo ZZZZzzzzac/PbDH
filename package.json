@@ -18,6 +18,7 @@
     "packages/resource-conversion",
     "packages/tabletop",
     "packages/local-storage",
+    "packages/cloud-documents",
     "packages/media-admission",
     "packages/platform-auth",
     "packages/platform-ui",

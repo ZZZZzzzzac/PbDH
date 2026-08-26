@@ -1,0 +1,185 @@
+import hashlib
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from pbdh_backend.api_errors import ApiError
+from pbdh_backend.app import create_app
+from pbdh_backend.identity.tokens import VerifiedIdentity
+from pbdh_backend.settings import Settings
+
+
+ROOT = Path(__file__).parents[2]
+
+
+class FakeTokenVerifier:
+    def verify(self, token: str) -> VerifiedIdentity:
+        if not token.startswith("token:"):
+            raise ApiError(401, "AUTH_TOKEN_INVALID", "登录凭据无效或已过期。")
+        return VerifiedIdentity(token.removeprefix("token:"))
+
+
+def client(tmp_path: Path) -> TestClient:
+    return TestClient(create_app(Settings(
+        database_path=tmp_path / "pbdh.sqlite3",
+        migrations_path=ROOT / "apps/backend/migrations",
+        supabase_url="https://example.supabase.co",
+        supabase_anon_key="public-anon-key",
+        admin_auth_subject="platform-admin",
+    ), FakeTokenVerifier()))
+
+
+def claim(api: TestClient, subject: str) -> dict[str, str]:
+    response = api.post(
+        "/api/auth/session/claim",
+        headers={"Authorization": f"Bearer token:{subject}"},
+        json={},
+    )
+    assert response.status_code == 200
+    return {
+        "Authorization": f"Bearer token:{subject}",
+        "X-PbDH-Session": response.json()["sessionId"],
+    }
+
+
+def document_write(
+    mutation_id: str,
+    document_kind: str,
+    payload: dict[str, object],
+    asset_ids: list[str],
+    base_revision: int | None,
+    force: bool = False,
+) -> dict[str, object]:
+    return {
+        "mutationId": mutation_id,
+        "documentKind": document_kind,
+        "contractFamily": "creator-workspace-draft" if document_kind == "creator-workspace" else "tabletop-document",
+        "contractVersion": "1",
+        "baseRevision": base_revision,
+        "assetIds": asset_ids,
+        "payload": payload,
+        "force": force,
+    }
+
+
+def test_cloud_document_requires_media_before_atomic_revision_commit(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    outsider = claim(api, "author-two")
+    document_id = "workspace-1"
+    media = b"normalized-webp"
+    asset_id = f"sha256:{hashlib.sha256(media).hexdigest()}"
+    write = document_write("mutation-1", "creator-workspace", {"name": "荒野遭遇集"}, [asset_id], None)
+
+    missing = api.put(f"/api/cloud/documents/{document_id}", headers=owner, json=write)
+    assert missing.status_code == 422
+    assert missing.json()["error"]["code"] == "CLOUD_MEDIA_NOT_READY"
+    assert api.get(f"/api/cloud/documents/{document_id}", headers=owner).status_code == 404
+
+    prepared = api.put(
+        f"/api/cloud/media/{asset_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=media,
+    )
+    assert prepared.status_code == 200
+    assert prepared.json() == {"assetId": asset_id, "byteLength": len(media), "ready": True}
+
+    committed = api.put(f"/api/cloud/documents/{document_id}", headers=owner, json=write)
+    assert committed.status_code == 200, committed.text
+    cloud_document = committed.json()["document"]
+    assert cloud_document["documentId"] == document_id
+    assert cloud_document["revision"] == 1
+    assert cloud_document["payload"] == {"name": "荒野遭遇集"}
+    assert cloud_document["assetIds"] == [asset_id]
+
+    restored_media = api.get(
+        f"/api/cloud/documents/{document_id}/media/{asset_id}",
+        headers=owner,
+    )
+    assert restored_media.status_code == 200
+    assert restored_media.content == media
+    assert api.get(
+        f"/api/cloud/documents/{document_id}/media/{asset_id}",
+        headers=outsider,
+    ).status_code == 404
+
+
+def test_cloud_document_mutations_are_idempotent_and_conflicts_are_explicit(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    document_id = "workspace-1"
+    initial = document_write("mutation-1", "creator-workspace", {"value": 1}, [], None)
+
+    created = api.put(f"/api/cloud/documents/{document_id}", headers=owner, json=initial)
+    repeated = api.put(f"/api/cloud/documents/{document_id}", headers=owner, json=initial)
+    assert created.status_code == repeated.status_code == 200
+    assert created.json() == repeated.json()
+
+    updated = api.put(
+        f"/api/cloud/documents/{document_id}",
+        headers=owner,
+        json=document_write("mutation-2", "creator-workspace", {"value": 2}, [], 1),
+    )
+    assert updated.json()["document"]["revision"] == 2
+
+    conflict = api.put(
+        f"/api/cloud/documents/{document_id}",
+        headers=owner,
+        json=document_write("mutation-3", "creator-workspace", {"value": 3}, [], 1),
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "CLOUD_DOCUMENT_REVISION_CONFLICT"
+
+    overwritten = api.put(
+        f"/api/cloud/documents/{document_id}",
+        headers=owner,
+        json=document_write("mutation-4", "creator-workspace", {"value": 4}, [], 1, True),
+    )
+    assert overwritten.status_code == 200
+    assert overwritten.json()["document"]["revision"] == 3
+    assert overwritten.json()["document"]["payload"] == {"value": 4}
+
+
+def test_cloud_documents_keep_kinds_revisions_and_recycle_bin_independent(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+
+    workspace = api.put(
+        "/api/cloud/documents/workspace-1",
+        headers=owner,
+        json=document_write("mutation-w1", "creator-workspace", {"resource": "enemy"}, [], None),
+    ).json()["document"]
+    tabletop = api.put(
+        "/api/cloud/documents/tabletop-1",
+        headers=owner,
+        json=document_write("mutation-t1", "gm-tabletop-document", {"stress": 2}, [], None),
+    ).json()["document"]
+    assert workspace["revision"] == tabletop["revision"] == 1
+
+    trashed = api.post(
+        "/api/cloud/documents/tabletop-1/trash",
+        headers=owner,
+        json={"mutationId": "mutation-t2", "baseRevision": 1},
+    )
+    assert trashed.status_code == 200
+    assert trashed.json()["document"]["revision"] == 2
+    assert trashed.json()["document"]["deletedAt"] is not None
+    assert api.get("/api/cloud/documents?documentKind=gm-tabletop-document", headers=owner).json() == {"documents": []}
+    assert len(api.get(
+        "/api/cloud/documents?documentKind=gm-tabletop-document&includeDeleted=true",
+        headers=owner,
+    ).json()["documents"]) == 1
+
+    restored = api.post(
+        "/api/cloud/documents/tabletop-1/restore",
+        headers=owner,
+        json={"mutationId": "mutation-t3", "baseRevision": 2},
+    )
+    assert restored.status_code == 200
+    assert restored.json()["document"]["revision"] == 3
+    assert restored.json()["document"]["deletedAt"] is None
+
+    current_workspace = api.get("/api/cloud/documents/workspace-1", headers=owner).json()["document"]
+    assert current_workspace["revision"] == 1
+    assert current_workspace["payload"] == {"resource": "enemy"}
+

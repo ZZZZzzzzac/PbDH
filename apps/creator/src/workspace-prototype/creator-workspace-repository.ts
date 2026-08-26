@@ -1,8 +1,13 @@
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import {
+  pendingSync,
+  type RemoteCloudDocument,
+} from "@pbdh/cloud-documents";
+import {
   DexieLocalDocumentStore,
   type LocalDocumentEnvelope,
   type LocalMediaAssetRecord,
+  type LocalDocumentSync,
 } from "@pbdh/local-storage";
 
 import {
@@ -11,6 +16,7 @@ import {
   type WorkspaceFolder,
   type WorkspaceResourceLocation,
 } from "./workspace-model.ts";
+import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 
 type CreatorWorkspacePayload = {
   version: 1;
@@ -25,6 +31,11 @@ type CreatorWorkspacePayload = {
   openResourceIds: string[];
   previewResourceId: string | null;
   currentFolderId: string | null;
+};
+
+export type StoredCreatorWorkspace = {
+  workspace: CreatorWorkspace;
+  sync: LocalDocumentSync;
 };
 
 function payload(workspace: CreatorWorkspace): CreatorWorkspacePayload {
@@ -67,8 +78,12 @@ export class CreatorWorkspaceRepository {
   }
 
   async list(): Promise<CreatorWorkspace[]> {
+    return (await this.listStored()).map((item) => item.workspace);
+  }
+
+  async listStored(): Promise<StoredCreatorWorkspace[]> {
     const envelopes = await this.#store.list<CreatorWorkspacePayload>("creator-workspace");
-    const workspaces: CreatorWorkspace[] = [];
+    const workspaces: StoredCreatorWorkspace[] = [];
     for (const envelope of envelopes) {
       if (envelope.payload.version !== 1) throw new Error("Unsupported stored Creator Workspace version");
       if (envelope.payload.closed) {
@@ -76,7 +91,7 @@ export class CreatorWorkspaceRepository {
         continue;
       }
       const media = await this.#store.getMedia(envelope.assetIds);
-      workspaces.push(createWorkspace({
+      workspaces.push({ workspace: createWorkspace({
         document: envelope.payload.document,
         media,
         folders: envelope.payload.folders,
@@ -85,14 +100,33 @@ export class CreatorWorkspaceRepository {
         previewResourceId: envelope.payload.previewResourceId,
         currentFolderId: envelope.payload.currentFolderId,
         dirtyResourceIds: envelope.payload.dirtyResourceIds ?? [],
-      } as CreatorWorkspace, envelope.payload.dirty));
+      } as CreatorWorkspace, envelope.payload.dirty), sync: envelope.sync });
     }
     return workspaces;
   }
 
-  async save(workspace: CreatorWorkspace): Promise<void> {
+  async save(
+    workspace: CreatorWorkspace,
+    cloudAccountId: string | null = null,
+    enableExistingCloud = false,
+  ): Promise<LocalDocumentSync> {
     const existing = await this.#store.get<CreatorWorkspacePayload>("creator-workspace", workspace.key);
     const now = this.#now();
+    const nextPayload = payload(workspace);
+    const assetIds = workspace.document.assets.map((asset) => asset.id);
+    const shouldEnableExistingCloud = Boolean(
+      existing?.sync.scope === "local-only" && cloudAccountId && enableExistingCloud,
+    );
+    if (existing && sameContent(existing, nextPayload, assetIds) && !shouldEnableExistingCloud) {
+      return existing.sync;
+    }
+    const initialSync: LocalDocumentSync = cloudAccountId
+      ? { scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId }
+      : { scope: "local-only", state: "clean", baseRevision: null };
+    const currentSync = shouldEnableExistingCloud
+      ? initialSync
+      : existing?.sync ?? initialSync;
+    const sync = pendingSync(currentSync);
     const envelope: LocalDocumentEnvelope<CreatorWorkspacePayload> = {
       documentId: workspace.key,
       documentKind: "creator-workspace",
@@ -100,14 +134,92 @@ export class CreatorWorkspaceRepository {
       contractVersion: "1",
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
-      assetIds: workspace.document.assets.map((asset) => asset.id),
-      sync: existing?.sync ?? { scope: "local-only", state: "clean", baseRevision: null },
-      payload: payload(workspace),
+      assetIds,
+      sync,
+      payload: nextPayload,
     };
     await this.#store.put(envelope, mediaRecords(workspace));
+    return sync;
+  }
+
+  async restoreRemote(
+    remote: RemoteCloudDocument,
+    media: ReadonlyMap<string, Uint8Array>,
+    accountId: string,
+  ): Promise<StoredCreatorWorkspace> {
+    if (remote.documentKind !== "creator-workspace"
+      || remote.contractFamily !== "creator-workspace-draft"
+      || remote.contractVersion !== "1"
+      || remote.deletedAt !== null
+      || !isCreatorWorkspacePayload(remote.payload)
+      || remote.payload.key !== remote.documentId
+      || remote.payload.document.package.id !== remote.documentId) {
+      throw new Error("云端 Creator Workspace 格式无效。");
+    }
+    const diagnostics = await validateResourcePackageCandidate(remote.payload.document, media);
+    if (diagnostics.some((item) => item.severity === "error")) {
+      throw new Error(`云端 Creator Workspace 无效：${diagnostics[0]!.code}`);
+    }
+    const workspace = createWorkspace({
+      document: remote.payload.document,
+      media: new Map(media),
+      folders: remote.payload.folders,
+      resourceLocations: remote.payload.resourceLocations,
+      openResourceIds: remote.payload.openResourceIds,
+      previewResourceId: remote.payload.previewResourceId,
+      currentFolderId: remote.payload.currentFolderId,
+      dirtyResourceIds: remote.payload.dirtyResourceIds ?? [],
+    } as CreatorWorkspace, remote.payload.dirty);
+    const sync: LocalDocumentSync = {
+      scope: "cloud",
+      state: "clean",
+      baseRevision: String(remote.revision),
+      accountId,
+      mutationId: null,
+      lastError: null,
+    };
+    await this.#store.put({
+      documentId: remote.documentId,
+      documentKind: "creator-workspace",
+      contractFamily: remote.contractFamily,
+      contractVersion: remote.contractVersion,
+      createdAt: remote.createdAt,
+      updatedAt: remote.updatedAt,
+      assetIds: [...remote.assetIds],
+      sync,
+      payload: structuredClone(remote.payload),
+    }, mediaRecords(workspace));
+    return { workspace, sync };
+  }
+
+  async syncState(documentId: string): Promise<LocalDocumentSync | undefined> {
+    return (await this.#store.get("creator-workspace", documentId))?.sync;
   }
 
   async remove(workspaceKey: string): Promise<void> {
     await this.#store.remove("creator-workspace", workspaceKey);
   }
+}
+
+function sameContent(
+  existing: LocalDocumentEnvelope<CreatorWorkspacePayload>,
+  nextPayload: CreatorWorkspacePayload,
+  assetIds: string[],
+): boolean {
+  return JSON.stringify(existing.payload) === JSON.stringify(nextPayload)
+    && JSON.stringify(existing.assetIds) === JSON.stringify(assetIds);
+}
+
+function isCreatorWorkspacePayload(value: unknown): value is CreatorWorkspacePayload {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<CreatorWorkspacePayload>;
+  return candidate.version === 1
+    && typeof candidate.key === "string"
+    && typeof candidate.dirty === "boolean"
+    && Boolean(candidate.document)
+    && Array.isArray(candidate.folders)
+    && Array.isArray(candidate.resourceLocations)
+    && Array.isArray(candidate.openResourceIds)
+    && (candidate.previewResourceId === null || typeof candidate.previewResourceId === "string")
+    && (candidate.currentFolderId === null || typeof candidate.currentFolderId === "string");
 }

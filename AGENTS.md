@@ -44,6 +44,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
 - `packages/tabletop/`：共享 Tabletop Core 与 React Surface；使用 `core` 和 `react` 子入口隔离
 - `packages/local-storage/`：浏览器本地持久化底座；拥有 PbDH IndexedDB schema 与通用文档/媒体存储实现，业务模块只通过各自 Repository 接口使用
+- `packages/cloud-documents/`：浏览器端共享 Cloud Document Client 与持久 outbox/conflict 协调；只解释统一文档信封、revision、媒体准备和会话写门禁，不解释领域 payload
 - `packages/platform-auth/`：浏览器端共享身份与活动会话客户端；使用无 React 的 `core` 入口和 React `provider` 入口，提供统一账号状态与 Platform App Bar 账号控件，不拥有业务文档或权限规则
 - `packages/platform-ui/`：所有前端共用的 Platform App Bar 与应用级外壳样式；各 App 只注入当前页面和导航动作，不复制顶部栏实现
 - `packages/publication-ui/`：Creator 与 Market 共用的 Publication 展示信息窗口；Creator 注入完整资源包发布动作，Market 注入既有 Publication 展示信息更新动作
@@ -61,6 +62,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `packages/contract-runtime`、`packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
 - `packages/local-storage` 只拥有浏览器存储机制与共享信封，不解释 Creator Workspace、GM Tabletop Document 或 Character Save payload；各领域 Repository 负责 Contract 校验与生命周期。
+- `packages/cloud-documents` 可以依赖 `packages/local-storage` 与 `packages/platform-auth` 的凭据类型；不得依赖任何 App、领域 payload、React 或 Template/Renderer。
 - `packages/platform-auth/core` 只依赖外部身份 SDK 和 Platform Backend HTTP 边界；React provider 可依赖 core 与 React，不得依赖任何 App 或业务领域 package。
 - Platform Shell 在单一 origin 只挂载一个账号 Provider；Player、Creator/GM 与 Market 切换复用该活动会话，不得重新认领或顶替。
 - `packages/platform-ui` 可以依赖 `packages/platform-auth/provider`；业务 App 不得复制 Platform App Bar 的结构或样式。

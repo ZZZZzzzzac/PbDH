@@ -108,5 +108,32 @@ export const creatorWorkspaceDesign = {
       "previewBackground": "#D8D1C7",
       "previewBorder": "#C9C1B6"
     }
+  },
+  "cloudDocuments": {
+    "page": "21 Cloud Documents",
+    "statesFrame": "#43 / Creator 与 GM 云同步状态",
+    "dialogsFrame": "#43 / 云同步对话框与回收站",
+    "status": {
+      "localBackground": "#E9E4DC",
+      "localForeground": "#62574E",
+      "pendingBackground": "#F4E5C3",
+      "pendingForeground": "#8A5A16",
+      "cleanBackground": "#DDE7DD",
+      "cleanForeground": "#365D4C",
+      "conflictBackground": "#EEDAD7",
+      "conflictForeground": "#8A2525"
+    },
+    "menus": {
+      "workspaceWidth": 220,
+      "tabletopWidth": 248,
+      "accountDialogWidth": 360
+    },
+    "dialogs": {
+      "syncWidth": 430,
+      "conflictWidth": 650,
+      "trashWidth": 720,
+      "trashEmptyBackground": "#E9E4DC",
+      "trashEmptyForeground": "#3C332D"
+    }
   }
 } as const;

@@ -21,8 +21,16 @@ const pages: Array<{ id: PlatformPage; label: string }> = [
   { id: "market", label: "资源市场" },
 ];
 
-type AppBarRegistration = { token: symbol; actions: ReactNode };
-type RegisterAppBarActions = (page: PlatformPage, actions: ReactNode) => () => void;
+type AppBarRegistration = {
+  token: symbol;
+  actions?: ReactNode;
+  accountManageLabel?: string;
+  onAccountManage?: () => void;
+};
+type RegisterAppBarActions = (
+  page: PlatformPage,
+  registration: Omit<AppBarRegistration, "token">,
+) => () => void;
 
 const AppBarActionsContext = createContext<RegisterAppBarActions | null>(null);
 
@@ -36,9 +44,9 @@ export function PlatformChrome({
   children: ReactNode;
 }) {
   const [registrations, setRegistrations] = useState<Partial<Record<PlatformPage, AppBarRegistration>>>({});
-  const register = useCallback<RegisterAppBarActions>((page, actions) => {
+  const register = useCallback<RegisterAppBarActions>((page, registration) => {
     const token = Symbol(page);
-    setRegistrations((current) => ({ ...current, [page]: { token, actions } }));
+    setRegistrations((current) => ({ ...current, [page]: { token, ...registration } }));
     return () => setRegistrations((current) => {
       if (current[page]?.token !== token) return current;
       const next = { ...current };
@@ -58,6 +66,8 @@ export function PlatformChrome({
       activePage={activePage}
       onNavigate={navigation}
       extraActions={registrations[activePage]?.actions}
+      accountManageLabel={registrations[activePage]?.accountManageLabel}
+      onAccountManage={registrations[activePage]?.onAccountManage}
     />
     {children}
   </AppBarActionsContext.Provider>;
@@ -65,7 +75,19 @@ export function PlatformChrome({
 
 export function usePlatformAppBarActions(page: PlatformPage, actions: ReactNode): void {
   const register = useContext(AppBarActionsContext);
-  useEffect(() => register?.(page, actions), [actions, page, register]);
+  useEffect(() => register?.(page, { actions }), [actions, page, register]);
+}
+
+export function usePlatformAccountManagement(
+  page: PlatformPage,
+  label: string,
+  onManage: () => void,
+): void {
+  const register = useContext(AppBarActionsContext);
+  useEffect(
+    () => register?.(page, { accountManageLabel: label, onAccountManage: onManage }),
+    [label, onManage, page, register],
+  );
 }
 
 export function PlatformAppBar({

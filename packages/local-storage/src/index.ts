@@ -9,6 +9,9 @@ export type LocalDocumentSync = {
   scope: "local-only" | "cloud";
   state: "clean" | "pending" | "conflict";
   baseRevision: string | null;
+  accountId?: string | null;
+  mutationId?: string | null;
+  lastError?: string | null;
 };
 
 export type LocalDocumentEnvelope<T = unknown> = {

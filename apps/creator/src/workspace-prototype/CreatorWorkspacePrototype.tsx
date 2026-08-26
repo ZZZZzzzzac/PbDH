@@ -18,7 +18,12 @@ import {
   type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
-import { DexieLocalDocumentStore } from "@pbdh/local-storage";
+import type { RemoteCloudDocument } from "@pbdh/cloud-documents";
+import {
+  DexieLocalDocumentStore,
+  type LocalDocumentKind,
+  type LocalDocumentSync,
+} from "@pbdh/local-storage";
 import {
   createBrowserImageAdmission,
   publicationCoverPolicy,
@@ -26,6 +31,7 @@ import {
   type ImageAdmissionPolicy,
 } from "@pbdh/media-admission";
 import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
+import { usePlatformAccountManagement } from "@pbdh/platform-ui";
 import { PublicationDialog } from "@pbdh/publication-ui";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import {
@@ -53,6 +59,10 @@ import {
 } from "@pbdh/templates/core";
 
 import { creatorWorkspaceDesign } from "./design.generated.ts";
+import {
+  CreatorCloudDocumentService,
+  type CreatorCloudRecovery,
+} from "./cloud-document-service.ts";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
 import {
   creatorMarketHandoffMismatch,
@@ -112,7 +122,12 @@ type Dialog =
   | { kind: "new-tabletop" }
   | { kind: "rename-tabletop"; tabletopId: string }
   | { kind: "delete-tabletop"; tabletopId: string; name: string }
+  | { kind: "sync-document"; documentKind: CloudDocumentKind; documentId: string; name: string }
+  | { kind: "cloud-conflict"; documentKind: CloudDocumentKind; documentId: string; name: string }
+  | { kind: "cloud-trash" }
   | null;
+
+type CloudDocumentKind = Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">;
 
 type TabletopContextMenu =
   | { kind: "resource"; resourceId: string; x: number; y: number }
@@ -211,11 +226,16 @@ const iconPaths = {
   check: ["m5 12 4 4L19 6"],
   chevronDown: ["m6 9 6 6 6-6"],
   chevronRight: ["m9 18 6-6-6-6"],
+  cloudAlert: ["M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 0 1 0 9Z", "M12 12v3", "M12 17h.01"],
+  cloudCheck: ["M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 0 1 0 9Z", "m10 15 2 2 4-4"],
+  cloudOff: ["m2 2 20 20", "M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 2.7-.9", "M10.7 4.2A7 7 0 0 1 15.7 10h1.8a4.5 4.5 0 0 1 4.2 6"],
+  cloudUpload: ["M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 0 1 0 9Z", "M12 17v-6", "m9 14 3-3 3 3"],
   download: ["M12 3v12", "m7 10 5 5 5-5", "M5 21h14"],
   ellipsis: ["M5 12h.01", "M12 12h.01", "M19 12h.01"],
   filePlus: ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z", "M14 2v6h6", "M12 18v-6", "M9 15h6"],
   folder: ["M3 6h6l2 2h10v11H3Z"],
   folderPlus: ["M3 6h6l2 2h10v11H3Z", "M12 11v6", "M9 14h6"],
+  grid: ["M4 4h6v6H4Z", "M14 4h6v6h-6Z", "M4 14h6v6H4Z", "M14 14h6v6h-6Z"],
   grip: ["M9 5h.01", "M15 5h.01", "M9 12h.01", "M15 12h.01", "M9 19h.01", "M15 19h.01"],
   image: ["M3 5h18v14H3Z", "m3 16 5-5 4 4 3-3 3 4", "M14.5 9.5h.01"],
   package: ["m12 3 9 5-9 5-9-5Z", "m3 8 9 5 9-5", "M3 8v9l9 5 9-5V8", "M12 13v9"],
@@ -224,6 +244,7 @@ const iconPaths = {
   settings: ["M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z", "M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 14.7a1.7 1.7 0 0 0-1.55-1H5v-3h.09A1.7 1.7 0 0 0 6.64 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.3 3.8V3h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19 8.3a1.7 1.7 0 0 0 1.55 1H21v3h-.09A1.7 1.7 0 0 0 19.4 15Z"],
   skull: ["M8 19v2", "M12 19v2", "M16 19v2", "M5 12a7 7 0 1 1 14 0v4l-3 3H8l-3-3Z", "M9 13h.01", "M15 13h.01"],
   sword: ["m14.5 17.5-8-8", "m11 6 6-3-3 6", "m5 14-2 2 5 5 2-2", "m14 9 7-7", "m15 4 5 5"],
+  trash: ["M3 6h18", "M19 6l-1 14H6L5 6", "M8 6V4h8v2", "M10 11v6", "M14 11v6"],
   upload: ["M12 21V9", "m7 14 5-5 5 5", "M5 3h14"],
   user: ["M20 21a8 8 0 0 0-16 0", "M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"],
   x: ["M18 6 6 18", "m6 6 12 12"],
@@ -233,6 +254,25 @@ function Icon({ name }: { name: keyof typeof iconPaths }) {
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
     {iconPaths[name].map((path) => <path key={path} d={path} />)}
   </svg>;
+}
+
+function CloudSyncIndicator({ sync }: { sync?: LocalDocumentSync }) {
+  const state = sync?.scope === "cloud" ? sync.state : "local";
+  const presentation = {
+    local: { icon: "cloudOff" as const, label: "本地" },
+    pending: { icon: "cloudUpload" as const, label: "待同步" },
+    clean: { icon: "cloudCheck" as const, label: "已同步" },
+    conflict: { icon: "cloudAlert" as const, label: "冲突" },
+  }[state];
+  return <span className={`cloud-sync-state is-${state}`} title={presentation.label} aria-label={presentation.label}>
+    <Icon name={presentation.icon} />
+  </span>;
+}
+
+function trashRemainingDays(purgeAfter: string | null): string {
+  if (!purgeAfter) return "";
+  const remaining = Math.max(0, Math.ceil((Date.parse(purgeAfter) - Date.now()) / 86_400_000));
+  return `剩余 ${remaining} 天`;
 }
 
 function AdversaryEditor({
@@ -402,6 +442,9 @@ export function CreatorWorkspacePrototype({
     if (mode !== nextMode) onModeChange?.(nextMode);
   }, [mode, onModeChange]);
   const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
+  const [workspaceSync, setWorkspaceSync] = useState<Map<string, LocalDocumentSync>>(() => new Map());
+  const [tabletopSync, setTabletopSync] = useState<Map<string, LocalDocumentSync>>(() => new Map());
+  const [cloudTrash, setCloudTrash] = useState<RemoteCloudDocument[]>([]);
   const [activeTabletopId, setActiveTabletopId] = useState("");
   const [tabletopNameDraft, setTabletopNameDraft] = useState("");
   const [selectedInstanceId, setSelectedInstanceId] = useState("");
@@ -422,6 +465,7 @@ export function CreatorWorkspacePrototype({
   const suppressCanvasContextMenuRef = useRef(false);
   const tabletopViewportRef = useRef<HTMLDivElement>(null);
   const marketHandoffStartedRef = useRef<string | null>(null);
+  const cloudRecoveryAccountRef = useRef<string | null>(null);
   const workspaceWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [notice, setNotice] = useState<string | null>(null);
@@ -432,22 +476,59 @@ export function CreatorWorkspacePrototype({
   const localDocumentStore = useMemo(() => new DexieLocalDocumentStore(), []);
   const creatorWorkspaceRepository = useMemo(() => new CreatorWorkspaceRepository(localDocumentStore), [localDocumentStore]);
   const tabletopRepository = useMemo(() => new TabletopDocumentRepository(localDocumentStore), [localDocumentStore]);
+  const cloudDocumentService = useMemo(() => new CreatorCloudDocumentService(
+    localDocumentStore,
+    creatorWorkspaceRepository,
+    tabletopRepository,
+  ), [creatorWorkspaceRepository, localDocumentStore, tabletopRepository]);
   const active = workspaces.find((workspace) => workspace.key === activeKey) ?? workspaces[0];
   const activeTabletop = tabletops.find((tabletop) => tabletop.id === activeTabletopId);
   const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
+  const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean) => {
+    const restoredWorkspaces = snapshot.workspaces.map((item) => item.workspace);
+    const restoredTabletops = snapshot.tabletops.map((item) => item.model);
+    setWorkspaceSync(new Map(snapshot.workspaces.map((item) => [item.workspace.key, item.sync])));
+    setTabletopSync(new Map(snapshot.tabletops.map((item) => [item.model.id, item.sync])));
+    if (!replaceDocuments) return;
+    setWorkspaces(restoredWorkspaces);
+    setTabletops(restoredTabletops);
+    setActiveKey((current) => restoredWorkspaces.some((item) => item.key === current)
+      ? current
+      : restoredWorkspaces[0]?.key ?? "");
+    setActiveResourceId((current) => restoredWorkspaces.some((item) =>
+      item.document.resources.some((resource) => resource.id === current))
+      ? current
+      : restoredWorkspaces[0]?.openResourceIds[0] ?? "");
+    setActiveTabletopId((current) => restoredTabletops.some((item) => item.id === current)
+      ? current
+      : restoredTabletops[0]?.id ?? "");
+    const media = new Map(snapshot.tabletops.flatMap((item) => [...item.media]));
+    setTabletopMedia(media);
+    setAssetUrls((current) => new Map([
+      ...current,
+      ...restoredWorkspaces.flatMap((workspace) => [...bytesToUrlMap(workspace)]),
+      ...[...media].map(([id, bytes]) => [id, URL.createObjectURL(new Blob([
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      ], { type: "image/webp" }))] as const),
+    ]));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    creatorWorkspaceRepository.list()
+    creatorWorkspaceRepository.listStored()
       .then((stored) => {
-        if (cancelled || stored.length === 0) return;
-        setWorkspaces(stored);
-        const restoredActive = stored[0];
+        const visible = stored.filter((item) => item.sync.scope === "local-only"
+          || item.sync.accountId === auth.credentials?.accountId);
+        if (cancelled) return;
+        const restored = visible.map((item) => item.workspace);
+        setWorkspaces(restored);
+        setWorkspaceSync(new Map(visible.map((item) => [item.workspace.key, item.sync])));
+        const restoredActive = restored[0];
         setActiveKey(restoredActive?.key ?? "");
         setActiveResourceId(restoredActive?.openResourceIds[0] ?? "");
         setAssetUrls((current) => new Map([
           ...current,
-          ...stored.flatMap((workspace) => [...bytesToUrlMap(workspace)]),
+          ...restored.flatMap((workspace) => [...bytesToUrlMap(workspace)]),
         ]));
       })
       .catch((error) => setNotice(error instanceof Error ? error.message : "工作区恢复失败"))
@@ -455,7 +536,7 @@ export function CreatorWorkspacePrototype({
         if (!cancelled) setWorkspaceStorageReady(true);
       });
     return () => { cancelled = true; };
-  }, [creatorWorkspaceRepository]);
+  }, [auth.credentials?.accountId, creatorWorkspaceRepository]);
 
   useEffect(() => {
     if (!workspaceStorageReady || !tabletopStorageReady || marketHandoffStartedRef.current === handoffUrl) return;
@@ -513,26 +594,39 @@ export function CreatorWorkspacePrototype({
   useEffect(() => {
     if (!workspaceStorageReady) return;
     const timeout = window.setTimeout(() => {
-      const selected = workspaces.find((workspace) => workspace.key === activeKey);
       const write = workspaceWriteQueueRef.current.then(async () => {
-        await Promise.all(workspaces.map((workspace) => creatorWorkspaceRepository.save(workspace)));
-        if (selected) await creatorWorkspaceRepository.save(selected);
+        await Promise.all(workspaces.map((workspace) =>
+          creatorWorkspaceRepository.save(workspace, auth.credentials?.accountId ?? null)));
+        if (auth.credentials) {
+          const snapshot = await cloudDocumentService.flush("creator-workspace", auth.credentials);
+          applyCloudSnapshot(snapshot, false);
+        }
       });
       workspaceWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => setNotice(error instanceof Error ? error.message : "工作区保存失败"));
     }, 120);
     return () => window.clearTimeout(timeout);
-  }, [activeKey, creatorWorkspaceRepository, workspaceStorageReady, workspaces]);
+  }, [
+    applyCloudSnapshot,
+    auth.credentials,
+    cloudDocumentService,
+    creatorWorkspaceRepository,
+    workspaceStorageReady,
+    workspaces,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
     tabletopRepository.list()
       .then((stored) => {
-        if (cancelled || stored.length === 0) return;
-        const models = stored.map((item) => item.model);
-        const media = new Map(stored.flatMap((item) => [...item.media]));
+        const visible = stored.filter((item) => item.sync.scope === "local-only"
+          || item.sync.accountId === auth.credentials?.accountId);
+        if (cancelled) return;
+        const models = visible.map((item) => item.model);
+        const media = new Map(visible.flatMap((item) => [...item.media]));
         setTabletops(models);
-        setActiveTabletopId(models[0]!.id);
+        setTabletopSync(new Map(visible.map((item) => [item.model.id, item.sync])));
+        setActiveTabletopId(models[0]?.id ?? "");
         setSelectedInstanceId("");
         setTabletopMedia(media);
         setAssetUrls((current) => new Map([...current, ...[...media].map(([id, bytes]) => [
@@ -547,7 +641,34 @@ export function CreatorWorkspacePrototype({
         if (!cancelled) setTabletopStorageReady(true);
       });
     return () => { cancelled = true; };
-  }, [tabletopRepository]);
+  }, [auth.credentials?.accountId, tabletopRepository]);
+
+  useEffect(() => {
+    const credentials = auth.credentials;
+    if (!credentials) {
+      cloudRecoveryAccountRef.current = null;
+      return;
+    }
+    if (!workspaceStorageReady || !tabletopStorageReady) return;
+    if (cloudRecoveryAccountRef.current === credentials.accountId) return;
+    cloudRecoveryAccountRef.current = credentials.accountId;
+    let cancelled = false;
+    cloudDocumentService.recover(credentials)
+      .then((snapshot) => {
+        if (!cancelled) applyCloudSnapshot(snapshot, true);
+      })
+      .catch((error) => {
+        cloudRecoveryAccountRef.current = null;
+        if (!cancelled) setNotice(error instanceof Error ? error.message : "云文档恢复失败");
+      });
+    return () => { cancelled = true; };
+  }, [
+    applyCloudSnapshot,
+    auth.credentials,
+    cloudDocumentService,
+    tabletopStorageReady,
+    workspaceStorageReady,
+  ]);
 
   const resource = active?.document.resources.find((candidate) => candidate.id === activeResourceId);
   const isAdversary = Boolean(resource && isTemplate(resource, adversaryTemplate));
@@ -574,13 +695,25 @@ export function CreatorWorkspacePrototype({
     const timeout = window.setTimeout(() => {
       const write = tabletopWriteQueueRef.current.then(async () => {
         await Promise.all(tabletops.map((tabletop) =>
-          tabletopRepository.save(tabletop, allTabletopMedia)));
+          tabletopRepository.save(tabletop, allTabletopMedia, auth.credentials?.accountId ?? null)));
+        if (auth.credentials) {
+          const snapshot = await cloudDocumentService.flush("gm-tabletop-document", auth.credentials);
+          applyCloudSnapshot(snapshot, false);
+        }
       });
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => setNotice(error instanceof Error ? error.message : "桌面保存失败"));
     }, 120);
     return () => window.clearTimeout(timeout);
-  }, [allTabletopMedia, tabletopRepository, tabletopStorageReady, tabletops]);
+  }, [
+    allTabletopMedia,
+    applyCloudSnapshot,
+    auth.credentials,
+    cloudDocumentService,
+    tabletopRepository,
+    tabletopStorageReady,
+    tabletops,
+  ]);
 
   useEffect(() => {
     if (!tabletopContextMenu) return;
@@ -665,6 +798,15 @@ export function CreatorWorkspacePrototype({
     "--gm-selected-border": creatorWorkspaceDesign.gmTabletop.canvas.selectedBorder,
     "--gm-canvas-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.canvasWidth}px`,
     "--gm-instance-menu-width": `${creatorWorkspaceDesign.gmTabletop.menus.instanceWidth}px`,
+    "--cloud-local": creatorWorkspaceDesign.cloudDocuments.status.localForeground,
+    "--cloud-pending": creatorWorkspaceDesign.cloudDocuments.status.pendingForeground,
+    "--cloud-clean": creatorWorkspaceDesign.cloudDocuments.status.cleanForeground,
+    "--cloud-conflict": creatorWorkspaceDesign.cloudDocuments.status.conflictForeground,
+    "--cloud-sync-dialog-width": `${creatorWorkspaceDesign.cloudDocuments.dialogs.syncWidth}px`,
+    "--cloud-conflict-dialog-width": `${creatorWorkspaceDesign.cloudDocuments.dialogs.conflictWidth}px`,
+    "--cloud-trash-dialog-width": `${creatorWorkspaceDesign.cloudDocuments.dialogs.trashWidth}px`,
+    "--cloud-trash-empty-background": creatorWorkspaceDesign.cloudDocuments.dialogs.trashEmptyBackground,
+    "--cloud-trash-empty-foreground": creatorWorkspaceDesign.cloudDocuments.dialogs.trashEmptyForeground,
   } as CSSProperties;
 
   function replaceActive(next: CreatorWorkspace) {
@@ -688,33 +830,122 @@ export function CreatorWorkspacePrototype({
     setDialog({ kind: "close-workspace", workspaceKey, name: workspace.document.package.name });
   }
 
+  function requestCloudSync(documentKind: CloudDocumentKind, documentId: string, name: string) {
+    if (!auth.credentials) {
+      setNotice("请先登录再启用云同步");
+      return;
+    }
+    setTabletopContextMenu(null);
+    setDialog({ kind: "sync-document", documentKind, documentId, name });
+  }
+
+  async function confirmCloudSync(documentKind: CloudDocumentKind, documentId: string) {
+    const credentials = auth.credentials;
+    if (!credentials) return setNotice("请先登录再启用云同步");
+    try {
+      const snapshot = await cloudDocumentService.enable(documentKind, documentId, credentials);
+      applyCloudSnapshot(snapshot, false);
+      setDialog(null);
+      setNotice("已同步到云端");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "云同步失败");
+    }
+  }
+
+  const openCloudTrash = useCallback(async () => {
+    const credentials = auth.credentials;
+    if (!credentials) return setNotice("请先登录再查看云端回收站");
+    setTabletopContextMenu(null);
+    try {
+      setCloudTrash(await cloudDocumentService.listTrash(credentials));
+      setDialog({ kind: "cloud-trash" });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "云端回收站读取失败");
+    }
+  }, [auth.credentials, cloudDocumentService]);
+  usePlatformAccountManagement("creator", "云端回收站", openCloudTrash);
+  usePlatformAccountManagement("gm", "云端回收站", openCloudTrash);
+
+  async function restoreCloudTrashDocument(remote: RemoteCloudDocument) {
+    const credentials = auth.credentials;
+    if (!credentials) return setNotice("请先登录再恢复云文档");
+    try {
+      const snapshot = await cloudDocumentService.restoreFromTrash(remote, credentials);
+      applyCloudSnapshot(snapshot, true);
+      setCloudTrash((current) => current.filter((item) => item.documentId !== remote.documentId));
+      setNotice("云文档已恢复");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "云文档恢复失败");
+    }
+  }
+
+  async function resolveCloudConflict(
+    documentKind: CloudDocumentKind,
+    documentId: string,
+    action: "cloud" | "local" | "aside",
+  ) {
+    const credentials = auth.credentials;
+    if (!credentials) return setNotice("请先登录再处理云冲突");
+    try {
+      if (documentKind === "creator-workspace") await workspaceWriteQueueRef.current;
+      else await tabletopWriteQueueRef.current;
+      if (action === "aside") {
+        if (documentKind === "creator-workspace") {
+          const source = workspaces.find((item) => item.key === documentId);
+          if (!source) throw new Error("没有找到冲突的本地工作区。");
+          const fork = await forkCurrentWorkspace(source);
+          await creatorWorkspaceRepository.save(fork, null);
+        } else {
+          const source = tabletops.find((item) => item.id === documentId);
+          if (!source) throw new Error("没有找到冲突的本地桌面。");
+          await tabletopRepository.save({
+            ...structuredClone(source),
+            id: crypto.randomUUID(),
+            name: `${source.name} - 本地副本`,
+          }, allTabletopMedia, null);
+        }
+      }
+      const snapshot = action === "local"
+        ? await cloudDocumentService.overwriteWithLocal(documentKind, documentId, credentials)
+        : await cloudDocumentService.keepCloud(documentKind, documentId, credentials);
+      applyCloudSnapshot(snapshot, true);
+      setDialog(null);
+      setNotice(action === "local" ? "已用本地版本覆盖云端" : action === "aside" ? "本地版本已另存" : "已保留云端版本");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "云冲突处理失败");
+    }
+  }
+
   async function closeWorkspacePackage(workspaceKey: string) {
     const closing = workspaces.find((workspace) => workspace.key === workspaceKey);
     if (!closing) return;
-    const remaining = workspaces.filter((workspace) => workspace.key !== workspaceKey);
-    setWorkspaces(remaining);
-    if (active?.key === workspaceKey) {
-      const next = remaining[0];
-      setActiveKey(next?.key ?? "");
-      setActiveResourceId(next?.openResourceIds[0] ?? "");
-    }
     setTabletopContextMenu(null);
-    setDialog(null);
-
-    const removal = workspaceWriteQueueRef.current.then(() => creatorWorkspaceRepository.remove(workspaceKey));
-    workspaceWriteQueueRef.current = removal.catch(() => undefined);
     try {
-      await removal;
+      await workspaceWriteQueueRef.current;
+      const sync = workspaceSync.get(workspaceKey);
+      if (sync?.scope === "cloud") {
+        if (!auth.credentials?.canWrite) throw new Error("当前会话不能删除云端工作区。");
+        applyCloudSnapshot(await cloudDocumentService.trash(
+          "creator-workspace",
+          workspaceKey,
+          auth.credentials,
+        ), true);
+      } else {
+        await creatorWorkspaceRepository.remove(workspaceKey);
+        const remaining = workspaces.filter((workspace) => workspace.key !== workspaceKey);
+        setWorkspaces(remaining);
+        if (active?.key === workspaceKey) {
+          const next = remaining[0];
+          setActiveKey(next?.key ?? "");
+          setActiveResourceId(next?.openResourceIds[0] ?? "");
+        }
+      }
+      setDialog(null);
     } catch (error) {
-      setWorkspaces((current) => current.some((workspace) => workspace.key === workspaceKey)
-        ? current
-        : [...current, closing]);
-      setActiveKey(workspaceKey);
-      setActiveResourceId(closing.openResourceIds[0] ?? "");
       setNotice(error instanceof Error ? error.message : "资源包关闭失败");
       return;
     }
-    setNotice("资源包已关闭并删除");
+    setNotice(workspaceSync.get(workspaceKey)?.scope === "cloud" ? "资源包已移到云端回收站" : "资源包已关闭并删除");
   }
 
   function activateWorkspaceResource(resourceId: string) {
@@ -934,22 +1165,27 @@ export function CreatorWorkspacePrototype({
   }
 
   async function deleteTabletop(tabletopId: string) {
-    const remaining = tabletops.filter((tabletop) => tabletop.id !== tabletopId);
-    const nextActiveId = activeTabletopId === tabletopId
-      ? remaining[0]?.id ?? ""
-      : activeTabletopId;
-    setTabletops(remaining);
-    setActiveTabletopId(nextActiveId);
-    setSelectedInstanceId("");
-    setTabletopView("canvas");
     setTabletopContextMenu(null);
-    setDialog(null);
-
-    const removal = tabletopWriteQueueRef.current.then(() => tabletopRepository.remove(tabletopId));
-    tabletopWriteQueueRef.current = removal.catch(() => undefined);
     try {
-      await removal;
-      setNotice("桌面已删除");
+      await tabletopWriteQueueRef.current;
+      const sync = tabletopSync.get(tabletopId);
+      if (sync?.scope === "cloud") {
+        if (!auth.credentials?.canWrite) throw new Error("当前会话不能删除云端桌面。");
+        applyCloudSnapshot(await cloudDocumentService.trash(
+          "gm-tabletop-document",
+          tabletopId,
+          auth.credentials,
+        ), true);
+      } else {
+        await tabletopRepository.remove(tabletopId);
+        const remaining = tabletops.filter((tabletop) => tabletop.id !== tabletopId);
+        setTabletops(remaining);
+        setActiveTabletopId(activeTabletopId === tabletopId ? remaining[0]?.id ?? "" : activeTabletopId);
+      }
+      setSelectedInstanceId("");
+      setTabletopView("canvas");
+      setDialog(null);
+      setNotice(sync?.scope === "cloud" ? "桌面已移到云端回收站" : "桌面已删除");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "桌面删除失败");
     }
@@ -972,7 +1208,7 @@ export function CreatorWorkspacePrototype({
 
   async function exportTabletop() {
     if (!activeTabletop) return;
-    const candidate = await tabletopRepository.save(activeTabletop, allTabletopMedia);
+    const candidate = await tabletopRepository.save(activeTabletop, allTabletopMedia, auth.credentials?.accountId ?? null);
     const bytes = writePbtab(candidate.document, candidate.media);
     const blob = new Blob([
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
@@ -998,7 +1234,7 @@ export function CreatorWorkspacePrototype({
       setDialog({ kind: "diagnostics", title: "导入失败 · 零写入", diagnostics: result.diagnostics });
       return;
     }
-    const model = await tabletopRepository.import(result.candidate);
+    const model = await tabletopRepository.import(result.candidate, auth.credentials?.accountId ?? null);
     setTabletopMedia((current) => new Map([...current, ...result.candidate!.media]));
     setAssetUrls((current) => new Map([
       ...current,
@@ -1066,7 +1302,9 @@ export function CreatorWorkspacePrototype({
     setActiveKey(next.key);
     setActiveResourceId(next.document.resources[0]?.id ?? "");
     setDialog(null);
-    const write = workspaceWriteQueueRef.current.then(() => creatorWorkspaceRepository.save(next));
+    const write = workspaceWriteQueueRef.current.then(async () => {
+      await creatorWorkspaceRepository.save(next, auth.credentials?.accountId ?? null, true);
+    });
     workspaceWriteQueueRef.current = write.catch(() => undefined);
     write.then(() => {
       if (handoff) finishMarketHandoff(next, handoff);
@@ -1335,6 +1573,7 @@ export function CreatorWorkspacePrototype({
               }}>
                 <button type="button" className="package-root-main" onClick={() => switchWorkspace(workspace.key)}>
                   <Icon name={workspace.key === active?.key ? "chevronDown" : "chevronRight"} /><Icon name="package" /><strong>{workspace.document.package.name}</strong>
+                  <CloudSyncIndicator sync={workspaceSync.get(workspace.key)} />
                 </button>
                 <button type="button" aria-label={`${workspace.document.package.name}菜单`} onClick={(event) => {
                   switchWorkspace(workspace.key);
@@ -1378,7 +1617,7 @@ export function CreatorWorkspacePrototype({
                   switchWorkspace(workspace.key);
                   setWorkspaces((currentWorkspaces) => currentWorkspaces.map((item) => item.key === workspace.key ? pinWorkspaceResource(item, candidate.id) : item));
                 }}>
-                  <ResourceIcon resource={candidate} /><span>{resourceTitle(candidate)}</span>{workspace.dirtyResourceIds.includes(candidate.id) && <i aria-label="已修改">●</i>}
+                  <ResourceIcon resource={candidate} /><span>{resourceTitle(candidate)}</span>
                 </button>
                 <button type="button" className="resource-tab-close" aria-label={`关闭 ${resourceTitle(candidate)}`} onClick={() => closeWorkspaceTab(workspace.key, candidate.id)}><Icon name="x" /></button>
               </div>;
@@ -1430,7 +1669,7 @@ export function CreatorWorkspacePrototype({
             {tabletops.map((tabletop) => <div
               className={`tabletop-tab ${tabletop.id === activeTabletop?.id ? "is-current" : ""}`}
               key={tabletop.id}
-            ><button type="button" className="tabletop-tab-main" onClick={() => { setActiveTabletopId(tabletop.id); setSelectedInstanceId(""); setTabletopView("canvas"); }}><span>▦</span><b>{tabletop.name}</b></button><button
+            ><button type="button" className="tabletop-tab-main" onClick={() => { setActiveTabletopId(tabletop.id); setSelectedInstanceId(""); setTabletopView("canvas"); }}><span>▦</span><b>{tabletop.name}</b><CloudSyncIndicator sync={tabletopSync.get(tabletop.id)} /></button><button
               type="button"
               className="tabletop-tab-close"
               aria-label={`删除 ${tabletop.name}`}
@@ -1563,6 +1802,16 @@ export function CreatorWorkspacePrototype({
         style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 210)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 260)) }}
         onPointerDown={(event) => event.stopPropagation()}
       >
+        {(workspaceSync.get(tabletopContextMenu.workspaceKey)?.scope ?? "local-only") === "local-only" && <button type="button" role="menuitem" onClick={() => {
+          const workspace = workspaces.find((item) => item.key === tabletopContextMenu.workspaceKey);
+          if (workspace) requestCloudSync("creator-workspace", workspace.key, workspace.document.package.name);
+        }}>同步到云端</button>}
+        {workspaceSync.get(tabletopContextMenu.workspaceKey)?.state === "conflict" && <button type="button" role="menuitem" onClick={() => {
+          const workspace = workspaces.find((item) => item.key === tabletopContextMenu.workspaceKey);
+          if (workspace) setDialog({ kind: "cloud-conflict", documentKind: "creator-workspace", documentId: workspace.key, name: workspace.document.package.name });
+          setTabletopContextMenu(null);
+        }}>解决云冲突</button>}
+        <i />
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new" }); }}>新建资源包</button>
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); importRef.current?.click(); }}>导入 .pbres</button>
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); void exportPackage(); }}>导出 .pbres</button>
@@ -1612,6 +1861,12 @@ export function CreatorWorkspacePrototype({
         style={{ left: Math.max(8, Math.min(tabletopContextMenu.x, window.innerWidth - 240)), top: Math.max(8, Math.min(tabletopContextMenu.y, window.innerHeight - 150)) }}
         onPointerDown={(event) => event.stopPropagation()}
       >
+        {(activeTabletop && (tabletopSync.get(activeTabletop.id)?.scope ?? "local-only") === "local-only") && <button type="button" role="menuitem" onClick={() => requestCloudSync("gm-tabletop-document", activeTabletop.id, activeTabletop.name)}>同步到云端</button>}
+        {activeTabletop && tabletopSync.get(activeTabletop.id)?.state === "conflict" && <button type="button" role="menuitem" onClick={() => {
+          setDialog({ kind: "cloud-conflict", documentKind: "gm-tabletop-document", documentId: activeTabletop.id, name: activeTabletop.name });
+          setTabletopContextMenu(null);
+        }}>解决云冲突</button>}
+        <i />
         <button type="button" role="menuitem" onClick={requestTabletopRename}>重命名</button>
         <i />
         <button type="button" role="menuitem" onClick={() => tabletopImportRef.current?.click()}>导入 .pbtab</button>
@@ -1644,7 +1899,7 @@ export function CreatorWorkspacePrototype({
         onClose={() => setDialog(null)}
         onSubmit={() => void publishWorkspace()}
       />}
-      {dialog && dialog.kind !== "publish" && <div className="dialog-backdrop" role="presentation"><section className="dialog" role="dialog" aria-modal="true">
+      {dialog && dialog.kind !== "publish" && <div className="dialog-backdrop" role="presentation"><section className={`dialog dialog-${dialog.kind}`} role="dialog" aria-modal="true">
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
@@ -1665,14 +1920,32 @@ export function CreatorWorkspacePrototype({
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => deleteFeature(dialog.index, dialog.target)}>删除</button></div></>}
         {dialog.kind === "delete-workspace-node" && <><h2>删除{dialog.node.kind === "folder" ? "文件夹" : "资源"}</h2><p>删除“{dialog.name}”？{dialog.node.kind === "folder" ? "文件夹内的资源也会一并删除。" : ""}</p>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => confirmWorkspaceNodeDeletion(dialog.node)}>删除</button></div></>}
-        {dialog.kind === "close-workspace" && <><h2>关闭资源包</h2><p>关闭“{dialog.name}”？对应的本地工作区数据将被删除。</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void closeWorkspacePackage(dialog.workspaceKey)}>关闭并删除</button></div></>}
+        {dialog.kind === "close-workspace" && <><h2>{workspaceSync.get(dialog.workspaceKey)?.scope === "cloud" ? "移到回收站" : "关闭资源包"}</h2><p>{dialog.name}</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void closeWorkspacePackage(dialog.workspaceKey)}>{workspaceSync.get(dialog.workspaceKey)?.scope === "cloud" ? "移到回收站" : "关闭并删除"}</button></div></>}
         {dialog.kind === "new-tabletop" && <><h2>新建桌面</h2><Field className="dialog-field" label="名称" value={tabletopNameDraft} onChange={setTabletopNameDraft} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!tabletopNameDraft.trim()} onClick={createTabletopFromDialog}>创建</button></div></>}
         {dialog.kind === "rename-tabletop" && <><h2>重命名桌面</h2><Field className="dialog-field" label="名称" value={tabletopNameDraft} onChange={setTabletopNameDraft} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" disabled={!tabletopNameDraft.trim()} onClick={() => renameTabletopFromDialog(dialog.tabletopId)}>保存</button></div></>}
-        {dialog.kind === "delete-tabletop" && <><h2>删除桌面</h2><p>删除“{dialog.name}”？对应的本地桌面数据将被删除。</p>
-          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void deleteTabletop(dialog.tabletopId)}>删除</button></div></>}
+        {dialog.kind === "delete-tabletop" && <><h2>{tabletopSync.get(dialog.tabletopId)?.scope === "cloud" ? "移到回收站" : "删除桌面"}</h2><p>{dialog.name}</p>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="danger" onClick={() => void deleteTabletop(dialog.tabletopId)}>{tabletopSync.get(dialog.tabletopId)?.scope === "cloud" ? "移到回收站" : "删除"}</button></div></>}
+        {dialog.kind === "sync-document" && <><h2>同步到云端</h2><p>{dialog.name}</p>
+          <div className="cloud-document-kind">{dialog.documentKind === "creator-workspace" ? "资源工作区" : "GM 桌面"}</div>
+          <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={() => void confirmCloudSync(dialog.documentKind, dialog.documentId)}>同步</button></div></>}
+        {dialog.kind === "cloud-conflict" && <><h2>云端版本有更新</h2><p>{dialog.name}</p>
+          <div className="conflict-choices cloud-conflict-actions">
+            <button type="button" className="primary" onClick={() => void resolveCloudConflict(dialog.documentKind, dialog.documentId, "cloud")}>保留云端</button>
+            <button type="button" onClick={() => void resolveCloudConflict(dialog.documentKind, dialog.documentId, "aside")}>本地另存</button>
+            <button type="button" className="danger" onClick={() => void resolveCloudConflict(dialog.documentKind, dialog.documentId, "local")}>用本地覆盖</button>
+          </div></>}
+        {dialog.kind === "cloud-trash" && <><h2>云端回收站</h2>
+          {cloudTrash.length === 0 ? <div className="cloud-trash-empty"><span><Icon name="trash" /></span><strong>回收站为空</strong></div> : <div className="cloud-trash-list">{cloudTrash.map((item) => <div className="cloud-trash-row" key={`${item.documentKind}:${item.documentId}`}>
+            <Icon name={item.documentKind === "creator-workspace" ? "package" : "grid"} />
+            <div><strong>{item.documentKind === "creator-workspace"
+              ? ((item.payload as { document?: { package?: { name?: string } } }).document?.package?.name ?? "资源工作区")
+              : ((item.payload as { name?: string }).name ?? "GM 桌面")}</strong><small>{item.documentKind === "creator-workspace" ? "资源工作区" : "GM 桌面"}　{trashRemainingDays(item.purgeAfter)}</small></div>
+            <button type="button" onClick={() => void restoreCloudTrashDocument(item)}>恢复</button>
+          </div>)}</div>}
+          <div className="dialog-actions"><button type="button" className="primary" onClick={() => setDialog(null)}>完成</button></div></>}
       </section></div>}
       {notice && <div className="creator-toast" role="status"><Icon name="check" />{notice}</div>}
     </main>

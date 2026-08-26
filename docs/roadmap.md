@@ -8,8 +8,8 @@
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 5 已完成；#23—#33、#35—#41 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Market 敌人交接到 GM 与本地恢复 #40、Market 武器交接到 Player Resource Manager #41 均已通过人工端到端验收；Publication 更新、取消发布、重新发布与主动拉取 #42 已完成自动化验证，等待人工验收。
-- 下一步：人工验收 #42；通过后进入敌人路径的 Creator 与 GM 云恢复 #43。
+- 产品实现：阶段 5 已完成；#23—#33、#35—#43 已完成。阶段 6 已拆为 #38—#45 并完成 triage；Publication 生命周期 #42，以及敌人路径的 Creator Workspace 与 GM Tabletop 云恢复 #43 均已通过自动化和人工验收。
+- 下一步：实现武器路径的 Character Save 云恢复 #44；完成后进入两条真实纵切的联合人工验收 #45。
 
 ## 推进模型
 
@@ -189,7 +189,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 6：完成敌人与武器两条资源纵切
 
-阶段状态：进行中。实现 Issue #38—#45 已发布并完成 triage；#38—#41 已完成，#43、#45 为 HITL，#42、#44 为 AFK。当前处理 #42。
+阶段状态：进行中。实现 Issue #38—#45 已发布并完成 triage；#38—#43 已完成，#44 为 AFK，#45 为 HITL。当前处理 #44。
 
 实施并联合验收两条真实路径。敌人卡验证 Creator、Market 与 GM，武器卡验证 Creator、Market 与 Player：
 

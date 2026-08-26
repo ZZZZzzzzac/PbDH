@@ -73,4 +73,45 @@ describe("Creator Workspace local repository", () => {
     await repository.remove(workspace.key);
     expect(await store.get("creator-workspace", workspace.key)).toBeUndefined();
   });
+
+  test("only marks a cloud workspace pending when its persisted content changes", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const repository = new CreatorWorkspaceRepository(store);
+    let workspace = await createBlankWorkspace("云端工作区");
+
+    await repository.save(workspace, "account-1");
+    const first = await store.get("creator-workspace", workspace.key);
+    expect(first?.sync).toMatchObject({ scope: "cloud", state: "pending", baseRevision: null });
+
+    first!.sync = { scope: "cloud", state: "clean", baseRevision: "1", accountId: "account-1" };
+    await store.put(first!);
+    await repository.save(workspace, "account-1");
+    expect((await store.get("creator-workspace", workspace.key))?.sync.state).toBe("clean");
+
+    workspace = createWorkspaceFolder(workspace, null, "发生变化");
+    await repository.save(workspace, "account-1");
+    expect((await store.get("creator-workspace", workspace.key))?.sync).toMatchObject({
+      scope: "cloud",
+      state: "pending",
+      baseRevision: "1",
+    });
+  });
+
+  test("explicitly converts the same local document id to cloud without a duplicate", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const repository = new CreatorWorkspaceRepository(store);
+    const workspace = await createBlankWorkspace("本地工作区");
+
+    await repository.save(workspace);
+    await repository.save(workspace, "account-1", true);
+
+    expect(await repository.list()).toHaveLength(1);
+    expect((await store.get("creator-workspace", workspace.key))?.sync).toMatchObject({
+      scope: "cloud",
+      state: "pending",
+      accountId: "account-1",
+    });
+  });
 });

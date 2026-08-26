@@ -365,7 +365,27 @@ describe("Creator Workspace prototype state model", () => {
 
     expect(creatorSource).not.toContain("openTabletopIds");
     expect(creatorSource).not.toContain("handoff-tabletop");
-    expect(creatorSource).toContain("creatorWorkspaceRepository.save(next)");
+    expect(creatorSource).toContain(
+      "creatorWorkspaceRepository.save(next, auth.credentials?.accountId ?? null, true)",
+    );
+  });
+
+  test("opens the shared cloud recycle bin from the account dialog and renders its empty state", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const platformUiSource = readFileSync(path.join(
+      root,
+      "packages/platform-ui/src/index.tsx",
+    ), "utf8");
+
+    expect(creatorSource).toContain('usePlatformAccountManagement("creator", "云端回收站", openCloudTrash)');
+    expect(creatorSource).toContain('usePlatformAccountManagement("gm", "云端回收站", openCloudTrash)');
+    expect(creatorSource).toContain("<strong>回收站为空</strong>");
+    expect(creatorSource).not.toContain('role="menuitem" onClick={() => void openCloudTrash()}>云端回收站');
+    expect(platformUiSource).toContain("accountManageLabel={registrations[activePage]?.accountManageLabel}");
+    expect(platformUiSource).toContain("onAccountManage={registrations[activePage]?.onAccountManage}");
   });
 
   test("routes Market handoff through the Platform Shell", () => {
