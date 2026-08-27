@@ -19,4 +19,13 @@ describe("Platform App Bar style isolation", () => {
     expect(source).toContain("{extraActions}");
     expect(stylesheet).toContain(".pbdh-platform-mobile-extra");
   });
+
+  test("owns the shared PbDH notification surface", () => {
+    const source = readFileSync(fileURLToPath(new URL("../../packages/platform-ui/src/index.tsx", import.meta.url)), "utf8");
+    const stylesheet = readFileSync(fileURLToPath(new URL("../../packages/platform-ui/src/styles.css", import.meta.url)), "utf8");
+
+    expect(source).toContain("export function usePlatformNotifications");
+    expect(source).toContain('aria-label="PbDH 通知"');
+    expect(stylesheet).toContain(".pbdh-platform-notification-panel");
+  });
 });

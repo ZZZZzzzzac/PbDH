@@ -11,6 +11,7 @@
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
 - 当前完成工作项：[GitHub Issue #46](https://github.com/ZZZZzzzzac/PbDH/issues/46)“迁移寻望之心作为第二个真实 System Package”。下一项应继续从六个 L1 的未完成产品能力中拆分正式实现 Issue。
+- #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
 
@@ -29,6 +30,9 @@
 - 寻望之心已从 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6` 的 `public/system-packages/heart-of-hopefind` 迁移为第二个真实预置 System Package。旧 `survivor-styles` 已转换为使用“自由”Template 的标准内嵌 `.pbres`；页面、Modules、Dependencies、Character Text Export、3 个 Validation Scripts 与 Skin 均走正式 Loader/Validator/Player Runtime。
 - Player 现在可在 Daggerheart 与寻望之心间显式切换，当前系统偏好跨刷新保存；Character Save 与 active save 按稳定 System Package ID 隔离。移动端 Platform 主菜单同时暴露当前 App 的四组 Player 操作。
 - 旧原型 `apps/player/src/PlayerAppPrototype.tsx` 和旧图片处理器 `apps/player/src/sheet-runtime/rendering/playerImageProcessor.ts` 已移入 Windows 回收站；Git 中记录为删除。
+- Platform App Bar 的通知铃铛现在拥有统一通知队列、数量、查看、逐条关闭与全部清除；Player 已移除两处 `message message-info` 横幅，错误横幅仍保留。
+- Player “系统包”菜单已恢复 ZIP、文件夹上传与 Author Preview。输入目录会同时经过权威 `system.json` Contract 和正式 Sheet Loader/Validator；嵌入 `.pbres` 复用现有资源路由，动态 System Document 进入 Character Save resolver，避免自定义包只能打开却不能保存。
+- 寻望之心作者源中 10 个曾被文本复制损坏的 WebP 已从固定来源仓库按二进制恢复，并重新生成公开 System Package。
 
 ## 已验证
 
@@ -55,6 +59,8 @@
 - #42 真实敌人取消/重新发布验收通过：取消后匿名目录不再包含该 Publication，详情、`.pbres` 下载和媒体均返回 404；作者管理页仍保留同一 Publication。重新发布后公开目录、详情、下载和媒体恢复，Publication ID、Package ID、版本与 Digest 均不变；下载为 200、44,809 bytes，媒体为 200、42,822-byte WebP。#42 与 #45 的最终验收记录已发布，`ready-for-human` 已移除，两个 Issue 均已关闭。
 - #46 自动化浏览器验收通过：寻望之心的 8 个求生者风格可组合为实际人物字段，人物编辑、生命/压力、噪音 d12→d20→d12、切换保存和刷新恢复正常；Daggerheart 原人物与武器数据未被串写。390×844 下页面宽度为 390px、无横向溢出，移动端系统包面板可展开，控制台无 error；临时 viewport 已恢复。
 - 当前 `npm run verify` 通过：55 个 TypeScript 测试文件、335 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
+- 后续修复的浏览器验收通过：系统包菜单显示“上传系统包(zip) / 上传系统包(文件夹) / 系统包预览”；寻望之心页面存在 33 个有效 `128×128` 标记图片、fallback 与破图均为 0；`.message.message-info` 为 0；PbDH 通知显示数量并可打开查看。自动化期间 Codex 未崩溃，浏览器风险旧规则已确认不再存在。
+- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、341 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 
 ## 接下来
 
@@ -76,7 +82,7 @@
 2. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 3. 单独重建被 Git 忽略的 `.env.local`。Supabase 配置沿用 `DaggerHeart_Battle` 的公开客户端 URL 与 anon key，但凭据只从安全的本地来源复制，不写入 handoff 或 Git。
 4. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-5. 运行 `npm run verify`；当前基线为 TypeScript 335 / Python 76 / 类型检查通过 / Platform build 通过。
+5. 运行 `npm run verify`；当前基线为 TypeScript 341 / Python 76 / 类型检查通过 / Platform build 通过。
 6. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；如导入旧人物存档，存档内已嵌入的旧文字卡不会被强制改写，重新选择对应资源即可获得图片卡。
 
 ## 建议 skills

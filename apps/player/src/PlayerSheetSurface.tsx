@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type InputHTMLAttributes,
 } from "react";
 
 import {
@@ -18,6 +19,7 @@ import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
 import {
   usePlatformAccountManagement,
   usePlatformAppBarActions,
+  usePlatformNotifications,
 } from "@pbdh/platform-ui";
 
 import { CharacterSaveRepository } from "./character-saves/character-save-repository.ts";
@@ -51,6 +53,18 @@ import {
 } from "./resources/resource-package-repository.ts";
 import { routeResourcePackage } from "./resources/route-resource-package.ts";
 import {
+  buildSheetResourceLibraryInputs,
+  buildSheetRuntimeMediaAssets,
+} from "./sheet-runtime/adapters/platformResourceLibraries.ts";
+import {
+  createVirtualFileSystemFromDirectoryFiles,
+  createVirtualFileSystemFromDirectoryHandle,
+  createVirtualFileSystemFromZipFile,
+  type PackageDirectoryHandle,
+  type PackageVirtualFileSystem,
+} from "./sheet-runtime/loaders/packageVfs.ts";
+import { loadSystemPackageFromVfs, type PackageLoadResult } from "./sheet-runtime/loaders/systemPackageLoader.ts";
+import {
   nextGuideStep,
   previousGuideStep,
   startGuideSession,
@@ -73,6 +87,7 @@ import {
   resetRuntimeDependencies,
   useRuntimeStore,
 } from "./sheet-runtime/store/runtimeStore.ts";
+import { loadPlatformSystemPackageFromVfs } from "./system-package-ingress.ts";
 
 const preferredSystemPackageKey = "pbdh:player:preferred-system-package";
 
@@ -96,10 +111,15 @@ export function PlayerSheetSurface({
   onHandoffConsumed?(cleanedUrl: URL): void;
 } = {}) {
   const auth = useAuth();
+  const { notify } = usePlatformNotifications();
+  const importedSystemsRef = useRef(new Map<string, SystemPackageDocument>());
+  const previewDirectoryHandleRef = useRef<PackageDirectoryHandle | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const currentCatalogEntry = findPlayerSystemPackage(currentPackage?.manifest.ID)
-    ?? defaultPlayerSystemPackage;
-  const currentSystem = currentCatalogEntry.system;
+    ?? null;
+  const currentSystem = currentCatalogEntry?.system
+    ?? importedSystemsRef.current.get(currentPackage?.manifest.ID ?? "")
+    ?? defaultPlayerSystemPackage.system;
   const resourceRepository = useMemo(() => new DexieResourcePackageRepository(), []);
   const localDocumentStore = useMemo(() => new DexieLocalDocumentStore(), []);
   const characterSaveRepository = useMemo(
@@ -115,7 +135,8 @@ export function PlayerSheetSurface({
   const libraryRef = useRef<ResourceLibrary>(new Map());
   const runtimeStorageRef = useRef<PlatformRuntimeStorage | null>(null);
   const runtimeStorage = useMemo(() => new PlatformRuntimeStorage({
-    currentSystem: (packageId) => findPlayerSystemPackage(packageId)?.system,
+    currentSystem: (packageId) => findPlayerSystemPackage(packageId)?.system
+      ?? importedSystemsRef.current.get(packageId),
     characterSaves: characterSaveRepository,
     installedPackages: async () => libraryRef.current,
     visibleCharacterSaves: () => cloudDocumentService.localSnapshot(credentialsRef.current?.accountId),
@@ -153,6 +174,8 @@ export function PlayerSheetSurface({
   const runtimeReadyRef = useRef(false);
   const recoveredAccountRef = useRef<string | undefined>(undefined);
   const characterFileInputRef = useRef<HTMLInputElement>(null);
+  const packageFileInputRef = useRef<HTMLInputElement>(null);
+  const packageDirectoryInputRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
 
@@ -169,6 +192,11 @@ export function PlayerSheetSurface({
   const cardTableCardWidths = useRuntimeStore((state) => state.cardTableCardWidths);
   const initialize = useRuntimeStore((state) => state.initialize);
   const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
+  const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
+  const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
+  const authorPreviewActive = useRuntimeStore((state) => state.authorPreviewActive);
+  const enterAuthorPreview = useRuntimeStore((state) => state.enterAuthorPreview);
+  const exitAuthorPreview = useRuntimeStore((state) => state.exitAuthorPreview);
   const createCharacterSave = useRuntimeStore((state) => state.createCharacterSave);
   const switchCharacterSave = useRuntimeStore((state) => state.switchCharacterSave);
   const renameCharacterSave = useRuntimeStore((state) => state.renameCharacterSave);
@@ -224,6 +252,28 @@ export function PlayerSheetSurface({
         setLibraryReady(true);
         configureRuntimeDependencies({
           storage: runtimeStorage,
+          loadSystemPackageFromFile: async (file) => {
+            const vfs = await createVirtualFileSystemFromZipFile(file);
+            return vfs.ok
+              ? loadImportedSystemPackage(vfs.vfs, true)
+              : { ok: false, issues: vfs.issues };
+          },
+          loadSystemPackageFromDirectory: async (files) => {
+            const vfs = await createVirtualFileSystemFromDirectoryFiles(files);
+            return vfs.ok
+              ? loadImportedSystemPackage(vfs.vfs, true)
+              : { ok: false, issues: vfs.issues };
+          },
+          loadSystemPackageFromDirectoryHandle: async (handle) => {
+            const vfs = await createVirtualFileSystemFromDirectoryHandle(handle);
+            return vfs.ok
+              ? loadImportedSystemPackage(vfs.vfs, false)
+              : { ok: false, issues: vfs.issues };
+          },
+          loadPreviewDirectoryHandle: async () => previewDirectoryHandleRef.current,
+          savePreviewDirectoryHandle: async (handle) => {
+            previewDirectoryHandleRef.current = handle;
+          },
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
@@ -254,6 +304,43 @@ export function PlayerSheetSurface({
     };
   }, [cloudDocumentService, initialize, resourceRepository, runtimeStorage, switchToPresetSystemPackage]);
 
+  async function loadImportedSystemPackage(
+    vfs: PackageVirtualFileSystem,
+    persistEmbeddedResources: boolean,
+  ): Promise<PackageLoadResult> {
+    const platform = await loadPlatformSystemPackageFromVfs(vfs);
+    if (!platform.ok) return { ok: false, issues: platform.issues };
+
+    const system = platform.package.document;
+    const installed = await restorePlayerResourceLibrary(resourceRepository, system);
+    const routed = new Map(installed);
+    for (const candidate of platform.package.embeddedResources.values()) {
+      routed.set(candidate.document.package.id, {
+        document: structuredClone(candidate.document),
+        media: new Map(candidate.media),
+        routes: routeResourcePackage({ currentSystem: system, resourcePackage: candidate.document }),
+      });
+    }
+    const runtime = await loadSystemPackageFromVfs(vfs, {
+      resourceLibraries: buildSheetResourceLibraryInputs({
+        currentSystem: system,
+        installedPackages: routed,
+      }),
+      packageAssets: buildSheetRuntimeMediaAssets(routed),
+    });
+    if (!runtime.ok) return runtime;
+
+    if (persistEmbeddedResources) {
+      for (const candidate of platform.package.embeddedResources.values()) {
+        await resourceRepository.replace(candidate, "file");
+      }
+    }
+    importedSystemsRef.current.set(system.package.id, system);
+    libraryRef.current = routed;
+    setLibrary(routed);
+    return runtime;
+  }
+
   useEffect(() => {
     if (auth.status === "loading" || auth.status === "working" || !runtimeReadyRef.current) return;
     const accountKey = auth.credentials?.accountId ?? "local";
@@ -277,6 +364,18 @@ export function PlayerSheetSurface({
   }, [currentPackage?.manifest.ID, currentPackage?.manifest.版本]);
 
   useEffect(() => () => questionnaireSessionRef.current?.close(), []);
+
+  useEffect(() => {
+    if (!importNotice) return;
+    notify(importNotice);
+    useRuntimeStore.setState({ importNotice: null });
+  }, [importNotice, notify]);
+
+  useEffect(() => {
+    if (!cloudNotice) return;
+    notify(cloudNotice);
+    setCloudNotice(undefined);
+  }, [cloudNotice, notify]);
 
   useEffect(() => {
     if (!libraryReady || handoffStartedRef.current === handoffUrl) return;
@@ -352,6 +451,38 @@ export function PlayerSheetSurface({
       }
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "系统包切换失败");
+    }
+  }
+
+  async function handlePackageFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await uploadSystemPackageFromFile(file);
+    event.target.value = "";
+  }
+
+  async function handlePackageDirectory(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files ? [...event.target.files] : [];
+    if (files.length === 0) return;
+    await uploadSystemPackageFromDirectory(files);
+    event.target.value = "";
+  }
+
+  async function handleEnterAuthorPreview() {
+    const previewWindow = window as typeof window & {
+      showDirectoryPicker?: () => Promise<PackageDirectoryHandle>;
+    };
+    if (!previewWindow.showDirectoryPicker) {
+      useRuntimeStore.setState({
+        importNotice: "当前浏览器不支持 File System Access API，无法进入系统包预览。",
+      });
+      return;
+    }
+    try {
+      await enterAuthorPreview(await previewWindow.showDirectoryPicker());
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      useRuntimeStore.setState({ importError: "无法选择或授权预览开发目录。" });
     }
   }
 
@@ -618,11 +749,19 @@ export function PlayerSheetSurface({
                切换到{entry.system.package.name}
              </button>
            ))}
+           <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageFileInputRef.current?.click()}>上传系统包(zip)</button>
+           <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageDirectoryInputRef.current?.click()}>上传系统包(文件夹)</button>
+           {authorPreviewActive ? <>
+             <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>重新选择预览目录</button>
+             <button type="button" role="menuitem" onClick={exitAuthorPreview}>退出预览</button>
+           </> : (
+             <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>系统包预览</button>
+           )}
            <div className="player-menu-summary"><span>资源包</span><strong>{library.size}</strong></div>
          </div>
       </div>
     </nav>
-  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, characterData, characterSaves, currentPackage, currentSystem, duplicateCharacterSave, library.size, switchCharacterSave]);
+  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, authorPreviewActive, bootStatus, characterData, characterSaves, currentPackage, currentSystem, duplicateCharacterSave, exitAuthorPreview, library.size, switchCharacterSave]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
@@ -635,12 +774,19 @@ export function PlayerSheetSurface({
   return (
     <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme="light">
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,application/zip" onChange={(event) => void handleCharacterFile(event)} />
+      <input ref={packageFileInputRef} hidden type="file" accept=".zip,application/zip,application/x-zip-compressed" onChange={(event) => void handlePackageFile(event)} />
+      <input
+        ref={packageDirectoryInputRef}
+        hidden
+        type="file"
+        multiple
+        {...({ webkitdirectory: "" } as InputHTMLAttributes<HTMLInputElement>)}
+        onChange={(event) => void handlePackageDirectory(event)}
+      />
       {bootStatus === "loading"
         ? <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
         : null}
       {surfaceError || importError ? <div className="message message-error" role="alert">{surfaceError ?? importError}</div> : null}
-      {importNotice ? <div className="message message-info" role="status">{importNotice}</div> : null}
-      {cloudNotice ? <div className="message message-info" role="status">{cloudNotice}</div> : null}
       {packageIssues.length ? <PackageIssuePanel issues={packageIssues} /> : null}
       <ValidationIssueDialog
         issues={validationIssues}

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -34,6 +35,17 @@ type RegisterAppBarActions = (
 
 const AppBarActionsContext = createContext<RegisterAppBarActions | null>(null);
 
+type PlatformNotification = {
+  id: number;
+  message: string;
+};
+
+type PlatformNotifications = {
+  notify(message: string): void;
+};
+
+const PlatformNotificationsContext = createContext<PlatformNotifications | null>(null);
+
 export function PlatformChrome({
   activePage,
   onNavigate,
@@ -44,6 +56,8 @@ export function PlatformChrome({
   children: ReactNode;
 }) {
   const [registrations, setRegistrations] = useState<Partial<Record<PlatformPage, AppBarRegistration[]>>>({});
+  const [notifications, setNotifications] = useState<PlatformNotification[]>([]);
+  const nextNotificationId = useRef(1);
   const register = useCallback<RegisterAppBarActions>((page, registration) => {
     const token = Symbol(page);
     setRegistrations((current) => ({
@@ -66,22 +80,39 @@ export function PlatformChrome({
     gm: () => onNavigate("gm"),
     market: () => onNavigate("market"),
   }), [onNavigate]);
+  const notificationApi = useMemo<PlatformNotifications>(() => ({
+    notify(message) {
+      const id = nextNotificationId.current++;
+      setNotifications((current) => [...current, { id, message }]);
+    },
+  }), []);
 
   const activeRegistrations = registrations[activePage] ?? [];
   const actions = activeRegistrations.findLast((candidate) => candidate.actions !== undefined)?.actions;
   const accountManagement = activeRegistrations.findLast((candidate) =>
     candidate.accountManageLabel !== undefined && candidate.onAccountManage !== undefined);
 
-  return <AppBarActionsContext.Provider value={register}>
-    <PlatformAppBar
-      activePage={activePage}
-      onNavigate={navigation}
-      extraActions={actions}
-      accountManageLabel={accountManagement?.accountManageLabel}
-      onAccountManage={accountManagement?.onAccountManage}
-    />
-    {children}
-  </AppBarActionsContext.Provider>;
+  return <PlatformNotificationsContext.Provider value={notificationApi}>
+    <AppBarActionsContext.Provider value={register}>
+      <PlatformAppBar
+        activePage={activePage}
+        onNavigate={navigation}
+        extraActions={actions}
+        accountManageLabel={accountManagement?.accountManageLabel}
+        onAccountManage={accountManagement?.onAccountManage}
+        notifications={notifications}
+        onDismissNotification={(id) => setNotifications((current) => current.filter((item) => item.id !== id))}
+        onClearNotifications={() => setNotifications([])}
+      />
+      {children}
+    </AppBarActionsContext.Provider>
+  </PlatformNotificationsContext.Provider>;
+}
+
+export function usePlatformNotifications(): PlatformNotifications {
+  const notifications = useContext(PlatformNotificationsContext);
+  if (!notifications) throw new Error("usePlatformNotifications 必须在 PlatformChrome 内使用");
+  return notifications;
 }
 
 export function usePlatformAppBarActions(page: PlatformPage, actions: ReactNode): void {
@@ -107,14 +138,21 @@ export function PlatformAppBar({
   accountManageLabel,
   onAccountManage,
   extraActions,
+  notifications = [],
+  onDismissNotification,
+  onClearNotifications,
 }: {
   activePage: PlatformPage;
   onNavigate?: Partial<Record<PlatformPage, () => void>>;
   accountManageLabel?: string;
   onAccountManage?: () => void;
   extraActions?: ReactNode;
+  notifications?: PlatformNotification[];
+  onDismissNotification?: (id: number) => void;
+  onClearNotifications?: () => void;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const navigate = (page: PlatformPage) => {
     setMobileOpen(false);
     onNavigate?.[page]?.();
@@ -134,7 +172,16 @@ export function PlatformAppBar({
     </nav>
     <div className="pbdh-platform-extra">{extraActions}</div>
     <div className="pbdh-platform-actions">
-      <button type="button" aria-label="通知"><BarIcon kind="bell" /></button>
+      <button
+        className="pbdh-platform-notification-button"
+        type="button"
+        aria-label="通知"
+        aria-expanded={notificationsOpen}
+        onClick={() => setNotificationsOpen((value) => !value)}
+      >
+        <BarIcon kind="bell" />
+        {notifications.length > 0 ? <span>{notifications.length}</span> : null}
+      </button>
       <button type="button" aria-label="设置"><BarIcon kind="settings" /></button>
       <AccountControl
         className="pbdh-platform-account"
@@ -152,6 +199,18 @@ export function PlatformAppBar({
         <BarIcon kind="menu" />
       </button>
     </div>
+    {notificationsOpen ? <section className="pbdh-platform-notification-panel" aria-label="PbDH 通知">
+      <header>
+        <strong>通知</strong>
+        {notifications.length > 0 ? <button type="button" onClick={onClearNotifications}>全部清除</button> : null}
+      </header>
+      {notifications.length === 0 ? <p>暂无通知</p> : <ol>
+        {notifications.map((notification) => <li key={notification.id}>
+          <span>{notification.message}</span>
+          <button type="button" aria-label="关闭通知" onClick={() => onDismissNotification?.(notification.id)}>×</button>
+        </li>)}
+      </ol>}
+    </section> : null}
     {mobileOpen && <div className="pbdh-platform-mobile-menu">
       <nav className="pbdh-platform-mobile-pages" aria-label="移动端主页面">
         {pages.map((page) => <button

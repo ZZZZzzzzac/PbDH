@@ -29,6 +29,22 @@ describe("Player toolbar", () => {
     expect(styles).toContain(".pbdh-platform-mobile-extra .player-menu-panel");
   });
 
+  it("把 Player 信息提示交给统一 Platform 通知，不再渲染 message-info 横幅", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain("usePlatformNotifications");
+    expect(source).not.toContain('className="message message-info"');
+  });
+
+  it("在系统包菜单提供上传和 Author Preview 入口", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain("上传系统包(zip)");
+    expect(source).toContain("上传系统包(文件夹)");
+    expect(source).toContain("系统包预览");
+    expect(source).toContain("enterAuthorPreview");
+  });
+
   it("在菜单点击的同步调用栈中打开问卷标签页", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
 

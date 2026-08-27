@@ -117,6 +117,32 @@ describe("Platform Runtime Storage", () => {
     expect((await storage.loadCurrentCharacterData(systems[1]!.package.id))?.character.values.name)
       .toBe(systems[1]!.package.name);
   });
+
+  it("构造后注册的上传 System Document 仍可保存人物存档", async () => {
+    const repository = new MemoryCharacterSaveStore();
+    const systems = new Map<string, SystemPackageDocument>();
+    const currentSystem = heartSystemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem: (packageId) => systems.get(packageId),
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    systems.set(currentSystem.package.id, currentSystem);
+    await storage.saveCurrentSystemPackage(sheetSystemPackage);
+    const data = createEmptyCharacterData(sheetSystemPackage);
+
+    await storage.saveCharacterSave({
+      id: data.character.id,
+      packageId: currentSystem.package.id,
+      name: "上传系统人物",
+      updatedAt: data.updatedAt,
+      data,
+    });
+
+    expect(await storage.listCharacterSaves(currentSystem.package.id)).toHaveLength(1);
+  });
 });
 
 class MemoryCharacterSaveStore {

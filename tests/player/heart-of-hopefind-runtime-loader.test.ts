@@ -67,6 +67,15 @@ describe("寻望之心 Sheet Runtime 加载", () => {
       .toEqual([["survivor-styles", 8]]);
     expect(loaded.package.resourceLibraries?.[0]?.entries[0]?.fields)
       .toHaveProperty("第一特性名称");
+    const packageAssetUrls = new Map(
+      loaded.packageAssets?.map((asset) => [asset.路径, asset.staticUrl]) ?? [],
+    );
+    for (const resource of ["life", "stress", "hope", "wounds"]) {
+      expect(packageAssetUrls.get(`assets/icons/resource-${resource}-marked.webp`))
+        .toContain(`/system-packages/heart-of-hopefind/assets/icons/resource-${resource}-marked.webp`);
+      expect(packageAssetUrls.get(`assets/icons/resource-${resource}-unmarked.webp`))
+        .toContain(`/system-packages/heart-of-hopefind/assets/icons/resource-${resource}-unmarked.webp`);
+    }
     const composer = loaded.package.modules.find((module) => module.ID === "pick-survivor-style");
     expect(composer?.类型).toBe("resourceComposer");
     if (composer?.类型 !== "resourceComposer") throw new Error("Missing survivor style composer.");
