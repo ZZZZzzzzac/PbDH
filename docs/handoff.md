@@ -6,7 +6,7 @@
 
 - 分支：`main`；包含尚未 push 的本地提交；不要未经确认 push。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
-- 阶段 6 的 #38—#44 已完成；#45 正在联合验收。敌人与武器两条真实纵切的本地、Market、运行时、刷新和云边界已验证，真实武器公开发布/匿名取得也已通过；只剩独立设备恢复证据，Issue 尚未关闭。
+- 阶段 6 的 #38—#44 已完成；#45 正在联合验收。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得和独立设备云恢复均已验证。#45 的 Blocked by #42 仍开放；#42 明确要求真实敌人完成取消发布与重新发布，执行该短暂公开状态变更前仍需用户确认，因此两个 Issue 暂未关闭。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
 - 下一工作项：[GitHub Issue #45](https://github.com/ZZZZzzzzac/PbDH/issues/45)。
@@ -47,12 +47,13 @@
 - 修复 Market 武器卡图被误报为 `UNUSED_PACKAGE_IMAGE`：动态资源媒体继续参与存在性与卡图引用校验，但只有真正的 System Package 图片进入“未使用图片”警告。新增回归测试后，真实 Player 资源管理器不再显示该警告。
 - 390×844 自动化验收通过：关闭资源管理器后 Player、Market、GM 页面均无横向溢出；Player 主武器、Market 两个出版物、GM 两个独立敌人实例和移动端主导航均可见，控制台无错误；临时 viewport 已恢复默认值。
 - 当前 `npm run verify` 通过：54 个 TypeScript 测试文件、329 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告，均不影响退出码。
-- #45 定向证据集通过：15 个 TypeScript 文件 / 93 个测试覆盖归档、Contract、Market 交接、Publication、Creator/GM 放置、Player 安装与 Dependency、云恢复和冲突；Backend Publication/Cloud Document 12 个测试覆盖匿名下载、权限/会话、媒体原子提交、revision 冲突与零部分写入。运行中匿名 API 同时证明：公开敌人 `.pbres` 返回 200 和正确媒体类型，未发布武器匿名下载返回 404。
+- #45 定向证据集通过：15 个 TypeScript 文件 / 93 个测试覆盖归档、Contract、Market 交接、Publication、Creator/GM 放置、Player 安装与 Dependency、云恢复和冲突；Backend Publication/Cloud Document 12 个测试覆盖匿名下载、权限/会话、媒体原子提交、revision 冲突与零部分写入。运行中匿名 API 证明：武器未发布时下载返回 404；用户确认重新发布后，同一快照返回 200、正确媒体类型和 110251 bytes。
+- Chrome 扩展提供了与 IAB 独立的 IndexedDB 验收环境：初始没有 Market 测试资源包；登录会话自行恢复后，云端 Character Save 恢复人物名、主武器最终字段和描述，且当时源武器包尚未安装；随后公开武器包完整安装为第 9 个包，同快照再次取得明确 no-op。Creator Workspaces 和“陨落神殿”也从云端恢复，两个同源敌人实例压力分别为 `3/5` 与 `0/5`，刷新并重新选择桌面后仍一致；全程无控制台错误。
 
 ## 接下来
 
-1. 使用与当前浏览器不共享 IndexedDB 的独立浏览器会话登录测试账号，验证 Character Save 与 GM Tabletop 的云恢复；不要用同源刷新冒充两设备恢复。
-2. 补齐该证据后在 #45 发布完整验收矩阵，移除 `ready-for-human` 并关闭 Issue；若发现问题，继续先写复现测试再修复。
+1. 获得明确授权后，让真实敌人 Publication 短暂取消发布，验证匿名目录/详情/下载均不可取得，再重新发布并确认 Publication ID、Package ID、版本和 Digest 不变；这是 #42 的最后一项真实验收。
+2. 在 #42 与 #45 发布最终验收矩阵，移除 `ready-for-human` 并依次关闭；若发现问题，继续先写复现测试再修复。
 
 ## 换机交接
 
