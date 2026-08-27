@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；当前提交：`95dacc5`，比 `origin/main` 超前 1 个本地提交；不要未经确认 push。
+- 分支：`main`；包含尚未 push 的本地提交；不要未经确认 push。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#44 已完成；#45 正在联合验收。敌人与武器两条真实纵切的本地、Market、运行时、刷新和云边界已验证，剩余真实武器公开发布/匿名取得和独立设备恢复证据，Issue 尚未关闭。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -43,10 +43,11 @@
 - 本地测试账号凭据保存在被 Git 忽略的 `.env.local` 中，键为 `PBDH_TEST_ACCOUNT_EMAIL` 与 `PBDH_TEST_ACCOUNT_PASSWORD`；不要把值写入文档、日志或 Git。
 - 内嵌浏览器自动化连续完成登录、会话接管、云恢复、刷新和 30 题问卷，没有导致 Codex 应用崩溃；全局 `C:\Users\zinge\.codex\AGENTS.md` 中对应风险限制已删除。
 - #45 真实敌人纵切已验证：Market 单资源入口交接完整包；同 Package ID 不同 Digest 必须显式更新；Creator Ingress 只导入并聚焦、不自动放置；“陨落神殿”两个牛头人实例分别保持压力 `3/5` 与 `0/5`，刷新后不互相污染；桌面已同步云端，`.pbtab` 导出无控制台错误。
-- #45 真实武器纵切已验证：Market 的“测试资源包”以标准 `.pbres` 安装到 Daggerheart Core 原生“武器”入口；Player 显示 2 个资源，主武器 Dependency 产出与描述在刷新后恢复；人物存档已同步；重复安装同一快照为明确 no-op。该出版物当前仍为未发布，仅作者账号可取得，不能据此宣称公开匿名取得已通过。
+- #45 真实武器纵切已验证：Market 的“测试资源包”以标准 `.pbres` 安装到 Daggerheart Core 原生“武器”入口；Player 显示 2 个资源，主武器 Dependency 产出与描述在刷新后恢复；人物存档已同步；重复安装同一快照为明确 no-op。随后经 Market“导入卡片工坊”完整回到 Creator 并同步云端；只读核对 Backend 证明 Market 与云 Workspace 的完整逻辑文档相同，Package ID、版本、Digest、2 个资源和 2 个媒体一致。该出版物当前仍为未发布，仅作者账号可取得，不能据此宣称公开匿名取得已通过。
 - 修复 Market 武器卡图被误报为 `UNUSED_PACKAGE_IMAGE`：动态资源媒体继续参与存在性与卡图引用校验，但只有真正的 System Package 图片进入“未使用图片”警告。新增回归测试后，真实 Player 资源管理器不再显示该警告。
 - 390×844 自动化验收通过：关闭资源管理器后 Player、Market、GM 页面均无横向溢出；Player 主武器、Market 两个出版物、GM 两个独立敌人实例和移动端主导航均可见，控制台无错误；临时 viewport 已恢复默认值。
 - 当前 `npm run verify` 通过：54 个 TypeScript 测试文件、329 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告，均不影响退出码。
+- #45 定向证据集通过：15 个 TypeScript 文件 / 93 个测试覆盖归档、Contract、Market 交接、Publication、Creator/GM 放置、Player 安装与 Dependency、云恢复和冲突；Backend Publication/Cloud Document 12 个测试覆盖匿名下载、权限/会话、媒体原子提交、revision 冲突与零部分写入。运行中匿名 API 同时证明：公开敌人 `.pbres` 返回 200 和正确媒体类型，未发布武器匿名下载返回 404。
 
 ## 接下来
 
