@@ -14,6 +14,7 @@ const currentSystem = {
   resourceCompatibility: [
     { templateId: "种族", nativeEntry: { id: "ancestries", label: "种族" } },
     { templateId: "护甲", nativeEntry: { id: "armor", label: "护甲" } },
+    { templateId: "自由", nativeEntry: { id: "free-resources", label: "自由资源" } },
   ],
 } as SystemPackageDocument;
 
@@ -112,6 +113,31 @@ describe("Sheet Runtime 平台资源适配", () => {
     ]).map((field) => field.key)).toEqual(["名称", "护甲值"]);
   });
 
+  it("把自由 Template 的具名内容段投影为 Sheet Resource 字段", () => {
+    const library = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        resource("survivor-style", "自由", {
+          名称: "孤独",
+          类型: "求生者风格",
+          简介: "独自求生",
+          内容: [
+            { 标题: "第一特性名称", 正文: "独行智慧" },
+            { 标题: "第一特性规则", 正文: "没有队友时具有优势。" },
+          ],
+        }),
+      ]),
+    }).find((candidate) => candidate.ID === "free-resources")!;
+
+    expect(library.entries[0]?.fields).toMatchObject({
+      名称: "孤独",
+      类型: "求生者风格",
+      简介: "独自求生",
+      第一特性名称: "独行智慧",
+      第一特性规则: "没有队友时具有优势。",
+    });
+  });
+
   it("把资源包卡面显示方式传给 Sheet 卡牌", () => {
     const imageResource = resource("ancestry", "种族", { 名称: "械灵", 特性: [] }, { portrait: "sha256:portrait" }, "image");
     const libraries = buildSheetResourceLibraries({
@@ -146,7 +172,9 @@ function installedPackage(
       destination: "native" as const,
       nativeEntry: candidate.template.id === "护甲"
         ? { id: "armor", label: "护甲" }
-        : { id: "ancestries", label: "种族" },
+        : candidate.template.id === "自由"
+          ? { id: "free-resources", label: "自由资源" }
+          : { id: "ancestries", label: "种族" },
     })),
   };
 }

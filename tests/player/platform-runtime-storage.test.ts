@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CharacterSaveDocument, SystemPackageDocument } from "@pbdh/contract-runtime";
 
 import systemJson from "../../apps/player/src/daggerheart-core-system.generated.json";
+import heartSystemJson from "../../apps/player/src/heart-of-hopefind-system.generated.json";
 import type { StoredCharacterSave } from "../../apps/player/src/character-saves/character-save-repository.ts";
 import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import type { SystemPackage as SheetSystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
@@ -81,6 +82,40 @@ describe("Platform Runtime Storage", () => {
     await storage.deleteCharacterSave(currentSystem.package.id, data.character.id);
     expect(await storage.listCharacterSaves(currentSystem.package.id)).toEqual([]);
     expect(await storage.loadActiveCharacterSaveId(currentSystem.package.id)).toBeNull();
+  });
+
+  it("按 System Package ID 隔离两个真实预置包的人物存档", async () => {
+    const repository = new MemoryCharacterSaveStore();
+    const localStorage = new MemoryStorage();
+    const systems = [systemJson, heartSystemJson] as SystemPackageDocument[];
+    const storage = new PlatformRuntimeStorage({
+      currentSystem: (packageId) => systems.find((system) => system.package.id === packageId),
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage,
+    });
+
+    for (const currentSystem of systems) {
+      const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+      await storage.saveCurrentSystemPackage(sheetSystemPackage);
+      const data = createEmptyCharacterData(sheetSystemPackage);
+      data.character.values.name = currentSystem.package.name;
+      await storage.saveCharacterSave({
+        id: data.character.id,
+        packageId: currentSystem.package.id,
+        name: `${currentSystem.package.name}角色`,
+        updatedAt: data.updatedAt,
+        data,
+      });
+      await storage.setActiveCharacterSaveId(currentSystem.package.id, data.character.id);
+    }
+
+    expect(await storage.listCharacterSaves(systems[0]!.package.id)).toHaveLength(1);
+    expect(await storage.listCharacterSaves(systems[1]!.package.id)).toHaveLength(1);
+    expect((await storage.loadCurrentCharacterData(systems[0]!.package.id))?.character.values.name)
+      .toBe(systems[0]!.package.name);
+    expect((await storage.loadCurrentCharacterData(systems[1]!.package.id))?.character.values.name)
+      .toBe(systems[1]!.package.name);
   });
 });
 

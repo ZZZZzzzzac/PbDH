@@ -22,6 +22,13 @@ describe("Player toolbar", () => {
     expect(styles).toContain(".pbdh-platform-appbar { display: none !important; }");
   });
 
+  it("在移动端主菜单中纵向展开四组 Player 操作", async () => {
+    const styles = await readFile("apps/player/src/styles.css", "utf8");
+
+    expect(styles).toContain(".pbdh-platform-mobile-extra .player-toolbar");
+    expect(styles).toContain(".pbdh-platform-mobile-extra .player-menu-panel");
+  });
+
   it("在菜单点击的同步调用栈中打开问卷标签页", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
 

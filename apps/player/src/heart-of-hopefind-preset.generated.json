@@ -1,0 +1,15 @@
+{
+  "id": "01a04186-51be-74e1-b94f-ec17d354dc00",
+  "urlPath": "heart-of-hopefind",
+  "name": "寻望之心",
+  "version": "1.1.0",
+  "releaseVersion": "0.0.0-dev",
+  "directory": "heart-of-hopefind",
+  "inventoryPath": ".pbdh-runtime-files.json",
+  "fileCount": 23,
+  "metadataFileCount": 13,
+  "loadingPresentation": {
+    "标语": "正在感染病毒...",
+    "强调色": "#302e28"
+  }
+}

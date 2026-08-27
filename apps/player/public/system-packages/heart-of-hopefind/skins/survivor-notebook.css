@@ -1,0 +1,155 @@
+:scope {
+  --hopefind-paper: #eee8d7;
+  --hopefind-ink: #171714;
+  --hopefind-line: #302e28;
+  color-scheme: light;
+  color: var(--hopefind-ink);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+:scope .character-sheet {
+  padding: 12px;
+}
+
+:scope .hopefind-page {
+  position: relative;
+  background: var(--hopefind-paper);
+  border: 1.2mm solid var(--hopefind-line);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+:scope .hopefind-page::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 auto;
+  height: 0.25mm;
+  background: rgba(48, 46, 40, 0.07);
+  box-shadow:
+    0 7.25mm rgba(48, 46, 40, 0.07),
+    0 14.5mm rgba(48, 46, 40, 0.07),
+    0 21.75mm rgba(48, 46, 40, 0.07),
+    0 29mm rgba(48, 46, 40, 0.07),
+    0 36.25mm rgba(48, 46, 40, 0.07),
+    0 43.5mm rgba(48, 46, 40, 0.07),
+    0 50.75mm rgba(48, 46, 40, 0.07),
+    0 58mm rgba(48, 46, 40, 0.07),
+    0 65.25mm rgba(48, 46, 40, 0.07),
+    0 72.5mm rgba(48, 46, 40, 0.07),
+    0 79.75mm rgba(48, 46, 40, 0.07),
+    0 87mm rgba(48, 46, 40, 0.07),
+    0 94.25mm rgba(48, 46, 40, 0.07),
+    0 101.5mm rgba(48, 46, 40, 0.07),
+    0 108.75mm rgba(48, 46, 40, 0.07),
+    0 116mm rgba(48, 46, 40, 0.07),
+    0 123.25mm rgba(48, 46, 40, 0.07),
+    0 130.5mm rgba(48, 46, 40, 0.07),
+    0 137.75mm rgba(48, 46, 40, 0.07),
+    0 145mm rgba(48, 46, 40, 0.07),
+    0 152.25mm rgba(48, 46, 40, 0.07),
+    0 159.5mm rgba(48, 46, 40, 0.07),
+    0 166.75mm rgba(48, 46, 40, 0.07),
+    0 174mm rgba(48, 46, 40, 0.07),
+    0 181.25mm rgba(48, 46, 40, 0.07),
+    0 188.5mm rgba(48, 46, 40, 0.07),
+    0 195.75mm rgba(48, 46, 40, 0.07),
+    0 203mm rgba(48, 46, 40, 0.07),
+    0 210.25mm rgba(48, 46, 40, 0.07),
+    0 217.5mm rgba(48, 46, 40, 0.07),
+    0 224.75mm rgba(48, 46, 40, 0.07),
+    0 232mm rgba(48, 46, 40, 0.07),
+    0 239.25mm rgba(48, 46, 40, 0.07),
+    0 246.5mm rgba(48, 46, 40, 0.07),
+    0 253.75mm rgba(48, 46, 40, 0.07),
+    0 261mm rgba(48, 46, 40, 0.07),
+    0 268.25mm rgba(48, 46, 40, 0.07),
+    0 275.5mm rgba(48, 46, 40, 0.07),
+    0 282.75mm rgba(48, 46, 40, 0.07),
+    0 290mm rgba(48, 46, 40, 0.07);
+  pointer-events: none;
+}
+
+:scope .hopefind-page > * {
+  position: relative;
+  z-index: auto;
+}
+
+:scope .sheet-title,
+:scope .style-panel,
+:scope .trait-panel,
+:scope .profession-panel,
+:scope .arc-panel,
+:scope .core-hurt-block,
+:scope .core-hurt-phases article {
+  border: 0.65mm solid var(--hopefind-line);
+  padding: 2mm;
+}
+
+:scope .sheet-title {
+  border-width: 0 0 1mm;
+}
+
+:scope .sheet-title p,
+:scope .sheet-title small {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:scope .sheet-title h1 {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 2rem;
+}
+
+:scope [data-module-type="countableResource"] {
+  --restricted-markdown-black: var(--hopefind-ink);
+}
+
+:scope [data-module-id="noise"] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id="noise"] > [data-part="label"] {
+  display: none;
+}
+
+:scope [data-module-id="noise"] [data-part="options"] {
+  height: 100%;
+  padding: 0;
+  place-content: center;
+}
+
+:scope [data-module-id="noise"] [data-part="option"] {
+  min-height: 0;
+  justify-content: center;
+}
+
+:scope [data-module-id="pick-survivor-style"] {
+  display: flex;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id="pick-survivor-style"] [data-part="button"] {
+  width: 2.375rem;
+  min-width: 2.375rem;
+  min-height: 0;
+  padding: 0;
+  border-color: var(--hopefind-line);
+  background: var(--hopefind-line);
+  color: var(--hopefind-paper);
+  font-size: 0;
+  line-height: 1;
+}
+
+:scope .profession-row + .profession-row,
+:scope .arc-row + .arc-row {
+  border-top: 0.35mm solid var(--hopefind-line);
+}
+

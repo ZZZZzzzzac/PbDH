@@ -236,3 +236,14 @@ button.primary { border-color: var(--player-primary, #641f1d) !important; color:
 .character-save-trash-empty { display: grid; flex: 1; place-content: center; justify-items: center; color: #756a5e; }
 .character-save-toast { position: fixed; z-index: 90; right: 20px; bottom: 20px; max-width: 460px; min-height: 44px; padding: 10px 14px; border: 1px solid #c9c1b6; border-radius: 7px; background: #fffdf8; box-shadow: 0 5px 16px #21150f2a; cursor: pointer; text-align: left; }
 @media (max-height: 820px) { .resource-manager { height: calc(100vh - 78px); } .resource-manager-layer { padding: 10px; } }
+
+@media (max-width: 900px) {
+  .pbdh-platform-mobile-extra .player-toolbar { width: 100%; height: auto; display: grid; gap: 2px; border-left: 0; }
+  .pbdh-platform-mobile-extra .player-menu { width: 100%; height: auto; display: grid; }
+  .pbdh-platform-mobile-extra .player-menu::after { display: none; }
+  .pbdh-platform-mobile-extra .player-menu-trigger { width: 100%; min-width: 0; text-align: left; }
+  .pbdh-platform-mobile-extra .player-menu-panel,
+  .pbdh-platform-mobile-extra .player-menu-panel.is-right { position: static; width: 100%; max-height: 0; padding: 0; overflow: hidden; border: 0; opacity: 0; pointer-events: none; transform: none; }
+  .pbdh-platform-mobile-extra .player-menu:hover .player-menu-panel,
+  .pbdh-platform-mobile-extra .player-menu:focus-within .player-menu-panel { max-height: 520px; padding: 8px; border: 1px solid #4a382d; opacity: 1; pointer-events: auto; }
+}

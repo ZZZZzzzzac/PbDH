@@ -28,7 +28,7 @@ type CharacterSaveStore = Pick<
 >;
 
 export type PlatformRuntimeStorageOptions = {
-  currentSystem: SystemPackageDocument;
+  currentSystem: SystemPackageDocument | ((packageId: string) => SystemPackageDocument | undefined);
   characterSaves: CharacterSaveStore;
   installedPackages: () => Promise<PlatformResourceLibrary>;
   visibleCharacterSaves?: () => Promise<StoredCharacterSave[]>;
@@ -46,7 +46,7 @@ const cardTableHeightsKeyPrefix = "pbdh:player:card-table-heights:";
 const colorSchemeKey = "pbdh:player:color-scheme";
 
 export class PlatformRuntimeStorage implements RuntimeStorage {
-  readonly #currentSystem: SystemPackageDocument;
+  readonly #resolveSystem: (packageId: string) => SystemPackageDocument | undefined;
   readonly #characterSaves: CharacterSaveStore;
   readonly #installedPackages: () => Promise<PlatformResourceLibrary>;
   readonly #visibleCharacterSaves: () => Promise<StoredCharacterSave[]>;
@@ -61,7 +61,10 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   #cacheMetadata: SystemPackageCacheMetadata | null = null;
 
   constructor(options: PlatformRuntimeStorageOptions) {
-    this.#currentSystem = options.currentSystem;
+    const currentSystem = options.currentSystem;
+    this.#resolveSystem = typeof currentSystem === "function"
+      ? currentSystem
+      : (packageId) => currentSystem.package.id === packageId ? currentSystem : undefined;
     this.#characterSaves = options.characterSaves;
     this.#installedPackages = options.installedPackages;
     this.#visibleCharacterSaves = options.visibleCharacterSaves ?? (() => this.#characterSaves.list());
@@ -135,10 +138,12 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   async loadCharacterSave(packageId: string, saveId: string) {
     const stored = await this.#findSave(packageId, saveId);
     if (!stored) return null;
+    const currentSystem = this.#resolveSystem(packageId);
+    if (!currentSystem) return null;
     return characterSaveToSheet({
       candidate: stored,
       currentSystem: {
-        resourceCompatibility: this.#currentSystem.resourceCompatibility,
+        resourceCompatibility: currentSystem.resourceCompatibility,
       },
       mediaUrl: (assetId, bytes) => {
         const asset = stored.document.characterData.assets.find((candidate) => candidate.id === assetId);
@@ -148,8 +153,10 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   }
 
   async saveCharacterSave(record: CharacterSaveRecord): Promise<void> {
-    if (record.packageId !== this.#currentSystem.package.id) return;
+    const currentSystem = this.#resolveSystem(record.packageId);
+    if (!currentSystem) return;
     const sheetSystemPackage = this.#requireSheetSystemPackage();
+    if (sheetSystemPackage.manifest.ID !== currentSystem.package.id) return;
     const existing = await this.#findSave(record.packageId, record.id);
     const data = record.data.character.id === record.id
       ? record.data
@@ -158,9 +165,9 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
       name: record.name,
       data,
       currentSystem: {
-        id: this.#currentSystem.package.id,
-        version: this.#currentSystem.package.version,
-        resourceCompatibility: this.#currentSystem.resourceCompatibility,
+        id: currentSystem.package.id,
+        version: currentSystem.package.version,
+        resourceCompatibility: currentSystem.resourceCompatibility,
       },
       sheetSystemPackage,
       installedPackages: await this.#installedPackages(),

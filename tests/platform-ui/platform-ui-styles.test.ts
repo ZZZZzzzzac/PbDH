@@ -10,4 +10,13 @@ describe("Platform App Bar style isolation", () => {
     expect(stylesheet).toContain("font-family: \"Noto Sans SC\", \"Microsoft YaHei\", sans-serif;");
     expect(stylesheet).toContain(".pbdh-platform-nav button.is-current { font-weight: 750; }");
   });
+
+  test("keeps current app actions reachable from the mobile menu", () => {
+    const source = readFileSync(fileURLToPath(new URL("../../packages/platform-ui/src/index.tsx", import.meta.url)), "utf8");
+    const stylesheet = readFileSync(fileURLToPath(new URL("../../packages/platform-ui/src/styles.css", import.meta.url)), "utf8");
+
+    expect(source).toContain('className="pbdh-platform-mobile-extra"');
+    expect(source).toContain("{extraActions}");
+    expect(stylesheet).toContain(".pbdh-platform-mobile-extra");
+  });
 });

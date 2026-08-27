@@ -142,18 +142,27 @@ export function PlatformAppBar({
         manageLabel={accountManageLabel}
         onManage={onAccountManage}
       />
-      <button className="pbdh-platform-mobile-button" type="button" aria-label="主页面" onClick={() => setMobileOpen((value) => !value)}>
+      <button
+        className="pbdh-platform-mobile-button"
+        type="button"
+        aria-label="主页面"
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen((value) => !value)}
+      >
         <BarIcon kind="menu" />
       </button>
     </div>
-    {mobileOpen && <nav className="pbdh-platform-mobile-menu" aria-label="移动端主页面">
-      {pages.map((page) => <button
-        type="button"
-        key={page.id}
-        className={page.id === activePage ? "is-current" : ""}
-        onClick={() => navigate(page.id)}
-      >{page.label}</button>)}
-    </nav>}
+    {mobileOpen && <div className="pbdh-platform-mobile-menu">
+      <nav className="pbdh-platform-mobile-pages" aria-label="移动端主页面">
+        {pages.map((page) => <button
+          type="button"
+          key={page.id}
+          className={page.id === activePage ? "is-current" : ""}
+          onClick={() => navigate(page.id)}
+        >{page.label}</button>)}
+      </nav>
+      {extraActions ? <div className="pbdh-platform-mobile-extra">{extraActions}</div> : null}
+    </div>}
   </header>;
 }
 

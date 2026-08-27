@@ -20,10 +20,15 @@ import {
   usePlatformAppBarActions,
 } from "@pbdh/platform-ui";
 
-import systemJson from "./daggerheart-core-system.generated.json";
 import { CharacterSaveRepository } from "./character-saves/character-save-repository.ts";
 import { PlayerCloudDocumentService } from "./character-saves/cloud-document-service.ts";
 import { validateCharacterSaveCandidate } from "./character-saves/character-save-validator.ts";
+import {
+  defaultPlayerSystemPackage,
+  findPlayerSystemPackage,
+  playerSystemPackageCatalog,
+  type PlayerSystemPackageCatalogEntry,
+} from "./playerSystemPackageCatalog.ts";
 import {
   ResourceManager,
   type ResourcePackageIngress,
@@ -62,10 +67,6 @@ import { PackageLoadingSurface } from "./sheet-runtime/rendering/app/PackageLoad
 import { resolveGuideTargetPageId } from "./sheet-runtime/rendering/app/guideTarget.ts";
 import { useSheetOutput } from "./sheet-runtime/rendering/app/useSheetOutput.ts";
 import { SheetRenderer } from "./sheet-runtime/rendering/SheetRenderer.tsx";
-import {
-  daggerheartCorePreset,
-  loadDaggerheartCoreRuntimePackage,
-} from "./sheet-runtime/loaders/daggerheartCoreRuntimeLoader.ts";
 import { PlatformRuntimeStorage } from "./sheet-runtime/storage/platformRuntimeStorage.ts";
 import {
   configureRuntimeDependencies,
@@ -73,10 +74,11 @@ import {
   useRuntimeStore,
 } from "./sheet-runtime/store/runtimeStore.ts";
 
-const currentSystem = systemJson as SystemPackageDocument;
+const preferredSystemPackageKey = "pbdh:player:preferred-system-package";
 
 export async function restorePlayerResourceLibrary(
   repository: ResourcePackageRepository,
+  currentSystem: SystemPackageDocument = defaultPlayerSystemPackage.system,
 ): Promise<ResourceLibrary> {
   const stored = await repository.list();
   return new Map(stored.map((candidate) => [candidate.document.package.id, {
@@ -94,6 +96,10 @@ export function PlayerSheetSurface({
   onHandoffConsumed?(cleanedUrl: URL): void;
 } = {}) {
   const auth = useAuth();
+  const currentPackage = useRuntimeStore((state) => state.currentPackage);
+  const currentCatalogEntry = findPlayerSystemPackage(currentPackage?.manifest.ID)
+    ?? defaultPlayerSystemPackage;
+  const currentSystem = currentCatalogEntry.system;
   const resourceRepository = useMemo(() => new DexieResourcePackageRepository(), []);
   const localDocumentStore = useMemo(() => new DexieLocalDocumentStore(), []);
   const characterSaveRepository = useMemo(
@@ -109,7 +115,7 @@ export function PlayerSheetSurface({
   const libraryRef = useRef<ResourceLibrary>(new Map());
   const runtimeStorageRef = useRef<PlatformRuntimeStorage | null>(null);
   const runtimeStorage = useMemo(() => new PlatformRuntimeStorage({
-    currentSystem,
+    currentSystem: (packageId) => findPlayerSystemPackage(packageId)?.system,
     characterSaves: characterSaveRepository,
     installedPackages: async () => libraryRef.current,
     visibleCharacterSaves: () => cloudDocumentService.localSnapshot(credentialsRef.current?.accountId),
@@ -150,7 +156,6 @@ export function PlayerSheetSurface({
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
 
-  const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
   const characterSaves = useRuntimeStore((state) => state.characterSaves);
   const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
@@ -202,29 +207,41 @@ export function PlayerSheetSurface({
         if (credentials) await cloudDocumentService.recover(credentials);
         else await cloudDocumentService.localSnapshot();
         recoveredAccountRef.current = credentials?.accountId ?? "local";
-        await installMissingEmbeddedResourcePackages({
-          systemPackage: currentSystem,
-          systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/daggerheart-core`,
-          repository: resourceRepository,
-        });
-        const restored = await restorePlayerResourceLibrary(resourceRepository);
+        for (const entry of playerSystemPackageCatalog) {
+          await installMissingEmbeddedResourcePackages({
+            systemPackage: entry.system,
+            systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+            repository: resourceRepository,
+          });
+        }
+        const restored = await restorePlayerResourceLibrary(
+          resourceRepository,
+          defaultPlayerSystemPackage.system,
+        );
         if (cancelled) return;
         libraryRef.current = restored;
         setLibrary(restored);
         setLibraryReady(true);
         configureRuntimeDependencies({
           storage: runtimeStorage,
-          loadPresetSystemPackage: (_preset, onProgress) => {
-            onProgress?.({ completed: 0, total: daggerheartCorePreset.metadataFileCount });
-            return loadDaggerheartCoreRuntimePackage({
-              currentSystem,
-              installedPackages: libraryRef.current,
+          loadPresetSystemPackage: async (preset, onProgress) => {
+            const entry = findPlayerSystemPackage(preset.id);
+            if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
+            const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
+            libraryRef.current = routed;
+            setLibrary(routed);
+            onProgress?.({ completed: 0, total: entry.preset.metadataFileCount });
+            return entry.load({
+              currentSystem: entry.system,
+              installedPackages: routed,
             });
           },
         });
-        await initialize([daggerheartCorePreset]);
+        await initialize(playerSystemPackageCatalog.map((entry) => entry.preset));
         if (cancelled) return;
-        await switchToPresetSystemPackage(daggerheartCorePreset, true);
+        const preferred = findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
+          ?? defaultPlayerSystemPackage;
+        await switchToPresetSystemPackage(preferred.preset, true);
         runtimeReadyRef.current = true;
       } catch (error) {
         if (!cancelled) setSurfaceError(error instanceof Error ? error.message : "Player 初始化失败");
@@ -246,7 +263,7 @@ export function PlayerSheetSurface({
       try {
         if (auth.credentials) await cloudDocumentService.recover(auth.credentials);
         else await cloudDocumentService.localSnapshot();
-        await switchToPresetSystemPackage(daggerheartCorePreset, true);
+        await reloadActiveSystemPackage();
       } catch (error) {
         setCloudNotice(error instanceof Error ? error.message : "人物存档恢复失败");
       }
@@ -313,9 +330,29 @@ export function PlayerSheetSurface({
     });
   }
 
+  async function reloadActiveSystemPackage(): Promise<void> {
+    const activePackageId = useRuntimeStore.getState().currentPackage?.manifest.ID;
+    const entry = findPlayerSystemPackage(activePackageId) ?? defaultPlayerSystemPackage;
+    await switchToPresetSystemPackage(entry.preset, true);
+  }
+
   async function reloadResourceCatalog(): Promise<void> {
     await flushCurrentCharacter();
-    await switchToPresetSystemPackage(daggerheartCorePreset, true);
+    await reloadActiveSystemPackage();
+  }
+
+  async function handleSwitchSystem(entry: PlayerSystemPackageCatalogEntry): Promise<void> {
+    if (entry.system.package.id === currentSystem.package.id) return;
+    try {
+      await flushCurrentCharacter();
+      await switchToPresetSystemPackage(entry.preset, true);
+      if (useRuntimeStore.getState().currentPackage?.manifest.ID === entry.system.package.id) {
+        localStorage.setItem(preferredSystemPackageKey, entry.system.package.id);
+        setCloudNotice(`已切换到系统包：${entry.system.package.name}`);
+      }
+    } catch (error) {
+      setCloudNotice(error instanceof Error ? error.message : "系统包切换失败");
+    }
   }
 
   async function commitInstall(
@@ -373,7 +410,7 @@ export function PlayerSheetSurface({
         await cloudDocumentService.flush(credentials);
         setCloudNotice("当前人物存档已同步。");
       }
-      await switchToPresetSystemPackage(daggerheartCorePreset, true);
+      await reloadActiveSystemPackage();
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档同步失败");
     }
@@ -405,7 +442,7 @@ export function PlayerSheetSurface({
         await cloudDocumentService.keepCloud(activeCharacterSaveId, credentials);
       }
       setCloudDialog(null);
-      await switchToPresetSystemPackage(daggerheartCorePreset, true);
+      await reloadActiveSystemPackage();
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档冲突处理失败");
     }
@@ -429,7 +466,7 @@ export function PlayerSheetSurface({
     try {
       await cloudDocumentService.restoreFromTrash(remote, credentials);
       setCloudTrash(await cloudDocumentService.listTrash(credentials));
-      await switchToPresetSystemPackage(daggerheartCorePreset, true);
+      await reloadActiveSystemPackage();
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "云端人物存档恢复失败");
     }
@@ -446,9 +483,8 @@ export function PlayerSheetSurface({
       if (!result.candidate) {
         throw new Error(`人物存档无效：${result.diagnostics[0]?.code ?? "unknown"}`);
       }
-      if (result.candidate.document.systemPackage.id !== currentSystem.package.id) {
-        throw new Error("该人物存档不属于当前 Daggerheart 系统包。");
-      }
+      const targetSystem = findPlayerSystemPackage(result.candidate.document.systemPackage.id);
+      if (!targetSystem) throw new Error("该人物存档所属的预置系统包不可用。");
       const imported = await characterSaveRepository.import(
         result.candidate,
         credentialsRef.current?.accountId ?? null,
@@ -460,7 +496,10 @@ export function PlayerSheetSurface({
       if (credentialsRef.current && imported.sync.scope === "cloud") {
         await cloudDocumentService.flush(credentialsRef.current);
       }
-      await switchToPresetSystemPackage(daggerheartCorePreset, true);
+      await switchToPresetSystemPackage(targetSystem.preset, true);
+      if (useRuntimeStore.getState().currentPackage?.manifest.ID === targetSystem.system.package.id) {
+        localStorage.setItem(preferredSystemPackageKey, targetSystem.system.package.id);
+      }
       setCloudNotice(`已导入人物存档：${imported.document.name}`);
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档导入失败");
@@ -564,15 +603,26 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>系统包</span></button>
         <div className="player-menu-panel is-right" role="menu">
-          <div className="player-menu-current">
+           <div className="player-menu-current">
             <small>当前系统包</small><strong>{currentSystem.package.name}</strong>
             <span>v{currentSystem.package.version}</span>
            </div>
+           {playerSystemPackageCatalog.map((entry) => (
+             <button
+               key={entry.system.package.id}
+               type="button"
+               role="menuitem"
+               disabled={entry.system.package.id === currentSystem.package.id}
+               onClick={() => void handleSwitchSystem(entry)}
+             >
+               切换到{entry.system.package.name}
+             </button>
+           ))}
            <div className="player-menu-summary"><span>资源包</span><strong>{library.size}</strong></div>
          </div>
       </div>
     </nav>
-  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, characterData, characterSaves, currentPackage, duplicateCharacterSave, library.size, switchCharacterSave]);
+  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, characterData, characterSaves, currentPackage, currentSystem, duplicateCharacterSave, library.size, switchCharacterSave]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession

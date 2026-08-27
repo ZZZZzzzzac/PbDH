@@ -1,0 +1,88 @@
+<main class="hopefind-page character-sheet">
+  <header class="sheet-title">
+    <div>
+      <p>Heart of Hopefind</p>
+      <h1>寻望之心</h1>
+    </div>
+    <small>求生者人物卡</small>
+  </header>
+
+  <section class="overview-grid">
+    <div class="overview-portrait">
+      <pb-module id="survivor-portrait"></pb-module>
+    </div>
+    <div class="overview-left">
+      <pb-module id="survivor-name"></pb-module>
+      <pb-module id="survivor-alias"></pb-module>
+      <pb-module id="life"></pb-module>
+      <pb-module id="stress"></pb-module>
+    </div>
+    <div class="overview-right">
+      <pb-module id="hope-points"></pb-module>
+      <pb-module id="wounds"></pb-module>
+      <div class="dice-noise-row">
+        <div class="dice-stack">
+          <pb-module id="hope-die"></pb-module>
+          <pb-module id="fear-die"></pb-module>
+        </div>
+        <pb-module id="noise"></pb-module>
+      </div>
+    </div>
+  </section>
+
+  <section class="character-lower-row">
+    <article class="style-panel">
+      <div class="style-name-row">
+        <pb-module id="survivor-style-name"></pb-module>
+        <pb-module id="pick-survivor-style"></pb-module>
+      </div>
+      <pb-module id="survivor-style-features"></pb-module>
+    </article>
+    <article class="trait-panel">
+      <pb-module id="character-trait-name"></pb-module>
+      <pb-module id="character-trait-description"></pb-module>
+    </article>
+  </section>
+
+  <section class="character-lower-row">
+    <article class="profession-panel">
+      <div class="profession-row profession-title-row"><pb-module id="profession-name"></pb-module><span>加值</span></div>
+      <div class="profession-row"><pb-module id="profession-keyword-1"></pb-module><pb-module id="profession-modifier-1"></pb-module></div>
+      <div class="profession-row"><pb-module id="profession-keyword-2"></pb-module><pb-module id="profession-modifier-2"></pb-module></div>
+      <div class="profession-row"><pb-module id="profession-keyword-3"></pb-module><pb-module id="profession-modifier-3"></pb-module></div>
+      <div class="profession-row"><pb-module id="profession-keyword-4"></pb-module><pb-module id="profession-modifier-4"></pb-module></div>
+    </article>
+
+    <article class="arc-panel">
+      <div class="arc-row"><pb-module id="arc-1-description"></pb-module><pb-module id="arc-1-intensity"></pb-module></div>
+      <div class="arc-row"><pb-module id="arc-2-description"></pb-module><pb-module id="arc-2-intensity"></pb-module></div>
+      <div class="arc-row"><pb-module id="arc-3-description"></pb-module><pb-module id="arc-3-intensity"></pb-module></div>
+      <div class="arc-row"><pb-module id="arc-4-description"></pb-module><pb-module id="arc-4-intensity"></pb-module></div>
+      <div class="arc-row"><pb-module id="arc-5-description"></pb-module><pb-module id="arc-5-intensity"></pb-module></div>
+    </article>
+  </section>
+
+  <section class="core-hurt-block">
+    <pb-module id="core-hurt"></pb-module>
+  </section>
+
+  <section class="core-hurt-phases">
+    <article>
+      <pb-module id="core-hurt-phase-opening"></pb-module>
+      <pb-module id="core-hurt-opening-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-development"></pb-module>
+      <pb-module id="core-hurt-development-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-turn"></pb-module>
+      <pb-module id="core-hurt-turn-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-conclusion"></pb-module>
+      <pb-module id="core-hurt-conclusion-note"></pb-module>
+    </article>
+  </section>
+</main>
+

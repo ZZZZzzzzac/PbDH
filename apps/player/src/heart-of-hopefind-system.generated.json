@@ -1,0 +1,33 @@
+{
+  "contractVersion": "1.0.0-alpha.1",
+  "package": {
+    "id": "01a04186-51be-74e1-b94f-ec17d354dc00",
+    "version": "1.1.0",
+    "name": "寻望之心",
+    "description": "由迁移后的 Sheet Runtime 驱动的寻望之心系统包。"
+  },
+  "resourceCompatibility": [
+    {
+      "templateId": "自由",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "survivor-styles",
+        "label": "求生者风格"
+      }
+    }
+  ],
+  "modules": [],
+  "dependencies": [],
+  "embeddedResources": [
+    {
+      "path": "resources/heart-of-hopefind.pbres",
+      "packageId": "01a04186-51bf-7c26-8c27-2f7147125243",
+      "version": "1.0.0",
+      "minimumVersion": "1.0.0",
+      "snapshotDigest": "sha256:7f92f54fb4cf5845e4da5d5fd698a94559213b6e2457880d2562968506d9cfc7"
+    }
+  ]
+}

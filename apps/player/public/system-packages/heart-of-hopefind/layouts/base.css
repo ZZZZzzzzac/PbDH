@@ -1,0 +1,133 @@
+:scope {
+  width: 210mm;
+  max-width: none;
+  margin-inline: auto;
+}
+
+:scope .hopefind-page {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  gap: 3mm;
+  padding: 6mm;
+}
+
+:scope .sheet-title,
+:scope .overview-left,
+:scope .overview-right,
+:scope .dice-stack {
+  display: grid;
+  gap: 2mm;
+}
+
+:scope .sheet-title {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+:scope .sheet-title h1,
+:scope .sheet-title p {
+  margin: 0;
+}
+
+:scope .overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 0.82fr) minmax(0, 1fr);
+  gap: 3mm;
+  align-items: stretch;
+}
+
+:scope .overview-portrait,
+:scope .overview-portrait > [data-module-slot-id],
+:scope .overview-portrait [data-module-type="imageField"] {
+  min-height: 0;
+  height: 100%;
+}
+
+:scope .overview-portrait [data-part="surface-frame"] {
+  min-height: 0;
+}
+
+:scope .dice-noise-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(24mm, 0.58fr);
+  gap: 2mm;
+  align-items: stretch;
+}
+
+:scope .dice-noise-row > [data-module-slot-id="noise"],
+:scope .dice-noise-row > [data-module-slot-id="noise"] > [data-module-type] {
+  height: 100%;
+}
+
+:scope .style-name-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10mm;
+  align-items: stretch;
+  gap: 1.5mm;
+}
+
+:scope .character-lower-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3mm;
+}
+
+:scope .profession-row,
+:scope .arc-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14mm, 0.24fr);
+  align-items: stretch;
+  gap: 1.5mm;
+}
+
+:scope .profession-title-row {
+  align-items: end;
+}
+
+:scope .profession-title-row > span {
+  padding-block-end: 2mm;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+:scope .core-hurt-phases {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2mm;
+}
+
+:scope .core-hurt-phases article {
+  display: grid;
+  align-content: start;
+  gap: 2mm;
+}
+
+@media screen and (max-width: 800px) {
+  :scope {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  :scope .overview-grid,
+  :scope .character-lower-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :scope .core-hurt-phases {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 480px) {
+  :scope .hopefind-page {
+    gap: 2mm;
+    padding: 3mm;
+  }
+
+  :scope .core-hurt-phases {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

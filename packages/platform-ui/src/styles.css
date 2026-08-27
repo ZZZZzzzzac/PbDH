@@ -32,15 +32,17 @@
 .pbdh-platform-actions svg { width: 18px; height: 18px; }
 .pbdh-platform-account { width: auto; max-width: 150px; }
 .pbdh-platform-mobile-button { display: none !important; }
-.pbdh-platform-mobile-menu { display: none; }
+.pbdh-platform-mobile-menu, .pbdh-platform-mobile-pages, .pbdh-platform-mobile-extra { display: none; }
 body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none; }
 @media (max-width: 900px) {
   .pbdh-platform-appbar { grid-template-columns: 1fr auto; padding: 0 14px; }
   .pbdh-platform-nav, .pbdh-platform-extra { display: none; }
   .pbdh-platform-mobile-button { display: inline-flex !important; }
-  .pbdh-platform-mobile-menu { position: absolute; top: 100%; right: 10px; display: grid; width: 190px; padding: 6px; border: 1px solid #4a382d; border-radius: 7px; background: #21150f; box-shadow: 0 12px 28px #0004; }
-  .pbdh-platform-mobile-menu button { padding: 10px 12px; border: 0; border-radius: 4px; color: #c8bcae; background: transparent; text-align: left; font: inherit; cursor: pointer; }
-  .pbdh-platform-mobile-menu button.is-current { color: #fffdf8; background: #38271e; }
+  .pbdh-platform-mobile-menu { position: absolute; top: 100%; right: 10px; display: grid; width: min(280px, calc(100vw - 20px)); padding: 6px; border: 1px solid #4a382d; border-radius: 7px; background: #21150f; box-shadow: 0 12px 28px #0004; }
+  .pbdh-platform-mobile-pages { display: grid; }
+  .pbdh-platform-mobile-pages button { padding: 10px 12px; border: 0; border-radius: 4px; color: #c8bcae; background: transparent; text-align: left; font: inherit; cursor: pointer; }
+  .pbdh-platform-mobile-pages button.is-current { color: #fffdf8; background: #38271e; }
+  .pbdh-platform-mobile-extra { display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid #4a382d; }
 }
 
 @media print {

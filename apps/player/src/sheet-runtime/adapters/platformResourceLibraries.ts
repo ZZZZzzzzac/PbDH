@@ -90,6 +90,11 @@ function toSheetResourceEntry(
   };
 
   switch (resource.template.id) {
+    case "自由":
+      return {
+        ...freeTemplateSections(data.内容),
+        ...common,
+      };
     case "种族": {
       const rawFeatures: unknown[] = Array.isArray(data.特性) ? data.特性 : [];
       const features = rawFeatures.filter(isRecord);
@@ -133,6 +138,16 @@ function toSheetResourceEntry(
       ? resolveMediaReference?.({ packageId, assetId }) ?? sheetRuntimeMediaPath(packageId, assetId)
       : "";
   }
+}
+
+function freeTemplateSections(value: unknown): Record<string, string> {
+  if (!Array.isArray(value)) return {};
+  return Object.fromEntries(value.flatMap((section) => {
+    if (!isRecord(section)) return [];
+    const title = stringField(section.标题).trim();
+    if (!title) return [];
+    return [[title, stringField(section.正文)]];
+  }));
 }
 
 export function buildSheetEmbeddedResourceEntry(input: {
