@@ -1,0 +1,65 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a0132c-4eef-7703-94ac-ec8b5e66a002",
+    "version": "1.0.0",
+    "name": "Daggerheart Core 六类稳定资源测试包",
+    "description": "覆盖种族、社群、职业、子职业、物品与领域卡稳定 Template。"
+  },
+  "targets": [{
+    "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+    "version": "1.0.0"
+  }],
+  "license": {
+    "label": "PbDH test fixture",
+    "declaration": "数据结构迁移自 PbDH_Sheet 的 Daggerheart Core 资源，仅用于契约与跨宿主测试。"
+  },
+  "forkSource": null,
+  "assets": [],
+  "resources": [
+    {
+      "id": "fixture-ancestry", "path": "种族/测试种族.json",
+      "template": { "id": "种族", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试种族", "简介": "适应力强。", "特性": [{ "名称": "适应", "描述": "面对变化时保持从容。" }] },
+      "media": {}
+    },
+    {
+      "id": "fixture-community", "path": "社群/测试社群.json",
+      "template": { "id": "社群", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试社群", "简介": "来自山巅。", "性格": "坚韧", "特性": { "名称": "山民", "描述": "熟悉险地。" } },
+      "media": {}
+    },
+    {
+      "id": "fixture-profession", "path": "职业/测试职业.json",
+      "template": { "id": "职业", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试职业", "描述": "久经战阵。", "领域": ["利刃", "骸骨"], "生命点": "6", "闪避值": "10", "职业物品": "武器", "希望特性": "无畏", "职业特性": "猛攻", "推荐初始属性": { "说明": "力量优先" }, "推荐初始武器": "阔剑", "推荐初始护甲": "锁甲", "背景问题": ["为何战斗？"], "关系问题": ["保护谁？"], "施法属性": "" },
+      "media": {}
+    },
+    {
+      "id": "fixture-subclass", "path": "子职业/测试子职业.json",
+      "template": { "id": "子职业", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试子职业", "主职": "战士", "等级": "基础", "施法属性": "", "描述": "勇往直前。", "风味描述": "绝不退缩。" },
+      "media": {}
+    },
+    {
+      "id": "fixture-item", "path": "物品/测试物品.json",
+      "template": { "id": "物品", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试物品", "类型": "消耗品", "掷骰": "d4", "描述": "恢复生命。", "风味描述": "温热的红色药剂。" },
+      "media": {}
+    },
+    {
+      "id": "fixture-domain", "path": "领域卡/测试领域卡.json",
+      "template": { "id": "领域卡", "version": "1.0.0" },
+      "presentation": { "width": "90", "height": "142", "unit": "mm", "mode": "text", "fixedRatio": true },
+      "data": { "名称": "测试领域卡", "领域": "利刃", "等级": "1", "属性": "能力", "回想": "1", "描述": "攻击附近敌人。", "风味描述": "剑锋卷起狂风。" },
+      "media": {}
+    }
+  ],
+  "emptyDirectories": [],
+  "snapshotDigest": "sha256:e7bf2be158d0bc07f9872499522669e6bcb7d0cd7676fa5ff75a4b1b0899a142"
+}

@@ -42,6 +42,90 @@
       "state": "development",
       "schema": "src/core/armor/1.0.0/schema.json",
       "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "种族",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/ancestry/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "种族",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/ancestry/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "社群",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/community/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "社群",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/community/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "职业",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/profession/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "职业",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/profession/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "子职业",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/subclass/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "子职业",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/subclass/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "物品",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/item/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "物品",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/item/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "领域卡",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/domain/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "领域卡",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/domain/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
     }
   ]
 }

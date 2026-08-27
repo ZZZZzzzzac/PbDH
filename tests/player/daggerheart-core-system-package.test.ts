@@ -72,10 +72,20 @@ describe("migrated Daggerheart Core System Package", () => {
       new Set(["种族", "社群", "职业", "子职业", "武器", "护甲", "物品", "领域卡"]),
     );
     const resources = candidates.flatMap((candidate) => candidate.document.resources);
-    expect(candidates[0]?.document.package.version).toBe("1.0.2");
+    expect(candidates[0]?.document.package.version).toBe("1.0.3");
     const armorResources = resources.filter((resource) => resource.template.id === "护甲");
     expect(armorResources).toHaveLength(34);
     expect(armorResources.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+    const stableCounts = new Map([
+      ["种族", 18], ["社群", 9], ["职业", 9], ["子职业", 54], ["物品", 120], ["领域卡", 189],
+    ]);
+    for (const [templateId, count] of stableCounts) {
+      const matching = resources.filter((resource) => resource.template.id === templateId);
+      expect(matching).toHaveLength(count);
+      expect(matching.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+    }
+    expect(system.resourceCompatibility.every((item) => item.versionRange.minimumInclusive === "1.0.0"
+      && item.versionRange.maximumExclusive === "2.0.0")).toBe(true);
     expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);
     expect(resources.filter((resource) => !resource.media.portrait).every((resource) => resource.presentation.mode === "text")).toBe(true);
   });

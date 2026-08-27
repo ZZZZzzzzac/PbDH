@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E7%A7%8D%E6%97%8F/1.0.0/schema.json",
+  "title": "种族 Template Data",
+  "type": "object",
+  "required": ["名称", "简介", "特性"],
+  "properties": {
+    "名称": { "type": "string" },
+    "简介": { "type": "string" },
+    "特性": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["名称", "描述"],
+        "properties": { "名称": { "type": "string" }, "描述": { "type": "string" } },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

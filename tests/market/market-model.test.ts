@@ -133,6 +133,19 @@ describe("Market handoff intents", () => {
     expect(createHandoffIntent(enemy, "player").targetRoute).toBe("other-resources");
   });
 
+  test.each([
+    ["种族", "ancestries"], ["社群", "communities"], ["职业", "classes"],
+    ["子职业", "subclasses"], ["物品", "loot"], ["领域卡", "domain-cards"],
+  ] as const)("routes %s to its native Player entry", (templateId, targetRoute) => {
+    const native = publication({
+      kind: "mixed",
+      templateIds: [templateId],
+      resources: [{ id: `resource-${templateId}`, name: `测试${templateId}`, templateId, path: `${templateId}/测试.json`, data: {}, source: {} }],
+    });
+    expect(createHandoffIntent(native, "player", `resource-${templateId}`).targetRoute).toBe(targetRoute);
+    expect(createHandoffIntent(native, "player").targetRoute).toBe(targetRoute);
+  });
+
   test("routes the focused weapon in a mixed package to Player weapons", () => {
     const mixed = publication({
       kind: "mixed",

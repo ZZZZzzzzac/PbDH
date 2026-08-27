@@ -93,7 +93,7 @@ export type HandoffIntent = {
   snapshotDigest: string;
   acquisition: "complete-resource-package";
   focusLocator?: { resourceId: string };
-  targetRoute: "weapons" | "armor" | "other-resources" | "creator-ingress";
+  targetRoute: "weapons" | "armor" | "ancestries" | "communities" | "classes" | "subclasses" | "loot" | "domain-cards" | "other-resources" | "creator-ingress";
   autoInstall: false;
   autoPlace: false;
 };
@@ -122,7 +122,16 @@ export function createHandoffIntent(
   ) {
     targetRoute = "armor";
   } else {
-    targetRoute = "other-resources";
+    const templateId = focusedResource?.templateId
+      ?? (publication.templateIds.length === 1 ? publication.templateIds[0] : undefined);
+    targetRoute = ({
+      种族: "ancestries",
+      社群: "communities",
+      职业: "classes",
+      子职业: "subclasses",
+      物品: "loot",
+      领域卡: "domain-cards",
+    } as Partial<Record<string, HandoffIntent["targetRoute"]>>)[templateId ?? ""] ?? "other-resources";
   }
 
   return {

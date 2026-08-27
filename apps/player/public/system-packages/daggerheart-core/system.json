@@ -10,8 +10,8 @@
     {
       "templateId": "种族",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "ancestries",
@@ -21,8 +21,8 @@
     {
       "templateId": "社群",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "communities",
@@ -32,8 +32,8 @@
     {
       "templateId": "职业",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "classes",
@@ -43,8 +43,8 @@
     {
       "templateId": "子职业",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "subclasses",
@@ -76,8 +76,8 @@
     {
       "templateId": "物品",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "loot",
@@ -87,8 +87,8 @@
     {
       "templateId": "领域卡",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "domain-cards",
@@ -192,9 +192,9 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.2",
-      "minimumVersion": "1.0.2",
-      "snapshotDigest": "sha256:aba2fb68884b84c32466592d89a3bafeb106dd01af32e7f8f0ad952704ac86b4"
+      "version": "1.0.3",
+      "minimumVersion": "1.0.3",
+      "snapshotDigest": "sha256:801bc36e5c4fd07522f1c0cb5542f60b65356456077393827d1dab63f7a42385"
     }
   ]
 }

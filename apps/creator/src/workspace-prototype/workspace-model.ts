@@ -155,6 +155,21 @@ export function updateArmorData(
   return next;
 }
 
+export function updateWorkspaceResourceData(
+  workspace: CreatorWorkspace,
+  update: (data: Record<string, unknown>) => void,
+  resourceId?: string,
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  const resource = workspaceResource(next, resourceId);
+  if (!resource.data || typeof resource.data !== "object" || Array.isArray(resource.data)) {
+    throw new Error(`Resource data must be an object: ${resource.id}`);
+  }
+  update(resource.data as Record<string, unknown>);
+  markResourceDirty(next, resource.id);
+  return next;
+}
+
 export function updateResourcePresentation(
   workspace: CreatorWorkspace,
   update: (presentation: ResourcePresentation) => void,

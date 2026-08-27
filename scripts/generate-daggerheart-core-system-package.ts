@@ -23,18 +23,18 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.2";
+const resourcePackageVersion = "1.0.3";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 
 const libraries = [
-  library("ancestries", "种族", "种族", "0.0.0-dev.1", transformAncestry),
-  library("communities", "社群", "社群", "0.0.0-dev.1", transformCommunity),
-  library("classes", "职业", "职业", "0.0.0-dev.1", transformProfession),
-  library("subclasses", "子职业", "子职业", "0.0.0-dev.1", transformSubclass),
+  library("ancestries", "种族", "种族", "1.0.0", transformAncestry),
+  library("communities", "社群", "社群", "1.0.0", transformCommunity),
+  library("classes", "职业", "职业", "1.0.0", transformProfession),
+  library("subclasses", "子职业", "子职业", "1.0.0", transformSubclass),
   library("weapons", "武器", "武器", "1.0.0", transformWeapon),
   library("armor", "护甲", "护甲", "1.0.0", transformArmor),
-  library("loot", "物品与消耗品", "物品", "0.0.0-dev.1", transformItem),
-  library("domain-cards", "领域卡", "领域卡", "0.0.0-dev.1", transformDomain),
+  library("loot", "物品与消耗品", "物品", "1.0.0", transformItem),
+  library("domain-cards", "领域卡", "领域卡", "1.0.0", transformDomain),
 ] as const;
 
 const sourceResourceAssetPaths = new Set<string>();

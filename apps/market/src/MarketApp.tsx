@@ -7,6 +7,7 @@ import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
   adversaryRendererFor,
   armorRendererFor,
+  stableReferenceRendererFor,
   weaponRendererFor,
 } from "@pbdh/templates/frontend";
 import type { AdversaryData, ArmorData, WeaponData } from "@pbdh/templates/core";
@@ -59,6 +60,12 @@ const dimensionLabels: Record<FilterDimension, string> = {
 const routeLabels: Record<HandoffIntent["targetRoute"], string> = {
   weapons: "Daggerheart Core / 武器",
   armor: "Daggerheart Core / 护甲",
+  ancestries: "Daggerheart Core / 种族",
+  communities: "Daggerheart Core / 社群",
+  classes: "Daggerheart Core / 职业",
+  subclasses: "Daggerheart Core / 子职业",
+  loot: "Daggerheart Core / 物品与消耗品",
+  "domain-cards": "Daggerheart Core / 领域卡",
   "other-resources": "其他资源",
   "creator-ingress": "卡片工坊 / 资源包导入",
 };
@@ -218,6 +225,10 @@ function Discovery({
 
 export function CanonicalPreview({ publication, resourceId }: { publication: Publication; resourceId: string }) {
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
+  const referenceRenderer = stableReferenceRendererFor(
+    resource.templateId,
+    (resource.source as SurfaceResource<Record<string, unknown>>).template.version,
+  );
   const assets = useMemo(() => new Map(
     Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
   ), [publication.mediaUrls]);
@@ -243,6 +254,12 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
               resource={resource.source as SurfaceResource<ArmorData>}
               expectedRendererRevision="armor-card-r1"
               renderer={armorRendererFor((resource.source as SurfaceResource<ArmorData>).template.version)}
+              assets={assets}
+              label={`${resource.name}规范卡面`}
+            /> : referenceRenderer ? <CanonicalCardSurface
+              resource={resource.source as SurfaceResource<Record<string, unknown>>}
+              expectedRendererRevision={referenceRenderer.revision}
+              renderer={referenceRenderer}
               assets={assets}
               label={`${resource.name}规范卡面`}
             /> : <p>当前版本尚不能预览此模板。</p>}

@@ -1,10 +1,29 @@
 export { adversaryAuthoringLayout } from "./adversary/1.0.0/authoring-layout.ts";
 export { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
+export { ancestryAuthoringLayout } from "./ancestry/1.0.0/authoring-layout.ts";
+export { communityAuthoringLayout } from "./community/1.0.0/authoring-layout.ts";
+export { domainAuthoringLayout } from "./domain/1.0.0/authoring-layout.ts";
+export { itemAuthoringLayout } from "./item/1.0.0/authoring-layout.ts";
+export { professionAuthoringLayout } from "./profession/1.0.0/authoring-layout.ts";
+export { subclassAuthoringLayout } from "./subclass/1.0.0/authoring-layout.ts";
 export {
   armorRendererRevision,
   armorRendererStyles,
   type ArmorRuntimeState,
 } from "./armor/1.0.0/renderer.tsx";
+export { ancestryRendererRevision, ancestryRendererStyles } from "./ancestry/1.0.0/renderer.tsx";
+export { communityRendererRevision, communityRendererStyles } from "./community/1.0.0/renderer.tsx";
+export { domainRendererRevision, domainRendererStyles } from "./domain/1.0.0/renderer.tsx";
+export { itemRendererRevision, itemRendererStyles } from "./item/1.0.0/renderer.tsx";
+export { professionRendererRevision, professionRendererStyles } from "./profession/1.0.0/renderer.tsx";
+export { subclassRendererRevision, subclassRendererStyles } from "./subclass/1.0.0/renderer.tsx";
+export {
+  isStableReferenceTemplateId,
+  stableReferenceAuthoringLayoutFor,
+  stableReferenceRendererFor,
+  stableReferenceTemplateIds,
+  type StableReferenceTemplateId,
+} from "./reference-card/registry.ts";
 export { adversaryAuthoringLayout as legacyAdversaryAuthoringLayout } from "./adversary/1.0.0-alpha.1/authoring-layout.ts";
 export {
   adversaryCardDesignSource,
@@ -17,7 +36,18 @@ export {
   buildTemplateSupportManifest,
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
-export { adversaryRendererFor, armorRendererFor, freeRendererFor, weaponRendererFor } from "./renderer-registry.ts";
+export {
+  adversaryRendererFor,
+  ancestryRendererFor,
+  armorRendererFor,
+  communityRendererFor,
+  domainRendererFor,
+  freeRendererFor,
+  itemRendererFor,
+  professionRendererFor,
+  subclassRendererFor,
+  weaponRendererFor,
+} from "./renderer-registry.ts";
 export { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";
 export {
   freeRendererRevision,

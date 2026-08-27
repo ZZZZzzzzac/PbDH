@@ -1,4 +1,4 @@
-export type AuthoringControl = "text" | "textarea";
+export type AuthoringControl = "text" | "textarea" | "string-list" | "string-map";
 
 export type AuthoringField = {
   path: string;

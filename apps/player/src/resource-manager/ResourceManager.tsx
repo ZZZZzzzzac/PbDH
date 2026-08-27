@@ -6,7 +6,7 @@ import {
 } from "@pbdh/contract-runtime";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
-import { armorRendererFor } from "@pbdh/templates/frontend";
+import { armorRendererFor, stableReferenceRendererFor } from "@pbdh/templates/frontend";
 import { armorTemplate, type ArmorData } from "@pbdh/templates/core";
 
 import {
@@ -135,6 +135,7 @@ function PlayerResourcePreviewContent({
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
   const isArmor = resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version;
+  const referenceRenderer = stableReferenceRendererFor(resource.template.id, resource.template.version);
   return <div className="player-dialog-backdrop player-resource-preview-backdrop">
     <section className="player-dialog player-resource-preview" role="dialog" aria-modal="true" aria-label={`${name}资源详情`}>
       <header><h2>{name}</h2><button aria-label="关闭资源详情" onClick={onClose}>×</button></header>
@@ -143,6 +144,12 @@ function PlayerResourcePreviewContent({
           resource={resource as unknown as SurfaceResource<ArmorData>}
           expectedRendererRevision={armorTemplate.rendererRevision}
           renderer={armorRendererFor(resource.template.version)}
+          assets={assets}
+          label={`${name}玩家规范卡面`}
+        /> : referenceRenderer ? <CanonicalCardSurface
+          resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
+          expectedRendererRevision={referenceRenderer.revision}
+          renderer={referenceRenderer}
           assets={assets}
           label={`${name}玩家规范卡面`}
         /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}
@@ -327,7 +334,10 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   function openResource(installed: InstalledResourcePackage, resourceId?: string) {
     const target = installed.document.resources.find((resource) => resource.id === resourceId)
       ?? installed.document.resources[0];
-    if (target?.template.id === armorTemplate.id && target.template.version === armorTemplate.version) {
+    if (target && (
+      (target.template.id === armorTemplate.id && target.template.version === armorTemplate.version)
+      || stableReferenceRendererFor(target.template.id, target.template.version)
+    )) {
       setPreview({ installed, resourceId: target.id });
       return;
     }

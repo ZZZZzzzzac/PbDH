@@ -34,10 +34,13 @@ import {
   updateAdversaryData,
   updateArmorData,
   updateResourcePresentation,
+  updateWorkspaceResourceData,
   updateWeaponData,
   weaponData,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
-import { armorTemplate, weaponTemplate } from "@pbdh/templates/core";
+import {
+  ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
+} from "@pbdh/templates/core";
 
 const root = process.cwd();
 const document = minotaurPackage as ResourcePackageLogicalDocument;
@@ -121,6 +124,20 @@ describe("Creator Workspace prototype state model", () => {
     expect(adversaryData(edited).名称).toBe("牛头人破坏者");
     expect(edited.dirtyResourceIds).toContain(created.resourceId);
   });
+
+  test.each([ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate])(
+    "creates and generically edits stable %s resources",
+    (template) => {
+      const source = createWorkspace({ document, media });
+      const created = addTemplateResource(source, template.id, template.version);
+      const edited = updateWorkspaceResourceData(created.workspace, (data) => { data.名称 = `测试${template.id}`; }, created.resourceId);
+      const resource = edited.document.resources.find((candidate) => candidate.id === created.resourceId)!;
+      expect(resource.template).toEqual({ id: template.id, version: "1.0.0" });
+      expect(resource.data).toMatchObject({ 名称: `测试${template.id}` });
+      expect(edited.dirtyResourceIds).toContain(created.resourceId);
+      expect(adversaryData(edited).名称).toBe("牛头人破坏者");
+    },
+  );
 
   test("stores resources in user folders rather than grouping them by Template", () => {
     const source = selectWorkspaceFolder(createWorkspace({ document, media }), null);

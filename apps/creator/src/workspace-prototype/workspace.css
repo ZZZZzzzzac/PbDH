@@ -73,6 +73,16 @@
 
 .workbench-body { min-width: 0; min-height: 0; display: grid; grid-template-columns: 560px minmax(520px, 1fr); gap: var(--creator-body-gap); padding: var(--creator-body-padding); }
 .authoring-editor { min-width: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--creator-editor); }
+.field-group.structured-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.structured-field-grid > h2, .structured-repeat { grid-column: 1 / -1; }
+.structured-field-grid > h2, .structured-repeat h3 { margin: 0; font-size: 13px; }
+.structured-repeat { display: grid; gap: 8px; }
+.structured-repeat > header { display: flex; align-items: center; justify-content: space-between; }
+.structured-repeat article { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: 8px; align-items: end; }
+.structured-field-grid .compact-field { width: 100%; height: auto; align-items: flex-start; }
+.structured-field-grid .compact-field input, .structured-field-grid .compact-field textarea { width: 100%; }
+.structured-field-grid .textarea-field { grid-column: 1 / -1; }
+.structured-remove { min-height: 32px; }
 .field-group { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--creator-group-border); border-radius: var(--creator-group-radius); background: var(--creator-group-bg); }
 .field-row { width: 100%; min-height: 34px; display: flex; align-items: center; gap: 12px; }
 .field-row.dense-row { gap: 5px; }
@@ -224,12 +234,13 @@
   .creator-workspace { display: block; }
   .resource-explorer { min-height: 420px; }
   .creator-workbench { min-height: 1200px; }
-  .workbench-body { padding: 8px; }
+  .workbench-body { grid-template-columns: minmax(0, 1fr); padding: 8px; }
   .authoring-editor { overflow-x: auto; }
   .field-group, .features-editor { min-width: 532px; }
   .armor-workbench-body { grid-template-columns: minmax(0, 1fr); }
   .armor-workbench-body .armor-authoring-editor { overflow-x: hidden; }
   .armor-workbench-body .armor-field-grid { min-width: 0; }
+  .field-group.structured-field-grid, .structured-repeat article { min-width: 0; grid-template-columns: minmax(0, 1fr); }
 }
 
 @media print {

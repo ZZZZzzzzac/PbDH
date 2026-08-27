@@ -1,5 +1,12 @@
 [
   {
+    "name": "daggerheart-core-reference-types-known-answer",
+    "document": "valid/daggerheart-core-reference-types.json",
+    "media": [],
+    "targets": null,
+    "expected": "sha256:e7bf2be158d0bc07f9872499522669e6bcb7d0cd7676fa5ff75a4b1b0899a142"
+  },
+  {
     "name": "minotaur-wrecker-known-answer",
     "document": "valid/minotaur-wrecker.json",
     "media": [

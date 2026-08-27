@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E9%A2%86%E5%9F%9F%E5%8D%A1/1.0.0/schema.json",
+  "title": "领域卡 Template Data",
+  "type": "object",
+  "required": ["名称", "领域", "等级", "属性", "回想", "描述", "风味描述"],
+  "properties": {
+    "名称": { "type": "string" },
+    "领域": { "type": "string" },
+    "等级": { "type": "string", "pattern": "^(?:|[0-9]+)$" },
+    "属性": { "type": "string" },
+    "回想": { "type": "string", "pattern": "^(?:|[0-9]+)$" },
+    "描述": { "type": "string" },
+    "风味描述": { "type": "string" }
+  },
+  "additionalProperties": false
+}

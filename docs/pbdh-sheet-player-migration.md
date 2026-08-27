@@ -50,7 +50,8 @@
 - Runtime Storage 已接入正式 Character Save Repository；人物字段、自包含桌面副本和媒体按同一 revision 保存，云恢复后缺少来源 `.pbres` 仍可显示、复制和再次保存。
 - 登录前本地人物通过显式“同步到云”进入云端；登录后新建或导入人物进入 outbox。账号切换、冲突三动作、云端删除与回收站使用统一 Cloud Document Service。
 - Player 图片入口已改用共享媒体准入流程，在用户裁剪后归一化为内容寻址 WebP。
-- Daggerheart Core 的 34 份护甲已从固定来源 `resources/armor.json` 迁移到可信 `护甲@1.0.0`；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.2`。旧 `护甲@0.0.0-dev.1` 只保留精确 Reader 与显式候选升级路径，不再由官方生成器或资源转换 Adapter 新增生产。
+- Daggerheart Core 的 34 份护甲以及剩余 399 份种族、社群、职业、子职业、物品和领域卡已从固定来源迁移到各自可信 `1.0.0` Template；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.3`。对应 `0.0.0-dev.1` 只保留精确 Reader 与显式候选升级路径，不再由官方生成器或资源转换 Adapter 新增生产。
+- 六类稳定化证据固定为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`，原路径分别为 `public/system-packages/daggerheart-core/resources/ancestries.json`、`communities.json`、`classes.json`、`subclasses.json`、`loot.json` 与 `domain-cards.json`；本仓库对应只读迁移源位于 `apps/player/system-package-sources/daggerheart-core/resources/`，旧仓库未修改。
 
 ## 阶段验收
 

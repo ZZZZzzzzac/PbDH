@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
+import pytest
 
 from pbdh_backend.api_errors import ApiError
 from pbdh_backend.app import create_app
@@ -135,29 +136,50 @@ def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_
     assert loaded["candidate"] == {"document": document, "media": media}
 
 
-def test_stable_armor_template_is_publishable(tmp_path: Path) -> None:
+@pytest.mark.parametrize(("template_id", "data"), [
+    ("护甲", {"名称": "填充布甲", "类型": "护甲", "护甲值": "3", "重度伤害阈值": "5", "严重伤害阈值": "11", "描述": "灵活：闪避值+1。", "风味描述": "轻柔填料缝入耐磨布层。", "位阶": "1"}),
+    ("种族", {"名称": "人类", "简介": "适应力强。", "特性": [{"名称": "适应", "描述": "获得优势。"}]}),
+    ("社群", {"名称": "高岭", "简介": "来自山巅。", "性格": "坚韧", "特性": {"名称": "山民", "描述": "熟悉险地。"}}),
+    ("职业", {"名称": "战士", "描述": "久经战阵。", "领域": ["利刃", "骸骨"], "生命点": "6", "闪避值": "10", "职业物品": "武器", "希望特性": "无畏", "职业特性": "猛攻", "推荐初始属性": {"说明": "力量优先"}, "推荐初始武器": "阔剑", "推荐初始护甲": "锁甲", "背景问题": ["为何战斗？"], "关系问题": ["保护谁？"], "施法属性": ""}),
+    ("子职业", {"名称": "勇者", "主职": "战士", "等级": "基础", "施法属性": "", "描述": "勇往直前。", "风味描述": "绝不退缩。"}),
+    ("物品", {"名称": "治疗药水", "类型": "消耗品", "掷骰": "d4", "描述": "恢复生命。", "风味描述": "温热的红色药剂。"}),
+    ("领域卡", {"名称": "旋风斩", "领域": "利刃", "等级": "1", "属性": "能力", "回想": "1", "描述": "攻击附近敌人。", "风味描述": "剑锋卷起狂风。"}),
+])
+def test_stable_templates_are_publishable(tmp_path: Path, template_id: str, data: dict[str, Any]) -> None:
     api = client(tmp_path)
     document, media = candidate()
-    document["resources"][0]["template"] = {"id": "护甲", "version": "1.0.0"}
-    document["resources"][0]["data"] = {
-        "名称": "填充布甲",
-        "类型": "护甲",
-        "护甲值": "3",
-        "重度伤害阈值": "5",
-        "严重伤害阈值": "11",
-        "描述": "灵活：闪避值+1。",
-        "风味描述": "轻柔填料缝入耐磨布层。",
-        "位阶": "1",
-    }
+    document["resources"][0]["template"] = {"id": template_id, "version": "1.0.0"}
+    document["resources"][0]["data"] = data
     document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
 
-    response = publish(api, claim(api, "armor-author"), document, media)
+    response = publish(api, claim(api, "stable-template-author"), document, media)
 
     assert response.status_code == 200, response.text
     assert response.json()["publication"]["document"]["resources"][0]["template"] == {
-        "id": "护甲",
+        "id": template_id,
         "version": "1.0.0",
     }
+
+
+def test_legacy_reference_templates_are_not_publishable(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    headers = claim(api, "legacy-template-author")
+    fixture = read_json(FIXTURE_ROOT / "valid/daggerheart-core-reference-types.json")
+
+    for resource in fixture["resources"]:
+        document, media = candidate()
+        document["resources"][0]["template"] = {
+            "id": resource["template"]["id"],
+            "version": "0.0.0-dev.1",
+        }
+        document["resources"][0]["data"] = copy.deepcopy(resource["data"])
+        document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+        response = publish(api, headers, document, media)
+
+        assert response.status_code == 422, response.text
+
+    assert api.get("/api/publications").json() == {"publications": []}
 
 
 def test_publication_requires_active_account_session(tmp_path: Path) -> None:

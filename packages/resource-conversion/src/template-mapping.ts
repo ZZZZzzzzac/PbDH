@@ -1,15 +1,15 @@
 import {
   adversaryTemplate,
+  ancestryTemplate,
   armorTemplate,
-  temporaryAncestryTemplate,
-  temporaryCommunityTemplate,
-  temporaryDomainTemplate,
+  communityTemplate,
+  domainTemplate,
   temporaryEnvironmentTemplate,
   freeTemplate,
+  itemTemplate,
+  professionTemplate,
+  subclassTemplate,
   templateRegistry,
-  temporaryItemTemplate,
-  temporaryProfessionTemplate,
-  temporarySubclassTemplate,
   weaponTemplateV2,
 } from "@pbdh/templates/core";
 
@@ -50,13 +50,13 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     return { id: armorTemplate.id, version: armorTemplate.version, data };
   }
   if (resource.kind === "item") {
-    const data = structuredClone(temporaryItemTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(itemTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: temporaryItemTemplate.id, version: temporaryItemTemplate.version, data };
+    return { id: itemTemplate.id, version: itemTemplate.version, data };
   }
   if (resource.kind === "class") {
-    const data = structuredClone(temporaryProfessionTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(professionTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       const value = resource.fields[key];
       if (Array.isArray(data[key])) data[key] = Array.isArray(value) ? value.map(text).filter(Boolean) : [];
@@ -66,23 +66,23 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
       else data[key] = text(value ?? data[key]);
     }
     data.名称 = resource.name;
-    return { id: temporaryProfessionTemplate.id, version: temporaryProfessionTemplate.version, data };
+    return { id: professionTemplate.id, version: professionTemplate.version, data };
   }
   if (resource.kind === "subclass") {
-    const data = structuredClone(temporarySubclassTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(subclassTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: temporarySubclassTemplate.id, version: temporarySubclassTemplate.version, data };
+    return { id: subclassTemplate.id, version: subclassTemplate.version, data };
   }
   if (resource.kind === "ancestry") {
-    const data = structuredClone(temporaryAncestryTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(ancestryTemplate.defaultData) as unknown as JsonObject;
     data.名称 = resource.name;
     data.简介 = text(resource.fields.简介);
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return { 名称: text(feature.名称), 描述: text(feature.描述) };
     }) : [];
-    return { id: temporaryAncestryTemplate.id, version: temporaryAncestryTemplate.version, data };
+    return { id: ancestryTemplate.id, version: ancestryTemplate.version, data };
   }
   if (resource.kind === "community") {
     const feature = isObject(resource.fields.特性) ? resource.fields.特性 : {};
@@ -92,13 +92,13 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
       性格: text(resource.fields.性格),
       特性: { 名称: text(feature.名称), 描述: text(feature.描述) },
     };
-    return { id: temporaryCommunityTemplate.id, version: temporaryCommunityTemplate.version, data };
+    return { id: communityTemplate.id, version: communityTemplate.version, data };
   }
   if (resource.kind === "domain") {
-    const data = structuredClone(temporaryDomainTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(domainTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: temporaryDomainTemplate.id, version: temporaryDomainTemplate.version, data };
+    return { id: domainTemplate.id, version: domainTemplate.version, data };
   }
   if (resource.kind === "environment") {
     const data = structuredClone(temporaryEnvironmentTemplate.defaultData) as unknown as JsonObject;
