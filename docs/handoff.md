@@ -38,6 +38,7 @@
 - 正确的 ZSeven-W OpenPencil CLI `op 0.8.4` 已安装到 `C:\Users\zinge\.local\bin\op.exe`，该目录在用户 PATH 中；不要误装同名的 `open-pencil/open-pencil`。
 - Player 资源管理器按当前 System Package 的 `embeddedResources` 分成“原生资源包 / 额外资源包”。“同步到云”已归入“玩家存档”；“系统包”改为可用的当前包下拉框和独立版本号，只保留 `.pbsys` 与文件夹两个上传入口。
 - 文件夹入口现在就是 Author Preview：目录句柄按 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6:src/storage/storageService.ts` 的机制持久化到共享 IndexedDB `authorPreviewHandles` 表；同一标签页刷新会重新读取目录，恢复成功后不会再被首选预制包覆盖。
+- Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
 
 ## 已验证
 
@@ -71,6 +72,7 @@
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、345 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 - Player 菜单与资源分组浏览器验收通过：资源管理器显示“原生资源包 / 额外资源包”；系统包选择框为正常深色可用状态，选项为 Daggerheart / 寻望之心，版本号独立显示，菜单只显示“上传系统包(.pbsys) / 上传系统包(文件夹)”，控制台无 error。浏览器安全策略拒绝自动执行下拉切换，未绕过；切换逻辑由回归测试和类型检查覆盖。
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、349 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
+- 装备 Picker 与卡图修复浏览器验收通过：主/副武器表头均为“名称 / 属性 / 距离 / 伤害 / 负荷 / 位阶 / 类型 / 描述”，护甲包含位阶，三者默认位阶升序；不刷新页面切换寻望之心再切回 Daggerheart 后，领域卡“符文护符”为图片卡（图片 1、文字卡 0）。当前 `npm run verify` 通过：56 个 TypeScript 测试文件、350 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
 
 ## 接下来
 

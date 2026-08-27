@@ -76,6 +76,16 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.package.pages.length).toBeGreaterThan(1);
     expect(loaded.package.resourceLibraries?.reduce((total, library) =>
       total + library.entries.length, 0)).toBe(625);
+    for (const libraryId of ["subclasses", "domain-cards"]) {
+      const imageEntry = loaded.package.resourceLibraries?.find((library) => library.ID === libraryId)
+        ?.entries.find((entry) => entry.fields.卡牌显示方式 === "image");
+      expect(imageEntry?.fields.卡图).toBeTruthy();
+      expect(loaded.packageAssets).toContainEqual(expect.objectContaining({
+        路径: imageEntry?.fields.卡图,
+        sourceType: "resourceExtension",
+        bytes: expect.any(Uint8Array),
+      }));
+    }
     expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);

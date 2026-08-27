@@ -108,11 +108,14 @@ export async function loadPresetSystemPackage(
   if (!result.ok) return result;
   return {
     ...result,
-    packageAssets: imagePaths.map((path) => ({
-      路径: path,
-      类型: inferMimeType(path),
-      staticUrl: presetFileUrl(baseUrl, preset.directory, path, preset.releaseVersion),
-    })),
+    packageAssets: [
+      ...imagePaths.map((path) => ({
+        路径: path,
+        类型: inferMimeType(path),
+        staticUrl: presetFileUrl(baseUrl, preset.directory, path, preset.releaseVersion),
+      })),
+      ...(overrides.packageAssets ?? []),
+    ],
   };
 }
 

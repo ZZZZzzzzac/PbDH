@@ -23,6 +23,19 @@ function readJson<T>(filePath: string): T {
   return JSON.parse(readFileSync(filePath, "utf8")) as T;
 }
 
+type RuntimeResourcePicker = {
+  ID: string;
+  类型: string;
+  资源库?: Array<{
+    ID: string;
+    字段模板?: Array<{ 键: string; 标签?: string; 列宽?: string }>;
+    默认查询?: {
+      filters?: Record<string, string[]>;
+      sort?: { field: string; direction?: "asc" | "desc" };
+    };
+  }>;
+};
+
 const catalog = readJson<ContractCatalog>(path.join(root, "contracts/catalog.json"));
 const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
   family.versions.map((version) => [
@@ -72,5 +85,35 @@ describe("migrated Daggerheart Core System Package", () => {
     ]));
     expect(readJson(path.join(packageRoot, "runtime-libraries/weapons.json"))).toEqual([]);
     expect(() => readFileSync(path.join(packageRoot, "resources/weapons.json"))).toThrow();
+  });
+
+  test("shows and sorts equipment tiers while keeping compact damage headers on one line", () => {
+    const modules = readJson<RuntimeResourcePicker[]>(path.join(packageRoot, "modules.json"));
+    const pickerLibrary = (moduleId: string) => {
+      const module = modules.find((candidate) => candidate.ID === moduleId);
+      expect(module?.类型).toBe("resourcePicker");
+      expect(module?.资源库).toHaveLength(1);
+      return module!.资源库![0]!;
+    };
+
+    const primaryWeapon = pickerLibrary("pick-primary-weapon");
+    const secondaryWeapon = pickerLibrary("pick-secondary-weapon");
+    const armor = pickerLibrary("pick-armor");
+
+    expect(primaryWeapon.字段模板?.map((field) => field.键)).toEqual([
+      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "描述", "类型",
+    ]);
+    expect(secondaryWeapon.字段模板?.map((field) => field.键)).toEqual([
+      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "描述", "类型",
+    ]);
+    expect(armor.字段模板?.map((field) => field.键)).toContain("位阶");
+    expect(primaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
+    expect(secondaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
+    expect(armor.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
+
+    const primaryDamageType = primaryWeapon.字段模板?.find((field) => field.键 === "伤害类型");
+    const secondaryDamageType = secondaryWeapon.字段模板?.find((field) => field.键 === "伤害类型");
+    expect(primaryDamageType).toMatchObject({ 标签: "类型", 列宽: "compact" });
+    expect(secondaryDamageType).toMatchObject({ 标签: "类型", 列宽: "compact" });
   });
 });
