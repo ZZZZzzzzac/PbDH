@@ -4,16 +4,22 @@
 
 ## 当前落点
 
-- 分支：`main`；#47 的实现、移动端修复、真实发布链路修复与交接记录均已本地提交；完成后工作区干净，相对 `origin/main` 超前 4 个本地提交。不要未经确认 push。
+- 分支：`main`；#48 的六类资源实现已提交为 `026e959`，本交接收尾提交完成后工作区应干净，相对 `origin/main` 超前 6 个本地提交。不要未经确认 push。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
 - [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
+- [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
+
+- 新增可信 `种族`、`社群`、`职业`、`子职业`、`物品`、`领域卡` 六个 `1.0.0` Template，覆盖封闭 Schema、默认值、投影、媒体槽位、Tabletop、Authoring Layout、Canonical Renderer 与 Catalog；旧 `0.0.0-dev.1` 保留精确读取但禁止发布。
+- Creator 使用通用结构化编辑器完成六类资源的新建、编辑、预览与 `.pbres` 导出；Market 与 Player 复用相同 Canonical Card Surface，Player 将六类资源路由到 Daggerheart 原生 Picker、人物字段、物品栏和卡牌桌面。
+- Daggerheart Core 内置包提升到 `1.0.3`，仍为 625 个资源、280 个媒体；剩余 399 份官方资源全部迁移到稳定 Template，包 Digest 为 `sha256:801bc36e5c4fd07522f1c0cb5542f60b65356456077393827d1dab63f7a42385`。
+- 浏览器验收出版物 ID 为 `734fcbba-cedc-4210-be35-61a03e5344da`，Package ID 为 `01a04392-34a8-7807-8798-79efb6ff5d5d`。最终公开归档 116021 bytes，文件 SHA256 为 `4F32370477B7C4789F60BB3F62CF89703ECE1220AF36976F74ABDEAF8B28622A`，Snapshot Digest 为 `sha256:6ea401f92d838443594a07144cdbd97e0e3c0667d73b49a02c1790682182603a`。
 
 - 新增可信 `护甲@1.0.0`：封闭 Schema、默认值、投影、媒体槽位、Authoring Layout、不可变 `armor-card-r1` Renderer、Tabletop 空状态、旧版精确升级候选与双运行时 conformance fixture 均已接入。
 - Creator、Market、Player 与 GM Tabletop 均使用同一 Armor Canonical Resource Renderer；Creator 支持护甲新建、全字段编辑、预览、媒体与 `.pbres` 导出—重新导入，Market 支持匿名取得与规范卡面，Player 资源管理器支持规范预览。
@@ -48,6 +54,11 @@
 - Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
 
 ## 已验证
+
+- #48 最终 `npm run verify` 完整通过：63 个 TypeScript 测试文件 / 399 个测试、87 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
+- Creator 导出的六资源 `.pbres` 经正式 Loader/Validator 验证为 0 诊断；最终 Market 下载包同样为 0 诊断、6 个稳定 `1.0.0` 资源与 1 个封面资产。六种 Canonical Surface 在 Creator、Market、Player 均逐项显示。
+- Chrome 实机完成 Creator 登录发布、Market 取得、Player 安装与原生使用：种族、社群、职业、子职业、物品与领域卡分别进入人物字段、物品栏或卡牌桌面；刷新后状态保留。对同 Package ID、同版本但不同 Digest 的出版物，Player 明确要求“更新”；更新后再取得相同 Digest，明确 no-op 且不创建副本。
+- Creator 390×844 下无横向溢出；本地测试账号继续仅保存在被 Git 忽略的 `.env.local`，文档和提交不含凭据值。
 
 - #47 最终 `npm run verify` 完整通过：59 个 TypeScript 测试文件 / 361 个测试、78 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
 - #47 Creator、Market、Player 护甲定向集成测试为 3 个文件 / 29 个测试；Python Resource Package conformance 为 17 个测试。`node scripts/restart-dev.mjs` 已确认 Backend `8001` 与 Platform `5173` 均为 `OK`。
@@ -88,7 +99,7 @@
 
 ## 接下来
 
-1. #47 已完成并关闭；没有自动选择新的迁移工作项。
+1. #48 已完成并关闭；Daggerheart Core 剩余六类资源不再拆分独立 Issue。
 2. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
 3. 不要未经确认 push；如需继续阶段工作，先查看当前开放 Issue 与 triage label。
 
@@ -96,19 +107,19 @@
 
 ### 当前电脑离开前
 
-1. 当前工作区已提交且干净；`main` 比 `origin/main` 超前 4 个提交。
-2. 这 4 个提交目前只存在于本机。由于 `git push` 属于必须由用户确认的红线操作，Agent 没有推送；若希望在另一台电脑直接拉取，请离开前手动运行 `git push origin main`。
-3. 如果不推送，必须复制包含 `.git` 的完整仓库；只复制工作文件无法保留这 2 个提交。被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
-4. 离开前可再次运行 `git status --short --branch`，预期除 `main...origin/main [ahead 2]` 外没有文件状态。
+1. 当前工作区已提交且干净；`main` 比 `origin/main` 超前 6 个提交。
+2. 这 6 个提交目前只存在于本机。Agent 没有推送；若希望在另一台电脑直接拉取，请离开前手动运行 `git push origin main`。
+3. 如果不推送，必须复制包含 `.git` 的完整仓库；只复制工作文件无法保留这 6 个提交。被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
+4. 离开前可再次运行 `git status --short --branch`，预期除 `main...origin/main [ahead 6]` 外没有文件状态。
 
 ### 另一台电脑开始时
 
-1. 如果当前电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -4 --oneline` 包含 #47 的实现、交接、移动端修复与最终发布链路修复，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
+1. 如果当前电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -6 --oneline` 包含 #47 与 #48 的实现及交接提交，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
 2. 检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。该包应包含 625 个资源与 280 个媒体资产。
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 59 个 TypeScript 测试文件 / 361 个测试、78 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 63 个 TypeScript 测试文件 / 399 个测试、87 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills
