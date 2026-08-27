@@ -65,8 +65,8 @@
     {
       "templateId": "护甲",
       "versionRange": {
-        "minimumInclusive": "0.0.0-dev.1",
-        "maximumExclusive": "1.0.0"
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
       },
       "nativeEntry": {
         "id": "armor",
@@ -192,9 +192,9 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.1",
-      "minimumVersion": "1.0.1",
-      "snapshotDigest": "sha256:14f1d5a2edc7df4eb903aaf46693c46512e4ba7f899c9e0148b10bf6d54f0f01"
+      "version": "1.0.2",
+      "minimumVersion": "1.0.2",
+      "snapshotDigest": "sha256:aba2fb68884b84c32466592d89a3bafeb106dd01af32e7f8f0ad952704ac86b4"
     }
   ]
 }

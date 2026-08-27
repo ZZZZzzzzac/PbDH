@@ -5,11 +5,13 @@ import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbd
 import { describe, expect, test } from "vitest";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
   addTemplateResource,
   adversaryData,
+  armorData,
   clearAdversaryFeature,
   closeWorkspaceResourceTab,
   createBlankWorkspace,
@@ -30,11 +32,12 @@ import {
   toggleWorkspaceFolder,
   treeItemsInFolder,
   updateAdversaryData,
+  updateArmorData,
   updateResourcePresentation,
   updateWeaponData,
   weaponData,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
-import { weaponTemplate } from "@pbdh/templates/core";
+import { armorTemplate, weaponTemplate } from "@pbdh/templates/core";
 
 const root = process.cwd();
 const document = minotaurPackage as ResourcePackageLogicalDocument;
@@ -96,6 +99,27 @@ describe("Creator Workspace prototype state model", () => {
     expect(weaponData(edited, created.resourceId)).toEqual(values);
     expect(adversaryData(edited).名称).toBe("牛头人破坏者");
     expect(edited.dirty).toBe(true);
+  });
+
+  test("creates and edits a complete armor resource without changing another resource", () => {
+    const source = createWorkspace({ document, media });
+    const created = addTemplateResource(source, armorTemplate.id, armorTemplate.version);
+    expect(armorData(created.workspace, created.resourceId)).toEqual(armorTemplate.defaultData);
+
+    const values = {
+      名称: "测试护甲",
+      类型: "护甲",
+      护甲值: "4",
+      重度伤害阈值: "7",
+      严重伤害阈值: "14",
+      描述: "坚韧：降低伤害。",
+      风味描述: "由铁木编成。",
+      位阶: "2",
+    };
+    const edited = updateArmorData(created.workspace, (data) => Object.assign(data, values), created.resourceId);
+    expect(armorData(edited, created.resourceId)).toEqual(values);
+    expect(adversaryData(edited).名称).toBe("牛头人破坏者");
+    expect(edited.dirtyResourceIds).toContain(created.resourceId);
   });
 
   test("stores resources in user folders rather than grouping them by Template", () => {
@@ -290,6 +314,30 @@ describe("Creator Workspace prototype state model", () => {
     const loadedWeapon = loaded.candidate?.document.resources.find((resource) => resource.template.id === "武器");
     expect((loadedWeapon?.data as { 名称: string }).名称).toBe("巡林短剑");
     expect(planImport(createWorkspace(exported), loaded.candidate!)).toBe("no-op");
+  });
+
+  test("exports and reloads an edited armor through the complete .pbres boundary", async () => {
+    const armorWorkspace = createWorkspace({
+      document: armorPackage as ResourcePackageLogicalDocument,
+      media: new Map(),
+    });
+    const edited = updateArmorData(armorWorkspace, (data) => {
+      data.名称 = "改良填充布甲";
+      data.护甲值 = "4";
+      data.风味描述 = "工坊重新缝制了内衬。";
+    });
+    const exported = await prepareWorkspaceExport(edited);
+    expect(await validateResourcePackageCandidate(exported.document, exported.media)).toEqual([]);
+
+    const loaded = await loadPbres(writePbres(exported.document, exported.media), validateResourcePackageCandidate);
+    expect(loaded.diagnostics).toEqual([]);
+    expect(loaded.candidate?.document.package.id).toBe(armorPackage.package.id);
+    expect(loaded.candidate?.document.resources[0]).toMatchObject({
+      id: armorPackage.resources[0]!.id,
+      path: armorPackage.resources[0]!.path,
+      template: { id: "护甲", version: "1.0.0" },
+      data: { 名称: "改良填充布甲", 护甲值: "4", 风味描述: "工坊重新缝制了内衬。" },
+    });
   });
 
   test("binds the App shell to the reviewed OpenPencil source", () => {

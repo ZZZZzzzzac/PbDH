@@ -46,15 +46,19 @@ import {
 import { TabletopSurface } from "@pbdh/tabletop/react";
 import {
   adversaryRendererFor,
+  armorAuthoringLayout,
+  armorRendererFor,
   weaponAuthoringLayout,
   weaponRendererFor,
 } from "@pbdh/templates/frontend";
 import {
   adversaryTemplate,
+  armorTemplate,
   templateRegistry,
   weaponTemplate,
   type AdversaryData,
   type AdversaryFeature,
+  type ArmorData,
   type WeaponData,
 } from "@pbdh/templates/core";
 
@@ -83,6 +87,7 @@ import { snapshotWorkspaceResourceForTabletop } from "./tabletop-placement.ts";
 import { WorkspaceTree } from "./WorkspaceTree.tsx";
 import {
   adversaryData,
+  armorData,
   addTemplateResource,
   clearAdversaryFeature,
   closeWorkspaceResourceTab,
@@ -103,6 +108,7 @@ import {
   selectWorkspaceFolder,
   toggleWorkspaceFolder,
   updateAdversaryData,
+  updateArmorData,
   updateResourcePresentation,
   updateWeaponData,
   weaponData,
@@ -349,6 +355,19 @@ function WeaponEditor({ data, onField }: { data: WeaponData; onField: (field: ke
   </section>;
 }
 
+function ArmorEditor({ data, onField }: { data: ArmorData; onField: (field: keyof ArmorData, value: string) => void }) {
+  return <section className="authoring-editor armor-authoring-editor">
+    {armorAuthoringLayout.sections.map((section) => <div className={`field-group armor-field-grid ${section.id}`} key={section.id}>
+      {section.fields.map((field) => {
+        const key = field.path as keyof ArmorData;
+        return field.control === "textarea"
+          ? <TextareaField key={field.path} label={field.label} value={data[key]} onChange={(value) => onField(key, value)} />
+          : <Field key={field.path} label={field.label} value={data[key]} onChange={(value) => onField(key, value)} />;
+      })}
+    </div>)}
+  </section>;
+}
+
 type TemplateBoundResource = { template: { id: string; version: string } };
 
 function isTemplate(resource: TemplateBoundResource, template: { id: string; version: string }): boolean {
@@ -361,7 +380,7 @@ function resourceTitle(resource: WorkspaceResource): string {
 }
 
 function ResourceIcon({ resource }: { resource: TemplateBoundResource }) {
-  return <Icon name={isTemplate(resource, weaponTemplate) ? "sword" : "skull"} />;
+  return <Icon name={isTemplate(resource, weaponTemplate) ? "sword" : isTemplate(resource, armorTemplate) ? "package" : "skull"} />;
 }
 
 function AutoFitPreview({ children }: { children: ReactNode }) {
@@ -676,10 +695,13 @@ export function CreatorWorkspacePrototype({
   const resource = active?.document.resources.find((candidate) => candidate.id === activeResourceId);
   const isAdversary = Boolean(resource && isTemplate(resource, adversaryTemplate));
   const isWeapon = Boolean(resource && isTemplate(resource, weaponTemplate));
+  const isArmor = Boolean(resource && isTemplate(resource, armorTemplate));
   const adversary = active && resource && isAdversary ? adversaryData(active, resource.id) : undefined;
   const weapon = active && resource && isWeapon ? weaponData(active, resource.id) : undefined;
+  const armor = active && resource && isArmor ? armorData(active, resource.id) : undefined;
   const adversaryPreviewResource = resource && adversary ? { ...resource, data: adversary } : undefined;
   const weaponPreviewResource = resource && weapon ? { ...resource, data: weapon } : undefined;
+  const armorPreviewResource = resource && armor ? { ...resource, data: armor } : undefined;
   const previewAssets = useMemo(() => new Map(
     resource
       ? Object.values(resource.media).flatMap((id) => {
@@ -1046,6 +1068,12 @@ export function CreatorWorkspacePrototype({
 
   function updateWeaponField(field: keyof WeaponData, value: string) {
     if (active && resource) replaceActive(updateWeaponData(active, (draft) => {
+      draft[field] = value;
+    }, resource.id));
+  }
+
+  function updateArmorField(field: keyof ArmorData, value: string) {
+    if (active && resource) replaceActive(updateArmorData(active, (draft) => {
       draft[field] = value;
     }, resource.id));
   }
@@ -1491,7 +1519,7 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  function createResource(template: typeof adversaryTemplate | typeof weaponTemplate) {
+  function createResource(template: typeof adversaryTemplate | typeof weaponTemplate | typeof armorTemplate) {
     if (!active) return;
     const result = addTemplateResource(active, template.id, template.version);
     replaceActive(result.workspace);
@@ -1515,7 +1543,6 @@ export function CreatorWorkspacePrototype({
   const instanceWeapon = selectedInstance && selectedInstance.resource.template.id === weaponTemplate.id
     ? selectedInstance.resource.data as WeaponData
     : undefined;
-
   function assetsFor(media: Record<string, string>) {
     return new Map(Object.values(media).flatMap((id) => {
       const url = assetUrls.get(id);
@@ -1549,6 +1576,16 @@ export function CreatorWorkspacePrototype({
         assets={instanceAssets}
         state={instance.state}
         label={`${(instance.resource.data as WeaponData).名称}桌面实例`}
+      />;
+    }
+    if (instance.resource.template.id === armorTemplate.id) {
+      return <CanonicalCardSurface
+        resource={instance.resource as TabletopInstance["resource"] & { data: ArmorData }}
+        expectedRendererRevision={armorTemplate.rendererRevision}
+        renderer={armorRendererFor(instance.resource.template.version)}
+        assets={instanceAssets}
+        state={instance.state}
+        label={`${(instance.resource.data as ArmorData).名称}桌面实例`}
       />;
     }
     return <div className="tabletop-renderer-error">无法呈现卡面</div>;
@@ -1639,6 +1676,7 @@ export function CreatorWorkspacePrototype({
             />}
 
             {weapon && <WeaponEditor data={weapon} onField={updateWeaponField} />}
+            {armor && <ArmorEditor data={armor} onField={updateArmorField} />}
 
             <aside className="preview-panel">
               <header><h1>实时预览</h1><div>
@@ -1661,6 +1699,7 @@ export function CreatorWorkspacePrototype({
               <AutoFitPreview>
                 {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererFor(adversaryPreviewResource.template.version)} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
                 {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererFor(weaponPreviewResource.template.version)} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
+                {armorPreviewResource && <CanonicalCardSurface resource={armorPreviewResource} expectedRendererRevision="armor-card-r1" renderer={armorRendererFor(armorPreviewResource.template.version)} assets={previewAssets} label={`${armorPreviewResource.data.名称 || "未命名护甲"}规范卡面`} />}
               </AutoFitPreview>
               <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button></footer>
             </aside>
@@ -1906,7 +1945,7 @@ export function CreatorWorkspacePrototype({
         {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={newName} onChange={setNewName} />
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
-          <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button></div>
+          <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button><button type="button" onClick={() => createResource(armorTemplate)}><Icon name="package" />护甲</button></div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}
         {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) =>
           <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}</b></li>)}</ul>

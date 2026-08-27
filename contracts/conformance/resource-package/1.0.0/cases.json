@@ -24,6 +24,13 @@
     "expected": []
   },
   {
+    "name": "accepts-daggerheart-core-armor",
+    "document": "valid/daggerheart-core-armor.json",
+    "media": [],
+    "mutation": { "kind": "none" },
+    "expected": []
+  },
+  {
     "name": "rejects-duplicate-resource-id",
     "document": "valid/minotaur-wrecker.json",
     "media": [

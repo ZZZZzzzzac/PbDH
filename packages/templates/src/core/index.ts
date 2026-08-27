@@ -2,6 +2,7 @@ import { adversaryTemplate as legacyAdversaryTemplate } from "./adversary/1.0.0-
 import { adversaryTemplate } from "./adversary/1.0.0/capability.ts";
 import { temporaryAncestryTemplate } from "./ancestry/0.0.0-dev.1/capability.ts";
 import { temporaryArmorTemplate } from "./armor/0.0.0-dev.1/capability.ts";
+import { armorTemplate } from "./armor/1.0.0/capability.ts";
 import { temporaryCommunityTemplate } from "./community/0.0.0-dev.1/capability.ts";
 import { temporaryDomainTemplate } from "./domain/0.0.0-dev.1/capability.ts";
 import { temporaryEnvironmentTemplate } from "./environment/0.0.0-dev.1/capability.ts";
@@ -24,6 +25,8 @@ export { temporaryAncestryTemplate } from "./ancestry/0.0.0-dev.1/capability.ts"
 export type { TemporaryAncestryData, TemporaryAncestryFeature } from "./ancestry/0.0.0-dev.1/capability.ts";
 export { temporaryArmorTemplate } from "./armor/0.0.0-dev.1/capability.ts";
 export type { TemporaryArmorData } from "./armor/0.0.0-dev.1/capability.ts";
+export { armorTemplate } from "./armor/1.0.0/capability.ts";
+export type { ArmorData } from "./armor/1.0.0/capability.ts";
 export { temporaryCommunityTemplate } from "./community/0.0.0-dev.1/capability.ts";
 export type { TemporaryCommunityData } from "./community/0.0.0-dev.1/capability.ts";
 export { temporaryDomainTemplate } from "./domain/0.0.0-dev.1/capability.ts";
@@ -57,6 +60,7 @@ export const templateRegistry = new TemplateRegistry([
   legacyAdversaryTemplate,
   temporaryAncestryTemplate,
   temporaryArmorTemplate,
+  armorTemplate,
   temporaryCommunityTemplate,
   temporaryDomainTemplate,
   temporaryEnvironmentTemplate,

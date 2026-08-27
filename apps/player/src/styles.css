@@ -185,6 +185,10 @@ button.primary { border-color: var(--player-primary, #641f1d) !important; color:
 .license-row { display: flex; gap: 20px; font-size: 12px; }
 .license-row span { width: 70px; color: #756a5e; font-weight: 700; }
 .player-dialog > footer { height: 64px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 18px; border-top: 1px solid var(--player-line); background: #faf7f1; }
+.player-resource-preview-backdrop { z-index: 60; }
+.player-resource-preview { width: min(520px, calc(100vw - 20px)); max-height: calc(100vh - 78px); display: flex; flex-direction: column; }
+.player-resource-preview-stage { min-height: 0; display: grid; flex: 1; place-items: center; overflow: auto; padding: 16px; background: #e8e0d3; }
+.player-resource-preview-stage > p { max-width: 320px; color: #756a5e; text-align: center; }
 .technical-toggle { width: max-content; padding: 0; border: 0; color: #641f1d; background: transparent; cursor: pointer; font-size: 12px; font-weight: 700; }
 .technical-details { max-height: 160px; margin: 0; overflow: auto; padding: 10px 10px 10px 30px; border-radius: 6px; background: #21150f; color: #fffdf8; }
 .technical-details li { margin: 4px 0; }

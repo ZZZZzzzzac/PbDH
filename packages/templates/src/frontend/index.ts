@@ -1,4 +1,10 @@
 export { adversaryAuthoringLayout } from "./adversary/1.0.0/authoring-layout.ts";
+export { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
+export {
+  armorRendererRevision,
+  armorRendererStyles,
+  type ArmorRuntimeState,
+} from "./armor/1.0.0/renderer.tsx";
 export { adversaryAuthoringLayout as legacyAdversaryAuthoringLayout } from "./adversary/1.0.0-alpha.1/authoring-layout.ts";
 export {
   adversaryCardDesignSource,
@@ -11,7 +17,7 @@ export {
   buildTemplateSupportManifest,
   type TemplateSupportManifest,
 } from "./support-manifest.ts";
-export { adversaryRendererFor, freeRendererFor, weaponRendererFor } from "./renderer-registry.ts";
+export { adversaryRendererFor, armorRendererFor, freeRendererFor, weaponRendererFor } from "./renderer-registry.ts";
 export { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";
 export {
   freeRendererRevision,

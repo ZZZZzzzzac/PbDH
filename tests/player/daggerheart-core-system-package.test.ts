@@ -72,6 +72,10 @@ describe("migrated Daggerheart Core System Package", () => {
       new Set(["种族", "社群", "职业", "子职业", "武器", "护甲", "物品", "领域卡"]),
     );
     const resources = candidates.flatMap((candidate) => candidate.document.resources);
+    expect(candidates[0]?.document.package.version).toBe("1.0.2");
+    const armorResources = resources.filter((resource) => resource.template.id === "护甲");
+    expect(armorResources).toHaveLength(34);
+    expect(armorResources.every((resource) => resource.template.version === "1.0.0")).toBe(true);
     expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);
     expect(resources.filter((resource) => !resource.media.portrait).every((resource) => resource.presentation.mode === "text")).toBe(true);
   });

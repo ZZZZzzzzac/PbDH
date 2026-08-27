@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E6%8A%A4%E7%94%B2/1.0.0/schema.json",
+  "title": "护甲 Template Data",
+  "type": "object",
+  "required": [
+    "名称",
+    "类型",
+    "护甲值",
+    "重度伤害阈值",
+    "严重伤害阈值",
+    "描述",
+    "风味描述",
+    "位阶"
+  ],
+  "properties": {
+    "名称": { "type": "string" },
+    "类型": { "type": "string" },
+    "护甲值": { "type": "string" },
+    "重度伤害阈值": { "type": "string" },
+    "严重伤害阈值": { "type": "string" },
+    "描述": { "type": "string" },
+    "风味描述": { "type": "string" },
+    "位阶": { "type": "string" }
+  },
+  "additionalProperties": false
+}

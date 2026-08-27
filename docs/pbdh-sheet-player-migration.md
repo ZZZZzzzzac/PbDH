@@ -50,6 +50,7 @@
 - Runtime Storage 已接入正式 Character Save Repository；人物字段、自包含桌面副本和媒体按同一 revision 保存，云恢复后缺少来源 `.pbres` 仍可显示、复制和再次保存。
 - 登录前本地人物通过显式“同步到云”进入云端；登录后新建或导入人物进入 outbox。账号切换、冲突三动作、云端删除与回收站使用统一 Cloud Document Service。
 - Player 图片入口已改用共享媒体准入流程，在用户裁剪后归一化为内容寻址 WebP。
+- Daggerheart Core 的 34 份护甲已从固定来源 `resources/armor.json` 迁移到可信 `护甲@1.0.0`；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.2`。旧 `护甲@0.0.0-dev.1` 只保留精确 Reader 与显式候选升级路径，不再由官方生成器或资源转换 Adapter 新增生产。
 
 ## 阶段验收
 

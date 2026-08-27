@@ -11,6 +11,12 @@ import { describe, expect, it } from "vitest";
 import systemJson from "../../apps/player/src/daggerheart-core-system.generated.json";
 import { sheetRuntimeMediaPath } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import {
+  createEmptyCharacterData,
+  exportCharacterData,
+  parseCharacterDataJson,
+} from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
+import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
+import {
   daggerheartCorePreset,
   loadDaggerheartCoreRuntimePackage,
 } from "../../apps/player/src/sheet-runtime/loaders/daggerheartCoreRuntimeLoader.ts";
@@ -89,6 +95,34 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);
+
+    const armor = loaded.package.resourceLibraries
+      ?.find((library) => library.ID === "armor")
+      ?.entries.find((entry) => entry.fields.名称 === "填充布甲");
+    expect(armor).toBeDefined();
+    const applied = applyResourceSelectionToDraft(
+      createEmptyCharacterData(loaded.package, "armor-character"),
+      loaded.package,
+      "pick-armor",
+      "armor",
+      [armor!],
+    );
+    expect(applied.interactionResult.warnings).toEqual([]);
+    expect(applied.characterData.character.values).toMatchObject({
+      "armor-name": "**填充布甲**｜阈值 5/11｜护甲值 3",
+      "armor-value": "3",
+      "armor-description": ":red[**灵活**]：闪避值+1。",
+      "armor-slots": { current: 0, max: 3 },
+    });
+    expect(applied.characterData.resourceSelections).not.toHaveProperty("pick-armor");
+    expect(JSON.stringify(applied.characterData)).not.toContain(armor!.ID);
+    expect(JSON.stringify(applied.characterData)).not.toContain(currentSystem.embeddedResources[0]!.packageId);
+
+    const restored = parseCharacterDataJson(exportCharacterData(applied.characterData), loaded.package);
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) throw new Error(restored.error);
+    expect(restored.data.character.values).toMatchObject(applied.characterData.character.values);
+    expect(restored.data.resourceSelections).not.toHaveProperty("pick-armor");
   });
 
   it("加载带卡图的 Market 原生武器时不把运行时卡图报告为未使用图片", async () => {

@@ -1,12 +1,12 @@
 import {
   adversaryTemplate,
+  armorTemplate,
   temporaryAncestryTemplate,
   temporaryCommunityTemplate,
   temporaryDomainTemplate,
   temporaryEnvironmentTemplate,
   freeTemplate,
   templateRegistry,
-  temporaryArmorTemplate,
   temporaryItemTemplate,
   temporaryProfessionTemplate,
   temporarySubclassTemplate,
@@ -44,10 +44,10 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     return { id: weaponTemplateV2.id, version: weaponTemplateV2.version, data };
   }
   if (resource.kind === "armor") {
-    const data = structuredClone(temporaryArmorTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: temporaryArmorTemplate.id, version: temporaryArmorTemplate.version, data };
+    return { id: armorTemplate.id, version: armorTemplate.version, data };
   }
   if (resource.kind === "item") {
     const data = structuredClone(temporaryItemTemplate.defaultData) as unknown as JsonObject;

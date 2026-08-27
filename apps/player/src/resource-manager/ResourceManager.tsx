@@ -4,6 +4,10 @@ import {
   type ContractDiagnostic,
   type SystemPackageDocument,
 } from "@pbdh/contract-runtime";
+import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
+import { armorRendererFor } from "@pbdh/templates/frontend";
+import { armorTemplate, type ArmorData } from "@pbdh/templates/core";
 
 import {
   type InstalledResourcePackage,
@@ -48,6 +52,11 @@ type Dialog =
   | { kind: "invalid"; diagnostics: ContractDiagnostic[] }
   | null;
 
+type ResourcePreview = {
+  installed: InstalledResourcePackage;
+  resourceId: string;
+};
+
 const typeIcons: Record<string, string> = {
   敌人: "♜",
   环境: "⌁",
@@ -77,6 +86,70 @@ function countsByDestination(plan: Exclude<ResourcePackageInstallPlan, { kind: "
     counts.set(label, (counts.get(label) ?? 0) + 1);
   }
   return [...counts];
+}
+
+function useResourceAssets(
+  installed: InstalledResourcePackage,
+  resource: InstalledResourcePackage["document"]["resources"][number],
+): ReadonlyMap<string, ManagedAsset> {
+  const [assets, setAssets] = useState<ReadonlyMap<string, ManagedAsset>>(() => new Map());
+  useEffect(() => {
+    const urls: string[] = [];
+    const next = new Map<string, ManagedAsset>();
+    for (const assetId of Object.values(resource.media)) {
+      const bytes = installed.media.get(assetId);
+      if (!bytes) {
+        next.set(assetId, { status: "error", reason: "missing installed media" });
+        continue;
+      }
+      const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      const url = URL.createObjectURL(new Blob([buffer], { type: "image/webp" }));
+      urls.push(url);
+      next.set(assetId, { status: "ready", url });
+    }
+    setAssets(next);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [installed, resource]);
+  return assets;
+}
+
+export function PlayerResourcePreviewDialog({
+  installed,
+  resourceId,
+  onClose,
+}: ResourcePreview & { onClose: () => void }) {
+  const resource = installed.document.resources.find((candidate) => candidate.id === resourceId);
+  if (!resource) return null;
+  return <PlayerResourcePreviewContent installed={installed} resource={resource} onClose={onClose} />;
+}
+
+function PlayerResourcePreviewContent({
+  installed,
+  resource,
+  onClose,
+}: {
+  installed: InstalledResourcePackage;
+  resource: InstalledResourcePackage["document"]["resources"][number];
+  onClose: () => void;
+}) {
+  const assets = useResourceAssets(installed, resource);
+  const name = resourceName(resource);
+  const isArmor = resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version;
+  return <div className="player-dialog-backdrop player-resource-preview-backdrop">
+    <section className="player-dialog player-resource-preview" role="dialog" aria-modal="true" aria-label={`${name}资源详情`}>
+      <header><h2>{name}</h2><button aria-label="关闭资源详情" onClick={onClose}>×</button></header>
+      <div className="player-resource-preview-stage">
+        {isArmor ? <CanonicalCardSurface
+          resource={resource as unknown as SurfaceResource<ArmorData>}
+          expectedRendererRevision={armorTemplate.rendererRevision}
+          renderer={armorRendererFor(resource.template.version)}
+          assets={assets}
+          label={`${name}玩家规范卡面`}
+        /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}
+      </div>
+      <footer><button className="primary" onClick={onClose}>关闭</button></footer>
+    </section>
+  </div>;
 }
 
 function DialogSurface({
@@ -138,6 +211,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   const [resourceQuery, setResourceQuery] = useState("");
   const [selectedType, setSelectedType] = useState("全部");
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [preview, setPreview] = useState<ResourcePreview>();
   const [removingPackageId, setRemovingPackageId] = useState<string>();
   const inputRef = useRef<HTMLInputElement>(null);
   const handledIngressIds = useRef(new Set<string>());
@@ -250,6 +324,16 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
     }
   }
 
+  function openResource(installed: InstalledResourcePackage, resourceId?: string) {
+    const target = installed.document.resources.find((resource) => resource.id === resourceId)
+      ?? installed.document.resources[0];
+    if (target?.template.id === armorTemplate.id && target.template.version === armorTemplate.version) {
+      setPreview({ installed, resourceId: target.id });
+      return;
+    }
+    onOpenResource(installed, target?.id ?? "");
+  }
+
   function renderPackageRow(installed: InstalledResourcePackage) {
     const isSelected = installed.document.package.id === selected?.document.package.id;
     const destinations = new Set(installed.routes.map((route) => route.nativeEntry?.label ?? "其他资源"));
@@ -277,13 +361,14 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
           <div className="resource-search"><input aria-label="搜索资源" placeholder="搜索名称" value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} /><span>{resources.length} / {selected.document.resources.length}</span></div>
           <div className="manager-resource-table"><div className="resource-table-head"><span /><b>名称</b><b>类型</b><b>使用位置</b></div>{resources.map((resource) => {
             const label = routeLabel(selected, resource.id);
-            return <button className="manager-resource-row" key={resource.id} onDoubleClick={() => onOpenResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
+            return <button className="manager-resource-row" key={resource.id} onDoubleClick={() => openResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
           })}</div>
-          <footer className="detail-actions"><button disabled={removingPackageId === selected.document.package.id} onClick={() => void removeSelectedPackage()}>{removingPackageId === selected.document.package.id ? "正在移除" : "移除"}</button><button className="primary" disabled={!resources[0]} onClick={() => resources[0] && onOpenResource(selected, resources[0].id)}>浏览资源</button></footer>
+          <footer className="detail-actions"><button disabled={removingPackageId === selected.document.package.id} onClick={() => void removeSelectedPackage()}>{removingPackageId === selected.document.package.id ? "正在移除" : "移除"}</button><button className="primary" disabled={!resources[0]} onClick={() => resources[0] && openResource(selected, resources[0].id)}>浏览资源</button></footer>
         </> : <div className="empty-library"><h2>没有已安装的资源包</h2><button className="primary" onClick={() => inputRef.current?.click()}>安装资源包</button></div>}</section>
       </div>
     </section>
     <input ref={inputRef} hidden type="file" accept=".pbres" onChange={importPackage} />
-    {dialog && <DialogSurface dialog={dialog} onCancel={() => setDialog(null)} onCommit={commit} onOpen={(installed, focusResourceId) => { setSelectedId(installed.document.package.id); setDialog(null); if (focusResourceId) onOpenResource(installed, focusResourceId); }} />}
+    {dialog && <DialogSurface dialog={dialog} onCancel={() => setDialog(null)} onCommit={commit} onOpen={(installed, focusResourceId) => { setSelectedId(installed.document.package.id); setDialog(null); openResource(installed, focusResourceId); }} />}
+    {preview && <PlayerResourcePreviewDialog {...preview} onClose={() => setPreview(undefined)} />}
   </div>;
 }

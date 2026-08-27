@@ -7,9 +7,11 @@ import {
 } from "@pbdh/contract-runtime";
 import {
   adversaryTemplate,
+  armorTemplate,
   templateRegistry,
   weaponTemplate,
   type AdversaryData,
+  type ArmorData,
   type WeaponData,
 } from "@pbdh/templates/core";
 
@@ -114,6 +116,12 @@ export function weaponData(workspace: CreatorWorkspace, resourceId?: string): We
   return resource.data as WeaponData;
 }
 
+export function armorData(workspace: CreatorWorkspace, resourceId?: string): ArmorData {
+  const resource = workspaceResource(workspace, resourceId);
+  assertTemplate(resource, armorTemplate.id);
+  return resource.data as ArmorData;
+}
+
 export function updateAdversaryData(
   workspace: CreatorWorkspace,
   update: (data: AdversaryData) => void,
@@ -132,6 +140,17 @@ export function updateWeaponData(
 ): CreatorWorkspace {
   const next = createWorkspace(workspace, true);
   update(weaponData(next, resourceId));
+  markResourceDirty(next, workspaceResource(next, resourceId).id);
+  return next;
+}
+
+export function updateArmorData(
+  workspace: CreatorWorkspace,
+  update: (data: ArmorData) => void,
+  resourceId?: string,
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  update(armorData(next, resourceId));
   markResourceDirty(next, workspaceResource(next, resourceId).id);
   return next;
 }

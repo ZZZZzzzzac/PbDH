@@ -458,7 +458,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "护甲", version: "0.0.0-dev.1" });
+    expect(candidate?.template).toEqual({ id: "护甲", version: "1.0.0" });
     expect(candidate?.data).toEqual({ ...armorBatch.resources[0]?.fields, 位阶: "" });
     expect(candidate?.diagnostics).toEqual([]);
   });

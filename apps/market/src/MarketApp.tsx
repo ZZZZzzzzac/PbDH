@@ -6,9 +6,10 @@ import { PublicationDialog, type PublicationFormValue } from "@pbdh/publication-
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
   adversaryRendererFor,
+  armorRendererFor,
   weaponRendererFor,
 } from "@pbdh/templates/frontend";
-import type { AdversaryData, WeaponData } from "@pbdh/templates/core";
+import type { AdversaryData, ArmorData, WeaponData } from "@pbdh/templates/core";
 
 import { marketDesignSource } from "../design.generated.ts";
 import { catalogOptions } from "./catalog-options.ts";
@@ -214,7 +215,7 @@ function Discovery({
   </div>;
 }
 
-function CanonicalPreview({ publication, resourceId }: { publication: Publication; resourceId: string }) {
+export function CanonicalPreview({ publication, resourceId }: { publication: Publication; resourceId: string }) {
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
   const assets = useMemo(() => new Map(
     Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
@@ -235,6 +236,12 @@ function CanonicalPreview({ publication, resourceId }: { publication: Publicatio
               resource={resource.source as SurfaceResource<WeaponData>}
               expectedRendererRevision="weapon-card-r1"
               renderer={weaponRendererFor((resource.source as SurfaceResource<WeaponData>).template.version)}
+              assets={assets}
+              label={`${resource.name}规范卡面`}
+            /> : resource.templateId === "护甲" ? <CanonicalCardSurface
+              resource={resource.source as SurfaceResource<ArmorData>}
+              expectedRendererRevision="armor-card-r1"
+              renderer={armorRendererFor((resource.source as SurfaceResource<ArmorData>).template.version)}
               assets={assets}
               label={`${resource.name}规范卡面`}
             /> : <p>当前版本尚不能预览此模板。</p>}
