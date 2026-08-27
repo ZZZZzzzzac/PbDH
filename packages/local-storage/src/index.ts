@@ -42,9 +42,15 @@ export type InstalledResourcePackageRecord = {
   document: unknown;
 };
 
+type AuthorPreviewHandleRecord = {
+  id: string;
+  handle: unknown;
+};
+
 type LegacyResourceMediaRecord = LocalMediaAssetRecord;
 
 export class PbDHLocalDatabase extends Dexie {
+  authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
   installedResourcePackages!: Table<InstalledResourcePackageRecord, string>;
   localDocuments!: Table<LocalDocumentEnvelope, string>;
   mediaAssets!: Table<LocalMediaAssetRecord, string>;
@@ -70,6 +76,31 @@ export class PbDHLocalDatabase extends Dexie {
       localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
       mediaAssets: "&assetId, byteLength",
     });
+    this.version(4).stores({
+      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
+      localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
+      mediaAssets: "&assetId, byteLength",
+      authorPreviewHandles: "&id",
+    });
+  }
+}
+
+const authorPreviewHandleId = "current-author-preview-directory";
+
+export class DexieAuthorPreviewHandleStore<THandle> {
+  readonly #database: PbDHLocalDatabase;
+
+  constructor(database = new PbDHLocalDatabase()) {
+    this.#database = database;
+  }
+
+  async load(): Promise<THandle | null> {
+    const record = await this.#database.authorPreviewHandles.get(authorPreviewHandleId);
+    return record ? record.handle as THandle : null;
+  }
+
+  async save(handle: THandle): Promise<void> {
+    await this.#database.authorPreviewHandles.put({ id: authorPreviewHandleId, handle });
   }
 }
 

@@ -4,6 +4,7 @@ import Dexie from "dexie";
 import { afterEach, describe, expect, test } from "vitest";
 
 import {
+  DexieAuthorPreviewHandleStore,
   DexieLocalDocumentStore,
   PbDHLocalDatabase,
   type LocalDocumentEnvelope,
@@ -103,5 +104,19 @@ describe("shared local document store", () => {
     databases.push(upgraded);
     expect(await upgraded.mediaAssets.count()).toBe(1);
     expect(upgraded.tables.map((table) => table.name)).not.toContain("resourceMedia");
+  });
+
+  test("persists an Author Preview directory handle across database reopening", async () => {
+    const firstDatabase = database();
+    const name = firstDatabase.name;
+    const firstStore = new DexieAuthorPreviewHandleStore<{ kind: "directory"; name: string }>(firstDatabase);
+    await firstStore.save({ kind: "directory", name: "system-package-dev" });
+    firstDatabase.close();
+
+    const reopened = new PbDHLocalDatabase(name);
+    databases.push(reopened);
+    const reopenedStore = new DexieAuthorPreviewHandleStore<{ kind: "directory"; name: string }>(reopened);
+
+    expect(await reopenedStore.load()).toEqual({ kind: "directory", name: "system-package-dev" });
   });
 });

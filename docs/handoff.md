@@ -36,6 +36,8 @@
 - Countable 图片标志恢复按内容数量自动缩放；图片型 Countable 的减号也会拦截右键并减少上限，不再打开浏览器右键菜单。
 - Player “系统包”菜单不再显示资源包数量；数量改为跟随“玩家功能 → 资源管理器”入口。资源管理器外壳、详情标题和资源表已使用 Player 专用类名，避免 Sheet Runtime 与 Market 的全局样式污染；分类横向滚动条也不再遮挡按钮。
 - 正确的 ZSeven-W OpenPencil CLI `op 0.8.4` 已安装到 `C:\Users\zinge\.local\bin\op.exe`，该目录在用户 PATH 中；不要误装同名的 `open-pencil/open-pencil`。
+- Player 资源管理器按当前 System Package 的 `embeddedResources` 分成“原生资源包 / 额外资源包”。“同步到云”已归入“玩家存档”；“系统包”改为可用的当前包下拉框和独立版本号，只保留 `.pbsys` 与文件夹两个上传入口。
+- 文件夹入口现在就是 Author Preview：目录句柄按 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6:src/storage/storageService.ts` 的机制持久化到共享 IndexedDB `authorPreviewHandles` 表；同一标签页刷新会重新读取目录，恢复成功后不会再被首选预制包覆盖。
 
 ## 已验证
 
@@ -67,6 +69,8 @@
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、342 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 - Player 资源管理器布局浏览器验收通过：660×756 下弹窗底部未越界，详情标题为 48px，分类栏为 38px、按钮为 30px，横向滚动条不再遮挡分类；1280×720 下顶栏 64px、汇总 58px、搜索 36px、底部操作 38px，控制台无 error，临时 viewport 已恢复。
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、345 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
+- Player 菜单与资源分组浏览器验收通过：资源管理器显示“原生资源包 / 额外资源包”；系统包选择框为正常深色可用状态，选项为 Daggerheart / 寻望之心，版本号独立显示，菜单只显示“上传系统包(.pbsys) / 上传系统包(文件夹)”，控制台无 error。浏览器安全策略拒绝自动执行下拉切换，未绕过；切换逻辑由回归测试和类型检查覆盖。
+- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、349 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 
 ## 接下来
 

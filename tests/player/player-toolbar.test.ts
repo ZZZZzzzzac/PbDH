@@ -36,13 +36,36 @@ describe("Player toolbar", () => {
     expect(source).not.toContain('className="message message-info"');
   });
 
-  it("在系统包菜单提供上传和 Author Preview 入口", async () => {
+  it("把存档同步放在玩家存档菜单，而不是玩家功能菜单", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
 
-    expect(source).toContain("上传系统包(zip)");
+    const playerFunctions = source.slice(source.indexOf('<span>玩家功能</span>'), source.indexOf('<span>玩家存档</span>'));
+    const characterSaves = source.slice(source.indexOf('<span>玩家存档</span>'), source.indexOf('<span>导入导出</span>'));
+
+    expect(playerFunctions).not.toContain("同步到云");
+    expect(characterSaves).toContain("同步到云");
+  });
+
+  it("用下拉菜单切换系统包，并把文件夹入口作为 Author Preview", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain('aria-label="当前系统包"');
+    expect(source).not.toContain("切换到{entry.system.package.name}");
+    expect(source).toContain("上传系统包(.pbsys)");
     expect(source).toContain("上传系统包(文件夹)");
-    expect(source).toContain("系统包预览");
-    expect(source).toContain("enterAuthorPreview");
+    expect(source).not.toContain(">系统包预览</button>");
+    expect(source).not.toContain(">重新选择预览目录</button>");
+    expect(source).toContain('onClick={() => void handleEnterAuthorPreview()}>上传系统包(文件夹)</button>');
+    expect(source).toContain('accept=".pbsys,application/zip"');
+    expect(source).not.toContain('accept=".zip,application/zip,application/x-zip-compressed"');
+  });
+
+  it("恢复 Author Preview 后不再用首选预制包覆盖它", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain("if (!state.authorPreviewActive)");
+    expect(source).toContain("loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load()");
+    expect(source).toContain("savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle)");
   });
 
   it("在菜单点击的同步调用栈中打开问卷标签页", async () => {

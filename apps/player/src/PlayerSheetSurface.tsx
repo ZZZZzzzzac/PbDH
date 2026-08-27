@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type InputHTMLAttributes,
 } from "react";
 
 import {
@@ -14,7 +13,10 @@ import {
   type SystemPackageDocument,
 } from "@pbdh/contract-runtime";
 import type { RemoteCloudDocument } from "@pbdh/cloud-documents";
-import { DexieLocalDocumentStore } from "@pbdh/local-storage";
+import {
+  DexieAuthorPreviewHandleStore,
+  DexieLocalDocumentStore,
+} from "@pbdh/local-storage";
 import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
 import {
   usePlatformAccountManagement,
@@ -113,7 +115,6 @@ export function PlayerSheetSurface({
   const auth = useAuth();
   const { notify } = usePlatformNotifications();
   const importedSystemsRef = useRef(new Map<string, SystemPackageDocument>());
-  const previewDirectoryHandleRef = useRef<PackageDirectoryHandle | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const currentCatalogEntry = findPlayerSystemPackage(currentPackage?.manifest.ID)
     ?? null;
@@ -122,6 +123,10 @@ export function PlayerSheetSurface({
     ?? defaultPlayerSystemPackage.system;
   const resourceRepository = useMemo(() => new DexieResourcePackageRepository(), []);
   const localDocumentStore = useMemo(() => new DexieLocalDocumentStore(), []);
+  const authorPreviewHandleStore = useMemo(
+    () => new DexieAuthorPreviewHandleStore<PackageDirectoryHandle>(),
+    [],
+  );
   const characterSaveRepository = useMemo(
     () => new CharacterSaveRepository(localDocumentStore),
     [localDocumentStore],
@@ -175,7 +180,6 @@ export function PlayerSheetSurface({
   const recoveredAccountRef = useRef<string | undefined>(undefined);
   const characterFileInputRef = useRef<HTMLInputElement>(null);
   const packageFileInputRef = useRef<HTMLInputElement>(null);
-  const packageDirectoryInputRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
 
@@ -193,7 +197,6 @@ export function PlayerSheetSurface({
   const initialize = useRuntimeStore((state) => state.initialize);
   const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
-  const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
   const authorPreviewActive = useRuntimeStore((state) => state.authorPreviewActive);
   const enterAuthorPreview = useRuntimeStore((state) => state.enterAuthorPreview);
   const exitAuthorPreview = useRuntimeStore((state) => state.exitAuthorPreview);
@@ -270,10 +273,8 @@ export function PlayerSheetSurface({
               ? loadImportedSystemPackage(vfs.vfs, false)
               : { ok: false, issues: vfs.issues };
           },
-          loadPreviewDirectoryHandle: async () => previewDirectoryHandleRef.current,
-          savePreviewDirectoryHandle: async (handle) => {
-            previewDirectoryHandleRef.current = handle;
-          },
+          loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load(),
+          savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle),
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
@@ -289,9 +290,12 @@ export function PlayerSheetSurface({
         });
         await initialize(playerSystemPackageCatalog.map((entry) => entry.preset));
         if (cancelled) return;
-        const preferred = findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
-          ?? defaultPlayerSystemPackage;
-        await switchToPresetSystemPackage(preferred.preset, true);
+        const state = useRuntimeStore.getState();
+        if (!state.authorPreviewActive) {
+          const preferred = findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
+            ?? defaultPlayerSystemPackage;
+          await switchToPresetSystemPackage(preferred.preset, true);
+        }
         runtimeReadyRef.current = true;
       } catch (error) {
         if (!cancelled) setSurfaceError(error instanceof Error ? error.message : "Player 初始化失败");
@@ -302,7 +306,7 @@ export function PlayerSheetSurface({
       runtimeReadyRef.current = false;
       resetRuntimeDependencies();
     };
-  }, [cloudDocumentService, initialize, resourceRepository, runtimeStorage, switchToPresetSystemPackage]);
+  }, [authorPreviewHandleStore, cloudDocumentService, initialize, resourceRepository, runtimeStorage, switchToPresetSystemPackage]);
 
   async function loadImportedSystemPackage(
     vfs: PackageVirtualFileSystem,
@@ -441,9 +445,10 @@ export function PlayerSheetSurface({
   }
 
   async function handleSwitchSystem(entry: PlayerSystemPackageCatalogEntry): Promise<void> {
-    if (entry.system.package.id === currentSystem.package.id) return;
+    if (entry.system.package.id === currentSystem.package.id && !authorPreviewActive) return;
     try {
       await flushCurrentCharacter();
+      if (authorPreviewActive) exitAuthorPreview();
       await switchToPresetSystemPackage(entry.preset, true);
       if (useRuntimeStore.getState().currentPackage?.manifest.ID === entry.system.package.id) {
         localStorage.setItem(preferredSystemPackageKey, entry.system.package.id);
@@ -457,15 +462,15 @@ export function PlayerSheetSurface({
   async function handlePackageFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (authorPreviewActive) exitAuthorPreview();
     await uploadSystemPackageFromFile(file);
     event.target.value = "";
   }
 
-  async function handlePackageDirectory(event: ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files ? [...event.target.files] : [];
-    if (files.length === 0) return;
-    await uploadSystemPackageFromDirectory(files);
-    event.target.value = "";
+  function handleSystemSelection(event: ChangeEvent<HTMLSelectElement>) {
+    const entry = playerSystemPackageCatalog.find((candidate) =>
+      candidate.system.package.id === event.target.value);
+    if (entry) void handleSwitchSystem(entry);
   }
 
   async function handleEnterAuthorPreview() {
@@ -685,9 +690,6 @@ export function PlayerSheetSurface({
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span></button>
         <div className="player-menu-panel" role="menu">
           <button className="player-menu-resource-manager" type="button" role="menuitem" onClick={() => setManagerOpen(true)}><span>资源管理器</span><strong>{library.size}</strong></button>
-          {auth.credentials ? (
-            <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button>
-          ) : null}
           {currentPackage?.characterCreationGuide ? (
             <button ref={guideButtonRef} type="button" role="menuitem" disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
           ) : null}
@@ -715,6 +717,9 @@ export function PlayerSheetSurface({
               {characterSaves.map((save) => <option key={save.id} value={save.id}>{save.name}</option>)}
             </select>
           </label>
+          {auth.credentials ? (
+            <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button>
+          ) : null}
           <button type="button" role="menuitem" onClick={() => void handleCreateSave()}>新建人物</button>
           <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void handleRenameSave()}>重命名</button>
           <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void duplicateCharacterSave(activeCharacterSaveId!)}>复制</button>
@@ -734,33 +739,22 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>系统包</span></button>
         <div className="player-menu-panel is-right" role="menu">
-           <div className="player-menu-current">
-            <small>当前系统包</small><strong>{currentSystem.package.name}</strong>
-            <span>v{currentSystem.package.version}</span>
-           </div>
-           {playerSystemPackageCatalog.map((entry) => (
-             <button
-               key={entry.system.package.id}
-               type="button"
-               role="menuitem"
-               disabled={entry.system.package.id === currentSystem.package.id}
-               onClick={() => void handleSwitchSystem(entry)}
-             >
-               切换到{entry.system.package.name}
-             </button>
-           ))}
-           <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageFileInputRef.current?.click()}>上传系统包(zip)</button>
-           <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageDirectoryInputRef.current?.click()}>上传系统包(文件夹)</button>
-           {authorPreviewActive ? <>
-             <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>重新选择预览目录</button>
-             <button type="button" role="menuitem" onClick={exitAuthorPreview}>退出预览</button>
-           </> : (
-             <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>系统包预览</button>
-           )}
+          <label className="player-menu-field player-menu-system">
+            <span>当前系统包</span>
+            <div>
+              <select aria-label="当前系统包" value={currentSystem.package.id} disabled={bootStatus === "loading"} onChange={handleSystemSelection}>
+                {currentCatalogEntry ? null : <option value={currentSystem.package.id}>{currentSystem.package.name}</option>}
+                {playerSystemPackageCatalog.map((entry) => <option key={entry.system.package.id} value={entry.system.package.id}>{entry.system.package.name}</option>)}
+              </select>
+              <strong>v{currentSystem.package.version}</strong>
+            </div>
+          </label>
+          <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageFileInputRef.current?.click()}>上传系统包(.pbsys)</button>
+          <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>上传系统包(文件夹)</button>
          </div>
       </div>
     </nav>
-  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, authorPreviewActive, bootStatus, characterData, characterSaves, currentPackage, currentSystem, duplicateCharacterSave, exitAuthorPreview, library.size, switchCharacterSave]);
+  ), [activeCharacterSave, activeCharacterSaveId, activeCharacterSaveName, auth.credentials, authorPreviewActive, bootStatus, characterData, characterSaves, currentCatalogEntry, currentPackage, currentSystem, duplicateCharacterSave, exitAuthorPreview, library.size, switchCharacterSave]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
@@ -773,15 +767,7 @@ export function PlayerSheetSurface({
   return (
     <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme="light">
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,application/zip" onChange={(event) => void handleCharacterFile(event)} />
-      <input ref={packageFileInputRef} hidden type="file" accept=".zip,application/zip,application/x-zip-compressed" onChange={(event) => void handlePackageFile(event)} />
-      <input
-        ref={packageDirectoryInputRef}
-        hidden
-        type="file"
-        multiple
-        {...({ webkitdirectory: "" } as InputHTMLAttributes<HTMLInputElement>)}
-        onChange={(event) => void handlePackageDirectory(event)}
-      />
+      <input ref={packageFileInputRef} hidden type="file" accept=".pbsys,application/zip" onChange={(event) => void handlePackageFile(event)} />
       {bootStatus === "loading"
         ? <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
         : null}

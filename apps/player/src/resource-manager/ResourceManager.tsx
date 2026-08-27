@@ -144,6 +144,13 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   const selected = library.get(selectedId) ?? packages[0];
   const filteredPackages = packages.filter((installed) =>
     installed.document.package.name.toLocaleLowerCase().includes(packageQuery.toLocaleLowerCase()));
+  const nativePackageIds = new Set(
+    currentSystem.embeddedResources.map((embedded) => embedded.packageId),
+  );
+  const nativePackages = filteredPackages.filter((installed) =>
+    nativePackageIds.has(installed.document.package.id));
+  const additionalPackages = filteredPackages.filter((installed) =>
+    !nativePackageIds.has(installed.document.package.id));
 
   const resourceTypes = useMemo(() => {
     if (!selected) return [];
@@ -243,20 +250,25 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
     }
   }
 
+  function renderPackageRow(installed: InstalledResourcePackage) {
+    const isSelected = installed.document.package.id === selected?.document.package.id;
+    const destinations = new Set(installed.routes.map((route) => route.nativeEntry?.label ?? "其他资源"));
+    return <button key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`} onClick={() => setSelectedId(installed.document.package.id)}>
+      <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
+      <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span><span className="offline">离线</span></p>
+    </button>;
+  }
+
   return <div className="resource-manager-layer" style={style} data-design-source={playerResourceManagerDesign.document}>
     <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
       <header className="manager-bar"><h1>资源管理器</h1><span>{currentSystem.package.name}</span><button className="install" onClick={() => inputRef.current?.click()}>＋ 安装资源包</button><button className="close" aria-label="关闭资源管理器" onClick={onClose}>×</button></header>
       <div className="manager-body">
         <aside className="package-list"><div className="list-title"><h2>已安装资源包</h2><span>{packages.length}</span></div>
           <input aria-label="搜索资源包" placeholder="搜索资源包" value={packageQuery} onChange={(event) => setPackageQuery(event.target.value)} />
-          <div className="package-scroll">{filteredPackages.map((installed) => {
-            const isSelected = installed.document.package.id === selected?.document.package.id;
-            const destinations = new Set(installed.routes.map((route) => route.nativeEntry?.label ?? "其他资源"));
-            return <button key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`} onClick={() => setSelectedId(installed.document.package.id)}>
-              <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
-              <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span><span className="offline">离线</span></p>
-            </button>;
-          })}</div>
+          <div className="package-scroll">
+            {nativePackages.length ? <><h3 className="package-group-title">原生资源包</h3>{nativePackages.map(renderPackageRow)}</> : null}
+            {additionalPackages.length ? <><h3 className="package-group-title">额外资源包</h3>{additionalPackages.map(renderPackageRow)}</> : null}
+          </div>
         </aside>
         <section className="package-detail">{selected ? <>
           <header className="package-detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div><button aria-label="资源包操作">•••</button></header>

@@ -53,6 +53,18 @@ describe("Player layout regressions", () => {
     expect(styles).toContain(".type-filters { display: flex; gap: 7px; height: 38px; padding-bottom: 8px; overflow-x: auto; overflow-y: hidden;");
   });
 
+  it("按 System Package 内嵌关系分组原生与额外资源包", async () => {
+    const [source, styles] = await Promise.all([
+      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("apps/player/src/styles.css", "utf8"),
+    ]);
+
+    expect(source).toContain("currentSystem.embeddedResources.map((embedded) => embedded.packageId)");
+    expect(source).toContain('<h3 className="package-group-title">原生资源包</h3>');
+    expect(source).toContain('<h3 className="package-group-title">额外资源包</h3>');
+    expect(styles).toContain(".package-group-title {");
+  });
+
   it("隔离资源管理器表格行与系统包的 resource-row", async () => {
     const [source, styles] = await Promise.all([
       readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
