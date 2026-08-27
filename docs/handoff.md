@@ -34,6 +34,8 @@
 - Player “系统包”菜单已恢复 ZIP、文件夹上传与 Author Preview。输入目录会同时经过权威 `system.json` Contract 和正式 Sheet Loader/Validator；嵌入 `.pbres` 复用现有资源路由，动态 System Document 进入 Character Save resolver，避免自定义包只能打开却不能保存。
 - 寻望之心作者源中 10 个曾被文本复制损坏的 WebP 已从固定来源仓库按二进制恢复，并重新生成公开 System Package。
 - Countable 图片标志恢复按内容数量自动缩放；图片型 Countable 的减号也会拦截右键并减少上限，不再打开浏览器右键菜单。
+- Player “系统包”菜单不再显示资源包数量；数量改为跟随“玩家功能 → 资源管理器”入口。资源管理器外壳、详情标题和资源表已使用 Player 专用类名，避免 Sheet Runtime 与 Market 的全局样式污染；分类横向滚动条也不再遮挡按钮。
+- 正确的 ZSeven-W OpenPencil CLI `op 0.8.4` 已安装到 `C:\Users\zinge\.local\bin\op.exe`，该目录在用户 PATH 中；不要误装同名的 `open-pencil/open-pencil`。
 
 ## 已验证
 
@@ -63,6 +65,8 @@
 - 后续修复的浏览器验收通过：系统包菜单显示“上传系统包(zip) / 上传系统包(文件夹) / 系统包预览”；寻望之心页面存在 33 个有效 `128×128` 标记图片、fallback 与破图均为 0；`.message.message-info` 为 0；PbDH 通知显示数量并可打开查看。自动化期间 Codex 未崩溃，浏览器风险旧规则已确认不再存在。
 - Countable 浏览器回归通过：Daggerheart 生命上限从 6 增至 14 时，14 个图片标志由 `26px` 自动缩至 `17px`，容器无溢出；右键减号可将上限从 14 减至 13，且不弹浏览器菜单。验收后已把生命上限恢复为 6，字号恢复为 `26px`，控制台无 error。
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、342 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
+- Player 资源管理器布局浏览器验收通过：660×756 下弹窗底部未越界，详情标题为 48px，分类栏为 38px、按钮为 30px，横向滚动条不再遮挡分类；1280×720 下顶栏 64px、汇总 58px、搜索 36px、底部操作 38px，控制台无 error，临时 viewport 已恢复。
+- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、345 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 
 ## 接下来
 

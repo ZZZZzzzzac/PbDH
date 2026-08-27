@@ -684,7 +684,7 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span></button>
         <div className="player-menu-panel" role="menu">
-          <button type="button" role="menuitem" onClick={() => setManagerOpen(true)}>资源管理器</button>
+          <button className="player-menu-resource-manager" type="button" role="menuitem" onClick={() => setManagerOpen(true)}><span>资源管理器</span><strong>{library.size}</strong></button>
           {auth.credentials ? (
             <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button>
           ) : null}
@@ -757,7 +757,6 @@ export function PlayerSheetSurface({
            </> : (
              <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>系统包预览</button>
            )}
-           <div className="player-menu-summary"><span>资源包</span><strong>{library.size}</strong></div>
          </div>
       </div>
     </nav>

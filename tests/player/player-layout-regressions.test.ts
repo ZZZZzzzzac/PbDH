@@ -18,6 +18,41 @@ describe("Player layout regressions", () => {
     expect(styles).toContain("overflow: hidden; flex-direction: column;");
   });
 
+  it("把资源包数量放在玩家功能的资源管理器入口", async () => {
+    const [source, styles] = await Promise.all([
+      readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8"),
+      readFile("apps/player/src/styles.css", "utf8"),
+    ]);
+
+    expect(source).toContain('className="player-menu-resource-manager"');
+    expect(source).toContain("<span>资源管理器</span><strong>{library.size}</strong>");
+    expect(source).not.toContain('<div className="player-menu-summary"><span>资源包</span>');
+    expect(styles).toContain(".player-menu-resource-manager { display: flex;");
+  });
+
+  it("隔离资源管理器外壳、标题和资源表的全局类名", async () => {
+    const [source, styles] = await Promise.all([
+      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("apps/player/src/styles.css", "utf8"),
+    ]);
+
+    expect(source).toContain('className="player-package-manager"');
+    expect(source).toContain('className="package-detail-heading"');
+    expect(source).toContain('className="manager-resource-table"');
+    expect(source).not.toContain('className="resource-manager"');
+    expect(source).not.toContain('className="detail-heading"');
+    expect(source).not.toContain('className="resource-table"');
+    expect(styles).toContain(".player-package-manager { width: min(1160px");
+    expect(styles).toContain(".package-detail-heading { height: 48px;");
+    expect(styles).toContain(".manager-resource-table { min-height: 0;");
+  });
+
+  it("为横向资源分类滚动条保留独立空间", async () => {
+    const styles = await readFile("apps/player/src/styles.css", "utf8");
+
+    expect(styles).toContain(".type-filters { display: flex; gap: 7px; height: 38px; padding-bottom: 8px; overflow-x: auto; overflow-y: hidden;");
+  });
+
   it("隔离资源管理器表格行与系统包的 resource-row", async () => {
     const [source, styles] = await Promise.all([
       readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),

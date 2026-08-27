@@ -244,7 +244,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   }
 
   return <div className="resource-manager-layer" style={style} data-design-source={playerResourceManagerDesign.document}>
-    <section className="resource-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
+    <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
       <header className="manager-bar"><h1>资源管理器</h1><span>{currentSystem.package.name}</span><button className="install" onClick={() => inputRef.current?.click()}>＋ 安装资源包</button><button className="close" aria-label="关闭资源管理器" onClick={onClose}>×</button></header>
       <div className="manager-body">
         <aside className="package-list"><div className="list-title"><h2>已安装资源包</h2><span>{packages.length}</span></div>
@@ -259,11 +259,11 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
           })}</div>
         </aside>
         <section className="package-detail">{selected ? <>
-          <header className="detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div><button aria-label="资源包操作">•••</button></header>
+          <header className="package-detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div><button aria-label="资源包操作">•••</button></header>
           <div className="detail-summary"><div><b>{selected.document.resources.length}</b><span>个资源</span></div><div><b>{selected.document.assets.length}</b><span>张图片</span></div><div><b>{resourceTypes.length}</b><span>种资源类型</span></div><div className="available"><b>可用</b><span>离线状态</span></div></div>
           <nav className="type-filters" aria-label="资源类型"><button className={selectedType === "全部" ? "active" : ""} onClick={() => setSelectedType("全部")}>全部 <b>{selected.document.resources.length}</b></button>{resourceTypes.map(([label, count]) => <button key={label} className={selectedType === label ? "active" : ""} onClick={() => setSelectedType(label)}>{label} <b>{count}</b></button>)}</nav>
           <div className="resource-search"><input aria-label="搜索资源" placeholder="搜索名称" value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} /><span>{resources.length} / {selected.document.resources.length}</span></div>
-          <div className="resource-table"><div className="resource-table-head"><span /><b>名称</b><b>类型</b><b>使用位置</b></div>{resources.map((resource) => {
+          <div className="manager-resource-table"><div className="resource-table-head"><span /><b>名称</b><b>类型</b><b>使用位置</b></div>{resources.map((resource) => {
             const label = routeLabel(selected, resource.id);
             return <button className="manager-resource-row" key={resource.id} onDoubleClick={() => onOpenResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
           })}</div>
