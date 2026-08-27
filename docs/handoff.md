@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；#48 的六类资源实现已提交为 `026e959`，本交接收尾提交完成后工作区应干净，相对 `origin/main` 超前 6 个本地提交。不要未经确认 push。
+- 分支：`main`；#48 的六类资源实现已提交为 `026e959`，验收交接已提交为 `87d00b2`；本次 handoff 更新提交并推送后，工作区应干净且与 `origin/main` 同步。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -101,20 +101,20 @@
 
 1. #48 已完成并关闭；Daggerheart Core 剩余六类资源不再拆分独立 Issue。
 2. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-3. 不要未经确认 push；如需继续阶段工作，先查看当前开放 Issue 与 triage label。
+3. 本轮提交已获用户明确授权推送；下次继续阶段工作时，先查看当前开放 Issue 与 triage label。
 
 ## 换机交接
 
 ### 当前电脑离开前
 
-1. 当前工作区已提交且干净；`main` 比 `origin/main` 超前 6 个提交。
-2. 这 6 个提交目前只存在于本机。Agent 没有推送；若希望在另一台电脑直接拉取，请离开前手动运行 `git push origin main`。
-3. 如果不推送，必须复制包含 `.git` 的完整仓库；只复制工作文件无法保留这 6 个提交。被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
-4. 离开前可再次运行 `git status --short --branch`，预期除 `main...origin/main [ahead 6]` 外没有文件状态。
+1. 本次 handoff 提交并推送后，当前工作区应已提交且干净，`main` 与 `origin/main` 同步。
+2. #47 与 #48 的实现、验收和交接提交均已推送到 `origin/main`，另一台电脑可直接快进拉取。
+3. 被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
+4. 离开前可再次运行 `git status --short --branch`，预期显示 `## main...origin/main` 且没有文件状态。
 
 ### 另一台电脑开始时
 
-1. 如果当前电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -6 --oneline` 包含 #47 与 #48 的实现及交接提交，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
+1. 运行 `git pull --ff-only origin main`；确认近期日志包含 #47 与 #48 的实现及交接提交，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
 2. 检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。该包应包含 625 个资源与 280 个媒体资产。
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
