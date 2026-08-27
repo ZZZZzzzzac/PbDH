@@ -227,6 +227,9 @@
   .workbench-body { padding: 8px; }
   .authoring-editor { overflow-x: auto; }
   .field-group, .features-editor { min-width: 532px; }
+  .armor-workbench-body { grid-template-columns: minmax(0, 1fr); }
+  .armor-workbench-body .armor-authoring-editor { overflow-x: hidden; }
+  .armor-workbench-body .armor-field-grid { min-width: 0; }
 }
 
 @media print {

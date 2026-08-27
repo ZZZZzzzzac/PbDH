@@ -382,6 +382,21 @@ describe("Creator Workspace prototype state model", () => {
     expect(styles).toContain("transform: none !important");
   });
 
+  test("keeps the armor editor inside the mobile viewport without widening other editors", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(creatorSource).toContain('armor ? " armor-workbench-body" : ""');
+    expect(styles).toContain(".armor-workbench-body { grid-template-columns: minmax(0, 1fr); }");
+    expect(styles).toContain(".armor-workbench-body .armor-field-grid { min-width: 0; }");
+  });
+
   test("binds GM whiteboard gestures and context menus without tool modes", () => {
     const creatorSource = readFileSync(path.join(
       root,

@@ -1663,7 +1663,7 @@ export function CreatorWorkspacePrototype({
               </div>;
             }))}
           </nav>
-          {resource ? <div className="workbench-body" onPointerDown={() => pinWorkspaceTab(resource.id)}>
+          {resource ? <div className={`workbench-body${armor ? " armor-workbench-body" : ""}`} onPointerDown={() => pinWorkspaceTab(resource.id)}>
             {adversary && <AdversaryEditor
               data={adversary}
               openFeatureMenu={openFeatureMenu}
