@@ -28,6 +28,20 @@
       "state": "development",
       "schema": "src/core/weapon/1.0.0/schema.json",
       "publication": { "development": true, "production": false }
+    },
+    {
+      "id": "护甲",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/armor/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "护甲",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/armor/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
     }
   ]
 }

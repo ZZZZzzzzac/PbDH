@@ -46,7 +46,7 @@ describe("Market armor Canonical Resource preview", () => {
       acquisition: "complete-resource-package",
       packageId: armorPackage.package.id,
       snapshotDigest: armorPackage.snapshotDigest,
-      targetRoute: "other-resources",
+      targetRoute: "armor",
     });
 
     const markup = renderToStaticMarkup(<CanonicalPreview publication={publication} resourceId={armor.id} />);

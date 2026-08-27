@@ -58,6 +58,7 @@ const dimensionLabels: Record<FilterDimension, string> = {
 
 const routeLabels: Record<HandoffIntent["targetRoute"], string> = {
   weapons: "Daggerheart Core / 武器",
+  armor: "Daggerheart Core / 护甲",
   "other-resources": "其他资源",
   "creator-ingress": "卡片工坊 / 资源包导入",
 };

@@ -93,7 +93,7 @@ export type HandoffIntent = {
   snapshotDigest: string;
   acquisition: "complete-resource-package";
   focusLocator?: { resourceId: string };
-  targetRoute: "weapons" | "other-resources" | "creator-ingress";
+  targetRoute: "weapons" | "armor" | "other-resources" | "creator-ingress";
   autoInstall: false;
   autoPlace: false;
 };
@@ -114,9 +114,16 @@ export function createHandoffIntent(
 
   let targetRoute: HandoffIntent["targetRoute"];
   if (target === "creator" || target === "gm") targetRoute = "creator-ingress";
-  else targetRoute = focusedResource?.templateId === "武器" || (!focusedResource && publication.kind === "weapon")
-    ? "weapons"
-    : "other-resources";
+  else if (focusedResource?.templateId === "武器" || (!focusedResource && publication.kind === "weapon")) {
+    targetRoute = "weapons";
+  } else if (
+    focusedResource?.templateId === "护甲"
+    || (!focusedResource && publication.templateIds.length === 1 && publication.templateIds[0] === "护甲")
+  ) {
+    targetRoute = "armor";
+  } else {
+    targetRoute = "other-resources";
+  }
 
   return {
     kind: "publication-handoff",

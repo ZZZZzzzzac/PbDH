@@ -135,6 +135,31 @@ def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_
     assert loaded["candidate"] == {"document": document, "media": media}
 
 
+def test_stable_armor_template_is_publishable(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    document["resources"][0]["template"] = {"id": "护甲", "version": "1.0.0"}
+    document["resources"][0]["data"] = {
+        "名称": "填充布甲",
+        "类型": "护甲",
+        "护甲值": "3",
+        "重度伤害阈值": "5",
+        "严重伤害阈值": "11",
+        "描述": "灵活：闪避值+1。",
+        "风味描述": "轻柔填料缝入耐磨布层。",
+        "位阶": "1",
+    }
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+    response = publish(api, claim(api, "armor-author"), document, media)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["publication"]["document"]["resources"][0]["template"] == {
+        "id": "护甲",
+        "version": "1.0.0",
+    }
+
+
 def test_publication_requires_active_account_session(tmp_path: Path) -> None:
     api = client(tmp_path)
     document, media = candidate()

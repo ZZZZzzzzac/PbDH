@@ -4,13 +4,13 @@
 
 ## 当前落点
 
-- 分支：`main`；最新产品代码提交为 `56487f3 feat: add armor resource vertical slice`，本交接文档随后以独立提交收尾；完成后工作区干净，相对 `origin/main` 超前 2 个本地提交。不要未经确认 push。
+- 分支：`main`；#47 的实现、移动端修复、真实发布链路修复与交接记录均已本地提交；完成后工作区干净，相对 `origin/main` 超前 4 个本地提交。不要未经确认 push。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
-- 当前工作项：[GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”。实现与自动化验证已完成，Issue 保持打开，仅待 Chrome 实机桌面与 390×844 验收。
+- [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -19,6 +19,8 @@
 - Creator、Market、Player 与 GM Tabletop 均使用同一 Armor Canonical Resource Renderer；Creator 支持护甲新建、全字段编辑、预览、媒体与 `.pbres` 导出—重新导入，Market 支持匿名取得与规范卡面，Player 资源管理器支持规范预览。
 - Daggerheart Core 的 34 份护甲已全部迁移到 `护甲@1.0.0`，内置资源包提升到 `1.0.2`；仍为 625 个资源、280 个媒体，Digest 为 `sha256:aba2fb68884b84c32466592d89a3bafeb106dd01af32e7f8f0ad952704ac86b4`。
 - Player 真实 Daggerheart Runtime 集成测试证明护甲 Picker 原子写入名称、护甲值、描述与护甲槽，Character Data 导出—恢复后字段保留，且不保存 Resource Package、Game Resource Reference 或 `pick-armor` selection snapshot。
+- 实机发布发现 Backend 的可信 Template Catalog 漏登 `护甲`；现已登记旧 `0.0.0-dev.1`（禁止发布）与稳定 `1.0.0`（开发环境可发布），并新增服务端发布回归测试。
+- Market 的 Player 交接现在把护甲明确显示为 `Daggerheart Core / 护甲`，不再误标为“其他资源”；Player 仍以 System Package Compatibility 为权威完成原生路由。
 
 - Player 已挂载完整 `SheetRenderer`、正式 Character Save Repository、云同步、`.pbcha`、统一图片准入、创建向导、问卷和打印。
 - Daggerheart Core 已原生化为单个 `daggerheart-core.pbres`，共 625 个资源和 280 个唯一媒体资产；`.pbres` 已去除压缩归档总字节数限制。
@@ -47,9 +49,10 @@
 
 ## 已验证
 
-- #47 当前 `npm run verify` 完整通过：59 个 TypeScript 测试文件 / 360 个测试、77 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
+- #47 最终 `npm run verify` 完整通过：59 个 TypeScript 测试文件 / 361 个测试、78 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
 - #47 Creator、Market、Player 护甲定向集成测试为 3 个文件 / 29 个测试；Python Resource Package conformance 为 17 个测试。`node scripts/restart-dev.mjs` 已确认 Backend `8001` 与 Platform `5173` 均为 `OK`。
-- Chrome 插件已启用，但安装后的当前 Codex 进程仍使用旧浏览器服务配置；连接在到达 Chrome 前以 `failed to write kernel assets: 系统找不到指定的路径 (os error 3)` 失败。必须完整退出并重启 Codex，再继续桌面与 390×844 实机验收；不得用 Playwright/Computer Use 绕过 browser skill。
+- Chrome 实机桌面纵切已通过：Creator 新建、全字段编辑、保存与刷新恢复；登录后上传封面并发布；退出账号后匿名 Market 可发现、打开 Canonical 护甲卡面并下载 `护甲纵切验收包.pbres`；交接对话框显示 `Daggerheart Core / 护甲`，Player 安装后资源管理器显示“护甲 1”，Picker 为 35 条结果，选择发布包的“填充布甲”后写入阈值 `5/11`、护甲值 `3`、护甲槽上限 `3` 与特性，刷新后完整恢复。各 Surface 控制台无 error。
+- 390×844 实机验收通过：Creator、Market、Player 均无横向溢出，Creator 编辑器的移动端最小宽度已收敛；临时 viewport 已恢复默认桌面尺寸。
 
 - 本轮资源包与 Player 改动通过 54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界与 Platform build；单包归档实测 20,796,696 bytes。
 - 真实浏览器已验证：Player 连续刷新稳定启动；资源管理器只安装一个 Daggerheart Core（625 资源、280 图片、8 个类型）；主武器选择、人物编辑、自动保存与刷新恢复正常；人物复制产生第二份可切换存档；正式 `.pbcha` 导入产生第三份存档且无诊断；头像经统一裁剪入口上传后可跨刷新恢复；创建向导显示 18 步；打印会在缺少必填车卡内容时给出预检查提示。
@@ -85,27 +88,27 @@
 
 ## 接下来
 
-1. 完整退出并重启 Codex，让新安装的 Chrome 插件与浏览器服务配置重新装载；回到本任务后先连接已打开的 `http://localhost:5173/`。
-2. 按 #47 完成桌面与 390×844 Creator 新建/编辑/保存/发布 → 匿名 Market 查看/下载 → Player 安装/护甲 Picker/刷新恢复核心路径，检查横向溢出与控制台 error。
-3. 实机验收通过后把记录发布到 #47，移除 `ready-for-agent`、关闭 Issue；不处理 #34，也不要未经确认 push。
+1. #47 已完成并关闭；没有自动选择新的迁移工作项。
+2. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
+3. 不要未经确认 push；如需继续阶段工作，先查看当前开放 Issue 与 triage label。
 
 ## 换机交接
 
 ### 当前电脑离开前
 
-1. 当前工作区已提交且干净；最新产品代码提交为 `56487f3`，随后是本交接文档提交。`main` 比 `origin/main` 超前 2 个提交。
-2. 这 2 个提交目前只存在于本机。由于 `git push` 属于必须由用户确认的红线操作，Agent 没有推送；若希望在另一台电脑直接拉取，请离开前手动运行 `git push origin main`。
+1. 当前工作区已提交且干净；`main` 比 `origin/main` 超前 4 个提交。
+2. 这 4 个提交目前只存在于本机。由于 `git push` 属于必须由用户确认的红线操作，Agent 没有推送；若希望在另一台电脑直接拉取，请离开前手动运行 `git push origin main`。
 3. 如果不推送，必须复制包含 `.git` 的完整仓库；只复制工作文件无法保留这 2 个提交。被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
 4. 离开前可再次运行 `git status --short --branch`，预期除 `main...origin/main [ahead 2]` 外没有文件状态。
 
 ### 另一台电脑开始时
 
-1. 如果当前电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -2 --oneline` 的最新两项依次为交接文档提交和 `56487f3 feat: add armor resource vertical slice`，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
+1. 如果当前电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -4 --oneline` 包含 #47 的实现、交接、移动端修复与最终发布链路修复，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
 2. 检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。该包应包含 625 个资源与 280 个媒体资产。
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 59 个 TypeScript 测试文件 / 360 个测试、77 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 59 个 TypeScript 测试文件 / 361 个测试、78 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills
