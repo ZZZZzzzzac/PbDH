@@ -1,10 +1,15 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { loadPbres, type SystemPackageDocument } from "@pbdh/contract-runtime";
+import {
+  loadPbres,
+  type ResourcePackageLogicalDocument,
+  type SystemPackageDocument,
+} from "@pbdh/contract-runtime";
 import { describe, expect, it } from "vitest";
 
 import systemJson from "../../apps/player/src/daggerheart-core-system.generated.json";
+import { sheetRuntimeMediaPath } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import {
   daggerheartCorePreset,
   loadDaggerheartCoreRuntimePackage,
@@ -15,6 +20,12 @@ import type { ResourceLibrary } from "../../apps/player/src/resources/resource-l
 
 const packageRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
 const currentSystem = systemJson as SystemPackageDocument;
+const marketWeaponFixture = JSON.parse(await readFile(path.resolve(
+  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+), "utf8")) as ResourcePackageLogicalDocument;
+const marketWeaponMedia = new Uint8Array(await readFile(path.resolve(
+  "contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+)));
 
 describe("Daggerheart Core Sheet Runtime 加载", () => {
   it("从带包级封面的原生 .pbres 组装完整资源库且不报告未使用图片", async () => {
@@ -68,5 +79,63 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);
+  });
+
+  it("加载带卡图的 Market 原生武器时不把运行时卡图报告为未使用图片", async () => {
+    const installedPackages = new Map();
+    for (const embedded of currentSystem.embeddedResources) {
+      const archive = await loadPbres(
+        new Uint8Array(await readFile(path.join(packageRoot, embedded.path))),
+        validateResourcePackageCandidate,
+      );
+      expect(archive.candidate).not.toBeNull();
+      const candidate = archive.candidate!;
+      installedPackages.set(candidate.document.package.id, {
+        ...candidate,
+        routes: routeResourcePackage({
+          currentSystem,
+          resourcePackage: candidate.document,
+        }),
+      });
+    }
+    const document = structuredClone(marketWeaponFixture);
+    document.resources[0]!.template.version = "1.0.0";
+    document.resources[0]!.presentation.mode = "image";
+    document.resources[0]!.media.portrait = document.assets[0]!.id;
+    const media = new Map([[document.assets[0]!.id, marketWeaponMedia]]);
+    installedPackages.set(document.package.id, {
+      document,
+      media,
+      routes: routeResourcePackage({ currentSystem, resourcePackage: document }),
+    });
+    const fetchFile: typeof fetch = async (url) => {
+      const pathname = new URL(String(url), "https://preset.invalid").pathname;
+      const marker = "/system-packages/daggerheart-core/";
+      const relativePath = decodeURIComponent(pathname.slice(pathname.indexOf(marker) + marker.length));
+      try {
+        return new Response(await readFile(path.join(packageRoot, relativePath)), { status: 200 });
+      } catch {
+        return new Response(null, { status: 404 });
+      }
+    };
+
+    const loaded = await loadDaggerheartCoreRuntimePackage({
+      currentSystem,
+      installedPackages: installedPackages as ResourceLibrary,
+      baseUrl: "/",
+      fetchFile,
+    });
+
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues, null, 2));
+    expect(loaded.package.resourceLibraries?.find((library) => library.ID === "weapons")?.entries)
+      .toContainEqual(expect.objectContaining({
+        fields: expect.objectContaining({
+          卡图: sheetRuntimeMediaPath(document.package.id, document.assets[0]!.id),
+        }),
+      }));
+    expect(loaded.issues).not.toContainEqual(expect.objectContaining({
+      code: "UNUSED_PACKAGE_IMAGE",
+      path: sheetRuntimeMediaPath(document.package.id, document.assets[0]!.id),
+    }));
   });
 });

@@ -120,12 +120,20 @@ function isUnsupportedCounterType(value: unknown): boolean {
   return value === "counter" || value === "counterChanged";
 }
 
-export function validateSystemPackage(input: unknown, sourceMap: PackageSourceMap = {}): PackageValidationResult {
-  const result = validateSystemPackageCore(input);
+export interface SystemPackageValidationOptions {
+  unusedAssetWarningRefs?: ReadonlySet<string>;
+}
+
+export function validateSystemPackage(
+  input: unknown,
+  sourceMap: PackageSourceMap = {},
+  options: SystemPackageValidationOptions = {},
+): PackageValidationResult {
+  const result = validateSystemPackageCore(input, options);
   return { ...result, issues: result.issues.map((issue) => normalizePackageIssue(issue, sourceMap)) };
 }
 
-function validateSystemPackageCore(input: unknown): PackageValidationResult {
+function validateSystemPackageCore(input: unknown, options: SystemPackageValidationOptions): PackageValidationResult {
   const parsed = systemPackageEnvelopeSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -228,7 +236,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   };
   const issues: PackageIssue[] = [];
 
-  const context = createValidationContext(systemPackage, issues);
+  const context = createValidationContext(systemPackage, issues, options.unusedAssetWarningRefs);
   collectBaseValidationIssues(context);
   collectModuleValidationIssues(context);
   collectGuideValidationIssues(context);

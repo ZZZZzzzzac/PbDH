@@ -202,7 +202,11 @@ async function normalizeManifestPackage(
     resourceFormatAdapters,
     characterFormatAdapters,
     characterTextExports,
-  }, sourceMap);
+  }, sourceMap, {
+    unusedAssetWarningRefs: new Set(packageAssets
+      .filter((asset) => asset.sourceType !== "resourceExtension")
+      .map((asset) => asset.路径)),
+  });
 }
 
 function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, pages: unknown): PackageSourceMap {

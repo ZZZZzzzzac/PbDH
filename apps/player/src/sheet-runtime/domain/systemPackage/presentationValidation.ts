@@ -7,7 +7,7 @@ import {
 import type { ValidationContext } from "./validationContext";
 
 export function collectPresentationValidationIssues(context: ValidationContext): void {
-  const { systemPackage, issues, moduleIds, assetRefs, usedAssetRefs } = context;
+  const { systemPackage, issues, moduleIds, assetRefs, unusedAssetWarningRefs, usedAssetRefs } = context;
   // --- HTML page templates & shell ---
   for (const page of systemPackage.pages) {
     const htmlIssues = validateHtmlTemplate(page.layout.htmlContent, `pages.${page.ID}.layout.html`);
@@ -54,7 +54,7 @@ export function collectPresentationValidationIssues(context: ValidationContext):
   }
 
   // --- Unused asset warnings ---
-  for (const assetPath of assetRefs) {
+  for (const assetPath of unusedAssetWarningRefs) {
     if (!usedAssetRefs.has(assetPath)) {
       issues.push({
         level: "warning",

@@ -4,9 +4,9 @@
 
 ## 当前落点
 
-- 分支：`main`；当前基线提交：`1c7aebf`，与 `origin/main` 一致。
-- 工作区包含尚未提交的问卷弹窗修复与回归测试：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
-- 阶段 6 的 #38—#44 已完成；#44 的登录、显式上云、云端恢复、刷新恢复、问卷 30 题流程、云端删除、回收站与恢复均通过真实浏览器验收，Issue 已关闭。
+- 分支：`main`；当前提交：`95dacc5`，比 `origin/main` 超前 1 个本地提交；不要未经确认 push。
+- 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
+- 阶段 6 的 #38—#44 已完成；#45 正在联合验收。敌人与武器两条真实纵切的本地、Market、运行时、刷新和云边界已验证，剩余真实武器公开发布/匿名取得和独立设备恢复证据，Issue 尚未关闭。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
 - 下一工作项：[GitHub Issue #45](https://github.com/ZZZZzzzzac/PbDH/issues/45)。
@@ -42,12 +42,17 @@
 - 新电脑上的 `npm run verify` 已完整通过：54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
 - 本地测试账号凭据保存在被 Git 忽略的 `.env.local` 中，键为 `PBDH_TEST_ACCOUNT_EMAIL` 与 `PBDH_TEST_ACCOUNT_PASSWORD`；不要把值写入文档、日志或 Git。
 - 内嵌浏览器自动化连续完成登录、会话接管、云恢复、刷新和 30 题问卷，没有导致 Codex 应用崩溃；全局 `C:\Users\zinge\.codex\AGENTS.md` 中对应风险限制已删除。
+- #45 真实敌人纵切已验证：Market 单资源入口交接完整包；同 Package ID 不同 Digest 必须显式更新；Creator Ingress 只导入并聚焦、不自动放置；“陨落神殿”两个牛头人实例分别保持压力 `3/5` 与 `0/5`，刷新后不互相污染；桌面已同步云端，`.pbtab` 导出无控制台错误。
+- #45 真实武器纵切已验证：Market 的“测试资源包”以标准 `.pbres` 安装到 Daggerheart Core 原生“武器”入口；Player 显示 2 个资源，主武器 Dependency 产出与描述在刷新后恢复；人物存档已同步；重复安装同一快照为明确 no-op。该出版物当前仍为未发布，仅作者账号可取得，不能据此宣称公开匿名取得已通过。
+- 修复 Market 武器卡图被误报为 `UNUSED_PACKAGE_IMAGE`：动态资源媒体继续参与存在性与卡图引用校验，但只有真正的 System Package 图片进入“未使用图片”警告。新增回归测试后，真实 Player 资源管理器不再显示该警告。
+- 390×844 自动化验收通过：关闭资源管理器后 Player、Market、GM 页面均无横向溢出；Player 主武器、Market 两个出版物、GM 两个独立敌人实例和移动端主导航均可见，控制台无错误；临时 viewport 已恢复默认值。
+- 当前 `npm run verify` 通过：54 个 TypeScript 测试文件、329 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告，均不影响退出码。
 
 ## 接下来
 
-1. 提交当前问卷弹窗修复、回归测试和本交接更新；不要提交 `.env.local`。
-2. 进入 #45，执行 Creator → Market → Player 与 Creator → Market → GM 两条联合纵切验收。
-3. 若验收发现问题，先写可复现测试再修复；不要回退为旧 Sheet schema、旧资源格式或独立 Player 顶栏。
+1. 获得明确授权后，把真实武器“测试资源包”发布为公开出版物，并在未登录会话验证匿名发现和完整包取得；发布是项目红线，不能自行执行。
+2. 使用与当前浏览器不共享 IndexedDB 的独立浏览器会话登录测试账号，验证 Character Save 与 GM Tabletop 的云恢复；不要用同源刷新冒充两设备恢复。
+3. 补齐上述证据后在 #45 发布完整验收矩阵，移除 `ready-for-human` 并关闭 Issue；若发现问题，继续先写复现测试再修复。
 
 ## 换机交接
 
