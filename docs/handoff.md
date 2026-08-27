@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；包含尚未 push 的本地提交；不要未经确认 push。
+- 分支：`main`；最新产品代码提交为 `befaf03b224176604f21f3e101390377580a12ef`，本交接文档随后以独立提交收尾；完成后工作区干净，相对 `origin/main` 超前 13 个本地提交。不要未经确认 push。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -83,22 +83,24 @@
 
 ### 当前电脑离开前
 
-1. 先检查 `git diff --check` 与 `git status --short`。本轮改动横跨 Backend Contract、Creator 发布封面、Platform App Bar、Player Runtime、Daggerheart Core 生成物、测试和文档，不能只提交 `apps/player/src`。
-2. 使用 `git add -A` 时确认以下归档迁移完整进入暂存区：新增 `apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`，删除同目录原有 8 个分包 `.pbres`。
-3. 提交并推送当前分支后，记录新提交 SHA；不要把 `.env.local`、Supabase URL/anon key、`.venv`、`node_modules` 或浏览器 IndexedDB 提交进 Git。
-4. 若不准备提交推送，必须复制完整工作区（包含未跟踪文件和删除状态）；仅复制已跟踪文件不足以恢复单包资源迁移。
+1. 当前工作区已提交且干净；最新产品代码提交为 `befaf03`，随后是本交接文档提交。`main` 比 `origin/main` 超前 13 个提交，远端仍停在 `1c7aebf`。
+2. 这 13 个提交目前只存在于本机。由于 `git push` 属于必须由用户确认的红线操作，Agent 没有推送；若希望回家后直接拉取，请离开前手动运行 `git push origin main`。
+3. 如果不推送，必须复制包含 `.git` 的完整仓库；只复制工作文件无法保留今天的 13 个提交。被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
+4. 离开前可再次运行 `git status --short --branch`，预期除 `main...origin/main [ahead 13]` 外没有文件状态。
 
 ### 另一台电脑开始时
 
-1. 拉取包含本轮修改的新提交，确认 `git status --short` 干净，并检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。
-2. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
-3. 单独重建被 Git 忽略的 `.env.local`。Supabase 配置沿用 `DaggerHeart_Battle` 的公开客户端 URL 与 anon key，但凭据只从安全的本地来源复制，不写入 handoff 或 Git。
-4. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-5. 运行 `npm run verify`；当前基线为 TypeScript 341 / Python 76 / 类型检查通过 / Platform build 通过。
-6. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；如导入旧人物存档，存档内已嵌入的旧文字卡不会被强制改写，重新选择对应资源即可获得图片卡。
+1. 如果公司电脑已推送，运行 `git pull --ff-only origin main`；确认 `git log -2 --oneline` 的最新两项依次为交接文档提交和 `befaf03 fix: restore daggerheart card art and equipment tiers`，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
+2. 检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。该包应包含 625 个资源与 280 个媒体资产。
+3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
+4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
+5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
+6. 运行 `npm run verify`；当前基线为 56 个 TypeScript 测试文件 / 350 个测试、76 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills
 
 - `$diagnosing-bugs`：真实 Player 交互、持久化或云恢复出现难以定位的问题时使用。
+- `$browser:control-in-app-browser`：需要对本地 Player、Creator、GM 或 Market 做真实交互与视觉验收时使用。
 - `$code-review`：指定本次迁移前的固定提交后，对 Player 大范围迁移做 Standards / Spec 双轴审查。
 - `$handoff`：下次跨设备暂停时更新本文件。
