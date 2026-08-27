@@ -37,16 +37,27 @@ describe("Player layout regressions", () => {
     expect(styles).toContain("background: var(--framework-surface, #fffdf8);");
   });
 
-  it("图片型计数标志保持系统包声明尺寸而不走文字缩放", async () => {
+  it("图片型计数标志按可用宽度自动缩小", async () => {
     const [source, styles] = await Promise.all([
       readFile("apps/player/src/sheet-runtime/rendering/CountableResourceModule.tsx", "utf8"),
       readFile("apps/player/src/sheet-runtime/styles/countable-resource.css", "utf8"),
     ]);
 
-    expect(source).toContain("markerPresentation && !imageMarkerPresentation");
+    expect(source).toContain("useTextFit(");
     expect(source).toContain('data-marker-layout={imageMarkerPresentation ? "image" : "text"}');
     expect(styles).toContain('.marker-group[data-marker-layout="image"]');
+    expect(styles).toContain("flex: 0 0 1em;");
+    expect(styles).toContain('.marker-group[data-marker-layout="image"] > [data-part="current-markers"]');
+    expect(styles).toContain('.marker-group[data-marker-layout="image"] > [data-part="remaining-markers"]');
     expect(styles).toContain('.marker-group[data-marker-layout="image"] .marker-cell');
-    expect(styles).toContain("font-size: var(--countable-marker-size, inherit);");
+    expect(styles).toContain("font-size: inherit;");
+    expect(styles).not.toContain('.marker-group[data-marker-layout="image"] .marker-cell {\n  font-size: var(--countable-marker-size, inherit);');
+  });
+
+  it("图片型计数标志的减号右键减少上限并阻止浏览器菜单", async () => {
+    const source = await readFile("apps/player/src/sheet-runtime/rendering/CountableResourceModule.tsx", "utf8");
+
+    expect(source).not.toContain("markerPresentation && !imageMarkerPresentation");
+    expect(source).toMatch(/const decrementPointerActions = usePointerActions\([\s\S]*?\n\s*markerPresentation,\s*\n\s*\);/u);
   });
 });

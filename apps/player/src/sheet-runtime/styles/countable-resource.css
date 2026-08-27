@@ -38,8 +38,10 @@
   font-size: var(--countable-marker-size, inherit);
 }
 
+.marker-group[data-marker-layout="image"] > [data-part="current-markers"],
+.marker-group[data-marker-layout="image"] > [data-part="remaining-markers"],
 .marker-group[data-marker-layout="image"] .marker-cell {
-  font-size: var(--countable-marker-size, inherit);
+  font-size: inherit;
 }
 
 .marker-group[data-text-fit="overflow"] {

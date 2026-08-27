@@ -54,7 +54,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const decrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "decrement") : setCurrent(current - step),
     () => applyMarkerAction("maximum", "decrement"),
-    markerPresentation && !imageMarkerPresentation,
+    markerPresentation,
   );
   const incrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "increment") : setCurrent(current + step),

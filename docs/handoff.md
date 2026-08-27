@@ -23,7 +23,7 @@
 - Creator 发布资源包时，未手动上传封面会固定选择资源列表第一张卡的首个已声明媒体，不再随当前编辑卡变化；第一张卡没有媒体时才退回资源包首个资产。Daggerheart Core 首张卡带有 `portrait`，可直接作为市场封面。
 - Player 的 Sheet Runtime 桥接现在只注入原生资源卡实际使用的 `portrait` / `back` 媒体；资源包独立封面继续保存在安装快照中，但不再被误当成 System Package 图片并报告 `UNUSED_PACKAGE_IMAGE`。
 - 修复创建向导 Portal 脱离主题变量作用域后遮罩与面板透明的问题：向导现在挂入 Player App Shell，并为遮罩、面板和操作区保留实色回退值。
-- “生命 / 压力 / 护甲 / 希望”的图片标志不再走文字自适应缩放，并覆盖布局皮肤的 `11px` 后代字号；实际页面中与熟练度统一为 `26px`。
+- “生命 / 压力 / 护甲 / 希望”的图片标志会按可用宽度自适应缩放，并覆盖布局皮肤的 `11px` 后代字号；常规数量下与熟练度统一为 `26px`。
 - “系统包”下拉菜单已移除重复的“管理资源包”入口；资源管理器仍保留在“玩家功能”菜单。
 - Daggerheart Core 的 280 个带图资源现在写入 `image` 卡面模式，无图的武器、护甲等继续使用文字卡；内置资源包版本提升到 `1.0.1`，已有 `1.0.0` 安装会按最低版本自动刷新；运行时媒体资产带上资源包来源键，Card Table 能解析到对应 Blob URL。
 - Player Resource Picker 的 `字段模板` 已改为显示白名单，并为种族、社群、职业、子职、武器、护甲、物品和领域卡配置了玩家有价值的精简列，不再显示 `ID`、卡图路径、卡背路径等内部列。
@@ -33,6 +33,7 @@
 - Platform App Bar 的通知铃铛现在拥有统一通知队列、数量、查看、逐条关闭与全部清除；Player 已移除两处 `message message-info` 横幅，错误横幅仍保留。
 - Player “系统包”菜单已恢复 ZIP、文件夹上传与 Author Preview。输入目录会同时经过权威 `system.json` Contract 和正式 Sheet Loader/Validator；嵌入 `.pbres` 复用现有资源路由，动态 System Document 进入 Character Save resolver，避免自定义包只能打开却不能保存。
 - 寻望之心作者源中 10 个曾被文本复制损坏的 WebP 已从固定来源仓库按二进制恢复，并重新生成公开 System Package。
+- Countable 图片标志恢复按内容数量自动缩放；图片型 Countable 的减号也会拦截右键并减少上限，不再打开浏览器右键菜单。
 
 ## 已验证
 
@@ -60,7 +61,8 @@
 - #46 自动化浏览器验收通过：寻望之心的 8 个求生者风格可组合为实际人物字段，人物编辑、生命/压力、噪音 d12→d20→d12、切换保存和刷新恢复正常；Daggerheart 原人物与武器数据未被串写。390×844 下页面宽度为 390px、无横向溢出，移动端系统包面板可展开，控制台无 error；临时 viewport 已恢复。
 - 当前 `npm run verify` 通过：55 个 TypeScript 测试文件、335 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 - 后续修复的浏览器验收通过：系统包菜单显示“上传系统包(zip) / 上传系统包(文件夹) / 系统包预览”；寻望之心页面存在 33 个有效 `128×128` 标记图片、fallback 与破图均为 0；`.message.message-info` 为 0；PbDH 通知显示数量并可打开查看。自动化期间 Codex 未崩溃，浏览器风险旧规则已确认不再存在。
-- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、341 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
+- Countable 浏览器回归通过：Daggerheart 生命上限从 6 增至 14 时，14 个图片标志由 `26px` 自动缩至 `17px`，容器无溢出；右键减号可将上限从 14 减至 13，且不弹浏览器菜单。验收后已把生命上限恢复为 6，字号恢复为 `26px`，控制台无 error。
+- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、342 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 
 ## 接下来
 
