@@ -53,7 +53,7 @@ import {
 } from "./sheet-runtime/domain/characterCreationGuide.ts";
 import { GuideSpotlight } from "./sheet-runtime/rendering/GuideSpotlight.tsx";
 import { QuestionnaireResultDialog } from "./sheet-runtime/rendering/QuestionnaireResultDialog.tsx";
-import type { QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";
+import { openQuestionnaireHost, type QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";
 import {
   PackageIssuePanel,
   ValidationIssueDialog,
@@ -489,11 +489,10 @@ export function PlayerSheetSurface({
     }
   }
 
-  async function startQuestionnaire() {
+  function startQuestionnaire() {
     const questionnaire = currentPackage?.questionnaireCharacterCreation;
     if (!questionnaire || !characterData) return;
     questionnaireSessionRef.current?.close();
-    const { openQuestionnaireHost } = await import("./sheet-runtime/rendering/questionnaireHost.ts");
     const opened = openQuestionnaireHost(questionnaire, (result) => {
       questionnaireSessionRef.current = null;
       prepareQuestionnaireResult(questionnaire.ID, result);
@@ -523,7 +522,7 @@ export function PlayerSheetSurface({
             <button ref={guideButtonRef} type="button" role="menuitem" disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
           ) : null}
           {currentPackage?.questionnaireCharacterCreation ? (
-            <button type="button" role="menuitem" disabled={!characterData} onClick={() => void startQuestionnaire()}>问卷创建</button>
+            <button type="button" role="menuitem" disabled={!characterData} onClick={startQuestionnaire}>问卷创建</button>
           ) : null}
         </div>
       </div>

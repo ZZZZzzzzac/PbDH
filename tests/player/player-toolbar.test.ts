@@ -21,4 +21,11 @@ describe("Player toolbar", () => {
     expect(styles).toContain("@media print");
     expect(styles).toContain(".pbdh-platform-appbar { display: none !important; }");
   });
+
+  it("在菜单点击的同步调用栈中打开问卷标签页", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain('import { openQuestionnaireHost, type QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";');
+    expect(source).not.toContain('await import("./sheet-runtime/rendering/questionnaireHost.ts")');
+  });
 });

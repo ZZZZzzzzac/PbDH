@@ -4,12 +4,12 @@
 
 ## 当前落点
 
-- 分支：`main`；当前基线提交：`96ac0ba`。
-- **工作区包含本轮全部实现但尚未提交。** 换机前必须把修改、新增的单包 `daggerheart-core.pbres`，以及 8 个旧分包 `.pbres` 的删除一起提交并推送；只拉取当前远端 `main` 会丢失本轮工作。
-- 阶段 6 的 #38—#43 已完成；#44 已完成自动化实现并标记为 `ready-for-human`，等待真实 Player 交互验收。
+- 分支：`main`；当前基线提交：`1c7aebf`，与 `origin/main` 一致。
+- 工作区包含尚未提交的问卷弹窗修复与回归测试：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
+- 阶段 6 的 #38—#44 已完成；#44 的登录、显式上云、云端恢复、刷新恢复、问卷 30 题流程、云端删除、回收站与恢复均通过真实浏览器验收，Issue 已关闭。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
 - 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
-- 当前工作项：[GitHub Issue #44](https://github.com/ZZZZzzzzac/PbDH/issues/44)。
+- 下一工作项：[GitHub Issue #45](https://github.com/ZZZZzzzzac/PbDH/issues/45)。
 
 ## 本轮完成
 
@@ -29,23 +29,25 @@
 
 ## 已验证
 
-- 本轮资源包与 Player 改动通过 54 个 TypeScript 测试文件、327 个测试，76 个 Python 测试、类型检查、依赖边界与 Platform build；单包归档实测 20,796,696 bytes。
+- 本轮资源包与 Player 改动通过 54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界与 Platform build；单包归档实测 20,796,696 bytes。
 - 真实浏览器已验证：Player 连续刷新稳定启动；资源管理器只安装一个 Daggerheart Core（625 资源、280 图片、8 个类型）；主武器选择、人物编辑、自动保存与刷新恢复正常；人物复制产生第二份可切换存档；正式 `.pbcha` 导入产生第三份存档且无诊断；头像经统一裁剪入口上传后可跨刷新恢复；创建向导显示 18 步；打印会在缺少必填车卡内容时给出预检查提示。
 - `.pbcha` 导出按钮在真实页面执行后没有错误；内嵌浏览器不暴露应用通过 Blob 链接触发的下载事件，归档字节级写入/读取往返继续由 Contract 测试覆盖。
-- `npm run verify` 当前被既有的 `Generated Creator Workspace design is stale` 设计一致性检查阻断；其余验证入口均已单独通过，本轮未改写无关 Creator 设计生成物。
+- `npm run verify` 已完整通过，既有的 Creator 设计一致性阻断在当前基线中已不存在。
 - `node scripts/restart-dev.mjs` 最近一次健康检查通过：Backend `8001`，Platform `5173`。
 - 本地 Supabase 登录沿用 `DaggerHeart_Battle/js/enemy_library_online.js` 的公开客户端 URL 与 anon key，已写入被 Git 忽略的 `.env.local`；重启后 `/api/auth/config` 返回 `configured: true`，Backend 与 Platform 健康检查通过。
-- Creator 默认发布封面回归通过：相关 3 个测试文件共 31 个测试与 `npm run typecheck` 均通过；统一 `npm run verify` 仍只在既有 `Generated Creator Workspace design is stale` 检查处停止。
+- Creator 默认发布封面回归通过：相关 3 个测试文件共 31 个测试与 `npm run typecheck` 均通过。
 - 带独立封面的真实 Daggerheart Core Runtime 加载回归通过；Player 资源桥接、Market 交接、离线仓库与系统包相关 4 个测试文件共 19 个测试及类型检查通过。
 - 本轮五项 Player 回归的 5 个定向测试文件共 16 个测试通过；完整 `tests/player` 共 15 个文件、58 个测试通过。真实浏览器确认：向导遮罩为 `rgba(18, 25, 27, 0.68)`、面板为实白色；四项图片标志和熟练度均为 `26px`；主武器 Picker 只显示“名称 / 属性 / 距离 / 伤害 / 负荷 / 伤害类型 / 描述”，领域卡只显示“名称 / 领域 / 等级 / 属性 / 回想 / 描述”；升级后新选子职卡使用 Blob 卡图。复测产生的临时卡牌已从本地人物存档清理。
-- #44 已标记为 `ready-for-human`；自动发布 Issue 评论被外部安全审查拒绝，没有评论落到 GitHub。
+- #44 已移除 `ready-for-human` 标签，发布真实验收记录并关闭。
+- 新电脑上的 `npm run verify` 已完整通过：54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
+- 本地测试账号凭据保存在被 Git 忽略的 `.env.local` 中，键为 `PBDH_TEST_ACCOUNT_EMAIL` 与 `PBDH_TEST_ACCOUNT_PASSWORD`；不要把值写入文档、日志或 Git。
+- 内嵌浏览器自动化连续完成登录、会话接管、云恢复、刷新和 30 题问卷，没有导致 Codex 应用崩溃；全局 `C:\Users\zinge\.codex\AGENTS.md` 中对应风险限制已删除。
 
-## 回家后继续
+## 接下来
 
-1. 启动或确认 Platform：`node scripts/restart-dev.mjs`，只使用 `http://localhost:5173`。
-2. #44 剩余真实环境验收只包括：允许弹窗后完成问卷创建全流程；使用已登录账号验证云同步、刷新恢复与云端回收站。内嵌浏览器未提供可用登录会话，也不暴露问卷 `window.open` 的新标签页。
+1. 提交当前问卷弹窗修复、回归测试和本交接更新；不要提交 `.env.local`。
+2. 进入 #45，执行 Creator → Market → Player 与 Creator → Market → GM 两条联合纵切验收。
 3. 若验收发现问题，先写可复现测试再修复；不要回退为旧 Sheet schema、旧资源格式或独立 Player 顶栏。
-4. 验收通过后关闭 #44，再进入 #45 的 Creator → Market → Player 与 Creator → Market → GM 两条联合纵切验收。
 
 ## 换机交接
 
@@ -62,7 +64,7 @@
 2. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 3. 单独重建被 Git 忽略的 `.env.local`。Supabase 配置沿用 `DaggerHeart_Battle` 的公开客户端 URL 与 anon key，但凭据只从安全的本地来源复制，不写入 handoff 或 Git。
 4. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-5. 先运行 `npm run verify`。当前预期它会在既有的 `Generated Creator Workspace design is stale` 停止；在该门禁修复前，分别运行 TypeScript 测试、Python 测试、类型检查与 Platform build，结果基线为 327 / 76 / 通过 / 通过。
+5. 运行 `npm run verify`；当前基线为 TypeScript 328 / Python 76 / 类型检查通过 / Platform build 通过。
 6. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core `1.0.1`；如导入旧人物存档，存档内已嵌入的旧文字卡不会被强制改写，重新选择对应资源即可获得图片卡。
 
 ## 建议 skills
