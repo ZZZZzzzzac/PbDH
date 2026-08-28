@@ -55,6 +55,7 @@
 - Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
 - 环境 Template 已从 `PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe:frontend/src/templates/environment/**` 提升为 `环境@1.0.0`。稳定结构补入“原文”和特性“原名”，旧 `0.0.0-dev.1` 保持精确读取并可生成不修改源数据的升级候选；Creator 可新建和完整编辑，四个资源 Surface 共用 `environment-card-r1`。
 - Player 资源管理器的环境入口判断已补齐；Market 安装的环境包位于“额外资源包 / 其他资源”，可直接打开共享 `environment-card-r1`，刷新后从 IndexedDB 恢复。
+- Creator Workspace 目录不再保存或执行同目录手动重排；文件夹优先，文件夹按名称、资源按文件名确定排序。拖到其他文件夹或根目录仍会更新资源路径并保持 Resource ID，旧本地/云 payload 的 `order` 值会在读取时规范化，无需持久化 schema 迁移。
 
 ## 已验证
 
@@ -101,6 +102,7 @@
 - 装备 Picker 与卡图修复浏览器验收通过：主/副武器表头均为“名称 / 属性 / 距离 / 伤害 / 负荷 / 位阶 / 类型 / 描述”，护甲包含位阶，三者默认位阶升序；不刷新页面切换寻望之心再切回 Daggerheart 后，领域卡“符文护符”为图片卡（图片 1、文字卡 0）。当前 `npm run verify` 通过：56 个 TypeScript 测试文件、350 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
 - #49 最终 `npm run verify` 通过：66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑、实时规范卡面，以及无图环境卡和带图敌人卡的自动 WebP 封面。
 - #49 公开 Publication ID 为 `e6ccb6d0-2320-495c-803d-db16817e559b`，Package ID 为 `01a04620-97cd-757c-b8c0-df43207b9562`，Snapshot Digest 为 `sha256:7410244b3e701db783efd35dd7edfd3d637f2138d828bb1bf26393d19605e761`。匿名 Market 可发现并下载；Player 安装到“其他资源”、共享卡面与刷新恢复通过；Chrome 原生 HTML5 拖放把环境卡显式放入 GM 桌面，刷新后实例恢复。全程控制台无 error。
+- Creator 目录确定排序完整验证通过：`npm run verify` 为 66 个 TypeScript 测试文件 / 411 个测试、88 个 Python 测试，类型检查、依赖边界、设计检查和 Platform build 全通过。内嵌浏览器中同一父目录的 `0 文件夹 / A 文件夹` 会立即按名称排序，刷新后顺序保持，控制台无 error；跨目录移动、资源路径更新、旧 `order` 规范化与同目录 no-op 由模型/仓库测试覆盖。浏览器自动化无法为该目录树构造原生 HTML5 `DataTransfer`，因此未把坐标拖拽结果作为验收证据。
 
 ## 接下来
 

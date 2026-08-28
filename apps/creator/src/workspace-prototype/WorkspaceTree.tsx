@@ -39,7 +39,7 @@ export function WorkspaceTree({
   onSelectFolder: (folderId: string | null) => void;
   onToggleFolder: (folderId: string) => void;
   onRenameFolder: (folderId: string, name: string) => string | null;
-  onMoveNode: (node: WorkspaceNodeRef, parentId: string | null, index?: number) => string | null;
+  onMoveNode: (node: WorkspaceNodeRef, parentId: string | null) => string | null;
   onDeleteNode: (node: WorkspaceNodeRef) => void;
   onResourceContextMenu: (resourceId: string, x: number, y: number) => void;
   onRootContextMenu: (x: number, y: number) => void;
@@ -79,8 +79,8 @@ export function WorkspaceTree({
     });
   };
 
-  const move = (node: WorkspaceNodeRef, parentId: string | null, index?: number) => {
-    setError(onMoveNode(node, parentId, index));
+  const move = (node: WorkspaceNodeRef, parentId: string | null) => {
+    setError(onMoveNode(node, parentId));
   };
 
   const beginRename = (folderId: string) => {
@@ -141,10 +141,7 @@ export function WorkspaceTree({
                 const dragged = readDraggedNode(event);
                 if (!dragged) return;
                 event.preventDefault();
-                const bounds = event.currentTarget.getBoundingClientRect();
-                const relativeY = bounds.height ? (event.clientY - bounds.top) / bounds.height : 0.5;
-                if (relativeY > 0.25 && relativeY < 0.75) move(dragged, folder.id);
-                else move(dragged, folder.parentId, folder.order + (relativeY >= 0.75 ? 1 : 0));
+                move(dragged, folder.id);
               }}
               onContextMenu={(event) => openMenu(event, node)}
             >
@@ -169,15 +166,6 @@ export function WorkspaceTree({
             aria-selected={resource.id === activeResourceId}
             draggable
             onDragStart={(event) => writeDraggedNode(event, node)}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.stopPropagation();
-              const dragged = readDraggedNode(event);
-              if (!dragged) return;
-              event.preventDefault();
-              const bounds = event.currentTarget.getBoundingClientRect();
-              move(dragged, item.parentId, item.order + (event.clientY - bounds.top > bounds.height / 2 ? 1 : 0));
-            }}
             onContextMenu={(event) => openMenu(event, node)}
           >
             <i />

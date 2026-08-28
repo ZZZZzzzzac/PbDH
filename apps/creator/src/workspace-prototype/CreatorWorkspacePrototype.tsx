@@ -1144,10 +1144,10 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  function moveWorkspaceTreeNode(node: WorkspaceNodeRef, parentId: string | null, index?: number): string | null {
+  function moveWorkspaceTreeNode(node: WorkspaceNodeRef, parentId: string | null): string | null {
     if (!active) return "没有打开的工作区";
     try {
-      replaceActive(moveWorkspaceNode(active, node, parentId, index));
+      replaceActive(moveWorkspaceNode(active, node, parentId));
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : "无法移动节点";

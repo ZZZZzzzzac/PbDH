@@ -173,21 +173,52 @@ describe("Creator Workspace prototype state model", () => {
     expect(created.workspace.folders.some((folder) => folder.name === "武器")).toBe(false);
   });
 
-  test("moves and reorders mixed folders and resources with the imported Cards semantics", () => {
+  test("moves resources across folders while keeping a deterministic folder-first order", () => {
     const rootDocument = structuredClone(document);
     rootDocument.resources[0]!.path = "牛头人破坏者.json";
     let workspace = selectWorkspaceFolder(createWorkspace({ document: rootDocument, media }), null);
     workspace = createWorkspaceFolder(workspace, null, "场景");
     const folderId = workspace.folders.find((folder) => folder.name === "场景")!.id;
     const resourceId = workspace.document.resources[0]!.id;
-    workspace = moveWorkspaceNode(workspace, { kind: "resource", id: resourceId }, null, 0);
-    workspace = moveWorkspaceNode(workspace, { kind: "folder", id: folderId }, null, 0);
+    workspace = moveWorkspaceNode(workspace, { kind: "resource", id: resourceId }, folderId);
+    expect(workspace.document.resources[0]!.path).toBe("场景/牛头人破坏者.json");
+    workspace = moveWorkspaceNode(workspace, { kind: "resource", id: resourceId }, null);
 
     expect(treeItemsInFolder(workspace, null).map((item) => `${item.kind}:${item.id}`)).toEqual([
       `folder:${folderId}`,
       `resource:${resourceId}`,
     ]);
     expect(workspace.document.resources[0]!.path).toBe("牛头人破坏者.json");
+  });
+
+  test("ignores resource array and legacy order values when sorting a folder", () => {
+    const sortedDocument = structuredClone(document);
+    const first = sortedDocument.resources[0]!;
+    first.id = "z-resource";
+    first.path = "z-10.json";
+    sortedDocument.resources.push({ ...structuredClone(first), id: "a-resource", path: "a-2.json" });
+    const legacyWorkspace = createWorkspace({ document: sortedDocument, media });
+    legacyWorkspace.folders = [];
+    legacyWorkspace.resourceLocations = [
+      { resourceId: "z-resource", parentId: null, order: 0 },
+      { resourceId: "a-resource", parentId: null, order: 99 },
+    ];
+    const restored = createWorkspace(legacyWorkspace);
+
+    expect(treeItemsInFolder(restored, null).map((item) => item.id)).toEqual(["a-resource", "z-resource"]);
+    expect(restored.resourceLocations.map((item) => [item.resourceId, item.order])).toEqual([
+      ["z-resource", 1],
+      ["a-resource", 0],
+    ]);
+  });
+
+  test("treats a same-folder drag as a no-op instead of persisting manual order", () => {
+    const workspace = createWorkspace({ document, media });
+    const resourceId = workspace.document.resources[0]!.id;
+    const parentId = workspace.resourceLocations.find((item) => item.resourceId === resourceId)!.parentId;
+
+    expect(moveWorkspaceNode(workspace, { kind: "resource", id: resourceId }, parentId)).toBe(workspace);
+    expect(workspace.dirty).toBe(false);
   });
 
   test("toggles folders and deletes resources while closing their tabs", () => {

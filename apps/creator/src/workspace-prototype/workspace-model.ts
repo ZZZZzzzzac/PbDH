@@ -68,6 +68,7 @@ export function createWorkspace(
         resourceLocations: structuredClone(source.resourceLocations),
       }
     : deriveWorkspaceLayout(document);
+  normalizeDeterministicOrders(document, layout.folders, layout.resourceLocations);
   const resourceIds = new Set(document.resources.map((resource) => resource.id));
   const openResourceIds = source.openResourceIds?.filter((id) => resourceIds.has(id))
     ?? document.resources.slice(0, 1).map((resource) => resource.id);
@@ -222,14 +223,14 @@ export function treeItemsInFolder(
   workspace: CreatorWorkspace,
   parentId: string | null,
 ): WorkspaceTreeItem[] {
-  return [
+  return sortWorkspaceTreeItems(workspace.document, workspace.folders, [
     ...workspace.folders
       .filter((folder) => folder.parentId === parentId)
       .map((folder) => ({ kind: "folder" as const, id: folder.id, parentId, order: folder.order })),
     ...workspace.resourceLocations
       .filter((location) => location.parentId === parentId)
       .map((location) => ({ kind: "resource" as const, id: location.resourceId, parentId, order: location.order })),
-  ].sort((left, right) => left.order - right.order);
+  ]).map((item, order) => ({ ...item, order }));
 }
 
 export function createWorkspaceFolder(
@@ -309,7 +310,6 @@ export function moveWorkspaceNode(
   workspace: CreatorWorkspace,
   node: WorkspaceNodeRef,
   targetParentId: string | null,
-  targetIndex?: number,
 ): CreatorWorkspace {
   requireWorkspaceFolderOrRoot(workspace, targetParentId);
   if (node.kind === "folder") {
@@ -322,9 +322,7 @@ export function moveWorkspaceNode(
   const sourceParentId = node.kind === "folder"
     ? requireWorkspaceFolder(workspace, node.id).parentId
     : requireResourceLocation(workspace, node.id).parentId;
-  const sourceOrder = node.kind === "folder"
-    ? requireWorkspaceFolder(workspace, node.id).order
-    : requireResourceLocation(workspace, node.id).order;
+  if (sourceParentId === targetParentId) return workspace;
   let next = createWorkspace(workspace, true);
   if (node.kind === "folder") {
     next.folders = next.folders.map((folder) => folder.id === node.id ? { ...folder, parentId: targetParentId } : folder);
@@ -333,18 +331,7 @@ export function moveWorkspaceNode(
       ? { ...location, parentId: targetParentId }
       : location);
   }
-  next = normalizeWorkspaceOrders(next, sourceParentId);
-  const targetItems = treeItemsInFolder(next, targetParentId).filter((item) => !(item.kind === node.kind && item.id === node.id));
-  const requestedIndex = targetIndex ?? targetItems.length;
-  const adjustedIndex = sourceParentId === targetParentId && sourceOrder < requestedIndex
-    ? requestedIndex - 1
-    : requestedIndex;
-  targetItems.splice(Math.max(0, Math.min(adjustedIndex, targetItems.length)), 0, {
-    ...node,
-    parentId: targetParentId,
-    order: adjustedIndex,
-  });
-  next = applyWorkspaceOrder(next, targetParentId, targetItems);
+  normalizeDeterministicOrders(next.document, next.folders, next.resourceLocations);
   syncWorkspacePaths(next);
   const movedResourceIds = node.kind === "resource"
     ? [node.id]
@@ -381,7 +368,7 @@ export function deleteWorkspaceNode(
   const retainedAssetIds = new Set(next.document.resources.flatMap((resource) => Object.values(resource.media)));
   next.document.assets = next.document.assets.filter((asset) => !removedAssetIds.has(asset.id) || retainedAssetIds.has(asset.id));
   for (const assetId of removedAssetIds) if (!retainedAssetIds.has(assetId)) next.media.delete(assetId);
-  next = normalizeWorkspaceOrders(next, sourceParentId);
+  normalizeDeterministicOrders(next.document, next.folders, next.resourceLocations);
   syncEmptyDirectories(next);
   return next;
 }
@@ -451,11 +438,9 @@ export function duplicateWorkspaceResource(
     copiedFilename = `${stem}-copy-${sequence}${extension}`;
   }
   next.document.resources.push({ ...structuredClone(source), id: nextId, path: workspacePath(next, sourceLocation.parentId, copiedFilename) });
-  next.resourceLocations.push({ resourceId: nextId, parentId: sourceLocation.parentId, order: sourceLocation.order + 1 });
-  const siblings = treeItemsInFolder(next, sourceLocation.parentId).filter((item) => !(item.kind === "resource" && item.id === nextId));
-  const sourceIndex = siblings.findIndex((item) => item.kind === "resource" && item.id === source.id);
-  siblings.splice(sourceIndex + 1, 0, { kind: "resource", id: nextId, parentId: sourceLocation.parentId, order: sourceIndex + 1 });
-  const ordered = applyWorkspaceOrder(next, sourceLocation.parentId, siblings);
+  next.resourceLocations.push({ resourceId: nextId, parentId: sourceLocation.parentId, order: 0 });
+  normalizeDeterministicOrders(next.document, next.folders, next.resourceLocations);
+  const ordered = next;
   ordered.openResourceIds = [...ordered.openResourceIds.filter((id) => id !== ordered.previewResourceId), nextId];
   ordered.previewResourceId = null;
   ordered.currentFolderId = sourceLocation.parentId;
@@ -695,23 +680,46 @@ function syncEmptyDirectories(workspace: CreatorWorkspace): void {
     .sort();
 }
 
-function normalizeWorkspaceOrders(workspace: CreatorWorkspace, parentId: string | null): CreatorWorkspace {
-  return applyWorkspaceOrder(workspace, parentId, treeItemsInFolder(workspace, parentId));
+function normalizeDeterministicOrders(
+  document: ResourcePackageLogicalDocument,
+  folders: WorkspaceFolder[],
+  resourceLocations: WorkspaceResourceLocation[],
+): void {
+  const parentIds = new Set<string | null>([
+    null,
+    ...folders.map((folder) => folder.parentId),
+    ...resourceLocations.map((location) => location.parentId),
+  ]);
+  for (const parentId of parentIds) {
+    const items = sortWorkspaceTreeItems(document, folders, [
+      ...folders
+        .filter((folder) => folder.parentId === parentId)
+        .map((folder) => ({ kind: "folder" as const, id: folder.id, parentId, order: 0 })),
+      ...resourceLocations
+        .filter((location) => location.parentId === parentId)
+        .map((location) => ({ kind: "resource" as const, id: location.resourceId, parentId, order: 0 })),
+    ]);
+    const orderByKey = new Map(items.map((item, index) => [`${item.kind}:${item.id}`, index]));
+    folders
+      .filter((folder) => folder.parentId === parentId)
+      .forEach((folder) => { folder.order = orderByKey.get(`folder:${folder.id}`)!; });
+    resourceLocations
+      .filter((location) => location.parentId === parentId)
+      .forEach((location) => { location.order = orderByKey.get(`resource:${location.resourceId}`)!; });
+  }
 }
 
-function applyWorkspaceOrder(
-  workspace: CreatorWorkspace,
-  parentId: string | null,
+function sortWorkspaceTreeItems(
+  document: ResourcePackageLogicalDocument,
+  folders: WorkspaceFolder[],
   items: WorkspaceTreeItem[],
-): CreatorWorkspace {
-  const orderByKey = new Map(items.map((item, index) => [`${item.kind}:${item.id}`, index]));
-  return {
-    ...workspace,
-    folders: workspace.folders.map((folder) => folder.parentId === parentId
-      ? { ...folder, order: orderByKey.get(`folder:${folder.id}`) ?? folder.order }
-      : folder),
-    resourceLocations: workspace.resourceLocations.map((location) => location.parentId === parentId
-      ? { ...location, order: orderByKey.get(`resource:${location.resourceId}`) ?? location.order }
-      : location),
-  };
+): WorkspaceTreeItem[] {
+  const label = (item: WorkspaceTreeItem) => item.kind === "folder"
+    ? folders.find((folder) => folder.id === item.id)?.name ?? item.id
+    : document.resources.find((resource) => resource.id === item.id)?.path.split("/").at(-1) ?? item.id;
+  return items.sort((left, right) => {
+    if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
+    const byLabel = label(left).localeCompare(label(right), "zh-CN", { numeric: true, sensitivity: "base" });
+    return byLabel || left.id.localeCompare(right.id);
+  });
 }
