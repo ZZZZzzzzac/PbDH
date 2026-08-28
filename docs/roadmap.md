@@ -9,7 +9,7 @@
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
 - L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
 - 产品实现：阶段 6 已完成；#38—#45 的敌人与武器两条真实纵切均通过自动化和人工验收。阶段 7 正在推进；#46—#49 已完成第二个真实 System Package、Daggerheart Core 剩余官方资源与环境 Template 纵切，Resource Package `1.0.0`、Structural SemVer、Portable Archive Profile 和双语言 conformance 已落地。
-- 下一步：先补齐 `.pbsys` 解压前的 ZIP 安全预检，再以完整官方语料推进 System Package Contract 稳定化；#34“快速即兴敌人卡”继续延后到 PbDH 本体完成后。
+- 下一步：以 Daggerheart 与寻望之心两个真实系统包的作者预览、文件交换和 Player 运行行为为依据，推进 System Package Contract 稳定化；#34“快速即兴敌人卡”继续延后到 PbDH 本体完成后。
 
 ## 推进模型
 
@@ -223,7 +223,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 7：扩大共同平台与官方内容
 
-阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package、Character Save 与 Tabletop Document 仍为 prerelease Contract；当前先完成 `.pbsys` ZIP 安全预检，再推进 System Package 稳定化。
+阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package、Character Save 与 Tabletop Document 仍为 prerelease Contract；当前以两个真实系统包已经运行的产品行为推进 System Package 稳定化。
 
 第一条纵切通过后，按“实现当前纵切、设计下一纵切”的双轨循环补全 Contracts & Template Platform 及其关联交付：
 
