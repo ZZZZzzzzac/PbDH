@@ -12,7 +12,7 @@
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
 - [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
 - [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
-- [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已实现稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、`.pbres` 往返和 Backend 发布门禁。Creator 自动化浏览器验收通过；真实 Market 发布属于公开发布红线，等待用户明确授权后再完成 Market → Player/GM 实机验收与关闭 Issue。
+- [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已完成稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、自动封面、`.pbres` 往返、Backend 发布门禁与 Chrome 真实纵切；最终证据已记录，等待标签已移除，Issue 已关闭。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -34,7 +34,7 @@
 - 修复首次打开 Player 时预置 System Package 尚未进入 Platform Runtime Storage、默认人物就提前保存的问题；现在先建立包缓存边界，再激活系统包和创建默认人物，并补了真实 Storage seam 的回归测试。
 - Player 人物存档已从页面左栏移回 Platform App Bar；顶部按旧 `PbDH_Sheet` 保留“玩家功能 / 玩家存档 / 导入导出 / 系统包”四组下拉菜单。打印媒体样式会隐藏完整 Platform App Bar。
 - Platform App Bar 已明确分成左右两组：PB/PbDH 与四个主页面 Tab 靠左且位置固定，各 App 独有工具、通知、设置与账号靠右；资源管理器详情栏恢复内部滚动；资源表行样式改为专用类名，避免与系统包 `.resource-row` 碰撞并挤压“生命 / 压力 / 护甲 / 希望”到“希望特性”区域。
-- Creator 发布资源包时，未手动上传封面会固定选择资源列表第一张卡的首个已声明媒体，不再随当前编辑卡变化；第一张卡没有媒体时才退回资源包首个资产。Daggerheart Core 首张卡带有 `portrait`，可直接作为市场封面。
+- Creator 发布资源包时，未手动上传封面会取资源列表第一张卡，强制固定比例并通过同一 Canonical Renderer Revision 渲染为 WebP；生成资产加入完整发布快照。带图媒体先内联为 Data URL，避免 Canvas 污染；`react-dom/server` 仅在点击发布时动态加载，不增加主入口常驻体积。
 - Player 的 Sheet Runtime 桥接现在只注入原生资源卡实际使用的 `portrait` / `back` 媒体；资源包独立封面继续保存在安装快照中，但不再被误当成 System Package 图片并报告 `UNUSED_PACKAGE_IMAGE`。
 - 修复创建向导 Portal 脱离主题变量作用域后遮罩与面板透明的问题：向导现在挂入 Player App Shell，并为遮罩、面板和操作区保留实色回退值。
 - “生命 / 压力 / 护甲 / 希望”的图片标志会按可用宽度自适应缩放，并覆盖布局皮肤的 `11px` 后代字号；常规数量下与熟练度统一为 `26px`。
@@ -54,6 +54,7 @@
 - 文件夹入口现在就是 Author Preview：目录句柄按 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6:src/storage/storageService.ts` 的机制持久化到共享 IndexedDB `authorPreviewHandles` 表；同一标签页刷新会重新读取目录，恢复成功后不会再被首选预制包覆盖。
 - Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
 - 环境 Template 已从 `PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe:frontend/src/templates/environment/**` 提升为 `环境@1.0.0`。稳定结构补入“原文”和特性“原名”，旧 `0.0.0-dev.1` 保持精确读取并可生成不修改源数据的升级候选；Creator 可新建和完整编辑，四个资源 Surface 共用 `environment-card-r1`。
+- Player 资源管理器的环境入口判断已补齐；Market 安装的环境包位于“额外资源包 / 其他资源”，可直接打开共享 `environment-card-r1`，刷新后从 IndexedDB 恢复。
 
 ## 已验证
 
@@ -98,13 +99,13 @@
 - Player 菜单与资源分组浏览器验收通过：资源管理器显示“原生资源包 / 额外资源包”；系统包选择框为正常深色可用状态，选项为 Daggerheart / 寻望之心，版本号独立显示，菜单只显示“上传系统包(.pbsys) / 上传系统包(文件夹)”，控制台无 error。浏览器安全策略拒绝自动执行下拉切换，未绕过；切换逻辑由回归测试和类型检查覆盖。
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、349 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 - 装备 Picker 与卡图修复浏览器验收通过：主/副武器表头均为“名称 / 属性 / 距离 / 伤害 / 负荷 / 位阶 / 类型 / 描述”，护甲包含位阶，三者默认位阶升序；不刷新页面切换寻望之心再切回 Daggerheart 后，领域卡“符文护符”为图片卡（图片 1、文字卡 0）。当前 `npm run verify` 通过：56 个 TypeScript 测试文件、350 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
-- #49 当前 `npm run verify` 通过：66 个 TypeScript 测试文件 / 408 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑与实时规范卡面；1280px 无横向溢出，控制台无 error。内嵌浏览器未能合成 GM 画布所需的原生 `DataTransfer`，因此没有把拖放失败当成产品失败或宣称 GM 实机通过。
+- #49 最终 `npm run verify` 通过：66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑、实时规范卡面，以及无图环境卡和带图敌人卡的自动 WebP 封面。
+- #49 公开 Publication ID 为 `e6ccb6d0-2320-495c-803d-db16817e559b`，Package ID 为 `01a04620-97cd-757c-b8c0-df43207b9562`，Snapshot Digest 为 `sha256:7410244b3e701db783efd35dd7edfd3d637f2138d828bb1bf26393d19605e761`。匿名 Market 可发现并下载；Player 安装到“其他资源”、共享卡面与刷新恢复通过；Chrome 原生 HTML5 拖放把环境卡显式放入 GM 桌面，刷新后实例恢复。全程控制台无 error。
 
 ## 接下来
 
-1. 先完成 #49 的真实 Market 发布与 Market → Player/GM 浏览器验收；公开发布前必须重新取得用户明确授权。通过后记录证据、移除等待标签并关闭 Issue。
-2. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-3. #49 关闭后再查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
+1. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
+2. 查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
 
 ## 换机交接
 
@@ -122,7 +123,7 @@
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 63 个 TypeScript 测试文件 / 399 个测试、87 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills
