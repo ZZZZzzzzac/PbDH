@@ -15,4 +15,5 @@
 
 System Package conformance 目录使用 `conformance/system-package/<exact-semver>/`：
 `valid/<name>/system.json` 与其 `resources/*.pbres` 表示可读目录输入，同级 `.pbsys`
-表示相同内容的 ZIP 输入；二者必须产生同一标准化候选。
+表示相同内容的 ZIP 输入；二者必须产生同一标准化候选。`1.0.0-alpha.2`
+开始由 `system.json.runtime` 统一声明 Player Runtime 文件，不再使用 `manifest.json`。

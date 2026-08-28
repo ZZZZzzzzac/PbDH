@@ -29,6 +29,11 @@
           "version": "1.0.0-alpha.1",
           "state": "development",
           "schema": "system-package/1.0.0-alpha.1/schema.json"
+        },
+        {
+          "version": "1.0.0-alpha.2",
+          "state": "development",
+          "schema": "system-package/1.0.0-alpha.2/schema.json"
         }
       ]
     },

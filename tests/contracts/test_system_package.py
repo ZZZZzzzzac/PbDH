@@ -12,7 +12,7 @@ from pbdh_backend.contracts import (
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE_ROOT = ROOT / "contracts/conformance/system-package/1.0.0-alpha.1"
+FIXTURE_ROOT = ROOT / "contracts/conformance/system-package/1.0.0-alpha.2"
 
 
 def read_json(path: Path) -> Any:
@@ -43,7 +43,7 @@ def validate_resource(document: dict[str, Any], media: dict[str, bytes]) -> list
 def test_system_package_schema_is_language_neutral() -> None:
     assert RUNTIME.validate({
         "family": "system-package",
-        "version": "1.0.0-alpha.1",
+        "version": "1.0.0-alpha.2",
         "mode": "development",
         "candidate": DOCUMENT,
     }) == []
@@ -53,7 +53,12 @@ def test_pbsys_contains_the_same_directory_and_complete_pbres() -> None:
     directory_pbres = (FIXTURE_ROOT / "valid/daggerheart" / EMBEDDED["path"]).read_bytes()
     pbsys = (FIXTURE_ROOT / "daggerheart.pbsys").read_bytes()
     with zipfile.ZipFile(io.BytesIO(pbsys)) as archive:
-        assert archive.namelist() == sorted(["system.json", EMBEDDED["path"]])
+        assert archive.namelist() == sorted([
+            "system.json",
+            "pages.json",
+            "modules.json",
+            EMBEDDED["path"],
+        ])
         assert json.loads(archive.read("system.json")) == DOCUMENT
         assert archive.read(EMBEDDED["path"]) == directory_pbres
 

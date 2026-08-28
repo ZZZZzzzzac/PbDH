@@ -182,7 +182,7 @@ function sheetCharacterData(): SheetCharacterData {
 
 function sheetSystemPackage(): SheetSystemPackage {
   return {
-    manifest: { ID: systemPackageId, 名称: "测试系统", 版本: "1.0.0", schemaVersion: "0.2.0" },
+    manifest: { ID: systemPackageId, 名称: "测试系统", 版本: "1.0.0" },
     pages: [],
     modules: [{
       ID: "pick-ancestry",

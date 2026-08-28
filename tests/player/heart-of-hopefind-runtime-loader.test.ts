@@ -53,6 +53,7 @@ describe("寻望之心 Sheet Runtime 加载", () => {
     });
 
     if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues, null, 2));
+    expect(currentSystem.contractVersion).toBe("1.0.0-alpha.2");
     expect(currentSystem.package).toMatchObject({
       id: "01a04186-51be-74e1-b94f-ec17d354dc00",
       name: "寻望之心",
@@ -84,6 +85,14 @@ describe("寻望之心 Sheet Runtime 加载", () => {
       ["名称", "简介", "第一特性名称", "第一特性规则", "第二特性名称", "第二特性规则"],
     ]);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
+    const inventory = JSON.parse(await readFile(
+      path.join(packageRoot, ".pbdh-runtime-files.json"),
+      "utf8",
+    )) as { files: string[] };
+    expect(inventory.files).toContain("system.json");
+    expect(inventory.files).not.toContain("manifest.json");
+    expect(inventory.files.some((file) => file.startsWith("runtime-libraries/"))).toBe(false);
+    await expect(readFile(path.join(packageRoot, "manifest.json"))).rejects.toThrow();
     expect(heartOfHopefindPreset.fileCount).toBeGreaterThan(10);
   });
 

@@ -6,8 +6,8 @@
   "releaseVersion": "0.0.0-dev",
   "directory": "heart-of-hopefind",
   "inventoryPath": ".pbdh-runtime-files.json",
-  "fileCount": 23,
-  "metadataFileCount": 13,
+  "fileCount": 22,
+  "metadataFileCount": 12,
   "loadingPresentation": {
     "标语": "正在感染病毒...",
     "强调色": "#302e28"

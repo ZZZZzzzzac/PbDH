@@ -8,7 +8,7 @@ Allowed writes by default:
 
 - `skins/<skin-id>/**`
 - `assets/skins/<skin-id>/**`
-- only that Skin's registration in `manifest.json`
+- only that Skin's registration in `system.json`
 
 Do not modify Base files under `layouts/`, `modules.json`, `pages.json`, `dependencies.json`, `guides/`, `checks/`, or `resources/` for a Skin task.
 

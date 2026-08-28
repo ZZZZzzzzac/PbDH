@@ -21,7 +21,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/system-package/1.0.0-alpha.1";
+const fixtureRoot = "contracts/conformance/system-package/1.0.0-alpha.2";
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
@@ -44,7 +44,7 @@ const embeddedBytes = new Uint8Array(readFileSync(
 function validateSystem(candidate: SystemPackageDocument): ContractDiagnostic[] {
   const schemaDiagnostics = runtime.validate({
     family: "system-package",
-    version: "1.0.0-alpha.1",
+    version: "1.0.0-alpha.2",
     mode: "development",
     candidate,
   });
@@ -77,6 +77,13 @@ function fixtureDirectoryEntries(): PortableDirectoryEntry[] {
         path.join(root, fixtureRoot, "valid/daggerheart/system.json"),
       )),
     },
+    ...["pages.json", "modules.json"].map((relativePath): PortableDirectoryEntry => ({
+      path: relativePath,
+      kind: "file",
+      bytes: new Uint8Array(readFileSync(
+        path.join(root, fixtureRoot, "valid/daggerheart", relativePath),
+      )),
+    })),
     { path: embeddedPath, kind: "file", bytes: embeddedBytes.slice() },
   ];
 }
@@ -117,7 +124,7 @@ describe("System Package directory and .pbsys", () => {
 
   test("nested corruption or declared identity mismatch yields zero candidate", async () => {
     const corrupt = fixtureDirectoryEntries();
-    corrupt[1]!.bytes = new Uint8Array([0x50, 0x4b]);
+    corrupt[3]!.bytes = new Uint8Array([0x50, 0x4b]);
     const corruptResult = await loadSystemPackageDirectory(corrupt, options);
     expect(corruptResult.candidate).toBeNull();
     expect(corruptResult.diagnostics.some((item) => item.code === "resource-package.archive.zip.invalid")).toBe(true);
@@ -134,7 +141,7 @@ describe("System Package directory and .pbsys", () => {
       code: "system-package.embedded-resource.identity-mismatch",
       severity: "error",
       family: "system-package",
-      version: "1.0.0-alpha.1",
+      version: "1.0.0-alpha.2",
       location: "/embeddedResources/0/snapshotDigest",
       params: {
         actual: document.embeddedResources[0]!.snapshotDigest,
@@ -152,7 +159,7 @@ describe("System Package directory and .pbsys", () => {
       code: "system-package.archive.file.unknown",
       severity: "error",
       family: "system-package",
-      version: "1.0.0-alpha.1",
+      version: "1.0.0-alpha.2",
       location: "/notes.txt",
       params: { path: "notes.txt" },
     }]);
@@ -173,17 +180,22 @@ describe("System Package directory and .pbsys", () => {
     ]);
   });
 
-  test("rejects invalid Player Module and Dependency references", () => {
+  test("rejects invalid Runtime skin and validation declarations", () => {
     const invalid = structuredClone(document);
-    const picker = invalid.modules.find((module) => module.type === "resourcePicker")!;
-    picker.nativeEntryId = "missing-entry";
-    invalid.dependencies[0]!.trigger.sourceModuleId = "primary-weapon-name";
-    invalid.dependencies[0]!.actions[0]!.targetModuleId = "pick-primary-weapon";
+    invalid.runtime.skins = [
+      { id: "ink", name: "纸墨", css: "ink.css", frameworkColorScheme: "light" },
+      { id: "ink", name: "纸墨副本", css: "ink-copy.css", frameworkColorScheme: "light" },
+    ];
+    invalid.runtime.defaultSkin = "missing";
+    invalid.runtime.validationChecks = [
+      { id: "check", script: "check.js" },
+      { id: "check", script: "check-copy.js" },
+    ];
 
     expect(validateSystemPackageSemantics(invalid).map((item) => item.code)).toEqual([
-      "system-package.dependency.target-invalid",
-      "system-package.dependency.source-invalid",
-      "system-package.module.native-entry-missing",
+      "system-package.runtime.default-skin.missing",
+      "system-package.runtime.skin.duplicate",
+      "system-package.runtime.validation-check.duplicate",
     ]);
   });
 });

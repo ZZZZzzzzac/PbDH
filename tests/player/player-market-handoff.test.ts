@@ -28,8 +28,26 @@ const document = JSON.parse(readFileSync(path.join(
 ), "utf8")) as ResourcePackageLogicalDocument;
 const system = JSON.parse(readFileSync(path.join(
   root,
-  "contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json",
+  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
 ), "utf8")) as SystemPackageDocument;
+const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
+  dependencies: [{
+    trigger: { type: "resourceSelected", sourceModuleId: "pick-primary-weapon" },
+    actions: [
+      {
+        targetModuleId: "primary-weapon-name",
+        content: {
+          type: "selectedResourceTemplate",
+          format: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
+        },
+      },
+      {
+        targetModuleId: "primary-weapon-description",
+        content: { type: "selectedResourceField", field: "描述" },
+      },
+    ],
+  }],
+};
 const asset = document.assets[0]!;
 const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
@@ -145,7 +163,7 @@ describe("Player Market handoff ingress", () => {
     });
   });
 
-  test("materializes a routed Market weapon through the formal System Package Dependency", async () => {
+  test("materializes a routed Market weapon through the Player dependency engine", async () => {
     const prepared = await prepareResourcePackageInstall({
       bytes,
       currentSystem: system,
@@ -166,7 +184,7 @@ describe("Player Market handoff ingress", () => {
 
     const applied = applyResourceSelection({
       characterData: { characterName: "阿斯特里德" },
-      currentSystem: system,
+      currentSystem: selectionSystem,
       sourceModuleId: "pick-primary-weapon",
       selectedResource: candidate.resource,
     });

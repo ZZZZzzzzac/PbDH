@@ -23,6 +23,7 @@ const resourcePackageSchemaPath = "resource-package/0.0.0-dev.1/schema.json";
 const resourcePackageAlphaSchemaPath = "resource-package/1.0.0-alpha.1/schema.json";
 const resourcePackageSchemaPathV1 = "resource-package/1.0.0/schema.json";
 const systemPackageAlphaSchemaPath = "system-package/1.0.0-alpha.1/schema.json";
+const systemPackageAlpha2SchemaPath = "system-package/1.0.0-alpha.2/schema.json";
 const characterSaveAlphaSchemaPath = "character-save/1.0.0-alpha.1/schema.json";
 const tabletopDocumentAlphaSchemaPath = "tabletop-document/1.0.0-alpha.1/schema.json";
 const schemas = {
@@ -35,6 +36,9 @@ const schemas = {
   ) as AnySchema,
   [systemPackageAlphaSchemaPath]: readJson(
     `contracts/${systemPackageAlphaSchemaPath}`,
+  ) as AnySchema,
+  [systemPackageAlpha2SchemaPath]: readJson(
+    `contracts/${systemPackageAlpha2SchemaPath}`,
   ) as AnySchema,
   [characterSaveAlphaSchemaPath]: readJson(
     `contracts/${characterSaveAlphaSchemaPath}`,

@@ -1,6 +1,5 @@
 import type {
   ResourcePackageLogicalDocument,
-  SystemPackageDocument,
 } from "@pbdh/contract-runtime";
 
 export type CharacterData = Readonly<Record<string, string>>;
@@ -18,6 +17,17 @@ export type ResourceSelectionResult = {
 };
 
 type Resource = ResourcePackageLogicalDocument["resources"][number];
+type ResourceSelectionSystem = {
+  dependencies: Array<{
+    trigger: { type: "resourceSelected"; sourceModuleId: string };
+    actions: Array<{
+      targetModuleId: string;
+      content:
+        | { type: "selectedResourceField"; field: string }
+        | { type: "selectedResourceTemplate"; format: string };
+    }>;
+  }>;
+};
 
 function diagnostic(
   code: string,
@@ -63,7 +73,7 @@ function formatTemplate(
 
 export function applyResourceSelection(input: {
   characterData: CharacterData;
-  currentSystem: SystemPackageDocument;
+  currentSystem: ResourceSelectionSystem;
   sourceModuleId: string;
   selectedResource: Resource;
 }): ResourceSelectionResult {

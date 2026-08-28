@@ -1,10 +1,78 @@
 {
-  "contractVersion": "1.0.0-alpha.1",
+  "contractVersion": "1.0.0-alpha.2",
   "package": {
     "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
     "version": "1.0.0",
     "name": "Daggerheart",
     "description": "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。"
+  },
+  "runtime": {
+    "loadingPresentation": {
+      "tagline": "正在掷二元骰...",
+      "accentColor": "#a83a24"
+    },
+    "pages": "pages.json",
+    "shell": {
+      "html": "layouts/shell.html",
+      "css": "layouts/shell.css"
+    },
+    "skins": [
+      {
+        "id": "skin-KimiK3",
+        "name": "松烟纸墨",
+        "css": "skins/skin-KimiK3/skin.css",
+        "frameworkColorScheme": "light",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/skin-KimiK3/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/skin-KimiK3/character-main.html"
+            },
+            {
+              "id": "character-story",
+              "html": "skins/skin-KimiK3/character-story.html"
+            }
+          ]
+        }
+      },
+      {
+        "id": "skin-black-hours",
+        "name": "黑时祷书",
+        "css": "skins/skin-black-hours/skin.css",
+        "frameworkColorScheme": "dark",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/skin-black-hours/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/skin-black-hours/character-main.html"
+            }
+          ]
+        }
+      }
+    ],
+    "defaultSkin": "skin-KimiK3",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterCreationGuide": "guides/character-creation.json",
+    "questionnaireCharacterCreation": {
+      "id": "daggerheart-class-domain-recommendation",
+      "name": "职业与领域推荐问卷",
+      "html": "questionnaires/class-domain-recommendation.html"
+    },
+    "characterFormatAdapters": "adapters/character-formats.json",
+    "characterTextExports": "exports/character-text.json",
+    "validationChecks": [
+      {
+        "id": "character-consistency",
+        "script": "checks/character-consistency.js"
+      }
+    ]
   },
   "resourceCompatibility": [
     {
@@ -94,98 +162,6 @@
         "id": "domain-cards",
         "label": "领域卡"
       }
-    }
-  ],
-  "modules": [
-    {
-      "id": "pick-primary-weapon",
-      "type": "resourcePicker",
-      "nativeEntryId": "weapons",
-      "buttonLabel": "选择主武器",
-      "columns": [
-        {
-          "field": "名称",
-          "label": "名称",
-          "width": "fill",
-          "sortable": true,
-          "filterable": false
-        },
-        {
-          "field": "属性",
-          "label": "属性",
-          "width": "normal",
-          "sortable": true,
-          "filterable": true
-        },
-        {
-          "field": "距离",
-          "label": "距离",
-          "width": "normal",
-          "sortable": true,
-          "filterable": true
-        },
-        {
-          "field": "伤害",
-          "label": "伤害",
-          "width": "normal",
-          "sortable": true,
-          "filterable": false
-        },
-        {
-          "field": "负荷",
-          "label": "负荷",
-          "width": "normal",
-          "sortable": true,
-          "filterable": true
-        },
-        {
-          "field": "位阶",
-          "label": "位阶",
-          "width": "compact",
-          "sortable": true,
-          "filterable": true
-        }
-      ]
-    },
-    {
-      "id": "primary-weapon-name",
-      "type": "freeText",
-      "label": "主武器"
-    },
-    {
-      "id": "primary-weapon-description",
-      "type": "longText",
-      "label": "武器特性"
-    }
-  ],
-  "dependencies": [
-    {
-      "id": "fill-primary-weapon",
-      "trigger": {
-        "type": "resourceSelected",
-        "sourceModuleId": "pick-primary-weapon"
-      },
-      "condition": {
-        "type": "always"
-      },
-      "actions": [
-        {
-          "type": "fillText",
-          "targetModuleId": "primary-weapon-name",
-          "content": {
-            "type": "selectedResourceTemplate",
-            "format": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
-          }
-        },
-        {
-          "type": "fillText",
-          "targetModuleId": "primary-weapon-description",
-          "content": {
-            "type": "selectedResourceField",
-            "field": "描述"
-          }
-        }
-      ]
     }
   ],
   "embeddedResources": [

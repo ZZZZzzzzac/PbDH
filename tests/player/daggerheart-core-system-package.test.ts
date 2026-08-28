@@ -91,13 +91,15 @@ describe("migrated Daggerheart Core System Package", () => {
   });
 
   test("keeps old Sheet resource documents out of the public runtime", () => {
-    const manifest = readJson<Record<string, unknown>>(path.join(packageRoot, "manifest.json"));
-    expect(manifest).not.toHaveProperty("resourceFormatAdapters");
-    expect(manifest.resourceLibraries).toEqual(expect.arrayContaining([
-      expect.objectContaining({ ID: "weapons", 路径: "runtime-libraries/weapons.json" }),
-      expect.objectContaining({ ID: "domain-cards", 路径: "runtime-libraries/domain-cards.json" }),
-    ]));
-    expect(readJson(path.join(packageRoot, "runtime-libraries/weapons.json"))).toEqual([]);
+    const system = readJson<SystemPackageDocument>(path.join(packageRoot, "system.json"));
+    const inventory = readJson<{ files: string[] }>(path.join(packageRoot, ".pbdh-runtime-files.json"));
+    expect(system.runtime).not.toHaveProperty("resourceFormatAdapters");
+    expect(system.runtime).not.toHaveProperty("resourceLibraries");
+    expect(inventory.files).toContain("system.json");
+    expect(inventory.files).not.toContain("manifest.json");
+    expect(inventory.files.some((file) => file.startsWith("runtime-libraries/"))).toBe(false);
+    expect(() => readFileSync(path.join(packageRoot, "manifest.json"))).toThrow();
+    expect(() => readFileSync(path.join(packageRoot, "runtime-libraries/weapons.json"))).toThrow();
     expect(() => readFileSync(path.join(packageRoot, "resources/weapons.json"))).toThrow();
   });
 

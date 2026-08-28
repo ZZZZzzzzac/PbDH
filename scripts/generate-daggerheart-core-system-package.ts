@@ -15,6 +15,29 @@ import { templateRegistry } from "../packages/templates/src/core/index.ts";
 
 type SourceEntry = Record<string, unknown> & { ID: string; 名称: string };
 type ResourceData = ResourcePackageLogicalDocument["resources"][number]["data"];
+type LegacyRuntimeManifest = {
+  加载展示?: { 标语: string; 强调色: string };
+  pages: string;
+  shell?: { html: string; css?: string };
+  skins?: Array<{
+    ID: string;
+    名称: string;
+    css: string;
+    推荐框架配色: "light" | "dark";
+    layoutOverrides?: {
+      shell?: { html: string };
+      pages?: Array<{ ID: string; html: string }>;
+    };
+  }>;
+  defaultSkin?: string;
+  modules: string;
+  dependencies?: string;
+  characterCreationGuide?: string;
+  questionnaireCharacterCreation?: { ID: string; 名称: string; html: string };
+  characterFormatAdapters?: string;
+  characterTextExports?: string;
+  validationChecks?: Array<{ ID: string; 脚本: string }>;
+};
 
 const sourceRoot = path.resolve("apps/player/system-package-sources/daggerheart-core");
 const outputRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
@@ -25,6 +48,10 @@ const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
 const resourcePackageVersion = "1.0.3";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+const legacyManifest = JSON.parse(await readFile(
+  path.join(sourceRoot, "manifest.json"),
+  "utf8",
+)) as LegacyRuntimeManifest;
 
 const libraries = [
   library("ancestries", "种族", "种族", "1.0.0", transformAncestry),
@@ -116,13 +143,14 @@ coreDocument = {
 };
 
 const systemDocument: SystemPackageDocument = {
-  contractVersion: "1.0.0-alpha.1",
+  contractVersion: "1.0.0-alpha.2",
   package: {
     id: systemPackageId,
     version: systemPackageVersion,
     name: "Daggerheart",
     description: "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。",
   },
+  runtime: mapLegacyRuntime(legacyManifest),
   resourceCompatibility: libraries.map((definition) => ({
     templateId: definition.templateId,
     versionRange: definition.templateVersion === "1.0.0"
@@ -130,44 +158,6 @@ const systemDocument: SystemPackageDocument = {
       : { minimumInclusive: definition.templateVersion, maximumExclusive: "1.0.0" },
     nativeEntry: { id: definition.id, label: definition.label },
   })),
-  modules: [
-    {
-      id: "pick-primary-weapon",
-      type: "resourcePicker",
-      nativeEntryId: "weapons",
-      buttonLabel: "选择主武器",
-      columns: [
-        { field: "名称", label: "名称", width: "fill", sortable: true, filterable: false },
-        { field: "属性", label: "属性", width: "normal", sortable: true, filterable: true },
-        { field: "距离", label: "距离", width: "normal", sortable: true, filterable: true },
-        { field: "伤害", label: "伤害", width: "normal", sortable: true, filterable: false },
-        { field: "负荷", label: "负荷", width: "normal", sortable: true, filterable: true },
-        { field: "位阶", label: "位阶", width: "compact", sortable: true, filterable: true },
-      ],
-    },
-    { id: "primary-weapon-name", type: "freeText", label: "主武器" },
-    { id: "primary-weapon-description", type: "longText", label: "武器特性" },
-  ],
-  dependencies: [{
-    id: "fill-primary-weapon",
-    trigger: { type: "resourceSelected", sourceModuleId: "pick-primary-weapon" },
-    condition: { type: "always" },
-    actions: [
-      {
-        type: "fillText",
-        targetModuleId: "primary-weapon-name",
-        content: {
-          type: "selectedResourceTemplate",
-          format: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
-        },
-      },
-      {
-        type: "fillText",
-        targetModuleId: "primary-weapon-description",
-        content: { type: "selectedResourceField", field: "描述" },
-      },
-    ],
-  }],
   embeddedResources: [{
     path: "resources/daggerheart-core.pbres",
     packageId: coreDocument.package.id,
@@ -182,31 +172,15 @@ await copyRuntimeSource(sourceRoot, outputRoot);
 const systemDocumentJson = `${JSON.stringify(systemDocument, null, 2)}\n`;
 await writeFile(path.join(outputRoot, "system.json"), systemDocumentJson, "utf8");
 await writeFile(generatedSystemDocumentPath, systemDocumentJson, "utf8");
-await mkdir(path.join(outputRoot, "runtime-libraries"), { recursive: true });
-for (const definition of libraries) {
-  await writeFile(path.join(outputRoot, "runtime-libraries", `${definition.id}.json`), "[]\n", "utf8");
-}
 await mkdir(path.join(outputRoot, "resources"), { recursive: true });
 await writeFile(
   path.join(outputRoot, "resources", "daggerheart-core.pbres"),
   writePbres(coreDocument, coreMedia),
 );
 
-const manifest = JSON.parse(await readFile(path.join(sourceRoot, "manifest.json"), "utf8")) as Record<string, unknown>;
-manifest.ID = systemPackageId;
-manifest.版本 = systemPackageVersion;
-manifest.resourceLibraries = libraries.map((definition) => ({
-  ID: definition.id,
-  名称: definition.label,
-  路径: `runtime-libraries/${definition.id}.json`,
-}));
-delete manifest.resourceFormatAdapters;
-await writeFile(path.join(outputRoot, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-
 const runtimeFiles = [
   ...await collectRuntimeSourcePaths(sourceRoot),
-  "manifest.json",
-  ...libraries.map((definition) => `runtime-libraries/${definition.id}.json`),
+  "system.json",
 ].sort();
 await writeFile(
   path.join(outputRoot, runtimeInventoryName),
@@ -223,7 +197,7 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   inventoryPath: runtimeInventoryName,
   fileCount: runtimeFiles.length,
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
-  loadingPresentation: manifest.加载展示,
+  loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");
 
 console.log(JSON.stringify({
@@ -244,6 +218,45 @@ function library<T extends SourceEntry>(
   transform: (entry: T) => Record<string, unknown>,
 ) {
   return { id, label, templateId, templateVersion, transform: transform as (entry: SourceEntry) => Record<string, unknown> };
+}
+
+function mapLegacyRuntime(manifest: LegacyRuntimeManifest): SystemPackageDocument["runtime"] {
+  return {
+    ...(manifest.加载展示 ? { loadingPresentation: {
+      tagline: manifest.加载展示.标语,
+      accentColor: manifest.加载展示.强调色,
+    } } : {}),
+    pages: manifest.pages,
+    ...(manifest.shell ? { shell: manifest.shell } : {}),
+    ...(manifest.skins ? { skins: manifest.skins.map((skin) => ({
+      id: skin.ID,
+      name: skin.名称,
+      css: skin.css,
+      frameworkColorScheme: skin.推荐框架配色,
+      ...(skin.layoutOverrides ? { layoutOverrides: {
+        ...(skin.layoutOverrides.shell ? { shell: skin.layoutOverrides.shell } : {}),
+        ...(skin.layoutOverrides.pages ? { pages: skin.layoutOverrides.pages.map((page) => ({
+          id: page.ID,
+          html: page.html,
+        })) } : {}),
+      } } : {}),
+    })) } : {}),
+    ...(manifest.defaultSkin ? { defaultSkin: manifest.defaultSkin } : {}),
+    modules: manifest.modules,
+    ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
+    ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
+    ...(manifest.questionnaireCharacterCreation ? { questionnaireCharacterCreation: {
+      id: manifest.questionnaireCharacterCreation.ID,
+      name: manifest.questionnaireCharacterCreation.名称,
+      html: manifest.questionnaireCharacterCreation.html,
+    } } : {}),
+    ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
+    ...(manifest.characterTextExports ? { characterTextExports: manifest.characterTextExports } : {}),
+    ...(manifest.validationChecks ? { validationChecks: manifest.validationChecks.map((check) => ({
+      id: check.ID,
+      script: check.脚本,
+    })) } : {}),
+  };
 }
 
 async function admitSourceImage(

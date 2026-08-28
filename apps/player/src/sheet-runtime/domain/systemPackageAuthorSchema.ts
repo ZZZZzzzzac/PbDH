@@ -4,7 +4,6 @@ import {
   characterFormatAdapterSourceSchema,
   resourceFormatAdapterSourceSchema,
 } from "./formatAdapter";
-import { resourceLibraryReferenceSchema } from "./resourceLibrary";
 import { characterTextExportSchema } from "./characterTextExport";
 import { dependencyRuleSchema, sheetModuleSchema } from "./systemPackage";
 
@@ -68,31 +67,6 @@ export const packageQuestionnaireSourceSchema = z.object({
   html: packageRelativePathSchema,
 });
 
-export const systemPackageManifestSourceSchema = z.object({
-  ID: z.string().min(1),
-  名称: z.string().min(1),
-  版本: z.string().min(1),
-  schemaVersion: z.string().min(1),
-  加载展示: z.object({
-    标语: z.string().trim().min(1).max(80),
-    强调色: z.string().regex(/^#[0-9a-f]{6}$/iu),
-  }).optional(),
-  pages: packageRelativePathSchema,
-  modules: packageRelativePathSchema,
-  shell: packageShellSourceSchema.optional(),
-  skins: z.array(packageSkinSourceSchema).min(1).optional(),
-  defaultSkin: z.string().min(1).optional(),
-  dependencies: packageRelativePathSchema.optional(),
-  characterCreationGuide: packageRelativePathSchema.optional(),
-  questionnaireCharacterCreation: packageQuestionnaireSourceSchema.optional(),
-  resourceFormatAdapters: packageRelativePathSchema.optional(),
-  characterFormatAdapters: packageRelativePathSchema.optional(),
-  characterTextExports: packageRelativePathSchema.optional(),
-  assets: z.never().optional(),
-  resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
-  validationChecks: z.array(packageValidationCheckSourceSchema).optional(),
-});
-
 export const resourceEntrySourceSchema = z.object({
   ID: z.string().min(1),
   旧ID: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
@@ -101,7 +75,6 @@ export const resourceEntrySourceSchema = z.object({
 export const resourceLibraryFileSourceSchema = z.array(resourceEntrySourceSchema);
 
 export const authorContractSchemas = {
-  manifest: systemPackageManifestSourceSchema,
   pages: packagePagesSourceSchema,
   modules: packageModulesSourceSchema,
   dependencies: packageDependenciesSourceSchema,
@@ -113,5 +86,4 @@ export const authorContractSchemas = {
   characterTextExports: characterTextExportsSourceSchema,
 } as const;
 
-export type SystemPackageManifestSource = z.infer<typeof systemPackageManifestSourceSchema>;
 export type PackagePageSource = z.infer<typeof packagePageSourceSchema>;

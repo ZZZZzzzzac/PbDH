@@ -1,7 +1,5 @@
 import { useMemo, useState } from "react";
 
-import type { SystemPackageDocument } from "@pbdh/contract-runtime";
-
 import type { ResourceLibrary } from "../resources/resource-library.ts";
 import {
   listResourcePickerCandidates,
@@ -11,7 +9,17 @@ import {
   type ResourcePickerQuery,
 } from "../resources/resource-picker.ts";
 
-type PickerModule = Extract<SystemPackageDocument["modules"][number], { type: "resourcePicker" }>;
+type PickerModule = {
+  nativeEntryId: string;
+  buttonLabel: string;
+  columns: Array<{
+    field: string;
+    label: string;
+    width: "compact" | "normal" | "wide" | "fill";
+    sortable: boolean;
+    filterable: boolean;
+  }>;
+};
 
 export function ResourcePickerDialog({
   library,

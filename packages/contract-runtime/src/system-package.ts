@@ -10,7 +10,8 @@ import {
 import { compareSemVer } from "./semver.ts";
 
 const FAMILY = "system-package";
-const VERSION = "1.0.0-alpha.1";
+export const SYSTEM_PACKAGE_VERSION = "1.0.0-alpha.2";
+const VERSION = SYSTEM_PACKAGE_VERSION;
 const ROOT_PATH = "system.json";
 const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 
@@ -22,6 +23,32 @@ export type SystemPackageDocument = {
     name: string;
     description: string;
   };
+  runtime: {
+    loadingPresentation?: {
+      tagline: string;
+      accentColor: string;
+    };
+    pages: string;
+    shell?: { html: string; css?: string };
+    skins?: Array<{
+      id: string;
+      name: string;
+      css: string;
+      frameworkColorScheme: "light" | "dark";
+      layoutOverrides?: {
+        shell?: { html: string };
+        pages?: Array<{ id: string; html: string }>;
+      };
+    }>;
+    defaultSkin?: string;
+    modules: string;
+    dependencies?: string;
+    characterCreationGuide?: string;
+    questionnaireCharacterCreation?: { id: string; name: string; html: string };
+    characterFormatAdapters?: string;
+    characterTextExports?: string;
+    validationChecks?: Array<{ id: string; script: string }>;
+  };
   resourceCompatibility: Array<{
     templateId: string;
     versionRange: {
@@ -29,38 +56,6 @@ export type SystemPackageDocument = {
       maximumExclusive: string;
     };
     nativeEntry: { id: string; label: string };
-  }>;
-  modules: Array<
-    | {
-      id: string;
-      type: "resourcePicker";
-      nativeEntryId: string;
-      buttonLabel: string;
-      columns: Array<{
-        field: string;
-        label: string;
-        width: "compact" | "normal" | "wide" | "fill";
-        sortable: boolean;
-        filterable: boolean;
-      }>;
-    }
-    | {
-      id: string;
-      type: "freeText" | "longText";
-      label: string;
-    }
-  >;
-  dependencies: Array<{
-    id: string;
-    trigger: { type: "resourceSelected"; sourceModuleId: string };
-    condition: { type: "always" };
-    actions: Array<{
-      type: "fillText";
-      targetModuleId: string;
-      content:
-        | { type: "selectedResourceField"; field: string }
-        | { type: "selectedResourceTemplate"; format: string };
-    }>;
   }>;
   embeddedResources: Array<{
     path: string;
@@ -129,8 +124,6 @@ export function validateSystemPackageSemantics(
   const diagnostics: ContractDiagnostic[] = [];
   const compatibilityKeys = new Set<string>();
   const nativeEntries = new Set<string>();
-  const moduleIds = new Set<string>();
-  const dependencyIds = new Set<string>();
   const embeddedPaths = new Set<string>();
   const embeddedIds = new Set<string>();
   document.resourceCompatibility.forEach((compatibility, index) => {
@@ -161,59 +154,45 @@ export function validateSystemPackageSemantics(
       ));
     }
   });
-  document.modules.forEach((module, index) => {
-    if (moduleIds.has(module.id)) {
+  const skinIds = new Set<string>();
+  document.runtime.skins?.forEach((skin, index) => {
+    if (skinIds.has(skin.id)) {
       diagnostics.push(diagnostic(
-        "system-package.module.duplicate",
-        `/modules/${index}/id`,
-        { id: module.id },
+        "system-package.runtime.skin.duplicate",
+        `/runtime/skins/${index}/id`,
+        { id: skin.id },
       ));
     }
-    moduleIds.add(module.id);
-    if (module.type === "resourcePicker" && !nativeEntries.has(module.nativeEntryId)) {
-      diagnostics.push(diagnostic(
-        "system-package.module.native-entry-missing",
-        `/modules/${index}/nativeEntryId`,
-        { id: module.nativeEntryId },
-      ));
-    }
-  });
-  document.dependencies.forEach((dependency, index) => {
-    if (dependencyIds.has(dependency.id)) {
-      diagnostics.push(diagnostic(
-        "system-package.dependency.duplicate",
-        `/dependencies/${index}/id`,
-        { id: dependency.id },
-      ));
-    }
-    dependencyIds.add(dependency.id);
-    const source = document.modules.find((module) => module.id === dependency.trigger.sourceModuleId);
-    if (source?.type !== "resourcePicker") {
-      diagnostics.push(diagnostic(
-        "system-package.dependency.source-invalid",
-        `/dependencies/${index}/trigger/sourceModuleId`,
-        { id: dependency.trigger.sourceModuleId },
-      ));
-    }
-    const writtenTargets = new Set<string>();
-    dependency.actions.forEach((action, actionIndex) => {
-      const target = document.modules.find((module) => module.id === action.targetModuleId);
-      if (target?.type !== "freeText" && target?.type !== "longText") {
+    skinIds.add(skin.id);
+    const pageIds = new Set<string>();
+    skin.layoutOverrides?.pages?.forEach((page, pageIndex) => {
+      if (pageIds.has(page.id)) {
         diagnostics.push(diagnostic(
-          "system-package.dependency.target-invalid",
-          `/dependencies/${index}/actions/${actionIndex}/targetModuleId`,
-          { id: action.targetModuleId },
+          "system-package.runtime.skin.page-override.duplicate",
+          `/runtime/skins/${index}/layoutOverrides/pages/${pageIndex}/id`,
+          { id: page.id },
         ));
       }
-      if (writtenTargets.has(action.targetModuleId)) {
-        diagnostics.push(diagnostic(
-          "system-package.dependency.target-duplicate",
-          `/dependencies/${index}/actions/${actionIndex}/targetModuleId`,
-          { id: action.targetModuleId },
-        ));
-      }
-      writtenTargets.add(action.targetModuleId);
+      pageIds.add(page.id);
     });
+  });
+  if (document.runtime.defaultSkin && !skinIds.has(document.runtime.defaultSkin)) {
+    diagnostics.push(diagnostic(
+      "system-package.runtime.default-skin.missing",
+      "/runtime/defaultSkin",
+      { id: document.runtime.defaultSkin },
+    ));
+  }
+  const validationCheckIds = new Set<string>();
+  document.runtime.validationChecks?.forEach((check, index) => {
+    if (validationCheckIds.has(check.id)) {
+      diagnostics.push(diagnostic(
+        "system-package.runtime.validation-check.duplicate",
+        `/runtime/validationChecks/${index}/id`,
+        { id: check.id },
+      ));
+    }
+    validationCheckIds.add(check.id);
   });
   document.embeddedResources.forEach((embedded, index) => {
     if (embeddedPaths.has(embedded.path)) {
@@ -305,7 +284,8 @@ export async function loadSystemPackageDirectory(
   diagnostics.push(...options.validateSystem(document));
   if (diagnostics.length) return { candidate: null, diagnostics: sortDiagnostics(diagnostics) };
 
-  const declaredPaths = new Set(document.embeddedResources.map((item) => item.path));
+  const declaredPaths = collectRuntimePaths(document.runtime);
+  document.embeddedResources.forEach((item) => declaredPaths.add(item.path));
   for (const entry of entries) {
     if (entry.path !== ROOT_PATH && !declaredPaths.has(entry.path)) {
       diagnostics.push(diagnostic(
@@ -355,6 +335,27 @@ export async function loadSystemPackageDirectory(
     return { candidate: null, diagnostics: sortDiagnostics(diagnostics) };
   }
   return { candidate: { document, embeddedResources }, diagnostics: sortDiagnostics(diagnostics) };
+}
+
+function collectRuntimePaths(runtime: SystemPackageDocument["runtime"]): Set<string> {
+  const paths = new Set([runtime.pages, runtime.modules]);
+  const add = (path?: string) => {
+    if (path) paths.add(path);
+  };
+  add(runtime.shell?.html);
+  add(runtime.shell?.css);
+  add(runtime.dependencies);
+  add(runtime.characterCreationGuide);
+  add(runtime.questionnaireCharacterCreation?.html);
+  add(runtime.characterFormatAdapters);
+  add(runtime.characterTextExports);
+  runtime.skins?.forEach((skin) => {
+    add(skin.css);
+    add(skin.layoutOverrides?.shell?.html);
+    skin.layoutOverrides?.pages?.forEach((page) => add(page.html));
+  });
+  runtime.validationChecks?.forEach((check) => add(check.script));
+  return paths;
 }
 
 export function writePbsys(

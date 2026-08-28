@@ -190,7 +190,6 @@ function minimalSheetSystemPackage(currentSystem: SystemPackageDocument): SheetS
       ID: currentSystem.package.id,
       名称: currentSystem.package.name,
       版本: currentSystem.package.version,
-      schemaVersion: "0.2.0",
     },
     pages: [],
     modules: [],

@@ -6,12 +6,12 @@ import {
 } from "@pbdh/contract-runtime";
 
 import catalogJson from "../../../contracts/catalog.json";
-import systemPackageSchema from "../../../contracts/system-package/1.0.0-alpha.1/schema.json";
+import systemPackageSchema from "../../../contracts/system-package/1.0.0-alpha.2/schema.json";
 
 const family = (catalogJson as ContractCatalog).families.find(
   (candidate) => candidate.id === "system-package",
 );
-const version = family?.versions.find((candidate) => candidate.version === "1.0.0-alpha.1");
+const version = family?.versions.find((candidate) => candidate.version === "1.0.0-alpha.2");
 
 if (!version) throw new Error("Missing supported System Package Contract");
 

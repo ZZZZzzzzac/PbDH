@@ -21,8 +21,26 @@ function readJson<T>(relativePath: string): T {
 }
 
 const currentSystem = readJson<SystemPackageDocument>(
-  "contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json",
+  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
 );
+const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
+  dependencies: [{
+    trigger: { type: "resourceSelected", sourceModuleId: "pick-primary-weapon" },
+    actions: [
+      {
+        targetModuleId: "primary-weapon-name",
+        content: {
+          type: "selectedResourceTemplate",
+          format: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
+        },
+      },
+      {
+        targetModuleId: "primary-weapon-description",
+        content: { type: "selectedResourceField", field: "描述" },
+      },
+    ],
+  }],
+};
 const resourcePackage = readJson<ResourcePackageLogicalDocument>(
   "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
 );
@@ -33,7 +51,7 @@ describe("Player resource selection materialization", () => {
     const before = { characterName: "阿斯特里德" };
     const result = applyResourceSelection({
       characterData: before,
-      currentSystem,
+      currentSystem: selectionSystem,
       sourceModuleId: "pick-primary-weapon",
       selectedResource: broadsword,
     });
@@ -55,7 +73,7 @@ describe("Player resource selection materialization", () => {
     const before = { "primary-weapon-name": "旧武器", untouched: "保留" };
     const result = applyResourceSelection({
       characterData: before,
-      currentSystem,
+      currentSystem: selectionSystem,
       sourceModuleId: "pick-primary-weapon",
       selectedResource,
     });
@@ -71,7 +89,7 @@ describe("Player resource selection materialization", () => {
     const before = { untouched: "保留" };
     const result = applyResourceSelection({
       characterData: before,
-      currentSystem,
+      currentSystem: selectionSystem,
       sourceModuleId: "unknown-picker",
       selectedResource: broadsword,
     });
@@ -84,7 +102,7 @@ describe("Player resource selection materialization", () => {
   test("later package changes cannot mutate the materialized result", () => {
     const applied = applyResourceSelection({
       characterData: {},
-      currentSystem,
+      currentSystem: selectionSystem,
       sourceModuleId: "pick-primary-weapon",
       selectedResource: broadsword,
     }).characterData;

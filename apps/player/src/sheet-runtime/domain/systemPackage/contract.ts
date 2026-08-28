@@ -18,8 +18,6 @@ import {
 } from "../formatAdapter";
 import { characterTextExportSchema, type CharacterTextExport } from "../characterTextExport";
 
-export const frameworkSchemaVersion = "0.2.0";
-
 export const loadingPresentationSchema = z.object({
   标语: z.string().trim().min(1).max(80),
   强调色: z.string().regex(/^#[0-9a-f]{6}$/i, "加载强调色必须是六位十六进制颜色，例如 #63bfd1。"),
@@ -29,7 +27,6 @@ export const systemPackageRuntimeManifestSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   版本: z.string().min(1),
-  schemaVersion: z.string().min(1),
   加载展示: loadingPresentationSchema.optional(),
 });
 

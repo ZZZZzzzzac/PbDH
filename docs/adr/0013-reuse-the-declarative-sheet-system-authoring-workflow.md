@@ -2,7 +2,7 @@
 
 Status: accepted
 
-PbDH will not build a System Author App in its first release. System Package Authors will use a file-first declarative workflow selectively migrated from `PbDH_sheet`: human- and AI-readable Author Data, a fixed manifest entry, ZIP distribution, directory-based development input, one normalized virtual package representation, layered validation diagnostics, and preview through the normal Player Runtime pipeline.
+PbDH will not build a System Author App in its first release. System Package Authors will use a file-first declarative workflow selectively migrated from `PbDH_sheet`: human- and AI-readable Author Data, a fixed `system.json` root definition, ZIP distribution, directory-based development input, one normalized virtual package representation, layered validation diagnostics, and preview through the normal Player Runtime pipeline.
 
 This preserves the mature low-frequency authoring contract without forcing its complexity into the user-facing Apps. The System Package remains declarative and cannot inject arbitrary React UI. Existing bounded Character Format Adapter and validation script seams may be retained only with their isolation, validation, and explicit contract boundaries; legacy System Package-owned Resource Format Adapters are not retained because shared resource conversion is platform-owned.
 

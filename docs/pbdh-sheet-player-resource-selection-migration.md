@@ -14,6 +14,6 @@ Selected sources:
 Migration boundary:
 
 - Player UI preserves the reviewed single-select browser behavior while using the current Player visual shell.
-- The new System Package Contract declares picker columns and the minimal Dependency subset instead of copying the legacy internal schema.
+- `system.json.runtime` points to the package-owned `modules.json` and `dependencies.json`; Player loads and validates those complete author files instead of maintaining a second root-level Module/Dependency subset.
 - One confirmed selection evaluates every declared write first, then commits final plain Character Data values atomically.
 - Legacy `resourceSelections`, package identity, resource identity, provenance, and load-time replay are intentionally excluded per ADR-0052.

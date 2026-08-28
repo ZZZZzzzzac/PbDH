@@ -30,7 +30,7 @@ export interface SystemPackageContractEntry {
   title: string;
   group: "author-source" | "runtime" | "script";
   io?: "input" | "output";
-  schema: z.ZodType;
+  schema?: z.ZodType;
   summary: string;
   semanticConstraints: readonly string[];
   document?: string;
@@ -38,17 +38,15 @@ export interface SystemPackageContractEntry {
 
 export const systemPackageContractEntries: readonly SystemPackageContractEntry[] = [
   {
-    id: "manifest",
-    title: "manifest.json",
+    id: "system-document",
+    title: "system.json",
     group: "author-source",
-    schema: authorContractSchemas.manifest,
-    summary: "包身份、入口文件、资源库、检查脚本、Shell 与 Skins 的唯一根声明。",
+    summary: "由 System Package JSON Schema 定义的包身份、Runtime 文件、资源兼容与内嵌资源唯一根声明。",
     document: "package-and-assets.md",
     semanticConstraints: [
-      "文件固定命名为 manifest.json 并位于包根。",
-      "schemaVersion 与当前框架版本不一致时允许加载但产生兼容性 warning。",
+      "文件固定命名为 system.json 并位于包根；Contract 版本由 contractVersion 声明。",
       "defaultSkin 必须引用 skins 中的 ID；所有声明路径必须存在且保持在包根内。",
-      "assets 不在 manifest 中枚举；受支持图片从 assets/** 自动发现。",
+      "资源库由 embeddedResources 中完整的 .pbres 提供，不在 Runtime 中重复声明。",
     ],
   },
   {
@@ -128,7 +126,7 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     title: "Questionnaire Character Creation declaration",
     group: "author-source",
     schema: authorContractSchemas.questionnaire,
-    summary: "manifest 内的问卷身份、显示名称与自包含 HTML 路径。",
+    summary: "system.json runtime 内的问卷身份、显示名称与自包含 HTML 路径。",
     document: "questionnaire-character-creation.md",
     semanticConstraints: [
       "每个 System Package 至多声明一个问卷；HTML 在 Base-owned 新标签页的 sandbox iframe 中运行。",
@@ -143,7 +141,7 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     schema: questionnaireDefinitionSchema,
     summary: "Loader 装配 HTML 内容后的问卷定义。",
     document: "questionnaire-character-creation.md",
-    semanticConstraints: ["Author 不直接编写 htmlContent；它由 manifest 声明的安全包内路径装配。"],
+    semanticConstraints: ["Author 不直接编写 htmlContent；它由 system.json 声明的包内路径装配。"],
   },
   {
     id: "questionnaire-result",
@@ -246,7 +244,7 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     title: "Validation Check declaration",
     group: "author-source",
     schema: packageValidationCheckSourceSchema,
-    summary: "manifest 内的 Check ID 与脚本路径。",
+    summary: "system.json runtime 内的 Check ID 与脚本路径。",
     document: "guides-validation.md",
     semanticConstraints: ["脚本必须能被 Acorn 解析，并在隔离 Worker 中执行。"],
   },

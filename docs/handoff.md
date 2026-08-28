@@ -13,6 +13,7 @@
 - [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
 - [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
 - [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已完成稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、自动封面、`.pbres` 往返、Backend 发布门禁与 Chrome 真实纵切；最终证据已记录，等待标签已移除，Issue 已关闭。
+- [GitHub Issue #50](https://github.com/ZZZZzzzzac/PbDH/issues/50)“AFK：合并 System Package 为单一 `system.json` 根定义”已完成 `1.0.0-alpha.2`、两个真实包生成、Player ZIP/目录/预置/Author Preview Loader 迁移和实机 `.pbsys` 验收；公开包不再包含 `manifest.json`。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -60,6 +61,7 @@
 - Resource Package Directory/ZIP Portable Archive Profile 的容器诊断版本已从遗留的 `1.0.0-alpha.1` 提升到当前 `1.0.0`。TypeScript 与 Python 现在共同消费 `contracts/conformance/resource-package/1.0.0/archive-cases.json`，覆盖路径安全、跨平台碰撞、特殊条目、媒体缺失/篡改/孤儿、未知文件和空目录一致性；旧 alpha `.pbres` 仍有双实现读取回归，不会被静默升级。
 - 浏览器侧 Resource Package Contract 测试已从只消费 alpha fixture 改为同时消费 `1.0.0-alpha.1` 与 `1.0.0` 的逻辑文档和 Snapshot Digest known-answer fixtures，与 Python Backend 的双版本证据对齐。
 - System Package Loader 已将“合法但未声明的归档文件”与“不安全的可移植路径”分离：前者报告 `system-package.archive.file.unknown`，绝对路径、反斜杠、`.` / `..`、空段、控制字符、尾随空格或点及 Windows 保留名仍报告 `system-package.archive.path.invalid`。
+- System Package Contract 新增 `1.0.0-alpha.2`：`system.json` 的 `runtime` 统一声明 Pages、Shell、Skins、Modules、Dependencies、创建流程、校验、Character Format Adapter 与文本导出文件；根级重复 Module/Dependency 和公开 `manifest.json` 已移除，Resource Libraries 继续由 `resourceCompatibility` 与内嵌 `.pbres` 投影。
 
 ## 已验证
 
@@ -112,6 +114,7 @@
 - Portable Archive Profile `1.0.0` 提升后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 437 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - 双版本 Resource Package Schema/Digest 浏览器 conformance 补齐后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 448 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - System Package 未知文件诊断修复后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+- #50 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证 Daggerheart / 寻望之心切换与刷新保持；上传 20.8 MB、只有 `system.json` 根且不含 `manifest.json` 的真实 Daggerheart `.pbsys` 后完整加载，控制台无 error。
 
 ## 接下来
 

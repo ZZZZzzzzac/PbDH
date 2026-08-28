@@ -6,8 +6,8 @@
   "releaseVersion": "0.0.0-dev",
   "directory": "daggerheart-core",
   "inventoryPath": ".pbdh-runtime-files.json",
-  "fileCount": 54,
-  "metadataFileCount": 40,
+  "fileCount": 46,
+  "metadataFileCount": 32,
   "loadingPresentation": {
     "标语": "正在掷二元骰...",
     "强调色": "#a83a24"

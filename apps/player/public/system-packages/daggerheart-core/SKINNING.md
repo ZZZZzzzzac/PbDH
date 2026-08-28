@@ -8,7 +8,7 @@ Start with the canonical [Pages, Layout and Skins contract](../../../docs/system
 - Base structural CSS lives in `layouts/*.css`.
 - `skins/plain.css` defines the current neutral values and is the compatibility baseline, not the design target.
 - New Skin CSS belongs at `skins/<skin-id>/skin.css`.
-- Optional HTML overrides belong under the same Skin directory and are registered in `manifest.json`.
+- Optional HTML overrides belong under the same Skin directory and are registered in `system.json`.
 - Skin images belong at `assets/skins/<skin-id>/**`.
 
 `plain.css` exposes the current `--dh-*` package tokens for sheet, shell, Beast Forms, Ranger Companion, lines, ink and system font stacks. A new Skin may override those tokens and the stable Framework module tokens at `:scope`, then add targeted rules where tokens are insufficient.

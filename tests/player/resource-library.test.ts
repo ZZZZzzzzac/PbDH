@@ -23,7 +23,7 @@ function readJson<T>(relativePath: string): T {
 }
 
 const system = readJson<SystemPackageDocument>(
-  "contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/system.json",
+  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
 );
 const baseDocument = readJson<ResourcePackageLogicalDocument>(
   "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",

@@ -131,16 +131,16 @@ export function createVirtualFileSystemFromZipBytes(bytes: Uint8Array): PackageV
 }
 
 function resolveZipRootPrefix(files: Map<string, Uint8Array>): void {
-  if (files.has("manifest.json")) {
+  if (files.has("system.json")) {
     return;
   }
 
-  const manifestPath = [...files.keys()].find((path) => path.endsWith("/manifest.json"));
-  if (!manifestPath) {
+  const systemDocumentPath = [...files.keys()].find((path) => path.endsWith("/system.json"));
+  if (!systemDocumentPath) {
     return;
   }
 
-  const prefix = manifestPath.slice(0, -"manifest.json".length);
+  const prefix = systemDocumentPath.slice(0, -"system.json".length);
   const entries = [...files.entries()];
   files.clear();
   for (const [path, data] of entries) {
@@ -265,10 +265,10 @@ function unsafePathIssue(path: string): PackagePathResult {
 }
 
 function resolvePackageRootPrefix(files: Map<string, Uint8Array>): void {
-  if (files.has("manifest.json")) return;
-  const manifests = [...files.keys()].filter((path) => path.endsWith("/manifest.json"));
-  if (manifests.length !== 1) return;
-  const prefix = manifests[0].slice(0, -"manifest.json".length);
+  if (files.has("system.json")) return;
+  const systemDocuments = [...files.keys()].filter((path) => path.endsWith("/system.json"));
+  if (systemDocuments.length !== 1) return;
+  const prefix = systemDocuments[0].slice(0, -"system.json".length);
   const entries = [...files.entries()];
   files.clear();
   for (const [path, data] of entries) {

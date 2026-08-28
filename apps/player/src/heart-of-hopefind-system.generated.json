@@ -1,10 +1,43 @@
 {
-  "contractVersion": "1.0.0-alpha.1",
+  "contractVersion": "1.0.0-alpha.2",
   "package": {
     "id": "01a04186-51be-74e1-b94f-ec17d354dc00",
     "version": "1.1.0",
     "name": "寻望之心",
     "description": "由迁移后的 Sheet Runtime 驱动的寻望之心系统包。"
+  },
+  "runtime": {
+    "loadingPresentation": {
+      "tagline": "正在感染病毒...",
+      "accentColor": "#302e28"
+    },
+    "pages": "pages.json",
+    "skins": [
+      {
+        "id": "survivor-notebook",
+        "name": "求生者手记",
+        "css": "skins/survivor-notebook.css",
+        "frameworkColorScheme": "light"
+      }
+    ],
+    "defaultSkin": "survivor-notebook",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterTextExports": "exports/character-text.json",
+    "validationChecks": [
+      {
+        "id": "character-state",
+        "script": "checks/character-state.js"
+      },
+      {
+        "id": "character-details",
+        "script": "checks/character-details.js"
+      },
+      {
+        "id": "core-hurt",
+        "script": "checks/core-hurt.js"
+      }
+    ]
   },
   "resourceCompatibility": [
     {
@@ -19,8 +52,6 @@
       }
     }
   ],
-  "modules": [],
-  "dependencies": [],
   "embeddedResources": [
     {
       "path": "resources/heart-of-hopefind.pbres",

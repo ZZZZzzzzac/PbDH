@@ -1,12 +1,13 @@
-import { z } from "zod";
+import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 import type { ResourceLibraryReference } from "../domain/resourceLibrary";
 import type { PackageSourceMap, PackageValidationResult } from "../domain/systemPackage";
-import { packagePagesSourceSchema, systemPackageManifestSourceSchema } from "../domain/systemPackageAuthorSchema";
+import { packagePagesSourceSchema } from "../domain/systemPackageAuthorSchema";
 import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipFile, type PackageDirectoryHandle, type PackageVirtualFileSystem } from "./packageVfs";
 import { inferMimeType, isPlainObject } from "../utils";
+import { validateSystemPackageDocument } from "../../system-package-validator";
 
-export const packageManifestPath = "manifest.json";
+export const systemDocumentPath = "system.json";
 export type LoadedPackageAsset = RuntimePackageAsset;
 
 export type PackageLoadResult = PackageValidationResult & { packageAssets?: LoadedPackageAsset[] };
@@ -15,7 +16,6 @@ export type PackageLoadOverrides = {
   packageAssets?: RuntimePackageAsset[];
 };
 
-const packageManifestSchema = systemPackageManifestSourceSchema;
 const pageLayoutReferenceSchema = packagePagesSourceSchema;
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
@@ -31,44 +31,46 @@ export async function loadSystemPackageFromVfs(
   vfs: PackageVirtualFileSystem,
   overrides: PackageLoadOverrides = {},
 ): Promise<PackageLoadResult> {
-  const manifestText = vfs.readText(packageManifestPath);
-  if (!manifestText.ok) {
-    if (manifestText.issue.code === "PACKAGE_FILE_MISSING") {
+  const systemText = vfs.readText(systemDocumentPath);
+  if (!systemText.ok) {
+    if (systemText.issue.code === "PACKAGE_FILE_MISSING") {
       return {
         ok: false,
         issues: [
           {
             level: "fatal",
-            code: "MANIFEST_MISSING",
-            text: "System Package 缺少 manifest.json。",
-            path: packageManifestPath,
+            code: "SYSTEM_DOCUMENT_MISSING",
+            text: "System Package 缺少 system.json。",
+            path: systemDocumentPath,
           },
         ],
       };
     }
 
-    return { ok: false, issues: [manifestText.issue] };
+    return { ok: false, issues: [systemText.issue] };
   }
 
-  const manifestJson = parsePackageJson(manifestText.value, packageManifestPath, "MANIFEST_JSON_INVALID");
-  if (!manifestJson.ok) {
-    return { ok: false, issues: [manifestJson.issue] };
+  const systemJson = parsePackageJson(systemText.value, systemDocumentPath, "SYSTEM_DOCUMENT_JSON_INVALID");
+  if (!systemJson.ok) {
+    return { ok: false, issues: [systemJson.issue] };
   }
 
-  const manifest = packageManifestSchema.safeParse(manifestJson.value);
-  if (!manifest.success) {
+  const document = systemJson.value as SystemPackageDocument;
+  const documentDiagnostics = validateSystemPackageDocument(document);
+  if (documentDiagnostics.length > 0) {
     return {
       ok: false,
-      issues: manifest.error.issues.map((issue) => ({
+      issues: documentDiagnostics.map((diagnostic) => ({
         level: "fatal",
-        code: issue.message === "必须是安全的包内相对路径。" ? "PACKAGE_PATH_UNSAFE" : "MANIFEST_SHAPE_INVALID",
-        text: issue.message,
-        path: [packageManifestPath, ...issue.path].join("."),
+        code: "SYSTEM_DOCUMENT_SHAPE_INVALID",
+        text: `System Package Contract 校验失败：${diagnostic.code}`,
+        path: `${systemDocumentPath}${diagnostic.location}`,
       })),
     };
   }
+  const runtime = document.runtime;
 
-  const pagesJson = readPackageJsonFile(vfs, manifest.data.pages);
+  const pagesJson = readPackageJsonFile(vfs, runtime.pages);
   if (!pagesJson.ok) {
     return { ok: false, issues: [pagesJson.issue] };
   }
@@ -78,79 +80,65 @@ export async function loadSystemPackageFromVfs(
     return { ok: false, issues: [pagesWithLayouts.issue] };
   }
 
-  const modulesJson = readPackageJsonFile(vfs, manifest.data.modules);
+  const modulesJson = readPackageJsonFile(vfs, runtime.modules);
   if (!modulesJson.ok) {
     return { ok: false, issues: [modulesJson.issue] };
   }
 
-  const dependenciesJson = manifest.data.dependencies ? readPackageJsonFile(vfs, manifest.data.dependencies) : undefined;
+  const dependenciesJson = runtime.dependencies ? readPackageJsonFile(vfs, runtime.dependencies) : undefined;
   if (dependenciesJson && !dependenciesJson.ok) {
     return { ok: false, issues: [dependenciesJson.issue] };
   }
-  const shell = manifest.data.shell ? loadTemplateFilesFromVfs(vfs, manifest.data.shell) : undefined;
+  const shell = runtime.shell ? loadTemplateFilesFromVfs(vfs, runtime.shell) : undefined;
   if (shell && !shell.ok) return { ok: false, issues: [shell.issue] };
-  const skins = loadSkinFilesFromVfs(vfs, manifest.data.skins ?? []);
+  const skins = loadSkinFilesFromVfs(vfs, runtime.skins ?? []);
   if (!skins.ok) return { ok: false, issues: [skins.issue] };
 
-  const guideJson = manifest.data.characterCreationGuide
-    ? readPackageJsonFile(vfs, manifest.data.characterCreationGuide)
+  const guideJson = runtime.characterCreationGuide
+    ? readPackageJsonFile(vfs, runtime.characterCreationGuide)
     : undefined;
   if (guideJson && !guideJson.ok) {
     return { ok: false, issues: [guideJson.issue] };
   }
-  const questionnaire = manifest.data.questionnaireCharacterCreation
-    ? loadQuestionnaireFileFromVfs(vfs, manifest.data.questionnaireCharacterCreation)
+  const questionnaire = runtime.questionnaireCharacterCreation
+    ? loadQuestionnaireFileFromVfs(vfs, runtime.questionnaireCharacterCreation)
     : undefined;
   if (questionnaire && !questionnaire.ok) return { ok: false, issues: [questionnaire.issue] };
-  const resourceFormatAdaptersJson = manifest.data.resourceFormatAdapters
-    ? readPackageJsonFile(vfs, manifest.data.resourceFormatAdapters)
-    : undefined;
-  if (resourceFormatAdaptersJson && !resourceFormatAdaptersJson.ok) return { ok: false, issues: [resourceFormatAdaptersJson.issue] };
-  const characterFormatAdaptersJson = manifest.data.characterFormatAdapters
-    ? readPackageJsonFile(vfs, manifest.data.characterFormatAdapters)
+  const characterFormatAdaptersJson = runtime.characterFormatAdapters
+    ? readPackageJsonFile(vfs, runtime.characterFormatAdapters)
     : undefined;
   if (characterFormatAdaptersJson && !characterFormatAdaptersJson.ok) return { ok: false, issues: [characterFormatAdaptersJson.issue] };
-  const characterTextExportsJson = manifest.data.characterTextExports
-    ? readPackageJsonFile(vfs, manifest.data.characterTextExports)
+  const characterTextExportsJson = runtime.characterTextExports
+    ? readPackageJsonFile(vfs, runtime.characterTextExports)
     : undefined;
   if (characterTextExportsJson && !characterTextExportsJson.ok) return { ok: false, issues: [characterTextExportsJson.issue] };
-  const resourceFormatAdapters = resourceFormatAdaptersJson
-    ? loadFormatAdapterScriptFilesFromVfs(vfs, resourceFormatAdaptersJson.value, false)
-    : undefined;
-  if (resourceFormatAdapters && !resourceFormatAdapters.ok) return { ok: false, issues: [resourceFormatAdapters.issue] };
   const characterFormatAdapters = characterFormatAdaptersJson
     ? loadFormatAdapterScriptFilesFromVfs(vfs, characterFormatAdaptersJson.value, true)
     : undefined;
   if (characterFormatAdapters && !characterFormatAdapters.ok) return { ok: false, issues: [characterFormatAdapters.issue] };
 
-  const resourceLibraries = loadResourceLibraryFilesFromVfs(vfs, manifest.data.resourceLibraries ?? []);
-  if (!resourceLibraries.ok) {
-    return { ok: false, issues: [resourceLibraries.issue] };
-  }
-
-  const validationChecks = loadValidationScriptFilesFromVfs(vfs, manifest.data.validationChecks ?? []);
+  const validationChecks = loadValidationScriptFilesFromVfs(vfs, runtime.validationChecks ?? []);
   if (!validationChecks.ok) {
     return { ok: false, issues: [validationChecks.issue] };
   }
 
   const packageAssets = resolvePackageAssets(vfs);
   const effectivePackageAssets = [...packageAssets, ...(overrides.packageAssets ?? [])];
-  const normalized = await normalizeManifestPackage(
-    manifest.data,
+  const normalized = await normalizeSystemPackage(
+    document,
     pagesWithLayouts.value,
     modulesJson.value,
-    overrides.resourceLibraries ?? resourceLibraries.value,
+    overrides.resourceLibraries ?? [],
     dependenciesJson?.value,
     validationChecks.value,
     guideJson?.value,
     questionnaire?.value,
-    resourceFormatAdapters?.value,
     characterFormatAdapters?.value,
     characterTextExportsJson?.value,
     shell?.value,
     skins.value,
     effectivePackageAssets,
-    buildPackageSourceMap(manifest.data, pagesJson.value),
+    buildPackageSourceMap(document, pagesJson.value),
   );
   if (!normalized.ok) {
     return normalized;
@@ -162,8 +150,8 @@ export async function loadSystemPackageFromVfs(
   };
 }
 
-async function normalizeManifestPackage(
-  manifest: z.infer<typeof packageManifestSchema>,
+async function normalizeSystemPackage(
+  document: SystemPackageDocument,
   pages: unknown,
   modules: unknown,
   resourceLibraries: Array<ResourceLibraryReference & { entries: unknown }> = [],
@@ -171,7 +159,6 @@ async function normalizeManifestPackage(
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
   questionnaireCharacterCreation?: unknown,
-  resourceFormatAdapters?: unknown,
   characterFormatAdapters?: unknown,
   characterTextExports?: unknown,
   shell?: unknown,
@@ -180,16 +167,19 @@ async function normalizeManifestPackage(
   sourceMap: PackageSourceMap = {},
 ): Promise<PackageValidationResult> {
   const { validateSystemPackage } = await import("../domain/systemPackage/validator");
+  const runtime = document.runtime;
   return validateSystemPackage({
     manifest: {
-      ID: manifest.ID,
-      名称: manifest.名称,
-      版本: manifest.版本,
-      schemaVersion: manifest.schemaVersion,
-      ...(manifest.加载展示 ? { 加载展示: manifest.加载展示 } : {}),
+      ID: document.package.id,
+      名称: document.package.name,
+      版本: document.package.version,
+      ...(runtime.loadingPresentation ? { 加载展示: {
+        标语: runtime.loadingPresentation.tagline,
+        强调色: runtime.loadingPresentation.accentColor,
+      } } : {}),
     },
     ...(skins && skins.length > 0 ? { skins } : {}),
-    ...(manifest.defaultSkin ? { defaultSkin: manifest.defaultSkin } : {}),
+    ...(runtime.defaultSkin ? { defaultSkin: runtime.defaultSkin } : {}),
     pages,
     shell,
     modules,
@@ -199,7 +189,6 @@ async function normalizeManifestPackage(
     validationChecks,
     characterCreationGuide,
     questionnaireCharacterCreation,
-    resourceFormatAdapters,
     characterFormatAdapters,
     characterTextExports,
   }, sourceMap, {
@@ -209,30 +198,27 @@ async function normalizeManifestPackage(
   });
 }
 
-function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, pages: unknown): PackageSourceMap {
+function buildPackageSourceMap(document: SystemPackageDocument, pages: unknown): PackageSourceMap {
+  const runtime = document.runtime;
   const sourceMap: PackageSourceMap = {
-    manifest: packageManifestPath,
-    pages: manifest.pages,
-    modules: manifest.modules,
-    ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
-    ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
-    ...(manifest.questionnaireCharacterCreation ? { questionnaireCharacterCreation: manifest.questionnaireCharacterCreation.html } : {}),
-    ...(manifest.resourceFormatAdapters ? { resourceFormatAdapters: manifest.resourceFormatAdapters } : {}),
-    ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
-    ...(manifest.characterTextExports ? { characterTextExports: manifest.characterTextExports } : {}),
-    ...(manifest.shell ? { shell: manifest.shell.html } : {}),
+    manifest: systemDocumentPath,
+    pages: runtime.pages,
+    modules: runtime.modules,
+    ...(runtime.dependencies ? { dependencies: runtime.dependencies } : {}),
+    ...(runtime.characterCreationGuide ? { characterCreationGuide: runtime.characterCreationGuide } : {}),
+    ...(runtime.questionnaireCharacterCreation ? { questionnaireCharacterCreation: runtime.questionnaireCharacterCreation.html } : {}),
+    ...(runtime.characterFormatAdapters ? { characterFormatAdapters: runtime.characterFormatAdapters } : {}),
+    ...(runtime.characterTextExports ? { characterTextExports: runtime.characterTextExports } : {}),
+    ...(runtime.shell ? { shell: runtime.shell.html } : {}),
   };
-  manifest.resourceLibraries?.forEach((library) => {
-    sourceMap[`resourceLibraries.${library.ID}`] = library.路径;
+  runtime.validationChecks?.forEach((check, index) => {
+    sourceMap[`validationChecks.${index}`] = check.script;
   });
-  manifest.validationChecks?.forEach((check, index) => {
-    sourceMap[`validationChecks.${index}`] = check.脚本;
-  });
-  manifest.skins?.forEach((skin) => {
-    sourceMap[`skins.${skin.ID}.css`] = skin.css;
-    if (skin.layoutOverrides?.shell) sourceMap[`skins.${skin.ID}.layoutOverrides.shell.html`] = skin.layoutOverrides.shell.html;
+  runtime.skins?.forEach((skin) => {
+    sourceMap[`skins.${skin.id}.css`] = skin.css;
+    if (skin.layoutOverrides?.shell) sourceMap[`skins.${skin.id}.layoutOverrides.shell.html`] = skin.layoutOverrides.shell.html;
     skin.layoutOverrides?.pages?.forEach((page) => {
-      sourceMap[`skins.${skin.ID}.layoutOverrides.pages.${page.ID}.html`] = page.html;
+      sourceMap[`skins.${skin.id}.layoutOverrides.pages.${page.id}.html`] = page.html;
     });
   });
   if (Array.isArray(pages)) {
@@ -255,11 +241,11 @@ function loadTemplateFilesFromVfs(vfs: PackageVirtualFileSystem, reference: { ht
 
 function loadQuestionnaireFileFromVfs(
   vfs: PackageVirtualFileSystem,
-  reference: { ID: string; 名称: string; html: string },
+  reference: { id: string; name: string; html: string },
 ) {
   const html = vfs.readText(reference.html);
   if (!html.ok) return html;
-  return { ok: true as const, value: { ID: reference.ID, 名称: reference.名称, htmlContent: html.value } };
+  return { ok: true as const, value: { ID: reference.id, 名称: reference.name, htmlContent: html.value } };
 }
 
 export async function loadSystemPackageFromDirectoryFiles(files: Iterable<File>): Promise<PackageLoadResult> {
@@ -335,34 +321,19 @@ function loadPageLayoutFilesFromVfs(vfs: PackageVirtualFileSystem, pages: unknow
   return { ok: true as const, value: normalizedPages };
 }
 
-function loadResourceLibraryFilesFromVfs(vfs: PackageVirtualFileSystem, libraries: ResourceLibraryReference[]) {
-  const normalizedLibraries = [];
-
-  for (const library of libraries) {
-    const entries = readPackageJsonFile(vfs, library.路径);
-    if (!entries.ok) {
-      return { ok: false as const, issue: entries.issue };
-    }
-
-    normalizedLibraries.push({ ...library, entries: entries.value });
-  }
-
-  return { ok: true as const, value: normalizedLibraries };
-}
-
 function loadValidationScriptFilesFromVfs(
   vfs: PackageVirtualFileSystem,
-  checks: NonNullable<z.infer<typeof packageManifestSchema>["validationChecks"]>,
+  checks: NonNullable<SystemPackageDocument["runtime"]["validationChecks"]>,
 ) {
   const normalizedChecks = [];
 
   for (const check of checks) {
-    const script = vfs.readText(check.脚本);
+    const script = vfs.readText(check.script);
     if (!script.ok) {
       return { ok: false as const, issue: script.issue };
     }
 
-    normalizedChecks.push({ ...check, 脚本: script.path, scriptContent: script.value });
+    normalizedChecks.push({ ID: check.id, 脚本: script.path, scriptContent: script.value });
   }
 
   return { ok: true as const, value: normalizedChecks };
@@ -415,7 +386,7 @@ function resolvePackageAssets(vfs: PackageVirtualFileSystem): LoadedPackageAsset
 
 function loadSkinFilesFromVfs(
   vfs: PackageVirtualFileSystem,
-  skins: NonNullable<z.infer<typeof packageManifestSchema>["skins"]>,
+  skins: NonNullable<SystemPackageDocument["runtime"]["skins"]>,
 ) {
   const normalizedSkins = [];
   for (const skin of skins) {
@@ -427,13 +398,13 @@ function loadSkinFilesFromVfs(
     for (const page of skin.layoutOverrides?.pages ?? []) {
       const html = vfs.readText(page.html);
       if (!html.ok) return { ok: false as const, issue: html.issue };
-      pages.push({ ID: page.ID, htmlContent: html.value });
+      pages.push({ ID: page.id, htmlContent: html.value });
     }
     normalizedSkins.push({
-      ID: skin.ID,
-      名称: skin.名称,
+      ID: skin.id,
+      名称: skin.name,
       cssContent: css.value,
-      推荐框架配色: skin.推荐框架配色,
+      推荐框架配色: skin.frameworkColorScheme,
       ...((shell?.ok || pages.length > 0) ? { layoutOverrides: {
         ...(shell?.ok ? { shell: { htmlContent: shell.value } } : {}),
         ...(pages.length > 0 ? { pages } : {}),
