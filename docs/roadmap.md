@@ -223,7 +223,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 7：扩大共同平台与官方内容
 
-阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package `1.0.0-alpha.2` 已合并为单一 `system.json` 根定义；System Package、Character Save 与 Tabletop Document 仍为 prerelease Contract，继续由两个真实系统包已经运行的产品行为推进稳定化。
+阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package 已收敛为开发期 `1.0.0`：使用单一 `system.json` 根定义、可省略空资源集合，并以路径引用权威 `.pbres`；Character Save 与 Tabletop Document 仍为 prerelease Contract，继续由已经运行的产品行为推进稳定化。
 
 第一条纵切通过后，按“实现当前纵切、设计下一纵切”的双轨循环补全 Contracts & Template Platform 及其关联交付：
 

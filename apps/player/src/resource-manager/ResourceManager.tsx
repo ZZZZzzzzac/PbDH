@@ -33,6 +33,7 @@ export type ResourcePackageIngress =
 
 type ResourceManagerProps = {
   currentSystem: SystemPackageDocument;
+  nativePackageIds: ReadonlySet<string>;
   library: ResourceLibrary;
   onCommitInstall: (
     plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>,
@@ -226,7 +227,7 @@ function DialogSurface({
   </div>;
 }
 
-export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, incomingPackage, onIncomingPackageHandled, onClose, onOpenResource }: ResourceManagerProps) {
+export function ResourceManager({ currentSystem, nativePackageIds, library, onCommitInstall, onRemovePackage, incomingPackage, onIncomingPackageHandled, onClose, onOpenResource }: ResourceManagerProps) {
   const packages = [...library.values()];
   const [selectedId, setSelectedId] = useState(packages[0]?.document.package.id ?? "");
   const [packageQuery, setPackageQuery] = useState("");
@@ -240,9 +241,6 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   const selected = library.get(selectedId) ?? packages[0];
   const filteredPackages = packages.filter((installed) =>
     installed.document.package.name.toLocaleLowerCase().includes(packageQuery.toLocaleLowerCase()));
-  const nativePackageIds = new Set(
-    currentSystem.embeddedResources.map((embedded) => embedded.packageId),
-  );
   const nativePackages = filteredPackages.filter((installed) =>
     nativePackageIds.has(installed.document.package.id));
   const additionalPackages = filteredPackages.filter((installed) =>

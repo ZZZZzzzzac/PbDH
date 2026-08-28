@@ -8,6 +8,14 @@
   "inventoryPath": ".pbdh-runtime-files.json",
   "fileCount": 22,
   "metadataFileCount": 12,
+  "embeddedResourceIndex": [
+    {
+      "path": "resources/heart-of-hopefind.pbres",
+      "packageId": "01a04186-51bf-7c26-8c27-2f7147125243",
+      "version": "1.0.0",
+      "snapshotDigest": "sha256:7f92f54fb4cf5845e4da5d5fd698a94559213b6e2457880d2562968506d9cfc7"
+    }
+  ],
   "loadingPresentation": {
     "标语": "正在感染病毒...",
     "强调色": "#302e28"

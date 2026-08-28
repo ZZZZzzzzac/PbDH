@@ -54,12 +54,14 @@ describe("Player layout regressions", () => {
   });
 
   it("按 System Package 内嵌关系分组原生与额外资源包", async () => {
-    const [source, styles] = await Promise.all([
+    const [source, surface, styles] = await Promise.all([
       readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8"),
       readFile("apps/player/src/styles.css", "utf8"),
     ]);
 
-    expect(source).toContain("currentSystem.embeddedResources.map((embedded) => embedded.packageId)");
+    expect(source).toContain("nativePackageIds.has(installed.document.package.id)");
+    expect(surface).toContain("currentCatalogEntry?.preset.embeddedResourceIndex.map(({ packageId }) => packageId)");
     expect(source).toContain('<h3 className="package-group-title">原生资源包</h3>');
     expect(source).toContain('<h3 className="package-group-title">额外资源包</h3>');
     expect(styles).toContain(".package-group-title {");

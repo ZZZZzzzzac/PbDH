@@ -143,7 +143,7 @@ coreDocument = {
 };
 
 const systemDocument: SystemPackageDocument = {
-  contractVersion: "1.0.0-alpha.2",
+  contractVersion: "1.0.0",
   package: {
     id: systemPackageId,
     version: systemPackageVersion,
@@ -160,10 +160,6 @@ const systemDocument: SystemPackageDocument = {
   })),
   embeddedResources: [{
     path: "resources/daggerheart-core.pbres",
-    packageId: coreDocument.package.id,
-    version: coreDocument.package.version,
-    minimumVersion: coreDocument.package.version,
-    snapshotDigest: coreDocument.snapshotDigest,
   }],
 };
 
@@ -197,6 +193,12 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   inventoryPath: runtimeInventoryName,
   fileCount: runtimeFiles.length,
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
+  embeddedResourceIndex: [{
+    path: "resources/daggerheart-core.pbres",
+    packageId: coreDocument.package.id,
+    version: coreDocument.package.version,
+    snapshotDigest: coreDocument.snapshotDigest,
+  }],
   loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");
 

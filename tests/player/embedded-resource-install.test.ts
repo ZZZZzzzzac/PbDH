@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 
 import { installMissingEmbeddedResourcePackages } from "../../apps/player/src/resources/install-embedded-resource-packages.ts";
+import type { PresetSystemPackage } from "../../apps/player/src/sheet-runtime/loaders/presetSystemPackageLoader.ts";
 import type {
   ResourcePackageRepository,
   StoredResourcePackage,
@@ -16,8 +17,11 @@ const packageRoot = path.resolve("apps/player/public/system-packages/daggerheart
 describe("系统包内置 .pbres 安装", () => {
   it("首次加载时安装所有 Daggerheart Core 原生资源包，重复加载保持幂等", async () => {
     const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
     const repository = new MemoryRepository();
+    let fetchCount = 0;
     const fetchFile: typeof fetch = async (url) => {
+      fetchCount += 1;
       const relativePath = decodeURIComponent(String(url).replace("https://preset.invalid/", ""));
       try {
         return new Response(await readFile(path.join(packageRoot, relativePath)), { status: 200 });
@@ -28,12 +32,14 @@ describe("系统包内置 .pbres 安装", () => {
 
     const first = await installMissingEmbeddedResourcePackages({
       systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
       systemPackageBaseUrl: "https://preset.invalid",
       repository,
       fetchFile,
     });
     const second = await installMissingEmbeddedResourcePackages({
       systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
       systemPackageBaseUrl: "https://preset.invalid",
       repository,
       fetchFile,
@@ -45,15 +51,16 @@ describe("系统包内置 .pbres 安装", () => {
       total + candidate.document.resources.length, 0)).toBe(625);
     expect(second).toMatchObject({
       installedPackageIds: [],
-      unchangedPackageIds: systemPackage.embeddedResources.map((item) => item.packageId),
-      pendingUpdates: [],
+      unchangedPackageIds: preset.embeddedResourceIndex.map((item) => item.packageId),
       rejected: [],
     });
+    expect(fetchCount).toBe(1);
   });
 
   it("内置资源低于最低版本时自动替换为系统包版本", async () => {
     const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
-    const embedded = systemPackage.embeddedResources[0]!;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
+    const embedded = preset.embeddedResourceIndex[0]!;
     const repository = new MemoryRepository();
     const fetchFile: typeof fetch = async (url) => {
       const relativePath = decodeURIComponent(String(url).replace("https://preset.invalid/", ""));
@@ -61,6 +68,7 @@ describe("系统包内置 .pbres 安装", () => {
     };
     await installMissingEmbeddedResourcePackages({
       systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
       systemPackageBaseUrl: "https://preset.invalid",
       repository,
       fetchFile,
@@ -70,13 +78,13 @@ describe("系统包内置 .pbres 安装", () => {
 
     const result = await installMissingEmbeddedResourcePackages({
       systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
       systemPackageBaseUrl: "https://preset.invalid",
       repository,
       fetchFile,
     });
 
     expect(result.installedPackageIds).toEqual([embedded.packageId]);
-    expect(result.pendingUpdates).toEqual([]);
     expect(repository.packages[0]?.document.package.version).toBe(embedded.version);
     expect(repository.packages[0]?.document.snapshotDigest).toBe(embedded.snapshotDigest);
   });

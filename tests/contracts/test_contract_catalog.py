@@ -22,6 +22,7 @@ RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH = "resource-package/1.0.0-alpha.1/schema.json
 RESOURCE_PACKAGE_STABLE_SCHEMA_PATH = "resource-package/1.0.0/schema.json"
 SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH = "system-package/1.0.0-alpha.1/schema.json"
 SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH = "system-package/1.0.0-alpha.2/schema.json"
+SYSTEM_PACKAGE_STABLE_SCHEMA_PATH = "system-package/1.0.0/schema.json"
 CHARACTER_SAVE_ALPHA_SCHEMA_PATH = "character-save/1.0.0-alpha.1/schema.json"
 TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH = "tabletop-document/1.0.0-alpha.1/schema.json"
 SCHEMAS = {
@@ -39,6 +40,9 @@ SCHEMAS = {
     ),
     SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH: read_json(
         f"contracts/{SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH}"
+    ),
+    SYSTEM_PACKAGE_STABLE_SCHEMA_PATH: read_json(
+        f"contracts/{SYSTEM_PACKAGE_STABLE_SCHEMA_PATH}"
     ),
     CHARACTER_SAVE_ALPHA_SCHEMA_PATH: read_json(
         f"contracts/{CHARACTER_SAVE_ALPHA_SCHEMA_PATH}"
@@ -81,7 +85,10 @@ def test_catalog_queries_exact_version_state() -> None:
 
 @pytest.mark.parametrize(
     "conformance_case",
-    read_json("contracts/conformance/contract-catalog/cases.json"),
+    [
+        *read_json("contracts/conformance/contract-catalog/cases.json"),
+        *read_json("contracts/conformance/system-package/1.0.0/cases.json"),
+    ],
     ids=lambda item: item["name"],
 )
 def test_stable_contract_diagnostic_conformance(conformance_case: dict) -> None:

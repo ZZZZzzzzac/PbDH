@@ -43,6 +43,9 @@ const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
     readJson<AnySchema>(path.join(root, "contracts", version.schema)),
   ])));
 const runtime = new ContractRuntime(catalog, schemas);
+const preset = readJson<{
+  embeddedResourceIndex: Array<{ path: string; packageId: string; version: string; snapshotDigest: string }>;
+}>(path.join(root, "apps/player/src/daggerheart-core-preset.generated.json"));
 
 describe("migrated Daggerheart Core System Package", () => {
   test("uses one valid native Resource Package for all System Package libraries", async () => {
@@ -63,7 +66,11 @@ describe("migrated Daggerheart Core System Package", () => {
       expect(archive.byteLength).toBeGreaterThan(20_000_000);
       const loaded = await loadPbres(archive, validateResourcePackageCandidate);
       expect(loaded.diagnostics).toEqual([]);
-      expect(loaded.candidate?.document.snapshotDigest).toBe(embedded.snapshotDigest);
+      const index = preset.embeddedResourceIndex.find((item) => item.path === embedded.path);
+      expect(index).toBeDefined();
+      expect(loaded.candidate?.document.package.id).toBe(index?.packageId);
+      expect(loaded.candidate?.document.package.version).toBe(index?.version);
+      expect(loaded.candidate?.document.snapshotDigest).toBe(index?.snapshotDigest);
       if (loaded.candidate) candidates.push(loaded.candidate);
     }
     expect(candidates.flatMap((candidate) => candidate.document.resources)).toHaveLength(625);

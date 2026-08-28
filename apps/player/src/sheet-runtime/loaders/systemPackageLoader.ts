@@ -1,4 +1,8 @@
-import type { SystemPackageDocument } from "@pbdh/contract-runtime";
+import {
+  normalizeSystemPackageDocument,
+  type AnySystemPackageDocument,
+  type SystemPackageDocument,
+} from "@pbdh/contract-runtime";
 import type { ResourceLibraryReference } from "../domain/resourceLibrary";
 import type { PackageSourceMap, PackageValidationResult } from "../domain/systemPackage";
 import { packagePagesSourceSchema } from "../domain/systemPackageAuthorSchema";
@@ -55,8 +59,8 @@ export async function loadSystemPackageFromVfs(
     return { ok: false, issues: [systemJson.issue] };
   }
 
-  const document = systemJson.value as SystemPackageDocument;
-  const documentDiagnostics = validateSystemPackageDocument(document);
+  const sourceDocument = systemJson.value as AnySystemPackageDocument;
+  const documentDiagnostics = validateSystemPackageDocument(sourceDocument);
   if (documentDiagnostics.length > 0) {
     return {
       ok: false,
@@ -68,6 +72,7 @@ export async function loadSystemPackageFromVfs(
       })),
     };
   }
+  const document = normalizeSystemPackageDocument(sourceDocument);
   const runtime = document.runtime;
 
   const pagesJson = readPackageJsonFile(vfs, runtime.pages);

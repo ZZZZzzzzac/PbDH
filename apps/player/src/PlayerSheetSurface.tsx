@@ -115,6 +115,7 @@ export function PlayerSheetSurface({
   const auth = useAuth();
   const { notify } = usePlatformNotifications();
   const importedSystemsRef = useRef(new Map<string, SystemPackageDocument>());
+  const importedEmbeddedPackageIdsRef = useRef(new Map<string, Set<string>>());
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const currentCatalogEntry = findPlayerSystemPackage(currentPackage?.manifest.ID)
     ?? null;
@@ -241,6 +242,7 @@ export function PlayerSheetSurface({
         for (const entry of playerSystemPackageCatalog) {
           await installMissingEmbeddedResourcePackages({
             systemPackage: entry.system,
+            embeddedResourceIndex: entry.preset.embeddedResourceIndex,
             systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
             repository: resourceRepository,
           });
@@ -340,6 +342,10 @@ export function PlayerSheetSurface({
       }
     }
     importedSystemsRef.current.set(system.package.id, system);
+    importedEmbeddedPackageIdsRef.current.set(
+      system.package.id,
+      new Set([...platform.package.embeddedResources.values()].map((candidate) => candidate.document.package.id)),
+    );
     libraryRef.current = routed;
     setLibrary(routed);
     return runtime;
@@ -808,6 +814,11 @@ export function PlayerSheetSurface({
       {managerOpen ? (
         <ResourceManager
           currentSystem={currentSystem}
+          nativePackageIds={new Set(
+            currentCatalogEntry?.preset.embeddedResourceIndex.map(({ packageId }) => packageId)
+              ?? importedEmbeddedPackageIdsRef.current.get(currentSystem.package.id)
+              ?? [],
+          )}
           library={library}
           incomingPackage={incomingPackage}
           onIncomingPackageHandled={(id) => setIncomingPackage((current) => current?.id === id ? undefined : current)}

@@ -116,7 +116,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     });
     expect(applied.characterData.resourceSelections).not.toHaveProperty("pick-armor");
     expect(JSON.stringify(applied.characterData)).not.toContain(armor!.ID);
-    expect(JSON.stringify(applied.characterData)).not.toContain(currentSystem.embeddedResources[0]!.packageId);
+    expect(JSON.stringify(applied.characterData)).not.toContain(daggerheartCorePreset.embeddedResourceIndex[0]!.packageId);
 
     const restored = parseCharacterDataJson(exportCharacterData(applied.characterData), loaded.package);
     expect(restored.ok).toBe(true);

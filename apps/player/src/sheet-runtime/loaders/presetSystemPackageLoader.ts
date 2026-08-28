@@ -21,6 +21,12 @@ export interface PresetSystemPackage {
   inventoryPath: string;
   fileCount: number;
   metadataFileCount: number;
+  embeddedResourceIndex: Array<{
+    path: string;
+    packageId: string;
+    version: string;
+    snapshotDigest: string;
+  }>;
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
 }
 

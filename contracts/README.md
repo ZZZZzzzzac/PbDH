@@ -13,7 +13,8 @@
 - `digest-cases.json`：跨语言 Snapshot Digest known-answer；
 - `source-manifest.json`：迁移数据与媒体来源证据，不属于 Contract 制品。
 
-System Package conformance 目录使用 `conformance/system-package/<exact-semver>/`：
-`valid/<name>/system.json` 与其 `resources/*.pbres` 表示可读目录输入，同级 `.pbsys`
-表示相同内容的 ZIP 输入；二者必须产生同一标准化候选。`1.0.0-alpha.2`
-开始由 `system.json.runtime` 统一声明 Player Runtime 文件，不再使用 `manifest.json`。
+System Package conformance 目录使用 `conformance/system-package/<exact-semver>/`。
+`cases.json` 保存跨语言 Schema 诊断；需要验证归档机制的版本还可用
+`valid/<name>/system.json`、`resources/*.pbres` 与同级 `.pbsys` 表示等价目录/ZIP 输入。
+`1.0.0-alpha.2` 开始由 `system.json.runtime` 统一声明 Player Runtime 文件；`1.0.0`
+允许省略空的资源集合，并只用 `embeddedResources[].path` 引用权威 `.pbres`。

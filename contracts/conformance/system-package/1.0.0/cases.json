@@ -1,0 +1,114 @@
+[
+  {
+    "name": "minimal package omits both resource collections",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Minimal",
+          "description": "No bundled resources"
+        },
+        "runtime": {
+          "pages": "pages.json",
+          "modules": "modules.json"
+        }
+      }
+    },
+    "expected": []
+  },
+  {
+    "name": "embedded resource declaration contains only its package path",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Embedded",
+          "description": "One bundled resource"
+        },
+        "runtime": {
+          "pages": "pages.json",
+          "modules": "modules.json"
+        },
+        "resourceCompatibility": [],
+        "embeddedResources": [
+          { "path": "resources/core.pbres" }
+        ]
+      }
+    },
+    "expected": []
+  },
+  {
+    "name": "embedded resource rejects duplicated nested identity",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Redundant",
+          "description": "Invalid duplicated identity"
+        },
+        "runtime": {
+          "pages": "pages.json",
+          "modules": "modules.json"
+        },
+        "embeddedResources": [
+          {
+            "path": "resources/core.pbres",
+            "packageId": "0198e155-04d2-7ccd-98f1-8a09a177dc2b",
+            "version": "1.0.0",
+            "minimumVersion": "1.0.0",
+            "snapshotDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+          }
+        ]
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/embeddedResources/0/minimumVersion",
+        "params": { "property": "minimumVersion" }
+      },
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/embeddedResources/0/packageId",
+        "params": { "property": "packageId" }
+      },
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/embeddedResources/0/snapshotDigest",
+        "params": { "property": "snapshotDigest" }
+      },
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/embeddedResources/0/version",
+        "params": { "property": "version" }
+      }
+    ]
+  }
+]

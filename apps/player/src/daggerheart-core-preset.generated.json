@@ -8,6 +8,14 @@
   "inventoryPath": ".pbdh-runtime-files.json",
   "fileCount": 46,
   "metadataFileCount": 32,
+  "embeddedResourceIndex": [
+    {
+      "path": "resources/daggerheart-core.pbres",
+      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
+      "version": "1.0.3",
+      "snapshotDigest": "sha256:801bc36e5c4fd07522f1c0cb5542f60b65356456077393827d1dab63f7a42385"
+    }
+  ],
   "loadingPresentation": {
     "标语": "正在掷二元骰...",
     "强调色": "#a83a24"

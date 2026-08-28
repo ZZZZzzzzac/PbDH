@@ -8,7 +8,9 @@ import {
   ContractRuntime,
   loadPbsys,
   loadSystemPackageDirectory,
+  normalizeSystemPackageDocument,
   planEmbeddedResourceAdmission,
+  type AnySystemPackageDocument,
   type ContractCatalog,
   type ContractDiagnostic,
   type PortableDirectoryEntry,
@@ -35,20 +37,25 @@ const schemas = Object.fromEntries(
   ])),
 );
 const runtime = new ContractRuntime(catalog, schemas);
-const document = readJson<SystemPackageDocument>(`${fixtureRoot}/valid/daggerheart/system.json`);
+const alpha2Document = readJson<AnySystemPackageDocument>(`${fixtureRoot}/valid/daggerheart/system.json`);
+const document = normalizeSystemPackageDocument(alpha2Document);
+if (alpha2Document.contractVersion !== "1.0.0-alpha.2") throw new Error("Expected alpha.2 fixture");
+const legacyEmbedded = alpha2Document.embeddedResources[0]!;
 const embeddedPath = document.embeddedResources[0]!.path;
 const embeddedBytes = new Uint8Array(readFileSync(
   path.join(root, fixtureRoot, "valid/daggerheart", embeddedPath),
 ));
 
-function validateSystem(candidate: SystemPackageDocument): ContractDiagnostic[] {
+function validateSystem(candidate: AnySystemPackageDocument): ContractDiagnostic[] {
   const schemaDiagnostics = runtime.validate({
     family: "system-package",
-    version: "1.0.0-alpha.2",
+    version: candidate.contractVersion,
     mode: "development",
     candidate,
   });
-  return schemaDiagnostics.length ? schemaDiagnostics : validateSystemPackageSemantics(candidate);
+  return schemaDiagnostics.length
+    ? schemaDiagnostics
+    : validateSystemPackageSemantics(normalizeSystemPackageDocument(candidate));
 }
 
 async function validateResource(
@@ -73,9 +80,7 @@ function fixtureDirectoryEntries(): PortableDirectoryEntry[] {
     {
       path: "system.json",
       kind: "file",
-      bytes: new Uint8Array(readFileSync(
-        path.join(root, fixtureRoot, "valid/daggerheart/system.json"),
-      )),
+      bytes: new TextEncoder().encode(`${JSON.stringify(document, null, 2)}\n`),
     },
     ...["pages.json", "modules.json"].map((relativePath): PortableDirectoryEntry => ({
       path: relativePath,
@@ -89,6 +94,30 @@ function fixtureDirectoryEntries(): PortableDirectoryEntry[] {
 }
 
 describe("System Package directory and .pbsys", () => {
+  test("normalizes omitted resource collections to empty arrays", async () => {
+    const minimal: AnySystemPackageDocument = {
+      contractVersion: "1.0.0",
+      package: {
+        id: "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+        version: "1.0.0",
+        name: "Minimal",
+        description: "",
+      },
+      runtime: { pages: "pages.json", modules: "modules.json" },
+    };
+    const entries: PortableDirectoryEntry[] = [
+      { path: "system.json", kind: "file", bytes: new TextEncoder().encode(JSON.stringify(minimal)) },
+      { path: "pages.json", kind: "file", bytes: new TextEncoder().encode("[]") },
+      { path: "modules.json", kind: "file", bytes: new TextEncoder().encode("[]") },
+    ];
+
+    const result = await loadSystemPackageDirectory(entries, options);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.candidate?.document.resourceCompatibility).toEqual([]);
+    expect(result.candidate?.document.embeddedResources).toEqual([]);
+  });
+
   test("produce the same normalized offline candidate", async () => {
     const directory = await loadSystemPackageDirectory(fixtureDirectoryEntries(), options);
     const archive = await loadPbsys(
@@ -102,9 +131,9 @@ describe("System Package directory and .pbsys", () => {
     const directoryEmbedded = directory.candidate?.embeddedResources.get(embeddedPath)?.document;
     const archiveEmbedded = archive.candidate?.embeddedResources.get(embeddedPath)?.document;
     expect(directoryEmbedded).toEqual(archiveEmbedded);
-    expect(directoryEmbedded?.package.id).toBe(document.embeddedResources[0]!.packageId);
-    expect(directoryEmbedded?.package.version).toBe(document.embeddedResources[0]!.version);
-    expect(directoryEmbedded?.snapshotDigest).toBe(document.embeddedResources[0]!.snapshotDigest);
+    expect(directoryEmbedded?.package.id).toBe(legacyEmbedded.packageId);
+    expect(directoryEmbedded?.package.version).toBe(legacyEmbedded.version);
+    expect(directoryEmbedded?.snapshotDigest).toBe(legacyEmbedded.snapshotDigest);
   });
 
   test("writer round-trips across ZIP mechanics", async () => {
@@ -129,22 +158,20 @@ describe("System Package directory and .pbsys", () => {
     expect(corruptResult.candidate).toBeNull();
     expect(corruptResult.diagnostics.some((item) => item.code === "resource-package.archive.zip.invalid")).toBe(true);
 
-    const mismatch = structuredClone(document);
+    const mismatch = structuredClone(alpha2Document);
     mismatch.embeddedResources[0]!.snapshotDigest = `sha256:${"0".repeat(64)}`;
-    const mismatchEntries = writeSystemPackageDirectory(
-      mismatch,
-      new Map([[embeddedPath, embeddedBytes]]),
-    );
+    const mismatchEntries = fixtureDirectoryEntries();
+    mismatchEntries[0]!.bytes = new TextEncoder().encode(`${JSON.stringify(mismatch, null, 2)}\n`);
     const mismatchResult = await loadSystemPackageDirectory(mismatchEntries, options);
     expect(mismatchResult.candidate).toBeNull();
     expect(mismatchResult.diagnostics).toContainEqual({
       code: "system-package.embedded-resource.identity-mismatch",
       severity: "error",
       family: "system-package",
-      version: "1.0.0-alpha.2",
+      version: "1.0.0",
       location: "/embeddedResources/0/snapshotDigest",
       params: {
-        actual: document.embeddedResources[0]!.snapshotDigest,
+        actual: legacyEmbedded.snapshotDigest,
         expected: mismatch.embeddedResources[0]!.snapshotDigest,
       },
     });
@@ -159,7 +186,7 @@ describe("System Package directory and .pbsys", () => {
       code: "system-package.archive.file.unknown",
       severity: "error",
       family: "system-package",
-      version: "1.0.0-alpha.2",
+      version: "1.0.0",
       location: "/notes.txt",
       params: { path: "notes.txt" },
     }]);
@@ -201,24 +228,26 @@ describe("System Package directory and .pbsys", () => {
 });
 
 describe("embedded official Resource admission", () => {
-  const embedded = document.embeddedResources[0]!;
+  const embedded = {
+    package: { version: legacyEmbedded.version },
+    snapshotDigest: legacyEmbedded.snapshotDigest,
+  };
 
   test("installs, no-ops, preserves newer local, prompts, and enforces baseline", () => {
     expect(planEmbeddedResourceAdmission({ embedded })).toEqual({ action: "install" });
     expect(planEmbeddedResourceAdmission({
       embedded,
-      local: { version: embedded.version, snapshotDigest: embedded.snapshotDigest },
+      local: { version: embedded.package.version, snapshotDigest: embedded.snapshotDigest },
     })).toEqual({ action: "no-op" });
     expect(planEmbeddedResourceAdmission({
       embedded,
       local: { version: "2.0.0", snapshotDigest: "sha256:newer" },
     })).toEqual({ action: "keep-local" });
 
-    const optional = { ...embedded, version: "1.1.0", minimumVersion: "1.0.0-alpha.1" };
     expect(planEmbeddedResourceAdmission({
-      embedded: optional,
+      embedded: { ...embedded, package: { version: "1.1.0" } },
       local: { version: "1.0.0", snapshotDigest: "sha256:local" },
-    })).toEqual({ action: "prompt-update" });
+    })).toEqual({ action: "required-update" });
     expect(planEmbeddedResourceAdmission({
       embedded,
       local: { version: "0.9.0", snapshotDigest: "sha256:old" },
@@ -228,7 +257,7 @@ describe("embedded official Resource admission", () => {
   test("rejects same ID/version with different digest", () => {
     expect(planEmbeddedResourceAdmission({
       embedded,
-      local: { version: embedded.version, snapshotDigest: `sha256:${"f".repeat(64)}` },
+      local: { version: embedded.package.version, snapshotDigest: `sha256:${"f".repeat(64)}` },
     })).toEqual({
       action: "reject",
       code: "system-package.embedded-resource.same-version-different-digest",

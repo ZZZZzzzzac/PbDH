@@ -24,6 +24,7 @@ const resourcePackageAlphaSchemaPath = "resource-package/1.0.0-alpha.1/schema.js
 const resourcePackageSchemaPathV1 = "resource-package/1.0.0/schema.json";
 const systemPackageAlphaSchemaPath = "system-package/1.0.0-alpha.1/schema.json";
 const systemPackageAlpha2SchemaPath = "system-package/1.0.0-alpha.2/schema.json";
+const systemPackageSchemaPathV1 = "system-package/1.0.0/schema.json";
 const characterSaveAlphaSchemaPath = "character-save/1.0.0-alpha.1/schema.json";
 const tabletopDocumentAlphaSchemaPath = "tabletop-document/1.0.0-alpha.1/schema.json";
 const schemas = {
@@ -39,6 +40,9 @@ const schemas = {
   ) as AnySchema,
   [systemPackageAlpha2SchemaPath]: readJson(
     `contracts/${systemPackageAlpha2SchemaPath}`,
+  ) as AnySchema,
+  [systemPackageSchemaPathV1]: readJson(
+    `contracts/${systemPackageSchemaPathV1}`,
   ) as AnySchema,
   [characterSaveAlphaSchemaPath]: readJson(
     `contracts/${characterSaveAlphaSchemaPath}`,
@@ -87,9 +91,10 @@ describe("Contract Catalog", () => {
 
 describe("stable Contract Diagnostic conformance", () => {
   const runtime = new ContractRuntime(catalog, schemas);
-  const cases = readJson(
-    "contracts/conformance/contract-catalog/cases.json",
-  ) as ConformanceCase[];
+  const cases = [
+    ...readJson("contracts/conformance/contract-catalog/cases.json") as ConformanceCase[],
+    ...readJson("contracts/conformance/system-package/1.0.0/cases.json") as ConformanceCase[],
+  ];
 
   for (const conformanceCase of cases) {
     test(conformanceCase.name, () => {

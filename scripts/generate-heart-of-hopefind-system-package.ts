@@ -108,7 +108,7 @@ resourceDocument = {
 };
 
 const systemDocument: SystemPackageDocument = {
-  contractVersion: "1.0.0-alpha.2",
+  contractVersion: "1.0.0",
   package: {
     id: systemPackageId,
     version: systemPackageVersion,
@@ -123,10 +123,6 @@ const systemDocument: SystemPackageDocument = {
   }],
   embeddedResources: [{
     path: "resources/heart-of-hopefind.pbres",
-    packageId: resourceDocument.package.id,
-    version: resourceDocument.package.version,
-    minimumVersion: resourceDocument.package.version,
-    snapshotDigest: resourceDocument.snapshotDigest,
   }],
 };
 
@@ -160,6 +156,12 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   inventoryPath: runtimeInventoryName,
   fileCount: runtimeFiles.length,
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
+  embeddedResourceIndex: [{
+    path: "resources/heart-of-hopefind.pbres",
+    packageId: resourceDocument.package.id,
+    version: resourceDocument.package.version,
+    snapshotDigest: resourceDocument.snapshotDigest,
+  }],
   loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");
 

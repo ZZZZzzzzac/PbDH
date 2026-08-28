@@ -207,5 +207,6 @@ function minimalPreset(currentSystem: SystemPackageDocument): PresetSystemPackag
     inventoryPath: ".pbdh-runtime-files.json",
     fileCount: 0,
     metadataFileCount: 0,
+    embeddedResourceIndex: [],
   };
 }

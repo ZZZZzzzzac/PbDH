@@ -10,15 +10,17 @@ import { validateResourcePackageCandidate } from "./resource-package-validator.t
 export type EmbeddedResourceInstallResult = {
   installedPackageIds: string[];
   unchangedPackageIds: string[];
-  pendingUpdates: Array<{
-    packageId: string;
-    action: "required-update" | "prompt-update";
-  }>;
   rejected: Array<{ packageId: string; code: string }>;
 };
 
 export async function installMissingEmbeddedResourcePackages(input: {
   systemPackage: SystemPackageDocument;
+  embeddedResourceIndex: Array<{
+    path: string;
+    packageId: string;
+    version: string;
+    snapshotDigest: string;
+  }>;
   systemPackageBaseUrl: string;
   repository: ResourcePackageRepository;
   fetchFile?: typeof fetch;
@@ -29,14 +31,24 @@ export async function installMissingEmbeddedResourcePackages(input: {
   const result: EmbeddedResourceInstallResult = {
     installedPackageIds: [],
     unchangedPackageIds: [],
-    pendingUpdates: [],
     rejected: [],
   };
 
-  for (const embedded of input.systemPackage.embeddedResources) {
+  const declaredPaths = new Set(input.systemPackage.embeddedResources.map(({ path }) => path));
+  const indexedPaths = new Set(input.embeddedResourceIndex.map(({ path }) => path));
+  for (const path of declaredPaths) {
+    if (!indexedPaths.has(path)) throw new Error(`内嵌资源缺少构建索引：${path}`);
+  }
+  for (const embedded of input.embeddedResourceIndex) {
+    if (!declaredPaths.has(embedded.path)) {
+      throw new Error(`内嵌资源索引引用了未声明路径：${embedded.path}`);
+    }
     const local = localById.get(embedded.packageId);
     const admission = planEmbeddedResourceAdmission({
-      embedded,
+      embedded: {
+        package: { version: embedded.version },
+        snapshotDigest: embedded.snapshotDigest,
+      },
       local: local && {
         version: local.document.package.version,
         snapshotDigest: local.document.snapshotDigest,
@@ -50,11 +62,6 @@ export async function installMissingEmbeddedResourcePackages(input: {
       result.rejected.push({ packageId: embedded.packageId, code: admission.code });
       continue;
     }
-    if (admission.action === "prompt-update") {
-      result.pendingUpdates.push({ packageId: embedded.packageId, action: admission.action });
-      continue;
-    }
-
     const response = await fetchFile(resolvePackageUrl(input.systemPackageBaseUrl, embedded.path));
     if (!response.ok) {
       throw new Error(`无法读取系统包内置资源 ${embedded.path}（HTTP ${response.status}）`);

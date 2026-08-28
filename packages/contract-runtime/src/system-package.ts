@@ -10,10 +10,77 @@ import {
 import { compareSemVer } from "./semver.ts";
 
 const FAMILY = "system-package";
-export const SYSTEM_PACKAGE_VERSION = "1.0.0-alpha.2";
+export const SYSTEM_PACKAGE_VERSION = "1.0.0";
 const VERSION = SYSTEM_PACKAGE_VERSION;
 const ROOT_PATH = "system.json";
 const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
+
+export type SystemPackageRuntime = {
+  loadingPresentation?: {
+    tagline: string;
+    accentColor: string;
+  };
+  pages: string;
+  shell?: { html: string; css?: string };
+  skins?: Array<{
+    id: string;
+    name: string;
+    css: string;
+    frameworkColorScheme: "light" | "dark";
+    layoutOverrides?: {
+      shell?: { html: string };
+      pages?: Array<{ id: string; html: string }>;
+    };
+  }>;
+  defaultSkin?: string;
+  modules: string;
+  dependencies?: string;
+  characterCreationGuide?: string;
+  questionnaireCharacterCreation?: { id: string; name: string; html: string };
+  characterFormatAdapters?: string;
+  characterTextExports?: string;
+  validationChecks?: Array<{ id: string; script: string }>;
+};
+
+export type SystemPackageResourceCompatibility = {
+  templateId: string;
+  versionRange: {
+    minimumInclusive: string;
+    maximumExclusive: string;
+  };
+  nativeEntry: { id: string; label: string };
+};
+
+type SystemPackageIdentity = {
+  id: string;
+  version: string;
+  name: string;
+  description: string;
+};
+
+export type SystemPackageSourceDocument = {
+  contractVersion: typeof VERSION;
+  package: SystemPackageIdentity;
+  runtime: SystemPackageRuntime;
+  resourceCompatibility?: SystemPackageResourceCompatibility[];
+  embeddedResources?: Array<{ path: string }>;
+};
+
+export type SystemPackageAlpha2Document = {
+  contractVersion: "1.0.0-alpha.2";
+  package: SystemPackageIdentity;
+  runtime: SystemPackageRuntime;
+  resourceCompatibility: SystemPackageResourceCompatibility[];
+  embeddedResources: Array<{
+    path: string;
+    packageId: string;
+    version: string;
+    minimumVersion: string;
+    snapshotDigest: string;
+  }>;
+};
+
+export type AnySystemPackageDocument = SystemPackageSourceDocument | SystemPackageAlpha2Document;
 
 export type SystemPackageDocument = {
   contractVersion: typeof VERSION;
@@ -23,47 +90,9 @@ export type SystemPackageDocument = {
     name: string;
     description: string;
   };
-  runtime: {
-    loadingPresentation?: {
-      tagline: string;
-      accentColor: string;
-    };
-    pages: string;
-    shell?: { html: string; css?: string };
-    skins?: Array<{
-      id: string;
-      name: string;
-      css: string;
-      frameworkColorScheme: "light" | "dark";
-      layoutOverrides?: {
-        shell?: { html: string };
-        pages?: Array<{ id: string; html: string }>;
-      };
-    }>;
-    defaultSkin?: string;
-    modules: string;
-    dependencies?: string;
-    characterCreationGuide?: string;
-    questionnaireCharacterCreation?: { id: string; name: string; html: string };
-    characterFormatAdapters?: string;
-    characterTextExports?: string;
-    validationChecks?: Array<{ id: string; script: string }>;
-  };
-  resourceCompatibility: Array<{
-    templateId: string;
-    versionRange: {
-      minimumInclusive: string;
-      maximumExclusive: string;
-    };
-    nativeEntry: { id: string; label: string };
-  }>;
-  embeddedResources: Array<{
-    path: string;
-    packageId: string;
-    version: string;
-    minimumVersion: string;
-    snapshotDigest: string;
-  }>;
+  runtime: SystemPackageRuntime;
+  resourceCompatibility: SystemPackageResourceCompatibility[];
+  embeddedResources: Array<{ path: string }>;
 };
 
 export type NormalizedSystemPackage = {
@@ -77,16 +106,32 @@ export type SystemPackageLoadResult = {
 };
 
 export type SystemPackageDocumentValidator = (
-  document: SystemPackageDocument,
+  document: AnySystemPackageDocument,
 ) => ContractDiagnostic[];
 
 export type EmbeddedResourceAdmission =
   | { action: "install" }
   | { action: "no-op" }
   | { action: "keep-local" }
-  | { action: "prompt-update" }
   | { action: "required-update" }
   | { action: "reject"; code: string };
+
+export type EmbeddedResourceIdentity = {
+  package: { version: string };
+  snapshotDigest: string;
+};
+
+export function normalizeSystemPackageDocument(
+  document: AnySystemPackageDocument,
+): SystemPackageDocument {
+  return {
+    contractVersion: VERSION,
+    package: structuredClone(document.package),
+    runtime: structuredClone(document.runtime),
+    resourceCompatibility: structuredClone(document.resourceCompatibility ?? []),
+    embeddedResources: document.embeddedResources?.map(({ path }) => ({ path })) ?? [],
+  };
+}
 
 function diagnostic(
   code: string,
@@ -125,7 +170,6 @@ export function validateSystemPackageSemantics(
   const compatibilityKeys = new Set<string>();
   const nativeEntries = new Set<string>();
   const embeddedPaths = new Set<string>();
-  const embeddedIds = new Set<string>();
   document.resourceCompatibility.forEach((compatibility, index) => {
     const key = `${compatibility.templateId}@${compatibility.versionRange.minimumInclusive}:${compatibility.versionRange.maximumExclusive}`;
     if (compatibilityKeys.has(key)) {
@@ -203,20 +247,6 @@ export function validateSystemPackageSemantics(
       ));
     }
     embeddedPaths.add(embedded.path);
-    if (embeddedIds.has(embedded.packageId)) {
-      diagnostics.push(diagnostic(
-        "system-package.embedded-resource.package-id-duplicate",
-        `/embeddedResources/${index}/packageId`,
-        { packageId: embedded.packageId },
-      ));
-    }
-    embeddedIds.add(embedded.packageId);
-    if (compareSemVer(embedded.minimumVersion, embedded.version) > 0) {
-      diagnostics.push(diagnostic(
-        "system-package.embedded-resource.minimum-above-embedded",
-        `/embeddedResources/${index}/minimumVersion`,
-      ));
-    }
   });
   return sortDiagnostics(diagnostics);
 }
@@ -275,14 +305,15 @@ export async function loadSystemPackageDirectory(
   if (!root?.bytes) {
     return { candidate: null, diagnostics: [diagnostic("system-package.archive.root.missing", `/${ROOT_PATH}`)] };
   }
-  let document: SystemPackageDocument;
+  let sourceDocument: AnySystemPackageDocument;
   try {
-    document = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(root.bytes)) as SystemPackageDocument;
+    sourceDocument = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(root.bytes)) as AnySystemPackageDocument;
   } catch {
     return { candidate: null, diagnostics: [diagnostic("system-package.archive.root.invalid-json", `/${ROOT_PATH}`)] };
   }
-  diagnostics.push(...options.validateSystem(document));
+  diagnostics.push(...options.validateSystem(sourceDocument));
   if (diagnostics.length) return { candidate: null, diagnostics: sortDiagnostics(diagnostics) };
+  const document = normalizeSystemPackageDocument(sourceDocument);
 
   const declaredPaths = collectRuntimePaths(document.runtime);
   document.embeddedResources.forEach((item) => declaredPaths.add(item.path));
@@ -314,19 +345,22 @@ export async function loadSystemPackageDirectory(
       });
     }
     if (!result.candidate) continue;
-    const actual = result.candidate.document;
-    const mismatches = [
-      ["packageId", embedded.packageId, actual.package.id],
-      ["version", embedded.version, actual.package.version],
-      ["snapshotDigest", embedded.snapshotDigest, actual.snapshotDigest],
-    ] as const;
-    for (const [field, expected, actualValue] of mismatches) {
-      if (expected !== actualValue) {
-        diagnostics.push(diagnostic(
-          "system-package.embedded-resource.identity-mismatch",
-          `/embeddedResources/${index}/${field}`,
-          { actual: actualValue, expected },
-        ));
+    if (sourceDocument.contractVersion === "1.0.0-alpha.2") {
+      const declared = sourceDocument.embeddedResources[index];
+      const actual = result.candidate.document;
+      const mismatches = [
+        ["packageId", declared?.packageId, actual.package.id],
+        ["version", declared?.version, actual.package.version],
+        ["snapshotDigest", declared?.snapshotDigest, actual.snapshotDigest],
+      ] as const;
+      for (const [field, expected, actualValue] of mismatches) {
+        if (expected !== actualValue) {
+          diagnostics.push(diagnostic(
+            "system-package.embedded-resource.identity-mismatch",
+            `/embeddedResources/${index}/${field}`,
+            { actual: actualValue, expected },
+          ));
+        }
       }
     }
     embeddedResources.set(embedded.path, result.candidate);
@@ -397,18 +431,16 @@ export async function loadPbsys(
 }
 
 export function planEmbeddedResourceAdmission(input: {
-  embedded: SystemPackageDocument["embeddedResources"][number];
+  embedded: EmbeddedResourceIdentity;
   local?: { version: string; snapshotDigest: string };
 }): EmbeddedResourceAdmission {
   if (!input.local) return { action: "install" };
-  const order = compareSemVer(input.local.version, input.embedded.version);
+  const order = compareSemVer(input.local.version, input.embedded.package.version);
   if (order === 0) {
     return input.local.snapshotDigest === input.embedded.snapshotDigest
       ? { action: "no-op" }
       : { action: "reject", code: "system-package.embedded-resource.same-version-different-digest" };
   }
   if (order > 0) return { action: "keep-local" };
-  return compareSemVer(input.local.version, input.embedded.minimumVersion) < 0
-    ? { action: "required-update" }
-    : { action: "prompt-update" };
+  return { action: "required-update" };
 }

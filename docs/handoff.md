@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；开始 #49 前 HEAD 为 `7c376b3` 且与 `origin/main` 同步。#49 实现完成后只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
+- 分支：`main`；#51 完成前 HEAD 为 `1de2790`，本地比 `origin/main` 领先 12 个提交。本轮仍只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -14,6 +14,8 @@
 - [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
 - [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已完成稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、自动封面、`.pbres` 往返、Backend 发布门禁与 Chrome 真实纵切；最终证据已记录，等待标签已移除，Issue 已关闭。
 - [GitHub Issue #50](https://github.com/ZZZZzzzzac/PbDH/issues/50)“AFK：合并 System Package 为单一 `system.json` 根定义”已完成 `1.0.0-alpha.2`、两个真实包生成、Player ZIP/目录/预置/Author Preview Loader 迁移和实机 `.pbsys` 验收；公开包不再包含 `manifest.json`。
+- [GitHub Issue #51](https://github.com/ZZZZzzzzac/PbDH/issues/51)“System Package Contract 收敛为开发期 1.0.0”已完成 Schema、双语言 conformance、Reader 归一化、两个真实包和构建期内嵌资源索引；稳定 `system.json` 的 `embeddedResources[]` 只保留 `path`。
+- [GitHub Issue #52](https://github.com/ZZZZzzzzac/PbDH/issues/52)记录高保真人物存档格式转换与结构化损失处理，当前为 `needs-triage`，不并入 System Package `1.0.0`。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -61,7 +63,8 @@
 - Resource Package Directory/ZIP Portable Archive Profile 的容器诊断版本已从遗留的 `1.0.0-alpha.1` 提升到当前 `1.0.0`。TypeScript 与 Python 现在共同消费 `contracts/conformance/resource-package/1.0.0/archive-cases.json`，覆盖路径安全、跨平台碰撞、特殊条目、媒体缺失/篡改/孤儿、未知文件和空目录一致性；旧 alpha `.pbres` 仍有双实现读取回归，不会被静默升级。
 - 浏览器侧 Resource Package Contract 测试已从只消费 alpha fixture 改为同时消费 `1.0.0-alpha.1` 与 `1.0.0` 的逻辑文档和 Snapshot Digest known-answer fixtures，与 Python Backend 的双版本证据对齐。
 - System Package Loader 已将“合法但未声明的归档文件”与“不安全的可移植路径”分离：前者报告 `system-package.archive.file.unknown`，绝对路径、反斜杠、`.` / `..`、空段、控制字符、尾随空格或点及 Windows 保留名仍报告 `system-package.archive.path.invalid`。
-- System Package Contract 新增 `1.0.0-alpha.2`：`system.json` 的 `runtime` 统一声明 Pages、Shell、Skins、Modules、Dependencies、创建流程、校验、Character Format Adapter 与文本导出文件；根级重复 Module/Dependency 和公开 `manifest.json` 已移除，Resource Libraries 继续由 `resourceCompatibility` 与内嵌 `.pbres` 投影。
+- System Package Contract 已收敛为开发期 `1.0.0`：`resourceCompatibility` 与 `embeddedResources` 均可省略并由 Reader 归一化为空数组；`embeddedResources[]` 只声明 `.pbres` 路径，包身份、版本和 Digest 由嵌套 Resource Package 提供。`alpha.2` 仍可精确校验、读取并归一化。
+- 两个公开预置包在构建时从权威 `.pbres` 派生快速索引。Player 已安装相同版本时直接通过 ID、版本和 Digest 判断，不再为了识别资源包而在每次启动下载、解压 Daggerheart 的 20.8 MB 归档；首次安装仍读取并完整校验 `.pbres`。
 
 ## 已验证
 
@@ -115,11 +118,13 @@
 - 双版本 Resource Package Schema/Digest 浏览器 conformance 补齐后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 448 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - System Package 未知文件诊断修复后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - #50 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证 Daggerheart / 寻望之心切换与刷新保持；上传 20.8 MB、只有 `system.json` 根且不含 `manifest.json` 的真实 Daggerheart `.pbsys` 后完整加载，控制台无 error。
+- #51 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器中已安装 Daggerheart 刷新到可交互约 421 ms，寻望之心切换后刷新保持约 946 ms；资源管理器原生/额外分组正常，20.8 MB 稳定版 Daggerheart `.pbsys` 上传成功，全程控制台无 error。原生目录选择器不能由浏览器自动化注入路径，目录 VFS 由共用 Loader 测试覆盖。
 
 ## 接下来
 
 1. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-2. 查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
+2. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
+3. 查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
 
 ## 换机交接
 
@@ -137,7 +142,7 @@
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills

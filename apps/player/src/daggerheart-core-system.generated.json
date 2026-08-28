@@ -1,5 +1,5 @@
 {
-  "contractVersion": "1.0.0-alpha.2",
+  "contractVersion": "1.0.0",
   "package": {
     "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
     "version": "1.0.0",
@@ -166,11 +166,7 @@
   ],
   "embeddedResources": [
     {
-      "path": "resources/daggerheart-core.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.3",
-      "minimumVersion": "1.0.3",
-      "snapshotDigest": "sha256:801bc36e5c4fd07522f1c0cb5542f60b65356456077393827d1dab63f7a42385"
+      "path": "resources/daggerheart-core.pbres"
     }
   ]
 }
