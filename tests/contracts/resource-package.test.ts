@@ -15,8 +15,10 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/resource-package/1.0.0-alpha.1";
-const schemaPath = "resource-package/1.0.0-alpha.1/schema.json";
+const fixtureProfiles = ["1.0.0-alpha.1", "1.0.0"].map((version) => ({
+  version,
+  fixtureRoot: `contracts/conformance/resource-package/${version}`,
+}));
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
@@ -54,7 +56,7 @@ const schemas = Object.fromEntries(
 );
 const runtime = new ContractRuntime(catalog, schemas);
 
-function loadMedia(fixtures: MediaFixture[]): ResourcePackageMedia {
+function loadMedia(fixtureRoot: string, fixtures: MediaFixture[]): ResourcePackageMedia {
   return new Map(
     fixtures.map((fixture) => [
       fixture.assetId,
@@ -84,47 +86,52 @@ function applyMutation(
   return candidate;
 }
 
-describe("Resource Package 1.0.0-alpha.1 conformance", () => {
-  const cases = readJson<ConformanceCase[]>(`${fixtureRoot}/cases.json`);
+for (const profile of fixtureProfiles) {
+  describe(`Resource Package ${profile.version} conformance`, () => {
+    const cases = readJson<ConformanceCase[]>(`${profile.fixtureRoot}/cases.json`);
 
-  for (const conformanceCase of cases) {
-    test(conformanceCase.name, async () => {
-      const source = readJson<ResourcePackageLogicalDocument>(
-        `${fixtureRoot}/${conformanceCase.document}`,
-      );
-      const candidate = applyMutation(source, conformanceCase.mutation);
-      const schemaDiagnostics = runtime.validate({
-        family: "resource-package",
-        version: "1.0.0-alpha.1",
-        mode: "development",
-        candidate,
+    for (const conformanceCase of cases) {
+      test(conformanceCase.name, async () => {
+        const source = readJson<ResourcePackageLogicalDocument>(
+          `${profile.fixtureRoot}/${conformanceCase.document}`,
+        );
+        const candidate = applyMutation(source, conformanceCase.mutation);
+        const schemaDiagnostics = runtime.validate({
+          family: "resource-package",
+          version: profile.version,
+          mode: "development",
+          candidate,
+        });
+        const diagnostics = schemaDiagnostics.length
+          ? schemaDiagnostics
+          : await validateResourcePackageSemantics(
+            candidate,
+            loadMedia(profile.fixtureRoot, conformanceCase.media),
+          );
+        expect(diagnostics).toEqual(conformanceCase.expected);
       });
-      const diagnostics = schemaDiagnostics.length
-        ? schemaDiagnostics
-        : await validateResourcePackageSemantics(candidate, loadMedia(conformanceCase.media));
-      expect(diagnostics).toEqual(conformanceCase.expected);
-    });
-  }
-});
+    }
+  });
 
-describe("Resource Package Snapshot Digest", () => {
-  const cases = readJson<DigestCase[]>(`${fixtureRoot}/digest-cases.json`);
+  describe(`Resource Package ${profile.version} Snapshot Digest`, () => {
+    const cases = readJson<DigestCase[]>(`${profile.fixtureRoot}/digest-cases.json`);
 
-  for (const digestCase of cases) {
-    test(digestCase.name, async () => {
-      const document = readJson<ResourcePackageLogicalDocument>(
-        `${fixtureRoot}/${digestCase.document}`,
-      );
-      if (digestCase.targets) document.targets = structuredClone(digestCase.targets);
-      const media = loadMedia(digestCase.media);
-      expect(await computeResourcePackageSnapshotDigest(document, media)).toBe(
-        digestCase.expected,
-      );
+    for (const digestCase of cases) {
+      test(digestCase.name, async () => {
+        const document = readJson<ResourcePackageLogicalDocument>(
+          `${profile.fixtureRoot}/${digestCase.document}`,
+        );
+        if (digestCase.targets) document.targets = structuredClone(digestCase.targets);
+        const media = loadMedia(profile.fixtureRoot, digestCase.media);
+        expect(await computeResourcePackageSnapshotDigest(document, media)).toBe(
+          digestCase.expected,
+        );
 
-      document.targets.reverse();
-      expect(await computeResourcePackageSnapshotDigest(document, media)).toBe(
-        digestCase.expected,
-      );
-    });
-  }
-});
+        document.targets.reverse();
+        expect(await computeResourcePackageSnapshotDigest(document, media)).toBe(
+          digestCase.expected,
+        );
+      });
+    }
+  });
+}
