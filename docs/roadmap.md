@@ -7,9 +7,9 @@
 - L0 `PbDH Platform` PRD：已发布为 GitHub Issue #1 并完成审阅，产品边界已冻结。
 - C4 L1/L2：已记录当前系统上下文和运行容器；未定义的 L3/L4 保持留白。
 - L1 PRD：六个 L1 均已发布并完成审阅；`GM Tabletop`（#6，原 GM App）与 `Market`（#7）已完成 grill 和 triage，全部作为开放父 Issue 保留。
-- L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布、完成 triage，状态均为 `ready-for-human`，并作为开放父 Issue 保留。它们覆盖 Contracts/Template/Renderer、最小 System Package、Creator、Player、GM Tabletop、Market，以及三个产品各自的 Cloud Document 连续性。
-- 产品实现：阶段 6 已完成；#38—#45 的敌人与武器两条真实纵切均通过自动化和人工验收。阶段 7 正在推进；#46—#51 已完成第二个真实 System Package、Daggerheart Core 剩余官方资源与环境 Template 纵切、System Package 单一 `system.json` 根定义及开发期 `1.0.0` 收敛，Resource Package `1.0.0`、Structural SemVer、Portable Archive Profile 和双语言 conformance 已落地。
-- 下一步：#53 使用 Daggerheart 与寻望之心两个真实系统包，把 Character Data 收敛为按 Module ID 的完整状态并稳定 Character Save `1.0.0`；#34“快速即兴敌人卡”继续延后到 PbDH 本体完成后。
+- L2 PRD：首条敌人资源纵切所需的 #8—#22 已全部发布并完成 triage；#9、#10、#12、#13、#15、#22 已完成并关闭，#11 已补齐全部首版可信 Template 的跨宿主 Renderer conformance。其余 L2 继续按真实缺口保持开放。
+- 产品实现：阶段 6 已完成；阶段 7 的全部官方资源与 Template、Resource Package `1.0.0`、System Package `1.0.0`、Character Save `1.0.0`、Structural SemVer、Portable Archive Profile 和双语言 conformance 均已落地。
+- 下一步：完成 #11 的关闭记录后，审计 #18 的 Replacement 闭包与显式放置缺口；#34“快速即兴敌人卡”继续延后到 PbDH 本体完成后。
 
 ## 推进模型
 
@@ -121,31 +121,31 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 4：发布首批最小 L2 PRD
 
-阶段状态：已完成。首条纵切所需的 #8—#22 均已发布并完成 triage，状态为 `ready-for-human`；所有 L0/L1/L2 PRD 保持开放。
+阶段状态：已完成。首条纵切所需的 #8—#22 均已发布并完成 triage；实现完成的 L2 按验收结果关闭，其余父 Issue 继续开放。
 
 不先写完所有 L2。只发布第一条敌人资源纵切真正依赖、且能在单一 L1 内独立验收的用户能力。发布顺序表达依赖，不要求前一个 L2 的全部实现结束后才开始编写下一个 L2。
 
 ### 4.1 Contracts & Template Platform
 
 1. `平台合约生命周期治理`（#8，已发布并完成 triage，`ready-for-human`）：首条纵切只实现 Resource Package Contract `1.0.0` 发布所需的状态、诊断与 conformance 门禁，不预先补全其他 Contract Family。
-2. `Resource Package 互操作`（#9，已发布并完成 triage，`ready-for-human`）：定义真实 Resource Package 的身份、版本、目录/ZIP、`.pbres`、自包含媒体、安全校验、诊断与生产者—消费者验收。
-3. `可信资源模板生命周期`（#10，已发布并完成 triage，`ready-for-human`）：首批只要求一个真实敌人 Template 的精确版本、Schema、默认数据、投影、媒体槽位、桌面声明和 fixtures。
-4. `规范资源呈现`（#11，已发布并完成 triage，`ready-for-human`）：首批只要求同一敌人资源在 Creator、Player、GM 和 Market 中使用同一精确 Renderer Revision 产生一致卡面。
+2. `Resource Package 互操作`（#9，已关闭）：定义真实 Resource Package 的身份、版本、目录/ZIP、`.pbres`、自包含媒体、安全校验、诊断与生产者—消费者验收。
+3. `可信资源模板生命周期`（#10，已关闭）：首批只要求一个真实敌人 Template 的精确版本、Schema、默认数据、投影、媒体槽位、桌面声明和 fixtures。
+4. `规范资源呈现`（#11，验收完成，待关闭记录）：首批只要求同一敌人资源在 Creator、Player、GM 和 Market 中使用同一精确 Renderer Revision 产生一致卡面。
 
 `资源格式转换` 不因首条纵切自动进入首批 L2。官方敌人数据可以通过有来源记录的一次性迁移进入；通用 Adapter 平台和 `.dhcb` 双向转换在纵切成立后扩面。
 
 ### 4.2 System Authoring Workflow
 
-5. `System Package 创作与资源兼容声明`（#12，已发布并完成 triage，`ready-for-human`）：建立首条纵切所需的最小 System Package 创作与运行时声明能力，产出一个真实 Daggerheart System Package，供 Player 验证按精确 Resource Template ID 与版本范围声明的原生路由兼容性；不把 Loader、CLI 或 Preview 实现组件升格为产品能力。
+5. `System Package 创作与资源兼容声明`（#12，已关闭）：建立首条纵切所需的最小 System Package 创作与运行时声明能力，产出一个真实 Daggerheart System Package，供 Player 验证按精确 Resource Template ID 与版本范围声明的原生路由兼容性；不把 Loader、CLI 或 Preview 实现组件升格为产品能力。
 
 ### 4.3 Creator App
 
-6. `Creator Workspace 资源创作与包交换`（#13，已发布并完成 triage，`ready-for-human`）：创建和编辑敌人资源，保存本地工作区，并导入、导出完整 `.pbres`。
+6. `Creator Workspace 资源创作与包交换`（#13，已关闭）：创建和编辑敌人资源，保存本地工作区，并导入、导出完整 `.pbres`。
 7. `Creator Workspace 云连续性`（#14，已发布并完成 triage，`ready-for-human`）：在保持匿名、离线、本地优先的前提下，按统一 Cloud Document 策略同步 Creator Workspace。
 
 ### 4.4 Player App
 
-8. `Player 资源取得与兼容路由`（#15，已发布并完成 triage，`ready-for-human`）：导入同一个 `.pbres`；所有结构有效的资源包均可安装，资源 Template 命中当前 System Package 的 Resource Compatibility 时进入原生资源区域，不兼容或无法执行精确 Template 时进入“其他资源”；目标系统引用只作可选分发与发现元数据。
+8. `Player 资源取得与兼容路由`（#15，已关闭）：导入同一个 `.pbres`；所有结构有效的资源包均可安装，资源 Template 命中当前 System Package 的 Resource Compatibility 时进入原生资源区域，不兼容或无法执行精确 Template 时进入“其他资源”；目标系统引用只作可选分发与发现元数据。
 9. `Character Save 云连续性`（#16，已发布并完成 triage，`ready-for-human`）：Character Data 与嵌入的玩家桌面状态作为同一个 Character Save 同步；玩家在资源库选择后由 Player 框架执行 System Package Dependency 并保存最终字段值，不保存游戏资源引用、Resource Package 依赖或资源选中状态；不建立独立玩家桌面云文档，也不同步 Resource Package 安装状态。
 
 ### 4.5 GM Tabletop
@@ -158,7 +158,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 ### 4.6 Market
 
 14. `Market 出版生命周期`（#21，已发布并完成 triage，`ready-for-human`）：由 Creator 显式发布同一个完整 Resource Package Snapshot，Market 原子建立当前 Publication。
-15. `Market 资源取得与 App 交接`（#22，已发布并完成 triage，`ready-for-human`）：匿名下载 `.pbres`，显式安装到 Player、导入 Creator，或“发送到桌面…”后选择桌面；任何路径都不得静默放置资源。
+15. `Market 资源取得与 App 交接`（#22，已关闭）：匿名下载 `.pbres`，显式安装到 Player、导入 Creator，或“发送到桌面…”后选择桌面；任何路径都不得静默放置资源。
 
 公共资源发现和最小市场治理不必阻塞最早的发布—取得纵切，但必须在 Market L1 完成前分别作为 L2 完成。
 
@@ -223,7 +223,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 ## 阶段 7：扩大共同平台与官方内容
 
-阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package 已收敛为开发期 `1.0.0`：使用单一 `system.json` 根定义、可省略空资源集合，并以路径引用权威 `.pbres`；#53 正在同一开发期版本内补齐独立 Character Data 版本并稳定 Character Save `1.0.0`，Tabletop Document 仍为 prerelease Contract。
+阶段状态：进行中。十个官方专用 Resource Template 与自由 Template、625 份 Daggerheart Core 官方资源、Resource Conversion Platform、Resource Package Contract `1.0.0` 及其双语言 conformance 已完成。System Package 与 Character Save 均已收敛为开发期 `1.0.0`；Tabletop Document 仍为 prerelease Contract。
 
 第一条纵切通过后，按“实现当前纵切、设计下一纵切”的双轨循环补全 Contracts & Template Platform 及其关联交付：
 

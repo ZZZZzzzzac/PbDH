@@ -4,14 +4,7 @@ import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import { useAuth } from "@pbdh/platform-auth/provider";
 import { PublicationDialog, type PublicationFormValue } from "@pbdh/publication-ui";
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
-import {
-  adversaryRendererFor,
-  armorRendererFor,
-  environmentRendererFor,
-  stableReferenceRendererFor,
-  weaponRendererFor,
-} from "@pbdh/templates/frontend";
-import type { AdversaryData, ArmorData, EnvironmentData, WeaponData } from "@pbdh/templates/core";
+import { trustedRendererFor } from "@pbdh/templates/frontend";
 
 import { marketDesignSource } from "../design.generated.ts";
 import { catalogOptions } from "./catalog-options.ts";
@@ -226,7 +219,7 @@ function Discovery({
 
 export function CanonicalPreview({ publication, resourceId }: { publication: Publication; resourceId: string }) {
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
-  const referenceRenderer = stableReferenceRendererFor(
+  const renderer = trustedRendererFor(
     resource.templateId,
     (resource.source as SurfaceResource<Record<string, unknown>>).template.version,
   );
@@ -237,36 +230,10 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
     <header><strong>{resource.name}</strong><button type="button"><Icon name="maximize" />放大</button></header>
     <div className="canonical-stage">
       <div className="canonical-scale">
-        {resource.templateId === "敌人"
-          ? <CanonicalCardSurface
-              resource={resource.source as SurfaceResource<AdversaryData>}
-              expectedRendererRevision="enemy-card-r1"
-              renderer={adversaryRendererFor((resource.source as SurfaceResource<AdversaryData>).template.version)}
-              assets={assets}
-              label={`${resource.name}规范卡面`}
-            />
-          : resource.templateId === "武器" ? <CanonicalCardSurface
-              resource={resource.source as SurfaceResource<WeaponData>}
-              expectedRendererRevision="weapon-card-r1"
-              renderer={weaponRendererFor((resource.source as SurfaceResource<WeaponData>).template.version)}
-              assets={assets}
-              label={`${resource.name}规范卡面`}
-            /> : resource.templateId === "护甲" ? <CanonicalCardSurface
-              resource={resource.source as SurfaceResource<ArmorData>}
-              expectedRendererRevision="armor-card-r1"
-              renderer={armorRendererFor((resource.source as SurfaceResource<ArmorData>).template.version)}
-              assets={assets}
-              label={`${resource.name}规范卡面`}
-            /> : resource.templateId === "环境" ? <CanonicalCardSurface
-              resource={resource.source as SurfaceResource<EnvironmentData>}
-              expectedRendererRevision="environment-card-r1"
-              renderer={environmentRendererFor((resource.source as SurfaceResource<EnvironmentData>).template.version)}
-              assets={assets}
-              label={`${resource.name}规范卡面`}
-            /> : referenceRenderer ? <CanonicalCardSurface
+        {renderer ? <CanonicalCardSurface
               resource={resource.source as SurfaceResource<Record<string, unknown>>}
-              expectedRendererRevision={referenceRenderer.revision}
-              renderer={referenceRenderer}
+              expectedRendererRevision={renderer.revision}
+              renderer={renderer}
               assets={assets}
               label={`${resource.name}规范卡面`}
             /> : <p>当前版本尚不能预览此模板。</p>}

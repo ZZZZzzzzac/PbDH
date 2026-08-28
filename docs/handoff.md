@@ -17,6 +17,8 @@
 - [GitHub Issue #51](https://github.com/ZZZZzzzzac/PbDH/issues/51)“System Package Contract 收敛为开发期 1.0.0”已完成 Schema、双语言 conformance、Reader 归一化、两个真实包和构建期内嵌资源索引；稳定 `system.json` 的 `embeddedResources[]` 只保留 `path`。
 - [GitHub Issue #52](https://github.com/ZZZZzzzzac/PbDH/issues/52)记录高保真人物存档格式转换与结构化损失处理，当前为 `needs-triage`，不并入 System Package `1.0.0`。
 - [GitHub Issue #53](https://github.com/ZZZZzzzzac/PbDH/issues/53)“稳定 Character Save 1.0.0 与 Module 状态持久化”已完成 Contract、Module 状态投影、`.pbcha` 媒体边界、开发期存档补全迁移和云恢复门禁；最终验收记录已发布并关闭 Issue。
+- L2 #9、#10、#12、#13、#15、#22 已按当前实现与真实纵切证据发布验收记录并关闭；#9/#10 正文已补充公开上线前继续在开发期 `1.0.0` 修改的版本规则。
+- #11“规范资源呈现”已补齐统一可信 Renderer 解析：Player 与 Market 不再维护各自的 Template 特判列表，十个专用 Template 与自由 Template 均可通过精确版本进入同一 Canonical Card Surface；未知 Template/版本仍明确降级。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -127,12 +129,13 @@
 - #50 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证 Daggerheart / 寻望之心切换与刷新保持；上传 20.8 MB、只有 `system.json` 根且不含 `manifest.json` 的真实 Daggerheart `.pbsys` 后完整加载，控制台无 error。
 - #51 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器中已安装 Daggerheart 刷新到可交互约 421 ms，寻望之心切换后刷新保持约 946 ms；资源管理器原生/额外分组正常，20.8 MB 稳定版 Daggerheart `.pbsys` 上传成功，全程控制台无 error。原生目录选择器不能由浏览器自动化注入路径，目录 VFS 由共用 Loader 测试覆盖。
 - #53 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 456 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证旧 Daggerheart 存档补全后正常启动并保留“符文护符”卡图；寻望之心姓名与希望点修改可跨刷新恢复，恢复验收前状态后再次刷新无 error；两包菜单均显示 `v1.0.0`。
+- #11 Renderer 收敛后的 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 468 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。11 个首版可信 Template 的精确 Renderer、四宿主同输入输出和未知版本不回退由共同测试锁定；真实 Player 与 Market 武器预览均显示 Canonical Surface，新标签页冷启动控制台无 error。
 
 ## 接下来
 
 1. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
 2. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
-3. #53 关闭后查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
+3. #11 关闭后审计 #18 的 Replacement 闭包与显式放置缺口，选择不扩大 GM 桌面范围的最小纵切。
 
 ## 换机交接
 

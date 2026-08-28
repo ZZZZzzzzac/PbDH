@@ -53,6 +53,7 @@ export {
   itemRendererFor,
   professionRendererFor,
   subclassRendererFor,
+  trustedRendererFor,
   weaponRendererFor,
 } from "./renderer-registry.ts";
 export { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";

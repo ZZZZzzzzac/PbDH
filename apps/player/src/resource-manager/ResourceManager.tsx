@@ -6,8 +6,7 @@ import {
 } from "@pbdh/contract-runtime";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
-import { armorRendererFor, environmentRendererFor, stableReferenceRendererFor } from "@pbdh/templates/frontend";
-import { armorTemplate, environmentTemplate, type ArmorData, type EnvironmentData } from "@pbdh/templates/core";
+import { trustedRendererFor } from "@pbdh/templates/frontend";
 
 import {
   type InstalledResourcePackage,
@@ -83,9 +82,7 @@ function routeLabel(installed: InstalledResourcePackage, resourceId: string): st
 export function supportsPlayerResourcePreview(
   resource: InstalledResourcePackage["document"]["resources"][number],
 ): boolean {
-  return (resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version)
-    || (resource.template.id === environmentTemplate.id && resource.template.version === environmentTemplate.version)
-    || stableReferenceRendererFor(resource.template.id, resource.template.version) !== undefined;
+  return trustedRendererFor(resource.template.id, resource.template.version) !== undefined;
 }
 
 function countsByDestination(plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>) {
@@ -143,29 +140,15 @@ function PlayerResourcePreviewContent({
 }) {
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
-  const isArmor = resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version;
-  const isEnvironment = resource.template.id === environmentTemplate.id && resource.template.version === environmentTemplate.version;
-  const referenceRenderer = stableReferenceRendererFor(resource.template.id, resource.template.version);
+  const renderer = trustedRendererFor(resource.template.id, resource.template.version);
   return <div className="player-dialog-backdrop player-resource-preview-backdrop">
     <section className="player-dialog player-resource-preview" role="dialog" aria-modal="true" aria-label={`${name}资源详情`}>
       <header><h2>{name}</h2><button aria-label="关闭资源详情" onClick={onClose}>×</button></header>
       <div className="player-resource-preview-stage">
-        {isArmor ? <CanonicalCardSurface
-          resource={resource as unknown as SurfaceResource<ArmorData>}
-          expectedRendererRevision={armorTemplate.rendererRevision}
-          renderer={armorRendererFor(resource.template.version)}
-          assets={assets}
-          label={`${name}玩家规范卡面`}
-        /> : isEnvironment ? <CanonicalCardSurface
-          resource={resource as unknown as SurfaceResource<EnvironmentData>}
-          expectedRendererRevision={environmentTemplate.rendererRevision}
-          renderer={environmentRendererFor(resource.template.version)}
-          assets={assets}
-          label={`${name}玩家规范卡面`}
-        /> : referenceRenderer ? <CanonicalCardSurface
+        {renderer ? <CanonicalCardSurface
           resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
-          expectedRendererRevision={referenceRenderer.revision}
-          renderer={referenceRenderer}
+          expectedRendererRevision={renderer.revision}
+          renderer={renderer}
           assets={assets}
           label={`${name}玩家规范卡面`}
         /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}
