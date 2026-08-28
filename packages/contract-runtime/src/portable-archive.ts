@@ -13,7 +13,7 @@ import type {
 } from "./resource-package.ts";
 
 const FAMILY = "resource-package";
-const VERSION = "1.0.0-alpha.1";
+const VERSION = "1.0.0";
 const ROOT_PATH = "package.json";
 const MAX_ENTRIES = 1024;
 const MAX_PATH_BYTES = 512;

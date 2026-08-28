@@ -21,7 +21,8 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/resource-package/1.0.0-alpha.1";
+const fixtureRoot = "contracts/conformance/resource-package/1.0.0";
+const legacyFixtureRoot = "contracts/conformance/resource-package/1.0.0-alpha.1";
 const assetId = "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034";
 const assetPath = "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp";
 
@@ -45,17 +46,22 @@ const schemas = Object.fromEntries(
   ),
 );
 const runtime = new ContractRuntime(catalog, schemas);
-const validate: ResourcePackageCandidateValidator = async (candidate, candidateMedia) => {
-  const schemaDiagnostics = runtime.validate({
-    family: "resource-package",
-    version: "1.0.0-alpha.1",
-    mode: "development",
-    candidate,
-  });
-  return schemaDiagnostics.length
-    ? schemaDiagnostics
-    : validateResourcePackageSemantics(candidate, candidateMedia);
-};
+function validatorFor(version: string): ResourcePackageCandidateValidator {
+  return async (candidate, candidateMedia) => {
+    const schemaDiagnostics = runtime.validate({
+      family: "resource-package",
+      version,
+      mode: "development",
+      candidate,
+    });
+    return schemaDiagnostics.length
+      ? schemaDiagnostics
+      : validateResourcePackageSemantics(candidate, candidateMedia);
+  };
+}
+
+const validate = validatorFor("1.0.0");
+const validateLegacy = validatorFor("1.0.0-alpha.1");
 
 type ArchiveCase = {
   name: string;
@@ -146,6 +152,17 @@ describe("Resource Package Directory Profile", () => {
 });
 
 describe("Resource Package .pbres ZIP Profile", () => {
+  test("keeps the legacy alpha archive readable", async () => {
+    const archive = new Uint8Array(readFileSync(path.join(
+      root,
+      legacyFixtureRoot,
+      "valid/minotaur-wrecker.pbres",
+    )));
+    const result = await loadPbres(archive, validateLegacy);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.candidate?.document.contractVersion).toBe("1.0.0-alpha.1");
+  });
+
   test("mechanical ZIP differences preserve the logical Snapshot Digest", async () => {
     const stored = writePbres(document, media, {
       compressionLevel: 0,
@@ -217,7 +234,7 @@ describe("Resource Package .pbres ZIP Profile", () => {
         code: "resource-package.archive.zip.invalid",
         severity: "error",
         family: "resource-package",
-        version: "1.0.0-alpha.1",
+        version: "1.0.0",
         location: "",
         params: {},
       },

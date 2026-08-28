@@ -57,6 +57,7 @@
 - Player 资源管理器的环境入口判断已补齐；Market 安装的环境包位于“额外资源包 / 其他资源”，可直接打开共享 `environment-card-r1`，刷新后从 IndexedDB 恢复。
 - Creator Workspace 目录不再保存或执行同目录手动重排；文件夹优先，文件夹按名称、资源按文件名确定排序。拖到其他文件夹或根目录仍会更新资源路径并保持 Resource ID，旧本地/云 payload 的 `order` 值会在读取时规范化，无需持久化 schema 迁移。
 - Resource Package Structural SemVer Classifier 已在 TypeScript 与 Python 两端落地并消费同一组 `1.0.0` conformance cases：集合重排与版本/Digest 变化为 `none`，字段、路径、媒体、展示、许可、来源及兼容 Template/目标变化为 `PATCH`，新增资源/目标为 `MINOR`，删除或改变稳定 Resource/Template/目标引用为 `MAJOR`；作者可过度升级但不可低于最低版本。正式 Publication Repository 在同一事务内执行门禁并保证拒绝时零写入，development 的 `1.0.0` 同版本替换仍按 ADR-0057 保留。
+- Resource Package Directory/ZIP Portable Archive Profile 的容器诊断版本已从遗留的 `1.0.0-alpha.1` 提升到当前 `1.0.0`。TypeScript 与 Python 现在共同消费 `contracts/conformance/resource-package/1.0.0/archive-cases.json`，覆盖路径安全、跨平台碰撞、特殊条目、媒体缺失/篡改/孤儿、未知文件和空目录一致性；旧 alpha `.pbres` 仍有双实现读取回归，不会被静默升级。
 
 ## 已验证
 
@@ -106,6 +107,7 @@
 - Creator 目录确定排序完整验证通过：`npm run verify` 为 66 个 TypeScript 测试文件 / 411 个测试、88 个 Python 测试，类型检查、依赖边界、设计检查和 Platform build 全通过。内嵌浏览器中同一父目录的 `0 文件夹 / A 文件夹` 会立即按名称排序，刷新后顺序保持，控制台无 error；跨目录移动、资源路径更新、旧 `order` 规范化与同目录 no-op 由模型/仓库测试覆盖。浏览器自动化无法为该目录树构造原生 HTML5 `DataTransfer`，因此未把坐标拖拽结果作为验收证据。
 - Structural SemVer 与封面回退收紧后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 436 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。共同 fixture 还覆盖了同一 System Package 多个精确目标版本的匹配顺序，证明集合顺序不会改变分类。
 - 内嵌浏览器使用未上传独立封面的“环境 Template 验收包”打开发布窗口，自动封面成功显示；图片自然尺寸为 `680×1073`、来源为本地 Blob，证明走固定比例 Canonical Renderer → WebP 链路。未点击最终发布，控制台无 error，临时验收标签页已关闭。
+- Portable Archive Profile `1.0.0` 提升后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 437 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 
 ## 接下来
 

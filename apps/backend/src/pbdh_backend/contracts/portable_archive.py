@@ -11,7 +11,7 @@ from typing import Any
 
 
 FAMILY = "resource-package"
-VERSION = "1.0.0-alpha.1"
+VERSION = "1.0.0"
 ROOT_PATH = "package.json"
 MAX_ENTRIES = 1024
 MAX_PATH_BYTES = 512

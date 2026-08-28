@@ -20,7 +20,8 @@ from pbdh_backend.contracts import (
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
+FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0"
+LEGACY_FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
 ASSET_ID = "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034"
 ASSET_PATH = FIXTURE_ROOT / "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
 
@@ -94,22 +95,13 @@ def test_directory_profile_round_trip() -> None:
     assert result["candidate"]["media"][ASSET_ID] == MEDIA[ASSET_ID]
 
 
-def test_stable_directory_and_pbres_round_trip() -> None:
-    fixture_root = ROOT / "contracts/conformance/resource-package/1.0.0"
-    document = read_json(fixture_root / "valid/minotaur-wrecker.json")
-    asset_id = document["assets"][0]["id"]
-    media = {asset_id: (fixture_root / f"media/{asset_id.removeprefix('sha256:')}.webp").read_bytes()}
-
-    directory_result = load_resource_package_directory(
-        write_resource_package_directory(document, media),
+def test_legacy_alpha_pbres_remains_readable() -> None:
+    result = load_pbres(
+        (LEGACY_FIXTURE_ROOT / "valid/minotaur-wrecker.pbres").read_bytes(),
         validate,
     )
-    assert directory_result["diagnostics"] == []
-    assert directory_result["candidate"] == {"document": document, "media": media}
-
-    archive_result = load_pbres(write_pbres(document, media), validate)
-    assert archive_result["diagnostics"] == []
-    assert archive_result["candidate"] == {"document": document, "media": media}
+    assert result["diagnostics"] == []
+    assert result["candidate"]["document"]["contractVersion"] == "1.0.0-alpha.1"
 
 
 def test_directory_profile_round_trips_empty_directories() -> None:
@@ -167,7 +159,7 @@ def test_invalid_zip_yields_zero_candidate() -> None:
             "code": "resource-package.archive.zip.invalid",
             "severity": "error",
             "family": "resource-package",
-            "version": "1.0.0-alpha.1",
+            "version": "1.0.0",
             "location": "",
             "params": {},
         }],
