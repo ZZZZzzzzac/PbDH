@@ -8,7 +8,7 @@ from pbdh_backend.contracts import ContractRuntime
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE_ROOT = ROOT / "contracts/conformance/character-save/1.0.0-alpha.1"
+FIXTURE_ROOT = ROOT / "contracts/conformance/character-save/1.0.0"
 
 
 def read_json(path: Path) -> object:
@@ -22,7 +22,7 @@ SCHEMAS = {
     for family in CATALOG["families"]
     for version in family["versions"]
 }
-FIXTURE = read_json(FIXTURE_ROOT / "valid/weapon-and-tabletop.json")
+FIXTURE = read_json(FIXTURE_ROOT / "valid/module-state.json")
 
 
 def mutate(source: dict, mutation: dict | None) -> dict:
@@ -49,7 +49,7 @@ def test_character_save_schema_conformance(case: dict) -> None:
     runtime = ContractRuntime(CATALOG, SCHEMAS)
     assert runtime.validate({
         "family": "character-save",
-        "version": "1.0.0-alpha.1",
+        "version": "1.0.0",
         "mode": "development",
         "candidate": mutate(FIXTURE, case["mutation"]),
     }) == case["expected"]

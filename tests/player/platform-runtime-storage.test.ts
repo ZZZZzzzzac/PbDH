@@ -190,9 +190,10 @@ function minimalSheetSystemPackage(currentSystem: SystemPackageDocument): SheetS
       ID: currentSystem.package.id,
       名称: currentSystem.package.name,
       版本: currentSystem.package.version,
+      角色数据版本: currentSystem.runtime.characterDataVersion,
     },
     pages: [],
-    modules: [],
+    modules: [{ ID: "name", 类型: "freeText", 标签: "姓名" }],
   } as SheetSystemPackage;
 }
 

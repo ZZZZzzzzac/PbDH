@@ -1,5 +1,9 @@
 import {
   CHARACTER_SAVE_VERSION,
+  CHARACTER_SAVE_ALPHA1_VERSION,
+  migrateCharacterSaveAlpha1,
+  selectCharacterSavePlayerMedia,
+  type AnyCharacterSaveDocument,
   type CharacterData,
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
@@ -24,6 +28,7 @@ export type StoredCharacterSave = CharacterSaveCandidate & {
 export function createCharacterSave(input: {
   name: string;
   systemPackage: CharacterSaveDocument["systemPackage"];
+  characterDataVersion: string;
   characterData?: CharacterData;
   documentId?: string;
   now?: string;
@@ -36,27 +41,21 @@ export function createCharacterSave(input: {
     createdAt: now,
     updatedAt: now,
     systemPackage: structuredClone(input.systemPackage),
-    characterData: structuredClone(input.characterData ?? {
-      values: {},
-      tabletop: { instances: [] },
-      assets: [],
-    }),
+    characterDataVersion: input.characterDataVersion,
+    characterData: structuredClone(input.characterData ?? {}),
   };
 }
 
 function mediaRecords(
-  document: CharacterSaveDocument,
+  _document: CharacterSaveDocument,
   media: ReadonlyMap<string, Uint8Array>,
 ): LocalMediaAssetRecord[] {
-  return document.characterData.assets.flatMap((asset) => {
-    const bytes = media.get(asset.id);
-    return bytes ? [{
-      assetId: asset.id,
-      mediaType: asset.mediaType,
-      byteLength: asset.byteLength,
-      bytes: new Uint8Array(bytes),
-    }] : [];
-  });
+  return [...media].map(([assetId, bytes]) => ({
+    assetId,
+    mediaType: "image/webp" as const,
+    byteLength: String(bytes.byteLength),
+    bytes: new Uint8Array(bytes),
+  }));
 }
 
 export class CharacterSaveRepository {
@@ -76,8 +75,12 @@ export class CharacterSaveRepository {
     const results: StoredCharacterSave[] = [];
     for (const envelope of envelopes) {
       const media = await this.#store.getMedia(envelope.assetIds);
-      await assertValid(envelope.payload, media, "Invalid stored Character Save");
-      results.push({ document: envelope.payload, media, sync: envelope.sync });
+      const candidate = await normalizeValid(
+        envelope.payload as unknown as AnyCharacterSaveDocument,
+        media,
+        "Invalid stored Character Save",
+      );
+      results.push({ ...candidate, sync: envelope.sync });
     }
     return results;
   }
@@ -91,44 +94,52 @@ export class CharacterSaveRepository {
     const candidate = structuredClone(document);
     candidate.createdAt = existing?.payload.createdAt ?? candidate.createdAt;
     candidate.updatedAt = this.#now();
-    await assertValid(candidate, media, "Invalid Character Save");
+    const playerMedia = selectCharacterSavePlayerMedia(candidate, media);
+    await assertValid(candidate, playerMedia, "Invalid Character Save");
     if (existing && sameCharacterSaveContent(existing.payload, candidate)) {
-      return { document: existing.payload, media: new Map(media), sync: existing.sync };
+      return { document: existing.payload, media: playerMedia, sync: existing.sync };
     }
     const initialSync: LocalDocumentSync = cloudAccountId
       ? { scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId }
       : { scope: "local-only", state: "clean", baseRevision: null };
     const sync = pendingSync(existing?.sync ?? initialSync);
-    await this.#put(candidate, media, sync);
-    return { document: candidate, media: new Map(media), sync };
+    await this.#put(candidate, playerMedia, sync);
+    return { document: candidate, media: playerMedia, sync };
   }
 
   async import(
     candidate: CharacterSaveCandidate,
     cloudAccountId: string | null = null,
   ): Promise<StoredCharacterSave> {
-    await assertValid(candidate.document, candidate.media, "Invalid Character Save import");
+    const playerMedia = selectCharacterSavePlayerMedia(candidate.document, candidate.media);
+    await assertValid(candidate.document, playerMedia, "Invalid Character Save import");
     const sync: LocalDocumentSync = cloudAccountId
       ? pendingSync({ scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId })
       : { scope: "local-only", state: "clean", baseRevision: null };
-    await this.#put(candidate.document, candidate.media, sync);
-    return { document: structuredClone(candidate.document), media: new Map(candidate.media), sync };
+    await this.#put(candidate.document, playerMedia, sync);
+    return { document: structuredClone(candidate.document), media: playerMedia, sync };
   }
 
   async restoreRemote(
     remote: RemoteCloudDocument,
     media: ReadonlyMap<string, Uint8Array>,
     accountId: string,
+    validateModuleState?: (candidate: CharacterSaveCandidate) => void | Promise<void>,
   ): Promise<StoredCharacterSave> {
     if (remote.documentKind !== "character-save"
       || remote.contractFamily !== "character-save"
-      || remote.contractVersion !== CHARACTER_SAVE_VERSION
+      || (remote.contractVersion !== CHARACTER_SAVE_VERSION
+        && remote.contractVersion !== CHARACTER_SAVE_ALPHA1_VERSION)
       || remote.deletedAt !== null) {
       throw new Error("云端人物存档格式无效。");
     }
-    const document = remote.payload as CharacterSaveDocument;
-    if (document.documentId !== remote.documentId) throw new Error("云端人物存档 Document ID 不一致。");
-    await assertValid(document, media, "云端人物存档无效");
+    const candidate = await normalizeValid(
+      remote.payload as AnyCharacterSaveDocument,
+      media,
+      "云端人物存档无效",
+    );
+    if (candidate.document.documentId !== remote.documentId) throw new Error("云端人物存档 Document ID 不一致。");
+    await validateModuleState?.(candidate);
     const sync: LocalDocumentSync = {
       scope: "cloud",
       state: "clean",
@@ -137,8 +148,8 @@ export class CharacterSaveRepository {
       mutationId: null,
       lastError: null,
     };
-    await this.#put(document, media, sync);
-    return { document: structuredClone(document), media: new Map(media), sync };
+    await this.#put(candidate.document, candidate.media, sync);
+    return { document: structuredClone(candidate.document), media: candidate.media, sync };
   }
 
   async syncState(documentId: string): Promise<LocalDocumentSync | undefined> {
@@ -161,7 +172,7 @@ export class CharacterSaveRepository {
       contractVersion: document.contractVersion,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
-      assetIds: document.characterData.assets.map((asset) => asset.id),
+      assetIds: [...media.keys()].sort((left, right) => left.localeCompare(right)),
       sync,
       payload: structuredClone(document),
     };
@@ -178,6 +189,27 @@ async function assertValid(
   if (diagnostics.some((item) => item.severity === "error")) {
     throw new Error(`${prefix}: ${diagnostics[0]!.code}`);
   }
+}
+
+async function normalizeValid(
+  source: AnyCharacterSaveDocument,
+  media: ReadonlyMap<string, Uint8Array>,
+  prefix: string,
+): Promise<CharacterSaveCandidate> {
+  const diagnostics = await validateCharacterSaveCandidate(source, media);
+  if (diagnostics.some((item) => item.severity === "error")) {
+    throw new Error(`${prefix}: ${diagnostics[0]!.code}`);
+  }
+  if (source.contractVersion === CHARACTER_SAVE_VERSION) {
+    return { document: structuredClone(source), media: new Map(media) };
+  }
+  const migrated = migrateCharacterSaveAlpha1(source);
+  if (!migrated.document) {
+    throw new Error(`${prefix}: ${migrated.diagnostics[0]?.code ?? "character-save.migration.failed"}`);
+  }
+  const playerMedia = selectCharacterSavePlayerMedia(migrated.document, media);
+  await assertValid(migrated.document, playerMedia, prefix);
+  return { document: migrated.document, media: playerMedia };
 }
 
 function sameCharacterSaveContent(

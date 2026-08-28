@@ -28,6 +28,7 @@ export interface CardInstance {
   scale: number;
   /** Record form is accepted only for saves created by the earlier Author-typed indicator prototype. */
   indicators?: CardIndicatorState;
+  tokenCount?: number;
 }
 
 export interface CreateCardInstanceInput {

@@ -57,7 +57,7 @@ describe("寻望之心 Sheet Runtime 加载", () => {
     expect(currentSystem.package).toMatchObject({
       id: "01a04186-51be-74e1-b94f-ec17d354dc00",
       name: "寻望之心",
-      version: "1.1.0",
+      version: "1.0.0",
     });
     expect(loaded.package.manifest.ID).toBe(currentSystem.package.id);
     expect(loaded.package.pages).toHaveLength(1);

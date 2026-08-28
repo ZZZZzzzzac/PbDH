@@ -14,6 +14,7 @@ This preserves the mature low-frequency authoring contract without forcing its c
 - Package paths remain package-root-relative and cannot escape the package or depend on external URLs unless a later contract explicitly permits a safe asset source.
 - Structural, reference, script, and security errors block runtime use; ordinary game text remains semantically permissive.
 - System Package Authors may supply Character Format Adapters for their own Character Data semantics. Player App owns isolated execution, diagnostics, and final Contract validation; Platform Administrator does not register these Adapters.
+- Every System Package declares an independent Character Data SemVer. Player Runtime derives the persisted Character Data shape, defaults, and validation rules from the package's Modules; authors do not maintain a competing handwritten Character Data Schema. Stateful Modules are persisted under their Module IDs, including each `cardTable`; transient selectors and derived displays do not gain artificial persisted state.
 - The new JSON Schema System Package Contract becomes authoritative. Sheet's Zod contract and tests are migration evidence and implementation sources, not a second authority.
 - Current platform ADRs override legacy behaviour where they conflict. In particular, an unknown Contract `MAJOR` cannot be rendered after only a warning; it requires an explicit migration or a supported reader.
 - The workflow may receive CLI, AI, and preview improvements without becoming a general low-code editor or another first-version product App.

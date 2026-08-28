@@ -14,6 +14,7 @@
           "description": "No bundled resources"
         },
         "runtime": {
+          "characterDataVersion": "1.0.0",
           "pages": "pages.json",
           "modules": "modules.json"
         }
@@ -36,6 +37,7 @@
           "description": "One bundled resource"
         },
         "runtime": {
+          "characterDataVersion": "1.0.0",
           "pages": "pages.json",
           "modules": "modules.json"
         },
@@ -62,6 +64,7 @@
           "description": "Invalid duplicated identity"
         },
         "runtime": {
+          "characterDataVersion": "1.0.0",
           "pages": "pages.json",
           "modules": "modules.json"
         },

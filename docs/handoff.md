@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；#51 完成前 HEAD 为 `1de2790`，本地比 `origin/main` 领先 12 个提交。本轮仍只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
+- 分支：`main`；#53 提交前本地比 `origin/main` 领先 13 个提交。本轮仍只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -16,9 +16,16 @@
 - [GitHub Issue #50](https://github.com/ZZZZzzzzac/PbDH/issues/50)“AFK：合并 System Package 为单一 `system.json` 根定义”已完成 `1.0.0-alpha.2`、两个真实包生成、Player ZIP/目录/预置/Author Preview Loader 迁移和实机 `.pbsys` 验收；公开包不再包含 `manifest.json`。
 - [GitHub Issue #51](https://github.com/ZZZZzzzzac/PbDH/issues/51)“System Package Contract 收敛为开发期 1.0.0”已完成 Schema、双语言 conformance、Reader 归一化、两个真实包和构建期内嵌资源索引；稳定 `system.json` 的 `embeddedResources[]` 只保留 `path`。
 - [GitHub Issue #52](https://github.com/ZZZZzzzzac/PbDH/issues/52)记录高保真人物存档格式转换与结构化损失处理，当前为 `needs-triage`，不并入 System Package `1.0.0`。
+- [GitHub Issue #53](https://github.com/ZZZZzzzzac/PbDH/issues/53)“稳定 Character Save 1.0.0 与 Module 状态持久化”已完成 Contract、Module 状态投影、`.pbcha` 媒体边界、开发期存档补全迁移和云恢复门禁；最终验收记录已发布并关闭 Issue。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
+
+- Character Save Contract 已直接收敛到开发期 `1.0.0`：`characterData` 以有状态 Module ID 为持久键，`freeText` / `longText`、Checkbox、Countable、`imageField` 和每个 `cardTable` 均保存可逆状态；System Package Runtime 必须声明 `characterDataVersion`。
+- Card Table 不再使用平台特判的统一 `characterData.tabletop`。每张卡的 Resource Copy、运行状态、Indicators、Token Count 和几何布局均位于所属 `cardTable` Module 下；卡图缺失时仍保留实例，当前资源包可用时重新解析媒体。
+- `.pbcha` 逻辑文档不含 `assets`；Writer 和 Repository 只携带顶层 `imageField` 引用的玩家 WebP，系统包图片与卡图不会进入人物归档或云媒体列表。旧 `1.0.0-alpha.1` 可确定性转换，开发期缺失 Module 状态按当前包默认值补齐。
+- 导入 `.pbcha` 和云端恢复会先加载目标预置 System Package，再校验 Package ID、版本、Character Data 版本、Module 集合和值形状；验证失败不会写入 Repository。
+- 寻望之心 System Package 已从开发期误用的 `1.1.0` 回到 `1.0.0`；生成器改为消费源 Manifest 版本，不再硬编码。已有本地 `1.1.0` 人物档会迁回当前 `1.0.0`。
 
 - 新增可信 `种族`、`社群`、`职业`、`子职业`、`物品`、`领域卡` 六个 `1.0.0` Template，覆盖封闭 Schema、默认值、投影、媒体槽位、Tabletop、Authoring Layout、Canonical Renderer 与 Catalog；旧 `0.0.0-dev.1` 保留精确读取但禁止发布。
 - Creator 使用通用结构化编辑器完成六类资源的新建、编辑、预览与 `.pbres` 导出；Market 与 Player 复用相同 Canonical Card Surface，Player 将六类资源路由到 Daggerheart 原生 Picker、人物字段、物品栏和卡牌桌面。
@@ -119,12 +126,13 @@
 - System Package 未知文件诊断修复后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - #50 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证 Daggerheart / 寻望之心切换与刷新保持；上传 20.8 MB、只有 `system.json` 根且不含 `manifest.json` 的真实 Daggerheart `.pbsys` 后完整加载，控制台无 error。
 - #51 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器中已安装 Daggerheart 刷新到可交互约 421 ms，寻望之心切换后刷新保持约 946 ms；资源管理器原生/额外分组正常，20.8 MB 稳定版 Daggerheart `.pbsys` 上传成功，全程控制台无 error。原生目录选择器不能由浏览器自动化注入路径，目录 VFS 由共用 Loader 测试覆盖。
+- #53 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 456 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证旧 Daggerheart 存档补全后正常启动并保留“符文护符”卡图；寻望之心姓名与希望点修改可跨刷新恢复，恢复验收前状态后再次刷新无 error；两包菜单均显示 `v1.0.0`。
 
 ## 接下来
 
 1. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
 2. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
-3. 查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
+3. #53 关闭后查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
 
 ## 换机交接
 
@@ -142,7 +150,7 @@
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 67 个 TypeScript 测试文件 / 456 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills

@@ -19,8 +19,9 @@
     },
     "runtime": {
       "type": "object",
-      "required": ["pages", "modules"],
+      "required": ["characterDataVersion", "pages", "modules"],
       "properties": {
+        "characterDataVersion": { "$ref": "#/$defs/semver" },
         "loadingPresentation": {
           "type": "object",
           "required": ["tagline", "accentColor"],

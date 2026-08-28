@@ -1,0 +1,59 @@
+[
+  {
+    "name": "accepts complete Module states",
+    "mutation": null,
+    "expected": []
+  },
+  {
+    "name": "requires the bound system package",
+    "mutation": {
+      "op": "delete",
+      "path": ["systemPackage"]
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0",
+        "location": "/systemPackage",
+        "params": { "property": "systemPackage" }
+      }
+    ]
+  },
+  {
+    "name": "requires an independent Character Data version",
+    "mutation": {
+      "op": "delete",
+      "path": ["characterDataVersion"]
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0",
+        "location": "/characterDataVersion",
+        "params": { "property": "characterDataVersion" }
+      }
+    ]
+  },
+  {
+    "name": "rejects installed packages in the document",
+    "mutation": {
+      "op": "set",
+      "path": ["installedResourcePackages"],
+      "value": []
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "character-save",
+        "version": "1.0.0",
+        "location": "/installedResourcePackages",
+        "params": { "property": "installedResourcePackages" }
+      }
+    ]
+  }
+]

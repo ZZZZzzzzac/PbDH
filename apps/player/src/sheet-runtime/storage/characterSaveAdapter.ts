@@ -3,6 +3,7 @@ import {
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
   type TabletopAsset,
+  type TabletopDocument,
   type TabletopResourceCopy,
 } from "@pbdh/contract-runtime";
 import { templateRegistry } from "@pbdh/templates/core";
@@ -38,45 +39,46 @@ export async function sheetCharacterToSave(input: {
   admitPlayerImage?: (image: PlayerImageData) => Promise<NormalizedPlayerImage>;
   nameCreatedAt?: string;
 }): Promise<CharacterSaveCandidate> {
-  const assets = new Map<string, TabletopAsset>();
   const media = new Map<string, Uint8Array>();
-  const values = structuredClone(input.data.character.values) as Record<string, SheetValue>;
+  const characterData: Record<string, unknown> = {};
+  for (const module of input.sheetSystemPackage.modules) {
+    if (module.类型 === "freeText" || module.类型 === "longText"
+      || module.类型 === "checkboxResource" || module.类型 === "countableResource") {
+      characterData[module.ID] = structuredClone(input.data.character.values[module.ID]);
+    } else if (module.类型 === "imageField") {
+      characterData[module.ID] = null;
+    } else if (module.类型 === "cardTable") {
+      characterData[module.ID] = { instances: [] };
+    }
+  }
 
-  for (const [moduleId, value] of Object.entries(values)) {
+  for (const [moduleId, value] of Object.entries(input.data.character.values)) {
     if (!isPlayerImageValue(value)) continue;
     const image = input.data.playerImages[value.imageId];
     if (!image) {
-      delete values[moduleId];
       continue;
     }
-    const existingAsset = input.existing?.document.characterData.assets.find((asset) =>
-      asset.id === image.id);
-    const existingBytes = existingAsset ? input.existing?.media.get(existingAsset.id) : undefined;
-    const normalized = existingAsset && existingBytes
-      ? { asset: existingAsset, bytes: existingBytes }
+    const existingAssetId = imageAssetId(input.existing?.document.characterData[moduleId]);
+    const existingBytes = existingAssetId ? input.existing?.media.get(existingAssetId) : undefined;
+    const normalized = existingAssetId && existingBytes
+      ? { asset: { id: existingAssetId }, bytes: existingBytes }
       : await requirePlayerImageAdmission(input.admitPlayerImage, image);
-    addAsset(assets, media, normalized.asset, normalized.bytes);
-    values[moduleId] = { kind: "player-image", imageId: normalized.asset.id };
+    media.set(normalized.asset.id, new Uint8Array(normalized.bytes));
+    characterData[moduleId] = { assetId: normalized.asset.id };
   }
 
-  const instances = input.data.cards.instances.map((card) => {
-    const existingInstance = input.existing?.document.characterData.tabletop.instances.find((candidate) =>
-      candidate.instanceId === card.instanceId);
+  for (const card of input.data.cards.instances) {
+    const existingInstance = findSavedCardInstance(input.existing?.document, card.instanceId);
     const snapshot = existingInstance
-      ? snapshotFromExisting(input.existing!, existingInstance.resourceCopy, assets, media)
+      ? { resourceCopy: structuredClone(existingInstance.resourceCopy) }
       : snapshotCard(card, input);
-    for (const asset of snapshot.assets) {
-      const bytes = snapshot.media.get(asset.id);
-      if (!bytes) throw new Error(`桌面卡缺少媒体：${asset.id}`);
-      addAsset(assets, media, asset, bytes);
-    }
-    return {
+    const instance: TabletopDocument["instances"][number] = {
       instanceId: card.instanceId,
       resourceCopy: snapshot.resourceCopy,
       state: {
-        sheetState: card.state,
-        tableModuleId: card.tableModuleId,
+        value: card.state,
         indicators: JSON.stringify(card.indicators),
+        ...(card.tokenCount === undefined ? {} : { tokenCount: String(card.tokenCount) }),
       },
       geometry: {
         x: card.xPct,
@@ -87,7 +89,10 @@ export async function sheetCharacterToSave(input: {
         scale: card.scale,
       },
     };
-  });
+    const tableState = characterData[card.tableModuleId];
+    if (!isCardTableState(tableState)) throw new Error(`Card Table Module 不存在：${card.tableModuleId}`);
+    tableState.instances.push(instance);
+  }
 
   const now = input.data.updatedAt;
   const document: CharacterSaveDocument = {
@@ -100,12 +105,11 @@ export async function sheetCharacterToSave(input: {
       id: input.currentSystem.id,
       version: input.currentSystem.version,
     },
-    characterData: {
-      values,
-      tabletop: { instances },
-      assets: [...assets.values()].sort((left, right) => left.id.localeCompare(right.id)),
-    },
+    characterDataVersion: input.sheetSystemPackage.manifest.角色数据版本,
+    characterData,
   };
+  const diagnostics = validateCharacterDataForSystemPackage(document, input.sheetSystemPackage);
+  if (diagnostics.length > 0) throw new Error(`Character Save Module 状态无效：${diagnostics.join("；")}`);
   return { document, media };
 }
 
@@ -118,10 +122,25 @@ export function characterSaveToSheet(input: {
       nativeEntry: { id: string };
     }>;
   };
+  sheetSystemPackage: SheetSystemPackage;
+  installedPackages?: PlatformResourceLibrary;
   mediaUrl: (assetId: string, bytes: Uint8Array) => string;
 }): SheetCharacterData {
+  const document = completeCharacterDataForSystemPackage(
+    input.candidate.document,
+    input.sheetSystemPackage,
+  );
+  const diagnostics = validateCharacterDataForSystemPackage(
+    document,
+    input.sheetSystemPackage,
+  );
+  if (diagnostics.length > 0) throw new Error(`Character Save Module 状态无效：${diagnostics.join("；")}`);
   const embeddedResourceEntries: SheetCharacterData["embeddedResourceEntries"] = {};
-  const cards: CardInstance[] = input.candidate.document.characterData.tabletop.instances.map((instance) => {
+  const cards: CardInstance[] = input.sheetSystemPackage.modules.flatMap((module) => {
+    if (module.类型 !== "cardTable") return [];
+    const tableState = document.characterData[module.ID];
+    if (!isCardTableState(tableState)) return [];
+    return tableState.instances.map((instance) => {
     const compatibility = input.currentSystem.resourceCompatibility.find((candidate) =>
       candidate.templateId === instance.resourceCopy.template.id);
     const libraryId = compatibility?.nativeEntry.id ?? "其他";
@@ -133,23 +152,22 @@ export function characterSaveToSheet(input: {
         libraryId,
         resourceCopy: instance.resourceCopy,
         resolveMediaReference: ({ assetId }) => {
-          const bytes = input.candidate.media.get(assetId);
+          const bytes = resolveCardMedia(input.installedPackages, instance.resourceCopy, assetId);
           return bytes ? input.mediaUrl(assetId, bytes) : undefined;
         },
       }),
       resourceCopy: structuredClone(instance.resourceCopy),
-      assets: input.candidate.document.characterData.assets.filter((asset) =>
-        Object.values(instance.resourceCopy.media).includes(asset.id)),
+      assets: resolveCardAssets(input.installedPackages, instance.resourceCopy),
       media: new Map(Object.values(instance.resourceCopy.media).flatMap((assetId) => {
-        const bytes = input.candidate.media.get(assetId);
+        const bytes = resolveCardMedia(input.installedPackages, instance.resourceCopy, assetId);
         return bytes ? [[assetId, new Uint8Array(bytes)] as const] : [];
       })),
     };
     return {
       instanceId: instance.instanceId,
-      tableModuleId: instance.state.tableModuleId ?? "character-card-table",
+      tableModuleId: module.ID,
       definitionRef: { type: "resourceLibrary", libraryId, entryId },
-      state: instance.state.sheetState ?? "",
+      state: instance.state.value ?? "",
       xPct: instance.geometry.x,
       yPct: instance.geometry.y,
       zIndex: instance.geometry.layer,
@@ -157,30 +175,40 @@ export function characterSaveToSheet(input: {
       rotation: instance.geometry.rotation,
       scale: instance.geometry.scale,
       indicators: parseIndicators(instance.state.indicators),
+      ...(parseTokenCount(instance.state.tokenCount) === undefined
+        ? {}
+        : { tokenCount: parseTokenCount(instance.state.tokenCount) }),
     };
+    });
   });
 
   const playerImages: Record<string, PlayerImageData> = {};
-  const values = structuredClone(input.candidate.document.characterData.values) as Record<string, SheetValue>;
-  for (const value of Object.values(values)) {
-    if (!isPlayerImageValue(value)) continue;
-    const asset = input.candidate.document.characterData.assets.find((candidate) =>
-      candidate.id === value.imageId);
-    const bytes = asset ? input.candidate.media.get(asset.id) : undefined;
-    if (!asset || !bytes) continue;
-    playerImages[asset.id] = {
-      id: asset.id,
-      mimeType: asset.mediaType,
-      dataUrl: input.mediaUrl(asset.id, bytes),
+  const values: Record<string, SheetValue> = {};
+  for (const module of input.sheetSystemPackage.modules) {
+    const value = document.characterData[module.ID];
+    if (module.类型 === "freeText" || module.类型 === "longText"
+      || module.类型 === "checkboxResource" || module.类型 === "countableResource") {
+      values[module.ID] = structuredClone(value) as SheetValue;
+      continue;
+    }
+    if (module.类型 !== "imageField") continue;
+    const assetId = imageAssetId(value);
+    const bytes = assetId ? input.candidate.media.get(assetId) : undefined;
+    if (!assetId || !bytes) continue;
+    values[module.ID] = { kind: "player-image", imageId: assetId };
+    playerImages[assetId] = {
+      id: assetId,
+      mimeType: "image/webp",
+      dataUrl: input.mediaUrl(assetId, bytes),
     };
   }
 
   return {
     kind: "pbdh-character-data",
     schemaVersion: "0.1.0",
-    systemPackage: structuredClone(input.candidate.document.systemPackage),
+    systemPackage: structuredClone(document.systemPackage),
     character: {
-      id: input.candidate.document.documentId,
+      id: document.documentId,
       values,
     },
     cards: { instances: cards },
@@ -188,22 +216,19 @@ export function characterSaveToSheet(input: {
     embeddedResourceEntries,
     resourceSelections: {},
     playerImages,
-    updatedAt: input.candidate.document.updatedAt,
+    updatedAt: document.updatedAt,
   };
 }
 
 function snapshotCard(
   card: CardInstance,
   input: Parameters<typeof sheetCharacterToSave>[0],
-): { resourceCopy: TabletopResourceCopy; assets: TabletopAsset[]; media: Map<string, Uint8Array> } {
+): { resourceCopy: TabletopResourceCopy } {
   if (card.definitionRef.type === "resourceLibrary") {
     const embedded = input.data.embeddedResourceEntries[card.definitionRef.entryId];
     if (embedded?.resourceCopy) {
       return {
         resourceCopy: structuredClone(embedded.resourceCopy),
-        assets: structuredClone(embedded.assets ?? []),
-        media: new Map([...(embedded.media ?? new Map())].map(([assetId, bytes]) =>
-          [assetId, new Uint8Array(bytes)])),
       };
     }
     const parsed = parseInstalledEntryId(card.definitionRef.entryId);
@@ -213,7 +238,6 @@ function snapshotCard(
     if (!installed || !resource || !isRecord(resource.data)) {
       throw new Error(`桌面卡来源资源不可用：${card.definitionRef.entryId}`);
     }
-    const assetIds = new Set(Object.values(resource.media));
     return {
       resourceCopy: {
         source: { packageId: parsed.packageId, resourceId: parsed.resourceId },
@@ -223,8 +247,6 @@ function snapshotCard(
         labels: [],
         media: structuredClone(resource.media),
       },
-      assets: installed.document.assets.filter((asset) => assetIds.has(asset.id)),
-      media: new Map([...installed.media].filter(([assetId]) => assetIds.has(assetId))),
     };
   }
 
@@ -253,39 +275,7 @@ function snapshotCard(
     labels: [],
     media: compositeMedia(composite.fields),
   };
-  const assetIds = new Set(Object.values(resourceCopy.media));
-  const assets: TabletopAsset[] = [];
-  const media = new Map<string, Uint8Array>();
-  for (const installed of input.installedPackages.values()) {
-    for (const asset of installed.document.assets) {
-      if (!assetIds.has(asset.id) || assets.some((candidate) => candidate.id === asset.id)) continue;
-      const bytes = installed.media.get(asset.id);
-      if (!bytes) continue;
-      assets.push(asset);
-      media.set(asset.id, bytes);
-    }
-  }
-  return { resourceCopy, assets, media };
-}
-
-function snapshotFromExisting(
-  existing: CharacterSaveCandidate,
-  resourceCopy: TabletopResourceCopy,
-  assets: Map<string, TabletopAsset>,
-  media: Map<string, Uint8Array>,
-) {
-  const ids = new Set(Object.values(resourceCopy.media));
-  const selectedAssets = existing.document.characterData.assets.filter((asset) => ids.has(asset.id));
-  const selectedMedia = new Map<string, Uint8Array>();
-  for (const asset of selectedAssets) {
-    const bytes = existing.media.get(asset.id);
-    if (bytes) selectedMedia.set(asset.id, bytes);
-  }
-  for (const asset of selectedAssets) {
-    const bytes = selectedMedia.get(asset.id);
-    if (bytes) addAsset(assets, media, asset, bytes);
-  }
-  return { resourceCopy: structuredClone(resourceCopy), assets: selectedAssets, media: selectedMedia };
+  return { resourceCopy };
 }
 
 function compositeData(templateId: string, fields: Record<string, string>): Record<string, unknown> {
@@ -338,14 +328,241 @@ function parseIndicators(value: string | undefined): CardInstance["indicators"] 
   }
 }
 
-function addAsset(
-  assets: Map<string, TabletopAsset>,
-  media: Map<string, Uint8Array>,
-  asset: TabletopAsset,
-  bytes: Uint8Array,
+function parseTokenCount(value: string | undefined): number | undefined {
+  if (value === undefined || !/^\d+$/u.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+}
+
+function imageAssetId(value: unknown): string | undefined {
+  return isRecord(value) && typeof value.assetId === "string" ? value.assetId : undefined;
+}
+
+function isCardTableState(value: unknown): value is { instances: TabletopDocument["instances"] } {
+  return isRecord(value) && Array.isArray(value.instances);
+}
+
+function findSavedCardInstance(
+  document: CharacterSaveDocument | undefined,
+  instanceId: string,
+): TabletopDocument["instances"][number] | undefined {
+  if (!document) return undefined;
+  for (const value of Object.values(document.characterData)) {
+    if (!isCardTableState(value)) continue;
+    const found = value.instances.find((candidate) => candidate.instanceId === instanceId);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function resolveCardPackage(
+  installedPackages: PlatformResourceLibrary | undefined,
+  resourceCopy: TabletopResourceCopy,
 ) {
-  assets.set(asset.id, structuredClone(asset));
-  media.set(asset.id, new Uint8Array(bytes));
+  if (!installedPackages) return undefined;
+  const sourcePackage = resourceCopy.source
+    ? installedPackages.get(resourceCopy.source.packageId)
+    : undefined;
+  if (sourcePackage) return sourcePackage;
+  const assetIds = Object.values(resourceCopy.media);
+  return [...installedPackages.values()].find((candidate) =>
+    assetIds.some((assetId) => candidate.media.has(assetId)));
+}
+
+function resolveCardMedia(
+  installedPackages: PlatformResourceLibrary | undefined,
+  resourceCopy: TabletopResourceCopy,
+  assetId: string,
+): Uint8Array | undefined {
+  return resolveCardPackage(installedPackages, resourceCopy)?.media.get(assetId);
+}
+
+function resolveCardAssets(
+  installedPackages: PlatformResourceLibrary | undefined,
+  resourceCopy: TabletopResourceCopy,
+): TabletopAsset[] {
+  const packageEntry = resolveCardPackage(installedPackages, resourceCopy);
+  const assetIds = new Set(Object.values(resourceCopy.media));
+  return packageEntry?.document.assets.filter((asset) => assetIds.has(asset.id)) ?? [];
+}
+
+export function validateCharacterDataForSystemPackage(
+  document: CharacterSaveDocument,
+  systemPackage: SheetSystemPackage,
+): string[] {
+  const diagnostics: string[] = [];
+  if (document.systemPackage.id !== systemPackage.manifest.ID) diagnostics.push("System Package ID 不匹配");
+  if (document.systemPackage.version !== systemPackage.manifest.版本) diagnostics.push("System Package 版本不匹配");
+  if (document.characterDataVersion !== systemPackage.manifest.角色数据版本) diagnostics.push("Character Data 版本不匹配");
+
+  const modules = new Map(systemPackage.modules.map((module) => [module.ID, module]));
+  const stateful = new Set(systemPackage.modules.flatMap((module) =>
+    module.类型 === "freeText" || module.类型 === "longText" || module.类型 === "checkboxResource"
+      || module.类型 === "countableResource" || module.类型 === "imageField" || module.类型 === "cardTable"
+      ? [module.ID]
+      : []));
+  for (const moduleId of Object.keys(document.characterData)) {
+    if (!stateful.has(moduleId)) diagnostics.push(`未知或无状态 Module：${moduleId}`);
+  }
+
+  const instanceIds = new Set<string>();
+  for (const moduleId of stateful) {
+    const module = modules.get(moduleId)!;
+    if (!Object.prototype.hasOwnProperty.call(document.characterData, moduleId)) {
+      diagnostics.push(`缺少 Module 状态：${moduleId}`);
+      continue;
+    }
+    const value = document.characterData[moduleId];
+    if (module.类型 === "freeText" || module.类型 === "longText") {
+      if (typeof value !== "string") diagnostics.push(`${moduleId} 必须是字符串`);
+      continue;
+    }
+    if (module.类型 === "checkboxResource") {
+      const optionIds = new Set(module.选项.map((option) => option.ID));
+      if (!isRecord(value) || Object.keys(value).length !== optionIds.size
+        || Object.entries(value).some(([id, checked]) => !optionIds.has(id) || typeof checked !== "boolean")) {
+        diagnostics.push(`${moduleId} 的勾选状态无效`);
+      }
+      continue;
+    }
+    if (module.类型 === "countableResource") {
+      const max = isRecord(value) ? value.max : undefined;
+      const current = isRecord(value) ? value.current : undefined;
+      const min = module.最小值 ?? 0;
+      const expectedMax = module.最大值 ?? null;
+      if (!isRecord(value) || Object.keys(value).some((key) => key !== "current" && key !== "max")
+        || !Number.isInteger(current) || (max !== null && !Number.isInteger(max))
+        || (typeof current === "number" && current < min)
+        || (typeof current === "number" && typeof max === "number" && current > max)
+        || (module.最大值可改 !== true && max !== expectedMax)) {
+        diagnostics.push(`${moduleId} 的计数状态无效`);
+      }
+      continue;
+    }
+    if (module.类型 === "imageField") {
+      if (value !== null && (!isRecord(value) || Object.keys(value).length !== 1
+        || typeof value.assetId !== "string" || !/^sha256:[0-9a-f]{64}$/u.test(value.assetId))) {
+        diagnostics.push(`${moduleId} 的图片引用无效`);
+      }
+      continue;
+    }
+    if (module.类型 === "cardTable") {
+      if (!isCardTableState(value) || Object.keys(value).length !== 1) {
+        diagnostics.push(`${moduleId} 的卡牌桌面状态无效`);
+        continue;
+      }
+      value.instances.forEach((instance, index) => {
+        if (!isTabletopInstance(instance)) {
+          diagnostics.push(`${moduleId}.instances[${index}] 无效`);
+          return;
+        }
+        const states = module.状态选项 ?? [];
+        if (typeof instance.state.value !== "string"
+          || (states.length > 0 && !states.includes(instance.state.value))
+          || !isSerializedIndicators(instance.state.indicators)
+          || (instance.state.tokenCount !== undefined && parseTokenCount(instance.state.tokenCount) === undefined)) {
+          diagnostics.push(`${moduleId}.instances[${index}] 的运行状态无效`);
+        }
+        if (instanceIds.has(instance.instanceId)) diagnostics.push(`Card Instance ID 重复：${instance.instanceId}`);
+        instanceIds.add(instance.instanceId);
+      });
+    }
+  }
+  return diagnostics;
+}
+
+export function completeCharacterDataForSystemPackage(
+  document: CharacterSaveDocument,
+  systemPackage: SheetSystemPackage,
+): CharacterSaveDocument {
+  const characterData = structuredClone(document.characterData) as Record<string, unknown>;
+  let changed = false;
+  for (const module of systemPackage.modules) {
+    if (Object.prototype.hasOwnProperty.call(characterData, module.ID)) continue;
+    switch (module.类型) {
+      case "freeText":
+      case "longText":
+        characterData[module.ID] = module.默认值 ?? "";
+        changed = true;
+        break;
+      case "checkboxResource":
+        characterData[module.ID] = Object.fromEntries(module.选项.map((option) =>
+          [option.ID, option.默认选中 ?? false]));
+        changed = true;
+        break;
+      case "countableResource": {
+        const min = module.最小值 ?? 0;
+        const max = module.最大值 ?? null;
+        const initial = module.默认值 ?? min;
+        characterData[module.ID] = {
+          current: Math.max(min, max === null ? initial : Math.min(max, initial)),
+          max,
+        };
+        changed = true;
+        break;
+      }
+      case "imageField":
+        characterData[module.ID] = null;
+        changed = true;
+        break;
+      case "cardTable":
+        characterData[module.ID] = { instances: [] };
+        changed = true;
+        break;
+    }
+  }
+  const systemPackageChanged = document.systemPackage.id === systemPackage.manifest.ID
+    && document.systemPackage.version === "1.1.0"
+    && systemPackage.manifest.版本 === "1.0.0";
+  return changed || systemPackageChanged
+    ? {
+        ...document,
+        systemPackage: systemPackageChanged
+          ? { ...document.systemPackage, version: systemPackage.manifest.版本 }
+          : document.systemPackage,
+        characterData,
+      }
+    : document;
+}
+
+function isTabletopInstance(value: unknown): value is TabletopDocument["instances"][number] {
+  if (!isRecord(value) || typeof value.instanceId !== "string" || !isRecord(value.resourceCopy)
+    || !isRecord(value.state) || Object.values(value.state).some((item) => typeof item !== "string")
+    || !isRecord(value.geometry)) return false;
+  const geometry = value.geometry;
+  return ["x", "y", "layer", "rotation", "scale"].every((key) =>
+    typeof geometry[key] === "number" && Number.isFinite(geometry[key]))
+    && Number.isInteger(geometry.layer)
+    && typeof geometry.scale === "number" && geometry.scale > 0
+    && typeof geometry.flipped === "boolean"
+    && isRecord(value.resourceCopy.template)
+    && typeof value.resourceCopy.template.id === "string"
+    && typeof value.resourceCopy.template.version === "string"
+    && isRecord(value.resourceCopy.presentation)
+    && isRecord(value.resourceCopy.data)
+    && Array.isArray(value.resourceCopy.labels)
+    && value.resourceCopy.labels.every((label) => typeof label === "string")
+    && isRecord(value.resourceCopy.media)
+    && Object.values(value.resourceCopy.media).every((assetId) => typeof assetId === "string");
+}
+
+function isSerializedIndicators(value: string | undefined): boolean {
+  if (value === undefined) return true;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.length <= 10 && parsed.every((indicator) => isRecord(indicator)
+        && typeof indicator.indicatorId === "string"
+        && Number.isInteger(indicator.colorIndex)
+        && typeof indicator.colorIndex === "number" && indicator.colorIndex >= 0 && indicator.colorIndex <= 9
+        && Number.isInteger(indicator.value)
+        && typeof indicator.value === "number" && indicator.value >= 0);
+    }
+    return isRecord(parsed) && Object.entries(parsed).every(([id, count]) =>
+      id.length > 0 && Number.isInteger(count) && typeof count === "number" && count >= 0);
+  } catch {
+    return false;
+  }
 }
 
 async function requirePlayerImageAdmission(

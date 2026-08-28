@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import type { CharacterSaveDocument, ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 
-import fixtureJson from "../../contracts/conformance/character-save/1.0.0-alpha.1/valid/weapon-and-tabletop.json";
+import fixtureJson from "../../contracts/conformance/character-save/1.0.0/valid/module-state.json";
 import weaponPackageJson from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
 import {
   CharacterSaveRepository,
@@ -38,16 +38,13 @@ describe("CharacterSaveRepository", () => {
     const restored = await new CharacterSaveRepository(store).list();
 
     expect(restored).toHaveLength(1);
-    expect(restored[0]?.document.characterData.values).toEqual({
-      "primary-weapon-name": "**长弓**｜敏捷｜远距离｜d8+2 物理｜双手",
-      "primary-weapon-description": "一次攻击命中后，你可以标记 1 压力使伤害增加 1d6。",
-    });
-    expect(restored[0]?.document.characterData.tabletop.instances[0]).toMatchObject({
+    expect(restored[0]?.document.characterData["primary-weapon-name"]).toBe("**长弓**｜敏捷｜远距离｜d8+2 物理｜双手");
+    expect((restored[0]?.document.characterData["character-card-table"] as { instances: unknown[] }).instances[0]).toMatchObject({
       resourceCopy: {
         source: { resourceId: "minotaur-wrecker" },
         data: { 名称: "牛头人破坏者" },
       },
-      state: { currentHp: "4", currentStress: "2" },
+      state: { value: "配置", indicators: "[]" },
       geometry: { x: 128, y: 256 },
     });
     expect(restored[0]?.sync.scope).toBe("local-only");
@@ -56,13 +53,10 @@ describe("CharacterSaveRepository", () => {
   test("does not upload a pre-login save merely because the user signed in", async () => {
     const store = new DexieLocalDocumentStore(database());
     const repository = new CharacterSaveRepository(store, () => "2026-08-26T08:10:00.000Z");
-    const local = structuredClone(fixtureJson) as CharacterSaveDocument;
+    let local = structuredClone(fixtureJson) as CharacterSaveDocument;
     await repository.save(local, new Map());
 
-    local.characterData.values = {
-      ...local.characterData.values,
-      notes: "登录后的本地修改",
-    };
+    local = { ...local, characterData: { ...local.characterData, notes: "登录后的本地修改" } };
     const saved = await repository.save(local, new Map(), "account-1");
 
     expect(saved.sync).toEqual({
@@ -81,6 +75,7 @@ describe("CharacterSaveRepository", () => {
         id: "01a0132c-4eef-7703-94ac-ec8d1a660001",
         version: "1.0.0-alpha.1",
       },
+      characterDataVersion: "1.0.0",
       documentId: "01989f4e-7b2c-7000-8000-000000000046",
       now: "2026-08-26T08:09:00.000Z",
     });
@@ -117,7 +112,6 @@ describe("CharacterSaveRepository", () => {
     await resources.remove(resourcePackage.package.id);
 
     const restored = (await new CharacterSaveRepository(store).list())[0]!.document;
-    expect(restored.characterData.values).toEqual(character.characterData.values);
-    expect(restored.characterData.tabletop).toEqual(character.characterData.tabletop);
+    expect(restored.characterData).toEqual(character.characterData);
   });
 });

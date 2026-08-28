@@ -16,6 +16,7 @@ const ROOT_PATH = "system.json";
 const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 
 export type SystemPackageRuntime = {
+  characterDataVersion: string;
   loadingPresentation?: {
     tagline: string;
     accentColor: string;
@@ -127,7 +128,10 @@ export function normalizeSystemPackageDocument(
   return {
     contractVersion: VERSION,
     package: structuredClone(document.package),
-    runtime: structuredClone(document.runtime),
+    runtime: {
+      ...structuredClone(document.runtime),
+      characterDataVersion: document.runtime.characterDataVersion ?? "1.0.0",
+    },
     resourceCompatibility: structuredClone(document.resourceCompatibility ?? []),
     embeddedResources: document.embeddedResources?.map(({ path }) => ({ path })) ?? [],
   };

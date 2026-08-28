@@ -1,8 +1,5 @@
 import "fake-indexeddb/auto";
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { afterEach, describe, expect, test } from "vitest";
 
 import type {
@@ -12,12 +9,10 @@ import type {
 } from "@pbdh/cloud-documents";
 import type {
   CharacterSaveDocument,
-  ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 
-import characterJson from "../../contracts/conformance/character-save/1.0.0-alpha.1/valid/weapon-and-tabletop.json";
-import minotaurJson from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import characterJson from "../../contracts/conformance/character-save/1.0.0/valid/module-state.json";
 import { CharacterSaveRepository } from "../../apps/player/src/character-saves/character-save-repository.ts";
 import { PlayerCloudDocumentService } from "../../apps/player/src/character-saves/cloud-document-service.ts";
 
@@ -77,23 +72,15 @@ class RecoveryApi implements CloudDocumentApi {
 }
 
 describe("Player Character Save cloud recovery", () => {
-  test("restores final weapon data, tabletop state and media without a source resource package", async () => {
+  test("restores final weapon data and tabletop Resource Copy without a source resource package", async () => {
     const document = structuredClone(characterJson) as CharacterSaveDocument;
-    const resourcePackage = minotaurJson as ResourcePackageLogicalDocument;
-    const asset = resourcePackage.assets[0]!;
-    const bytes = new Uint8Array(readFileSync(path.join(
-      process.cwd(),
-      "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
-    )));
-    document.characterData.assets = [structuredClone(asset)];
-    document.characterData.tabletop.instances[0]!.resourceCopy.media = { portrait: asset.id };
     const remote: RemoteCloudDocument = {
       documentId: document.documentId,
       documentKind: "character-save",
       contractFamily: "character-save",
       contractVersion: document.contractVersion,
       revision: 6,
-      assetIds: [asset.id],
+      assetIds: [],
       payload: document,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
@@ -105,7 +92,7 @@ describe("Player Character Save cloud recovery", () => {
     const service = new PlayerCloudDocumentService(
       store,
       repository,
-      new RecoveryApi([remote], new Map([[asset.id, bytes]])),
+      new RecoveryApi([remote], new Map()),
     );
 
     const recovered = await service.recover(credentials);
@@ -116,16 +103,15 @@ describe("Player Character Save cloud recovery", () => {
       baseRevision: "6",
       accountId: "account-1",
     });
-    expect(recovered[0]?.document.characterData.values["primary-weapon-name"])
+    expect(recovered[0]?.document.characterData["primary-weapon-name"])
       .toContain("长弓");
-    expect(recovered[0]?.document.characterData.tabletop.instances[0]).toMatchObject({
-      state: { currentHp: "4", currentStress: "2" },
+    expect((recovered[0]?.document.characterData["character-card-table"] as { instances: unknown[] }).instances[0]).toMatchObject({
+      state: { value: "配置", indicators: "[]" },
       resourceCopy: {
         data: { 名称: "牛头人破坏者" },
-        media: { portrait: asset.id },
       },
     });
-    expect(recovered[0]?.media.get(asset.id)).toEqual(bytes);
+    expect(recovered[0]?.media.size).toBe(0);
   });
 
   test("shows local-only saves plus only the active account's cloud saves", async () => {
@@ -152,5 +138,33 @@ describe("Player Character Save cloud recovery", () => {
       .toEqual([local.name, "账号一"].sort());
     expect((await service.localSnapshot("account-2")).map((save) => save.document.name).sort())
       .toEqual([local.name, "账号二"].sort());
+  });
+
+  test("does not persist a cloud save rejected by target System Package module validation", async () => {
+    const document = structuredClone(characterJson) as CharacterSaveDocument;
+    const remote: RemoteCloudDocument = {
+      documentId: document.documentId,
+      documentKind: "character-save",
+      contractFamily: "character-save",
+      contractVersion: document.contractVersion,
+      revision: 1,
+      assetIds: [],
+      payload: document,
+      createdAt: document.createdAt,
+      updatedAt: document.updatedAt,
+      deletedAt: null,
+      purgeAfter: null,
+    };
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    const service = new PlayerCloudDocumentService(
+      store,
+      repository,
+      new RecoveryApi([remote], new Map()),
+      () => { throw new Error("Module 状态无效"); },
+    );
+
+    await expect(service.recover(credentials)).rejects.toThrow("Module 状态无效");
+    expect(await repository.list()).toEqual([]);
   });
 });

@@ -57,6 +57,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   readonly #createMediaUrl: PlatformRuntimeStorageOptions["createMediaUrl"];
   readonly #admitPlayerImage: (image: PlayerImageData) => Promise<NormalizedPlayerImage>;
   #currentPackage: SystemPackage | null = null;
+  readonly #loadedPackages = new Map<string, SystemPackage>();
   #currentPackageAssets: RuntimePackageAsset[] = [];
   #cacheMetadata: SystemPackageCacheMetadata | null = null;
 
@@ -91,6 +92,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
     cacheMetadata: SystemPackageCacheMetadata = { source: "imported" },
   ): Promise<void> {
     this.#currentPackage = structuredClone(systemPackage);
+    this.#loadedPackages.set(systemPackage.manifest.ID, structuredClone(systemPackage));
     this.#currentPackageAssets = packageAssets.map(copyRuntimeAsset);
     this.#cacheMetadata = structuredClone(cacheMetadata);
   }
@@ -140,15 +142,15 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
     if (!stored) return null;
     const currentSystem = this.#resolveSystem(packageId);
     if (!currentSystem) return null;
+    const sheetSystemPackage = this.#requireSheetSystemPackage(packageId);
     return characterSaveToSheet({
       candidate: stored,
       currentSystem: {
         resourceCompatibility: currentSystem.resourceCompatibility,
       },
-      mediaUrl: (assetId, bytes) => {
-        const asset = stored.document.characterData.assets.find((candidate) => candidate.id === assetId);
-        return this.#createMediaUrl!(assetId, bytes, asset?.mediaType ?? "image/webp");
-      },
+      sheetSystemPackage,
+      installedPackages: await this.#installedPackages(),
+      mediaUrl: (assetId, bytes) => this.#createMediaUrl!(assetId, bytes, "image/webp"),
     });
   }
 
@@ -273,9 +275,10 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
       && candidate.document.systemPackage.id === packageId);
   }
 
-  #requireSheetSystemPackage(): SystemPackage {
-    if (!this.#currentPackage) throw new Error("人物存档前必须先加载系统包。");
-    return this.#currentPackage;
+  #requireSheetSystemPackage(packageId?: string): SystemPackage {
+    const systemPackage = packageId ? this.#loadedPackages.get(packageId) : this.#currentPackage;
+    if (!systemPackage) throw new Error("人物存档前必须先加载系统包。");
+    return systemPackage;
   }
 }
 

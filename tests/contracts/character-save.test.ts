@@ -9,6 +9,8 @@ import {
   loadPbcha,
   validateCharacterSaveSemantics,
   writePbcha,
+  type AnyCharacterSaveDocument,
+  type CharacterSaveAlpha1Document,
   type CharacterSaveDocument,
   type CharacterSaveMedia,
   type ContractCatalog,
@@ -16,7 +18,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/character-save/1.0.0-alpha.1";
+const fixtureRoot = "contracts/conformance/character-save/1.0.0";
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
@@ -29,7 +31,7 @@ const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
     readJson<AnySchema>(`contracts/${version.schema}`),
   ])));
 const runtime = new ContractRuntime(catalog, schemas);
-const fixture = readJson<CharacterSaveDocument>(`${fixtureRoot}/valid/weapon-and-tabletop.json`);
+const fixture = readJson<CharacterSaveDocument>(`${fixtureRoot}/valid/module-state.json`);
 
 type Mutation =
   | null
@@ -49,10 +51,10 @@ function mutate(source: CharacterSaveDocument, mutation: Mutation): CharacterSav
   return result as unknown as CharacterSaveDocument;
 }
 
-async function validate(document: CharacterSaveDocument, media: CharacterSaveMedia = new Map()) {
+async function validate(document: AnyCharacterSaveDocument, media: CharacterSaveMedia = new Map()) {
   const diagnostics = runtime.validate({
     family: "character-save",
-    version: "1.0.0-alpha.1",
+    version: document.contractVersion,
     mode: "development",
     candidate: document,
   });
@@ -61,7 +63,7 @@ async function validate(document: CharacterSaveDocument, media: CharacterSaveMed
     : validateCharacterSaveSemantics(document, media);
 }
 
-describe("Character Save 1.0.0-alpha.1 conformance", () => {
+describe("Character Save 1.0.0 conformance", () => {
   const cases = readJson<Array<{
     name: string;
     mutation: Mutation;
@@ -75,21 +77,6 @@ describe("Character Save 1.0.0-alpha.1 conformance", () => {
     });
   }
 
-  test("rejects duplicate player tabletop instance IDs", async () => {
-    const duplicate = structuredClone(fixture);
-    duplicate.characterData.tabletop.instances.push(
-      structuredClone(duplicate.characterData.tabletop.instances[0]!),
-    );
-    expect(await validate(duplicate)).toContainEqual({
-      code: "character-save.tabletop.instance-id.duplicate",
-      severity: "error",
-      family: "character-save",
-      version: "1.0.0-alpha.1",
-      location: "/characterData/tabletop/instances/1/instanceId",
-      params: { instanceId: "01989f4e-7b2c-7000-8000-000000000045" },
-    });
-  });
-
   test("round-trips one Character Save through .pbcha", async () => {
     const bytes = writePbcha(fixture, new Map(), { exportTime: new Date("2026-08-26T00:00:00Z") });
     const result = await loadPbcha(bytes, validate);
@@ -98,9 +85,55 @@ describe("Character Save 1.0.0-alpha.1 conformance", () => {
     expect(result.candidate?.media.size).toBe(0);
   });
 
+  test(".pbcha only carries media referenced by imageField module state", async () => {
+    const playerBytes = new Uint8Array([1, 2, 3, 4]);
+    const digest = await crypto.subtle.digest("SHA-256", playerBytes);
+    const playerAssetId = `sha256:${Array.from(new Uint8Array(digest), (value) =>
+      value.toString(16).padStart(2, "0")).join("")}`;
+    const document: CharacterSaveDocument = {
+      ...structuredClone(fixture),
+      characterData: { ...structuredClone(fixture.characterData), "character-avatar": { assetId: playerAssetId } },
+    };
+    const bytes = writePbcha(document, new Map([
+      [playerAssetId, playerBytes],
+      [`sha256:${"f".repeat(64)}`, new Uint8Array([9])],
+    ]));
+
+    const result = await loadPbcha(bytes, validate);
+
+    expect(result.diagnostics).toEqual([]);
+    expect([...result.candidate!.media.keys()]).toEqual([playerAssetId]);
+  });
+
   test("rejects a bad .pbcha without producing a candidate", async () => {
     const result = await loadPbcha(new Uint8Array([1, 2, 3]), validate);
     expect(result.candidate).toBeNull();
     expect(result.diagnostics[0]?.code).toBe("character-save.archive.zip.invalid");
+  });
+
+  test("reads and deterministically converts the development alpha shape", async () => {
+    const alpha = readJson<CharacterSaveAlpha1Document>(
+      "contracts/conformance/character-save/1.0.0-alpha.1/valid/weapon-and-tabletop.json",
+    );
+    alpha.characterData.tabletop.instances[0]!.state = {
+      ...alpha.characterData.tabletop.instances[0]!.state,
+      tableModuleId: "character-card-table",
+      sheetState: "配置",
+      indicators: "[]",
+    };
+    const bytes = writePbcha(alpha as unknown as CharacterSaveDocument, new Map());
+    const result = await loadPbcha(bytes, validate);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.candidate?.document).toMatchObject({
+      contractVersion: "1.0.0",
+      characterDataVersion: "1.0.0",
+      characterData: {
+        "primary-weapon-name": "**长弓**｜敏捷｜远距离｜d8+2 物理｜双手",
+        "character-card-table": { instances: [expect.objectContaining({
+          instanceId: "01989f4e-7b2c-7000-8000-000000000045",
+          state: expect.objectContaining({ value: "配置", indicators: "[]" }),
+        })] },
+      },
+    });
   });
 });

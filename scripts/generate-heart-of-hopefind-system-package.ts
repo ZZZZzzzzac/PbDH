@@ -21,6 +21,8 @@ type SourceEntry = {
   第二特性规则: string;
 };
 type LegacyRuntimeManifest = {
+  版本: string;
+  角色数据版本: string;
   加载展示?: { 标语: string; 强调色: string };
   pages: string;
   skins?: Array<{
@@ -42,13 +44,13 @@ const generatedSystemDocumentPath = path.resolve("apps/player/src/heart-of-hopef
 const generatedPresetPath = path.resolve("apps/player/src/heart-of-hopefind-preset.generated.json");
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a04186-51be-74e1-b94f-ec17d354dc00";
-const systemPackageVersion = "1.1.0";
 const resourcePackageId = "01a04186-51bf-7c26-8c27-2f7147125243";
 const resourcePackageVersion = "1.0.0";
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
 )) as LegacyRuntimeManifest;
+const systemPackageVersion = legacyManifest.版本;
 
 const freeTemplate = templateRegistry.resolve("自由", "1.0.0");
 if (!freeTemplate) throw new Error("Missing Template: 自由@1.0.0");
@@ -173,6 +175,7 @@ console.log(JSON.stringify({
 
 function mapLegacyRuntime(manifest: LegacyRuntimeManifest): SystemPackageDocument["runtime"] {
   return {
+    characterDataVersion: manifest.角色数据版本,
     ...(manifest.加载展示 ? { loadingPresentation: {
       tagline: manifest.加载展示.标语,
       accentColor: manifest.加载展示.强调色,

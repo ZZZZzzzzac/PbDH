@@ -3,6 +3,10 @@ import { strFromU8, strToU8, unzipSync, zipSync, type Zippable, type ZipOptions 
 import type { ContractDiagnostic } from "./index.ts";
 import {
   CHARACTER_SAVE_VERSION,
+  CHARACTER_SAVE_ALPHA1_VERSION,
+  migrateCharacterSaveAlpha1,
+  selectCharacterSavePlayerMedia,
+  type AnyCharacterSaveDocument,
   type CharacterSaveCandidate,
   type CharacterSaveCandidateValidator,
   type CharacterSaveDocument,
@@ -56,10 +60,10 @@ export function writePbcha(
   const files: Record<string, [Uint8Array, ZipOptions]> = {
     [ROOT_PATH]: [strToU8(`${JSON.stringify(document, null, 2)}\n`), zipOptions],
   };
-  for (const asset of document.characterData.assets) {
-    const bytes = media.get(asset.id);
-    if (!bytes) throw new Error(`Missing media bytes: ${asset.id}`);
-    files[`assets/${asset.id.slice("sha256:".length)}.webp`] = [bytes, zipOptions];
+  const playerMedia = selectCharacterSavePlayerMedia(document, media);
+  for (const [assetId, bytes] of [...playerMedia].sort(([left], [right]) => left.localeCompare(right))) {
+    if (!/^sha256:[0-9a-f]{64}$/u.test(assetId)) throw new Error(`Invalid media Asset ID: ${assetId}`);
+    files[`assets/${assetId.slice("sha256:".length)}.webp`] = [bytes, zipOptions];
   }
   return zipSync(files as Zippable);
 }
@@ -103,11 +107,11 @@ export async function loadPbcha(
     return { candidate: null, diagnostics: [diagnostic("character-save.archive.root.missing", `/${ROOT_PATH}`)] };
   }
 
-  let document: CharacterSaveDocument;
+  let sourceDocument: AnyCharacterSaveDocument;
   try {
     const parsed = JSON.parse(strFromU8(root)) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
-    document = parsed as CharacterSaveDocument;
+    sourceDocument = parsed as AnyCharacterSaveDocument;
   } catch {
     return { candidate: null, diagnostics: [diagnostic("character-save.archive.root.invalid-json", `/${ROOT_PATH}`)] };
   }
@@ -134,7 +138,20 @@ export async function loadPbcha(
   }
   if (archiveDiagnostics.length > 0) return { candidate: null, diagnostics: archiveDiagnostics };
 
-  const diagnostics = await validate(document, media);
+  const sourceDiagnostics = await validate(sourceDocument, media);
+  if (sourceDiagnostics.some((item) => item.severity === "error")) {
+    return { candidate: null, diagnostics: sourceDiagnostics };
+  }
+  const migrated = sourceDocument.contractVersion === CHARACTER_SAVE_ALPHA1_VERSION
+    ? migrateCharacterSaveAlpha1(sourceDocument)
+    : { document: sourceDocument as CharacterSaveDocument, diagnostics: [] };
+  if (!migrated.document) return { candidate: null, diagnostics: migrated.diagnostics };
+  const migratedMedia = sourceDocument.contractVersion === CHARACTER_SAVE_VERSION
+    ? media
+    : selectCharacterSavePlayerMedia(migrated.document, media);
+  const diagnostics = sourceDocument.contractVersion === CHARACTER_SAVE_VERSION
+    ? sourceDiagnostics
+    : await validate(migrated.document, migratedMedia);
   if (diagnostics.some((item) => item.severity === "error")) return { candidate: null, diagnostics };
-  return { candidate: { document, media }, diagnostics };
+  return { candidate: { document: migrated.document, media: migratedMedia }, diagnostics };
 }

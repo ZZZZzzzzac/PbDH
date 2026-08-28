@@ -103,7 +103,7 @@ describe("System Package directory and .pbsys", () => {
         name: "Minimal",
         description: "",
       },
-      runtime: { pages: "pages.json", modules: "modules.json" },
+      runtime: { pages: "pages.json", modules: "modules.json", characterDataVersion: "1.0.0" },
     };
     const entries: PortableDirectoryEntry[] = [
       { path: "system.json", kind: "file", bytes: new TextEncoder().encode(JSON.stringify(minimal)) },

@@ -27,6 +27,7 @@ export const systemPackageRuntimeManifestSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   版本: z.string().min(1),
+  角色数据版本: z.string().min(1),
   加载展示: loadingPresentationSchema.optional(),
 });
 

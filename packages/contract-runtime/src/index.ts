@@ -46,18 +46,22 @@ export type {
   TabletopDocumentCandidateValidator,
 } from "./tabletop-archive.ts";
 export {
+  CHARACTER_SAVE_ALPHA1_VERSION,
   CHARACTER_SAVE_VERSION,
+  migrateCharacterSaveAlpha1,
+  selectCharacterSavePlayerMedia,
   validateCharacterSaveSemantics,
 } from "./character-save.ts";
 export { loadPbcha, writePbcha } from "./character-archive.ts";
 export type { PbchaLoadResult } from "./character-archive.ts";
 export type {
+  AnyCharacterSaveDocument,
   CharacterData,
+  CharacterSaveAlpha1Document,
   CharacterSaveCandidate,
   CharacterSaveCandidateValidator,
   CharacterSaveDocument,
   CharacterSaveMedia,
-  CharacterValues,
 } from "./character-save.ts";
 export {
   compareSemVer,

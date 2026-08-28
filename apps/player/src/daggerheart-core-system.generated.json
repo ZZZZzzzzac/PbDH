@@ -7,6 +7,7 @@
     "description": "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。"
   },
   "runtime": {
+    "characterDataVersion": "1.0.0",
     "loadingPresentation": {
       "tagline": "正在掷二元骰...",
       "accentColor": "#a83a24"

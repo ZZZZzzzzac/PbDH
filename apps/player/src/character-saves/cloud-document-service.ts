@@ -6,6 +6,7 @@ import {
   type RemoteCloudDocument,
 } from "@pbdh/cloud-documents";
 import { DexieLocalDocumentStore } from "@pbdh/local-storage";
+import type { CharacterSaveCandidate } from "@pbdh/contract-runtime";
 
 import {
   CharacterSaveRepository,
@@ -17,15 +18,18 @@ export class PlayerCloudDocumentService {
   readonly #api: CloudDocumentApi;
   readonly #coordinator: CloudDocumentCoordinator;
   readonly #repository: CharacterSaveRepository;
+  readonly #validateModuleState?: (candidate: CharacterSaveCandidate) => void | Promise<void>;
 
   constructor(
     store: DexieLocalDocumentStore,
     repository: CharacterSaveRepository,
     api: CloudDocumentApi = new HttpCloudDocumentApi(),
+    validateModuleState?: (candidate: CharacterSaveCandidate) => void | Promise<void>,
   ) {
     this.#store = store;
     this.#repository = repository;
     this.#api = api;
+    this.#validateModuleState = validateModuleState;
     this.#coordinator = new CloudDocumentCoordinator(store, api);
   }
 
@@ -147,7 +151,7 @@ export class PlayerCloudDocumentService {
     for (const assetId of remote.assetIds) {
       media.set(assetId, await this.#api.getMedia(remote.documentId, assetId, credentials));
     }
-    await this.#repository.restoreRemote(remote, media, credentials.accountId);
+    await this.#repository.restoreRemote(remote, media, credentials.accountId, this.#validateModuleState);
   }
 }
 

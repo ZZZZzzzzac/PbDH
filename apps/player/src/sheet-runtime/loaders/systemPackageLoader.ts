@@ -178,6 +178,7 @@ async function normalizeSystemPackage(
       ID: document.package.id,
       名称: document.package.name,
       版本: document.package.version,
+      角色数据版本: runtime.characterDataVersion,
       ...(runtime.loadingPresentation ? { 加载展示: {
         标语: runtime.loadingPresentation.tagline,
         强调色: runtime.loadingPresentation.accentColor,

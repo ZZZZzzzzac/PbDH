@@ -10,6 +10,7 @@ import {
 import {
   loadPbcha,
   writePbcha,
+  type CharacterSaveCandidate,
   type SystemPackageDocument,
 } from "@pbdh/contract-runtime";
 import type { RemoteCloudDocument } from "@pbdh/cloud-documents";
@@ -27,6 +28,10 @@ import {
 import { CharacterSaveRepository } from "./character-saves/character-save-repository.ts";
 import { PlayerCloudDocumentService } from "./character-saves/cloud-document-service.ts";
 import { validateCharacterSaveCandidate } from "./character-saves/character-save-validator.ts";
+import {
+  completeCharacterDataForSystemPackage,
+  validateCharacterDataForSystemPackage,
+} from "./sheet-runtime/storage/characterSaveAdapter.ts";
 import {
   defaultPlayerSystemPackage,
   findPlayerSystemPackage,
@@ -132,9 +137,27 @@ export function PlayerSheetSurface({
     () => new CharacterSaveRepository(localDocumentStore),
     [localDocumentStore],
   );
+  const validatePresetCharacterSave = useCallback(async (candidate: CharacterSaveCandidate) => {
+    const targetSystem = findPlayerSystemPackage(candidate.document.systemPackage.id);
+    if (!targetSystem) throw new Error("该人物存档所属的预置系统包不可用。");
+    const targetResources = await restorePlayerResourceLibrary(resourceRepository, targetSystem.system);
+    const targetRuntime = await targetSystem.load({
+      currentSystem: targetSystem.system,
+      installedPackages: targetResources,
+    });
+    if (!targetRuntime.ok) throw new Error(`目标系统包不可用：${targetRuntime.issues[0]?.text ?? "unknown"}`);
+    const completedDocument = completeCharacterDataForSystemPackage(candidate.document, targetRuntime.package);
+    const moduleDiagnostics = validateCharacterDataForSystemPackage(completedDocument, targetRuntime.package);
+    if (moduleDiagnostics.length > 0) throw new Error(`人物存档 Module 状态无效：${moduleDiagnostics[0]}`);
+  }, [resourceRepository]);
   const cloudDocumentService = useMemo(
-    () => new PlayerCloudDocumentService(localDocumentStore, characterSaveRepository),
-    [characterSaveRepository, localDocumentStore],
+    () => new PlayerCloudDocumentService(
+      localDocumentStore,
+      characterSaveRepository,
+      undefined,
+      validatePresetCharacterSave,
+    ),
+    [characterSaveRepository, localDocumentStore, validatePresetCharacterSave],
   );
   const credentialsRef = useRef(auth.credentials);
   credentialsRef.current = auth.credentials;
@@ -627,6 +650,7 @@ export function PlayerSheetSurface({
       }
       const targetSystem = findPlayerSystemPackage(result.candidate.document.systemPackage.id);
       if (!targetSystem) throw new Error("该人物存档所属的预置系统包不可用。");
+      await validatePresetCharacterSave(result.candidate);
       const imported = await characterSaveRepository.import(
         result.candidate,
         credentialsRef.current?.accountId ?? null,

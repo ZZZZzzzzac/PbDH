@@ -1,0 +1,60 @@
+{
+  "contractVersion": "1.0.0",
+  "documentId": "01989f4e-7b2c-7000-8000-000000000044",
+  "name": "瑟菈·暮林",
+  "createdAt": "2026-08-26T08:00:00.000Z",
+  "updatedAt": "2026-08-26T08:05:00.000Z",
+  "systemPackage": {
+    "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+    "version": "1.0.0"
+  },
+  "characterDataVersion": "1.0.0",
+  "characterData": {
+    "primary-weapon-name": "**长弓**｜敏捷｜远距离｜d8+2 物理｜双手",
+    "primary-weapon-description": "一次攻击命中后，你可以标记 1 压力使伤害增加 1d6。",
+    "character-avatar": null,
+    "character-card-table": {
+      "instances": [
+        {
+          "instanceId": "01989f4e-7b2c-7000-8000-000000000045",
+          "resourceCopy": {
+            "source": {
+              "packageId": "01977c2f-72df-7000-8000-000000000001",
+              "resourceId": "minotaur-wrecker"
+            },
+            "template": {
+              "id": "敌人",
+              "version": "1.0.0"
+            },
+            "presentation": {
+              "width": "88",
+              "height": "126",
+              "unit": "mm",
+              "mode": "split",
+              "fixedRatio": true
+            },
+            "data": {
+              "名称": "牛头人破坏者",
+              "位阶": "2",
+              "类型": "蛮力"
+            },
+            "labels": ["荒野"],
+            "media": {}
+          },
+          "state": {
+            "value": "配置",
+            "indicators": "[]"
+          },
+          "geometry": {
+            "x": 128,
+            "y": 256,
+            "layer": 0,
+            "rotation": 0,
+            "flipped": false,
+            "scale": 1
+          }
+        }
+      ]
+    }
+  }
+}

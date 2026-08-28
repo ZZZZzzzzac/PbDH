@@ -24,6 +24,7 @@ SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH = "system-package/1.0.0-alpha.1/schema.json"
 SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH = "system-package/1.0.0-alpha.2/schema.json"
 SYSTEM_PACKAGE_STABLE_SCHEMA_PATH = "system-package/1.0.0/schema.json"
 CHARACTER_SAVE_ALPHA_SCHEMA_PATH = "character-save/1.0.0-alpha.1/schema.json"
+CHARACTER_SAVE_STABLE_SCHEMA_PATH = "character-save/1.0.0/schema.json"
 TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH = "tabletop-document/1.0.0-alpha.1/schema.json"
 SCHEMAS = {
     RESOURCE_PACKAGE_SCHEMA_PATH: read_json(
@@ -46,6 +47,9 @@ SCHEMAS = {
     ),
     CHARACTER_SAVE_ALPHA_SCHEMA_PATH: read_json(
         f"contracts/{CHARACTER_SAVE_ALPHA_SCHEMA_PATH}"
+    ),
+    CHARACTER_SAVE_STABLE_SCHEMA_PATH: read_json(
+        f"contracts/{CHARACTER_SAVE_STABLE_SCHEMA_PATH}"
     ),
     TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH: read_json(
         f"contracts/{TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH}"

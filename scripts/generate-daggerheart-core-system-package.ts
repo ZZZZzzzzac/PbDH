@@ -16,6 +16,7 @@ import { templateRegistry } from "../packages/templates/src/core/index.ts";
 type SourceEntry = Record<string, unknown> & { ID: string; 名称: string };
 type ResourceData = ResourcePackageLogicalDocument["resources"][number]["data"];
 type LegacyRuntimeManifest = {
+  角色数据版本: string;
   加载展示?: { 标语: string; 强调色: string };
   pages: string;
   shell?: { html: string; css?: string };
@@ -224,6 +225,7 @@ function library<T extends SourceEntry>(
 
 function mapLegacyRuntime(manifest: LegacyRuntimeManifest): SystemPackageDocument["runtime"] {
   return {
+    characterDataVersion: manifest.角色数据版本,
     ...(manifest.加载展示 ? { loadingPresentation: {
       tagline: manifest.加载展示.标语,
       accentColor: manifest.加载展示.强调色,
