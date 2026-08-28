@@ -4,7 +4,7 @@
 
 ## 当前落点
 
-- 分支：`main`；#53 提交前本地比 `origin/main` 领先 13 个提交。本轮仍只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
+- 分支：`main`；本交接提交推送后应与 `origin/main` 同步。下次开始时仍先检查分支状态，避免在过期基线上继续开发。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -19,6 +19,8 @@
 - [GitHub Issue #53](https://github.com/ZZZZzzzzac/PbDH/issues/53)“稳定 Character Save 1.0.0 与 Module 状态持久化”已完成 Contract、Module 状态投影、`.pbcha` 媒体边界、开发期存档补全迁移和云恢复门禁；最终验收记录已发布并关闭 Issue。
 - L2 #9、#10、#12、#13、#15、#22 已按当前实现与真实纵切证据发布验收记录并关闭；#9/#10 正文已补充公开上线前继续在开发期 `1.0.0` 修改的版本规则。
 - #11“规范资源呈现”已补齐统一可信 Renderer 解析：Player 与 Market 不再维护各自的 Template 特判列表，十个专用 Template 与自由 Template 均可通过精确版本进入同一 Canonical Card Surface；未知 Template/版本仍明确降级。
+- #11 的实现、自动化测试与浏览器验收均已完成，但用户只授权关闭另外六个 L2，#11 仍保持 Open；未经新的明确授权不要关闭。
+- #18 的 Replacement 产品模型已由用户确认改为“每次从 Creator Workspace 实例化目标卡”，不缓存曾经成功切换过的形态：当前桌面卡仍是独立副本；每次切换都重新查找目标资源并生成新实例；目标已删除时本次切换失败且当前卡不变；切回也要求工作区中仍存在目标。桌面只沿用位置、尺寸、旋转与层级，卡牌自身状态按新实例建立；`.pbtab` 只保存当前桌面实例，不保存隐藏形态、历史形态或 Replacement 闭包。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -133,9 +135,11 @@
 
 ## 接下来
 
-1. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-2. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
-3. #11 关闭后审计 #18 的 Replacement 闭包与显式放置缺口，选择不扩大 GM 桌面范围的最小纵切。
+1. 继续 #18。先修订 [GitHub Issue #18](https://github.com/ZZZZzzzzac/PbDH/issues/18) 中“放置时复制完整 Replacement 闭包”和“放置后完全独立”的旧规则，再更新相关 `CONTEXT.md` / ADR；规则与用户刚确认的按次工作区实例化模型一致后，才设计 Template、Resource Package 与 Tabletop Document Contract。Schema 变更仍属于红线，实施前必须把具体结构方案交给用户确认。
+2. #18 的最小实现不要引入 `materializedForms`：Replacement 声明只负责定位目标工作区资源；切换成功时用目标资源创建新桌面实例，沿用几何布局，资源运行状态重新初始化；切换失败零写入。测试至少覆盖 A→B、A↔B、多阶段、目标删除、来源修改后再次切换、失败保持当前实例和 `.pbtab` 往返。
+3. #11 已实现但保持 Open；只有用户明确授权后才发布验收记录并关闭。
+4. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
+5. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
 
 ## 换机交接
 
@@ -153,7 +157,7 @@
 3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
 4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
 5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 67 个 TypeScript 测试文件 / 456 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+6. 运行 `npm run verify`；当前基线为 68 个 TypeScript 测试文件 / 468 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
 
 ## 建议 skills
@@ -161,4 +165,5 @@
 - `$diagnosing-bugs`：真实 Player 交互、持久化或云恢复出现难以定位的问题时使用。
 - `$browser:control-in-app-browser`：需要对本地 Player、Creator、GM 或 Market 做真实交互与视觉验收时使用。
 - `$code-review`：指定本次迁移前的固定提交后，对 Player 大范围迁移做 Standards / Spec 双轴审查。
+- `$domain-modeling`：#18 开始时先修订领域规则和 ADR，明确 Replacement 与桌面实例的关系，再设计 Contract。
 - `$handoff`：下次跨设备暂停时更新本文件。
