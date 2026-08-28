@@ -59,6 +59,7 @@
 - Resource Package Structural SemVer Classifier 已在 TypeScript 与 Python 两端落地并消费同一组 `1.0.0` conformance cases：集合重排与版本/Digest 变化为 `none`，字段、路径、媒体、展示、许可、来源及兼容 Template/目标变化为 `PATCH`，新增资源/目标为 `MINOR`，删除或改变稳定 Resource/Template/目标引用为 `MAJOR`；作者可过度升级但不可低于最低版本。正式 Publication Repository 在同一事务内执行门禁并保证拒绝时零写入，development 的 `1.0.0` 同版本替换仍按 ADR-0057 保留。
 - Resource Package Directory/ZIP Portable Archive Profile 的容器诊断版本已从遗留的 `1.0.0-alpha.1` 提升到当前 `1.0.0`。TypeScript 与 Python 现在共同消费 `contracts/conformance/resource-package/1.0.0/archive-cases.json`，覆盖路径安全、跨平台碰撞、特殊条目、媒体缺失/篡改/孤儿、未知文件和空目录一致性；旧 alpha `.pbres` 仍有双实现读取回归，不会被静默升级。
 - 浏览器侧 Resource Package Contract 测试已从只消费 alpha fixture 改为同时消费 `1.0.0-alpha.1` 与 `1.0.0` 的逻辑文档和 Snapshot Digest known-answer fixtures，与 Python Backend 的双版本证据对齐。
+- System Package Loader 已将“合法但未声明的归档文件”与“不安全的可移植路径”分离：前者报告 `system-package.archive.file.unknown`，绝对路径、反斜杠、`.` / `..`、空段、控制字符、尾随空格或点及 Windows 保留名仍报告 `system-package.archive.path.invalid`。
 
 ## 已验证
 
@@ -110,6 +111,7 @@
 - 内嵌浏览器使用未上传独立封面的“环境 Template 验收包”打开发布窗口，自动封面成功显示；图片自然尺寸为 `680×1073`、来源为本地 Blob，证明走固定比例 Canonical Renderer → WebP 链路。未点击最终发布，控制台无 error，临时验收标签页已关闭。
 - Portable Archive Profile `1.0.0` 提升后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 437 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 - 双版本 Resource Package Schema/Digest 浏览器 conformance 补齐后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 448 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
+- System Package 未知文件诊断修复后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
 
 ## 接下来
 

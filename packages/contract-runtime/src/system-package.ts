@@ -12,7 +12,7 @@ import { compareSemVer } from "./semver.ts";
 const FAMILY = "system-package";
 const VERSION = "1.0.0-alpha.1";
 const ROOT_PATH = "system.json";
-const EMBEDDED_PATH = /^resources\/[a-z0-9][a-z0-9-]*\.pbres$/;
+const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 
 export type SystemPackageDocument = {
   contractVersion: typeof VERSION;
@@ -111,11 +111,16 @@ function encodeJson(value: unknown): Uint8Array {
 }
 
 function validPath(path: string): boolean {
-  return path === ROOT_PATH || (
-    EMBEDDED_PATH.test(path)
-    && !path.includes("\\")
-    && !path.split("/").some((part) => part === "." || part === ".." || part === "")
-  );
+  if (!path || path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:/.test(path)) return false;
+  if (path.includes("\\")) return false;
+  return !path.split("/").some((part) =>
+    !part
+    || part === "."
+    || part === ".."
+    || /\p{Cc}/u.test(part)
+    || part.endsWith(" ")
+    || part.endsWith(".")
+    || WINDOWS_RESERVED.test(part));
 }
 
 export function validateSystemPackageSemantics(

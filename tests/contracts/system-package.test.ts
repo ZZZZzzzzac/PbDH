@@ -143,13 +143,28 @@ describe("System Package directory and .pbsys", () => {
     });
   });
 
-  test("rejects unknown files and duplicate declarations with zero candidate", async () => {
+  test("distinguishes unknown files from invalid portable paths", async () => {
     const entries = fixtureDirectoryEntries();
     entries.push({ path: "notes.txt", kind: "file", bytes: new TextEncoder().encode("no") });
     const unknown = await loadSystemPackageDirectory(entries, options);
     expect(unknown.candidate).toBeNull();
-    expect(unknown.diagnostics[0]?.code).toBe("system-package.archive.path.invalid");
+    expect(unknown.diagnostics).toEqual([{
+      code: "system-package.archive.file.unknown",
+      severity: "error",
+      family: "system-package",
+      version: "1.0.0-alpha.1",
+      location: "/notes.txt",
+      params: { path: "notes.txt" },
+    }]);
 
+    const traversal = fixtureDirectoryEntries();
+    traversal.push({ path: "../evil.json", kind: "file", bytes: new TextEncoder().encode("{}") });
+    const invalid = await loadSystemPackageDirectory(traversal, options);
+    expect(invalid.candidate).toBeNull();
+    expect(invalid.diagnostics[0]?.code).toBe("system-package.archive.path.invalid");
+  });
+
+  test("rejects duplicate declarations with zero candidate", () => {
     const duplicate = structuredClone(document);
     duplicate.resourceCompatibility.push(structuredClone(duplicate.resourceCompatibility[0]!));
     expect(validateSystemPackageSemantics(duplicate).map((item) => item.code)).toEqual([
