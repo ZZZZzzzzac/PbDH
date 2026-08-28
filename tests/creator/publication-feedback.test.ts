@@ -11,6 +11,11 @@ describe("Creator publication feedback", () => {
     expect(publicationErrorMessage("publication.auth.required", "fallback")).toBe("请先登录，再发布到资源市场。")
   });
 
+  test("explains that a text-only package needs an explicit cover", () => {
+    expect(publicationErrorMessage("creator.publication-cover.required", "fallback"))
+      .toBe("请先上传资源包封面，再发布到资源市场。");
+  });
+
   test("explains a changed development snapshot instead of reporting auth failure", () => {
     expect(publicationErrorMessage("PUBLICATION_VERSION_CONFLICT", "fallback")).toBe(
       "当前内容与已发布版本不同，请重新发布开发中的 1.0.0。",

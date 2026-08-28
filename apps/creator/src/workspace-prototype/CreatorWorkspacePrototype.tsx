@@ -1477,7 +1477,11 @@ export function CreatorWorkspacePrototype({
     setPublicationTitle(active.document.package.name);
     setPublicationSummary(active.document.package.description);
     setPublicationLanguage("中文");
-    setPublicationTags(resource?.template.id === weaponTemplate.id ? ["武器", "Daggerheart"] : ["敌人", "Daggerheart"]);
+    setPublicationTags(resource?.template.id === weaponTemplate.id
+      ? ["武器", "Daggerheart"]
+      : resource?.template.id === environmentTemplate.id
+        ? ["环境", "Daggerheart"]
+        : ["敌人", "Daggerheart"]);
     setPublicationLicense(publicationLicenseId(active.document.license.label));
     setPublicationCover({ assetId: coverAssetId, url: assetUrls.get(coverAssetId) ?? "" });
     setDialog({ kind: "publish" });
@@ -1508,6 +1512,21 @@ export function CreatorWorkspacePrototype({
 
   async function publishWorkspace() {
     if (!active) return;
+    if (!publicationCover.assetId) {
+      setDialog({
+        kind: "diagnostics",
+        title: "发布门禁未通过",
+        diagnostics: [{
+          code: "creator.publication-cover.required",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication/cover",
+          params: {},
+        }],
+      });
+      return;
+    }
     const result = await preparePublicationCandidate(active, {
       title: publicationTitle,
       summary: publicationSummary,
