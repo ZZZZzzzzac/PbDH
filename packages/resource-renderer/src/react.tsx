@@ -52,6 +52,81 @@ export type CanonicalCardSurfaceProps<TData, TState> = {
   label?: string;
 };
 
+export type CanonicalCardCoverSvg = {
+  svg: string;
+  width: number;
+  height: number;
+};
+
+export type CanonicalCardCoverWebp = {
+  blob: Blob;
+  bytes: Uint8Array;
+  width: number;
+  height: number;
+};
+
+const cssPixelsPerMillimetre = 96 / 25.4;
+
+export async function buildCanonicalCardCoverSvg<TData, TState>(
+  props: CanonicalCardSurfaceProps<TData, TState>,
+  pixelRatio = 2,
+): Promise<CanonicalCardCoverSvg> {
+  const resource = {
+    ...props.resource,
+    presentation: { ...props.resource.presentation, fixedRatio: true },
+  };
+  const prepared = prepareCanonicalSurface({ ...props, resource });
+  if (prepared.status !== "ready") {
+    throw new Error(prepared.diagnostics.map((item) => item.code).join(", ") || "renderer.cover.unavailable");
+  }
+  const cssWidth = prepared.widthMm * cssPixelsPerMillimetre;
+  const cssHeight = prepared.heightMm * cssPixelsPerMillimetre;
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const markup = renderToStaticMarkup(<>
+    <style>{boundaryStyles}</style>
+    <style>{prepared.renderer.styles}</style>
+    <div className="pbdh-surface-root">
+      {prepared.renderer.render(prepared.renderInput)}
+    </div>
+  </>);
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${cssWidth}" height="${cssHeight}" viewBox="0 0 ${cssWidth} ${cssHeight}">`,
+    `<foreignObject width="${cssWidth}" height="${cssHeight}">`,
+    `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${cssWidth}px;height:${cssHeight}px;overflow:hidden">`,
+    markup,
+    "</div></foreignObject></svg>",
+  ].join("");
+  return {
+    svg,
+    width: Math.round(cssWidth * pixelRatio),
+    height: Math.round(cssHeight * pixelRatio),
+  };
+}
+
+export async function renderCanonicalCardCoverToWebp<TData, TState>(
+  props: CanonicalCardSurfaceProps<TData, TState>,
+  pixelRatio = 2,
+): Promise<CanonicalCardCoverWebp> {
+  const cover = await buildCanonicalCardCoverSvg(props, pixelRatio);
+  const image = new Image();
+  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cover.svg)}`;
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = cover.width;
+  canvas.height = cover.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("renderer.cover.canvas-unavailable");
+  context.drawImage(image, 0, 0, cover.width, cover.height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+  if (!blob || blob.type !== "image/webp") throw new Error("renderer.cover.webp-unavailable");
+  return {
+    blob,
+    bytes: new Uint8Array(await blob.arrayBuffer()),
+    width: cover.width,
+    height: cover.height,
+  };
+}
+
 class RendererBoundary extends Component<{
   resetKey: string;
   children: ReactNode;

@@ -33,8 +33,8 @@ import {
 import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
 import { usePlatformAccountManagement } from "@pbdh/platform-ui";
 import { PublicationDialog } from "@pbdh/publication-ui";
-import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
-import type { SurfaceResource } from "@pbdh/resource-renderer/core";
+import { CanonicalCardSurface, renderCanonicalCardCoverToWebp } from "@pbdh/resource-renderer/react";
+import type { ManagedAsset, RendererRevisionCapability, SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
   createTabletopDocument,
   executeTabletopCommand,
@@ -89,7 +89,6 @@ import {
   type CreatorMarketHandoff,
 } from "./market-handoff.ts";
 import {
-  defaultPublicationCoverAssetId,
   preparePublicationCandidate,
 } from "./publication-candidate.ts";
 import { PublicationApiError, publishCandidate } from "./publication-api.ts";
@@ -482,6 +481,74 @@ async function imageAsset(file: File, policy: ImageAdmissionPolicy) {
     height: String(admitted.height),
   };
   return { asset, bytes: admitted.bytes, blob: admitted.blob };
+}
+
+function publicationRenderer(resource: WorkspaceResource): {
+  expectedRendererRevision: string;
+  renderer?: RendererRevisionCapability<any, any, ReactNode>;
+} {
+  const version = resource.template.version;
+  if (resource.template.id === adversaryTemplate.id) {
+    return { expectedRendererRevision: adversaryTemplate.rendererRevision, renderer: adversaryRendererFor(version) };
+  }
+  if (resource.template.id === weaponTemplate.id) {
+    return { expectedRendererRevision: weaponTemplate.rendererRevision, renderer: weaponRendererFor(version) };
+  }
+  if (resource.template.id === armorTemplate.id) {
+    return { expectedRendererRevision: armorTemplate.rendererRevision, renderer: armorRendererFor(version) };
+  }
+  if (resource.template.id === environmentTemplate.id) {
+    return { expectedRendererRevision: environmentTemplate.rendererRevision, renderer: environmentRendererFor(version) };
+  }
+  const renderer = stableReferenceRendererFor(resource.template.id, version);
+  return { expectedRendererRevision: renderer?.revision ?? "", renderer };
+}
+
+async function generatedPublicationCover(
+  workspace: CreatorWorkspace,
+): Promise<PublicationCoverDraft> {
+  const resource = workspace.document.resources[0] as WorkspaceResource | undefined;
+  if (!resource) throw new Error("creator.publication-cover.resource-missing");
+  const binding = publicationRenderer(resource);
+  const assets = new Map<string, ManagedAsset>(await Promise.all(Object.values(resource.media).map(async (assetId) => {
+    const bytes = workspace.media.get(assetId);
+    if (!bytes) return [assetId, { status: "error" as const, reason: "missing workspace media" }] as const;
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const url = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("renderer.cover.media-read-failed")));
+      reader.addEventListener("error", () => reject(new Error("renderer.cover.media-read-failed")));
+      reader.readAsDataURL(new Blob([buffer], { type: "image/webp" }));
+    });
+    return [assetId, { status: "ready" as const, url }] as const;
+  })));
+  const rendered = await renderCanonicalCardCoverToWebp({
+    resource: resource as unknown as SurfaceResource<Record<string, unknown>>,
+    expectedRendererRevision: binding.expectedRendererRevision,
+    renderer: binding.renderer,
+    assets,
+    label: `${String((resource.data as Record<string, unknown>).名称 ?? "未命名资源")}发布封面`,
+  });
+  const digestInput = rendered.bytes.buffer.slice(
+    rendered.bytes.byteOffset,
+    rendered.bytes.byteOffset + rendered.bytes.byteLength,
+  ) as ArrayBuffer;
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", digestInput));
+  const assetId = `sha256:${[...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  return {
+    assetId,
+    url: URL.createObjectURL(rendered.blob),
+    asset: {
+      id: assetId,
+      mediaType: "image/webp",
+      byteLength: String(rendered.bytes.byteLength),
+      width: String(rendered.width),
+      height: String(rendered.height),
+    },
+    bytes: rendered.bytes,
+  };
 }
 
 export type CreatorAppMode = "creator" | "gm";
@@ -1471,9 +1538,8 @@ export function CreatorWorkspacePrototype({
     setNotice(`已导出完整 .pbres · ${next.document.snapshotDigest.slice(0, 18)}…`);
   }
 
-  function openPublicationDialog() {
+  async function openPublicationDialog() {
     if (!active) return;
-    const coverAssetId = defaultPublicationCoverAssetId(active.document);
     setPublicationTitle(active.document.package.name);
     setPublicationSummary(active.document.package.description);
     setPublicationLanguage("中文");
@@ -1483,8 +1549,26 @@ export function CreatorWorkspacePrototype({
         ? ["环境", "Daggerheart"]
         : ["敌人", "Daggerheart"]);
     setPublicationLicense(publicationLicenseId(active.document.license.label));
-    setPublicationCover({ assetId: coverAssetId, url: assetUrls.get(coverAssetId) ?? "" });
-    setDialog({ kind: "publish" });
+    try {
+      const cover = await generatedPublicationCover(active);
+      setPublicationCover(cover);
+      setDialog({ kind: "publish" });
+    } catch (error) {
+      setDialog({
+        kind: "diagnostics",
+        title: "无法生成发布封面",
+        diagnostics: [{
+          code: error instanceof Error && error.message === "creator.publication-cover.resource-missing"
+            ? "creator.publication-cover.resource-missing"
+            : "creator.publication-cover.render-failed",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication/cover",
+          params: {},
+        }],
+      });
+    }
   }
 
   async function replacePublicationCover(event: ChangeEvent<HTMLInputElement>) {
@@ -1512,21 +1596,6 @@ export function CreatorWorkspacePrototype({
 
   async function publishWorkspace() {
     if (!active) return;
-    if (!publicationCover.assetId) {
-      setDialog({
-        kind: "diagnostics",
-        title: "发布门禁未通过",
-        diagnostics: [{
-          code: "creator.publication-cover.required",
-          severity: "error",
-          family: "creator-prototype",
-          version: "1",
-          location: "/publication/cover",
-          params: {},
-        }],
-      });
-      return;
-    }
     const result = await preparePublicationCandidate(active, {
       title: publicationTitle,
       summary: publicationSummary,
@@ -1717,7 +1786,7 @@ export function CreatorWorkspacePrototype({
             <button type="button" title="新建资源包" aria-label="新建资源包" onClick={() => setDialog({ kind: "new" })}><Icon name="packagePlus" /></button>
             <button type="button" title="导入资源包" aria-label="导入资源包" onClick={() => importRef.current?.click()}><Icon name="upload" /></button>
             <button type="button" title="导出资源包" aria-label="导出资源包" disabled={!active} onClick={exportPackage}><Icon name="download" /></button>
-            <button type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active} onClick={openPublicationDialog}><Icon name="package" /></button>
+            <button type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active} onClick={() => void openPublicationDialog()}><Icon name="package" /></button>
             <button type="button" title="新建资源" aria-label="新建资源" disabled={!active} onClick={() => setDialog({ kind: "new-resource" })}><Icon name="filePlus" /></button>
             <button type="button" title="新建文件夹" aria-label="新建文件夹" disabled={!active} onClick={() => active && replaceActive(createWorkspaceFolder(active))}><Icon name="folderPlus" /></button>
           </div></header>
@@ -1978,7 +2047,7 @@ export function CreatorWorkspacePrototype({
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new" }); }}>新建资源包</button>
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); importRef.current?.click(); }}>导入 .pbres</button>
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); void exportPackage(); }}>导出 .pbres</button>
-        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); openPublicationDialog(); }}>发布到资源市场</button>
+        <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); void openPublicationDialog(); }}>发布到资源市场</button>
         <i />
         <button type="button" role="menuitem" onClick={() => { setTabletopContextMenu(null); setDialog({ kind: "new-resource" }); }}>新建资源</button>
         <button type="button" role="menuitem" onClick={() => { if (active) replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); }}>新建文件夹</button>

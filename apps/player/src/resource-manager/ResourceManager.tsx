@@ -79,6 +79,14 @@ function routeLabel(installed: InstalledResourcePackage, resourceId: string): st
   return route?.nativeEntry?.label ?? "其他资源";
 }
 
+export function supportsPlayerResourcePreview(
+  resource: InstalledResourcePackage["document"]["resources"][number],
+): boolean {
+  return (resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version)
+    || (resource.template.id === environmentTemplate.id && resource.template.version === environmentTemplate.version)
+    || stableReferenceRendererFor(resource.template.id, resource.template.version) !== undefined;
+}
+
 function countsByDestination(plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>) {
   const counts = new Map<string, number>();
   for (const route of plan.routes) {
@@ -341,10 +349,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   function openResource(installed: InstalledResourcePackage, resourceId?: string) {
     const target = installed.document.resources.find((resource) => resource.id === resourceId)
       ?? installed.document.resources[0];
-    if (target && (
-      (target.template.id === armorTemplate.id && target.template.version === armorTemplate.version)
-      || stableReferenceRendererFor(target.template.id, target.template.version)
-    )) {
+    if (target && supportsPlayerResourcePreview(target)) {
       setPreview({ installed, resourceId: target.id });
       return;
     }

@@ -35,15 +35,6 @@ export type PublicationCandidateResult =
   | { ok: true; candidate: PublicationCandidate }
   | { ok: false; diagnostics: ContractDiagnostic[] };
 
-export function defaultPublicationCoverAssetId(
-  document: ResourcePackageLogicalDocument,
-): string {
-  const declaredAssetIds = new Set(document.assets.map((asset) => asset.id));
-  const firstCardAssetId = Object.values(document.resources[0]?.media ?? {})
-    .find((assetId) => declaredAssetIds.has(assetId));
-  return firstCardAssetId ?? document.assets[0]?.id ?? "";
-}
-
 export async function preparePublicationCandidate(
   workspace: CreatorWorkspace,
   metadata: PublicationMetadata,

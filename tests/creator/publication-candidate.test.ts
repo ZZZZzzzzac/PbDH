@@ -9,7 +9,6 @@ import { describe, expect, test } from "vitest";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
 import {
-  defaultPublicationCoverAssetId,
   preparePublicationCandidate,
 } from "../../apps/creator/src/workspace-prototype/publication-candidate.ts";
 import {
@@ -33,24 +32,6 @@ const metadata = {
 };
 
 describe("Creator publication candidate", () => {
-  test("uses the first resource card media as the default cover", () => {
-    const firstCardAsset = {
-      ...asset,
-      id: `sha256:${"1".repeat(64)}`,
-    };
-    const firstResource = structuredClone(document.resources[0]!);
-    firstResource.id = "first-card";
-    firstResource.media = { portrait: firstCardAsset.id };
-    const secondResource = structuredClone(document.resources[0]!);
-    secondResource.id = "second-card";
-    secondResource.media = { portrait: asset.id };
-    const source = structuredClone(document);
-    source.assets = [asset, firstCardAsset];
-    source.resources = [firstResource, secondResource];
-
-    expect(defaultPublicationCoverAssetId(source)).toBe(firstCardAsset.id);
-  });
-
   test("adds the publication cover to the complete snapshot and recomputes its digest", async () => {
     const source = removePortrait(createWorkspace({
       document,

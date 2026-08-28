@@ -11,9 +11,11 @@ describe("Creator publication feedback", () => {
     expect(publicationErrorMessage("publication.auth.required", "fallback")).toBe("请先登录，再发布到资源市场。")
   });
 
-  test("explains that a text-only package needs an explicit cover", () => {
-    expect(publicationErrorMessage("creator.publication-cover.required", "fallback"))
-      .toBe("请先上传资源包封面，再发布到资源市场。");
+  test("explains automatic cover generation failures", () => {
+    expect(publicationErrorMessage("creator.publication-cover.resource-missing", "fallback"))
+      .toBe("资源包至少需要一项资源，才能生成发布封面。");
+    expect(publicationErrorMessage("creator.publication-cover.render-failed", "fallback"))
+      .toBe("首张资源卡无法渲染为发布封面，请检查卡面后重试。");
   });
 
   test("explains a changed development snapshot instead of reporting auth failure", () => {

@@ -11,7 +11,10 @@ import {
   RendererRevisionRegistry,
   type ManagedAsset,
 } from "../../packages/resource-renderer/src/core.ts";
-import { CanonicalCardSurface } from "../../packages/resource-renderer/src/react.tsx";
+import {
+  buildCanonicalCardCoverSvg,
+  CanonicalCardSurface,
+} from "../../packages/resource-renderer/src/react.tsx";
 import type { AdversaryData } from "../../packages/templates/src/core/index.ts";
 import {
   adversaryCardDesignSource,
@@ -178,6 +181,26 @@ describe("Canonical Surface Renderer Port", () => {
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
     expect(markup).toContain("is-fluid");
     expect(result.renderInput.presentation.fixedRatio).toBe(false);
+  });
+
+  test("builds publication cover SVG through the same renderer with fixed ratio", async () => {
+    const fluidResource = structuredClone(resource);
+    fluidResource.presentation.fixedRatio = false;
+    const before = structuredClone(fluidResource);
+
+    const cover = await buildCanonicalCardCoverSvg({
+      resource: fluidResource,
+      expectedRendererRevision: "enemy-card-r1",
+      renderer: adversaryRendererRevision,
+      assets: readyAssets,
+    });
+
+    expect(cover.width).toBe(680);
+    expect(cover.height).toBe(1073);
+    expect(cover.svg).toContain("data-renderer-revision=\"enemy-card-r1\"");
+    expect(cover.svg).toContain("牛头人破坏者");
+    expect(cover.svg).not.toContain("enemy-card is-fluid");
+    expect(fluidResource).toEqual(before);
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {

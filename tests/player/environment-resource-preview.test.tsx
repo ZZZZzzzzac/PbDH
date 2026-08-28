@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
-import { PlayerResourcePreviewDialog } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
+import {
+  PlayerResourcePreviewDialog,
+  supportsPlayerResourcePreview,
+} from "../../apps/player/src/resource-manager/ResourceManager.tsx";
 import type { InstalledResourcePackage } from "../../apps/player/src/resources/resource-library.ts";
 import { environmentTemplate } from "../../packages/templates/src/core/index.ts";
 
@@ -32,6 +35,7 @@ const installed = {
 
 describe("Player environment Canonical Resource preview", () => {
   test("renders an installed environment from Other Resources with the shared Surface", () => {
+    expect(supportsPlayerResourcePreview(resource)).toBe(true);
     const markup = renderToStaticMarkup(<PlayerResourcePreviewDialog installed={installed} resourceId={resource.id} onClose={() => undefined} />);
     expect(markup).toContain("荒废林地玩家规范卡面");
     expect(markup).toContain("data-pbdh-canonical-surface");
