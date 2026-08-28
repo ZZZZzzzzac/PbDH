@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
+from pbdh_backend.contracts import (
+    classify_resource_package_version_change,
+    resource_package_version_meets_minimum,
+)
 from pbdh_backend.database import Database
 
 
@@ -70,7 +74,7 @@ class PublicationRepository:
                 )
 
             current = connection.execute(
-                "SELECT publication_id, package_version, snapshot_digest "
+                "SELECT publication_id, package_version, snapshot_digest, logical_document_json "
                 "FROM publications WHERE package_id = ?",
                 (package_id,),
             ).fetchone()
@@ -84,6 +88,16 @@ class PublicationRepository:
                 version_order = _compare_semver(package_version, current["package_version"])
                 if version_order < 0 or (version_order == 0 and not allow_same_version_replace):
                     raise PublicationVersionConflict(package_id)
+                if not allow_same_version_replace:
+                    classification = classify_resource_package_version_change(
+                        json.loads(current["logical_document_json"]),
+                        document,
+                    )
+                    if not resource_package_version_meets_minimum(
+                        package_version,
+                        classification["minimumVersion"],
+                    ):
+                        raise PublicationVersionConflict(package_id)
                 publication_id = current["publication_id"]
                 created = False
             else:

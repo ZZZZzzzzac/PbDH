@@ -504,11 +504,10 @@ function publicationRenderer(resource: WorkspaceResource): {
   return { expectedRendererRevision: renderer?.revision ?? "", renderer };
 }
 
-async function generatedPublicationCover(
+async function generatedPublicationCoverForResource(
   workspace: CreatorWorkspace,
+  resource: WorkspaceResource,
 ): Promise<PublicationCoverDraft> {
-  const resource = workspace.document.resources[0] as WorkspaceResource | undefined;
-  if (!resource) throw new Error("creator.publication-cover.resource-missing");
   const binding = publicationRenderer(resource);
   const assets = new Map<string, ManagedAsset>(await Promise.all(Object.values(resource.media).map(async (assetId) => {
     const bytes = workspace.media.get(assetId);
@@ -549,6 +548,22 @@ async function generatedPublicationCover(
     },
     bytes: rendered.bytes,
   };
+}
+
+async function generatedPublicationCover(
+  workspace: CreatorWorkspace,
+): Promise<PublicationCoverDraft> {
+  if (workspace.document.resources.length === 0) {
+    throw new Error("creator.publication-cover.resource-missing");
+  }
+  for (const resource of workspace.document.resources as WorkspaceResource[]) {
+    try {
+      return await generatedPublicationCoverForResource(workspace, resource);
+    } catch {
+      // 单张卡不可渲染时继续尝试包内其他资源，封面缺失本身不阻止发布。
+    }
+  }
+  throw new Error("creator.publication-cover.render-failed");
 }
 
 export type CreatorAppMode = "creator" | "gm";

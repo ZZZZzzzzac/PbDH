@@ -13,6 +13,17 @@ export type {
   ResourcePackageMedia,
 } from "./resource-package.ts";
 export {
+  classifyResourcePackageVersionChange,
+  createResourcePackageVersionBaseline,
+  resourcePackageVersionMeetsMinimum,
+} from "./resource-package-version.ts";
+export type {
+  ResourcePackageChangeLevel,
+  ResourcePackageVersionBaseline,
+  ResourcePackageVersionClassification,
+  ResourcePackageVersionReason,
+} from "./resource-package-version.ts";
+export {
   loadPbres,
   loadResourcePackageDirectory,
   writePbres,

@@ -34,7 +34,7 @@
 - 修复首次打开 Player 时预置 System Package 尚未进入 Platform Runtime Storage、默认人物就提前保存的问题；现在先建立包缓存边界，再激活系统包和创建默认人物，并补了真实 Storage seam 的回归测试。
 - Player 人物存档已从页面左栏移回 Platform App Bar；顶部按旧 `PbDH_Sheet` 保留“玩家功能 / 玩家存档 / 导入导出 / 系统包”四组下拉菜单。打印媒体样式会隐藏完整 Platform App Bar。
 - Platform App Bar 已明确分成左右两组：PB/PbDH 与四个主页面 Tab 靠左且位置固定，各 App 独有工具、通知、设置与账号靠右；资源管理器详情栏恢复内部滚动；资源表行样式改为专用类名，避免与系统包 `.resource-row` 碰撞并挤压“生命 / 压力 / 护甲 / 希望”到“希望特性”区域。
-- Creator 发布资源包时，未手动上传封面会取资源列表第一张卡，强制固定比例并通过同一 Canonical Renderer Revision 渲染为 WebP；生成资产加入完整发布快照。带图媒体先内联为 Data URL，避免 Canvas 污染；`react-dom/server` 仅在点击发布时动态加载，不增加主入口常驻体积。
+- Creator 发布资源包时，未手动上传封面会按确定顺序尝试包内资源卡，取第一张可渲染卡，强制固定比例并通过同一 Canonical Renderer Revision 渲染为 WebP；单张卡失败会继续尝试下一张，不把独立封面缺失当作发布阻塞。生成资产加入完整发布快照。带图媒体先内联为 Data URL，避免 Canvas 污染；`react-dom/server` 仅在点击发布时动态加载，不增加主入口常驻体积。
 - Player 的 Sheet Runtime 桥接现在只注入原生资源卡实际使用的 `portrait` / `back` 媒体；资源包独立封面继续保存在安装快照中，但不再被误当成 System Package 图片并报告 `UNUSED_PACKAGE_IMAGE`。
 - 修复创建向导 Portal 脱离主题变量作用域后遮罩与面板透明的问题：向导现在挂入 Player App Shell，并为遮罩、面板和操作区保留实色回退值。
 - “生命 / 压力 / 护甲 / 希望”的图片标志会按可用宽度自适应缩放，并覆盖布局皮肤的 `11px` 后代字号；常规数量下与熟练度统一为 `26px`。
@@ -56,6 +56,7 @@
 - 环境 Template 已从 `PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe:frontend/src/templates/environment/**` 提升为 `环境@1.0.0`。稳定结构补入“原文”和特性“原名”，旧 `0.0.0-dev.1` 保持精确读取并可生成不修改源数据的升级候选；Creator 可新建和完整编辑，四个资源 Surface 共用 `environment-card-r1`。
 - Player 资源管理器的环境入口判断已补齐；Market 安装的环境包位于“额外资源包 / 其他资源”，可直接打开共享 `environment-card-r1`，刷新后从 IndexedDB 恢复。
 - Creator Workspace 目录不再保存或执行同目录手动重排；文件夹优先，文件夹按名称、资源按文件名确定排序。拖到其他文件夹或根目录仍会更新资源路径并保持 Resource ID，旧本地/云 payload 的 `order` 值会在读取时规范化，无需持久化 schema 迁移。
+- Resource Package Structural SemVer Classifier 已在 TypeScript 与 Python 两端落地并消费同一组 `1.0.0` conformance cases：集合重排与版本/Digest 变化为 `none`，字段、路径、媒体、展示、许可、来源及兼容 Template/目标变化为 `PATCH`，新增资源/目标为 `MINOR`，删除或改变稳定 Resource/Template/目标引用为 `MAJOR`；作者可过度升级但不可低于最低版本。正式 Publication Repository 在同一事务内执行门禁并保证拒绝时零写入，development 的 `1.0.0` 同版本替换仍按 ADR-0057 保留。
 
 ## 已验证
 
@@ -103,6 +104,8 @@
 - #49 最终 `npm run verify` 通过：66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑、实时规范卡面，以及无图环境卡和带图敌人卡的自动 WebP 封面。
 - #49 公开 Publication ID 为 `e6ccb6d0-2320-495c-803d-db16817e559b`，Package ID 为 `01a04620-97cd-757c-b8c0-df43207b9562`，Snapshot Digest 为 `sha256:7410244b3e701db783efd35dd7edfd3d637f2138d828bb1bf26393d19605e761`。匿名 Market 可发现并下载；Player 安装到“其他资源”、共享卡面与刷新恢复通过；Chrome 原生 HTML5 拖放把环境卡显式放入 GM 桌面，刷新后实例恢复。全程控制台无 error。
 - Creator 目录确定排序完整验证通过：`npm run verify` 为 66 个 TypeScript 测试文件 / 411 个测试、88 个 Python 测试，类型检查、依赖边界、设计检查和 Platform build 全通过。内嵌浏览器中同一父目录的 `0 文件夹 / A 文件夹` 会立即按名称排序，刷新后顺序保持，控制台无 error；跨目录移动、资源路径更新、旧 `order` 规范化与同目录 no-op 由模型/仓库测试覆盖。浏览器自动化无法为该目录树构造原生 HTML5 `DataTransfer`，因此未把坐标拖拽结果作为验收证据。
+- Structural SemVer 与封面回退收紧后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 436 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。共同 fixture 还覆盖了同一 System Package 多个精确目标版本的匹配顺序，证明集合顺序不会改变分类。
+- 内嵌浏览器使用未上传独立封面的“环境 Template 验收包”打开发布窗口，自动封面成功显示；图片自然尺寸为 `680×1073`、来源为本地 Blob，证明走固定比例 Canonical Renderer → WebP 链路。未点击最终发布，控制台无 error，临时验收标签页已关闭。
 
 ## 接下来
 

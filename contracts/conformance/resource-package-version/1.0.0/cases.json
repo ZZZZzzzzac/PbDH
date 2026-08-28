@@ -1,0 +1,160 @@
+{
+  "fixtureVersion": "1.0.0",
+  "defaultSource": "../../resource-package/1.0.0/valid/minotaur-wrecker.json",
+  "cases": [
+    {
+      "name": "version-digest-and-resource-order",
+      "source": "../../resource-package/1.0.0/valid/daggerheart-core-reference-types.json",
+      "previous": [
+        {
+          "op": "add",
+          "path": "/targets/-",
+          "value": { "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660002", "version": "1.0.0" }
+        },
+        { "op": "add", "path": "/emptyDirectories/-", "value": "第二幕" },
+        { "op": "add", "path": "/emptyDirectories/-", "value": "第一幕" }
+      ],
+      "current": [
+        { "op": "replace", "path": "/package/version", "value": "1.7.0" },
+        { "op": "replace", "path": "/snapshotDigest", "value": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" },
+        { "op": "reverse", "path": "/resources" },
+        { "op": "reverse", "path": "/targets" },
+        { "op": "reverse", "path": "/emptyDirectories" }
+      ],
+      "expected": { "level": "none", "minimumVersion": "1.0.0", "reasonCodes": [] }
+    },
+    {
+      "name": "field",
+      "current": [{ "op": "replace", "path": "/resources/0/data/名称", "value": "伤痕牛头人" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "path",
+      "current": [{ "op": "replace", "path": "/resources/0/path", "value": "第二幕/牛头人破坏者.json" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "license",
+      "current": [{ "op": "replace", "path": "/license/declaration", "value": "新的许可声明" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "presentation",
+      "current": [{ "op": "replace", "path": "/resources/0/presentation/mode", "value": "text" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "media",
+      "current": [
+        { "op": "replace", "path": "/resources/0/media", "value": {} },
+        { "op": "replace", "path": "/assets", "value": [] }
+      ],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "empty-directory",
+      "current": [{ "op": "add", "path": "/emptyDirectories/-", "value": "空场景" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "fork-source",
+      "current": [{
+        "op": "replace",
+        "path": "/forkSource",
+        "value": {
+          "publicationId": "01a0132c-4eef-7703-94ac-ec8d1a660003",
+          "packageId": "01a0132c-4eef-7703-94ac-ec8b5e66c701",
+          "version": "1.0.0",
+          "snapshotDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "copiedResources": [{
+            "packageId": "01a0132c-4eef-7703-94ac-ec8b5e66c701",
+            "resourceId": "source-resource"
+          }]
+        }
+      }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.content-changed"] }
+    },
+    {
+      "name": "compatible-template",
+      "current": [{ "op": "replace", "path": "/resources/0/template/version", "value": "1.1.0" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.resource-template-compatible"] }
+    },
+    {
+      "name": "compatible-target",
+      "current": [{ "op": "replace", "path": "/targets/0/version", "value": "1.1.0" }],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.target-compatible-changed"] }
+    },
+    {
+      "name": "compatible-target-preserves-exact-sibling",
+      "previous": [{
+        "op": "add",
+        "path": "/targets/-",
+        "value": { "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001", "version": "1.1.0" }
+      }],
+      "current": [
+        { "op": "replace", "path": "/targets/0/version", "value": "1.2.0" },
+        { "op": "reverse", "path": "/targets" }
+      ],
+      "expected": { "level": "patch", "minimumVersion": "1.0.1", "reasonCodes": ["resource-package.version.target-compatible-changed"] }
+    },
+    {
+      "name": "added-resource",
+      "current": [
+        { "op": "copy", "from": "/resources/0", "path": "/resources/-" },
+        { "op": "replace", "path": "/resources/1/id", "value": "added-resource" },
+        { "op": "replace", "path": "/resources/1/path", "value": "敌人/新增敌人.json" }
+      ],
+      "expected": { "level": "minor", "minimumVersion": "1.1.0", "reasonCodes": ["resource-package.version.resource-added"] }
+    },
+    {
+      "name": "added-target",
+      "current": [{
+        "op": "add",
+        "path": "/targets/-",
+        "value": { "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660002", "version": "1.0.0" }
+      }],
+      "expected": { "level": "minor", "minimumVersion": "1.1.0", "reasonCodes": ["resource-package.version.target-added"] }
+    },
+    {
+      "name": "removed-resource",
+      "current": [{ "op": "remove", "path": "/resources/0" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.resource-removed"] }
+    },
+    {
+      "name": "changed-resource-id",
+      "current": [{ "op": "replace", "path": "/resources/0/id", "value": "changed-id" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.resource-removed", "resource-package.version.resource-added"] }
+    },
+    {
+      "name": "changed-template-id",
+      "current": [{ "op": "replace", "path": "/resources/0/template/id", "value": "环境" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.resource-template-incompatible"] }
+    },
+    {
+      "name": "changed-template-major",
+      "current": [{ "op": "replace", "path": "/resources/0/template/version", "value": "2.0.0" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.resource-template-incompatible"] }
+    },
+    {
+      "name": "removed-target",
+      "current": [{ "op": "remove", "path": "/targets/0" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.target-removed"] }
+    },
+    {
+      "name": "changed-target-system",
+      "current": [{ "op": "replace", "path": "/targets/0/systemPackageId", "value": "01a0132c-4eef-7703-94ac-ec8d1a660002" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.target-removed", "resource-package.version.target-added"] }
+    },
+    {
+      "name": "changed-target-major",
+      "current": [{ "op": "replace", "path": "/targets/0/version", "value": "2.0.0" }],
+      "expected": { "level": "major", "minimumVersion": "2.0.0", "reasonCodes": ["resource-package.version.target-major-changed"] }
+    }
+  ],
+  "versionChoices": [
+    { "selected": "2.0.0", "minimum": "1.1.0", "accepted": true },
+    { "selected": "1.1.0", "minimum": "1.1.0", "accepted": true },
+    { "selected": "1.0.9", "minimum": "1.1.0", "accepted": false },
+    { "selected": "invalid", "minimum": "1.1.0", "accepted": false }
+  ]
+}

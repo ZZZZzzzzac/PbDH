@@ -15,7 +15,7 @@ describe("Creator publication feedback", () => {
     expect(publicationErrorMessage("creator.publication-cover.resource-missing", "fallback"))
       .toBe("资源包至少需要一项资源，才能生成发布封面。");
     expect(publicationErrorMessage("creator.publication-cover.render-failed", "fallback"))
-      .toBe("首张资源卡无法渲染为发布封面，请检查卡面后重试。");
+      .toBe("资源包内没有可渲染为发布封面的资源卡，请检查卡面后重试。");
   });
 
   test("explains a changed development snapshot instead of reporting auth failure", () => {

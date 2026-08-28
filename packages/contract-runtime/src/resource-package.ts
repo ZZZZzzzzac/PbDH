@@ -4,6 +4,7 @@ const FAMILY = "resource-package";
 export const RESOURCE_PACKAGE_VERSION = "1.0.0";
 export const LEGACY_RESOURCE_PACKAGE_VERSION = "1.0.0-alpha.1";
 const DIGEST_DOMAIN = "pbdh-resource-package-digest-v1";
+const VERSION_CONTENT_DOMAIN = "pbdh-resource-package-version-content-v1";
 
 type JsonValue = null | boolean | string | JsonValue[] | { [key: string]: JsonValue };
 
@@ -102,6 +103,13 @@ function normalizedDocument(document: ResourcePackageLogicalDocument): JsonValue
   return content as JsonValue;
 }
 
+function normalizedVersionContent(document: ResourcePackageLogicalDocument): JsonValue {
+  const content = normalizedDocument(document) as Omit<ResourcePackageLogicalDocument, "snapshotDigest">;
+  const { version: _version, ...packageIdentity } = content.package;
+  content.package = packageIdentity as ResourcePackageLogicalDocument["package"];
+  return content as JsonValue;
+}
+
 function encodeFrame(type: string, payload: Uint8Array): Uint8Array {
   const encoder = new TextEncoder();
   const typeBytes = encoder.encode(type);
@@ -152,6 +160,16 @@ export async function computeResourcePackageSnapshotDigest(
   }
 
   return `sha256:${await sha256(concatenate(parts))}`;
+}
+
+export async function computeResourcePackageVersionContentHash(
+  document: ResourcePackageLogicalDocument,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  return `sha256:${await sha256(concatenate([
+    encodeFrame("domain", encoder.encode(VERSION_CONTENT_DOMAIN)),
+    encodeFrame("logical-content", encoder.encode(canonicalize(normalizedVersionContent(document)))),
+  ]))}`;
 }
 
 function semanticDiagnostic(

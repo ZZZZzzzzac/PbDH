@@ -16,6 +16,9 @@ from pbdh_backend.contracts import (
 )
 from pbdh_backend.database import Database
 from pbdh_backend.identity.tokens import VerifiedIdentity
+from pbdh_backend.publications.repository import (
+    PublicationVersionConflict,
+)
 from pbdh_backend.settings import Settings
 
 
@@ -247,6 +250,35 @@ def test_package_ownership_idempotency_and_monotonic_versions(tmp_path: Path) ->
     assert updated.status_code == 200
     assert updated.json()["publication"]["publicationId"] == first.json()["publication"]["publicationId"]
     assert updated.json()["publication"]["packageVersion"] == "1.0.1"
+
+
+def test_repository_enforces_structural_version_minimum_atomically(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    account = api.app.state.identity_repository.get_or_create_account("author-one")
+    repository = api.app.state.publication_repository
+    document, media = candidate()
+    created = repository.publish(account.account_id, document, media, metadata(document))
+
+    patch = copy.deepcopy(document)
+    patch["package"]["version"] = "1.0.1"
+    patch["resources"][0]["data"]["名称"] = "另一只牛头人"
+    patch["snapshotDigest"] = compute_resource_package_snapshot_digest(patch, media)
+    assert repository.publish(account.account_id, patch, media, metadata(patch)).created is False
+
+    major = copy.deepcopy(patch)
+    major["package"]["version"] = "1.0.2"
+    major["resources"] = []
+    major["snapshotDigest"] = compute_resource_package_snapshot_digest(major, media)
+    with pytest.raises(PublicationVersionConflict):
+        repository.publish(account.account_id, major, media, metadata(major))
+    unchanged = repository.get_publication(created.publication_id)
+    assert unchanged is not None
+    assert unchanged["packageVersion"] == "1.0.1"
+    assert unchanged["snapshotDigest"] == patch["snapshotDigest"]
+
+    major["package"]["version"] = "2.0.0"
+    major["snapshotDigest"] = compute_resource_package_snapshot_digest(major, media)
+    assert repository.publish(account.account_id, major, media, metadata(major)).created is False
 
 
 def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_accounts(tmp_path: Path) -> None:
