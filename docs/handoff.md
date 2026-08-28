@@ -1,10 +1,10 @@
 # PbDH 开发交接
 
-更新时间：2026-08-27
+更新时间：2026-08-28
 
 ## 当前落点
 
-- 分支：`main`；#48 的六类资源实现已提交为 `026e959`，验收交接已提交为 `87d00b2`；本次 handoff 更新提交并推送后，工作区应干净且与 `origin/main` 同步。
+- 分支：`main`；开始 #49 前 HEAD 为 `7c376b3` 且与 `origin/main` 同步。#49 实现完成后只做本地提交，不 push；下次开始时先检查本地 `main` 是否领先远端。
 - 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
 - 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
 - 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
@@ -12,6 +12,7 @@
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
 - [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
 - [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
+- [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已实现稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、`.pbres` 往返和 Backend 发布门禁。Creator 自动化浏览器验收通过；真实 Market 发布属于公开发布红线，等待用户明确授权后再完成 Market → Player/GM 实机验收与关闭 Issue。
 - #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
 
 ## 本轮完成
@@ -52,6 +53,7 @@
 - Player 资源管理器按当前 System Package 的 `embeddedResources` 分成“原生资源包 / 额外资源包”。“同步到云”已归入“玩家存档”；“系统包”改为可用的当前包下拉框和独立版本号，只保留 `.pbsys` 与文件夹两个上传入口。
 - 文件夹入口现在就是 Author Preview：目录句柄按 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6:src/storage/storageService.ts` 的机制持久化到共享 IndexedDB `authorPreviewHandles` 表；同一标签页刷新会重新读取目录，恢复成功后不会再被首选预制包覆盖。
 - Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
+- 环境 Template 已从 `PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe:frontend/src/templates/environment/**` 提升为 `环境@1.0.0`。稳定结构补入“原文”和特性“原名”，旧 `0.0.0-dev.1` 保持精确读取并可生成不修改源数据的升级候选；Creator 可新建和完整编辑，四个资源 Surface 共用 `environment-card-r1`。
 
 ## 已验证
 
@@ -96,12 +98,13 @@
 - Player 菜单与资源分组浏览器验收通过：资源管理器显示“原生资源包 / 额外资源包”；系统包选择框为正常深色可用状态，选项为 Daggerheart / 寻望之心，版本号独立显示，菜单只显示“上传系统包(.pbsys) / 上传系统包(文件夹)”，控制台无 error。浏览器安全策略拒绝自动执行下拉切换，未绕过；切换逻辑由回归测试和类型检查覆盖。
 - 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、349 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
 - 装备 Picker 与卡图修复浏览器验收通过：主/副武器表头均为“名称 / 属性 / 距离 / 伤害 / 负荷 / 位阶 / 类型 / 描述”，护甲包含位阶，三者默认位阶升序；不刷新页面切换寻望之心再切回 Daggerheart 后，领域卡“符文护符”为图片卡（图片 1、文字卡 0）。当前 `npm run verify` 通过：56 个 TypeScript 测试文件、350 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
+- #49 当前 `npm run verify` 通过：66 个 TypeScript 测试文件 / 408 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑与实时规范卡面；1280px 无横向溢出，控制台无 error。内嵌浏览器未能合成 GM 画布所需的原生 `DataTransfer`，因此没有把拖放失败当成产品失败或宣称 GM 实机通过。
 
 ## 接下来
 
-1. #48 已完成并关闭；Daggerheart Core 剩余六类资源不再拆分独立 Issue。
+1. 先完成 #49 的真实 Market 发布与 Market → Player/GM 浏览器验收；公开发布前必须重新取得用户明确授权。通过后记录证据、移除等待标签并关闭 Issue。
 2. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-3. 本轮提交已获用户明确授权推送；下次继续阶段工作时，先查看当前开放 Issue 与 triage label。
+3. #49 关闭后再查看开放 Issue 与 triage label，从父 PRD 中选择下一个阻塞 PbDH 本体完成的最小纵切。
 
 ## 换机交接
 

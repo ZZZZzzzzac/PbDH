@@ -49,6 +49,8 @@ import {
   adversaryRendererFor,
   armorAuthoringLayout,
   armorRendererFor,
+  environmentAuthoringLayout,
+  environmentRendererFor,
   stableReferenceAuthoringLayoutFor,
   stableReferenceRendererFor,
   weaponAuthoringLayout,
@@ -61,6 +63,7 @@ import {
   armorTemplate,
   communityTemplate,
   domainTemplate,
+  environmentTemplate,
   itemTemplate,
   professionTemplate,
   subclassTemplate,
@@ -69,6 +72,7 @@ import {
   type AdversaryData,
   type AdversaryFeature,
   type ArmorData,
+  type EnvironmentData,
   type WeaponData,
 } from "@pbdh/templates/core";
 
@@ -746,8 +750,11 @@ export function CreatorWorkspacePrototype({
   const isAdversary = Boolean(resource && isTemplate(resource, adversaryTemplate));
   const isWeapon = Boolean(resource && isTemplate(resource, weaponTemplate));
   const isArmor = Boolean(resource && isTemplate(resource, armorTemplate));
+  const isEnvironment = Boolean(resource && isTemplate(resource, environmentTemplate));
   const referenceLayout = resource
-    ? stableReferenceAuthoringLayoutFor(resource.template.id, resource.template.version)
+    ? isEnvironment
+      ? environmentAuthoringLayout
+      : stableReferenceAuthoringLayoutFor(resource.template.id, resource.template.version)
     : undefined;
   const referenceRenderer = resource
     ? stableReferenceRendererFor(resource.template.id, resource.template.version)
@@ -758,6 +765,9 @@ export function CreatorWorkspacePrototype({
   const adversaryPreviewResource = resource && adversary ? { ...resource, data: adversary } : undefined;
   const weaponPreviewResource = resource && weapon ? { ...resource, data: weapon } : undefined;
   const armorPreviewResource = resource && armor ? { ...resource, data: armor } : undefined;
+  const environmentPreviewResource = resource && isEnvironment
+    ? { ...resource, data: resource.data as EnvironmentData }
+    : undefined;
   const previewAssets = useMemo(() => new Map(
     resource
       ? Object.values(resource.media).flatMap((id) => {
@@ -1658,6 +1668,16 @@ export function CreatorWorkspacePrototype({
         label={`${(instance.resource.data as ArmorData).名称}桌面实例`}
       />;
     }
+    if (instance.resource.template.id === environmentTemplate.id) {
+      return <CanonicalCardSurface
+        resource={instance.resource as TabletopInstance["resource"] & { data: EnvironmentData }}
+        expectedRendererRevision={environmentTemplate.rendererRevision}
+        renderer={environmentRendererFor(instance.resource.template.version)}
+        assets={instanceAssets}
+        state={instance.state}
+        label={`${(instance.resource.data as EnvironmentData).名称}桌面实例`}
+      />;
+    }
     const renderer = stableReferenceRendererFor(instance.resource.template.id, instance.resource.template.version);
     if (renderer) return <CanonicalCardSurface
       resource={instance.resource as unknown as SurfaceResource<Record<string, unknown>>}
@@ -1780,6 +1800,7 @@ export function CreatorWorkspacePrototype({
                 {adversaryPreviewResource && <CanonicalCardSurface resource={adversaryPreviewResource} expectedRendererRevision="enemy-card-r1" renderer={adversaryRendererFor(adversaryPreviewResource.template.version)} assets={previewAssets} label={`${adversaryPreviewResource.data.名称 || "未命名敌人"}规范卡面`} />}
                 {weaponPreviewResource && <CanonicalCardSurface resource={weaponPreviewResource} expectedRendererRevision="weapon-card-r1" renderer={weaponRendererFor(weaponPreviewResource.template.version)} assets={previewAssets} label={`${weaponPreviewResource.data.名称 || "未命名武器"}规范卡面`} />}
                 {armorPreviewResource && <CanonicalCardSurface resource={armorPreviewResource} expectedRendererRevision="armor-card-r1" renderer={armorRendererFor(armorPreviewResource.template.version)} assets={previewAssets} label={`${armorPreviewResource.data.名称 || "未命名护甲"}规范卡面`} />}
+                {environmentPreviewResource && <CanonicalCardSurface resource={environmentPreviewResource} expectedRendererRevision="environment-card-r1" renderer={environmentRendererFor(environmentPreviewResource.template.version)} assets={previewAssets} label={`${environmentPreviewResource.data.名称 || "未命名环境"}规范卡面`} />}
                 {referenceRenderer && <CanonicalCardSurface resource={resource as unknown as SurfaceResource<Record<string, unknown>>} expectedRendererRevision={referenceRenderer.revision} renderer={referenceRenderer} assets={previewAssets} label={`${String((resource.data as Record<string, unknown>).名称 ?? "未命名资源")}规范卡面`} />}
               </AutoFitPreview>
               <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => portraitRef.current?.click()}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button></footer>
@@ -2027,6 +2048,7 @@ export function CreatorWorkspacePrototype({
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button><button type="button" className="primary" onClick={createWorkspaceFromDialog}>创建</button></div></>}
         {dialog.kind === "new-resource" && <><h2>新建资源</h2>
           <div className="resource-type-choices"><button type="button" onClick={() => createResource(adversaryTemplate)}><Icon name="skull" />敌人</button><button type="button" onClick={() => createResource(weaponTemplate)}><Icon name="sword" />主武器</button><button type="button" onClick={() => createResource(armorTemplate)}><Icon name="package" />护甲</button>{[
+            environmentTemplate,
             ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate,
           ].map((template) => <button type="button" key={template.id} onClick={() => createResource(template)}><Icon name="package" />{template.id}</button>)}</div>
           <div className="dialog-actions"><button type="button" onClick={() => setDialog(null)}>取消</button></div></>}

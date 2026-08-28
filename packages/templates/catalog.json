@@ -100,6 +100,20 @@
       "publication": { "development": true, "production": false }
     },
     {
+      "id": "环境",
+      "version": "0.0.0-dev.1",
+      "state": "development",
+      "schema": "src/core/environment/0.0.0-dev.1/schema.json",
+      "publication": { "development": false, "production": false }
+    },
+    {
+      "id": "环境",
+      "version": "1.0.0",
+      "state": "development",
+      "schema": "src/core/environment/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
+    },
+    {
       "id": "物品",
       "version": "0.0.0-dev.1",
       "state": "development",

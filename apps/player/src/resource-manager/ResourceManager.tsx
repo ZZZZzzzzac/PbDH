@@ -6,8 +6,8 @@ import {
 } from "@pbdh/contract-runtime";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
-import { armorRendererFor, stableReferenceRendererFor } from "@pbdh/templates/frontend";
-import { armorTemplate, type ArmorData } from "@pbdh/templates/core";
+import { armorRendererFor, environmentRendererFor, stableReferenceRendererFor } from "@pbdh/templates/frontend";
+import { armorTemplate, environmentTemplate, type ArmorData, type EnvironmentData } from "@pbdh/templates/core";
 
 import {
   type InstalledResourcePackage,
@@ -135,6 +135,7 @@ function PlayerResourcePreviewContent({
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
   const isArmor = resource.template.id === armorTemplate.id && resource.template.version === armorTemplate.version;
+  const isEnvironment = resource.template.id === environmentTemplate.id && resource.template.version === environmentTemplate.version;
   const referenceRenderer = stableReferenceRendererFor(resource.template.id, resource.template.version);
   return <div className="player-dialog-backdrop player-resource-preview-backdrop">
     <section className="player-dialog player-resource-preview" role="dialog" aria-modal="true" aria-label={`${name}资源详情`}>
@@ -144,6 +145,12 @@ function PlayerResourcePreviewContent({
           resource={resource as unknown as SurfaceResource<ArmorData>}
           expectedRendererRevision={armorTemplate.rendererRevision}
           renderer={armorRendererFor(resource.template.version)}
+          assets={assets}
+          label={`${name}玩家规范卡面`}
+        /> : isEnvironment ? <CanonicalCardSurface
+          resource={resource as unknown as SurfaceResource<EnvironmentData>}
+          expectedRendererRevision={environmentTemplate.rendererRevision}
+          renderer={environmentRendererFor(resource.template.version)}
           assets={assets}
           label={`${name}玩家规范卡面`}
         /> : referenceRenderer ? <CanonicalCardSurface

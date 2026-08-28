@@ -7,6 +7,7 @@ import { armorRendererRevision } from "./armor/1.0.0/renderer.tsx";
 import { ancestryRendererRevision } from "./ancestry/1.0.0/renderer.tsx";
 import { communityRendererRevision } from "./community/1.0.0/renderer.tsx";
 import { domainRendererRevision } from "./domain/1.0.0/renderer.tsx";
+import { environmentRendererRevision } from "./environment/1.0.0/renderer.tsx";
 import { itemRendererRevision } from "./item/1.0.0/renderer.tsx";
 import { professionRendererRevision } from "./profession/1.0.0/renderer.tsx";
 import { subclassRendererRevision } from "./subclass/1.0.0/renderer.tsx";
@@ -73,4 +74,9 @@ export function itemRendererFor(version: string) {
 export function domainRendererFor(version: string) {
   if (version === domainRendererRevision.templateVersion) return domainRendererRevision;
   throw new Error(`Unsupported domain Renderer version: ${version}`);
+}
+
+export function environmentRendererFor(version: string) {
+  if (version === environmentRendererRevision.templateVersion) return environmentRendererRevision;
+  throw new Error(`Unsupported environment Renderer version: ${version}`);
 }

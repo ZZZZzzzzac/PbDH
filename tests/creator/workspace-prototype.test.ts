@@ -39,7 +39,7 @@ import {
   weaponData,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import {
-  ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
+  ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, environmentTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
 } from "@pbdh/templates/core";
 
 const root = process.cwd();
@@ -125,7 +125,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(edited.dirtyResourceIds).toContain(created.resourceId);
   });
 
-  test.each([ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate])(
+  test.each([environmentTemplate, ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate])(
     "creates and generically edits stable %s resources",
     (template) => {
       const source = createWorkspace({ document, media });
@@ -138,6 +138,28 @@ describe("Creator Workspace prototype state model", () => {
       expect(adversaryData(edited).名称).toBe("牛头人破坏者");
     },
   );
+
+  test("exports and reloads a stable environment through the formal .pbres boundary", async () => {
+    const source = createWorkspace({ document, media });
+    const created = addTemplateResource(source, environmentTemplate.id, environmentTemplate.version);
+    const edited = updateWorkspaceResourceData(created.workspace, (data) => {
+      Object.assign(data, {
+        名称: "荒废林地",
+        原文: "ABANDONED GROVE",
+        难度: "11",
+        特性: [{ 名称: "蔓生战场", 原名: "Overgrown Battlefield", 类型: "被动", 描述: "旧战场遗迹。", 引导问题: "为何发生冲突？" }],
+      });
+    }, created.resourceId);
+
+    const exported = await prepareWorkspaceExport(edited);
+    expect(await validateResourcePackageCandidate(exported.document, exported.media)).toEqual([]);
+    const loaded = await loadPbres(writePbres(exported.document, exported.media), validateResourcePackageCandidate);
+    expect(loaded.diagnostics).toEqual([]);
+    expect(loaded.candidate?.document.resources.find((resource) => resource.id === created.resourceId)).toMatchObject({
+      template: { id: "环境", version: "1.0.0" },
+      data: { 名称: "荒废林地", 原文: "ABANDONED GROVE", 难度: "11" },
+    });
+  });
 
   test("stores resources in user folders rather than grouping them by Template", () => {
     const source = selectWorkspaceFolder(createWorkspace({ document, media }), null);

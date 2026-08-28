@@ -3,6 +3,7 @@ export { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
 export { ancestryAuthoringLayout } from "./ancestry/1.0.0/authoring-layout.ts";
 export { communityAuthoringLayout } from "./community/1.0.0/authoring-layout.ts";
 export { domainAuthoringLayout } from "./domain/1.0.0/authoring-layout.ts";
+export { environmentAuthoringLayout } from "./environment/1.0.0/authoring-layout.ts";
 export { itemAuthoringLayout } from "./item/1.0.0/authoring-layout.ts";
 export { professionAuthoringLayout } from "./profession/1.0.0/authoring-layout.ts";
 export { subclassAuthoringLayout } from "./subclass/1.0.0/authoring-layout.ts";
@@ -14,6 +15,11 @@ export {
 export { ancestryRendererRevision, ancestryRendererStyles } from "./ancestry/1.0.0/renderer.tsx";
 export { communityRendererRevision, communityRendererStyles } from "./community/1.0.0/renderer.tsx";
 export { domainRendererRevision, domainRendererStyles } from "./domain/1.0.0/renderer.tsx";
+export {
+  environmentRendererRevision,
+  environmentRendererStyles,
+  type EnvironmentRuntimeState,
+} from "./environment/1.0.0/renderer.tsx";
 export { itemRendererRevision, itemRendererStyles } from "./item/1.0.0/renderer.tsx";
 export { professionRendererRevision, professionRendererStyles } from "./profession/1.0.0/renderer.tsx";
 export { subclassRendererRevision, subclassRendererStyles } from "./subclass/1.0.0/renderer.tsx";
@@ -42,6 +48,7 @@ export {
   armorRendererFor,
   communityRendererFor,
   domainRendererFor,
+  environmentRendererFor,
   freeRendererFor,
   itemRendererFor,
   professionRendererFor,

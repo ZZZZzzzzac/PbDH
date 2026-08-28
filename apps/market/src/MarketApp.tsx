@@ -7,10 +7,11 @@ import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import {
   adversaryRendererFor,
   armorRendererFor,
+  environmentRendererFor,
   stableReferenceRendererFor,
   weaponRendererFor,
 } from "@pbdh/templates/frontend";
-import type { AdversaryData, ArmorData, WeaponData } from "@pbdh/templates/core";
+import type { AdversaryData, ArmorData, EnvironmentData, WeaponData } from "@pbdh/templates/core";
 
 import { marketDesignSource } from "../design.generated.ts";
 import { catalogOptions } from "./catalog-options.ts";
@@ -254,6 +255,12 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
               resource={resource.source as SurfaceResource<ArmorData>}
               expectedRendererRevision="armor-card-r1"
               renderer={armorRendererFor((resource.source as SurfaceResource<ArmorData>).template.version)}
+              assets={assets}
+              label={`${resource.name}规范卡面`}
+            /> : resource.templateId === "环境" ? <CanonicalCardSurface
+              resource={resource.source as SurfaceResource<EnvironmentData>}
+              expectedRendererRevision="environment-card-r1"
+              renderer={environmentRendererFor((resource.source as SurfaceResource<EnvironmentData>).template.version)}
               assets={assets}
               label={`${resource.name}规范卡面`}
             /> : referenceRenderer ? <CanonicalCardSurface

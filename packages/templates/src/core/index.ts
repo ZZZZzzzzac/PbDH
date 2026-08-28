@@ -9,6 +9,7 @@ import { communityTemplate } from "./community/1.0.0/capability.ts";
 import { temporaryDomainTemplate } from "./domain/0.0.0-dev.1/capability.ts";
 import { domainTemplate } from "./domain/1.0.0/capability.ts";
 import { temporaryEnvironmentTemplate } from "./environment/0.0.0-dev.1/capability.ts";
+import { environmentTemplate } from "./environment/1.0.0/capability.ts";
 import { freeTemplate } from "./free/1.0.0/capability.ts";
 import { temporaryItemTemplate } from "./item/0.0.0-dev.1/capability.ts";
 import { itemTemplate } from "./item/1.0.0/capability.ts";
@@ -45,6 +46,8 @@ export { domainTemplate } from "./domain/1.0.0/capability.ts";
 export type { DomainData } from "./domain/1.0.0/capability.ts";
 export { temporaryEnvironmentTemplate } from "./environment/0.0.0-dev.1/capability.ts";
 export type { TemporaryEnvironmentData, TemporaryEnvironmentFeature } from "./environment/0.0.0-dev.1/capability.ts";
+export { environmentTemplate } from "./environment/1.0.0/capability.ts";
+export type { EnvironmentData, EnvironmentFeature } from "./environment/1.0.0/capability.ts";
 export { freeTemplate } from "./free/1.0.0/capability.ts";
 export type { FreeContentBlock, FreeData } from "./free/1.0.0/capability.ts";
 export { temporaryItemTemplate } from "./item/0.0.0-dev.1/capability.ts";
@@ -85,6 +88,7 @@ export const templateRegistry = new TemplateRegistry([
   temporaryDomainTemplate,
   domainTemplate,
   temporaryEnvironmentTemplate,
+  environmentTemplate,
   freeTemplate,
   temporaryItemTemplate,
   itemTemplate,
