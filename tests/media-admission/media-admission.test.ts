@@ -18,10 +18,15 @@ describe("shared image admission contract", () => {
   });
 
   test("centers a fixed 63:88 cover crop", () => {
+    expect(publicationCoverPolicy.fixedAspectRatio).toBeCloseTo(63 / 88);
     const crop = centerCrop(1600, 900, 63 / 88);
     expect(crop.width / crop.height).toBeCloseTo(63 / 88);
     expect(crop.x).toBeGreaterThan(0);
     expect(crop.y).toBe(0);
+  });
+
+  test("player avatar defaults to free crop instead of forcing a square", () => {
+    expect(playerAvatarPolicy.fixedAspectRatio).toBeUndefined();
   });
 
   test("keeps an adjustable crop ratio when sizing the WebP output", () => {

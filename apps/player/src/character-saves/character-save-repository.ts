@@ -25,6 +25,11 @@ export type StoredCharacterSave = CharacterSaveCandidate & {
   sync: LocalDocumentSync;
 };
 
+export type CharacterSaveImportPlan =
+  | { kind: "new"; candidate: CharacterSaveCandidate }
+  | { kind: "duplicate"; existing: StoredCharacterSave }
+  | { kind: "conflict"; candidate: CharacterSaveCandidate; existing: StoredCharacterSave };
+
 export function createCharacterSave(input: {
   name: string;
   systemPackage: CharacterSaveDocument["systemPackage"];
@@ -118,6 +123,33 @@ export class CharacterSaveRepository {
       : { scope: "local-only", state: "clean", baseRevision: null };
     await this.#put(candidate.document, playerMedia, sync);
     return { document: structuredClone(candidate.document), media: playerMedia, sync };
+  }
+
+  async planImport(candidate: CharacterSaveCandidate): Promise<CharacterSaveImportPlan> {
+    const playerMedia = selectCharacterSavePlayerMedia(candidate.document, candidate.media);
+    await assertValid(candidate.document, playerMedia, "Invalid Character Save import");
+    const existing = (await this.list()).find((save) => save.document.documentId === candidate.document.documentId);
+    const normalized = { document: structuredClone(candidate.document), media: playerMedia };
+    if (!existing) return { kind: "new", candidate: normalized };
+    if (sameCharacterSaveArchive(existing, normalized)) return { kind: "duplicate", existing };
+    return { kind: "conflict", candidate: normalized, existing };
+  }
+
+  async importAsCopy(
+    candidate: CharacterSaveCandidate,
+    cloudAccountId: string | null = null,
+  ): Promise<StoredCharacterSave> {
+    const now = this.#now();
+    return this.import({
+      document: {
+        ...structuredClone(candidate.document),
+        documentId: crypto.randomUUID(),
+        name: `${candidate.document.name} 副本`,
+        createdAt: now,
+        updatedAt: now,
+      },
+      media: new Map(candidate.media),
+    }, cloudAccountId);
   }
 
   async restoreRemote(
@@ -219,4 +251,20 @@ function sameCharacterSaveContent(
   const { updatedAt: _currentUpdatedAt, ...currentContent } = current;
   const { updatedAt: _nextUpdatedAt, ...nextContent } = next;
   return JSON.stringify(currentContent) === JSON.stringify(nextContent);
+}
+
+function sameCharacterSaveArchive(
+  current: CharacterSaveCandidate,
+  next: CharacterSaveCandidate,
+): boolean {
+  if (JSON.stringify(current.document) !== JSON.stringify(next.document)) return false;
+  if (current.media.size !== next.media.size) return false;
+  for (const [assetId, bytes] of current.media) {
+    const other = next.media.get(assetId);
+    if (!other || other.byteLength !== bytes.byteLength) return false;
+    for (let index = 0; index < bytes.byteLength; index += 1) {
+      if (bytes[index] !== other[index]) return false;
+    }
+  }
+  return true;
 }

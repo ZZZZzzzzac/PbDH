@@ -1,4 +1,7 @@
 import { Ellipsis } from "lucide-react";
+import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
+import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
+import { trustedRendererFor } from "@pbdh/templates/frontend";
 import { useEffect, useRef, useState } from "react";
 import type { CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
@@ -6,6 +9,7 @@ import { findResourceEntryProvenance } from "../../domain/effectiveResourceCatal
 import type { ResourceLibraryEntry } from "../../domain/resourceLibrary";
 import type { CardTableModule } from "../../domain/systemPackage";
 import { resourceAssetUrlKey } from "../../loaders/assetResolver";
+import { sheetRuntimeMediaPath } from "../../adapters/platformResourceLibraries";
 import { useRuntimeStore } from "../../store/runtimeStore";
 import { RestrictedMarkdown } from "../RestrictedMarkdown";
 import { useCardDescriptionFit } from "../cardDescriptionFit";
@@ -36,15 +40,41 @@ export function CardFace({
   const cardArtRef = definition?.fields[artField] ?? "";
   const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
   const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
+  const resourceCopy = definition?.resourceCopy;
   const cardArtUrlKey = cardArtRef.startsWith("resource-extension:")
     ? cardArtRef
-    : resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
+    : resourceCopy?.source
+      ? resourceAssetUrlKey("resourceExtension", resourceCopy.source.packageId, cardArtRef)
+      : resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
   const cardArtUrl = useRuntimeStore((state) => cardArtRef
     ? /^(?:blob:|data:)/u.test(cardArtRef) ? cardArtRef : state.packageAssetUrls[cardArtUrlKey]
     : undefined);
+  const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const displayMode = resolveCardDisplayMode(definition, module);
   const showArt = displayMode !== "text" && cardArtUrl && !imageFailed;
+  const canonicalRenderer = resourceCopy
+    ? trustedRendererFor(resourceCopy.template.id, resourceCopy.template.version)
+    : undefined;
+  const canonicalResource = resourceCopy ? canonicalCardResource(resourceCopy, definition, module, definitionRef?.type === "resourceLibrary" ? definitionRef : undefined) : undefined;
+  const assets = resourceCopy
+    ? canonicalCardAssets(resourceCopy, definition, module, provenance, packageAssetUrls)
+    : new Map<string, ManagedAsset>();
   useEffect(() => setImageFailed(false), [cardArtRef, cardArtUrl]);
+
+  if (canonicalResource && canonicalRenderer) {
+    return <CardDisplay
+      width={Number(canonicalResource.presentation.width)}
+      height={Number(canonicalResource.presentation.height)}
+      fixedRatio={canonicalResource.presentation.fixedRatio}
+      displayAspectRatio={63 / 88}
+    ><CanonicalCardSurface
+        resource={canonicalResource}
+        expectedRendererRevision={canonicalRenderer.revision}
+        renderer={canonicalRenderer}
+        assets={assets}
+        label={`${fallbackName}规范卡面`}
+      /></CardDisplay>;
+  }
 
   if (showArt && displayMode === "image") {
     return <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} />;
@@ -60,6 +90,57 @@ export function CardFace({
     );
   }
   return <TextCard definition={definition} module={module} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
+}
+
+function canonicalCardResource(
+  resourceCopy: NonNullable<ResourceLibraryEntry["resourceCopy"]>,
+  definition: ResourceLibraryEntry,
+  module: CardTableModule,
+  definitionRef: Extract<CardInstance["definitionRef"], { type: "resourceLibrary" }> | undefined,
+): SurfaceResource<Record<string, unknown>> {
+  const backAssetId = resourceCopy.media.back;
+  const showingBack = definitionRef && definition.fields[cardField(module, "卡图字段")] === definition.fields[cardField(module, "卡背字段")];
+  return {
+    template: structuredClone(resourceCopy.template),
+    presentation: {
+      ...structuredClone(resourceCopy.presentation),
+      mode: resolveCardDisplayMode(definition, module),
+    },
+    data: structuredClone(resourceCopy.data),
+    media: showingBack && backAssetId
+      ? { ...structuredClone(resourceCopy.media), portrait: backAssetId }
+      : structuredClone(resourceCopy.media),
+  };
+}
+
+export function canonicalCardAssets(
+  resourceCopy: NonNullable<ResourceLibraryEntry["resourceCopy"]>,
+  definition: ResourceLibraryEntry,
+  module: CardTableModule,
+  provenance: ReturnType<typeof findResourceEntryProvenance>,
+  packageAssetUrls: Record<string, string>,
+): ReadonlyMap<string, ManagedAsset> {
+  const assets = new Map<string, ManagedAsset>();
+  for (const [slot, assetId] of Object.entries(resourceCopy.media)) {
+    const fieldRef = slot === "portrait"
+      ? definition.fields[cardField(module, "卡图字段")]
+      : slot === "back" ? definition.fields[cardField(module, "卡背字段")] : undefined;
+    const directUrl = fieldRef && /^(?:blob:|data:)/u.test(fieldRef) ? fieldRef : undefined;
+    const runtimePath = resourceCopy.source
+      ? sheetRuntimeMediaPath(resourceCopy.source.packageId, assetId)
+      : fieldRef;
+    const runtimeKey = resourceCopy.source && runtimePath
+      ? resourceAssetUrlKey("resourceExtension", resourceCopy.source.packageId, runtimePath)
+      : runtimePath ? resourceAssetUrlKey(provenance?.type, provenance?.id, runtimePath) : undefined;
+    const fieldKey = resourceCopy.source && fieldRef
+      ? resourceAssetUrlKey("resourceExtension", resourceCopy.source.packageId, fieldRef)
+      : fieldRef ? resourceAssetUrlKey(provenance?.type, provenance?.id, fieldRef) : undefined;
+    const url = directUrl
+      ?? (fieldKey ? packageAssetUrls[fieldKey] : undefined)
+      ?? (runtimeKey ? packageAssetUrls[runtimeKey] : undefined);
+    assets.set(assetId, url ? { status: "ready", url } : { status: "error", reason: "missing player card media" });
+  }
+  return assets;
 }
 
 export function CardStateBadge({ id, label }: { id?: string; label: string }) {

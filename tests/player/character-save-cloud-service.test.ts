@@ -38,6 +38,7 @@ afterEach(async () => {
 });
 
 class RecoveryApi implements CloudDocumentApi {
+  readonly deleted: Array<{ documentId: string; baseRevision: number }> = [];
   constructor(
     readonly documents: RemoteCloudDocument[],
     readonly media: ReadonlyMap<string, Uint8Array>,
@@ -68,6 +69,10 @@ class RecoveryApi implements CloudDocumentApi {
 
   async restoreDocument(): Promise<RemoteCloudDocument> {
     throw new Error("unexpected restore");
+  }
+
+  async deleteDocument(documentId: string, baseRevision: number): Promise<void> {
+    this.deleted.push({ documentId, baseRevision });
   }
 }
 
@@ -166,5 +171,71 @@ describe("Player Character Save cloud recovery", () => {
 
     await expect(service.recover(credentials)).rejects.toThrow("Module 状态无效");
     expect(await repository.list()).toEqual([]);
+  });
+
+  test("缺少目标系统包时保留云端人物供稍后匹配，不运行人物数据校验", async () => {
+    const document = structuredClone(characterJson) as CharacterSaveDocument;
+    document.systemPackage = {
+      id: "01989f4e-7b2c-7000-8000-000000000099",
+      version: "1.0.0",
+    };
+    const remote: RemoteCloudDocument = {
+      documentId: document.documentId,
+      documentKind: "character-save",
+      contractFamily: "character-save",
+      contractVersion: document.contractVersion,
+      revision: 2,
+      assetIds: [],
+      payload: document,
+      createdAt: document.createdAt,
+      updatedAt: document.updatedAt,
+      deletedAt: null,
+      purgeAfter: null,
+    };
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    let moduleValidationRuns = 0;
+    const service = new PlayerCloudDocumentService(
+      store,
+      repository,
+      new RecoveryApi([remote], new Map()),
+      (candidate) => {
+        if (candidate.document.systemPackage.id === document.systemPackage.id) return;
+        moduleValidationRuns += 1;
+      },
+    );
+
+    const recovered = await service.recover(credentials);
+
+    expect(moduleValidationRuns).toBe(0);
+    expect(recovered).toMatchObject([{
+      document: { documentId: document.documentId, systemPackage: document.systemPackage },
+      sync: { scope: "cloud", state: "clean", accountId: credentials.accountId },
+    }]);
+  });
+
+  test("permanently deletes only a Character Save that is already in cloud trash", async () => {
+    const document = structuredClone(characterJson) as CharacterSaveDocument;
+    const remote: RemoteCloudDocument = {
+      documentId: document.documentId,
+      documentKind: "character-save",
+      contractFamily: "character-save",
+      contractVersion: document.contractVersion,
+      revision: 4,
+      assetIds: [],
+      payload: document,
+      createdAt: document.createdAt,
+      updatedAt: document.updatedAt,
+      deletedAt: "2026-08-28T00:00:00.000Z",
+      purgeAfter: "2026-09-27T00:00:00.000Z",
+    };
+    const store = new DexieLocalDocumentStore(database());
+    const api = new RecoveryApi([remote], new Map());
+    const service = new PlayerCloudDocumentService(store, new CharacterSaveRepository(store), api);
+
+    await service.deleteFromTrash(remote, credentials);
+    expect(api.deleted).toEqual([{ documentId: remote.documentId, baseRevision: 4 }]);
+    await expect(service.deleteFromTrash({ ...remote, deletedAt: null }, credentials))
+      .rejects.toThrow("只有回收站里的人物存档可以永久删除");
   });
 });

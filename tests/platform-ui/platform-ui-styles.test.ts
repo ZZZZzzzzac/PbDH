@@ -28,4 +28,11 @@ describe("Platform App Bar style isolation", () => {
     expect(source).toContain('aria-label="PbDH 通知"');
     expect(stylesheet).toContain(".pbdh-platform-notification-panel");
   });
+
+  test("closes the notification menu when the pointer leaves its whole menu", () => {
+    const source = readFileSync(fileURLToPath(new URL("../../packages/platform-ui/src/index.tsx", import.meta.url)), "utf8");
+
+    expect(source).toContain('className="pbdh-platform-notification-menu"');
+    expect(source).toContain("onMouseLeave={() => setNotificationsOpen(false)}");
+  });
 });

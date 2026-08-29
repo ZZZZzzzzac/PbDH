@@ -1,0 +1,160 @@
+[
+  {
+    "ID": "fill-armor",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-armor" }],
+    "targets": [
+      { "类型": "module", "模块ID": "armor-summary" },
+      { "类型": "module", "模块ID": "armor-feature" },
+      { "类型": "module", "模块ID": "armor-slots" },
+      { "类型": "module", "模块ID": "major-threshold" },
+      { "类型": "module", "模块ID": "severe-threshold" },
+      { "类型": "module", "模块ID": "armor-value" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-armor" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "armor-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "{{名称}} | 阈值 {{重度阈值}}/{{严重阈值}} | 护甲值 {{护甲值}}" } },
+      { "类型": "fillText", "目标模块ID": "armor-feature", "内容": { "类型": "selectedResourceField", "字段": "描述" } },
+      { "类型": "fillCountable", "目标模块ID": "armor-slots", "最大值": { "类型": "selectedResourceField", "字段": "护甲值" } },
+      { "类型": "fillText", "目标模块ID": "major-threshold", "内容": { "类型": "selectedResourceField", "字段": "重度阈值" } },
+      { "类型": "fillText", "目标模块ID": "severe-threshold", "内容": { "类型": "selectedResourceField", "字段": "严重阈值" } },
+      { "类型": "fillText", "目标模块ID": "armor-value", "内容": { "类型": "selectedResourceField", "字段": "护甲值" } }
+    ]
+  },
+  {
+    "ID": "append-inventory-items",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-inventory-item" }],
+    "targets": [{ "类型": "module", "模块ID": "inventory" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-inventory-item" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "inventory", "写入方式": "追加", "追加分隔符": "\n", "内容": { "类型": "selectedResourceTemplate", "格式": "- **{{名称}}**: {{描述}}", "分隔符": "\n" } }]
+  },
+  {
+    "ID": "filter-domain-cards-on-primary",
+    "sources": [
+      { "类型": "freeText", "模块ID": "primary-domain" },
+      { "类型": "freeText", "模块ID": "secondary-domain" }
+    ],
+    "targets": [{ "类型": "module", "模块ID": "pick-domain-card" }],
+    "触发": { "类型": "freeTextChanged", "来源模块ID": "primary-domain" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "setResourceDefaultFilter", "目标模块ID": "pick-domain-card", "字段": "领域", "值": { "类型": "freeTextValues", "模块IDs": ["primary-domain", "secondary-domain"] } }]
+  },
+  {
+    "ID": "filter-domain-cards-on-secondary",
+    "sources": [
+      { "类型": "freeText", "模块ID": "primary-domain" },
+      { "类型": "freeText", "模块ID": "secondary-domain" }
+    ],
+    "targets": [{ "类型": "module", "模块ID": "pick-domain-card" }],
+    "触发": { "类型": "freeTextChanged", "来源模块ID": "secondary-domain" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "setResourceDefaultFilter", "目标模块ID": "pick-domain-card", "字段": "领域", "值": { "类型": "freeTextValues", "模块IDs": ["primary-domain", "secondary-domain"] } }]
+  },
+  {
+    "ID": "fill-ancestry",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-ancestry" }],
+    "targets": [
+      { "类型": "module", "模块ID": "ancestry-name" },
+      { "类型": "module", "模块ID": "ancestry-experience" },
+      { "类型": "module", "模块ID": "ancestry-experience-modifier" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-ancestry" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "ancestry-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "setTextPlaceholder", "目标模块ID": "ancestry-experience", "内容": { "类型": "selectedResourceField", "字段": "默认种族经历" } },
+      { "类型": "setTextPlaceholder", "目标模块ID": "ancestry-experience-modifier", "内容": { "类型": "selectedResourceField", "字段": "默认种族经历修正" } }
+    ]
+  },
+  {
+    "ID": "fill-community",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-community" }],
+    "targets": [{ "类型": "module", "模块ID": "community-name" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-community" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "community-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } }]
+  },
+  {
+    "ID": "fill-class",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-class" }],
+    "targets": [
+      { "类型": "module", "模块ID": "class-name" },
+      { "类型": "module", "模块ID": "evasion" },
+      { "类型": "module", "模块ID": "hp" },
+      { "类型": "module", "模块ID": "primary-domain" },
+      { "类型": "module", "模块ID": "class-hope-feature" },
+      { "类型": "module", "模块ID": "class-feature" },
+      { "类型": "module", "模块ID": "background-question-1" },
+      { "类型": "module", "模块ID": "background-question-2" },
+      { "类型": "module", "模块ID": "background-question-3" },
+      { "类型": "module", "模块ID": "connection-question-1" },
+      { "类型": "module", "模块ID": "connection-question-2" },
+      { "类型": "module", "模块ID": "connection-question-3" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "class-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "fillText", "目标模块ID": "evasion", "内容": { "类型": "selectedResourceField", "字段": "闪避值" } },
+      { "类型": "fillCountable", "目标模块ID": "hp", "最大值": { "类型": "selectedResourceField", "字段": "生命点" } },
+      { "类型": "fillText", "目标模块ID": "primary-domain", "内容": { "类型": "selectedResourceField", "字段": "主领域" } },
+      { "类型": "fillText", "目标模块ID": "class-hope-feature", "内容": { "类型": "selectedResourceField", "字段": "希望特性" } },
+      { "类型": "fillText", "目标模块ID": "class-feature", "内容": { "类型": "selectedResourceField", "字段": "职业特性" } },
+      { "类型": "fillText", "目标模块ID": "background-question-1", "内容": { "类型": "selectedResourceField", "字段": "背景问题1" } },
+      { "类型": "fillText", "目标模块ID": "background-question-2", "内容": { "类型": "selectedResourceField", "字段": "背景问题2" } },
+      { "类型": "fillText", "目标模块ID": "background-question-3", "内容": { "类型": "selectedResourceField", "字段": "背景问题3" } },
+      { "类型": "fillText", "目标模块ID": "connection-question-1", "内容": { "类型": "selectedResourceField", "字段": "关系问题1" } },
+      { "类型": "fillText", "目标模块ID": "connection-question-2", "内容": { "类型": "selectedResourceField", "字段": "关系问题2" } },
+      { "类型": "fillText", "目标模块ID": "connection-question-3", "内容": { "类型": "selectedResourceField", "字段": "关系问题3" } }
+    ]
+  },
+  {
+    "ID": "filter-subclasses-by-class",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-class" }],
+    "targets": [{ "类型": "module", "模块ID": "pick-subclass-t1" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "setResourceDefaultFilter", "目标模块ID": "pick-subclass-t1", "字段": "主职", "值": { "类型": "selectedResourceField", "字段": "名称" } }]
+  },
+  {
+    "ID": "fill-subclass-selection",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-subclass-t1" }],
+    "targets": [
+      { "类型": "module", "模块ID": "subclass-name" },
+      { "类型": "module", "模块ID": "subclass-stage" },
+      { "类型": "module", "模块ID": "weapon-summary" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "subclass-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "fillText", "目标模块ID": "subclass-stage", "内容": { "类型": "selectedResourceField", "字段": "等级" } },
+      { "类型": "fillText", "目标模块ID": "weapon-summary", "内容": { "类型": "selectedResourceField", "字段": "武器原型" } }
+    ]
+  },
+  {
+    "ID": "fill-subclass-feature-when-present",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-subclass-t1" }],
+    "targets": [{ "类型": "module", "模块ID": "subclass-current" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
+    "条件": { "类型": "selectedResourceFieldNotEquals", "字段": "子职特性", "值": "" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "subclass-current", "内容": { "类型": "selectedResourceField", "字段": "子职特性" } }]
+  },
+  {
+    "ID": "fill-class-feature-when-present",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-subclass-t1" }],
+    "targets": [{ "类型": "module", "模块ID": "class-feature" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
+    "条件": { "类型": "selectedResourceFieldNotEquals", "字段": "职业特性", "值": "" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "class-feature", "内容": { "类型": "selectedResourceField", "字段": "职业特性" } }]
+  },
+  {
+    "ID": "fill-hope-feature-when-present",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-subclass-t1" }],
+    "targets": [{ "类型": "module", "模块ID": "class-hope-feature" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
+    "条件": { "类型": "selectedResourceFieldNotEquals", "字段": "希望特性", "值": "" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "class-hope-feature", "内容": { "类型": "selectedResourceField", "字段": "希望特性" } }]
+  }
+]

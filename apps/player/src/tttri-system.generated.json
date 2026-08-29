@@ -1,0 +1,166 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a05400-0000-7000-8000-000000000201",
+    "version": "1.0.1",
+    "name": "罗德岛旅记",
+    "description": "由迁移后的 Sheet Runtime 驱动的罗德岛旅记系统包。"
+  },
+  "runtime": {
+    "characterDataVersion": "1.0.1",
+    "loadingPresentation": {
+      "tagline": "正在连接PRTS...",
+      "accentColor": "#63bfd1"
+    },
+    "pages": "pages.json",
+    "shell": {
+      "html": "layouts/shell.html",
+      "css": "layouts/shell.css"
+    },
+    "skins": [
+      {
+        "id": "rhodes-island",
+        "name": "终末地",
+        "css": "skins/rhodes-island/skin.css",
+        "frameworkColorScheme": "light",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/rhodes-island/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/rhodes-island/character-main.html"
+            },
+            {
+              "id": "character-story",
+              "html": "skins/rhodes-island/character-story.html"
+            }
+          ]
+        }
+      },
+      {
+        "id": "terra-portal",
+        "name": "罗德岛",
+        "css": "skins/terra-portal/skin.css",
+        "frameworkColorScheme": "dark",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/terra-portal/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/terra-portal/character-main.html"
+            },
+            {
+              "id": "character-story",
+              "html": "skins/terra-portal/character-story.html"
+            }
+          ]
+        }
+      }
+    ],
+    "defaultSkin": "terra-portal",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterCreationGuide": "guides/character-creation.json",
+    "questionnaireCharacterCreation": {
+      "id": "tttri-subclass-recommendation",
+      "name": "干员推荐问卷",
+      "html": "questionnaires/subclass-recommendation.html"
+    },
+    "characterFormatAdapters": "adapters/character-formats.json",
+    "characterTextExports": "exports/character-text.json",
+    "validationChecks": [
+      {
+        "id": "tttri-character-consistency",
+        "script": "checks/character-consistency.js"
+      }
+    ]
+  },
+  "resourceCompatibility": [
+    {
+      "templateId": "职业",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "classes",
+        "label": "职业"
+      }
+    },
+    {
+      "templateId": "子职业",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "subclasses",
+        "label": "干员"
+      }
+    },
+    {
+      "templateId": "种族",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "ancestries",
+        "label": "种族"
+      }
+    },
+    {
+      "templateId": "社群",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "communities",
+        "label": "社群"
+      }
+    },
+    {
+      "templateId": "领域卡",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "domain-cards",
+        "label": "领域卡"
+      }
+    },
+    {
+      "templateId": "护甲",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "armor",
+        "label": "护甲"
+      }
+    },
+    {
+      "templateId": "物品",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "loot",
+        "label": "物品与消耗品"
+      }
+    }
+  ],
+  "embeddedResources": [
+    {
+      "path": "resources/tttri.pbres"
+    }
+  ]
+}

@@ -139,6 +139,38 @@ def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_
     assert loaded["candidate"] == {"document": document, "media": media}
 
 
+def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    source_document, media = candidate()
+    source = publish(api, claim(api, "source-author"), source_document, media).json()["publication"]
+    assert source["publicationId"].split("-")[2].startswith("7")
+
+    derived = copy.deepcopy(source_document)
+    derived["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000072"
+    derived["package"]["name"] = "牛头人破坏者 Fork"
+    derived["forkSource"] = {
+        "publicationId": source["publicationId"],
+        "packageId": source_document["package"]["id"],
+        "version": source_document["package"]["version"],
+        "snapshotDigest": source_document["snapshotDigest"],
+        "copiedResources": [{
+            "packageId": source_document["package"]["id"],
+            "resourceId": resource["id"],
+        } for resource in source_document["resources"]],
+    }
+    derived["snapshotDigest"] = compute_resource_package_snapshot_digest(derived, media)
+    accepted = publish(api, claim(api, "fork-author"), derived, media)
+    assert accepted.status_code == 200, accepted.text
+
+    forged = copy.deepcopy(derived)
+    forged["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000073"
+    forged["forkSource"]["snapshotDigest"] = f"sha256:{'0' * 64}"
+    forged["snapshotDigest"] = compute_resource_package_snapshot_digest(forged, media)
+    rejected = publish(api, claim(api, "forged-fork-author"), forged, media)
+    assert rejected.status_code == 422
+    assert rejected.json()["error"]["fieldErrors"][0]["code"] == "publication.fork-source.snapshot-mismatch"
+    assert len(api.get("/api/publications").json()["publications"]) == 2
+
 @pytest.mark.parametrize(("template_id", "data"), [
     ("护甲", {"名称": "填充布甲", "类型": "护甲", "护甲值": "3", "重度伤害阈值": "5", "严重伤害阈值": "11", "描述": "灵活：闪避值+1。", "风味描述": "轻柔填料缝入耐磨布层。", "位阶": "1"}),
     ("环境", {"名称": "荒废林地", "原文": "ABANDONED GROVE", "位阶": "1", "种类": "探索", "简介": "一片曾经的德鲁伊林地。", "趋向": "吸引好奇者", "难度": "11", "潜在敌人": "野兽，林地守卫", "特性": [{"名称": "蔓生战场", "原名": "Overgrown Battlefield", "类型": "被动", "描述": "此地曾发生过一场战斗。", "引导问题": "为何发生冲突？"}]}),
@@ -163,6 +195,27 @@ def test_stable_templates_are_publishable(tmp_path: Path, template_id: str, data
         "id": template_id,
         "version": "1.0.0",
     }
+
+
+def test_publication_accepts_declared_replacement_and_rejects_unknown_button(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    headers = claim(api, "replacement-author")
+    document, media = candidate()
+    resource = document["resources"][0]
+    resource["replacements"] = [{
+        "replacementId": "alternate-form",
+        "targetResourceId": resource["id"],
+    }]
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+    accepted = publish(api, headers, document, media)
+    assert accepted.status_code == 200, accepted.text
+
+    document["package"]["id"] = "01a0132c-4eef-7703-94ac-ec8c02654800"
+    resource["replacements"][0]["replacementId"] = "unknown-button"
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+    rejected = publish(api, headers, document, media)
+    assert rejected.status_code == 422, rejected.text
+    assert rejected.json()["error"]["fieldErrors"][0]["code"] == "template.replacement.unsupported"
 
 
 def test_legacy_reference_templates_are_not_publishable(tmp_path: Path) -> None:

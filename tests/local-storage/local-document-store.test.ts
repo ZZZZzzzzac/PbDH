@@ -6,6 +6,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   DexieAuthorPreviewHandleStore,
   DexieLocalDocumentStore,
+  DexieRuntimeCacheStore,
   PbDHLocalDatabase,
   type LocalDocumentEnvelope,
 } from "../../packages/local-storage/src/index.ts";
@@ -118,5 +119,58 @@ describe("shared local document store", () => {
     const reopenedStore = new DexieAuthorPreviewHandleStore<{ kind: "directory"; name: string }>(reopened);
 
     expect(await reopenedStore.load()).toEqual({ kind: "directory", name: "system-package-dev" });
+  });
+
+  test("migrates globally installed resource packages into their target System Package", async () => {
+    const name = `pbdh-platform-test-${crypto.randomUUID()}`;
+    const legacy = new Dexie(name);
+    legacy.version(5).stores({
+      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
+      localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
+      mediaAssets: "&assetId, byteLength",
+      authorPreviewHandles: "&id",
+      runtimeCaches: "&id",
+    });
+    await legacy.table("installedResourcePackages").put({
+      packageId: "01a05400-0000-7000-8000-000000000202",
+      snapshotDigest: `sha256:${"c".repeat(64)}`,
+      version: "1.0.1",
+      installedAt: "2026-08-29T00:00:00.000Z",
+      source: "bundled",
+      document: {
+        targets: [{ systemPackageId: "01a05400-0000-7000-8000-000000000201", version: "1.0.1" }],
+      },
+    });
+    legacy.close();
+
+    const upgraded = new PbDHLocalDatabase(name);
+    databases.push(upgraded);
+    const records = await upgraded.installedSystemResourcePackages.toArray();
+    expect(records).toMatchObject([{
+      systemPackageId: "01a05400-0000-7000-8000-000000000201",
+      packageId: "01a05400-0000-7000-8000-000000000202",
+    }]);
+  });
+
+  test("persists runtime snapshots with binary assets across database reopening", async () => {
+    const firstDatabase = database();
+    const name = firstDatabase.name;
+    const firstStore = new DexieRuntimeCacheStore<{ id: string; bytes: Uint8Array }>(firstDatabase);
+    await firstStore.save("player-current-system-package", {
+      id: "system.example",
+      bytes: new Uint8Array([7, 8, 9]),
+    });
+    firstDatabase.close();
+
+    const reopened = new PbDHLocalDatabase(name);
+    databases.push(reopened);
+    const reopenedStore = new DexieRuntimeCacheStore<{ id: string; bytes: Uint8Array }>(reopened);
+
+    expect(await reopenedStore.load("player-current-system-package")).toEqual({
+      id: "system.example",
+      bytes: new Uint8Array([7, 8, 9]),
+    });
+    await reopenedStore.remove("player-current-system-package");
+    expect(await reopenedStore.load("player-current-system-package")).toBeNull();
   });
 });

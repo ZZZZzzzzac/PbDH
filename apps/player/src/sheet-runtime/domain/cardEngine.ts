@@ -1,5 +1,12 @@
 import type { CharacterData } from "./characterData";
 import { transitionCountableState, type CountableDirection } from "./countableState";
+import {
+  executeTabletopCommand,
+  nextTabletopLayer,
+  type TabletopCapability,
+  type TabletopCommand,
+  type TabletopDocumentModel,
+} from "@pbdh/tabletop/core";
 
 export type CardFace = "front" | "back";
 export type ResourceDefinitionRef =
@@ -96,7 +103,7 @@ export function createCardInstance(data: CharacterData, input: CreateCardInstanc
     definitionRef,
     state: input.state ?? "",
     ...defaultCardPosition(siblingCount),
-    zIndex: nextZIndex(data.cards.instances),
+    zIndex: nextTabletopLayer(data.cards.instances.map((instance) => ({ layer: instance.zIndex }))),
     face: "front",
     rotation: 0,
     scale: 1,
@@ -107,21 +114,12 @@ export function createCardInstance(data: CharacterData, input: CreateCardInstanc
 }
 
 export function updateCardInstancePosition(data: CharacterData, instanceId: string, xPct: number, yPct: number): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) =>
-      instance.instanceId === instanceId ? { ...instance, xPct: clampPct(xPct), yPct: clampPct(yPct), zIndex: nextZIndex(data.cards.instances) } : instance,
-    ),
-  );
+  const moved = applySharedCardCommands(data, [{ type: "move", instanceId, position: { x: clampPct(xPct), y: clampPct(yPct) } }]);
+  return applySharedCardCommands(moved, [{ type: "layer", instanceId, action: "front" }]);
 }
 
 export function bringCardInstanceToFront(data: CharacterData, instanceId: string): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) =>
-      instance.instanceId === instanceId ? { ...instance, zIndex: nextZIndex(data.cards.instances) } : instance,
-    ),
-  );
+  return applySharedCardCommands(data, [{ type: "layer", instanceId, action: "front" }]);
 }
 
 export function updateCardInstanceState(data: CharacterData, instanceId: string, state: string): CharacterData {
@@ -132,28 +130,17 @@ export function updateCardInstanceState(data: CharacterData, instanceId: string,
 }
 
 export function flipCardInstance(data: CharacterData, instanceId: string): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) =>
-      instance.instanceId === instanceId ? { ...instance, face: instance.face === "front" ? "back" : "front" } : instance,
-    ),
-  );
+  return applySharedCardCommands(data, [{ type: "flip", instanceId }]);
 }
 
 export function rotateCardInstance(data: CharacterData, instanceId: string, quarterTurns: number): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) =>
-      instance.instanceId === instanceId ? { ...instance, rotation: normalizeRotation(instance.rotation + quarterTurns * 90) } : instance,
-    ),
-  );
+  return applySharedCardCommands(data, [{ type: "rotate-quarter", instanceId, quarterTurns }]);
 }
 
 export function setCardInstanceUpright(data: CharacterData, instanceId: string): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) => instance.instanceId === instanceId ? { ...instance, rotation: 0 } : instance),
-  );
+  const instance = data.cards.instances.find((item) => item.instanceId === instanceId);
+  if (!instance) return data;
+  return applySharedCardCommands(data, [{ type: "rotate-quarter", instanceId, quarterTurns: -Math.round(instance.rotation / 90) }]);
 }
 
 export function addCardIndicator(data: CharacterData, instanceId: string, indicatorId: string): CharacterData {
@@ -211,10 +198,6 @@ export function readCardIndicators(instance: Pick<CardInstance, "indicators">): 
   }));
 }
 
-function normalizeRotation(rotation: number): number {
-  return ((Math.round(rotation / 90) * 90) % 360 + 360) % 360;
-}
-
 export function createCardTableLayout(input: CardTableLayoutInput): CardTableLayout {
   const surfaceWidthPx = Number.isFinite(input.surfaceWidthPx) && input.surfaceWidthPx > 0 ? input.surfaceWidthPx : 800;
   const surfaceMaxCardWidthPx = Math.max(minCardWidthPx, surfaceWidthPx - defaultCardInsetPx * 2);
@@ -262,25 +245,21 @@ export function clampCardWidth(value: number): number {
 
 export function tidyCardTable(data: CharacterData, tableModuleId: string, layout: CardTableLayout): CharacterData {
   let tableIndex = 0;
-
-  return updateCardInstances(
-    data,
-    data.cards.instances.map((instance) => {
-      if (instance.tableModuleId !== tableModuleId) {
-        return instance;
-      }
-
-      const next = {
-        ...instance,
-        xPct: layout.insetXPct + (tableIndex % layout.columns) * layout.stepXPct,
-        yPct: layout.insetYPct + Math.floor(tableIndex / layout.columns) * layout.stepYPct,
-        zIndex: tableIndex + 1,
-        rotation: 0,
-      };
-      tableIndex += 1;
-      return next;
-    }),
-  );
+  const placements = data.cards.instances.flatMap((instance) => {
+    if (instance.tableModuleId !== tableModuleId) return [];
+    const index = tableIndex;
+    tableIndex += 1;
+    return [{
+      instanceId: instance.instanceId,
+      position: {
+        x: layout.insetXPct + (index % layout.columns) * layout.stepXPct,
+        y: layout.insetYPct + Math.floor(index / layout.columns) * layout.stepYPct,
+      },
+      layer: index + 1,
+      rotation: 0,
+    }];
+  });
+  return placements.length ? applySharedCardCommands(data, [{ type: "arrange", placements }]) : data;
 }
 
 export function placeCardInstancesInNextTidySlots(
@@ -340,14 +319,53 @@ export function restoreCardTableLayout(
 }
 
 export function deleteCardInstance(data: CharacterData, instanceId: string): CharacterData {
-  return updateCardInstances(
-    data,
-    data.cards.instances.filter((instance) => instance.instanceId !== instanceId),
-  );
+  return applySharedCardCommands(data, [{ type: "delete", instanceId }]);
 }
 
-function nextZIndex(instances: CardInstance[]): number {
-  return Math.max(0, ...instances.map((instance) => instance.zIndex)) + 1;
+const playerTabletopCapabilities = new Set<TabletopCapability>([
+  "move", "rotate", "flip", "layer", "arrange", "delete",
+]);
+
+function applySharedCardCommands(data: CharacterData, commands: TabletopCommand[]): CharacterData {
+  let document: TabletopDocumentModel = {
+    id: "player-card-table",
+    name: "Player Card Table",
+    canvas: { width: 100, height: 100 },
+    assets: [],
+    instances: data.cards.instances.map((instance) => ({
+      id: instance.instanceId,
+      resource: {
+        source: null,
+        template: { id: "player.card", version: "1.0.0" },
+        presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+        data: {}, labels: [], replacements: [], media: {},
+      },
+      state: {},
+      position: { x: instance.xPct, y: instance.yPct },
+      layer: instance.zIndex,
+      rotation: instance.rotation,
+      flipped: instance.face === "back",
+      scale: instance.scale,
+    })),
+  };
+  for (const command of commands) {
+    const result = executeTabletopCommand(document, command, { capabilities: playerTabletopCapabilities });
+    if (result.diagnostics.length) return data;
+    document = result.document;
+  }
+  const geometry = new Map(document.instances.map((instance) => [instance.id, instance]));
+  return updateCardInstances(data, data.cards.instances.flatMap((instance) => {
+    const shared = geometry.get(instance.instanceId);
+    return shared ? [{
+      ...instance,
+      xPct: shared.position.x,
+      yPct: shared.position.y,
+      zIndex: shared.layer,
+      rotation: shared.rotation,
+      face: shared.flipped ? "back" : "front",
+      scale: shared.scale,
+    }] : [];
+  }));
 }
 
 function clampPct(value: number): number {

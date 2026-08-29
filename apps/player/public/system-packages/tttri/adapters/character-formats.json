@@ -1,0 +1,31 @@
+[
+  {
+    "ID": "dhsheet-character",
+    "名称": "dhSheet",
+    "载体": [
+      {
+        "类型": "json",
+        "根类型": "object",
+        "文件后缀": ".json",
+        "检测": [
+          { "路径": ["ruleSetId"], "等于": "rhodes-island" },
+          { "路径": ["name"], "存在": true }
+        ]
+      },
+      {
+        "类型": "embeddedJson",
+        "文件后缀": ".html",
+        "开始标记": "window.characterData = ",
+        "结束标记": "\n};",
+        "结束标记包含字符数": 2,
+        "检测": [
+          { "路径": ["ruleSetId"], "等于": "rhodes-island" },
+          { "路径": ["name"], "存在": true }
+        ]
+      }
+    ],
+    "导入脚本": "adapters/scripts/character-import.js",
+    "导出脚本": "adapters/scripts/character-export.js",
+    "导出文件后缀": ".json"
+  }
+]

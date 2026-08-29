@@ -117,5 +117,108 @@
         }
       }
     ]
+  },
+  {
+    "name": "rejects-missing-replacement-target",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "mutation": {
+      "kind": "set-replacements",
+      "resourceIndex": 0,
+      "value": [{ "replacementId": "alternate-form", "targetResourceId": "missing" }]
+    },
+    "expected": [
+      {
+        "code": "resource-package.replacement-target.missing",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.0.0",
+        "location": "/resources/0/replacements/0/targetResourceId",
+        "params": { "targetResourceId": "missing" }
+      }
+    ]
+  },
+  {
+    "name": "rejects-duplicate-replacement-id",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "mutation": {
+      "kind": "set-replacements",
+      "resourceIndex": 0,
+      "value": [
+        { "replacementId": "alternate-form", "targetResourceId": "01a0132c-4eef-7703-94ac-ec8c026547f7" },
+        { "replacementId": "alternate-form", "targetResourceId": "01a0132c-4eef-7703-94ac-ec8c026547f7" }
+      ]
+    },
+    "expected": [
+      {
+        "code": "resource-package.replacement-id.duplicate",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.0.0",
+        "location": "/resources/0/replacements/1/replacementId",
+        "params": { "replacementId": "alternate-form" }
+      }
+    ]
+  },
+  {
+    "name": "rejects a fixed card outside the 63:88 design ratio",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "mutation": { "kind": "set-presentation-size", "resourceIndex": 0, "width": "90", "height": "142" },
+    "expected": [
+      {
+        "code": "contract.schema.const",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.0.0",
+        "location": "/resources/0/presentation/height",
+        "params": { "expected": "88" }
+      },
+      {
+        "code": "contract.schema.const",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.0.0",
+        "location": "/resources/0/presentation/width",
+        "params": { "expected": "63" }
+      }
+    ]
+  },
+  {
+    "name": "rejects a variable-height card with a different width",
+    "document": "valid/minotaur-wrecker.json",
+    "media": [
+      {
+        "assetId": "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034",
+        "path": "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
+      }
+    ],
+    "mutation": { "kind": "set-presentation-size", "resourceIndex": 0, "width": "90", "height": "121", "fixedRatio": false },
+    "expected": [
+      {
+        "code": "contract.schema.const",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.0.0",
+        "location": "/resources/0/presentation/width",
+        "params": { "expected": "63" }
+      }
+    ]
   }
 ]

@@ -42,6 +42,10 @@ def _normalized_document(document: Mapping[str, Any]) -> dict[str, Any]:
     )
     content["assets"].sort(key=lambda item: item["id"])
     content["resources"].sort(key=lambda item: (item["path"], item["id"]))
+    for resource in content["resources"]:
+        resource.get("replacements", []).sort(
+            key=lambda item: (item["replacementId"], item["targetResourceId"])
+        )
     content["emptyDirectories"].sort()
     return content
 
@@ -167,6 +171,25 @@ def validate_resource_package_semantics(
             ))
 
     for resource_index, resource in enumerate(document["resources"]):
+        replacement_ids: set[str] = set()
+        for replacement_index, replacement in enumerate(resource.get("replacements", [])):
+            replacement_id = replacement["replacementId"]
+            if replacement_id in replacement_ids:
+                diagnostics.append(_diagnostic(
+                    "resource-package.replacement-id.duplicate",
+                    f"/resources/{resource_index}/replacements/{replacement_index}/replacementId",
+                    {"replacementId": replacement_id},
+                    version,
+                ))
+            replacement_ids.add(replacement_id)
+            target_resource_id = replacement["targetResourceId"]
+            if target_resource_id not in resource_ids:
+                diagnostics.append(_diagnostic(
+                    "resource-package.replacement-target.missing",
+                    f"/resources/{resource_index}/replacements/{replacement_index}/targetResourceId",
+                    {"targetResourceId": target_resource_id},
+                    version,
+                ))
         for slot, asset_id in resource["media"].items():
             if asset_id not in asset_ids:
                 diagnostics.append(_diagnostic(

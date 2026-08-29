@@ -15,5 +15,6 @@ export const communityTemplate = deepFreeze<TemplateCoreCapability<CommunityData
   version: "1.0.0",
   schema,
   rendererRevision: "community-card-r1",
+  defaultPresentation: { ...temporaryCommunityTemplate.defaultPresentation, width: "63", height: "88" },
   upgradeFrom: { version: "0.0.0-dev.1", upgrade },
 });

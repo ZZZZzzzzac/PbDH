@@ -59,7 +59,6 @@ export const publicationCoverPolicy: ImageAdmissionPolicy = {
 export const playerAvatarPolicy: ImageAdmissionPolicy = {
   purpose: "player-avatar",
   outputWidth: 512,
-  fixedAspectRatio: 1,
 };
 
 export function createBrowserImageAdmission(): ImageAdmissionWorkflow {

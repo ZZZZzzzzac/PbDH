@@ -102,16 +102,45 @@ describe("CharacterSaveRepository", () => {
     resourcePackage.assets = [];
     for (const resource of resourcePackage.resources) resource.media = {};
     await characters.save(character, new Map());
-    await resources.replace({ document: resourcePackage, media: new Map() }, "file");
+    await resources.replace(character.systemPackage.id, { document: resourcePackage, media: new Map() }, "file");
 
     const replacement = structuredClone(resourcePackage);
     replacement.package.version = "1.0.1";
     replacement.snapshotDigest = `sha256:${"1".repeat(64)}`;
     (replacement.resources[0]!.data as Record<string, unknown>)["名称"] = "已经改变的武器";
-    await resources.replace({ document: replacement, media: new Map() }, "file");
-    await resources.remove(resourcePackage.package.id);
+    await resources.replace(character.systemPackage.id, { document: replacement, media: new Map() }, "file");
+    await resources.remove(character.systemPackage.id, resourcePackage.package.id);
 
     const restored = (await new CharacterSaveRepository(store).list())[0]!.document;
     expect(restored.characterData).toEqual(character.characterData);
+  });
+
+  test("同 ID 导入区分已存在、默认副本和明确替换", async () => {
+    const repository = new CharacterSaveRepository(
+      new DexieLocalDocumentStore(database()),
+      () => "2026-08-26T08:10:00.000Z",
+    );
+    const original = await repository.save(structuredClone(fixtureJson) as CharacterSaveDocument, new Map());
+
+    await expect(repository.planImport({ document: original.document, media: original.media }))
+      .resolves.toMatchObject({ kind: "duplicate" });
+
+    const changed = {
+      document: {
+        ...structuredClone(original.document),
+        characterData: { ...original.document.characterData, notes: "导入版本" },
+      },
+      media: new Map(original.media),
+    };
+    await expect(repository.planImport(changed)).resolves.toMatchObject({ kind: "conflict" });
+
+    const copy = await repository.importAsCopy(changed);
+    expect(copy.document.documentId).not.toBe(original.document.documentId);
+    expect(copy.document.name).toContain("副本");
+    expect(await repository.list()).toHaveLength(2);
+
+    await repository.import(changed);
+    const restoredOriginal = (await repository.list()).find((save) => save.document.documentId === original.document.documentId);
+    expect(restoredOriginal?.document.characterData.notes).toBe("导入版本");
   });
 });

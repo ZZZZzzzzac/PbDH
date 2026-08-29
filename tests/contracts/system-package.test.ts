@@ -225,6 +225,26 @@ describe("System Package directory and .pbsys", () => {
       "system-package.runtime.validation-check.duplicate",
     ]);
   });
+
+  test("accepts one complete Character Data migration chain and rejects broken chains", () => {
+    const valid = structuredClone(document);
+    valid.runtime.characterDataVersion = "2.0.0";
+    valid.runtime.characterDataMigrations = [
+      { fromVersion: "1.0.0", toVersion: "1.1.0", script: "migrations/1.0.0-1.1.0.js" },
+      { fromVersion: "1.1.0", toVersion: "2.0.0", script: "migrations/1.1.0-2.0.0.js" },
+    ];
+    expect(validateSystemPackageSemantics(valid)).toEqual([]);
+
+    const broken = structuredClone(valid);
+    broken.runtime.characterDataMigrations = [
+      ...valid.runtime.characterDataMigrations,
+      { fromVersion: "1.0.0", toVersion: "0.9.0", script: "migrations/bad.js" },
+    ];
+    expect(validateSystemPackageSemantics(broken).map((item) => item.code)).toEqual(expect.arrayContaining([
+      "system-package.runtime.character-data-migration.branch",
+      "system-package.runtime.character-data-migration.not-forward",
+    ]));
+  });
 });
 
 describe("embedded official Resource admission", () => {

@@ -68,6 +68,30 @@ export async function activatePackage(
     nextAssetResolver = createRuntimeAssetResolver([...assets, ...extensionAssets]);
     const resourceCatalog = createEffectiveResourceCatalog(systemPackage, installedResourceExtensions);
     const effectivePackage = applyEffectiveResourceCatalog(systemPackage, resourceCatalog);
+    const scriptConsent = await environment.dependencies.storage.preparePackageScriptConsent(effectivePackage);
+    if (scriptConsent.status === "required") {
+      const skinPreference = resolveSkinPreference(environment, systemPackage);
+      set({
+        basePackage: systemPackage,
+        currentPackage: effectivePackage,
+        selectedSkinId: skinPreference.skinId,
+        resourceCatalog,
+        installedResourceExtensions,
+        packageAssetUrls: nextAssetResolver.urls,
+        characterData: null,
+        activeCharacterSaveId: null,
+        pendingPackageScriptConsent: scriptConsent.candidate,
+        pendingCharacterDataMigration: null,
+        packageIssues: issues,
+        bootStatus: "ready",
+        packageLoadProgress: null,
+        packageLoadingPresentation: null,
+        storageStatus,
+      });
+      environment.activePackageAssetResolver?.revokeAll();
+      environment.activePackageAssetResolver = nextAssetResolver;
+      return true;
+    }
     const loaded = await loadActiveCharacterForPackage(effectivePackage, environment.dependencies.storage);
     const skinPreference = resolveSkinPreference(environment, systemPackage);
     const cardTableSurfaceHeights = loadCardTableSurfaceHeights(environment, systemPackage.manifest.ID);
@@ -84,14 +108,17 @@ export async function activatePackage(
       pendingResourceFormatSelection: null,
       pendingResourceExtensionRemoval: null,
       pendingQuestionnaireResult: null,
-      resourceReferenceIssues: collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog),
+      pendingCharacterDataMigration: loaded.pendingCharacterDataMigration,
+      pendingPackageScriptConsent: null,
+      resourceReferenceIssues: loaded.characterData ? collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog) : [],
       packageAssetUrls: nextAssetResolver.urls,
       characterData: loaded.characterData,
       characterSaves: loaded.characterSaves,
+      allCharacterSaves: loaded.allCharacterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
       ...emptyDerivedState(),
       cardTableSurfaceHeights,
-      ...rebuildDependencyRuntimeState(loaded.characterData, effectivePackage),
+      ...(loaded.characterData ? rebuildDependencyRuntimeState(loaded.characterData, effectivePackage) : {}),
       packageIssues: issues,
       bootStatus: "ready",
       packageLoadProgress: null,
@@ -201,10 +228,13 @@ export async function clearCachedPackageAndResetState(
     pendingResourceFormatSelection: null,
     pendingResourceExtensionRemoval: null,
     pendingQuestionnaireResult: null,
+    pendingCharacterDataMigration: null,
+    pendingPackageScriptConsent: null,
     resourceReferenceIssues: [],
     packageAssetUrls: {},
     characterData: null,
     characterSaves: [],
+    allCharacterSaves: [],
     activeCharacterSaveId: null,
     ...emptyDerivedState(),
     cardTableSurfaceHeights: {},

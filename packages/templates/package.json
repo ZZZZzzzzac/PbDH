@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./core": "./src/core/index.ts",
-    "./frontend": "./src/frontend/index.ts"
+    "./frontend": "./src/frontend/index.ts",
+    "./frontend/lazy": "./src/frontend/lazy-renderer-registry.ts"
   },
   "dependencies": {
     "@pbdh/resource-renderer": "0.0.0",

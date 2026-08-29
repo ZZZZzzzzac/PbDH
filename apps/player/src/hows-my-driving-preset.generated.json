@@ -1,0 +1,23 @@
+{
+  "id": "01a05400-0000-7000-8000-000000000101",
+  "urlPath": "hows-my-driving",
+  "name": "我的车技如何？",
+  "version": "1.0.0",
+  "releaseVersion": "0.0.0-dev",
+  "directory": "hows-my-driving",
+  "inventoryPath": ".pbdh-runtime-files.json",
+  "fileCount": 10,
+  "metadataFileCount": 10,
+  "embeddedResourceIndex": [
+    {
+      "path": "resources/hows-my-driving.pbres",
+      "packageId": "01a05400-0000-7000-8000-000000000102",
+      "version": "1.0.0",
+      "snapshotDigest": "sha256:b29fc592e550662d5e01fc29e9e2207a88470f53de76da1fddcb18f8c52e76f5"
+    }
+  ],
+  "loadingPresentation": {
+    "标语": "正在整备座驾...",
+    "强调色": "#8f2024"
+  }
+}

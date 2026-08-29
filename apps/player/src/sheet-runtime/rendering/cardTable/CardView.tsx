@@ -25,8 +25,6 @@ export function CardView({
   module,
   presentation,
   onPointerDown,
-  onPointerMove,
-  onPointerUp,
   onContextMenu,
 }: {
   instance: CardInstance;
@@ -35,8 +33,6 @@ export function CardView({
   module: CardTableModule;
   presentation?: CardPresentation;
   onPointerDown: (event: PointerEvent<HTMLElement>, instance: CardInstance) => void;
-  onPointerMove: (event: PointerEvent<HTMLElement>) => void;
-  onPointerUp: (event: PointerEvent<HTMLElement>) => void;
   onContextMenu: (event: MouseEvent<HTMLElement>, instance: CardInstance) => void;
 }) {
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
@@ -59,9 +55,6 @@ export function CardView({
         "--play-card-state-color": stateAppearance?.描边颜色,
       } as CSSProperties}
       onPointerDown={(event) => onPointerDown(event, instance)}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
       onContextMenu={(event) => onContextMenu(event, instance)}
       aria-label={name}
       aria-describedby={stateBadgeId}

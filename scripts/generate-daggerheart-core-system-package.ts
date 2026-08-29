@@ -6,7 +6,9 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import {
   computeResourcePackageSnapshotDigest,
+  loadPbres,
   writePbres,
+  type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
   type ResourcePackageMedia,
   type SystemPackageDocument,
@@ -47,8 +49,9 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.3";
+const resourcePackageVersion = "1.0.7";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
@@ -65,7 +68,6 @@ const libraries = [
   library("domain-cards", "领域卡", "领域卡", "1.0.0", transformDomain),
 ] as const;
 
-const sourceResourceAssetPaths = new Set<string>();
 const generatedLibraries: Array<{
   definition: typeof libraries[number];
   assets: ResourcePackageLogicalDocument["assets"];
@@ -90,8 +92,8 @@ for (const definition of libraries) {
       throw new Error(`${definition.id}/${entry.ID} does not match ${definition.templateId}: ${JSON.stringify(validate.errors)}`);
     }
     const resourceMedia: Record<string, string> = {};
-    await admitSourceImage(entry, "卡图", "portrait", resourceMedia, assets, media);
-    await admitSourceImage(entry, "卡背", "back", resourceMedia, assets, media);
+    await admitSourceImage(entry, previousPackage, "卡图", "portrait", resourceMedia, assets, media);
+    await admitSourceImage(entry, previousPackage, "卡背", "back", resourceMedia, assets, media);
     resources.push({
       id: entry.ID,
       path: `${definition.label}/${portableName(entry.ID)}.json`,
@@ -121,13 +123,13 @@ let coreDocument: ResourcePackageLogicalDocument = {
   package: {
     id: resourcePackageId,
     version: resourcePackageVersion,
-    name: "Daggerheart Core",
-    description: "Daggerheart Core 系统包随附的完整游戏资源。",
+    name: "匕首之心官方资源",
+    description: "匕首之心系统包随附的完整游戏资源。",
   },
   targets: [{ systemPackageId, version: systemPackageVersion }],
   license: {
     label: "系统包内置资源",
-    declaration: "由 Daggerheart Core 系统包提供。",
+    declaration: "由匕首之心系统包提供。",
   },
   forkSource: null,
   assets: [...new Map(generatedLibraries.flatMap(({ assets }) =>
@@ -148,7 +150,7 @@ const systemDocument: SystemPackageDocument = {
   package: {
     id: systemPackageId,
     version: systemPackageVersion,
-    name: "Daggerheart",
+    name: "匕首之心",
     description: "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。",
   },
   runtime: mapLegacyRuntime(legacyManifest),
@@ -165,7 +167,6 @@ const systemDocument: SystemPackageDocument = {
 };
 
 await mkdir(outputRoot, { recursive: true });
-await copyRuntimeSource(sourceRoot, outputRoot);
 const systemDocumentJson = `${JSON.stringify(systemDocument, null, 2)}\n`;
 await writeFile(path.join(outputRoot, "system.json"), systemDocumentJson, "utf8");
 await writeFile(generatedSystemDocumentPath, systemDocumentJson, "utf8");
@@ -176,7 +177,7 @@ await writeFile(
 );
 
 const runtimeFiles = [
-  ...await collectRuntimeSourcePaths(sourceRoot),
+  ...await collectPublishedRuntimePaths(outputRoot),
   "system.json",
 ].sort();
 await writeFile(
@@ -187,7 +188,7 @@ await writeFile(
 await writeFile(generatedPresetPath, `${JSON.stringify({
   id: systemPackageId,
   urlPath: "daggerheart",
-  name: "匕首心",
+  name: "匕首之心",
   version: systemPackageVersion,
   releaseVersion: "0.0.0-dev",
   directory: "daggerheart-core",
@@ -265,6 +266,7 @@ function mapLegacyRuntime(manifest: LegacyRuntimeManifest): SystemPackageDocumen
 
 async function admitSourceImage(
   entry: SourceEntry,
+  previousPackage: ResourcePackageCandidate | null,
   sourceField: "卡图" | "卡背",
   slot: string,
   resourceMedia: Record<string, string>,
@@ -273,8 +275,17 @@ async function admitSourceImage(
 ) {
   const relativePath = entry[sourceField];
   if (typeof relativePath !== "string" || !relativePath.endsWith(".webp")) return;
-  sourceResourceAssetPaths.add(relativePath.replaceAll("\\", "/"));
-  const bytes = new Uint8Array(await readFile(path.join(sourceRoot, ...relativePath.split("/"))));
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await readFile(path.join(sourceRoot, ...relativePath.split("/"))));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    const previousResource = previousPackage?.document.resources.find((resource) => resource.id === entry.ID);
+    const previousAssetId = previousResource?.media[slot];
+    const previousBytes = previousAssetId ? previousPackage?.media.get(previousAssetId) : undefined;
+    if (!previousBytes) throw new Error(`Missing packed media for ${entry.ID}/${slot}: ${relativePath}`);
+    bytes = previousBytes;
+  }
   const id = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
   if (!assets.has(id)) {
     const dimensions = webpDimensions(bytes);
@@ -290,33 +301,27 @@ async function admitSourceImage(
   resourceMedia[slot] = id;
 }
 
-async function copyRuntimeSource(sourceDirectory: string, targetDirectory: string, relative = "") {
-  await mkdir(targetDirectory, { recursive: true });
-  for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
-    const relativePath = path.posix.join(relative, entry.name);
-    if (relativePath === "resources" || relativePath.startsWith("resources/")) continue;
-    if (relativePath === "manifest.json") continue;
-    if (relativePath === "adapters/resource-formats.json") continue;
-    if (sourceResourceAssetPaths.has(relativePath)) continue;
-    const sourcePath = path.join(sourceDirectory, entry.name);
-    const targetPath = path.join(targetDirectory, entry.name);
-    if (entry.isDirectory()) await copyRuntimeSource(sourcePath, targetPath, relativePath);
-    else if (entry.isFile()) await writeFile(targetPath, await readFile(sourcePath));
-  }
-}
-
-async function collectRuntimeSourcePaths(sourceDirectory: string, relative = ""): Promise<string[]> {
+async function collectPublishedRuntimePaths(sourceDirectory: string, relative = ""): Promise<string[]> {
   const files: string[] = [];
   for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
     const relativePath = path.posix.join(relative, entry.name);
     if (relativePath === "resources" || relativePath.startsWith("resources/")) continue;
-    if (relativePath === "manifest.json") continue;
-    if (relativePath === "adapters/resource-formats.json") continue;
-    if (sourceResourceAssetPaths.has(relativePath)) continue;
-    if (entry.isDirectory()) files.push(...await collectRuntimeSourcePaths(path.join(sourceDirectory, entry.name), relativePath));
+    if (relativePath === "system.json" || relativePath === runtimeInventoryName) continue;
+    if (entry.isDirectory()) files.push(...await collectPublishedRuntimePaths(path.join(sourceDirectory, entry.name), relativePath));
     else if (entry.isFile()) files.push(relativePath);
   }
   return files;
+}
+
+async function loadPreviousPackage(filePath: string): Promise<ResourcePackageCandidate | null> {
+  try {
+    const loaded = await loadPbres(new Uint8Array(await readFile(filePath)), async () => []);
+    if (!loaded.candidate) throw new Error(`Invalid existing Resource Package: ${filePath}`);
+    return loaded.candidate;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
 }
 
 function feature(value: unknown) {

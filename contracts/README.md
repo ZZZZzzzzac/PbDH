@@ -18,3 +18,7 @@ System Package conformance 目录使用 `conformance/system-package/<exact-semve
 `valid/<name>/system.json`、`resources/*.pbres` 与同级 `.pbsys` 表示等价目录/ZIP 输入。
 `1.0.0-alpha.2` 开始由 `system.json.runtime` 统一声明 Player Runtime 文件；`1.0.0`
 允许省略空的资源集合，并只用 `embeddedResources[].path` 引用权威 `.pbres`。
+
+Tabletop Document `1.0.0` 只保存当前可见的桌面卡。每张卡的资源副本可保存换卡目标，
+但不保存隐藏形态、历史形态或预先复制的目标资源；实际换卡时从当前 Creator Workspace
+重新取得目标资源。`1.0.0-alpha.1` 继续保留读取支持。

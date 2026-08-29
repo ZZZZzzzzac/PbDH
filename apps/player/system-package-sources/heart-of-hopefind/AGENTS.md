@@ -1,5 +1,11 @@
 # Heart of Hopefind Author Rules
 
+## 当前目录边界
+
+- 本目录现在只保留可编辑的资源 JSON、迁移清单和来源说明。
+- Player 正式运行目录是 `apps/player/public/system-packages/heart-of-hopefind/`；页面、皮肤和运行时资产只在那里维护。
+- 修改资源文本后运行 `scripts/generate-heart-of-hopefind-system-package.ts`。
+
 ## Authority and provenance
 
 - 本目录是“寻望之心”迁移后的 System Package 作者源，不是 Player 运行时发布目录。

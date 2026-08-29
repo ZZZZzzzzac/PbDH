@@ -17,6 +17,12 @@ export type TabletopCommand = {
   id: string;
   capability: "adjust-decimal-string" | "set-string";
   field: string;
+  values?: readonly string[];
+};
+
+export type TabletopReplacement = {
+  id: string;
+  label: string;
 };
 
 export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
@@ -40,7 +46,8 @@ export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
     stateSchema: Record<string, unknown>;
     defaultState: (data: TData) => Record<string, string>;
     commands: readonly TabletopCommand[];
-    replacements: readonly unknown[];
+    replacements: readonly TabletopReplacement[];
+    editableDataFields?: readonly (readonly string[])[];
   };
   upgradeFrom: null | {
     version: string;

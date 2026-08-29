@@ -1,0 +1,50 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a05400-0000-7000-8000-000000000001",
+    "version": "1.2.0",
+    "name": "巫趣 Witchy",
+    "description": "由迁移后的 Sheet Runtime 驱动的巫趣 Witchy系统包。"
+  },
+  "runtime": {
+    "characterDataVersion": "1.2.0",
+    "loadingPresentation": {
+      "tagline": "正在熬煮秘药...",
+      "accentColor": "#553a75"
+    },
+    "pages": "pages.json",
+    "skins": [
+      {
+        "id": "witching-hour",
+        "name": "魔女时刻",
+        "css": "skins/witching-hour/skin.css",
+        "frameworkColorScheme": "light",
+        "layoutOverrides": {
+          "pages": [
+            {
+              "id": "witch-sheet",
+              "html": "skins/witching-hour/witch-sheet.html"
+            }
+          ]
+        }
+      }
+    ],
+    "defaultSkin": "witching-hour",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterCreationGuide": "guides/character-creation.json",
+    "characterTextExports": "exports/character-text.json",
+    "validationChecks": [
+      {
+        "id": "witch-creation",
+        "script": "checks/witch-creation.js"
+      }
+    ]
+  },
+  "resourceCompatibility": [],
+  "embeddedResources": [
+    {
+      "path": "resources/witchy.pbres"
+    }
+  ]
+}

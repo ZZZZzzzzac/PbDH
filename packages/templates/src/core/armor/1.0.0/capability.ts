@@ -21,6 +21,7 @@ export const armorTemplate = deepFreeze<TemplateCoreCapability<ArmorData>>({
   state: "development",
   schema,
   rendererRevision: "armor-card-r1",
+  defaultPresentation: { ...temporaryArmorTemplate.defaultPresentation, width: "63", height: "88" },
   upgradeFrom: {
     version: "0.0.0-dev.1",
     upgrade: upgradeLegacyArmor,

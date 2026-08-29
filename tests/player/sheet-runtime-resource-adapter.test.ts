@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 
 import {
   buildSheetResourceLibraries,
   buildSheetRuntimeMediaAssets,
+  replacePlatformResourceLibraries,
+  replacePlatformRuntimeMediaAssets,
   sheetRuntimeMediaPath,
 } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import type { ResourceLibrary as SheetResourceLibrary } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { getOtherResourceLibraries } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
+import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
+import { ResourceLibraryBrowser } from "../../apps/player/src/sheet-runtime/rendering/ResourceLibraryBrowser.tsx";
 import type { ResourceLibrary } from "../../apps/player/src/resources/resource-library.ts";
 
 const currentSystem = {
@@ -145,7 +153,125 @@ describe("Sheet Runtime 平台资源适配", () => {
       installedPackages: libraryWith([imageResource]),
     });
 
-    expect(libraries.find((library) => library.ID === "ancestries")?.entries[0]?.fields.卡牌显示方式).toBe("image");
+    const entry = libraries.find((library) => library.ID === "ancestries")?.entries[0];
+    expect(entry?.fields.卡牌显示方式).toBe("image");
+    expect(entry?.resourceCopy).toMatchObject({
+      template: { id: "种族", version: "1.0.0" },
+      presentation: { mode: "image" },
+      media: { portrait: "sha256:portrait" },
+    });
+  });
+
+  it("领域卡名称再长也保持名称列居中", () => {
+    const library = {
+      ID: "domain-cards",
+      名称: "领域卡",
+      路径: "test:domain-cards",
+      fields: [{ key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true, width: "normal" }],
+      entries: [{ ID: "long-name", fields: { ID: "long-name", 名称: "这是一个超过十个字的自制领域卡名称" } }],
+    } satisfies SheetResourceLibrary;
+
+    const markup = renderToStaticMarkup(createElement(ResourceLibraryBrowser, {
+      library,
+      multiSelect: false,
+      selectedIds: [],
+      onCommit: () => undefined,
+      onClose: () => undefined,
+    }));
+
+    expect(markup).toMatch(/<th class="resource-table-cell-centered"[^>]*>[\s\S]*?名称/);
+    expect(markup).toMatch(/<td class="[^"]*resource-table-cell-centered[^"]*">/);
+  });
+
+  it("把没有原生入口的资源统一接到系统可选的其他资源库", () => {
+    const packageId = "00000000-0000-7000-8000-000000000001";
+    const portraitId = "sha256:other-portrait";
+    const other = resource("madness", "自由", {
+      名称: "记忆障碍",
+      类型: "疯狂",
+      简介: "一张疯狂卡",
+      内容: [{ 标题: "效果", 正文: "无法清晰回忆。" }],
+    }, { portrait: portraitId }, "image");
+    const installed = installedPackage(
+      packageId,
+      [other],
+      [imageAsset(portraitId)],
+      new Map([[portraitId, new Uint8Array([1])]]),
+    );
+    const installedPackages = new Map([[packageId, {
+      ...installed,
+      routes: [{ resource: other, destination: "other-resources", reason: "template-incompatible" }],
+    }]]) as unknown as ResourceLibrary;
+
+    const libraries = buildSheetResourceLibraries({ currentSystem, installedPackages });
+    expect(libraries.filter((library) => library.ID === "其他")).toHaveLength(1);
+    expect(libraries.find((library) => library.ID === "其他")?.entries[0]).toMatchObject({
+      fields: { 名称: "记忆障碍", 类型: "疯狂", 效果: "无法清晰回忆。" },
+    });
+    const packageWithOtherPicker = {
+      modules: [{ ID: "pick-other-resources", 类型: "resourcePicker", 按钮文本: "选择其他资源", 资源库: "其他" }],
+      resourceLibraries: libraries,
+    } as unknown as SystemPackage;
+    expect(getOtherResourceLibraries(packageWithOtherPicker).map((library) => library.ID)).toEqual(["其他"]);
+    expect(buildSheetRuntimeMediaAssets(installedPackages)).toMatchObject([{
+      路径: sheetRuntimeMediaPath(packageId, portraitId),
+    }]);
+  });
+
+  it("局部替换平台资源，同时保留系统自己的资源条目", () => {
+    const oldPackageId = "00000000-0000-7000-8000-000000000001";
+    const nextPackageId = "00000000-0000-7000-8000-000000000002";
+    const oldLibraries = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([resource("old", "种族", { 名称: "旧资源", 特性: [] })]),
+    });
+    const basePackage = {
+      manifest: { ID: "test-system", 名称: "测试系统", 版本: "1.0.0" },
+      resourceLibraries: oldLibraries.map((library) => library.ID === "ancestries" ? {
+        ...library,
+        路径: "legacy:ancestries",
+        entries: [{ ID: "system-entry", fields: { ID: "system-entry", 名称: "系统自带" } }, ...library.entries],
+      } : library),
+    } as unknown as SystemPackage;
+    const nextInstalled = installedPackage(nextPackageId, [
+      resource("next", "护甲", { 名称: "新资源", 重度伤害阈值: "7", 严重伤害阈值: "14" }),
+    ]);
+
+    const refreshed = replacePlatformResourceLibraries({
+      currentSystem,
+      basePackage,
+      installedPackages: new Map([[nextPackageId, nextInstalled]]) as unknown as ResourceLibrary,
+    });
+
+    expect(refreshed.resourceLibraries?.find((library) => library.ID === "ancestries")?.entries.map((entry) => entry.ID))
+      .toEqual(["system-entry"]);
+    expect(refreshed.resourceLibraries?.find((library) => library.ID === "armor")?.entries.map((entry) => entry.ID))
+      .toEqual([`${nextPackageId}:next`]);
+    expect(refreshed.resourceLibraries?.flatMap((library) => library.entries).some((entry) => entry.ID === `${oldPackageId}:old`))
+      .toBe(false);
+  });
+
+  it("局部替换平台卡图，同时保留系统包与旧扩展的图片", () => {
+    const packageId = "00000000-0000-7000-8000-000000000002";
+    const portraitId = "sha256:new";
+    const nextInstalled = installedPackage(
+      packageId,
+      [resource("next", "种族", { 名称: "新资源", 特性: [] }, { portrait: portraitId }, "image")],
+      [imageAsset(portraitId)],
+      new Map([[portraitId, new Uint8Array([3])]]),
+    );
+
+    const refreshed = replacePlatformRuntimeMediaAssets([
+      { 路径: "assets/system.webp", 类型: "image/webp", bytes: new Uint8Array([1]) },
+      { 路径: "platform-resources/old/old.webp", 类型: "image/webp", sourceType: "resourceExtension", sourceId: "old", bytes: new Uint8Array([2]) },
+      { 路径: "assets/legacy.webp", 类型: "image/webp", sourceType: "resourceExtension", sourceId: "legacy", bytes: new Uint8Array([4]) },
+    ], new Map([[packageId, nextInstalled]]) as unknown as ResourceLibrary);
+
+    expect(refreshed.map((asset) => asset.路径)).toEqual([
+      "assets/system.webp",
+      "assets/legacy.webp",
+      sheetRuntimeMediaPath(packageId, portraitId),
+    ]);
   });
 });
 

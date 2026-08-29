@@ -1,11 +1,15 @@
 import type { PackageIssue } from "../../domain/systemPackage";
 import { validateCachedSystemPackage } from "../../domain/systemPackage/cachedPackageValidation";
-import type { RuntimePackageAsset } from "../../loaders/assetResolver";
-import type { PackageLoadResult } from "../../loaders/systemPackageLoader";
+import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../../domain/effectiveResourceCatalog";
+import { createRuntimeAssetResolver, type RuntimePackageAsset } from "../../loaders/assetResolver";
 import type { PresetSystemPackage } from "../../loaders/presetSystemPackageLoader";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
-import { emptyDerivedState } from "../runtimeStateHelpers";
-import type { PackageSlice, RuntimeGet, RuntimeSet, RuntimeSlice, StorageStatus } from "../runtimeTypes";
+import {
+  collectStaleResourceReferenceIssues,
+  emptyDerivedState,
+  rebuildDependencyRuntimeState,
+} from "../runtimeStateHelpers";
+import type { PackageSlice, RuntimeGet, RuntimePackageLoadResult, RuntimeSet, RuntimeSlice, StorageStatus } from "../runtimeTypes";
 import {
   activatePackage,
   authorPreviewSessionKey,
@@ -29,8 +33,11 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
     importError: null,
     importNotice: null,
     authorPreviewActive: false,
+    pendingSystemPackageImport: null,
+    pendingPackageScriptConsent: null,
 
     async initialize(presets = []) {
+      environment.pendingSystemPackageImportResult = undefined;
       set({
         bootStatus: "loading",
         packageLoadProgress: null,
@@ -38,6 +45,7 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         packageIssues: [],
         importError: null,
         importNotice: null,
+        pendingSystemPackageImport: null,
         frameworkColorSchemePreference: loadFrameworkColorSchemePreference(environment),
       });
 
@@ -84,14 +92,28 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
           if (refreshed.ok) {
             const loaded = await activatePackage(
               environment,
-              refreshed.package,
-              refreshed.issues,
+              cachedValidation.package,
+              [],
               set,
               "idle",
-              refreshed.packageAssets ?? [],
+              cachedAssets,
             );
             if (!loaded) return;
-            await cacheRefreshedPreset(environment, matchingPreset, refreshed, set);
+            environment.pendingSystemPackageImportResult = {
+              ...refreshed,
+              cacheMetadata: presetCacheMetadata(matchingPreset),
+            };
+            set({
+              packageLoadProgress: null,
+              packageLoadingPresentation: null,
+              importNotice: `预制系统包“${matchingPreset.name}”有新版，确认后才会替换当前版本。`,
+              pendingSystemPackageImport: {
+                packageId: refreshed.package.manifest.ID,
+                packageName: refreshed.package.manifest.名称,
+                packageVersion: refreshed.package.manifest.版本,
+                replacesCurrent: true,
+              },
+            });
             return;
           }
           fallbackIssues = refreshed.issues.map((issue) => ({
@@ -114,7 +136,6 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         set,
         get,
         () => environment.dependencies.loadSystemPackageFromFile(file),
-        "saveCurrentSystemPackage (extension) failed",
       );
     },
 
@@ -124,12 +145,99 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         set,
         get,
         () => environment.dependencies.loadSystemPackageFromDirectory(files),
-        "saveCurrentSystemPackage (upload) failed",
       );
+    },
+
+    async confirmSystemPackageImport() {
+      const pending = environment.pendingSystemPackageImportResult;
+      if (!pending || !get().pendingSystemPackageImport) return;
+      set({ bootStatus: "loading", importError: null, importNotice: null });
+      try {
+        await pending.commit?.();
+        let packageCacheStatus: StorageStatus = "saved";
+        try {
+          await environment.dependencies.storage.saveCurrentSystemPackage(
+            pending.package,
+            pending.packageAssets ?? [],
+            pending.cacheMetadata ?? { source: "imported" },
+          );
+        } catch (error) {
+          console.error("saveCurrentSystemPackage (confirmed import) failed", error);
+          packageCacheStatus = "error";
+        }
+        environment.pendingSystemPackageImportResult = undefined;
+        set({ pendingSystemPackageImport: null });
+        await activatePackage(
+          environment,
+          pending.package,
+          pending.issues,
+          set,
+          packageCacheStatus,
+          pending.packageAssets ?? [],
+        );
+        if (packageCacheStatus === "error") {
+          set({ importNotice: "系统包已切换，但浏览器无法保存；刷新页面后需要重新上传。" });
+        }
+      } catch (error) {
+        set({
+          bootStatus: get().currentPackage ? "ready" : "error",
+          importError: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+
+    async refreshPlatformResources(basePackage, packageAssets) {
+      const state = get();
+      if (state.basePackage?.manifest.ID !== basePackage.manifest.ID) {
+        throw new Error("当前系统包已变化，无法更新资源目录。");
+      }
+      const extensionAssets = await environment.dependencies.storage
+        .loadResourceExtensionAssets(basePackage.manifest.ID);
+      const nextAssetResolver = createRuntimeAssetResolver([...packageAssets, ...extensionAssets]);
+      try {
+        const cacheMetadata = await environment.dependencies.storage
+          .loadCurrentSystemPackageCacheMetadata();
+        await environment.dependencies.storage.saveCurrentSystemPackage(
+          basePackage,
+          packageAssets,
+          cacheMetadata ?? undefined,
+        );
+        const resourceCatalog = createEffectiveResourceCatalog(
+          basePackage,
+          state.installedResourceExtensions,
+        );
+        const effectivePackage = applyEffectiveResourceCatalog(basePackage, resourceCatalog);
+        const characterData = state.characterData;
+        set({
+          basePackage,
+          currentPackage: effectivePackage,
+          resourceCatalog,
+          packageAssetUrls: nextAssetResolver.urls,
+          pendingQuestionnaireResult: null,
+          resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, resourceCatalog),
+          ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
+        });
+        environment.activePackageAssetResolver?.revokeAll();
+        environment.activePackageAssetResolver = nextAssetResolver;
+      } catch (error) {
+        nextAssetResolver.revokeAll();
+        throw error;
+      }
+    },
+
+    cancelSystemPackageImport() {
+      environment.pendingSystemPackageImportResult = undefined;
+      set({
+        pendingSystemPackageImport: null,
+        bootStatus: "ready",
+        packageIssues: [],
+        importNotice: "已取消导入系统包，当前内容未改变。",
+      });
     },
 
     async switchToPresetSystemPackage(preset, forceReload = false) {
       if (!forceReload && get().currentPackage?.manifest.ID === preset.id) return;
+      environment.pendingSystemPackageImportResult = undefined;
       set({
         bootStatus: "loading",
         packageLoadProgress: initialPresetProgress(preset),
@@ -137,6 +245,7 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         packageIssues: [],
         importError: null,
         importNotice: null,
+        pendingSystemPackageImport: null,
       });
       const validation = await environment.dependencies.loadPresetSystemPackage(
         preset,
@@ -196,7 +305,26 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
       set({ frameworkColorSchemePreference: preference });
     },
 
+    async confirmPackageScriptConsent() {
+      const pending = get().pendingPackageScriptConsent;
+      const currentPackage = get().currentPackage;
+      if (!pending || !currentPackage) return;
+      try {
+        await environment.dependencies.storage.approvePackageScripts(pending);
+        set({ pendingPackageScriptConsent: null, bootStatus: "loading", importError: null });
+        await activatePackage(environment, currentPackage, get().packageIssues, set, get().storageStatus);
+      } catch (error) {
+        set({ importError: error instanceof Error ? error.message : String(error), storageStatus: "error" });
+      }
+    },
+
+    cancelPackageScriptConsent() {
+      set({ pendingPackageScriptConsent: null, importNotice: "已取消运行外部系统脚本；人物数据尚未打开。" });
+    },
+
     async enterAuthorPreview(handle) {
+      environment.pendingSystemPackageImportResult = undefined;
+      set({ pendingSystemPackageImport: null });
       sessionStorage.setItem(authorPreviewSessionKey, "active");
       await environment.dependencies.savePreviewDirectoryHandle(handle);
       await loadPreviewPackage(environment, handle, set);
@@ -250,6 +378,7 @@ async function restoreAuthorPreview(environment: RuntimeEnvironment, set: Runtim
 function resetToEmptyRuntime(environment: RuntimeEnvironment, set: RuntimeSet): void {
   environment.activePackageAssetResolver?.revokeAll();
   environment.activePackageAssetResolver = undefined;
+  environment.pendingSystemPackageImportResult = undefined;
   set({
     basePackage: null,
     currentPackage: null,
@@ -265,6 +394,7 @@ function resetToEmptyRuntime(environment: RuntimeEnvironment, set: RuntimeSet): 
     characterData: null,
     characterSaves: [],
     activeCharacterSaveId: null,
+    pendingSystemPackageImport: null,
     ...emptyDerivedState(),
     packageIssues: [],
     bootStatus: "ready",
@@ -276,9 +406,9 @@ async function importSystemPackage(
   environment: RuntimeEnvironment,
   set: RuntimeSet,
   get: RuntimeGet,
-  load: () => Promise<PackageLoadResult>,
-  errorScope: string,
+  load: () => Promise<RuntimePackageLoadResult>,
 ): Promise<void> {
+  environment.pendingSystemPackageImportResult = undefined;
   set({
     bootStatus: "loading",
     packageLoadProgress: null,
@@ -286,6 +416,7 @@ async function importSystemPackage(
     packageIssues: [],
     importError: null,
     importNotice: null,
+    pendingSystemPackageImport: null,
   });
   const validation = await load();
   if (!validation.ok) {
@@ -293,44 +424,17 @@ async function importSystemPackage(
     return;
   }
 
-  let packageCacheStatus: StorageStatus = "idle";
-  try {
-    await environment.dependencies.storage.saveCurrentSystemPackage(
-      validation.package,
-      validation.packageAssets ?? [],
-      { source: "imported" },
-    );
-  } catch (error) {
-    console.error(errorScope, error);
-    packageCacheStatus = "error";
-  }
-  await activatePackage(
-    environment,
-    validation.package,
-    validation.issues,
-    set,
-    packageCacheStatus,
-    validation.packageAssets ?? [],
-  );
-}
-
-async function cacheRefreshedPreset(
-  environment: RuntimeEnvironment,
-  preset: PresetSystemPackage,
-  refreshed: Extract<PackageLoadResult, { ok: true }>,
-  set: RuntimeSet,
-): Promise<void> {
-  try {
-    await environment.dependencies.storage.saveCurrentSystemPackage(
-      refreshed.package,
-      refreshed.packageAssets ?? [],
-      presetCacheMetadata(preset),
-    );
-    set({ storageStatus: "saved", importNotice: `已更新预制 System Package：${preset.name}` });
-  } catch (error) {
-    console.error("saveCurrentSystemPackage (preset refresh) failed", error);
-    set({ storageStatus: "error", importNotice: "预制 System Package 已更新，但浏览器无法缓存最新版本。" });
-  }
+  environment.pendingSystemPackageImportResult = validation;
+  set({
+    bootStatus: "ready",
+    packageIssues: validation.issues,
+    pendingSystemPackageImport: {
+      packageId: validation.package.manifest.ID,
+      packageName: validation.package.manifest.名称,
+      packageVersion: validation.package.manifest.版本,
+      replacesCurrent: Boolean(get().currentPackage),
+    },
+  });
 }
 
 function handleInitializeFailure(environment: RuntimeEnvironment, error: unknown, set: RuntimeSet): void {

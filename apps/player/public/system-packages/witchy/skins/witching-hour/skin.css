@@ -1,0 +1,249 @@
+/* witching-hour 「魔女时刻」— 烛照羊皮纸的淡黄为底，夜幕沉紫为墨；月相题眉、星野预兆。 */
+:scope {
+  color-scheme: light;
+
+  /* Base Layout 令牌：接管 base.css 的全部配色入口 */
+  --witchy-paper: #f6eecc;
+  --witchy-panel: rgba(253, 248, 231, 0.85);
+  --witchy-ink: #332445;
+  --witchy-line: #9781ac;
+  --witchy-accent: #553a75;
+
+  /* Skin 私有令牌 */
+  --skin-purple-deep: #2c1f3d;
+  --skin-purple: #553a75;
+  --skin-purple-dim: #452f60;
+  --skin-purple-soft: #7d639c;
+  --skin-purple-faint: #b7a3c7;
+  --skin-gold: #b08d3c;
+  --skin-gold-bright: #d9b95c;
+  --skin-paper-hi: #fdf8e7;
+  --skin-on-night: #f3ead0;
+  --skin-on-night-soft: #cdbae0;
+  --witching-left-column: 50fr;
+  --witching-right-column: 50fr;
+}
+
+/* Restricted Markdown  palette：与沉紫协调 */
+:scope [data-module-type="freeText"],
+:scope [data-module-type="longText"],
+:scope [data-module-type="countableResource"],
+:scope [data-module-type="imageField"] {
+  --restricted-markdown-purple: #553a75;
+  --restricted-markdown-yellow: #8a6d1f;
+}
+
+/* 页面：烛光自左上角泻下，夜色沉在右下角。 */
+.witching-hour-sheet {
+  padding: 5mm 4mm;
+  gap: 0;
+  background:
+    radial-gradient(circle at 10% 3%, rgba(217, 185, 92, 0.18), transparent 28%),
+    radial-gradient(circle at 95% 98%, rgba(85, 58, 117, 0.14), transparent 32%),
+    linear-gradient(160deg, #faf3d6, #f4ebc4 55%, #f7efce);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.witching-hour-sheet .sheet-content-grid {
+  grid-template-columns: minmax(0, var(--witching-left-column)) minmax(0, var(--witching-right-column));
+}
+
+.witching-hour-sheet .magic-resource-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.witching-hour-sheet .familiar-layout {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+
+@media print {
+  .witching-hour-sheet .sheet-column {
+    gap: 0;
+  }
+
+  .witching-hour-sheet .picker-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 题眉：魔典封面式的沉紫横幅，月相饰带换行居下。 */
+.witching-title {
+  flex-wrap: wrap;
+  row-gap: 1mm;
+  padding: 1.5mm 4mm;
+  border: 1px solid var(--skin-purple-deep);
+  border-bottom: 1px solid var(--skin-purple-deep);
+  border-radius: 2mm;
+  background:
+    radial-gradient(circle at 92% 25%, rgba(217, 185, 92, 0.2), transparent 32%),
+    linear-gradient(115deg, var(--skin-purple-deep), #4b3566 58%, #382854);
+  box-shadow: 0 1px 5px rgba(44, 31, 61, 0.35);
+}
+
+.witching-title p {
+  color: var(--skin-gold-bright);
+}
+
+.witching-title h1 {
+  color: #f7f0da;
+  letter-spacing: 0.12em;
+}
+
+.witching-title small {
+  color: var(--skin-on-night-soft);
+}
+
+.witching-title::after {
+  content: "☾ ✧ ● ✧ ☽";
+  flex: 1 0 100%;
+  color: var(--skin-gold-bright);
+  font-size: 10px;
+  letter-spacing: 1.4em;
+  text-indent: 1.4em;
+  text-align: center;
+}
+
+/* 分区题签：新月引领，尾线渐隐如咒文拖尾。 */
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  color: var(--skin-purple);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+}
+
+.panel-title::before {
+  content: "☾";
+  flex: 0 0 auto;
+  color: var(--skin-gold);
+  letter-spacing: 0;
+}
+
+.panel-title::after {
+  content: "";
+  flex: 1 1 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--skin-purple-soft), transparent);
+}
+
+/* 面板：羊皮纸高光 + 沉紫描边。 */
+.witching-hour-sheet .sheet-region {
+  border-color: var(--skin-purple-soft);
+  background:
+    linear-gradient(172deg, rgba(253, 248, 231, 0.92), rgba(247, 238, 207, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 252, 240, 0.65),
+    0 1px 4px rgba(44, 31, 61, 0.14);
+}
+
+/* 预兆：整页唯一的夜空段落，星点铺在沉紫之上。 */
+.witching-hour-sheet .omen-panel {
+  border-color: var(--skin-purple-deep);
+  background:
+    radial-gradient(rgba(253, 248, 231, 0.4) 0.8px, transparent 1.5px) 0 0 / 9mm 9mm,
+    radial-gradient(rgba(253, 248, 231, 0.24) 0.7px, transparent 1.4px) 4.5mm 4.5mm / 11mm 11mm,
+    radial-gradient(circle at 85% 20%, rgba(217, 185, 92, 0.16), transparent 34%),
+    linear-gradient(150deg, #382854, var(--skin-purple-deep) 62%, #211630);
+  box-shadow:
+    inset 0 0 0 1px rgba(253, 248, 231, 0.08),
+    0 1px 5px rgba(44, 31, 61, 0.3);
+}
+
+.panel-title-night {
+  color: var(--skin-on-night);
+}
+
+.panel-title-night::before {
+  color: var(--skin-gold-bright);
+}
+
+.panel-title-night::after {
+  background: linear-gradient(90deg, rgba(243, 234, 208, 0.55), transparent);
+}
+
+.omen-panel [data-part="label"] {
+  color: var(--skin-on-night-soft);
+}
+
+.omen-panel :is([data-part="input"], [data-markdown-preview]) {
+  border-color: var(--skin-purple-soft);
+  background: rgba(253, 248, 231, 0.94);
+  color: var(--skin-purple-deep);
+}
+
+/* 立绘：沉紫相框。 */
+.witching-hour-sheet [data-module-type="imageField"] [data-part="surface-frame"] {
+  border-color: var(--skin-purple-soft);
+  background: rgba(253, 248, 231, 0.7);
+}
+
+/* 通用模块部件。 */
+:scope [data-module-type] [data-part="label"] {
+  color: #584470;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+:scope [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: var(--skin-purple-faint);
+  background: rgba(255, 252, 240, 0.92);
+  color: #332445;
+  caret-color: var(--skin-purple);
+}
+
+:scope [data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: var(--skin-purple-soft);
+}
+
+:scope [data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+:scope [data-module-type] button:focus-visible {
+  outline: 2px solid var(--skin-purple);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(85, 58, 117, 0.18);
+}
+
+:scope [data-module-type="freeText"] [data-markdown-preview],
+:scope [data-module-type="longText"] [data-markdown-preview] {
+  background: rgba(255, 252, 240, 0.7);
+  color: #332445;
+}
+
+/* 计数资源与选择器按钮：夜幕紫底、烛光描字。 */
+:scope [data-module-type="resourcePicker"] [data-part="button"],
+:scope [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid var(--skin-purple-deep);
+  border-radius: 1.5mm;
+  background: linear-gradient(160deg, var(--skin-purple), var(--skin-purple-dim));
+  color: var(--skin-on-night);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.12), 0 1px 3px rgba(44, 31, 61, 0.3);
+}
+
+:scope [data-module-type="resourcePicker"] [data-part="button"]:hover:not(:disabled),
+:scope [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  border-color: #211630;
+  background: linear-gradient(160deg, #65478a, #4e3670);
+  color: #ffffff;
+}
+
+:scope [data-module-type="countableResource"] [data-part="current-markers"] {
+  color: var(--skin-purple);
+}
+
+:scope [data-module-type="countableResource"] [data-part="remaining-markers"] {
+  color: var(--skin-purple-faint);
+}
+
+/* 三界本源：标签带沉紫底线，与题签呼应。 */
+.witching-hour-sheet .essence-grid [data-part="label"] {
+  border-bottom-color: var(--skin-purple-soft);
+  color: var(--skin-purple);
+}
+
+/* 魔法条目：词条间以细紫线分隔如咒文节段。 */
+.witching-hour-sheet .magic-list article + article {
+  padding-top: 1.5mm;
+  border-top: 1px dashed var(--skin-purple-faint);
+}

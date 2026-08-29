@@ -26,7 +26,8 @@ export async function installMissingEmbeddedResourcePackages(input: {
   fetchFile?: typeof fetch;
 }): Promise<EmbeddedResourceInstallResult> {
   const fetchFile = input.fetchFile ?? fetch;
-  const stored = await input.repository.list();
+  const systemPackageId = input.systemPackage.package.id;
+  const stored = await input.repository.list(systemPackageId);
   const localById = new Map(stored.map((candidate) => [candidate.document.package.id, candidate]));
   const result: EmbeddedResourceInstallResult = {
     installedPackageIds: [],
@@ -81,7 +82,7 @@ export async function installMissingEmbeddedResourcePackages(input: {
     ) {
       throw new Error(`系统包内置资源身份不匹配：${embedded.path}`);
     }
-    await input.repository.replace(loaded.candidate, "bundled");
+    await input.repository.replace(systemPackageId, loaded.candidate, "bundled");
     result.installedPackageIds.push(embedded.packageId);
   }
 

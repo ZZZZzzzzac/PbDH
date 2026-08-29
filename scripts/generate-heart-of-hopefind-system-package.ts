@@ -129,7 +129,6 @@ const systemDocument: SystemPackageDocument = {
 };
 
 await mkdir(outputRoot, { recursive: true });
-await copyRuntimeSource(sourceRoot, outputRoot);
 const systemDocumentJson = `${JSON.stringify(systemDocument, null, 2)}\n`;
 await writeFile(path.join(outputRoot, "system.json"), systemDocumentJson, "utf8");
 await writeFile(generatedSystemDocumentPath, systemDocumentJson, "utf8");
@@ -140,7 +139,7 @@ await writeFile(
 );
 
 const runtimeFiles = [
-  ...await collectRuntimeSourcePaths(sourceRoot),
+  ...await collectPublishedRuntimePaths(outputRoot),
   "system.json",
 ].sort();
 await writeFile(
@@ -198,26 +197,13 @@ function mapLegacyRuntime(manifest: LegacyRuntimeManifest): SystemPackageDocumen
   };
 }
 
-async function copyRuntimeSource(sourceDirectory: string, targetDirectory: string, relative = "") {
-  await mkdir(targetDirectory, { recursive: true });
-  for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
-    const relativePath = path.posix.join(relative, entry.name);
-    if (relativePath === "resources" || relativePath.startsWith("resources/")) continue;
-    if (relativePath === "manifest.json" || relativePath === "AGENTS.md") continue;
-    const sourcePath = path.join(sourceDirectory, entry.name);
-    const targetPath = path.join(targetDirectory, entry.name);
-    if (entry.isDirectory()) await copyRuntimeSource(sourcePath, targetPath, relativePath);
-    else if (entry.isFile()) await writeFile(targetPath, await readFile(sourcePath));
-  }
-}
-
-async function collectRuntimeSourcePaths(sourceDirectory: string, relative = ""): Promise<string[]> {
+async function collectPublishedRuntimePaths(sourceDirectory: string, relative = ""): Promise<string[]> {
   const files: string[] = [];
   for (const entry of await readdir(sourceDirectory, { withFileTypes: true })) {
     const relativePath = path.posix.join(relative, entry.name);
     if (relativePath === "resources" || relativePath.startsWith("resources/")) continue;
-    if (relativePath === "manifest.json" || relativePath === "AGENTS.md") continue;
-    if (entry.isDirectory()) files.push(...await collectRuntimeSourcePaths(path.join(sourceDirectory, entry.name), relativePath));
+    if (relativePath === "system.json" || relativePath === runtimeInventoryName) continue;
+    if (entry.isDirectory()) files.push(...await collectPublishedRuntimePaths(path.join(sourceDirectory, entry.name), relativePath));
     else if (entry.isFile()) files.push(relativePath);
   }
   return files;

@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from "react";
 
 import {
+  type ResourcePackageCandidate,
   type ContractDiagnostic,
   type SystemPackageDocument,
+  writePbres,
 } from "@pbdh/contract-runtime";
-import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import {
+  resourceConversionRegistry,
+  type ConversionDiagnostic,
+  type ResourceContainer,
+  type ResourceFormatId,
+} from "@pbdh/resource-conversion";
+import { CanonicalCardSurface, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
 import { trustedRendererFor } from "@pbdh/templates/frontend";
 
@@ -12,9 +20,12 @@ import {
   type InstalledResourcePackage,
   type ResourceLibrary,
   type ResourcePackageInstallPlan,
+  planResourcePackageInstall,
 } from "../resources/resource-library.ts";
+import type { ResourcePackageSource } from "../resources/resource-package-repository.ts";
 import type { PlayerMarketHandoff } from "../resources/market-handoff.ts";
 import { prepareResourcePackageInstall } from "../resources/prepare-resource-package-install.ts";
+import { materializePlayerResourceConversion } from "../resources/materialize-resource-conversion.ts";
 import { playerResourceManagerDesign } from "./design.generated.ts";
 
 export type ResourcePackageIngress =
@@ -32,23 +43,24 @@ export type ResourcePackageIngress =
 
 type ResourceManagerProps = {
   currentSystem: SystemPackageDocument;
-  nativePackageIds: ReadonlySet<string>;
   library: ResourceLibrary;
   onCommitInstall: (
     plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>,
-    source: "file" | "market",
+    source: ResourcePackageSource,
   ) => Promise<void>;
   onRemovePackage: (packageId: string) => Promise<void>;
+  embeddedPackageIndex: ReadonlyMap<string, { version: string; snapshotDigest: string }>;
+  loadEmbeddedPackage: (packageId: string) => Promise<ResourcePackageCandidate | null>;
   incomingPackage?: ResourcePackageIngress;
   onIncomingPackageHandled?: (id: string) => void;
   onClose: () => void;
-  onOpenResource: (installed: InstalledResourcePackage, resourceId: string) => void;
 };
 
 type Dialog =
-  | { kind: "install"; plan: Extract<ResourcePackageInstallPlan, { kind: "insert" }>; source: "file" | "market"; focusResourceId?: string }
-  | { kind: "update"; plan: Extract<ResourcePackageInstallPlan, { kind: "update" }>; source: "file" | "market"; focusResourceId?: string }
+  | { kind: "install"; plan: Extract<ResourcePackageInstallPlan, { kind: "insert" }>; source: ResourcePackageSource; focusResourceId?: string }
+  | { kind: "update"; plan: Extract<ResourcePackageInstallPlan, { kind: "update" }>; source: ResourcePackageSource; focusResourceId?: string }
   | { kind: "no-op"; installed: InstalledResourcePackage; focusResourceId?: string }
+  | { kind: "remove"; installed: InstalledResourcePackage }
   | { kind: "invalid"; diagnostics: ContractDiagnostic[] }
   | null;
 
@@ -56,6 +68,23 @@ type ResourcePreview = {
   installed: InstalledResourcePackage;
   resourceId: string;
 };
+
+type ConversionReview = {
+  formatId: ResourceFormatId;
+  sourceFileName: string;
+  candidate: ResourcePackageCandidate | null;
+  plan: ResourcePackageInstallPlan | null;
+  converted: number;
+  failed: number;
+  diagnostics: ConversionDiagnostic[];
+};
+
+const thirdPartyFormats: Array<{ id: Exclude<ResourceFormatId, "pbres">; label: string }> = [
+  { id: "zzz", label: "导入ZZZ格式" },
+  { id: "rinkcx", label: "导入Rink格式" },
+  { id: "dhsheet", label: "导入dhsheet格式" },
+  { id: "kid", label: "导入不咕鸟格式" },
+];
 
 const typeIcons: Record<string, string> = {
   敌人: "♜",
@@ -141,21 +170,21 @@ function PlayerResourcePreviewContent({
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
   const renderer = trustedRendererFor(resource.template.id, resource.template.version);
-  return <div className="player-dialog-backdrop player-resource-preview-backdrop">
-    <section className="player-dialog player-resource-preview" role="dialog" aria-modal="true" aria-label={`${name}资源详情`}>
-      <header><h2>{name}</h2><button aria-label="关闭资源详情" onClick={onClose}>×</button></header>
-      <div className="player-resource-preview-stage">
-        {renderer ? <CanonicalCardSurface
-          resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
-          expectedRendererRevision={renderer.revision}
-          renderer={renderer}
-          assets={assets}
-          label={`${name}玩家规范卡面`}
-        /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}
-      </div>
-      <footer><button className="primary" onClick={onClose}>关闭</button></footer>
-    </section>
-  </div>;
+  return <CardPreviewDialog
+    width={Number(resource.presentation.width)}
+    height={Number(resource.presentation.height)}
+    fixedRatio={resource.presentation.fixedRatio}
+    label={`${name}资源详情`}
+    onClose={onClose}
+  >
+    {renderer ? <CanonicalCardSurface
+      resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
+      expectedRendererRevision={renderer.revision}
+      renderer={renderer}
+      assets={assets}
+      label={`${name}玩家规范卡面`}
+    /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}
+  </CardPreviewDialog>;
 }
 
 function DialogSurface({
@@ -163,11 +192,15 @@ function DialogSurface({
   onCancel,
   onCommit,
   onOpen,
+  onRemove,
+  currentSystem,
 }: {
   dialog: Exclude<Dialog, null>;
   onCancel: () => void;
-  onCommit: (plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>, source: "file" | "market", focusResourceId?: string) => void | Promise<void>;
+  onCommit: (plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>, source: ResourcePackageSource, focusResourceId?: string) => void | Promise<void>;
   onOpen: (installed: InstalledResourcePackage, focusResourceId?: string) => void;
+  onRemove: (installed: InstalledResourcePackage) => void | Promise<void>;
+  currentSystem: SystemPackageDocument;
 }) {
   const [technicalDetails, setTechnicalDetails] = useState(false);
   if (dialog.kind === "invalid") return <div className="player-dialog-backdrop">
@@ -191,6 +224,17 @@ function DialogSurface({
     </section>
   </div>;
 
+  if (dialog.kind === "remove") return <div className="player-dialog-backdrop">
+    <section className="player-dialog compact" role="alertdialog" aria-modal="true" aria-label="确认移除资源包">
+      <header><h2>移除资源包</h2><button aria-label="关闭" onClick={onCancel}>×</button></header>
+      <div className="dialog-content">
+        <div className="diagnostic info"><strong>{dialog.installed.document.package.name}</strong><span>将从本机移除 {dialog.installed.document.resources.length} 个资源和 {dialog.installed.document.assets.length} 张图片。</span></div>
+        <p>以后不能再从这个包选择新资源。人物卡里已经写入的字段和卡牌桌面里的独立卡牌不会改变。</p>
+      </div>
+      <footer><button onClick={onCancel}>取消</button><button className="danger" onClick={() => onRemove(dialog.installed)}>确认移除</button></footer>
+    </section>
+  </div>;
+
   const { plan } = dialog;
   const document = plan.candidate.document;
   const routeCounts = countsByDestination(plan);
@@ -198,19 +242,23 @@ function DialogSurface({
     <section className="player-dialog" role="dialog" aria-modal="true">
       <header><h2>{dialog.kind === "update" ? "更新资源包" : "安装资源包"}</h2><button aria-label="关闭" onClick={onCancel}>×</button></header>
       <div className="dialog-content">
-        <div className="package-heading"><span className="package-symbol">▣</span><div><h3>{document.package.name}</h3><small>版本 {document.package.version} · {dialog.source === "market" ? "Market 取得" : "本地文件"}</small></div></div>
+        <div className="package-heading"><span className="package-symbol">▣</span><div><h3>{document.package.name}</h3><small>版本 {document.package.version} · {dialog.source === "market" ? "Market 取得" : dialog.source === "bundled" ? "系统包内置" : "本地文件"}</small></div></div>
         {plan.kind === "update" && <div className="version-change"><span>{plan.existing.document.package.version}</span><b>→</b><span>{document.package.version}</span></div>}
         <div className="summary-grid"><div><b>{document.resources.length}</b><span>个资源</span></div><div><b>{document.assets.length}</b><span>张图片</span></div><div><b>{routeCounts.length}</b><span>种使用位置</span></div></div>
         <div className="diagnostic success"><strong>可用于当前系统</strong><span>{routeCounts.map(([label, count]) => `${label} ${count}`).join(" · ")}</span></div>
+        <div className="license-row"><span>当前系统</span><b>{currentSystem.package.name} v{currentSystem.package.version}</b></div>
+        <div className="license-row"><span>资源包目标</span><b>{resourceTargetLabel(document)}</b></div>
+        <div className="license-row"><span>快照</span><b>{document.snapshotDigest}</b></div>
+        <div className="license-row"><span>文件检查</span><b>结构与图片完整</b></div>
         <div className="type-summary"><strong>资源类型</strong><div>{routeCounts.map(([label, count]) => <span key={label}><b>{label}</b>{count}</span>)}</div></div>
         <div className="license-row"><span>许可</span><b>{document.license.label}</b></div>
       </div>
-      <footer><button onClick={onCancel}>取消</button><button className="primary" onClick={() => onCommit(plan, dialog.source, dialog.focusResourceId)}>{dialog.kind === "update" ? "更新" : "安装"}</button></footer>
+      <footer><button onClick={onCancel}>取消</button><button className="primary" onClick={() => onCommit(plan, dialog.source, dialog.focusResourceId)}>{dialog.source === "bundled" ? "恢复内置版本" : dialog.kind === "update" ? "更新" : "安装"}</button></footer>
     </section>
   </div>;
 }
 
-export function ResourceManager({ currentSystem, nativePackageIds, library, onCommitInstall, onRemovePackage, incomingPackage, onIncomingPackageHandled, onClose, onOpenResource }: ResourceManagerProps) {
+export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, embeddedPackageIndex, loadEmbeddedPackage, incomingPackage, onIncomingPackageHandled, onClose }: ResourceManagerProps) {
   const packages = [...library.values()];
   const [selectedId, setSelectedId] = useState(packages[0]?.document.package.id ?? "");
   const [packageQuery, setPackageQuery] = useState("");
@@ -219,15 +267,18 @@ export function ResourceManager({ currentSystem, nativePackageIds, library, onCo
   const [dialog, setDialog] = useState<Dialog>(null);
   const [preview, setPreview] = useState<ResourcePreview>();
   const [removingPackageId, setRemovingPackageId] = useState<string>();
+  const [conversionReview, setConversionReview] = useState<ConversionReview>();
   const inputRef = useRef<HTMLInputElement>(null);
+  const conversionInputRef = useRef<HTMLInputElement>(null);
+  const conversionFormatRef = useRef<Exclude<ResourceFormatId, "pbres">>("zzz");
   const handledIngressIds = useRef(new Set<string>());
   const selected = library.get(selectedId) ?? packages[0];
   const filteredPackages = packages.filter((installed) =>
     installed.document.package.name.toLocaleLowerCase().includes(packageQuery.toLocaleLowerCase()));
   const nativePackages = filteredPackages.filter((installed) =>
-    nativePackageIds.has(installed.document.package.id));
+    embeddedPackageIndex.has(installed.document.package.id));
   const additionalPackages = filteredPackages.filter((installed) =>
-    !nativePackageIds.has(installed.document.package.id));
+    !embeddedPackageIndex.has(installed.document.package.id));
 
   const resourceTypes = useMemo(() => {
     if (!selected) return [];
@@ -286,17 +337,84 @@ export function ResourceManager({ currentSystem, nativePackageIds, library, onCo
     await preparePackage(new Uint8Array(await file.arrayBuffer()), "file");
   }
 
-  async function commit(plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>, source: "file" | "market", focusResourceId?: string) {
+  function selectConversionFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void convertThirdPartyFile(conversionFormatRef.current, file);
+  }
+
+  async function convertThirdPartyFile(formatId: Exclude<ResourceFormatId, "pbres">, file: File) {
+    try {
+      const imported = await resourceConversionRegistry.import(formatId, {
+        bytes: new Uint8Array(await file.arrayBuffer()),
+        fileName: file.name,
+        container: resourceContainer(file.name),
+      });
+      if (!imported.ok) {
+        setConversionReview({
+          formatId,
+          sourceFileName: file.name,
+          candidate: null,
+          plan: null,
+          converted: imported.report.converted,
+          failed: imported.report.failed,
+          diagnostics: imported.report.diagnostics,
+        });
+        return;
+      }
+      const materialized = await materializePlayerResourceConversion(imported.batch, currentSystem);
+      const candidate = materialized.candidate;
+      setConversionReview({
+        formatId,
+        sourceFileName: file.name,
+        candidate,
+        plan: candidate ? planResourcePackageInstall({ currentSystem, library, candidate }) : null,
+        converted: materialized.converted,
+        failed: imported.report.failed + materialized.skipped,
+        diagnostics: [...imported.report.diagnostics, ...materialized.diagnostics],
+      });
+    } catch (error) {
+      setConversionReview({
+        formatId,
+        sourceFileName: file.name,
+        candidate: null,
+        plan: null,
+        converted: 0,
+        failed: 1,
+        diagnostics: [{
+          code: "player.resource-conversion.failed",
+          severity: "error",
+          message: error instanceof Error ? error.message : "第三方资源转换失败。",
+        }],
+      });
+    }
+  }
+
+  function exportConvertedPackage(review: ConversionReview) {
+    if (!review.candidate) return;
+    downloadBytes(
+      writePbres(review.candidate.document, review.candidate.media),
+      `${safeFileName(review.candidate.document.package.name)}.pbres`,
+    );
+  }
+
+  async function installConvertedPackage(review: ConversionReview) {
+    if (!review.plan || review.plan.kind === "no-op") return;
+    await commit(review.plan, "file");
+    setConversionReview(undefined);
+  }
+
+  async function commit(plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>, source: ResourcePackageSource, focusResourceId?: string) {
     try {
       await onCommitInstall(plan, source);
       setSelectedId(plan.candidate.document.package.id);
       setDialog(null);
       if (focusResourceId) {
-        onOpenResource({
+        setPreview({ installed: {
           document: plan.candidate.document,
           media: plan.candidate.media,
           routes: plan.routes,
-        }, focusResourceId);
+        }, resourceId: focusResourceId });
       }
     } catch {
       setDialog({
@@ -313,12 +431,13 @@ export function ResourceManager({ currentSystem, nativePackageIds, library, onCo
     }
   }
 
-  async function removeSelectedPackage() {
-    if (!selected || removingPackageId) return;
-    const packageId = selected.document.package.id;
+  async function removeSelectedPackage(installed: InstalledResourcePackage) {
+    if (removingPackageId || embeddedPackageIndex.has(installed.document.package.id)) return;
+    const packageId = installed.document.package.id;
     setRemovingPackageId(packageId);
     try {
       await onRemovePackage(packageId);
+      setDialog(null);
       setSelectedId(packages.find((candidate) => candidate.document.package.id !== packageId)?.document.package.id ?? "");
     } catch (error) {
       console.error("无法移除资源包", error);
@@ -327,28 +446,59 @@ export function ResourceManager({ currentSystem, nativePackageIds, library, onCo
     }
   }
 
+  async function restoreSelectedEmbeddedPackage(installed = selected) {
+    if (!installed || removingPackageId || !embeddedPackageIndex.has(installed.document.package.id)) return;
+    setRemovingPackageId(installed.document.package.id);
+    try {
+      const candidate = await loadEmbeddedPackage(installed.document.package.id);
+      if (!candidate) throw new Error("找不到系统包内置资源。");
+      const plan = planResourcePackageInstall({ currentSystem, library, candidate });
+      if (plan.kind === "no-op") return;
+      if (plan.kind === "insert") setDialog({ kind: "install", plan, source: "bundled" });
+      else setDialog({ kind: "update", plan, source: "bundled" });
+    } catch {
+      setDialog({
+        kind: "invalid",
+        diagnostics: [{
+          code: "player.resource-package.embedded-restore-failed",
+          severity: "error",
+          family: "player",
+          version: "1",
+          location: "",
+          params: {},
+        }],
+      });
+    } finally {
+      setRemovingPackageId(undefined);
+    }
+  }
+
   function openResource(installed: InstalledResourcePackage, resourceId?: string) {
     const target = installed.document.resources.find((resource) => resource.id === resourceId)
       ?? installed.document.resources[0];
-    if (target && supportsPlayerResourcePreview(target)) {
-      setPreview({ installed, resourceId: target.id });
-      return;
-    }
-    onOpenResource(installed, target?.id ?? "");
+    if (target) setPreview({ installed, resourceId: target.id });
   }
 
   function renderPackageRow(installed: InstalledResourcePackage) {
     const isSelected = installed.document.package.id === selected?.document.package.id;
     const destinations = new Set(installed.routes.map((route) => route.nativeEntry?.label ?? "其他资源"));
-    return <button key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`} onClick={() => setSelectedId(installed.document.package.id)}>
-      <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
-      <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span><span className="offline">离线</span></p>
-    </button>;
+    const action = embeddedResourcePackageAction(installed, embeddedPackageIndex);
+    return <div key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`}>
+      <button className="package-row-select" type="button" onClick={() => setSelectedId(installed.document.package.id)}>
+        <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
+        <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span></p>
+      </button>
+      {action === "restore" ? (
+        <button className="package-row-remove" type="button" aria-label={`恢复 ${installed.document.package.name}`} disabled={removingPackageId === installed.document.package.id} onClick={() => { setSelectedId(installed.document.package.id); void restoreSelectedEmbeddedPackage(installed); }}>↻</button>
+      ) : action === "remove" ? (
+        <button className="package-row-remove" type="button" aria-label={`移除 ${installed.document.package.name}`} disabled={removingPackageId === installed.document.package.id} onClick={() => setDialog({ kind: "remove", installed })}>×</button>
+      ) : null}
+    </div>;
   }
 
   return <div className="resource-manager-layer" style={style} data-design-source={playerResourceManagerDesign.document}>
     <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
-      <header className="manager-bar"><h1>资源管理器</h1><span>{currentSystem.package.name}</span><button className="install" onClick={() => inputRef.current?.click()}>＋ 安装资源包</button><button className="close" aria-label="关闭资源管理器" onClick={onClose}>×</button></header>
+      <header className="manager-bar"><h1>资源管理器</h1><span>{currentSystem.package.name}</span><div className="manager-import-actions">{thirdPartyFormats.map((format) => <button key={format.id} type="button" onClick={() => { conversionFormatRef.current = format.id; conversionInputRef.current?.click(); }}>{format.label}</button>)}<button className="install" onClick={() => inputRef.current?.click()}>导入pbres格式</button></div><button className="close" aria-label="关闭资源管理器" onClick={onClose}>×</button></header>
       <div className="manager-body">
         <aside className="package-list"><div className="list-title"><h2>已安装资源包</h2><span>{packages.length}</span></div>
           <input aria-label="搜索资源包" placeholder="搜索资源包" value={packageQuery} onChange={(event) => setPackageQuery(event.target.value)} />
@@ -358,20 +508,70 @@ export function ResourceManager({ currentSystem, nativePackageIds, library, onCo
           </div>
         </aside>
         <section className="package-detail">{selected ? <>
-          <header className="package-detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div><button aria-label="资源包操作">•••</button></header>
-          <div className="detail-summary"><div><b>{selected.document.resources.length}</b><span>个资源</span></div><div><b>{selected.document.assets.length}</b><span>张图片</span></div><div><b>{resourceTypes.length}</b><span>种资源类型</span></div><div className="available"><b>可用</b><span>离线状态</span></div></div>
+          <header className="package-detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div></header>
+          <div className="detail-summary"><div><b>{selected.document.resources.length}</b><span>个资源</span></div><div><b>{selected.document.assets.length}</b><span>张图片</span></div><div><b>{resourceTypes.length}</b><span>种资源类型</span></div></div>
           <nav className="type-filters" aria-label="资源类型"><button className={selectedType === "全部" ? "active" : ""} onClick={() => setSelectedType("全部")}>全部 <b>{selected.document.resources.length}</b></button>{resourceTypes.map(([label, count]) => <button key={label} className={selectedType === label ? "active" : ""} onClick={() => setSelectedType(label)}>{label} <b>{count}</b></button>)}</nav>
           <div className="resource-search"><input aria-label="搜索资源" placeholder="搜索名称" value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} /><span>{resources.length} / {selected.document.resources.length}</span></div>
           <div className="manager-resource-table"><div className="resource-table-head"><span /><b>名称</b><b>类型</b><b>使用位置</b></div>{resources.map((resource) => {
             const label = routeLabel(selected, resource.id);
-            return <button className="manager-resource-row" key={resource.id} onDoubleClick={() => openResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
+            return <button className="manager-resource-row" key={resource.id} onClick={() => openResource(selected, resource.id)}><span className="template-icon">{typeIcons[resource.template.id] ?? "◆"}</span><strong>{resourceName(resource)}</strong><span>{label}</span><span>{label}</span></button>;
           })}</div>
-          <footer className="detail-actions"><button disabled={removingPackageId === selected.document.package.id} onClick={() => void removeSelectedPackage()}>{removingPackageId === selected.document.package.id ? "正在移除" : "移除"}</button><button className="primary" disabled={!resources[0]} onClick={() => resources[0] && openResource(selected, resources[0].id)}>浏览资源</button></footer>
-        </> : <div className="empty-library"><h2>没有已安装的资源包</h2><button className="primary" onClick={() => inputRef.current?.click()}>安装资源包</button></div>}</section>
+        </> : <div className="empty-library"><h2>没有已安装的资源包</h2><button className="primary" onClick={() => inputRef.current?.click()}>导入pbres格式</button></div>}</section>
       </div>
     </section>
     <input ref={inputRef} hidden type="file" accept=".pbres" onChange={importPackage} />
-    {dialog && <DialogSurface dialog={dialog} onCancel={() => setDialog(null)} onCommit={commit} onOpen={(installed, focusResourceId) => { setSelectedId(installed.document.package.id); setDialog(null); openResource(installed, focusResourceId); }} />}
+    <input ref={conversionInputRef} hidden type="file" accept=".json,.dhcb,.png,application/json,image/png" onChange={selectConversionFile} />
+    {dialog && <DialogSurface dialog={dialog} currentSystem={currentSystem} onCancel={() => setDialog(null)} onCommit={commit} onRemove={removeSelectedPackage} onOpen={(installed, focusResourceId) => { setSelectedId(installed.document.package.id); setDialog(null); openResource(installed, focusResourceId); }} />}
+    {conversionReview ? <div className="player-dialog-backdrop">
+      <section className="player-dialog" role="alertdialog" aria-modal="true" aria-label="第三方资源转换报告">
+        <header><h2>转换报告</h2><button aria-label="关闭" onClick={() => setConversionReview(undefined)}>×</button></header>
+        <div className="dialog-content">
+          <div className={`diagnostic ${conversionReview.candidate ? "success" : "error"}`}><strong>{conversionReview.sourceFileName}</strong><span>格式 {conversionReview.formatId} · 转换 {conversionReview.converted} · 跳过或失败 {conversionReview.failed}</span></div>
+          {conversionReview.diagnostics.length ? <ul className="technical-details">{conversionReview.diagnostics.map((item, index) => <li key={`${item.code}:${item.resourceId ?? index}`}><code>{item.code}</code><span>{item.message}</span></li>)}</ul> : <p>没有发现字段损失。</p>}
+        </div>
+        <footer><button onClick={() => setConversionReview(undefined)}>取消</button>{conversionReview.candidate ? <><button onClick={() => exportConvertedPackage(conversionReview)}>导出 .pbres 备份</button><button className="primary" onClick={() => void installConvertedPackage(conversionReview)}>确认并安装</button></> : null}</footer>
+      </section>
+    </div> : null}
     {preview && <PlayerResourcePreviewDialog {...preview} onClose={() => setPreview(undefined)} />}
   </div>;
+}
+
+function resourceTargetLabel(document: ResourcePackageCandidate["document"]): string {
+  return document.targets.length === 0
+    ? "未声明目标（按兼容性分流）"
+    : document.targets.map((target) => `${target.systemPackageId} ${target.version}`).join("、");
+}
+
+function resourceContainer(fileName: string): ResourceContainer {
+  const extension = fileName.split(".").at(-1)?.toLocaleLowerCase();
+  if (extension === "dhcb") return "dhcb";
+  if (extension === "png") return "png";
+  return "json";
+}
+
+function safeFileName(value: string): string {
+  return value.replace(/[\\/:*?"<>|]/gu, "-").trim() || "resources";
+}
+
+function downloadBytes(bytes: Uint8Array, fileName: string): void {
+  const url = URL.createObjectURL(new Blob([bytes.slice().buffer], { type: "application/zip" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function embeddedResourcePackageAction(
+  installed: InstalledResourcePackage,
+  index: ReadonlyMap<string, { version: string; snapshotDigest: string }>,
+): "locked" | "restore" | "remove" {
+  const embedded = index.get(installed.document.package.id);
+  if (!embedded) return "remove";
+  return installed.document.package.version === embedded.version
+    && installed.document.snapshotDigest === embedded.snapshotDigest
+    ? "locked"
+    : "restore";
 }

@@ -1,0 +1,41 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a05400-0000-7000-8000-000000000101",
+    "version": "1.0.0",
+    "name": "我的车技如何？",
+    "description": "由迁移后的 Sheet Runtime 驱动的我的车技如何？系统包。"
+  },
+  "runtime": {
+    "characterDataVersion": "1.0.0",
+    "loadingPresentation": {
+      "tagline": "正在整备座驾...",
+      "accentColor": "#8f2024"
+    },
+    "pages": "pages.json",
+    "skins": [
+      {
+        "id": "night-drive",
+        "name": "午夜公路",
+        "css": "skins/night-drive.css",
+        "frameworkColorScheme": "dark"
+      }
+    ],
+    "defaultSkin": "night-drive",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterTextExports": "exports/character-text.json",
+    "validationChecks": [
+      {
+        "id": "passenger-creation",
+        "script": "checks/passenger-creation.js"
+      }
+    ]
+  },
+  "resourceCompatibility": [],
+  "embeddedResources": [
+    {
+      "path": "resources/hows-my-driving.pbres"
+    }
+  ]
+}

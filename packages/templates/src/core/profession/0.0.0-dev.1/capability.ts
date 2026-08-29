@@ -50,7 +50,7 @@ export const temporaryProfessionTemplate = deepFreeze<TemplateCoreCapability<Tem
     return { title, summary, searchText };
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
-  defaultPresentation: { width: "90", height: "142", unit: "mm", mode: "text", fixedRatio: true },
+  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
   rendererRevision: "temporary-profession-r0",
   tabletop: {
     stateSchema: { type: "object", properties: {}, additionalProperties: false },

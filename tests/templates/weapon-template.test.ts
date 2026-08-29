@@ -86,8 +86,8 @@ describe("武器 Template Core", () => {
     ]);
     expect(resource.media).toEqual({});
     expect(weaponTemplate.defaultPresentation).toEqual({
-      width: "90",
-      height: "142",
+      width: "63",
+      height: "88",
       unit: "mm",
       mode: "text",
       fixedRatio: true,
@@ -96,6 +96,8 @@ describe("武器 Template Core", () => {
     expect(weaponTemplate.tabletop.defaultState(resource.data)).toEqual({});
     expect(weaponTemplate.tabletop.commands).toEqual([]);
     expect(weaponTemplate.tabletop.replacements).toEqual([]);
+    expect(weaponTemplate.tabletop.editableDataFields).toContainEqual(["名称"]);
+    expect(weaponTemplate.tabletop.editableDataFields).toContainEqual(["描述"]);
     expect(weaponTemplate.upgradeFrom).toBeNull();
   });
 });

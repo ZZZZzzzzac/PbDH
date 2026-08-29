@@ -1,0 +1,63 @@
+<main class="hmd-page ride-sheet">
+  <header class="title-strip">
+    <div>
+      <p>RIDE OR DIE</p>
+      <h1>要么开，要么死</h1>
+    </div>
+    <strong>座驾卡</strong>
+  </header>
+
+  <section class="panel ride-panel">
+    <h2>你的座驾 / YOUR RIDE</h2>
+    <div class="picker-field ride-picker-field">
+      <pb-module id="ride-name"></pb-module>
+      <pb-module id="pick-ride"></pb-module>
+    </div>
+    <div class="ride-state-grid">
+      <pb-module id="ride-starting-die"></pb-module>
+      <pb-module id="ride-current-die"></pb-module>
+      <pb-module id="ride-damage"></pb-module>
+    </div>
+    <pb-module id="ride-trait"></pb-module>
+  </section>
+
+  <section class="panel damage-note">
+    <h2>损伤 / DAMAGE</h2>
+    <p>座驾受到损伤时，标记 1 损伤点并投掷座驾骰。骰面结果为当前损伤点数量时，座驾骰降低一级；降低时座驾抛锚，威胁解除前无法驾驶。低于 D4 时彻底报废。</p>
+  </section>
+
+  <section class="panel gear-panel">
+    <h2>装备 / GEAR</h2>
+    <p class="instruction">每位乘客拥有 3 个装备栏位。装备损坏、弹药耗尽或因其他原因无法使用时，手动标记状态。</p>
+    <div class="gear-list">
+      <article>
+        <div class="gear-heading">
+          <span>01</span>
+          <pb-module id="gear-status-1"></pb-module>
+        </div>
+        <pb-module id="gear-1"></pb-module>
+      </article>
+      <article>
+        <div class="gear-heading">
+          <span>02</span>
+          <pb-module id="gear-status-2"></pb-module>
+        </div>
+        <pb-module id="gear-2"></pb-module>
+      </article>
+      <article>
+        <div class="gear-heading">
+          <span>03</span>
+          <pb-module id="gear-status-3"></pb-module>
+        </div>
+        <pb-module id="gear-3"></pb-module>
+      </article>
+    </div>
+  </section>
+
+  <section class="warning-strip">
+    <strong>FREE CANDY</strong>
+    <span>KEEP YOUR EYES ON THE REARVIEW MIRROR</span>
+  </section>
+
+  <footer class="road-marking">D12 → D10 → D8 → D6 → D4 → TOTALED</footer>
+</main>

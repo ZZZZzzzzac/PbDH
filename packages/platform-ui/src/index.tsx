@@ -172,16 +172,30 @@ export function PlatformAppBar({
     </nav>
     <div className="pbdh-platform-extra">{extraActions}</div>
     <div className="pbdh-platform-actions">
-      <button
-        className="pbdh-platform-notification-button"
-        type="button"
-        aria-label="通知"
-        aria-expanded={notificationsOpen}
-        onClick={() => setNotificationsOpen((value) => !value)}
-      >
-        <BarIcon kind="bell" />
-        {notifications.length > 0 ? <span>{notifications.length}</span> : null}
-      </button>
+      <div className="pbdh-platform-notification-menu" onMouseLeave={() => setNotificationsOpen(false)}>
+        <button
+          className="pbdh-platform-notification-button"
+          type="button"
+          aria-label="通知"
+          aria-expanded={notificationsOpen}
+          onClick={() => setNotificationsOpen((value) => !value)}
+        >
+          <BarIcon kind="bell" />
+          {notifications.length > 0 ? <span>{notifications.length}</span> : null}
+        </button>
+        {notificationsOpen ? <section className="pbdh-platform-notification-panel" aria-label="PbDH 通知">
+          <header>
+            <strong>通知</strong>
+            {notifications.length > 0 ? <button type="button" onClick={onClearNotifications}>全部清除</button> : null}
+          </header>
+          {notifications.length === 0 ? <p>暂无通知</p> : <ol>
+            {notifications.map((notification) => <li key={notification.id}>
+              <span>{notification.message}</span>
+              <button type="button" aria-label="关闭通知" onClick={() => onDismissNotification?.(notification.id)}>×</button>
+            </li>)}
+          </ol>}
+        </section> : null}
+      </div>
       <button type="button" aria-label="设置"><BarIcon kind="settings" /></button>
       <AccountControl
         className="pbdh-platform-account"
@@ -199,18 +213,6 @@ export function PlatformAppBar({
         <BarIcon kind="menu" />
       </button>
     </div>
-    {notificationsOpen ? <section className="pbdh-platform-notification-panel" aria-label="PbDH 通知">
-      <header>
-        <strong>通知</strong>
-        {notifications.length > 0 ? <button type="button" onClick={onClearNotifications}>全部清除</button> : null}
-      </header>
-      {notifications.length === 0 ? <p>暂无通知</p> : <ol>
-        {notifications.map((notification) => <li key={notification.id}>
-          <span>{notification.message}</span>
-          <button type="button" aria-label="关闭通知" onClick={() => onDismissNotification?.(notification.id)}>×</button>
-        </li>)}
-      </ol>}
-    </section> : null}
     {mobileOpen && <div className="pbdh-platform-mobile-menu">
       <nav className="pbdh-platform-mobile-pages" aria-label="移动端主页面">
         {pages.map((page) => <button

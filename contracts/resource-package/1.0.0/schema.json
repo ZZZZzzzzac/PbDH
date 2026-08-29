@@ -137,6 +137,22 @@
         "mode": { "enum": ["text", "split", "image"] },
         "fixedRatio": { "type": "boolean" }
       },
+      "allOf": [
+        { "properties": { "width": { "const": "63" } } },
+        {
+          "if": { "properties": { "fixedRatio": { "const": true } }, "required": ["fixedRatio"] },
+          "then": { "properties": { "height": { "const": "88" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "replacement": {
+      "type": "object",
+      "required": ["replacementId", "targetResourceId"],
+      "properties": {
+        "replacementId": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "targetResourceId": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
       "additionalProperties": false
     },
     "stringJsonValue": {
@@ -156,6 +172,10 @@
         "template": { "$ref": "#/$defs/templateReference" },
         "presentation": { "$ref": "#/$defs/presentation" },
         "data": { "$ref": "#/$defs/stringJsonValue" },
+        "replacements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/replacement" }
+        },
         "media": {
           "type": "object",
           "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },

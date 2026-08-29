@@ -18,7 +18,7 @@ import {
   type TabletopCapability,
 } from "@pbdh/tabletop/core";
 
-import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import { CreatorCloudDocumentService } from "../../apps/creator/src/workspace-prototype/cloud-document-service.ts";
 import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
@@ -77,6 +77,10 @@ class RecoveryApi implements CloudDocumentApi {
   async restoreDocument(): Promise<RemoteCloudDocument> {
     throw new Error("unexpected restore");
   }
+
+  async deleteDocument(): Promise<void> {
+    throw new Error("unexpected delete");
+  }
 }
 
 describe("Creator and GM cloud recovery", () => {
@@ -88,7 +92,7 @@ describe("Creator and GM cloud recovery", () => {
     const asset = packageDocument.assets[0]!;
     const bytes = new Uint8Array(readFileSync(path.join(
       process.cwd(),
-      "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+      "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
     )));
     const workspace = createWorkspace({ document: packageDocument, media: new Map([[asset.id, bytes]]) });
     await sourceWorkspaceRepository.save(workspace);
@@ -105,12 +109,14 @@ describe("Creator and GM cloud recovery", () => {
         presentation: structuredClone(packageDocument.resources[0]!.presentation),
         data: structuredClone(packageDocument.resources[0]!.data) as Record<string, unknown>,
         labels: [],
-        media: {},
+        replacements: [],
+        media: structuredClone(packageDocument.resources[0]!.media),
       },
       state: { currentHp: "4", currentStress: "2" },
       position: { x: 128, y: 256 },
     }, { capabilities }).document;
-    const tabletopCandidate = await sourceTabletopRepository.save(tabletop, new Map());
+    tabletop.assets = structuredClone(packageDocument.assets);
+    const tabletopCandidate = await sourceTabletopRepository.save(tabletop, new Map([[asset.id, bytes]]));
 
     const remotes: RemoteCloudDocument[] = [
       {
@@ -132,7 +138,7 @@ describe("Creator and GM cloud recovery", () => {
         contractFamily: "tabletop-document",
         contractVersion: tabletopCandidate.document.contractVersion,
         revision: 8,
-        assetIds: [],
+        assetIds: [asset.id],
         payload: structuredClone(tabletopCandidate.document),
         createdAt: tabletopCandidate.document.createdAt,
         updatedAt: tabletopCandidate.document.updatedAt,
@@ -162,5 +168,22 @@ describe("Creator and GM cloud recovery", () => {
       state: { currentHp: "4", currentStress: "2" },
       position: { x: 128, y: 256 },
     });
+    expect(recovered.tabletops[0]?.media.get(asset.id)).toEqual(bytes);
+
+    const tabletopOnlyStore = new DexieLocalDocumentStore(database());
+    const tabletopOnlyService = new CreatorCloudDocumentService(
+      tabletopOnlyStore,
+      new CreatorWorkspaceRepository(tabletopOnlyStore),
+      new TabletopDocumentRepository(tabletopOnlyStore),
+      new RecoveryApi(remotes.filter((remote) => remote.documentKind === "gm-tabletop-document"), new Map([[asset.id, bytes]])),
+    );
+    const tabletopOnlyRecovery = await tabletopOnlyService.recover(credentials);
+    expect(tabletopOnlyRecovery.workspaces).toEqual([]);
+    expect(tabletopOnlyRecovery.tabletops[0]?.model.instances[0]?.resource).toMatchObject({
+      source: { packageId: workspace.key, resourceId: packageDocument.resources[0]!.id },
+      data: { 名称: "牛头人破坏者" },
+      media: { portrait: asset.id },
+    });
+    expect(tabletopOnlyRecovery.tabletops[0]?.media.get(asset.id)).toEqual(bytes);
   });
 });

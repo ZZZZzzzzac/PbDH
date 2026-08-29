@@ -133,6 +133,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const beginDrag = (event: PointerEvent<HTMLElement>, instance: CardInstance) => {
     if (!tableRef.current || event.button !== 0) return;
 
+    event.preventDefault();
     const point = pointerToPct(event, tableRef.current);
     bringCardInstanceToFront(instance.instanceId);
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -157,6 +158,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const continueDrag = (event: PointerEvent<HTMLElement>) => {
     if (!dragState || dragState.pointerId !== event.pointerId || !tableRef.current) return;
 
+    event.preventDefault();
     const point = pointerToPct(event, tableRef.current);
     const nextXPct = point.xPct - dragState.offsetXPct;
     const nextYPct = point.yPct - dragState.offsetYPct;
@@ -232,6 +234,9 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         style={cardTableSurfaceStyle(tableLayout)}
         aria-label={`${module.标签}自由桌面`}
         onPointerDown={closeCardMenu}
+        onPointerMove={continueDrag}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
       >
         <div className="card-table-actions card-table-side-actions" data-part="actions" onPointerDown={(event) => event.stopPropagation()}>
           <button className="card-action-button" data-part="tidy-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
@@ -261,8 +266,6 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             module={module}
             presentation={findCardPresentation(systemPackage, module, instance)}
             onPointerDown={beginDrag}
-            onPointerMove={continueDrag}
-            onPointerUp={endDrag}
             onContextMenu={openCardMenu}
             key={instance.instanceId}
           />

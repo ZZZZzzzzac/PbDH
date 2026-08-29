@@ -3,12 +3,13 @@ import { createRuntimeAssetResolver, type RuntimeAssetResolver } from "../loader
 import { unconfiguredRuntimeStorage } from "../storage/runtimeStorage";
 import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { loadPresetSystemPackage } from "../loaders/presetSystemPackageLoader";
-import type { RuntimeDependencies } from "./runtimeTypes";
+import type { RuntimeDependencies, RuntimePackageLoadResult } from "./runtimeTypes";
 
 export interface RuntimeEnvironment {
   dependencies: RuntimeDependencies;
   autosaveTimer: ReturnType<typeof setTimeout> | undefined;
   activePackageAssetResolver: RuntimeAssetResolver | undefined;
+  pendingSystemPackageImportResult: Extract<RuntimePackageLoadResult, { ok: true }> | undefined;
 }
 
 export const defaultRuntimeDependencies: RuntimeDependencies = {
@@ -29,6 +30,7 @@ export function createRuntimeEnvironment(): RuntimeEnvironment {
     dependencies: defaultRuntimeDependencies,
     autosaveTimer: undefined,
     activePackageAssetResolver: undefined,
+    pendingSystemPackageImportResult: undefined,
   };
 }
 
@@ -45,6 +47,7 @@ export function resetRuntimeEnvironment(environment: RuntimeEnvironment): void {
   environment.autosaveTimer = undefined;
   environment.activePackageAssetResolver?.revokeAll();
   environment.activePackageAssetResolver = undefined;
+  environment.pendingSystemPackageImportResult = undefined;
 }
 
 export async function reloadRuntimeAssets(

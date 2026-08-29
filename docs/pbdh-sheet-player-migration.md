@@ -21,9 +21,8 @@
 | `src/rendering/**` | `apps/player/src/sheet-runtime/rendering/**` | 迁移 SheetRenderer、Module Registry、检查和输出界面 |
 | `src/store/**` | `apps/player/src/sheet-runtime/store/**` | 迁移 Runtime 状态和工作流；持久化改接正式 Repository |
 | `src/export/**` | `apps/player/src/sheet-runtime/export/**` | 迁移当前 Contract 仍需要的输出行为 |
-| `public/system-packages/daggerheart-core/**` | `apps/player/system-package-sources/daggerheart-core/**` | 固定迁移输入；不由浏览器直接读取 |
-| 生成的 System Package | `apps/player/public/system-packages/daggerheart-core/**` | 规则、布局、皮肤、必要资产和空原生库声明，由 Platform Vite 静态提供 |
-| System Package Resource Libraries | `apps/player/public/system-packages/daggerheart-core/resources/*.pbres` | 从迁移输入生成原生 Resource Package，不保留 Resource Extension 运行格式 |
+| `public/system-packages/daggerheart-core/**` | `apps/player/public/system-packages/daggerheart-core/**` | 已完成迁移的正式 System Package；由 Platform Vite 静态提供 |
+| System Package Resource Libraries | `apps/player/public/system-packages/daggerheart-core/resources/*.pbres` | 原生 Resource Package；资源文本、卡图和卡背不再保留第二套迁移副本 |
 | Runtime Resource Library adapter | `apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts` | 按 Template Compatibility 将已安装 `.pbres` 投影为 Sheet Runtime 只读资源库；不形成第二份持久数据 |
 | `src/storage/storageService.ts` | `apps/player/src/character-saves/**` 与 Player adapters | 只迁移行为；不复制 schema、键或旧记录格式 |
 | `src/rendering/app/AppTopBar.tsx` | `apps/player` Surface + `packages/platform-ui` | 迁移菜单能力；不复制旧顶栏结构和视觉实现 |
@@ -50,8 +49,8 @@
 - Runtime Storage 已接入正式 Character Save Repository；人物字段、自包含桌面副本和媒体按同一 revision 保存，云恢复后缺少来源 `.pbres` 仍可显示、复制和再次保存。
 - 登录前本地人物通过显式“同步到云”进入云端；登录后新建或导入人物进入 outbox。账号切换、冲突三动作、云端删除与回收站使用统一 Cloud Document Service。
 - Player 图片入口已改用共享媒体准入流程，在用户裁剪后归一化为内容寻址 WebP。
-- Daggerheart Core 的 34 份护甲以及剩余 399 份种族、社群、职业、子职业、物品和领域卡已从固定来源迁移到各自可信 `1.0.0` Template；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.3`。对应 `0.0.0-dev.1` 只保留精确 Reader 与显式候选升级路径，不再由官方生成器或资源转换 Adapter 新增生产。
-- 六类稳定化证据固定为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`，原路径分别为 `public/system-packages/daggerheart-core/resources/ancestries.json`、`communities.json`、`classes.json`、`subclasses.json`、`loot.json` 与 `domain-cards.json`；本仓库对应只读迁移源位于 `apps/player/system-package-sources/daggerheart-core/resources/`，旧仓库未修改。
+- Daggerheart Core 的 34 份护甲以及剩余 399 份种族、社群、职业、子职业、物品和领域卡已从固定来源迁移到各自可信 `1.0.0` Template；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.7`。对应 `0.0.0-dev.1` 只保留精确 Reader 与显式候选升级路径，不再新增生产。
+- 六类稳定化证据固定为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`，原路径分别为 `public/system-packages/daggerheart-core/resources/ancestries.json`、`communities.json`、`classes.json`、`subclasses.json`、`loot.json` 与 `domain-cards.json`。迁移来源继续由旧仓库和固定 commit 保存；本仓库只保留已迁移完成的 System Package 与 `.pbres`，不再提交第二套旧格式资源和卡图。
 
 ## 阶段验收
 

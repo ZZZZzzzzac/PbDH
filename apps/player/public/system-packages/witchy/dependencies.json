@@ -1,0 +1,72 @@
+[
+  {
+    "ID": "fill-archetype",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-archetype" }],
+    "targets": [
+      { "类型": "module", "模块ID": "archetype-name" },
+      { "类型": "module", "模块ID": "archetype-description" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-archetype" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "archetype-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "fillText", "目标模块ID": "archetype-description", "内容": { "类型": "selectedResourceField", "字段": "描述" } }
+    ]
+  },
+  {
+    "ID": "fill-familiar-type",
+    "sources": [
+      { "类型": "resourcePicker", "模块ID": "pick-familiar-type" },
+      { "类型": "countableResource", "模块ID": "erosion" }
+    ],
+    "targets": [
+      { "类型": "module", "模块ID": "familiar-type-name" },
+      { "类型": "module", "模块ID": "familiar-type-description" },
+      { "类型": "module", "模块ID": "magic-points" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-familiar-type" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "familiar-type-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "fillText", "目标模块ID": "familiar-type-description", "内容": { "类型": "selectedResourceField", "字段": "描述" } },
+      {
+        "类型": "fillCountable",
+        "目标模块ID": "magic-points",
+        "最大值": {
+          "类型": "integerCalculation",
+          "初始值": 6,
+          "运算": [
+            { "操作": "subtract", "值": { "类型": "countableCurrent", "模块ID": "erosion" } },
+            { "操作": "subtract", "值": { "类型": "resourceSelectionCount", "模块ID": "pick-familiar-type" } }
+          ],
+          "最小值": 0
+        }
+      }
+    ]
+  },
+  {
+    "ID": "apply-erosion-to-magic-points",
+    "sources": [
+      { "类型": "countableResource", "模块ID": "erosion" },
+      { "类型": "resourcePicker", "模块ID": "pick-familiar-type" }
+    ],
+    "targets": [{ "类型": "module", "模块ID": "magic-points" }],
+    "触发": { "类型": "countableChanged", "来源模块ID": "erosion" },
+    "条件": { "类型": "always" },
+    "动作": [
+      {
+        "类型": "fillCountable",
+        "目标模块ID": "magic-points",
+        "最大值": {
+          "类型": "integerCalculation",
+          "初始值": 6,
+          "运算": [
+            { "操作": "subtract", "值": { "类型": "countableCurrent", "模块ID": "erosion" } },
+            { "操作": "subtract", "值": { "类型": "resourceSelectionCount", "模块ID": "pick-familiar-type" } }
+          ],
+          "最小值": 0
+        }
+      }
+    ]
+  }
+]

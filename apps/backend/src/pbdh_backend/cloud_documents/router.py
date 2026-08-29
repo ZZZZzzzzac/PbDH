@@ -160,6 +160,28 @@ def restore_document(
     )}
 
 
+@router.delete("/documents/{document_id}", status_code=204)
+def delete_document(
+    document_id: str,
+    base_revision: Annotated[int, Query(alias="baseRevision", ge=1)],
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    cloud_repository: CloudDocumentRepository = Depends(repository),
+) -> Response:
+    try:
+        cloud_repository.delete_document(
+            authenticated.account.account_id,
+            document_id,
+            base_revision,
+        )
+    except CloudDocumentNotFound as error:
+        raise ApiError(404, "CLOUD_DOCUMENT_NOT_FOUND", "没有找到该云文档。") from error
+    except CloudDocumentRevisionConflict as error:
+        raise ApiError(409, "CLOUD_DOCUMENT_REVISION_CONFLICT", "云端文档已发生变化。") from error
+    except CloudDocumentStateConflict as error:
+        raise ApiError(409, "CLOUD_DOCUMENT_STATE_CONFLICT", "只有回收站里的云文档可以永久删除。") from error
+    return Response(status_code=204)
+
+
 def _lifecycle(
     operation: Any,
     account_id: str,

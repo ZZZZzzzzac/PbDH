@@ -8,6 +8,11 @@ const VERSION_CONTENT_DOMAIN = "pbdh-resource-package-version-content-v1";
 
 type JsonValue = null | boolean | string | JsonValue[] | { [key: string]: JsonValue };
 
+export type ResourceReplacement = {
+  replacementId: string;
+  targetResourceId: string;
+};
+
 export type ResourcePackageLogicalDocument = {
   contractVersion: typeof RESOURCE_PACKAGE_VERSION | typeof LEGACY_RESOURCE_PACKAGE_VERSION;
   package: {
@@ -32,6 +37,7 @@ export type ResourcePackageLogicalDocument = {
     template: { id: string; version: string };
     presentation: ResourcePresentation;
     data: JsonValue;
+    replacements?: ResourceReplacement[];
     media: Record<string, string>;
   }>;
   emptyDirectories: string[];
@@ -99,6 +105,10 @@ function normalizedDocument(document: ResourcePackageLogicalDocument): JsonValue
     const pathOrder = compareCodePoints(left.path, right.path);
     return pathOrder || compareCodePoints(left.id, right.id);
   });
+  content.resources.forEach((resource) => resource.replacements?.sort((left, right) => {
+    const idOrder = compareCodePoints(left.replacementId, right.replacementId);
+    return idOrder || compareCodePoints(left.targetResourceId, right.targetResourceId);
+  }));
   content.emptyDirectories.sort(compareCodePoints);
   return content as JsonValue;
 }
@@ -257,6 +267,24 @@ export async function validateResourcePackageSemantics(
   }
 
   document.resources.forEach((resource, resourceIndex) => {
+    const replacementIds = new Set<string>();
+    for (const [replacementIndex, replacement] of (resource.replacements ?? []).entries()) {
+      if (replacementIds.has(replacement.replacementId)) {
+        diagnostics.push(semanticDiagnostic(document.contractVersion,
+          "resource-package.replacement-id.duplicate",
+          `/resources/${resourceIndex}/replacements/${replacementIndex}/replacementId`,
+          { replacementId: replacement.replacementId },
+        ));
+      }
+      replacementIds.add(replacement.replacementId);
+      if (!resourceIds.has(replacement.targetResourceId)) {
+        diagnostics.push(semanticDiagnostic(document.contractVersion,
+          "resource-package.replacement-target.missing",
+          `/resources/${resourceIndex}/replacements/${replacementIndex}/targetResourceId`,
+          { targetResourceId: replacement.targetResourceId },
+        ));
+      }
+    }
     for (const [slot, assetId] of Object.entries(resource.media)) {
       if (!assetIds.has(assetId)) {
         diagnostics.push(semanticDiagnostic(document.contractVersion,

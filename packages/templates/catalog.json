@@ -13,6 +13,7 @@
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/adversary/1.0.0/schema.json",
+      "tabletopReplacements": [{ "id": "alternate-form", "label": "切换形态" }],
       "publication": { "development": true, "production": false }
     },
     {

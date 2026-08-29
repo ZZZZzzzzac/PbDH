@@ -1,4 +1,5 @@
 import hashlib
+import sqlite3
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -182,4 +183,75 @@ def test_cloud_documents_keep_kinds_revisions_and_recycle_bin_independent(tmp_pa
     current_workspace = api.get("/api/cloud/documents/workspace-1", headers=owner).json()["document"]
     assert current_workspace["revision"] == 1
     assert current_workspace["payload"] == {"resource": "enemy"}
+
+
+def test_cloud_document_permanent_delete_requires_trash_and_releases_media_reference(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    media = b"tabletop-webp"
+    asset_id = f"sha256:{hashlib.sha256(media).hexdigest()}"
+    assert api.put(
+        f"/api/cloud/media/{asset_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=media,
+    ).status_code == 200
+    assert api.put(
+        "/api/cloud/documents/tabletop-delete",
+        headers=owner,
+        json=document_write("create-delete", "gm-tabletop-document", {"enemy": "巨人"}, [asset_id], None),
+    ).status_code == 200
+
+    active_delete = api.delete(
+        "/api/cloud/documents/tabletop-delete?baseRevision=1",
+        headers=owner,
+    )
+    assert active_delete.status_code == 409
+    trashed = api.post(
+        "/api/cloud/documents/tabletop-delete/trash",
+        headers=owner,
+        json={"mutationId": "trash-delete", "baseRevision": 1},
+    ).json()["document"]
+    assert trashed["purgeAfter"] is not None
+
+    deleted = api.delete(
+        f"/api/cloud/documents/tabletop-delete?baseRevision={trashed['revision']}",
+        headers=owner,
+    )
+    assert deleted.status_code == 204
+    assert api.get("/api/cloud/documents/tabletop-delete", headers=owner).status_code == 404
+    with sqlite3.connect(tmp_path / "pbdh.sqlite3") as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM cloud_document_media WHERE document_id = ?",
+            ("tabletop-delete",),
+        ).fetchone()[0] == 0
+
+
+def test_expired_cloud_trash_is_purged_when_recycle_bin_is_read(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    assert api.put(
+        "/api/cloud/documents/tabletop-expired",
+        headers=owner,
+        json=document_write("create-expired", "gm-tabletop-document", {"enemy": "尸群"}, [], None),
+    ).status_code == 200
+    assert api.post(
+        "/api/cloud/documents/tabletop-expired/trash",
+        headers=owner,
+        json={"mutationId": "trash-expired", "baseRevision": 1},
+    ).status_code == 200
+    with sqlite3.connect(tmp_path / "pbdh.sqlite3") as connection:
+        connection.execute(
+            "UPDATE cloud_documents SET purge_after = '2000-01-01T00:00:00.000Z' "
+            "WHERE document_id = ?",
+            ("tabletop-expired",),
+        )
+        connection.commit()
+
+    recycle_bin = api.get(
+        "/api/cloud/documents?documentKind=gm-tabletop-document&includeDeleted=true",
+        headers=owner,
+    )
+    assert recycle_bin.status_code == 200
+    assert recycle_bin.json() == {"documents": []}
+    assert api.get("/api/cloud/documents/tabletop-expired", headers=owner).status_code == 404
 

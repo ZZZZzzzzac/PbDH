@@ -71,6 +71,7 @@ export { TemplateRegistry } from "./registry.ts";
 export type {
   MediaSlot,
   TabletopCommand,
+  TabletopReplacement,
   TemplateCoreCapability,
   TemplateLifecycleState,
   TemplateProjection,

@@ -69,8 +69,8 @@ describe("Canonical Surface Renderer Port", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.widthMm).toBe(90);
-    expect(result.heightMm).toBe(142);
+    expect(result.widthMm).toBe(63);
+    expect(result.heightMm).toBe(88);
     expect(result.renderInput.state).toEqual({
       currentHp: "7",
       currentStress: "0",
@@ -183,6 +183,33 @@ describe("Canonical Surface Renderer Port", () => {
     expect(result.renderInput.presentation.fixedRatio).toBe(false);
   });
 
+  test("rejects a wrong card ratio and lets only valid fluid height vary", () => {
+    const wrongFixedSize = structuredClone(resource);
+    wrongFixedSize.presentation = {
+      ...wrongFixedSize.presentation,
+      width: "90",
+      height: "142",
+      fixedRatio: true,
+    };
+    const fixed = prepare({ candidate: wrongFixedSize });
+    expect(fixed).toMatchObject({
+      status: "error",
+      diagnostics: [{ code: "renderer.presentation.invalid", location: "/presentation" }],
+    });
+
+    const fluidHeight = structuredClone(resource);
+    fluidHeight.presentation = {
+      ...fluidHeight.presentation,
+      width: "63",
+      height: "121",
+      fixedRatio: false,
+    };
+    const fluid = prepare({ candidate: fluidHeight });
+    if (fluid.status !== "ready") throw new Error("Expected ready Surface");
+    expect(fluid).toMatchObject({ widthMm: 63, heightMm: 121 });
+    expect(fluid.renderInput.presentation).toMatchObject({ width: "63", height: "121" });
+  });
+
   test("builds publication cover SVG through the same renderer with fixed ratio", async () => {
     const fluidResource = structuredClone(resource);
     fluidResource.presentation.fixedRatio = false;
@@ -195,8 +222,8 @@ describe("Canonical Surface Renderer Port", () => {
       assets: readyAssets,
     });
 
-    expect(cover.width).toBe(680);
-    expect(cover.height).toBe(1073);
+    expect(cover.width).toBe(476);
+    expect(cover.height).toBe(665);
     expect(cover.svg).toContain("data-renderer-revision=\"enemy-card-r1\"");
     expect(cover.svg).toContain("牛头人破坏者");
     expect(cover.svg).not.toContain("enemy-card is-fluid");
@@ -222,7 +249,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       page: "30 Components",
       surface: "#28 / Canonical Card Surface",
       component: "enemy-card-r1 / Canonical",
-      presentation: { width: "90mm", height: "142mm" },
+      presentation: { ratio: "63:88", variableHeight: false },
       featureNames: ["特性 / 蓄力", "特性 / 蛮牛冲撞", "特性 / 角撞"],
     });
   });
@@ -237,8 +264,8 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       />,
     );
     expect(markup).toContain("data-pbdh-canonical-surface");
-    expect(markup).toContain("width:90mm");
-    expect(markup).toContain("height:142mm");
+    expect(markup).toContain("width:63mm");
+    expect(markup).toContain("height:88mm");
     expect(markup).not.toContain("enemy-card");
 
     const fluidResource = structuredClone(resource);
@@ -279,12 +306,12 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(markup).toContain("aria-label=\"将生命设为 6\"");
     expect(markup).toContain("disabled=\"\"");
     expect(adversaryRendererStyles).toContain(".enemy-card.is-fluid");
-    expect(adversaryRendererStyles).toContain(".enemy-card.is-image .enemy-art { height: 100%; }");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-image .enemy-art{height:100%}");
     const signature = createHash("sha256")
       .update(adversaryRendererStyles)
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("99666724d0b2b899e7c0878ad966bf863c939e9479e1ef9a52fef369f66238ba");
+    expect(signature).toBe("7e59576c59c95425c10f877121ab2893752fc0f83d47744eb8a64c53bed45100");
   });
 });

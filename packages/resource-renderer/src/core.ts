@@ -107,17 +107,21 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
   state?: unknown;
   onStateCommand?: (commandId: string, value: string) => void;
 }): SurfacePreparation<TData, TState, TOutput> {
-  const width = Number(input.resource.presentation.width);
-  const height = Number(input.resource.presentation.height);
-  const widthMm = Number.isFinite(width) && width > 0 ? width : null;
-  const heightMm = Number.isFinite(height) && height > 0 ? height : null;
+  const sourceWidth = Number(input.resource.presentation.width);
+  const sourceHeight = Number(input.resource.presentation.height);
+  const validWidth = Number.isFinite(sourceWidth) && sourceWidth > 0;
+  const validHeight = Number.isFinite(sourceHeight) && sourceHeight > 0;
   const diagnostics: RendererDiagnostic[] = [];
   const presentation = input.resource.presentation;
+  const widthMm = validWidth ? sourceWidth : null;
+  const heightMm = validHeight ? sourceHeight : null;
   const validMode = presentation.mode === "text"
     || presentation.mode === "split"
     || presentation.mode === "image";
-  if (presentation.unit !== "mm" || widthMm === null || heightMm === null
-    || !validMode || typeof presentation.fixedRatio !== "boolean") {
+  const validCanonicalSize = presentation.width === "63"
+    && (!presentation.fixedRatio || presentation.height === "88");
+  if (presentation.unit !== "mm" || !validWidth || !validHeight
+    || !validMode || typeof presentation.fixedRatio !== "boolean" || !validCanonicalSize) {
     diagnostics.push(diagnostic(
       "renderer.presentation.invalid",
       "error",

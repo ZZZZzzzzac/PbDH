@@ -1,5 +1,5 @@
-import { X } from "lucide-react";
-import { useEffect, type CSSProperties } from "react";
+import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
+import type { CSSProperties } from "react";
 import { maxCardIndicators, readCardIndicators, type CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
 import type { ResourceLibraryEntry } from "../../domain/resourceLibrary";
@@ -95,29 +95,29 @@ export function CardDetailOverlay({
   presentation?: CardPresentation;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
   if (!instance) return null;
 
   const name = resolveRenderedCardPresentation(definition, module, presentation).name || definitionReferenceId(instance);
   const stateAppearance = module.状态外观?.[instance.state];
+  const width = Number(definition?.resourceCopy?.presentation.width ?? 63);
+  const height = Number(definition?.resourceCopy?.presentation.height ?? 88);
   return (
-    <div className="card-detail-backdrop" data-guide-interaction-surface="true" data-output-exclude="true" onClick={onClose}>
-      <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
-        <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
-        <div
-          className={`card-detail-face${stateAppearance ? " has-card-state-appearance" : ""}`}
-          data-card-state={instance.state}
-          style={{ "--play-card-state-color": stateAppearance?.描边颜色 } as CSSProperties}
-        >
-          <CardFace definition={definition} definitionRef={instance.definitionRef} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
-          {stateAppearance ? <CardStateBadge label={stateAppearance.徽标} /> : null}
-        </div>
-      </section>
-    </div>
+    <CardPreviewDialog
+      width={width}
+      height={height}
+      fixedRatio={definition?.resourceCopy?.presentation.fixedRatio ?? true}
+      label={`${name}详情`}
+      onClose={onClose}
+    >
+      <div
+        className={`card-detail-face${stateAppearance ? " has-card-state-appearance" : ""}`}
+        data-card-state={instance.state}
+        style={{ "--play-card-state-color": stateAppearance?.描边颜色 } as CSSProperties}
+      >
+        <CardFace definition={definition} definitionRef={instance.definitionRef} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
+        {stateAppearance ? <CardStateBadge label={stateAppearance.徽标} /> : null}
+      </div>
+    </CardPreviewDialog>
   );
 }
 

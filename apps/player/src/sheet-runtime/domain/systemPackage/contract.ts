@@ -493,6 +493,13 @@ export const validationCheckSchema = z.object({
   scriptContent: z.string().min(1),
 });
 
+export const characterDataMigrationSchema = z.object({
+  fromVersion: z.string().min(1),
+  toVersion: z.string().min(1),
+  script: z.string().min(1),
+  scriptContent: z.string().min(1),
+});
+
 export const systemPackageEnvelopeSchema = z.object({
   manifest: systemPackageRuntimeManifestSchema,
   shell: htmlTemplateLayoutSchema.optional(),
@@ -504,6 +511,7 @@ export const systemPackageEnvelopeSchema = z.object({
   resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
   dependencies: z.array(z.unknown()).optional(),
   validationChecks: z.array(validationCheckSchema).optional(),
+  characterDataMigrations: z.array(characterDataMigrationSchema).optional(),
   characterCreationGuide: z.unknown().optional(),
   questionnaireCharacterCreation: questionnaireDefinitionSchema.optional(),
   resourceFormatAdapters: z.array(resourceFormatAdapterSchema).optional(),
@@ -522,6 +530,7 @@ export interface SystemPackage {
   resourceLibraries?: ResourceLibrary[];
   dependencies?: DependencyRule[];
   validationChecks?: ValidationCheck[];
+  characterDataMigrations?: CharacterDataMigration[];
   characterCreationGuide?: CharacterCreationGuide;
   questionnaireCharacterCreation?: QuestionnaireDefinition;
   resourceFormatAdapters?: ResourceFormatAdapter[];
@@ -543,6 +552,7 @@ export type PackageAsset = z.infer<typeof assetSchema>;
 export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
 export type SystemPackageSkin = z.infer<typeof systemPackageSkinSchema>;
 export type PackagePage = z.infer<typeof packagePageSchema>;
+export type CharacterDataMigration = z.infer<typeof characterDataMigrationSchema>;
 export type DependencyRule = z.infer<typeof dependencyRuleSchema>;
 export type DependencySource = z.infer<typeof dependencySourceSchema>;
 export type DependencyTarget = z.infer<typeof dependencyTargetSchema>;

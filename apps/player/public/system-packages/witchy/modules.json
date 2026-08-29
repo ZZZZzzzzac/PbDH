@@ -1,0 +1,100 @@
+[
+  { "ID": "character-name", "类型": "freeText", "标签": "姓名" },
+  { "ID": "character-portrait", "类型": "imageField", "标签": "角色立绘", "替代文本": "女巫角色立绘" },
+  {
+    "ID": "magic-points",
+    "类型": "countableResource",
+    "标签": "魔力",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 3,
+    "步长": 1,
+    "最大值可改": false,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-magic-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-magic-unmarked.svg" }
+  },
+  {
+    "ID": "erosion",
+    "类型": "countableResource",
+    "标签": "蚀痕",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 0,
+    "步长": 1,
+    "显示方式": "标记",
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-erosion-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-erosion-unmarked.svg" }
+  },
+  { "ID": "essence-assiah", "类型": "freeText", "标签": "物质界 Assiah", "默认值": "0" },
+  { "ID": "essence-yetzirah", "类型": "freeText", "标签": "精神界 Yetzirah", "默认值": "0" },
+  { "ID": "essence-atziluth", "类型": "freeText", "标签": "灵界 Atziluth", "默认值": "0" },
+
+  {
+    "ID": "pick-archetype",
+    "类型": "resourcePicker",
+    "按钮文本": "选择原型",
+    "资源库": [
+      {
+        "ID": "archetypes",
+        "字段模板": [
+          { "键": "名称", "标签": "原型", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "描述", "标签": "规则", "默认显示": true, "可筛选": false, "可排序": false }
+        ]
+      }
+    ]
+  },
+  { "ID": "archetype-name", "类型": "freeText", "标签": "原型" },
+  { "ID": "archetype-description", "类型": "longText", "标签": "", "行数": 10 },
+
+  { "ID": "experience-1", "类型": "freeText", "标签": "", "占位文本": "经历 1" },
+  { "ID": "experience-modifier-1", "类型": "freeText", "标签": "", "默认值": "+3", "占位文本": "修正" },
+  { "ID": "experience-2", "类型": "freeText", "标签": "", "占位文本": "经历 2" },
+  { "ID": "experience-modifier-2", "类型": "freeText", "标签": "", "默认值": "+3", "占位文本": "修正" },
+  { "ID": "experience-3", "类型": "freeText", "标签": "", "占位文本": "额外经历" },
+  { "ID": "experience-modifier-3", "类型": "freeText", "标签": "", "占位文本": "修正" },
+  { "ID": "experience-4", "类型": "freeText", "标签": "", "占位文本": "额外经历" },
+  { "ID": "experience-modifier-4", "类型": "freeText", "标签": "", "占位文本": "修正" },
+  { "ID": "experience-5", "类型": "freeText", "标签": "", "占位文本": "额外经历" },
+  { "ID": "experience-modifier-5", "类型": "freeText", "标签": "", "占位文本": "修正" },
+
+  { "ID": "magic-1-name", "类型": "freeText", "标签": "魔法一", "隐藏标签": true, "占位文本": "魔法名称" },
+  { "ID": "magic-1-noun", "类型": "freeText", "标签": "魔法一 名词", "隐藏标签": true, "占位文本": "名词意象" },
+  { "ID": "magic-1-verb", "类型": "freeText", "标签": "魔法一 动词", "隐藏标签": true, "占位文本": "动词意象" },
+  { "ID": "magic-1-description", "类型": "longText", "标签": "魔法一说明", "隐藏标签": true, "行数": 3, "占位文本": "施法表现与效果说明" },
+  { "ID": "magic-2-name", "类型": "freeText", "标签": "魔法二", "隐藏标签": true, "占位文本": "魔法名称" },
+  { "ID": "magic-2-noun", "类型": "freeText", "标签": "魔法二 名词", "隐藏标签": true, "占位文本": "名词意象" },
+  { "ID": "magic-2-verb", "类型": "freeText", "标签": "魔法二 动词", "隐藏标签": true, "占位文本": "动词意象" },
+  { "ID": "magic-2-description", "类型": "longText", "标签": "魔法二说明", "隐藏标签": true, "行数": 3, "占位文本": "施法表现与效果说明" },
+  { "ID": "magic-3-name", "类型": "freeText", "标签": "魔法三", "隐藏标签": true, "占位文本": "魔法名称" },
+  { "ID": "magic-3-noun", "类型": "freeText", "标签": "魔法三 名词", "隐藏标签": true, "占位文本": "名词意象" },
+  { "ID": "magic-3-verb", "类型": "freeText", "标签": "魔法三 动词", "隐藏标签": true, "占位文本": "动词意象" },
+  { "ID": "magic-3-description", "类型": "longText", "标签": "魔法三说明", "隐藏标签": true, "行数": 3, "占位文本": "施法表现与效果说明" },
+  { "ID": "terminal-condition", "类型": "longText", "标签": "终末条件", "行数": 4, "占位文本": "记录一件物品或一种元素构成的终末条件" },
+  { "ID": "omen-past", "类型": "longText", "标签": "过去的预兆", "行数": 6 },
+  { "ID": "omen-present", "类型": "longText", "标签": "现在的预兆", "行数": 6 },
+  { "ID": "omen-future", "类型": "longText", "标签": "未来的预兆", "行数": 6 },
+
+  { "ID": "inventory", "类型": "longText", "标签": "", "行数": 5, "占位文本": "记录货币、宝物、战利品与携带道具" },
+
+  { "ID": "familiar-name", "类型": "freeText", "标签": "名字" },
+  { "ID": "familiar-portrait", "类型": "imageField", "标签": "使魔头像", "替代文本": "使魔头像" },
+  {
+    "ID": "pick-familiar-type",
+    "类型": "resourcePicker",
+    "按钮文本": "选择使魔类型",
+    "资源库": [
+      {
+        "ID": "familiar-types",
+        "字段模板": [
+          { "键": "名称", "标签": "类型", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "描述", "标签": "效果", "默认显示": true, "可筛选": false, "可排序": false }
+        ]
+      }
+    ]
+  },
+  { "ID": "familiar-type-name", "类型": "freeText", "标签": "类型" },
+  { "ID": "familiar-type-description", "类型": "longText", "标签": "特技", "行数": 4 }
+]

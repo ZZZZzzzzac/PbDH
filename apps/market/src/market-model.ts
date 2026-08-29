@@ -92,6 +92,7 @@ export type HandoffIntent = {
   packageVersion: string;
   snapshotDigest: string;
   acquisition: "complete-resource-package";
+  creatorMode: "import" | "fork";
   focusLocator?: { resourceId: string };
   targetRoute: "weapons" | "armor" | "ancestries" | "communities" | "classes" | "subclasses" | "loot" | "domain-cards" | "other-resources" | "creator-ingress";
   autoInstall: false;
@@ -103,6 +104,7 @@ export function createHandoffIntent(
   target: HandoffTarget,
   focusedResourceId?: string,
   allowUnpublished = false,
+  creatorMode: "import" | "fork" = "import",
 ): HandoffIntent {
   if (!canAcquirePublication(publication, allowUnpublished)) {
     throw new Error("publication.unpublished");
@@ -111,6 +113,7 @@ export function createHandoffIntent(
     ? publication.resources.find((resource) => resource.id === focusedResourceId)
     : undefined;
   if (focusedResourceId && !focusedResource) throw new Error("focus.resource.not-found");
+  if (creatorMode === "fork" && target !== "creator") throw new Error("handoff.fork.target-not-creator");
 
   let targetRoute: HandoffIntent["targetRoute"];
   if (target === "creator" || target === "gm") targetRoute = "creator-ingress";
@@ -142,6 +145,7 @@ export function createHandoffIntent(
     packageVersion: publication.packageVersion,
     snapshotDigest: publication.snapshotDigest,
     acquisition: "complete-resource-package",
+    creatorMode,
     ...(focusedResourceId ? { focusLocator: { resourceId: focusedResourceId } } : {}),
     targetRoute,
     autoInstall: false,
@@ -170,6 +174,7 @@ export function createCreatorHandoffUrl(
   url.searchParams.set("packageId", intent.packageId);
   url.searchParams.set("packageVersion", intent.packageVersion);
   url.searchParams.set("snapshotDigest", intent.snapshotDigest);
+  if (intent.creatorMode === "fork") url.searchParams.set("creatorMode", "fork");
   if (intent.focusLocator) url.searchParams.set("focusResourceId", intent.focusLocator.resourceId);
   return url;
 }

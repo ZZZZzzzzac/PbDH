@@ -183,6 +183,24 @@ export function updateResourcePresentation(
   return next;
 }
 
+export function updateResourceReplacement(
+  workspace: CreatorWorkspace,
+  resourceId: string,
+  replacementId: string,
+  targetResourceId: string | null,
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  const resource = workspaceResource(next, resourceId);
+  const retained = (resource.replacements ?? []).filter(
+    (replacement) => replacement.replacementId !== replacementId,
+  );
+  resource.replacements = targetResourceId
+    ? [...retained, { replacementId, targetResourceId }]
+    : retained;
+  markResourceDirty(next, resource.id);
+  return next;
+}
+
 export function addTemplateResource(
   workspace: CreatorWorkspace,
   templateId: string,
@@ -205,6 +223,7 @@ export function addTemplateResource(
     template: { id: template.id, version: template.version },
     presentation: structuredClone(template.defaultPresentation),
     data: structuredClone(template.defaultData),
+    ...(next.document.contractVersion === RESOURCE_PACKAGE_VERSION ? { replacements: [] } : {}),
     media: {},
   });
   next.resourceLocations.push({
@@ -448,6 +467,95 @@ export function duplicateWorkspaceResource(
   return { workspace: ordered, resourceId: nextId };
 }
 
+export function copyWorkspaceResourceToPackage(
+  sourceWorkspace: CreatorWorkspace,
+  targetWorkspace: CreatorWorkspace,
+  resourceId: string,
+): { workspace: CreatorWorkspace; resourceId: string; copiedResourceIds: string[] } {
+  workspaceResource(sourceWorkspace, resourceId);
+  const sourceById = new Map(sourceWorkspace.document.resources.map((resource) => [resource.id, resource]));
+  const resourcesToCopy: WorkspaceResource[] = [];
+  const queued = [resourceId];
+  const visited = new Set<string>();
+  while (queued.length > 0) {
+    const currentId = queued.shift()!;
+    if (visited.has(currentId)) continue;
+    const current = sourceById.get(currentId);
+    if (!current) continue;
+    visited.add(currentId);
+    resourcesToCopy.push(current);
+    for (const replacement of current.replacements ?? []) queued.push(replacement.targetResourceId);
+  }
+
+  const next = createWorkspace(targetWorkspace, true);
+  const copiedIdBySourceId = new Map<string, string>();
+  for (const source of resourcesToCopy) {
+    let copiedId = `resource-${uuidV7()}`;
+    while (next.document.resources.some((resource) => resource.id === copiedId)) {
+      copiedId = `resource-${uuidV7()}`;
+    }
+    copiedIdBySourceId.set(source.id, copiedId);
+  }
+
+  const occupiedPaths = new Set(next.document.resources.map((resource) => resource.path));
+  const copiedResourceIds: string[] = [];
+  for (const source of resourcesToCopy) {
+    const copiedId = copiedIdBySourceId.get(source.id)!;
+    const filename = source.path.split("/").at(-1) ?? `${source.id}.json`;
+    const extensionIndex = filename.lastIndexOf(".");
+    const stem = extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename;
+    const extension = extensionIndex > 0 ? filename.slice(extensionIndex) : ".json";
+    let copiedFilename = filename;
+    let sequence = 1;
+    while (occupiedPaths.has(workspacePath(next, next.currentFolderId, copiedFilename))) {
+      sequence += 1;
+      copiedFilename = `${stem}-copy-${sequence}${extension}`;
+    }
+    const copiedPath = workspacePath(next, next.currentFolderId, copiedFilename);
+    occupiedPaths.add(copiedPath);
+    const copied = structuredClone(source);
+    copied.id = copiedId;
+    copied.path = copiedPath;
+    copied.replacements = (copied.replacements ?? [])
+      .map((replacement) => ({
+        ...replacement,
+        targetResourceId: copiedIdBySourceId.get(replacement.targetResourceId) ?? "",
+      }))
+      .filter((replacement) => replacement.targetResourceId !== "");
+    next.document.resources.push(copied);
+    next.resourceLocations.push({
+      resourceId: copiedId,
+      parentId: next.currentFolderId,
+      order: treeItemsInFolder(next, next.currentFolderId).length,
+    });
+    copiedResourceIds.push(copiedId);
+    markResourceDirty(next, copiedId);
+  }
+
+  const copiedAssetIds = new Set(resourcesToCopy.flatMap((resource) => Object.values(resource.media)));
+  for (const assetId of copiedAssetIds) {
+    if (!next.document.assets.some((asset) => asset.id === assetId)) {
+      const asset = sourceWorkspace.document.assets.find((candidate) => candidate.id === assetId);
+      if (asset) next.document.assets.push(structuredClone(asset));
+    }
+    const bytes = sourceWorkspace.media.get(assetId);
+    if (bytes && !next.media.has(assetId)) next.media.set(assetId, bytes.slice());
+  }
+
+  normalizeDeterministicOrders(next.document, next.folders, next.resourceLocations);
+  next.openResourceIds = [
+    ...next.openResourceIds.filter((id) => id !== next.previewResourceId),
+    copiedIdBySourceId.get(resourceId)!,
+  ];
+  next.previewResourceId = null;
+  syncEmptyDirectories(next);
+  return {
+    workspace: next,
+    resourceId: copiedIdBySourceId.get(resourceId)!,
+    copiedResourceIds,
+  };
+}
+
 export function clearAdversaryFeature(
   workspace: CreatorWorkspace,
   index: number,
@@ -556,11 +664,30 @@ export async function createBlankWorkspace(name: string): Promise<CreatorWorkspa
 
 export async function forkCurrentWorkspace(
   workspace: CreatorWorkspace,
+  publicationSource?: {
+    publicationId: string;
+    packageId: string;
+    version: string;
+    snapshotDigest: string;
+  },
 ): Promise<CreatorWorkspace> {
   const next = createWorkspace(workspace, false);
+  const sourcePackageId = next.document.package.id;
   next.document.package.id = uuidV7();
   next.document.package.version = "1.0.0";
-  next.document.package.name = `${next.document.package.name}（本地副本）`;
+  next.document.package.name = `${next.document.package.name}${publicationSource ? "（Fork 草稿）" : "（本地副本）"}`;
+  if (publicationSource) {
+    next.document.forkSource = {
+      publicationId: publicationSource.publicationId,
+      packageId: publicationSource.packageId,
+      version: publicationSource.version,
+      snapshotDigest: publicationSource.snapshotDigest,
+      copiedResources: next.document.resources.map((resource) => ({
+        packageId: sourcePackageId,
+        resourceId: resource.id,
+      })),
+    };
+  } else next.document.forkSource = null;
   next.document.snapshotDigest = await computeResourcePackageSnapshotDigest(next.document, next.media);
   next.dirtyResourceIds = [];
   next.key = next.document.package.id;

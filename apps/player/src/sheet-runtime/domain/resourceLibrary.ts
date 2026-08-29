@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { TabletopResourceCopy } from "@pbdh/contract-runtime";
 import { isPlainObject } from "../utils";
 
 export const resourceLibraryFieldWidthSchema = z.enum(["compact", "normal", "wide", "fill"]);
@@ -37,6 +38,7 @@ export const resourceLibraryEntrySchema = z.object({
   ID: z.string().min(1),
   aliases: z.array(z.string().min(1)).optional(),
   fields: z.record(z.string(), z.string()),
+  resourceCopy: z.custom<TabletopResourceCopy>().optional(),
 });
 
 export const resourceLibrarySchema = z.object({
@@ -165,6 +167,7 @@ function normalizeResourceLibrary(
     entryIds.add(idValue);
 
     for (const [key, value] of Object.entries(entry)) {
+      if (key === "__pbdhResourceCopy") continue;
       if (!fieldKeys.includes(key)) {
         fieldKeys.push(key);
       }
@@ -215,6 +218,9 @@ function normalizeResourceLibrary(
     ID: String(entry.ID),
     ...(aliasesByEntry[entryIndex]?.length ? { aliases: aliasesByEntry[entryIndex] } : {}),
     fields: Object.fromEntries(fieldKeys.map((key) => [key, resourceValueToString(entry[key])])),
+    ...(isTabletopResourceCopy(entry.__pbdhResourceCopy)
+      ? { resourceCopy: structuredClone(entry.__pbdhResourceCopy) }
+      : {}),
   }));
   const fields = fieldKeys.map((key) => buildFieldMetadata(key, complexFieldKeys.has(key), entries.map((entry) => entry.fields[key] ?? "")));
 
@@ -381,6 +387,12 @@ function normalizeResourceEntryAliases(value: unknown): { ok: true; values: stri
 
 function isComplexResourceValue(value: unknown): boolean {
   return typeof value === "object" && value !== null;
+}
+
+function isTabletopResourceCopy(value: unknown): value is TabletopResourceCopy {
+  if (!isPlainObject(value) || !isPlainObject(value.template) || !isPlainObject(value.presentation)
+    || !isPlainObject(value.data) || !isPlainObject(value.media)) return false;
+  return typeof value.template.id === "string" && typeof value.template.version === "string";
 }
 
 function stringDisplayLength(value: string): number {

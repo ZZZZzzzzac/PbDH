@@ -1,0 +1,65 @@
+[
+  {
+    "ID": "fill-archetype",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-archetype" }],
+    "targets": [
+      { "类型": "module", "模块ID": "archetype-name" },
+      { "类型": "module", "模块ID": "archetype-abilities" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-archetype" },
+    "条件": { "类型": "always" },
+    "动作": [
+      {
+        "类型": "fillText",
+        "目标模块ID": "archetype-name",
+        "写入方式": "替换",
+        "内容": { "类型": "selectedResourceField", "字段": "名称" }
+      },
+      {
+        "类型": "fillText",
+        "目标模块ID": "archetype-abilities",
+        "写入方式": "替换",
+        "内容": {
+          "类型": "selectedResourceTemplate",
+          "格式": "**增益｜{{增益名称}}**\n{{增益}}\n\n**缺陷｜{{缺陷名称}}**\n{{缺陷}}"
+        }
+      }
+    ]
+  },
+  {
+    "ID": "fill-ranked-approaches",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-approaches" }],
+    "targets": [
+      { "类型": "module", "模块ID": "approach-expert" },
+      { "类型": "module", "模块ID": "approach-good" },
+      { "类型": "module", "模块ID": "approach-practiced" },
+      { "类型": "module", "模块ID": "approach-poor" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-approaches" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "approach-expert", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "名称", "选择索引": 0 } },
+      { "类型": "fillText", "目标模块ID": "approach-good", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "名称", "选择索引": 1 } },
+      { "类型": "fillText", "目标模块ID": "approach-practiced", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "名称", "选择索引": 2 } },
+      { "类型": "fillText", "目标模块ID": "approach-poor", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "名称", "选择索引": 3 } }
+    ]
+  },
+  {
+    "ID": "fill-ride",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-ride" }],
+    "targets": [
+      { "类型": "module", "模块ID": "ride-name" },
+      { "类型": "module", "模块ID": "ride-starting-die" },
+      { "类型": "module", "模块ID": "ride-current-die" },
+      { "类型": "module", "模块ID": "ride-trait" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-ride" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "ride-name", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
+      { "类型": "fillText", "目标模块ID": "ride-starting-die", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "初始座驾骰" } },
+      { "类型": "fillText", "目标模块ID": "ride-current-die", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "初始座驾骰" } },
+      { "类型": "fillText", "目标模块ID": "ride-trait", "写入方式": "替换", "内容": { "类型": "selectedResourceField", "字段": "特性" } }
+    ]
+  }
+]

@@ -1,0 +1,115 @@
+<main class="witchy-page witch-sheet">
+  <header class="witchy-title">
+    <p>Witchy</p>
+    <h1>巫趣</h1>
+    <small>ω1.1 女巫人物卡</small>
+  </header>
+
+  <div class="sheet-content-grid">
+    <div class="sheet-column">
+      <section class="character-summary" data-guide-region-id="guide-identity">
+        <pb-module id="character-portrait"></pb-module>
+        <div class="character-summary-details">
+          <section class="sheet-region identity-terminal-panel">
+            <div class="identity-fields">
+              <pb-module id="character-name"></pb-module>
+              <div class="picker-field" data-guide-region-id="guide-archetype">
+                <pb-module id="archetype-name"></pb-module>
+                <pb-module id="pick-archetype"></pb-module>
+              </div>
+            </div>
+            <div data-guide-region-id="guide-terminal">
+              <pb-module id="terminal-condition"></pb-module>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="sheet-region archetype-panel">
+        <pb-module id="archetype-description"></pb-module>
+      </section>
+
+      <section class="sheet-region experience-panel" data-guide-region-id="guide-experiences">
+        <div class="experience-list">
+          <div><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
+          <div><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
+          <div><pb-module id="experience-3"></pb-module><pb-module id="experience-modifier-3"></pb-module></div>
+          <div><pb-module id="experience-4"></pb-module><pb-module id="experience-modifier-4"></pb-module></div>
+        </div>
+      </section>
+
+      <section class="sheet-region inventory-panel" data-guide-region-id="guide-inventory">
+        <pb-module id="inventory"></pb-module>
+      </section>
+    </div>
+
+    <div class="sheet-column">
+      <section class="sheet-region resource-panel" data-guide-region-id="guide-resources">
+        <div class="essence-panel">
+          <div class="essence-grid">
+            <pb-module id="essence-assiah"></pb-module>
+            <pb-module id="essence-yetzirah"></pb-module>
+            <pb-module id="essence-atziluth"></pb-module>
+          </div>
+        </div>
+        <div class="magic-resource-grid">
+          <pb-module id="magic-points"></pb-module>
+          <pb-module id="erosion"></pb-module>
+        </div>
+      </section>
+
+      <section class="sheet-region magic-panel" data-guide-region-id="guide-magic">
+        <div class="magic-list">
+          <article>
+            <div class="magic-words">
+              <pb-module id="magic-1-name"></pb-module>
+              <pb-module id="magic-1-noun"></pb-module>
+              <pb-module id="magic-1-verb"></pb-module>
+            </div>
+            <pb-module id="magic-1-description"></pb-module>
+          </article>
+          <article>
+            <div class="magic-words">
+              <pb-module id="magic-2-name"></pb-module>
+              <pb-module id="magic-2-noun"></pb-module>
+              <pb-module id="magic-2-verb"></pb-module>
+            </div>
+            <pb-module id="magic-2-description"></pb-module>
+          </article>
+          <article>
+            <div class="magic-words">
+              <pb-module id="magic-3-name"></pb-module>
+              <pb-module id="magic-3-noun"></pb-module>
+              <pb-module id="magic-3-verb"></pb-module>
+            </div>
+            <pb-module id="magic-3-description"></pb-module>
+          </article>
+        </div>
+      </section>
+
+      <section class="sheet-region familiar-panel" data-guide-region-id="guide-familiar">
+        <div class="familiar-layout">
+          <pb-module id="familiar-portrait"></pb-module>
+          <div class="familiar-fields">
+            <pb-module id="familiar-name"></pb-module>
+            <div class="picker-field">
+              <pb-module id="familiar-type-name"></pb-module>
+              <pb-module id="pick-familiar-type"></pb-module>
+            </div>
+            <pb-module id="familiar-type-description"></pb-module>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <section class="sheet-region omen-panel" data-guide-region-id="guide-omens">
+    <h2>命运预兆</h2>
+    <div class="omen-grid">
+      <pb-module id="omen-past"></pb-module>
+      <pb-module id="omen-present"></pb-module>
+      <pb-module id="omen-future"></pb-module>
+    </div>
+  </section>
+</main>

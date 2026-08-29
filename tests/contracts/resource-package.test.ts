@@ -29,7 +29,9 @@ type Mutation =
   | { kind: "none" }
   | { kind: "duplicate-resource"; sourceIndex: number }
   | { kind: "add-root-property"; property: string; value: string }
-  | { kind: "set-target-version"; targetIndex: number; value: string };
+  | { kind: "set-target-version"; targetIndex: number; value: string }
+  | { kind: "set-presentation-size"; resourceIndex: number; width?: string; height?: string; fixedRatio?: boolean }
+  | { kind: "set-replacements"; resourceIndex: number; value: Array<{ replacementId: string; targetResourceId: string }> };
 type ConformanceCase = {
   name: string;
   document: string;
@@ -81,6 +83,16 @@ function applyMutation(
       break;
     case "set-target-version":
       candidate.targets[mutation.targetIndex]!.version = mutation.value;
+      break;
+    case "set-presentation-size": {
+      const presentation = candidate.resources[mutation.resourceIndex]!.presentation;
+      if (mutation.width !== undefined) presentation.width = mutation.width;
+      if (mutation.height !== undefined) presentation.height = mutation.height;
+      if (mutation.fixedRatio !== undefined) presentation.fixedRatio = mutation.fixedRatio;
+      break;
+    }
+    case "set-replacements":
+      candidate.resources[mutation.resourceIndex]!.replacements = structuredClone(mutation.value);
       break;
   }
   return candidate;

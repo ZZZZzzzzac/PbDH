@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import re
+import secrets
 import sqlite3
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
-from uuid import uuid4
+from uuid import UUID
 
 from pbdh_backend.contracts import (
     classify_resource_package_version_change,
@@ -101,7 +103,7 @@ class PublicationRepository:
                 publication_id = current["publication_id"]
                 created = False
             else:
-                publication_id = str(uuid4())
+                publication_id = _uuid_v7()
                 created = True
 
             assets = {asset["id"]: asset for asset in document["assets"]}
@@ -352,6 +354,25 @@ class PublicationRepository:
     ) -> dict[str, Any] | None:
         return self.get_manageable_publication(publication_id, account_id, False)
 
+    def get_publication_snapshot(self, publication_id: str) -> dict[str, Any] | None:
+        connection = self._database.connect()
+        try:
+            row = connection.execute(
+                "SELECT package_id, package_version, snapshot_digest, logical_document_json "
+                "FROM publications WHERE publication_id = ?",
+                (publication_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            return {
+                "packageId": row["package_id"],
+                "version": row["package_version"],
+                "snapshotDigest": row["snapshot_digest"],
+                "document": json.loads(row["logical_document_json"]),
+            }
+        finally:
+            connection.close()
+
     def get_manageable_publication(
         self, publication_id: str, account_id: str, allow_all: bool
     ) -> dict[str, Any] | None:
@@ -488,3 +509,13 @@ def _compare_semver(left: str, right: str) -> int:
             return 1
         return 1 if left_part > right_part else -1
     return (len(left_pre) > len(right_pre)) - (len(left_pre) < len(right_pre))
+
+
+def _uuid_v7() -> str:
+    timestamp = int(time.time() * 1000) & ((1 << 48) - 1)
+    value = timestamp << 80
+    value |= 0x7 << 76
+    value |= secrets.randbits(12) << 64
+    value |= 0b10 << 62
+    value |= secrets.randbits(62)
+    return str(UUID(int=value))

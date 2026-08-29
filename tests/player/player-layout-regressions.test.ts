@@ -60,11 +60,142 @@ describe("Player layout regressions", () => {
       readFile("apps/player/src/styles.css", "utf8"),
     ]);
 
-    expect(source).toContain("nativePackageIds.has(installed.document.package.id)");
-    expect(surface).toContain("currentCatalogEntry?.preset.embeddedResourceIndex.map(({ packageId }) => packageId)");
+    expect(source).toContain("embeddedPackageIndex.has(installed.document.package.id)");
+    expect(surface).toContain("currentEmbeddedPackageIndex()");
     expect(source).toContain('<h3 className="package-group-title">原生资源包</h3>');
     expect(source).toContain('<h3 className="package-group-title">额外资源包</h3>');
     expect(styles).toContain(".package-group-title {");
+  });
+
+  it("为罗德岛暗色资源表头提供可读的背景与文字变量", async () => {
+    const source = await readFile("apps/player/public/system-packages/tttri/skins/terra-portal/skin.css", "utf8");
+    expect(source).toContain("--framework-disabled-surface: var(--tp-panel-soft)");
+    expect(source).toContain("--framework-disabled-text: var(--tp-muted)");
+  });
+
+  it("在资源管理器顶栏直接选择第三方格式，之后查看报告并安装或导出标准资源包", async () => {
+    const source = await readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8");
+
+    expect(source).not.toContain("转换第三方资源");
+    expect(source).not.toContain("选择来源格式");
+    for (const label of ["导入ZZZ格式", "导入Rink格式", "导入dhsheet格式", "导入不咕鸟格式"]) {
+      expect(source).toContain(label);
+    }
+    expect(source).toContain('aria-label="第三方资源转换报告"');
+    expect(source).toContain("导出 .pbres 备份");
+    expect(source).toContain("确认并安装");
+    expect(source).toContain("resourceConversionRegistry.import(formatId");
+    expect(source).toContain("materializePlayerResourceConversion(imported.batch, currentSystem)");
+  });
+
+  it("单击资源即可预览，移除入口位于左侧资源包卡片", async () => {
+    const source = await readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8");
+
+    expect(source).toContain('onClick={() => openResource(selected, resource.id)}');
+    expect(source).not.toContain("onDoubleClick={() => openResource");
+    expect(source).not.toContain('className="detail-actions"');
+    expect(source).not.toContain(">浏览资源</button>");
+    expect(source).toContain('className="package-row-remove"');
+  });
+
+  it("资源预览只保留规范卡面和右上角关闭按钮", async () => {
+    const [source, sharedPreview] = await Promise.all([
+      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("packages/resource-renderer/src/react.tsx", "utf8"),
+    ]);
+    const preview = source.slice(source.indexOf("function PlayerResourcePreviewContent"), source.indexOf("function DialogSurface"));
+
+    expect(preview).not.toContain('className="player-dialog player-resource-preview"');
+    expect(preview).not.toContain("<header>");
+    expect(preview).not.toContain("<footer>");
+    expect(preview).toContain("<CardPreviewDialog");
+    expect(sharedPreview).toContain('data-pbdh-card-preview-close=""');
+    expect(sharedPreview).toContain('aria-label="关闭卡牌详情"');
+    expect(sharedPreview).toContain("right: -44px;");
+  });
+
+  it("把 pbres 入口说清楚，并移除没有区分价值的离线状态", async () => {
+    const [source, styles] = await Promise.all([
+      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("apps/player/src/styles.css", "utf8"),
+    ]);
+
+    expect(source).toContain("导入pbres格式");
+    expect(source).not.toContain("安装资源包</button>");
+    expect(source).not.toContain('className="offline"');
+    expect(source).not.toContain("离线状态");
+    expect(styles).not.toContain("span.offline");
+  });
+
+  it("安装和移除资源包都先展示会发生什么", async () => {
+    const source = await readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8");
+
+    expect(source).toContain("资源包目标");
+    expect(source).toContain("结构与图片完整");
+    expect(source).toContain("snapshotDigest");
+    expect(source).toContain('aria-label="确认移除资源包"');
+    expect(source).toContain("以后不能再从这个包选择新资源");
+    expect(source).toContain("卡牌桌面里的独立卡牌不会改变");
+  });
+
+  it("安装和移除资源包只刷新资源，不重新读取当前系统包", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const resourceChanges = source.slice(
+      source.indexOf("async function commitInstall"),
+      source.indexOf("async function handleCreateSave"),
+    );
+
+    expect(resourceChanges).not.toContain("reloadResourceCatalog");
+    expect(resourceChanges.match(/await refreshInstalledResources\(next\)/gu)).toHaveLength(2);
+  });
+
+  it("Player 卡牌桌面使用与 Creator、Market、GM 相同的规范卡面渲染器", async () => {
+    const source = await Promise.all([
+      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
+      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8"),
+    ]).then((files) => files.join("\n"));
+
+    expect(source).toContain("CanonicalCardSurface");
+    expect(source).toContain("trustedRendererFor");
+    expect(source).toContain("resourceCopy");
+    expect(source).toContain("assets");
+  });
+
+  it("由整个卡牌桌面持续接管卡牌拖动，卡面只负责开始拖动", async () => {
+    const [table, card] = await Promise.all([
+      readFile("apps/player/src/sheet-runtime/rendering/CardTableModule.tsx", "utf8"),
+      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
+    ]);
+    const surface = table.slice(table.indexOf('className="card-table-surface"'), table.indexOf('className="card-table-actions'));
+
+    expect(surface).toContain("onPointerMove={continueDrag}");
+    expect(surface).toContain("onPointerUp={endDrag}");
+    expect(surface).toContain("onPointerCancel={endDrag}");
+    expect(card).not.toContain("onPointerMove={onPointerMove}");
+    expect(card).not.toContain("onPointerUp={onPointerUp}");
+  });
+
+  it("按资源包身份查找共用卡面所需的图片", async () => {
+    const source = await readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8");
+
+    expect(source).toContain('resourceAssetUrlKey("resourceExtension", resourceCopy.source.packageId, runtimePath)');
+    expect(source).toContain("const runtimeKey = resourceCopy.source && runtimePath");
+  });
+
+  it("右键菜单在页面外层仍有不透明背景", async () => {
+    const styles = await readFile("apps/player/src/sheet-runtime/styles/card-table.css", "utf8");
+    const menu = styles.slice(styles.indexOf(".card-context-menu {"), styles.indexOf(".card-context-menu button"));
+
+    expect(menu).toMatch(/background:\s*var\([^,]+,\s*#[0-9a-f]{6}\)/iu);
+  });
+
+  it("头像裁剪的确认和取消操作始终位于可见的对话框头部", async () => {
+    const source = await readFile("apps/player/src/sheet-runtime/rendering/PlayerImageCropDialog.tsx", "utf8");
+    const header = source.slice(source.indexOf("<header"), source.indexOf("</header>"));
+
+    expect(header).toContain("onCancel");
+    expect(header).toContain("onConfirm");
+    expect(source).toContain("不限制比例");
   });
 
   it("隔离资源管理器表格行与系统包的 resource-row", async () => {

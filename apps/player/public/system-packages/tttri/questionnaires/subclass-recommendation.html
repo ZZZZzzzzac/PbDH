@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>子职业推荐 · 明日方舟TRPG</title>
+<style>
+@font-face{
+  font-family:'Noto Serif SC';
+  src:local('Noto Serif SC'),local('Source Han Serif SC'),local('Source Han Serif'),local('STSong'),local('SimSun');
+  font-weight:400 900;
+  font-display:swap;
+}
+@font-face{
+  font-family:'TTTRI Source Han Serif';
+  src:local('Source Han Serif SC Bold'),local('Source Han Serif CN Bold'),local('Source Han Serif SC'),local('Source Han Serif CN'),local('Noto Serif CJK SC Bold'),local('Noto Serif SC Bold'),local('Noto Serif SC');
+  font-weight:700;
+  font-display:swap;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0b12;--surface:#15151f;--surface2:#1d1d29;
+  --border:#3c3c4a;--border-light:#56566a;
+  --text:#ebebf0;--text2:#b2b2c0;--text3:#808090;
+  --accent1:#7cb8d8;--accent2:#e8a040;--accent1-dim:rgba(124,184,216,0.1);
+  --white:#f2f2f7;--white-dim:rgba(242,242,247,0.08);
+  --ff:"Noto Serif SC","Source Han Serif SC","STSong","SimSun","Songti SC","NSimSun",serif;
+  --ff-source-serif:'TTTRI Source Han Serif','Source Han Serif SC','Source Han Serif CN','Noto Serif CJK SC','Noto Serif SC','STSong','SimSun',serif;
+  --ff-mono:"SF Mono","Cascadia Code","Consolas",monospace;
+}
+html{font-size:16px}
+body{
+  font-family:var(--ff);background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  letter-spacing:0.02em;
+}
+/* 白点矩阵 */
+body::before{
+  content:'';position:fixed;z-index:0;opacity:0.14;
+  top:14%;left:58%;width:300px;height:380px;
+  background-image:radial-gradient(circle,var(--white) 2px,transparent 2px);
+  background-size:28px 28px;
+  pointer-events:none;
+}
+/* 四角校准线 */
+.calibration{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+}
+.calibration::before,.calibration::after{
+  content:'';position:absolute;width:48px;height:48px;
+  border-color:var(--white);border-style:solid;opacity:0.35;
+}
+.calibration::before{top:32px;left:32px;border-width:2px 0 0 2px}
+.calibration::after{top:32px;right:32px;border-width:2px 2px 0 0}
+.calibration-corner{
+  position:absolute;width:48px;height:48px;
+  border-color:var(--white);border-style:solid;opacity:0.35;
+  bottom:32px;
+}
+.calibration-corner.l{left:32px;border-width:0 0 2px 2px}
+.calibration-corner.r{right:32px;border-width:0 2px 2px 0}
+/* 边角光效 */
+.edge-glow{
+  position:fixed;pointer-events:none;z-index:0;
+}
+.edge-glow.tl{top:0;left:0;width:420px;height:420px;
+  background:radial-gradient(circle at 0 0,rgba(242,242,247,0.18) 0%,transparent 50%);}
+.edge-glow.br{bottom:0;right:0;width:400px;height:400px;
+  background:radial-gradient(circle at 100% 100%,rgba(242,242,247,0.14) 0%,transparent 50%);}
+/* 底部纵深强白光 */
+.glow-bottom{
+  position:fixed;bottom:-10%;left:50%;transform:translateX(-50%);
+  width:min(1200px,110vw);height:65vh;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 100%,rgba(242,242,247,0.5) 0%,rgba(242,242,247,0.18) 25%,rgba(242,242,247,0.04) 50%,transparent 70%);
+}
+
+/* ===== 开屏动画 ===== */
+.splash{
+  position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;transition:opacity 0.7s ease;
+}
+.splash.fadeout{opacity:0;pointer-events:none}
+.splash-diamond{
+  width:56px;height:56px;border:3px solid var(--white);
+  transform:rotate(45deg);opacity:0.35;
+  box-shadow:0 0 48px rgba(242,242,247,0.1),0 0 8px rgba(242,242,247,0.15);
+  margin-bottom:56px;animation:diamondPulse 3s ease-in-out infinite;
+}
+@keyframes diamondPulse{
+  0%,100%{opacity:0.25;box-shadow:0 0 32px rgba(242,242,247,0.06),0 0 6px rgba(242,242,247,0.1)}
+  50%{opacity:0.45;box-shadow:0 0 56px rgba(242,242,247,0.14),0 0 10px rgba(242,242,247,0.2)}
+}
+.splash-title{
+  font-family:var(--ff-source-serif);font-size:clamp(32px,7vw,56px);font-weight:700;
+  color:var(--white);letter-spacing:4px;text-align:center;
+  text-shadow:0 0 80px rgba(242,242,247,0.25),0 4px 60px rgba(242,242,247,0.08);
+  margin-bottom:10px;line-height:1.2;
+}
+.splash-sub{
+  font-size:14px;color:var(--text3);letter-spacing:3px;
+  font-family:var(--ff-mono);margin-bottom:56px;
+}
+.splash-hint{
+  font-size:12px;color:var(--text3);letter-spacing:2px;
+  font-family:var(--ff-mono);animation:hintBlink 2s ease-in-out infinite;
+}
+@keyframes hintBlink{0%,100%{opacity:0.3}50%{opacity:0.8}}
+.splash-progress{
+  width:min(600px,64vw);height:1.5px;background:var(--border);margin-top:32px;overflow:hidden;
+}
+.splash-progress-fill{
+  height:100%;width:0;background:var(--white);
+  transition:width 1.8s cubic-bezier(0.4,0,0.2,1);
+}
+.splash-progress-fill.loading{width:100%}
+
+.app{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:24px 24px 60px;min-height:100vh;display:flex;flex-direction:column}
+
+/* ===== 头部（简化版） ===== */
+.header{
+  display:flex;align-items:center;justify-content:flex-end;
+  margin-bottom:40px;padding:10px 18px;
+  background:rgba(242,242,247,0.04);
+}
+.header .tagline{
+  font-size:13px;letter-spacing:3px;color:var(--text2);
+  font-family:var(--ff-mono);margin-right:auto;
+}
+
+/* 进度指示器 - 点数 */
+.dots{display:flex;gap:6px;align-items:center}
+.dot{
+  width:8px;height:8px;border:1px solid var(--border-light);
+  transition:all 0.3s ease;
+}
+.dot.done{background:var(--white);border-color:var(--white)}
+.dot.current{border-color:var(--white);box-shadow:0 0 0 2px var(--white-dim)}
+.dot.remaining{border-color:var(--border)}
+.dot-label{
+  font-size:10px;color:var(--text3);font-family:var(--ff-mono);
+  margin-left:8px;letter-spacing:1px;
+}
+
+/* ===== 主布局 ===== */
+.main-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+
+/* ===== 扇形牌背 ===== */
+.fan-cards{
+  position:absolute;left:0;top:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;
+}
+.fan-card{
+  position:absolute;top:8px;left:10px;
+  width:calc(100% - 20px);height:calc(100% - 16px);
+  background:var(--surface2);border:1px solid var(--border);
+  transform-origin:bottom center;
+  box-shadow:0 2px 20px rgba(0,0,0,0.3);
+}
+.fan-card:nth-child(1){transform:rotate(-9deg);opacity:0.35}
+.fan-card:nth-child(2){transform:rotate(-5deg);opacity:0.45}
+.fan-card:nth-child(3){transform:rotate(-2deg);opacity:0.58}
+/* 牌背纹理 - 外框 */
+.fan-card::after{
+  content:'';position:absolute;inset:12px;
+  border:1px solid var(--border-light);opacity:0.5;
+}
+/* 牌背纹理 - 中央菱形 */
+.fan-card::before{
+  content:'';position:absolute;top:50%;left:50%;
+  width:48px;height:48px;
+  border:1.5px solid var(--white);opacity:0.3;
+  transform:translate(-50%,-50%) rotate(45deg);
+}
+
+/* ===== 当前卡片区域 ===== */
+.card-stage{width:100%;max-width:560px;position:relative;min-height:380px;z-index:1;perspective:800px}
+.question-card{
+  position:absolute;left:34px;top:0;width:calc(100% - 34px);
+  background:var(--surface);
+  border:1px solid var(--border-light);
+  border-left:4px solid var(--white);
+  padding:40px 36px 32px;
+  overflow:hidden;
+  box-shadow:0 4px 32px rgba(0,0,0,0.4),0 1px 0 rgba(242,242,247,0.04) inset;
+}
+/* 角落标记 */
+.question-card::after{
+  content:'';position:absolute;bottom:0;right:0;
+  width:40px;height:40px;
+  border-left:1px solid var(--border);border-top:1px solid var(--border);
+  opacity:0.3;
+}
+.q-num{
+  font-size:10px;letter-spacing:4px;color:var(--text3);margin-bottom:20px;
+  font-family:var(--ff-mono);text-transform:uppercase;
+}
+.q-title{font-family:var(--ff-source-serif);font-size:22px;font-weight:700;line-height:1.5;margin-bottom:32px;letter-spacing:0.04em}
+
+/* 选项 */
+.options{display:flex;flex-direction:column;gap:8px}
+.option{
+  display:flex;align-items:center;
+  font-family:var(--ff-source-serif);font-weight:700;
+  padding:16px 20px;
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;transition:all 0.2s ease;
+  position:relative;overflow:hidden;
+}
+/* 从左到右白色扫光 */
+.option::before{
+  content:'';position:absolute;inset:0;
+  background:var(--white);
+  transform:translateX(-101%);
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  z-index:0;
+}
+.option:hover::before{transform:translateX(0)}
+.option:hover{border-color:var(--white)}
+.option:active{background:rgba(242,242,247,0.15)}
+/* 左侧指示条 */
+.option-indicator{
+  width:3px;height:20px;border:1px solid var(--border-light);
+  margin-right:16px;flex-shrink:0;transition:all 0.2s ease;
+  position:relative;z-index:1;
+}
+.option:hover .option-indicator{border-color:var(--bg);background:var(--bg)}
+.option-content{flex:1;position:relative;z-index:1}
+.option-text{font-size:17px;font-weight:700;letter-spacing:0.03em;margin-bottom:2px;transition:color 0.25s}
+.option-desc{font-size:12px;font-weight:700;color:var(--text3);letter-spacing:0.02em;transition:color 0.25s}
+.option:hover .option-text{color:var(--bg)}
+.option:hover .option-desc{color:rgba(11,11,18,0.6)}
+
+/* 当前卡片入场 */
+.question-card.entering{animation:cardEnter 0.55s cubic-bezier(0.22,0.61,0.36,1) forwards}
+@keyframes cardEnter{
+  from{opacity:0;transform:rotateX(40deg) translateY(50px)}
+  to{opacity:1;transform:rotateX(0) translateY(0)}
+}
+/* 当前卡片打出 */
+.question-card.exiting{animation:cardExit 0.4s cubic-bezier(0.55,0,1,0.45) forwards}
+@keyframes cardExit{
+  from{opacity:1;transform:translateY(0) rotate(0)}
+  to{opacity:0;transform:translateY(90px) rotate(6deg)}
+}
+
+/* ===== 返回按钮 ===== */
+.back-row{margin-top:28px;display:flex;align-items:center;gap:8px}
+.btn-back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 18px;border:1px solid var(--border-light);background:var(--surface2);
+  color:var(--text2);font-size:13px;cursor:pointer;
+  font-family:var(--ff);letter-spacing:1px;transition:all 0.25s;
+}
+.btn-back:hover{background:var(--white);color:var(--bg);border-color:var(--white)}
+.btn-back .arrow{font-family:var(--ff-mono);font-size:16px;transition:transform 0.2s}
+.btn-back:hover .arrow{transform:translateX(-4px)}
+.btn-back.disabled{opacity:0.15;pointer-events:none}
+
+/* ===== 结果页 ===== */
+.result-wrap{animation:fadeUp 0.6s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.result-head{text-align:center;margin-bottom:48px}
+.result-head .icon-block{
+  width:56px;height:56px;margin:0 auto 20px;
+  border:3px solid var(--white);opacity:0.35;
+  transform:rotate(45deg);
+  box-shadow:0 0 40px rgba(242,242,247,0.08);
+}
+.result-head h2{font-size:26px;font-weight:900;letter-spacing:2px;margin-bottom:8px}
+.result-head p{font-size:14px;color:var(--text2);letter-spacing:0.5px}
+.result-cards{display:flex;flex-direction:column;gap:20px;text-align:left}
+.result-card{
+  background:var(--surface);border:2px solid var(--border);
+  padding:36px 32px;position:relative;
+}
+.result-card.best{border-color:var(--white);border-left-width:6px}
+.result-card.best::before{
+  content:'BEST MATCH';position:absolute;top:0;right:0;
+  padding:6px 14px;font-size:9px;letter-spacing:3px;color:var(--bg);
+  background:var(--white);font-family:var(--ff-mono);font-weight:600;
+}
+.result-card .class-tag{
+  display:inline-block;padding:3px 10px;border:1px solid var(--white);
+  font-size:10px;letter-spacing:2px;color:var(--white);
+  font-family:var(--ff-mono);margin-bottom:14px;opacity:0.7;
+}
+.result-card .sub-name{font-size:24px;font-weight:900;letter-spacing:2px;margin-bottom:6px}
+.result-card .sub-desc{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:16px}
+.result-card .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.result-card .tag{
+  padding:4px 10px;font-size:11px;letter-spacing:0.5px;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text2);
+}
+.result-card .match-row{display:flex;align-items:center;gap:12px}
+.match-pct{
+  font-size:14px;font-weight:700;color:var(--white);
+  font-family:var(--ff-mono);white-space:nowrap;
+}
+.match-track{flex:1;height:3px;background:var(--border)}
+.match-fill{height:100%;background:var(--white);transition:width 0.8s ease}
+
+/* 重测按钮 */
+.btn-restart{
+  display:block;margin:40px auto 0;padding:12px 36px;
+  border:2px solid var(--border);background:transparent;
+  color:var(--text2);font-size:13px;cursor:pointer;letter-spacing:3px;
+  font-family:var(--ff);transition:all 0.2s;
+}
+.btn-restart:hover{border-color:var(--white);color:var(--white)}
+
+/* ===== 响应式 ===== */
+@media (max-width:640px){
+  .app{padding:16px 14px 40px}
+  .header{margin-bottom:28px;padding:8px 12px}
+  .header .tagline{font-size:11px;letter-spacing:2px}
+  .main-area{flex-direction:column;align-items:stretch;gap:0}
+  .card-stage{min-height:300px;max-width:100%}
+  .question-card{left:20px;width:calc(100% - 20px);padding:28px 18px 24px}
+  .fan-card{top:4px;left:6px;width:calc(100% - 12px);height:calc(100% - 8px)}
+  .q-title{font-size:17px;margin-bottom:24px}
+  .option-text{font-size:15px}
+  .option{padding:14px 14px}
+  .option-desc{font-size:11px}
+  .result-card{padding:24px 20px}
+  .result-card .sub-name{font-size:20px}
+  .calibration::before,.calibration::after{width:32px;height:32px}
+  .calibration::before{top:16px;left:16px}
+  .calibration::after{top:16px;right:16px}
+  .calibration-corner{width:32px;height:32px;bottom:16px}
+  .calibration-corner.l{left:16px}
+  .calibration-corner.r{right:16px}
+  .splash-diamond{width:40px;height:40px;margin-bottom:40px}
+  .splash-progress{width:min(400px,70vw)}
+  .splash-sub{font-size:12px}
+  .splash-hint{font-size:11px}
+}
+@media (max-width:380px){
+  .header .tagline{font-size:10px;letter-spacing:1px}
+  .question-card{left:14px;width:calc(100% - 14px);padding:22px 14px 20px}
+  .q-title{font-size:15px}
+  .option-text{font-size:14px}
+  .option{padding:12px 12px}
+  .back-row{margin-top:20px}
+  .btn-back{font-size:12px;padding:6px 14px}
+}
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="splash-diamond"></div>
+  <h1 class="splash-title">寻找你的战斗之路</h1>
+  <p class="splash-sub">共赴明日：罗德岛旅记</p>
+  <div class="splash-progress">
+    <div class="splash-progress-fill" id="splashFill"></div>
+  </div>
+  <p class="splash-hint">轻触屏幕开始</p>
+</div>
+
+<div class="calibration">
+  <div class="calibration-corner l"></div>
+  <div class="calibration-corner r"></div>
+</div>
+<div class="edge-glow tl"></div>
+<div class="edge-glow br"></div>
+<div class="glow-bottom"></div>
+
+<div class="app" id="app">
+  <div class="header">
+    <div class="tagline">共赴明日：罗德岛旅记</div>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="main-area">
+    <div class="card-stage" id="cardStage">
+      <div class="fan-cards">
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+        <div class="fan-card"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 子职业数据 =====
+const subclasses = [
+  {name:'冲锋手',cls:'先锋',desc:'持长枪冲锋陷阵的前线战士，以压制性攻击使敌人陷入脆弱。你总是冲在最前方，为团队撕开突破口。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'中等',mobility:'高',team:'混合',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'情报官',cls:'先锋',desc:'使用可投掷短刃的侦察专家，擅长获取敌人情报。你靠洞察力来寻找敌人阵线最薄弱的位置。',tags:{range:'灵活',dmg:'物理',role:'控制削弱',complex:'中等',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'执旗手',cls:'先锋',desc:'高举旗帜鼓舞全军的战场核心。你的存在本身就是一种力量——让友方从希望中汲取更多力量。',tags:{range:'灵活',dmg:'物理',role:'支援增益',complex:'中等',mobility:'中',team:'团队核心',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'战术家',cls:'先锋',desc:'与战术召唤物并肩作战的协同者。你的造物或生物伙伴会与你一同攻击和移动，形成双人战术体系。',tags:{range:'灵活',dmg:'物理',role:'召唤造物',complex:'复杂',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'尖兵',cls:'先锋',desc:'持刀剑冲锋的希望散布者。每次成功的攻击都能为队友带来希望，是团队士气的发动机。',tags:{range:'近战',dmg:'物理',role:'支援增益',complex:'简单',mobility:'中',team:'团队核心',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'策士',cls:'先锋',desc:'持双刃剑的全局谋略者。你每一次回想都能为盟友带来希望，还能借取其他职业的特性，是真正的多面手。',tags:{range:'近战',dmg:'物理',role:'支援增益',complex:'复杂',mobility:'中',team:'团队核心',weapon:'刀剑',pace:'灵活切换'}},
+  {name:'无畏者',cls:'近卫',desc:'持长剑的近战大师，被攻击后反而进入更强的专注状态。愈战愈勇，永不退缩。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'简单',mobility:'中',team:'独立作战',weapon:'刀剑',pace:'稳健防守'}},
+  {name:'强攻手',cls:'近卫',desc:'挥舞链锯的破阵专家。可以同时攻击近距离内所有敌人并摧毁障碍物，是真正的人形攻城锤。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'简单',mobility:'低',team:'独立作战',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'武者',cls:'近卫',desc:'持长刀的孤高剑客，在承受伤害后绽放锋芒。用生命换取致命的反击，愈是绝境愈强大。',tags:{range:'中距离',dmg:'物理',role:'近战输出',complex:'中等',mobility:'中',team:'独立作战',weapon:'刀剑',pace:'灵活切换'}},
+  {name:'斗士',cls:'近卫',desc:'以拳套为武器的敏捷格斗家。闪避极高且越躲越强，在敌人的失误中寻找取胜之机。',tags:{range:'近战',dmg:'物理',role:'高机动刺客',complex:'中等',mobility:'高',team:'独立作战',weapon:'特殊装置',pace:'快节奏激进'}},
+  {name:'领主',cls:'近卫',desc:'使用多模式武装的全能战士。可以切换近战和远程模式，在任何距离都能造成威胁。',tags:{range:'灵活',dmg:'混合',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'刀剑',pace:'灵活切换'}},
+  {name:'术战者',cls:'近卫',desc:'持能量剑的魔法剑士。将法术能量注入剑中，每次成功的施法都能增强下一次攻击。',tags:{range:'近战',dmg:'混合',role:'近战输出',complex:'中等',mobility:'中',team:'混合',weapon:'刀剑',pace:'灵活切换'}},
+  {name:'重剑手',cls:'近卫',desc:'挥舞重剑的破格战士。伤害骰高达d20，代价是每一次攻击都会给自己带来压力。高风险，高回报。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'复杂',mobility:'低',team:'独立作战',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'铁卫',cls:'重装',desc:'持盾牌的重装核心。拥有最高的护甲值，是团队最坚固的防线，还能在格挡时反弹伤害。',tags:{range:'近战',dmg:'物理',role:'前排坦克',complex:'简单',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'稳健防守'}},
+  {name:'决战者',cls:'重装',desc:'持重型盾刃的终极防线。无法主动移动太远，但使范围内的敌人攻击队友时获得劣势——你即是阵地本身。',tags:{range:'近战',dmg:'物理',role:'前排坦克',complex:'中等',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'稳健防守'}},
+  {name:'不屈者',cls:'重装',desc:'持重型护盾的孤胆守卫。孤立自身吸引所有火力，在绝境中自我修复。一夫当关，万夫莫开。',tags:{range:'近战',dmg:'物理',role:'前排坦克',complex:'中等',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'稳健防守'}},
+  {name:'要塞',cls:'重装',desc:'持盾炮的移动堡垒。可以在近程和远程模式间切换，在远距离轰炸敌人的同时保护身后的队友。',tags:{range:'灵活',dmg:'物理',role:'前排坦克',complex:'中等',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'灵活切换'}},
+  {name:'守护者',cls:'重装',desc:'持医疗盾牌的战场医护。既能替队友承受伤害，又能启动治疗装置为队友恢复生命。盾与疗愈的结合。',tags:{range:'近战',dmg:'物理',role:'支援增益',complex:'中等',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'稳健防守'}},
+  {name:'驭法铁卫',cls:'重装',desc:'持能量盾牌的法术坦克。每次受到伤害时收集能量，用于强化法术，是法系阵容的坚固屏障。',tags:{range:'近战',dmg:'法术',role:'前排坦克',complex:'中等',mobility:'低',team:'混合',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'哨戒铁卫',cls:'重装',desc:'持铳械复合盾的机动守卫。可以将盾牌拆解投射至远处，为队友提供远程掩护，同时用铳械输出。',tags:{range:'中距离',dmg:'物理',role:'前排坦克',complex:'复杂',mobility:'中',team:'团队核心',weapon:'盾牌',pace:'灵活切换'}},
+  {name:'速射手',cls:'狙击',desc:'持小型铳械或轻弩的快速射击专家。可以同时攻击多个目标，射速快如闪电。',tags:{range:'远距离',dmg:'物理',role:'远程输出',complex:'简单',mobility:'中',team:'混合',weapon:'铳械弩',pace:'快节奏激进'}},
+  {name:'重射手',cls:'狙击',desc:'持复合弩的穿透射击者。箭矢可以穿透障碍和多个目标，近距离时威力更加惊人。',tags:{range:'中距离',dmg:'物理',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'铳械弩',pace:'灵活切换'}},
+  {name:'神射手',cls:'狙击',desc:'持狙击铳械或狙击弩的远程终结者。移动后无法立即攻击，但静待时机后，射程覆盖整个场景且精准致命。',tags:{range:'远距离',dmg:'物理',role:'远程输出',complex:'中等',mobility:'低',team:'独立作战',weapon:'铳械弩',pace:'稳健防守'}},
+  {name:'攻城手',cls:'狙击',desc:'持攻城铳械或攻城弩的破坏专家。沿射线方向毁灭性地攻击一切，摧毁障碍、穿透防线。',tags:{range:'远距离',dmg:'物理',role:'远程输出',complex:'中等',mobility:'低',team:'混合',weapon:'铳械弩',pace:'稳健防守'}},
+  {name:'散射手',cls:'狙击',desc:'持散射铳械的近身火力点。中距离霰弹覆盖所有敌人，近距离时更加致命——越近越危险。',tags:{range:'中距离',dmg:'物理',role:'远程输出',complex:'中等',mobility:'中',team:'独立作战',weapon:'铳械弩',pace:'快节奏激进'}},
+  {name:'投掷手',cls:'狙击',desc:'持发射装置的投掷专家。投掷物落地产生毁灭性余震，波及目标周围的敌人并摧毁掩体。',tags:{range:'远距离',dmg:'物理',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'猎手',cls:'狙击',desc:'持猎兽铳械的追踪者。攻击命中后能束缚敌人并引导队友移动，还有小型生物伙伴伴你同行。',tags:{range:'远距离',dmg:'物理',role:'远程输出',complex:'复杂',mobility:'中',team:'团队核心',weapon:'铳械弩',pace:'灵活切换'}},
+  {name:'中坚术师',cls:'术师',desc:'持施术单元的法术核心。造成高额法术伤害并可以进一步强化法术穿透，是纯粹的法术输出者。',tags:{range:'远距离',dmg:'法术',role:'远程输出',complex:'简单',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'阵法术师',cls:'术师',desc:'持阵法型施术单元的阵地法师。不移动时可将法术范围提升至覆盖所有合理目标，是站桩的法术炮台。',tags:{range:'中距离',dmg:'法术',role:'远程输出',complex:'中等',mobility:'低',team:'混合',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'秘术师',cls:'术师',desc:'持蓄能型施术单元的能量操纵者。每次成功施法都可以积蓄能量，用于强化后续法术或操控领域卡。',tags:{range:'中距离',dmg:'法术',role:'远程输出',complex:'复杂',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'驭械术师',cls:'术师',desc:'与施术召唤物协同作战。你的法术造物或生物伙伴拥有独立的领域卡能力，与你并肩输出法术伤害。',tags:{range:'中距离',dmg:'法术',role:'召唤造物',complex:'复杂',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'扩散术师',cls:'术师',desc:'持扩散型施术单元的范围法师。对单一目标施法时可以扩散至其周围的敌人，最终覆盖整个战场。',tags:{range:'中距离',dmg:'法术',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'链术师',cls:'术师',desc:'持链跃型施术单元的连锁法师。法术在敌人间跳跃，攻击越多的敌人获得越高的加值，形成连锁爆发。',tags:{range:'中距离',dmg:'法术',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'轰击术师',cls:'术师',desc:'持集束型施术单元的射线法师。沿射线方向释放毁灭性法术，无视隐身和掩体，还能借助友方造物折射攻击。',tags:{range:'中距离',dmg:'法术',role:'远程输出',complex:'中等',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'医师',cls:'辅助',desc:'持医疗单元的战场医者。远程为队友恢复大量生命，是最经典的治疗职业。',tags:{range:'远距离',dmg:'法术',role:'支援增益',complex:'简单',mobility:'中',team:'团队核心',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'护佑者',cls:'辅助',desc:'持庇护单元的伤害减免专家。在队友即将受到伤害时展开庇护，投掷骰子减少伤害值。',tags:{range:'中距离',dmg:'法术',role:'支援增益',complex:'中等',mobility:'中',team:'团队核心',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'吟游者',cls:'辅助',desc:'以乐器或书信为媒介的心灵抚慰者。用音乐和言语缓解队友的压力，还能直接将心声传达至目标心灵。',tags:{range:'中距离',dmg:'法术',role:'支援增益',complex:'中等',mobility:'中',team:'团队核心',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'工匠',cls:'辅助',desc:'持工程单元的造物大师。以领域卡为灵感制造各种工程造物，可以与持有者并肩作战并提供强大支援。',tags:{range:'近战',dmg:'物理',role:'召唤造物',complex:'复杂',mobility:'中',team:'团队核心',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'凝滞师',cls:'辅助',desc:'持凝滞型施术单元的控制专家。大范围施加阻滞状态，使敌人移动困难、掷骰获得劣势。',tags:{range:'中距离',dmg:'法术',role:'控制削弱',complex:'中等',mobility:'中',team:'混合',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'召唤师',cls:'辅助',desc:'持召唤型施术单元的召唤大师。可以同时维持多个伙伴召唤物，每个都拥有对应领域卡的独立能力。',tags:{range:'中距离',dmg:'法术',role:'召唤造物',complex:'复杂',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'咒愈师',cls:'辅助',desc:'持治疗型施术单元的攻击型治疗者。对队友进行"攻击"造成治疗伤害，将伤害转化为生命恢复。',tags:{range:'中距离',dmg:'法术',role:'支援增益',complex:'复杂',mobility:'中',team:'团队核心',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'处决者',cls:'特种',desc:'持匕首的暗杀专家。能以法术瞬间出现在目标近处，是战场上游走于阴影中的致命刺客。',tags:{range:'近战',dmg:'物理',role:'高机动刺客',complex:'中等',mobility:'高',team:'独立作战',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'伏击客',cls:'特种',desc:'持扫击武器的隐匿猎手。在团队移交聚焦时自动隐匿，从隐匿中发起的攻击覆盖所有敌人。',tags:{range:'近战',dmg:'物理',role:'高机动刺客',complex:'中等',mobility:'高',team:'独立作战',weapon:'刀剑',pace:'灵活切换'}},
+  {name:'巡空者',cls:'特种',desc:'持气动单元的空中战士。可以在战场上空飞行，不受地面环境影响，闪避大幅提升。',tags:{range:'灵活',dmg:'物理',role:'高机动刺客',complex:'中等',mobility:'高',team:'独立作战',weapon:'特殊装置',pace:'快节奏激进'}},
+  {name:'傀儡师',cls:'特种',desc:'持分身单元的诡术师。可以切换分身替你承受伤害和负面效果，让敌人始终摸不清你的真实位置。',tags:{range:'近战',dmg:'物理',role:'高机动刺客',complex:'复杂',mobility:'高',team:'独立作战',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'推击手',cls:'特种',desc:'持推击装置的战场控制者。将敌人推至远处使其失衡，也可以反向启动装置进行紧急机动。',tags:{range:'近战',dmg:'物理',role:'控制削弱',complex:'中等',mobility:'高',team:'混合',weapon:'特殊装置',pace:'快节奏激进'}},
+  {name:'钩索师',cls:'特种',desc:'持钩索装置的远程控制者。将敌人拉近并束缚在地面，还能使用钩索自由攀爬地形。',tags:{range:'中距离',dmg:'物理',role:'控制削弱',complex:'中等',mobility:'高',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'怪杰',cls:'特种',desc:'持混合弹药铳械的惊奇射手。每发弹药都有随机效果——从爆炸到治疗，没有人能预测下一枪会发生什么。',tags:{range:'中距离',dmg:'物理',role:'远程输出',complex:'复杂',mobility:'中',team:'混合',weapon:'铳械弩',pace:'快节奏激进'}},
+];
+
+// ===== 题目 =====
+const questions = [
+  {title:'当你走进一个陌生的房间，你最先注意到什么？',options:[
+    {text:'房间的出入口和窗户',desc:'下意识确认进出路径',w:{mobility:'高',range:'灵活',pace:'快节奏激进'}},
+    {text:'房间里是否有人？',desc:'有没有人比什么环境都重要',w:{team:'团队核心',role:'支援增益',complex:'中等'}},
+    {text:'房间的布局和结构',desc:'在脑中构建俯瞰图',w:{complex:'复杂',role:'远程输出',pace:'灵活切换'}},
+    {text:'房间的角落',desc:'那些不易被察觉的细节',w:{role:'近战输出',pace:'快节奏激进',range:'近战'}},
+  ]},
+  {title:'如果要选一种你与生俱来的天赋，它会是？',options:[
+    {text:'过人的体能与力量',desc:'身体就是你最可靠的武器',w:{dmg:'物理',role:'近战输出',complex:'简单'}},
+    {text:'敏锐的感知与洞察力',desc:'细节在你眼中无所遁形',w:{role:'控制削弱',mobility:'高',complex:'中等'}},
+    {text:'对能量流动的直觉感受',desc:'你能察觉到别人看不见的律动',w:{dmg:'法术',weapon:'法术单元',complex:'中等'}},
+    {text:'让人不由自主信赖的亲和力',desc:'人们在你身边就感到安心',w:{role:'支援增益',team:'团队核心',pace:'稳健防守'}},
+    {text:'将脑中构想化为实物的巧手',desc:'只要想得到，你就做得出来',w:{role:'召唤造物',weapon:'特殊装置',complex:'复杂'}},
+  ]},
+  {title:'在一次团队任务陷入僵局时，同伴们最可能因为什么来找你？',options:[
+    {text:'"我们需要你来当队伍的侦察员"',desc:'你的观察力总能让团队抢占先机',w:{role:'控制削弱',mobility:'高',complex:'中等',pace:'灵活切换'}},
+    {text:'"由你掩护我们冲出重围"',desc:'你是队伍最坚固的那道屏障',w:{role:'前排坦克',team:'团队核心',pace:'稳健防守',range:'近战'}},
+    {text:'"帮我们从远处解决那个麻烦"',desc:'远距离精准处理问题是你的拿手好戏',w:{role:'远程输出',range:'远距离',dmg:'物理',d2:'法术'}},
+    {text:'"快看看他伤得重不重"',desc:'照顾同伴始终是你的第一反应',w:{role:'支援增益',team:'团队核心',pace:'稳健防守'}},
+    {text:'"用你过人的才智帮我们想想办法"',desc:'常规思路走不通的时候大家就会想起你',w:{role:'近战输出',complex:'复杂',pace:'快节奏激进',team:'独立作战'}},
+  ]},
+  {title:'面对一个棘手的问题，你更习惯怎样处理？',options:[
+    {text:'立刻动手尝试，边做边调整',desc:'行动本身会告诉你下一步',w:{pace:'快节奏激进',complex:'简单',role:'近战输出',mobility:'高'}},
+    {text:'先花时间观察清楚，再稳步推进',desc:'看不清全局之前不会轻易出手',w:{pace:'稳健防守',complex:'中等',role:'远程输出',mobility:'低'}},
+    {text:'想一个出人意料的巧妙解法',desc:'你觉得最好的答案往往藏在侧面',w:{complex:'复杂',pace:'灵活切换',role:'控制削弱',team:'混合'}},
+    {text:'找信任的人一起商量',desc:'你不认为什么事都该一个人扛',w:{team:'团队核心',role:'支援增益',pace:'稳健防守'}},
+  ]},
+  {title:'你随身携带的物品中，最珍视的那一件——它是怎样来到你手中的？',options:[
+    {text:'家族传承下来的信物',desc:'它代表着一段不曾被遗忘的历史',w:{weapon:'刀剑',range:'近战',dmg:'物理',complex:'简单'}},
+    {text:'自己亲手一点点打造出来的',desc:'每一个零件的脾气你都了如指掌',w:{weapon:'特殊装置',role:'召唤造物',complex:'复杂',team:'混合'}},
+    {text:'一位重要的人临别时交予的',desc:'它承载着嘱托，也承载着信念',w:{weapon:'法术单元',dmg:'法术',role:'远程输出',r2:'支援增益'}},
+    {text:'在战场上捡回来的',desc:'没有它就没有今天的我',w:{weapon:'盾牌',role:'前排坦克',pace:'稳健防守',mobility:'低'}},
+    {text:'用第一笔报酬买的',desc:'自己挣来的东西，用着最踏实',w:{weapon:'铳械弩',range:'远距离',role:'远程输出',rn2:'中距离'}},
+  ]},
+  {title:'深夜独行，身后传来越来越近的脚步声。你最先做什么？',options:[
+    {text:'转身站定，正面迎向声音来源',desc:'你不习惯把后背留给不确定的东西',w:{role:'近战输出',pace:'快节奏激进',complex:'简单',team:'独立作战'}},
+    {text:'迅速闪入阴影中，潜伏观察',desc:'在暗处你才能看清对方的底细',w:{role:'高机动刺客',mobility:'高',complex:'中等',team:'独立作战'}},
+    {text:'加快脚步拉开距离',desc:'保持距离才能留出反应空间',w:{role:'远程输出',range:'远距离',pace:'稳健防守',mobility:'中'}},
+    {text:'步伐不变，冷静判断对方意图',desc:'贸然反应有时比威胁本身更危险',w:{pace:'稳健防守',complex:'中等',team:'混合',mobility:'低'}},
+    {text:'走向附近有光亮的地方',desc:'人群和光亮总能提供额外的选择',w:{team:'团队核心',role:'支援增益',pace:'灵活切换',complex:'中等'}},
+  ]},
+  {title:'你最亲近的人会怎样评价你？',options:[
+    {text:'"你这个人，说到就一定会做到"',desc:'承诺对你来说不是随口的话',w:{role:'前排坦克',team:'团队核心',complex:'中等',pace:'稳健防守'}},
+    {text:'"跟你在一起，什么都不用怕"',desc:'你的存在本身就是一种依靠',w:{role:'支援增益',team:'团队核心',pace:'稳健防守',complex:'中等'}},
+    {text:'"真不知道你的脑子里装了多少东西"',desc:'你总是有层出不穷的点子和方案',w:{complex:'复杂',role:'召唤造物',pace:'灵活切换',team:'混合'}},
+    {text:'"你总是第一个发现不对劲的人"',desc:'你的警觉性让人不得不服',w:{role:'高机动刺客',r2:'控制削弱',mobility:'高',complex:'中等'}},
+    {text:'"交给你的事从来不需要操心"',desc:'沉稳、可靠，是你最常收到的评价',w:{complex:'中等',pace:'稳健防守',team:'混合',mobility:'中'}},
+  ]},
+  {title:'你更相信什么？',options:[
+    {text:'事前做足准备的周密计划',desc:'运气总是站在有准备的人这边',w:{complex:'复杂',pace:'稳健防守',team:'混合',mobility:'低'}},
+    {text:'临场的直觉和本能反应',desc:'想太多反而会错过时机',w:{pace:'快节奏激进',complex:'简单',role:'近战输出',mobility:'高'}},
+    {text:'值得托付后背的同伴',desc:'一个人走不远，一群人才能',w:{team:'团队核心',role:'支援增益',pace:'稳健防守'}},
+    {text:'具体情况具体分析，没有一定之规',desc:'僵化的教条在现实中不堪一击',w:{pace:'灵活切换',complex:'中等',team:'混合',role:'控制削弱'}},
+  ]},
+  {title:'在一场重要的行动前夜，你通常会怎样度过？',options:[
+    {text:'反复检查装备、在脑中推演方案',desc:'每一个环节都要在脑海中预演过',w:{complex:'复杂',weapon:'特殊装置',pace:'灵活切换',role:'远程输出'}},
+    {text:'早早休息，养足精神',desc:'身体状态比什么都重要',w:{complex:'简单',role:'近战输出',pace:'快节奏激进'}},
+    {text:'和同伴最后确认一遍配合细节',desc:'你相信配合比个人能力更关键',w:{team:'团队核心',role:'支援增益',pace:'稳健防守'}},
+    {text:'独自待着，让自己彻底静下来',desc:'你需要清空杂念才能全力以赴',w:{team:'独立作战',role:'高机动刺客',mobility:'高',complex:'中等'}},
+  ]},
+  {title:'一件事做完之后，什么最能让你觉得「值了」？',options:[
+    {text:'那个最棘手的对手终于倒下的瞬间',desc:'全力以赴战胜强敌的体验无可替代',w:{role:'近战输出',pace:'快节奏激进',dmg:'物理',complex:'简单'}},
+    {text:'看到同伴们都安然无恙地站在你身旁',desc:'带所有人安全回来比什么都强',w:{role:'支援增益',r2:'前排坦克',team:'团队核心',pace:'稳健防守'}},
+    {text:'整个过程中每一步都如你预判般精准',desc:'完美的执行本身就是一种享受',w:{complex:'复杂',role:'远程输出',pace:'灵活切换',range:'远距离'}},
+    {text:'在绝境中你做出了谁也没想到的关键一手',desc:'那一刻所有人都看向你——你做到了',w:{role:'高机动刺客',r2:'控制削弱',mobility:'高',complex:'复杂'}},
+  ]},
+  {title:'你觉得人应该怎样度过一生？',options:[
+    {text:'不断磨砺自身，直至无人能及',desc:'强本身就是意义',w:{role:'近战输出',team:'独立作战',dmg:'物理',pace:'快节奏激进'}},
+    {text:'守护那些对你说「我相信你」的人',desc:'被需要，是你最深的动力',w:{role:'前排坦克',r2:'支援增益',team:'团队核心',pace:'稳健防守'}},
+    {text:'在有生之年看见世界的一切真相',desc:'未知永远在召唤你前行',w:{role:'远程输出',dmg:'法术',complex:'复杂',range:'远距离'}},
+    {text:'留下只有你才能创造出的东西',desc:'你来过，世界因此变得不一样',w:{role:'召唤造物',weapon:'特殊装置',complex:'复杂',team:'混合'}},
+    {text:'走一条前人不曾走过的路',desc:'唯有独属于自己的活法才不算虚度',w:{role:'高机动刺客',mobility:'高',team:'独立作战',pace:'灵活切换'}},
+  ]},
+];
+
+// ===== 状态 =====
+let state = {qIdx:0,answers:[],phase:'quiz'}; // answers: [{qIdx, optIdx}]
+let cardEl = null;
+
+// ===== DOM =====
+const cardStage = document.getElementById('cardStage');
+const dotsEl = document.getElementById('dots');
+
+function recalcScores(){
+  const scores = new Array(subclasses.length).fill(0);
+  state.answers.forEach(a=>{
+    const w = questions[a.qIdx].options[a.optIdx].w;
+    subclasses.forEach((sc,i)=>{
+      let s = 0;
+      const SKIP = new Set(['w2','w3','r2','d2','rn2']);
+      Object.entries(w).forEach(([k,v])=>{
+        if(!SKIP.has(k) && sc.tags[k]===v) s += 2;
+      });
+      if(w.r2 && sc.tags.role===w.r2) s += 1;
+      if(w.rn2 && sc.tags.range===w.rn2) s += 1;
+      if(w.w2 && sc.tags.weapon===w.w2) s += 1;
+      if(w.w3 && sc.tags.weapon===w.w3) s += 1;
+      if(w.d2 && sc.tags.dmg===w.d2) s += 1;
+      scores[i] += s;
+    });
+  });
+  return scores;
+}
+
+let busy = false;
+
+function answerAndAdvance(optIdx){
+  if(busy) return;
+  // 如果是回头修改答案
+  const existIdx = state.answers.findIndex(a=>a.qIdx===state.qIdx);
+  if(existIdx>=0) state.answers.splice(existIdx);
+  state.answers.push({qIdx:state.qIdx,optIdx});
+  state.qIdx++;
+  if(state.qIdx >= questions.length){ showResults(); return; }
+  renderQuestion('forward');
+}
+
+function goBack(){
+  if(busy||state.answers.length===0) return;
+  // 移除最后一条回答
+  state.answers.pop();
+  state.qIdx--;
+  renderQuestion('backward');
+}
+
+// ===== 渲染问题卡片 =====
+function renderQuestion(dir){
+  busy = true;
+  // 确保扇形牌背存在
+  if(!cardStage.querySelector('.fan-cards')){
+    const fan = document.createElement('div');
+    fan.className = 'fan-cards';
+    fan.innerHTML = '<div class="fan-card"></div><div class="fan-card"></div><div class="fan-card"></div>';
+    cardStage.appendChild(fan);
+  }
+  const q = questions[state.qIdx];
+  // 退出当前卡片
+  if(cardEl){
+    cardEl.classList.add('exiting');
+    cardEl.addEventListener('animationend',function h(){
+      cardEl.removeEventListener('animationend',h);
+      cardEl.remove();
+      cardEl = null;
+      buildCard(q);
+    });
+  }else{
+    buildCard(q);
+  }
+  updateUI();
+  function buildCard(q){
+    cardEl = document.createElement('div');
+    cardEl.className = 'question-card entering';
+    cardEl.innerHTML = `
+      <div class="q-num">QUESTION ${state.qIdx+1}</div>
+      <div class="q-title">${q.title}</div>
+      <div class="options">
+        ${q.options.map((o,i)=>`
+          <div class="option" data-idx="${i}">
+            <div class="option-indicator"></div>
+            <div class="option-content">
+              <div class="option-text">${o.text}</div>
+              <div class="option-desc">${o.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="back-row">
+        <button class="btn-back ${state.answers.length===0?'disabled':''}" id="btnBack">
+          <span class="arrow">←</span> 返回上一题
+        </button>
+      </div>`;
+    cardStage.appendChild(cardEl);
+    // 选项点击
+    cardEl.querySelectorAll('.option').forEach(el=>{
+      el.addEventListener('click',()=>{
+        const idx = parseInt(el.dataset.idx);
+        answerAndAdvance(idx);
+      });
+    });
+    // 返回按钮
+    const btnBack = cardEl.querySelector('#btnBack');
+    if(btnBack && state.answers.length>0){
+      btnBack.addEventListener('click',goBack);
+    }
+    busy = false;
+  }
+}
+
+// ===== 更新 UI（点数、牌堆计数、弃牌堆） =====
+function updateUI(){
+  // 点数
+  const n = questions.length;
+  let dotsHTML = '';
+  for(let i=0;i<n;i++){
+    let cls = 'dot ';
+    if(i<state.qIdx) cls += 'done';
+    else if(i===state.qIdx) cls += 'current';
+    else cls += 'remaining';
+    dotsHTML += `<div class="${cls}"></div>`;
+  }
+  dotsHTML += `<span class="dot-label">${state.qIdx}/${n}</span>`;
+  dotsEl.innerHTML = dotsHTML;
+}
+
+// ===== 结果页 =====
+function showResults(){
+  cardStage.innerHTML = '';
+  const scores = recalcScores();
+  const indexed = scores.map((s,i)=>({score:s,idx:i})).sort((a,b)=>b.score-a.score);
+  const top = indexed.slice(0,3);
+  let show = top.slice(0,2);
+  if(top.length===3){
+    const gap = top[1].score>0 ? (top[1].score-top[2].score)/top[1].score : 0;
+    if(gap<0.15) show = top;
+  }
+  const maxScore = show[0].score;
+
+  const reasonsMap = (sc)=>{
+    const r=[],t=sc.tags;
+    if(t.range==='近战')r.push('偏好近身作战');else if(t.range==='远距离')r.push('擅长远程打击');else if(t.range==='中距离')r.push('中距离灵活作战');else r.push('战斗距离灵活多变');
+    if(t.dmg==='物理')r.push('物理输出');else if(t.dmg==='法术')r.push('法术输出');else r.push('物理与法术并重');
+    if(t.role==='前排坦克')r.push('坚不可摧的防线');else if(t.role==='近战输出')r.push('近身火力输出');else if(t.role==='远程输出')r.push('远程火力覆盖');else if(t.role==='支援增益')r.push('团队支援核心');else if(t.role==='控制削弱')r.push('控制与削弱敌人');else if(t.role==='召唤造物')r.push('召唤伙伴协同作战');else if(t.role==='高机动刺客')r.push('高机动突袭');
+    if(t.complex==='简单')r.push('操作直观流畅');else if(t.complex==='复杂')r.push('策略深度丰富');else r.push('策略与操作均衡');
+    return r.slice(0,4);
+  };
+  const tagMap = {近战:'近距离',中距离:'中距离',远距离:'远距离',灵活:'灵活射程',物理:'物理伤害',法术:'法术伤害',混合:'复合伤害',快节奏激进:'快节奏',稳健防守:'阵地型',灵活切换:'灵活应变',简单:'易上手',中等:'均衡',复杂:'高策略',高:'高机动',中:'中机动',低:'稳重型',独立作战:'独当一面',团队核心:'团队核心',混合:'团队协作者'};
+  const tagsOf = sc => {
+    const t=[];
+    if(tagMap[sc.tags.range])t.push(tagMap[sc.tags.range]);
+    if(tagMap[sc.tags.pace])t.push(tagMap[sc.tags.pace]);
+    if(tagMap[sc.tags.complex])t.push(tagMap[sc.tags.complex]);
+    if(tagMap[sc.tags.mobility])t.push(tagMap[sc.tags.mobility]);
+    return t;
+  };
+
+  let cardsHTML = show.map((t,i)=>{
+    const sc = subclasses[t.idx];
+    const pct = maxScore>0?Math.round(t.score/maxScore*100):0;
+    const reasons = reasonsMap(sc);
+    const tags = tagsOf(sc);
+    return `<div class="result-card${i===0?' best':''}">
+      <div class="class-tag">${sc.cls}</div>
+      <div class="sub-name">${sc.name}</div>
+      <div class="sub-desc">${sc.desc}</div>
+      <div class="tags">${tags.map(x=>`<span class="tag">${x}</span>`).join('')}</div>
+      <div class="match-row">
+        <span class="match-pct">匹配度 ${pct}%</span>
+        <div class="match-track"><div class="match-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="sub-desc" style="margin-top:14px;color:var(--text2)">
+        <strong style="color:var(--white)">推荐理由：</strong>${reasons.join('，')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const wrap = document.createElement('div');
+  const bestSubclass = subclasses[show[0].idx];
+  wrap.className = 'result-wrap';
+  wrap.innerHTML = `
+    <div class="result-head">
+      <div class="icon-block"></div>
+      <h2>你的战斗之路</h2>
+      <p>根据你的回答，以下是为你推荐的子职业</p>
+    </div>
+    <div class="result-cards">${cardsHTML}</div>
+    <button class="btn-restart" id="btnApply">选择“${bestSubclass.cls} / ${bestSubclass.name}”</button>
+    <button class="btn-restart" id="btnRestart">重新测试</button>
+  `;
+  cardStage.appendChild(wrap);
+
+  document.getElementById('btnApply').addEventListener('click',()=>{
+    window.parent.postMessage({
+      type:'pbdh-questionnaire-result',
+      result:{
+        protocolVersion:'1',
+        interactions:[
+          {
+            type:'resourceSelected',
+            sourceModuleId:'pick-class',
+            libraryId:'classes',
+            entryIds:[`职业:${bestSubclass.cls}`]
+          },
+          {
+            type:'resourceSelected',
+            sourceModuleId:'pick-subclass-t1',
+            libraryId:'subclasses',
+            entryIds:[`子职:${bestSubclass.cls}:${bestSubclass.name}:T1`]
+          }
+        ]
+      }
+    },'*');
+  });
+
+  document.getElementById('btnRestart').addEventListener('click',()=>{
+    state = {qIdx:0,answers:[],phase:'quiz'};
+    cardEl = null;
+    cardStage.innerHTML = '';
+    renderQuestion('forward');
+  });
+
+  // 最终UI
+  dotsEl.innerHTML = Array.from({length:questions.length},()=>'<div class="dot done"></div>').join('')+`<span class="dot-label">${questions.length}/${questions.length}</span>`;
+}
+
+// ===== 开屏初始化 =====
+const splash = document.getElementById('splash');
+const splashFill = document.getElementById('splashFill');
+const appEl = document.getElementById('app');
+let splashDone = false;
+
+function startSplash(){
+  if(splashDone) return;
+  splashDone = true;
+  splash.querySelector('.splash-hint').style.opacity = '0';
+  splashFill.classList.add('loading');
+  let finished = false;
+  function onDone(){
+    if(finished) return;
+    finished = true;
+    splash.classList.add('fadeout');
+    appEl.style.display = 'flex';
+    renderQuestion('forward');
+    updateUI();
+    setTimeout(()=>{ splash.style.display = 'none'; },700);
+  }
+  splashFill.addEventListener('transitionend',onDone);
+  // 移动端兜底：transitionend 不触发时用超时
+  setTimeout(onDone,2200);
+}
+
+splash.addEventListener('click',startSplash);
+splash.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  startSplash();
+},{passive:false});
+
+// 初始隐藏 app
+appEl.style.display = 'none';
+</script>
+</body>
+</html>

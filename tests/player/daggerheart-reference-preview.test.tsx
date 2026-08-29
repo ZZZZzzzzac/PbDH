@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import { PlayerResourcePreviewDialog } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
+import { CardFace, canonicalCardAssets } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
+import type { CardTableModule } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import type { InstalledResourcePackage } from "../../apps/player/src/resources/resource-library.ts";
 import {
   ancestryTemplate, communityTemplate, domainTemplate, itemTemplate, professionTemplate, subclassTemplate,
@@ -27,5 +29,53 @@ describe("Player 六类稳定资源预览", () => {
     const markup = renderToStaticMarkup(<PlayerResourcePreviewDialog installed={installed} resourceId={resource.id} onClose={() => undefined} />);
     expect(markup).toContain(`测试${template.id}玩家规范卡面`);
     expect(markup).not.toContain("当前 Player 版本尚不能呈现");
+  });
+
+  test("玩家桌面上的卡图也进入共享规范卡面", () => {
+    const portraitId = "sha256:portrait";
+    const markup = renderToStaticMarkup(<CardFace
+      definition={{
+        ID: "test-package:ancestry",
+        fields: { 名称: "械灵", 卡图: "data:image/webp;base64,AA==", 卡背: "", 卡牌显示方式: "image" },
+        resourceCopy: {
+          source: { packageId: "test-package", resourceId: "ancestry" },
+          template: { id: ancestryTemplate.id, version: ancestryTemplate.version },
+          presentation: { ...ancestryTemplate.defaultPresentation, mode: "image" },
+          data: { ...ancestryTemplate.defaultData, 名称: "械灵" },
+          labels: [],
+          media: { portrait: portraitId },
+        },
+      }}
+      definitionRef={{ type: "resourceLibrary", libraryId: "ancestries", entryId: "test-package:ancestry" }}
+      module={{ 类型: "cardTable", ID: "cards", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "ancestries" }], 显示方式: "image" } as CardTableModule}
+      fallbackName="械灵"
+    />);
+    expect(markup).toContain("械灵规范卡面");
+    expect(markup).toContain("data-pbdh-canonical-surface");
+    expect(markup).not.toContain("play-card-text");
+  });
+
+  test("从资源包图片表中找到桌面卡图", () => {
+    const packageId = "test-package";
+    const portraitId = "sha256:portrait";
+    const runtimePath = `platform-resources/${packageId}/${encodeURIComponent(portraitId)}.webp`;
+    const module = { 类型: "cardTable", ID: "cards", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "ancestries" }] } as CardTableModule;
+    const resourceCopy = {
+      source: { packageId, resourceId: "ancestry" },
+      template: { id: ancestryTemplate.id, version: ancestryTemplate.version },
+      presentation: ancestryTemplate.defaultPresentation,
+      data: { ...ancestryTemplate.defaultData, 名称: "械灵" },
+      labels: [],
+      media: { portrait: portraitId },
+    };
+    const assets = canonicalCardAssets(
+      resourceCopy,
+      { ID: `${packageId}:ancestry`, fields: { 卡图: runtimePath }, resourceCopy },
+      module,
+      { type: "systemPackage", id: "daggerheart-core", name: "匕首之心", version: "1.0.0" },
+      { [`resource-extension:${packageId}:${runtimePath}`]: "blob:portrait" },
+    );
+
+    expect(assets.get(portraitId)).toEqual({ status: "ready", url: "blob:portrait" });
   });
 });

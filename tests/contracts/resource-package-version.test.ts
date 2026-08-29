@@ -108,4 +108,15 @@ describe("Resource Package Structural SemVer Classifier", () => {
       current,
     )).rejects.toThrow("same Package ID");
   });
+
+  test("reads a baseline saved before replacement fields existed", async () => {
+    const current = readDocument();
+    const baseline = await createResourcePackageVersionBaseline(current);
+    for (const resource of baseline.resources) delete resource.replacements;
+
+    const result = await classifyResourcePackageVersionChange(baseline, current);
+
+    expect(result.level).toBe("none");
+    expect(result.reasons).toEqual([]);
+  });
 });

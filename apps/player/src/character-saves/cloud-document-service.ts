@@ -143,6 +143,16 @@ export class PlayerCloudDocumentService {
     return this.localSnapshot(credentials.accountId);
   }
 
+  async deleteFromTrash(
+    remote: RemoteCloudDocument,
+    credentials: CloudCredentials,
+  ): Promise<void> {
+    if (remote.documentKind !== "character-save" || remote.deletedAt === null) {
+      throw new Error("只有回收站里的人物存档可以永久删除。");
+    }
+    await this.#api.deleteDocument(remote.documentId, remote.revision, credentials);
+  }
+
   async #restoreRemote(
     remote: RemoteCloudDocument,
     credentials: CloudCredentials,

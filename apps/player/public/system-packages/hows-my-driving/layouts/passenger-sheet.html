@@ -1,0 +1,88 @@
+<main class="hmd-page passenger-sheet">
+  <header class="title-strip">
+    <div>
+      <p>HOW'S MY DRIVING?</p>
+      <h1>我的车技如何？</h1>
+    </div>
+    <strong>乘客卡</strong>
+  </header>
+
+  <section class="panel identity-panel">
+    <h2>乘客 / PASSENGER</h2>
+    <div class="identity-grid">
+      <pb-module id="passenger-name"></pb-module>
+      <pb-module id="face-cast"></pb-module>
+    </div>
+    <pb-module id="vibes"></pb-module>
+  </section>
+
+  <div class="page-columns">
+    <div class="page-column">
+      <section class="panel archetype-panel">
+        <h2>原型 / ARCHETYPE</h2>
+        <div class="picker-field">
+          <pb-module id="archetype-name"></pb-module>
+          <pb-module id="pick-archetype"></pb-module>
+        </div>
+        <pb-module id="archetype-abilities"></pb-module>
+      </section>
+
+      <section class="panel approaches-panel">
+        <h2>行事风格 / APPROACHES</h2>
+        <p class="instruction">按专家、擅长、熟练、生疏的顺序选择正好 4 项。</p>
+        <pb-module id="pick-approaches"></pb-module>
+        <div class="approach-grid">
+          <pb-module id="approach-expert"></pb-module>
+          <pb-module id="approach-good"></pb-module>
+          <pb-module id="approach-practiced"></pb-module>
+          <pb-module id="approach-poor"></pb-module>
+        </div>
+      </section>
+
+      <section class="panel finish-panel">
+        <h2>最终线 / THE FINISH LINE</h2>
+        <pb-module id="finish-line"></pb-module>
+      </section>
+    </div>
+
+    <div class="page-column">
+      <section class="panel fuel-panel">
+        <h2>燃料 / FUEL</h2>
+        <div class="fuel-grid">
+          <pb-module id="fuel-die"></pb-module>
+          <pb-module id="fuel-points"></pb-module>
+        </div>
+      </section>
+
+      <section class="panel mementos-panel">
+        <h2>纪念物与经历 / MEMENTOS &amp; EXPERIENCES</h2>
+        <p class="instruction">经历适用时可花费 1 燃料点获得 +2；纪念物丢失或毁坏后无法使用。</p>
+        <div class="memento-list">
+          <article>
+            <div class="memento-heading">
+              <pb-module id="memento-1"></pb-module>
+              <pb-module id="memento-status-1"></pb-module>
+            </div>
+            <pb-module id="experience-1"></pb-module>
+          </article>
+          <article>
+            <div class="memento-heading">
+              <pb-module id="memento-2"></pb-module>
+              <pb-module id="memento-status-2"></pb-module>
+            </div>
+            <pb-module id="experience-2"></pb-module>
+          </article>
+          <article>
+            <div class="memento-heading">
+              <pb-module id="memento-3"></pb-module>
+              <pb-module id="memento-status-3"></pb-module>
+            </div>
+            <pb-module id="experience-3"></pb-module>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="road-marking">RIDE OR DIE · 2003 · KEEP MOVING</footer>
+</main>

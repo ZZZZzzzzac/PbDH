@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -66,6 +66,162 @@ export type CanonicalCardCoverWebp = {
 };
 
 const cssPixelsPerMillimetre = 96 / 25.4;
+
+const previewStyles = `
+[data-pbdh-card-preview-backdrop] {
+  position: fixed;
+  z-index: 160;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 20px 64px 20px 20px;
+  background: rgba(15, 20, 22, .74);
+}
+[data-pbdh-card-preview-dialog] {
+  position: relative;
+  width: min(var(--pbdh-preview-width), calc((100vh - 40px) * var(--pbdh-preview-ratio)), calc(100vw - 84px));
+  aspect-ratio: var(--pbdh-preview-ratio);
+}
+[data-pbdh-card-preview-stage] {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+}
+[data-pbdh-card-preview-close] {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: -44px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #fffdf8;
+  background: rgba(33, 21, 15, .92);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .34);
+  cursor: pointer;
+  font: 24px/1 system-ui, sans-serif;
+}
+[data-pbdh-card-preview-close]:hover { background: #641f1d; }
+@media print { [data-pbdh-card-preview-backdrop] { display: none !important; } }
+`;
+
+export function CardDisplay({
+  width: _width,
+  height,
+  fixedRatio = true,
+  displayWidth = "100%",
+  displayAspectRatio,
+  fit = "cover",
+  children,
+}: {
+  width: number;
+  height: number;
+  fixedRatio?: boolean;
+  displayWidth?: CSSProperties["width"];
+  displayAspectRatio?: number;
+  fit?: "cover" | "contain";
+  children: ReactNode;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const safeWidth = 63;
+  const safeHeight = fixedRatio ? 88 : (Number.isFinite(height) && height > 0 ? height : 88);
+  const safeDisplayAspectRatio = Number.isFinite(displayAspectRatio) && Number(displayAspectRatio) > 0
+    ? Number(displayAspectRatio)
+    : safeWidth / safeHeight;
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const resize = () => {
+      const widthScale = frame.clientWidth / (safeWidth * cssPixelsPerMillimetre);
+      const heightScale = frame.clientHeight / (safeHeight * cssPixelsPerMillimetre);
+      const next = fit === "contain" ? Math.min(widthScale, heightScale) : Math.max(widthScale, heightScale);
+      setScale(Math.max(0.01, next));
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(frame);
+    resize();
+    return () => observer.disconnect();
+  }, [fit, safeHeight, safeWidth]);
+
+  return <div
+    ref={frameRef}
+    data-pbdh-card-display=""
+    style={{ position: "relative", width: displayWidth, aspectRatio: safeDisplayAspectRatio, overflow: "hidden" }}
+  >
+    <div data-pbdh-card-display-inner="" style={{
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      width: `${safeWidth}mm`,
+      height: `${safeHeight}mm`,
+      transform: `translate(-50%, -50%) scale(${scale})`,
+      transformOrigin: "center",
+    }}>
+      {children}
+    </div>
+  </div>;
+}
+
+export function CardPreviewDialog({
+  width: _width,
+  height,
+  fixedRatio = true,
+  label,
+  onClose,
+  children,
+}: {
+  width: number;
+  height: number;
+  fixedRatio?: boolean;
+  label: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  const safeWidth = 63;
+  const safeHeight = fixedRatio ? 88 : (Number.isFinite(height) && height > 0 ? height : 88);
+  const displayWidth = 480;
+  const displayAspectRatio = 63 / 88;
+  const dialog = <div data-pbdh-card-preview-backdrop="" onClick={onClose}>
+    <style>{previewStyles}</style>
+    <section
+      data-pbdh-card-preview-dialog=""
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      style={{
+        "--pbdh-preview-width": `${displayWidth}px`,
+        "--pbdh-preview-ratio": displayAspectRatio,
+      } as CSSProperties}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button data-pbdh-card-preview-close="" type="button" aria-label="关闭卡牌详情" onClick={onClose}>×</button>
+      <div data-pbdh-card-preview-stage=""><CardDisplay
+        width={safeWidth}
+        height={safeHeight}
+        fixedRatio={fixedRatio}
+        displayAspectRatio={displayAspectRatio}
+        fit="contain"
+      >{children}</CardDisplay></div>
+    </section>
+  </div>;
+  return typeof document === "undefined" ? dialog : createPortal(dialog, document.body);
+}
 
 export async function buildCanonicalCardCoverSvg<TData, TState>(
   props: CanonicalCardSurfaceProps<TData, TState>,

@@ -60,6 +60,37 @@ function kindFor(group: Group, raw: JsonObject): ResourceKind {
   return "free";
 }
 
+function freeFieldBody(value: JsonValue): string {
+  if (typeof value === "string") return value;
+  if (value === null) return "";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value, null, 2);
+}
+
+function freeVariantFields(raw: JsonObject): JsonObject {
+  if (Array.isArray(raw.内容)) {
+    return {
+      名称: text(raw.名称),
+      类型: text(raw.类型) || "其他",
+      简介: text(raw.简介 || raw.简略信息),
+      内容: raw.内容.map((value) => {
+        const block = asJsonObject(value) ?? {};
+        return { 标题: text(block.标题), 正文: text(block.正文) };
+      }),
+    };
+  }
+  const omitted = new Set(["id", "名称", "类型", "简介", "简略信息", "imageUrl"]);
+  return {
+    名称: text(raw.名称),
+    类型: text(raw.类型) || "其他",
+    简介: text(raw.简略信息 || raw.简介),
+    内容: Object.entries(raw)
+      .filter(([key]) => !omitted.has(key))
+      .map(([key, value]) => ({ 标题: key, 正文: freeFieldBody(value) }))
+      .filter((block) => block.正文.trim().length > 0),
+  };
+}
+
 function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   if (group === "profession") return {
     名称: text(raw.名称),
@@ -124,6 +155,7 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     描述: text(raw.描述 || raw.效果),
     风味描述: text(raw.风味描述),
   };
+  if (group === "variant" && kindFor(group, raw) === "free") return freeVariantFields(raw);
   return { ...raw };
 }
 

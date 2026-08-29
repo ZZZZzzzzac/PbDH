@@ -206,7 +206,7 @@ export function useSheetOutput({
     }
     const { report } = result;
     const fileName = buildOutputFileName(activeCharacterSaveName, adapter.导出文件后缀, adapter.名称);
-    if (report.skippedFields + report.skippedCards + report.skippedImages > 0) {
+    if (report.skippedFields + report.skippedCards + report.skippedImages > 0 || report.diagnostics.length > 0) {
       setPendingExternalExport({ conversion: result, fileName });
       return;
     }

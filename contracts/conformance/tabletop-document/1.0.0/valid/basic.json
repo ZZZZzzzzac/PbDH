@@ -1,0 +1,43 @@
+{
+  "contractVersion": "1.0.0",
+  "documentId": "01989f4e-7b2c-7000-8000-000000000001",
+  "name": "陨落神殿",
+  "createdAt": "2026-08-20T10:00:00.000Z",
+  "updatedAt": "2026-08-20T10:00:00.000Z",
+  "canvas": { "width": 2400, "height": 1600 },
+  "instances": [
+    {
+      "instanceId": "01989f4e-7b2c-7000-8000-000000000002",
+      "resourceCopy": {
+        "source": {
+          "packageId": "0195f4d4-8b6b-7000-8000-000000000001",
+          "resourceId": "minotaur-wrecker"
+        },
+        "template": { "id": "敌人", "version": "1.0.0" },
+        "presentation": {
+          "width": "63",
+          "height": "88",
+          "unit": "mm",
+          "mode": "split",
+          "fixedRatio": true
+        },
+        "data": { "名称": "牛头人破坏者", "生命点": "7" },
+        "labels": ["敌人"],
+        "replacements": [
+          { "replacementId": "alternate-form", "targetResourceId": "minotaur-rage" }
+        ],
+        "media": {}
+      },
+      "state": { "currentHp": "7", "currentStress": "0" },
+      "geometry": {
+        "x": 48,
+        "y": 88,
+        "layer": 0,
+        "rotation": 0,
+        "flipped": false,
+        "scale": 1
+      }
+    }
+  ],
+  "assets": []
+}

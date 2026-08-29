@@ -36,14 +36,63 @@ describe("Player toolbar", () => {
     expect(source).not.toContain('className="message message-info"');
   });
 
-  it("把存档同步放在玩家存档菜单，而不是玩家功能菜单", async () => {
+  it("玩家存档只保留一个包含全部系统人物的下拉框", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
 
-    const playerFunctions = source.slice(source.indexOf('<span>玩家功能</span>'), source.indexOf('<span>玩家存档</span>'));
     const characterSaves = source.slice(source.indexOf('<span>玩家存档</span>'), source.indexOf('<span>导入导出</span>'));
 
-    expect(playerFunctions).not.toContain("同步到云");
+    expect(characterSaves).not.toContain("当前存档");
+    expect(characterSaves).not.toContain("全部人物");
+    expect(characterSaves).not.toContain("player-menu-character-group");
+    expect(characterSaves).toContain('aria-label="切换人物"');
+    expect(characterSaves).toContain("allCharacterSaves.map");
+    expect(characterSaves).toContain("openCharacterSave(save)");
     expect(characterSaves).toContain("同步到云");
+  });
+
+  it("桌面端四组 Player 菜单在鼠标离开后关闭，不因内部焦点保持展开", async () => {
+    const styles = await readFile("apps/player/src/styles.css", "utf8");
+    const desktopMenus = styles.slice(styles.indexOf(".player-menu {"), styles.indexOf(".player-runtime-layout"));
+
+    expect(desktopMenus).toContain(".player-menu:hover .player-menu-panel");
+    expect(desktopMenus).not.toContain(".player-menu:focus-within .player-menu-panel");
+  });
+
+  it("缺少系统包的人物文件可先保存在本机，并可导出或删除", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain("已保存待匹配人物存档");
+    expect(source).toContain("不会运行人物数据或上传云端");
+    expect(source).toContain("待匹配");
+    expect(source).toContain("exportCharacterSave(selectedCharacterSave.id)");
+    expect(source).toContain("deletePendingCharacterSave(selectedCharacterSave.id)");
+  });
+
+  it("全局人物下拉框显示存档和所属规则", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+
+    expect(source).toContain("characterSaveOptionLabel(save)");
+    expect(source).toContain("characterSystemName(save.packageId)");
+  });
+
+  it("人物下拉框只显示存档名和规则名", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const helper = source.slice(source.indexOf("function characterSaveOptionLabel"), source.indexOf("function characterAdapterExportLabel"));
+
+    expect(helper).toContain("`${save.name}・${characterSystemName(save.packageId)}`");
+    expect(helper).not.toContain("systemPackageVersion");
+    expect(helper).not.toContain("syncState");
+  });
+
+  it("把 Daggerheart Core 的玩家名称显示为匕首之心", async () => {
+    const source = JSON.parse(await readFile("apps/player/src/daggerheart-core-system.generated.json", "utf8")) as { package: { name: string } };
+    expect(source.package.name).toBe("匕首之心");
+  });
+
+  it("清楚标明本机存档不是云备份，并提供云端永久删除", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    expect(source).toContain("cloudDocumentService.deleteFromTrash(remote, credentials)");
+    expect(source).toContain("永久删除");
   });
 
   it("用下拉菜单切换系统包，并把文件夹入口作为 Author Preview", async () => {
@@ -73,5 +122,20 @@ describe("Player toolbar", () => {
 
     expect(source).toContain('import { openQuestionnaireHost, type QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";');
     expect(source).not.toContain('await import("./sheet-runtime/rendering/questionnaireHost.ts")');
+  });
+
+  it("把车卡审核放在玩家功能，并使用明确的导出名称", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const playerFunctions = source.slice(source.indexOf('<span>玩家功能</span>'), source.indexOf('<span>玩家存档</span>'));
+    const importExport = source.slice(source.indexOf('<span>导入导出</span>'), source.indexOf('<span>系统包</span>'));
+
+    expect(playerFunctions).toContain("车卡审核");
+    expect(playerFunctions).toContain("handleValidation()");
+    expect(importExport).not.toContain("运行检查");
+    expect(importExport).toContain("characterAdapterExportLabel(adapter)");
+    expect(importExport).toContain("characterTextExportLabel(definition)");
+    for (const label of ["导出PDF", "导出HTML", "导出为ZZZ格式", "导出为dhsheet格式", "导出为海豹骰"]) {
+      expect(source).toContain(label);
+    }
   });
 });

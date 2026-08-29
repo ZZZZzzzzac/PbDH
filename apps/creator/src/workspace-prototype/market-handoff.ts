@@ -6,6 +6,7 @@ export type CreatorMarketHandoff = {
   packageId: string;
   packageVersion: string;
   snapshotDigest: string;
+  creatorMode: "import" | "fork";
   focusResourceId?: string;
 };
 
@@ -23,6 +24,7 @@ export function parseCreatorMarketHandoff(sourceUrl: string | URL): CreatorMarke
   const packageId = url.searchParams.get("packageId")?.trim();
   const packageVersion = url.searchParams.get("packageVersion")?.trim();
   const snapshotDigest = url.searchParams.get("snapshotDigest")?.trim();
+  const creatorMode = url.searchParams.get("creatorMode") === "fork" ? "fork" : "import";
   if ((target !== "creator" && target !== "gm")
     || !publicationId
     || !packageId
@@ -35,6 +37,7 @@ export function parseCreatorMarketHandoff(sourceUrl: string | URL): CreatorMarke
     packageId,
     packageVersion,
     snapshotDigest,
+    creatorMode,
     ...(focusResourceId ? { focusResourceId } : {}),
   };
 }
@@ -48,6 +51,7 @@ export function withoutCreatorMarketHandoff(sourceUrl: string | URL): URL {
     "packageId",
     "packageVersion",
     "snapshotDigest",
+    "creatorMode",
     "focusResourceId",
   ]) {
     url.searchParams.delete(key);

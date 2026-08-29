@@ -33,7 +33,9 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
   return (set, get) => ({
     characterData: null,
     characterSaves: [],
+    allCharacterSaves: [],
     activeCharacterSaveId: null,
+    pendingCharacterDataMigration: null,
     derivedReadOnlyDisplayContent: {},
     derivedTextPlaceholders: {},
     moduleVisibility: {},
@@ -57,6 +59,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         characterData,
         characterSaves: await environment.dependencies.storage
           .listCharacterSaves(characterData.systemPackage.id),
+        allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
         activeCharacterSaveId: characterData.character.id,
         ...emptyDerivedState(),
         ...rebuildDependencyRuntimeState(characterData, currentPackage),
@@ -84,6 +87,15 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         set({ storageStatus: "error" });
       }
 
+      const preparation = await environment.dependencies.storage.prepareCharacterSaveMigration(currentPackage.manifest.ID, saveId);
+      if (preparation.status === "error") {
+        set({ storageStatus: "error", importError: preparation.message });
+        return;
+      }
+      if (preparation.status === "ready") {
+        set({ pendingCharacterDataMigration: preparation.candidate, importError: null, importNotice: null });
+        return;
+      }
       const characterData = await environment.dependencies.storage
         .loadCharacterSave(currentPackage.manifest.ID, saveId);
       if (!characterData) {
@@ -104,7 +116,40 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
           ? collectStaleResourceReferenceIssues(normalizedData, get().resourceCatalog!)
           : [],
         pendingQuestionnaireResult: null,
+        pendingCharacterDataMigration: null,
       });
+    },
+
+    async confirmCharacterDataMigration() {
+      const pending = get().pendingCharacterDataMigration;
+      const currentPackage = get().currentPackage;
+      if (!pending || !currentPackage) return;
+      try {
+        const characterData = await environment.dependencies.storage.commitCharacterSaveMigration(
+          currentPackage.manifest.ID,
+          pending,
+        );
+        await environment.dependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, pending.saveId);
+        const normalizedData = ensureCardState(characterData, currentPackage)!;
+        set({
+          characterData: normalizedData,
+          activeCharacterSaveId: pending.saveId,
+          characterSaves: await environment.dependencies.storage.listCharacterSaves(currentPackage.manifest.ID),
+          allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
+          pendingCharacterDataMigration: null,
+          ...emptyDerivedState(),
+          ...rebuildDependencyRuntimeState(normalizedData, currentPackage),
+          storageStatus: "saved",
+          importError: null,
+          importNotice: `人物存档已从 ${pending.fromVersion} 升级到 ${pending.toVersion}。`,
+        });
+      } catch (error) {
+        set({ storageStatus: "error", importError: error instanceof Error ? error.message : String(error) });
+      }
+    },
+
+    cancelCharacterDataMigration() {
+      set({ pendingCharacterDataMigration: null });
     },
 
     async renameCharacterSave(saveId, name) {
@@ -115,6 +160,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
       set({
         characterSaves: await environment.dependencies.storage
           .listCharacterSaves(currentPackage.manifest.ID),
+        allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
         importError: null,
         importNotice: null,
       });
@@ -150,6 +196,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         ...rebuildDependencyRuntimeState(data, currentPackage),
         characterSaves: await environment.dependencies.storage
           .listCharacterSaves(currentPackage.manifest.ID),
+        allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
         validationIssues: [],
         validationStatus: "idle",
         importError: null,
@@ -164,6 +211,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
       await environment.dependencies.storage.deleteCharacterSave(currentPackage.manifest.ID, saveId);
       const remaining = await environment.dependencies.storage
         .listCharacterSaves(currentPackage.manifest.ID);
+      const allCharacterSaves = await environment.dependencies.storage.listAllCharacterSaves();
       const nextSave = remaining[0];
       if (!nextSave) {
         await get().createCharacterSave();
@@ -177,6 +225,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
       set({
         characterData: normalizedData,
         characterSaves: remaining,
+        allCharacterSaves,
         activeCharacterSaveId: nextSave.id,
         ...emptyDerivedState(),
         ...rebuildDependencyRuntimeState(normalizedData, currentPackage),

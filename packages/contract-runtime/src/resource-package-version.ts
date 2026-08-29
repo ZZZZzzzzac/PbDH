@@ -21,6 +21,7 @@ export type ResourcePackageVersionBaseline = {
   resources: Array<{
     id: string;
     template: { id: string; version: string };
+    replacements?: Array<{ replacementId: string; targetResourceId: string }>;
   }>;
   targets: Array<{ systemPackageId: string; version: string }>;
 };
@@ -50,6 +51,7 @@ export async function createResourcePackageVersionBaseline(
     resources: document.resources.map((resource) => ({
       id: resource.id,
       template: { ...resource.template },
+      replacements: structuredClone(resource.replacements ?? []),
     })),
     targets: document.targets.map((target) => ({ ...target })),
   };
@@ -91,6 +93,7 @@ export async function classifyResourcePackageVersionChange(
     } else if (current.template.version !== previous.template.version) {
       addReason("patch", "resource-package.version.resource-template-compatible", previous.id);
     }
+    classifyReplacementChanges(previous.id, previous.replacements ?? [], current.replacements ?? [], addReason);
   }
   for (const resource of document.resources) {
     if (!baselineResourceIds.has(resource.id)) {
@@ -115,6 +118,33 @@ export async function classifyResourcePackageVersionChange(
     minimumVersion: bumpVersion(baseline.version, level),
     reasons,
   };
+}
+
+function classifyReplacementChanges(
+  resourceId: string,
+  previousReplacements: Array<{ replacementId: string; targetResourceId: string }>,
+  currentReplacements: Array<{ replacementId: string; targetResourceId: string }>,
+  addReason: (
+    level: Exclude<ResourcePackageChangeLevel, "none">,
+    code: string,
+    subject: string,
+  ) => void,
+): void {
+  const current = new Map(currentReplacements.map((replacement) => [replacement.replacementId, replacement]));
+  const previousIds = new Set(previousReplacements.map((replacement) => replacement.replacementId));
+  for (const replacement of previousReplacements) {
+    const next = current.get(replacement.replacementId);
+    const subject = `${resourceId}:${replacement.replacementId}`;
+    if (!next) addReason("major", "resource-package.version.replacement-removed", subject);
+    else if (next.targetResourceId !== replacement.targetResourceId) {
+      addReason("major", "resource-package.version.replacement-target-changed", subject);
+    }
+  }
+  for (const replacement of currentReplacements) {
+    if (!previousIds.has(replacement.replacementId)) {
+      addReason("minor", "resource-package.version.replacement-added", `${resourceId}:${replacement.replacementId}`);
+    }
+  }
 }
 
 export function resourcePackageVersionMeetsMinimum(

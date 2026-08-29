@@ -1,4 +1,5 @@
 import {
+  LEGACY_TABLETOP_DOCUMENT_VERSION,
   TABLETOP_DOCUMENT_VERSION,
   type TabletopDocument,
   type TabletopDocumentCandidate,
@@ -28,6 +29,7 @@ function toContract(
     name: model.name,
     createdAt,
     updatedAt,
+    canvas: structuredClone(model.canvas),
     instances: model.instances.map((instance) => ({
       instanceId: instance.id,
       resourceCopy: structuredClone(instance.resource),
@@ -49,9 +51,13 @@ function toModel(document: TabletopDocument): TabletopDocumentModel {
   return {
     id: document.documentId,
     name: document.name,
+    canvas: structuredClone(document.canvas ?? { width: 2400, height: 1600 }),
     instances: document.instances.map((instance) => ({
       id: instance.instanceId,
-      resource: structuredClone(instance.resourceCopy),
+      resource: {
+        ...structuredClone(instance.resourceCopy),
+        replacements: structuredClone(instance.resourceCopy.replacements ?? []),
+      },
       state: structuredClone(instance.state),
       position: { x: instance.geometry.x, y: instance.geometry.y },
       layer: instance.geometry.layer,
@@ -83,16 +89,46 @@ export type StoredTabletopDocument = TabletopDocumentCandidate & {
   sync: LocalDocumentSync;
 };
 
+export type TrashedTabletopDocument = StoredTabletopDocument & {
+  deletedAt: string;
+};
+
+export type TabletopImportConflictResolution = "reject" | "replace" | "copy";
+export type TabletopImportDisposition = "new" | "same" | "conflict";
+
+const trashDocumentId = (documentId: string) => `gm-tabletop-document-trash:${documentId}`;
+
+export function duplicateTabletopModel(
+  source: TabletopDocumentModel,
+  documentId: string,
+  instanceIds: readonly string[],
+  name = `${source.name} 副本`,
+): TabletopDocumentModel {
+  if (instanceIds.length !== source.instances.length) {
+    throw new Error("复制桌面时，卡片编号数量不正确。");
+  }
+  const copy = structuredClone(source);
+  copy.id = documentId;
+  copy.name = name;
+  copy.instances.forEach((instance, index) => {
+    instance.id = instanceIds[index]!;
+  });
+  return copy;
+}
+
 export class TabletopDocumentRepository {
   readonly #store: DexieLocalDocumentStore;
   readonly #now: () => string;
+  readonly #newId: () => string;
 
   constructor(
     store = new DexieLocalDocumentStore(),
     now = () => new Date().toISOString(),
+    newId = () => crypto.randomUUID(),
   ) {
     this.#store = store;
     this.#now = now;
+    this.#newId = newId;
   }
 
   async list(): Promise<StoredTabletopDocument[]> {
@@ -131,16 +167,115 @@ export class TabletopDocumentRepository {
     return { document, media: new Map(media) };
   }
 
-  async import(candidate: TabletopDocumentCandidate, cloudAccountId: string | null = null): Promise<TabletopDocumentModel> {
+  async import(
+    candidate: TabletopDocumentCandidate,
+    cloudAccountId: string | null = null,
+    conflictResolution: TabletopImportConflictResolution = "reject",
+  ): Promise<TabletopDocumentModel> {
     const diagnostics = await validateTabletopDocumentCandidate(candidate.document, candidate.media);
     if (diagnostics.some((item) => item.severity === "error")) {
       throw new Error(`Invalid Tabletop Document import: ${diagnostics[0]!.code}`);
+    }
+    const existing = await this.#store.get<TabletopDocument>(
+      "gm-tabletop-document",
+      candidate.document.documentId,
+    );
+    if (existing && sameTabletopContent(existing.payload, candidate.document)) {
+      return toModel(existing.payload);
+    }
+    if (existing && conflictResolution === "reject") {
+      throw new Error("已有编号相同的桌面，请选择保留副本或覆盖。");
+    }
+    if (existing && conflictResolution === "copy") {
+      return this.duplicate(
+        toModel(candidate.document),
+        candidate.media,
+        cloudAccountId,
+      );
     }
     const sync: LocalDocumentSync = cloudAccountId
       ? pendingSync({ scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId })
       : { scope: "local-only", state: "clean", baseRevision: null };
     await this.#put(candidate.document, candidate.media, sync);
     return toModel(candidate.document);
+  }
+
+  async importDisposition(candidate: TabletopDocumentCandidate): Promise<TabletopImportDisposition> {
+    const diagnostics = await validateTabletopDocumentCandidate(candidate.document, candidate.media);
+    if (diagnostics.some((item) => item.severity === "error")) {
+      throw new Error(`Invalid Tabletop Document import: ${diagnostics[0]!.code}`);
+    }
+    const existing = await this.#store.get<TabletopDocument>("gm-tabletop-document", candidate.document.documentId);
+    if (!existing) return "new";
+    return sameTabletopContent(existing.payload, candidate.document) ? "same" : "conflict";
+  }
+
+  async duplicate(
+    source: TabletopDocumentModel,
+    media: ReadonlyMap<string, Uint8Array>,
+    cloudAccountId: string | null = null,
+  ): Promise<TabletopDocumentModel> {
+    const copy = duplicateTabletopModel(
+      source,
+      this.#newId(),
+      source.instances.map(() => this.#newId()),
+    );
+    await this.save(copy, media, cloudAccountId);
+    return copy;
+  }
+
+  async listTrash(): Promise<TrashedTabletopDocument[]> {
+    const envelopes = await this.#store.list<TabletopDocument>("gm-tabletop-document-trash");
+    const results: TrashedTabletopDocument[] = [];
+    for (const envelope of envelopes) {
+      const media = await this.#store.getMedia(envelope.assetIds);
+      const diagnostics = await validateTabletopDocumentCandidate(envelope.payload, media);
+      if (diagnostics.some((item) => item.severity === "error")) {
+        throw new Error(`Invalid trashed Tabletop Document: ${diagnostics[0]!.code}`);
+      }
+      results.push({
+        document: envelope.payload,
+        media,
+        model: toModel(envelope.payload),
+        sync: envelope.sync,
+        deletedAt: envelope.updatedAt,
+      });
+    }
+    return results;
+  }
+
+  async trash(documentId: string): Promise<void> {
+    const existing = await this.#store.get<TabletopDocument>("gm-tabletop-document", documentId);
+    if (!existing) return;
+    const deletedAt = this.#now();
+    await this.#store.replace("gm-tabletop-document", documentId, {
+      ...existing,
+      documentId: trashDocumentId(documentId),
+      documentKind: "gm-tabletop-document-trash",
+      updatedAt: deletedAt,
+    });
+  }
+
+  async restore(documentId: string): Promise<StoredTabletopDocument> {
+    const trashId = trashDocumentId(documentId);
+    const trashed = await this.#store.get<TabletopDocument>("gm-tabletop-document-trash", trashId);
+    if (!trashed) throw new Error("回收站里找不到这个桌面。");
+    if (await this.#store.get("gm-tabletop-document", documentId)) {
+      throw new Error("已有编号相同的桌面，暂时不能恢复。");
+    }
+    await this.#store.replace("gm-tabletop-document-trash", trashId, {
+      ...trashed,
+      documentId,
+      documentKind: "gm-tabletop-document",
+      updatedAt: this.#now(),
+    });
+    const media = await this.#store.getMedia(trashed.assetIds);
+    return {
+      document: trashed.payload,
+      media,
+      model: toModel(trashed.payload),
+      sync: trashed.sync,
+    };
   }
 
   async restoreRemote(
@@ -150,7 +285,8 @@ export class TabletopDocumentRepository {
   ): Promise<StoredTabletopDocument> {
     if (remote.documentKind !== "gm-tabletop-document"
       || remote.contractFamily !== "tabletop-document"
-      || remote.contractVersion !== TABLETOP_DOCUMENT_VERSION
+      || (remote.contractVersion !== TABLETOP_DOCUMENT_VERSION
+        && remote.contractVersion !== LEGACY_TABLETOP_DOCUMENT_VERSION)
       || remote.deletedAt !== null) {
       throw new Error("云端 GM 桌面格式无效。");
     }
@@ -205,7 +341,30 @@ export class TabletopDocumentRepository {
 }
 
 function sameTabletopContent(current: TabletopDocument, next: TabletopDocument): boolean {
-  const { updatedAt: _currentUpdatedAt, ...currentContent } = current;
-  const { updatedAt: _nextUpdatedAt, ...nextContent } = next;
-  return JSON.stringify(currentContent) === JSON.stringify(nextContent);
+  const normalize = (document: TabletopDocument) => {
+    const { updatedAt: _updatedAt, ...content } = document;
+    return {
+      ...content,
+      canvas: content.canvas ?? { width: 2400, height: 1600 },
+      instances: content.instances.map((instance) => ({
+        ...instance,
+        resourceCopy: {
+          ...instance.resourceCopy,
+          replacements: instance.resourceCopy.replacements ?? [],
+        },
+      })),
+    };
+  };
+  return stableJson(normalize(current)) === stableJson(normalize(next));
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => `${JSON.stringify(key)}:${stableJson(child)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
 }

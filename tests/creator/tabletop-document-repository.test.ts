@@ -9,7 +9,10 @@ import {
   type TabletopCapability,
 } from "@pbdh/tabletop/core";
 
-import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
+import {
+  TabletopDocumentRepository,
+  duplicateTabletopModel,
+} from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 
 const databases: PbDHLocalDatabase[] = [];
 const capabilities = new Set<TabletopCapability>(["place"]);
@@ -45,14 +48,15 @@ describe("GM Tabletop Document Repository", () => {
         },
         template: { id: "pbdh.adversary", version: "1.0.0-alpha.1" },
         presentation: {
-          width: "88",
-          height: "126",
+          width: "63",
+          height: "88",
           unit: "mm",
           mode: "split",
           fixedRatio: true,
         },
         data: { 名称: "牛头人破坏者" },
         labels: ["敌人"],
+        replacements: [],
         media: {},
       },
       state: { currentHp: "7" },
@@ -63,7 +67,8 @@ describe("GM Tabletop Document Repository", () => {
     const [stored] = await repository.list();
 
     expect(stored?.model).toEqual(model);
-    expect(stored?.document.contractVersion).toBe("1.0.0-alpha.1");
+    expect(stored?.document.contractVersion).toBe("1.0.0");
+    expect(stored?.document.canvas).toEqual({ width: 2400, height: 1600 });
     expect(stored?.document.instances[0]?.resourceCopy.data.名称).toBe("牛头人破坏者");
   });
 
@@ -93,7 +98,7 @@ describe("GM Tabletop Document Repository", () => {
     expect(await value.localDocuments.count()).toBe(0);
   });
 
-  test("removes a tabletop document so reopening does not restore it", async () => {
+  test("moves a local tabletop to a recoverable recycle bin", async () => {
     const value = database();
     const store = new DexieLocalDocumentStore(value);
     const repository = new TabletopDocumentRepository(store);
@@ -105,9 +110,130 @@ describe("GM Tabletop Document Repository", () => {
     await repository.save(model, new Map());
     expect(await store.get("gm-tabletop-document", model.id)).toBeDefined();
 
-    await repository.remove(model.id);
+    await repository.trash(model.id);
     expect(await store.get("gm-tabletop-document", model.id)).toBeUndefined();
     expect(await repository.list()).toEqual([]);
+    expect((await repository.listTrash())[0]?.model).toEqual(model);
+
+    const restored = await repository.restore(model.id);
+    expect(restored.model).toEqual(model);
+    expect(await repository.listTrash()).toEqual([]);
+    expect((await repository.list())[0]?.model).toEqual(model);
+  });
+
+  test("preserves a card's intrinsic size when saving and reopening", async () => {
+    const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
+    const model = executeTabletopCommand(
+      createTabletopDocument("01989f4e-7b2c-7000-8000-000000000008", "旧尺寸桌面"),
+      {
+        type: "place",
+        instanceId: "01989f4e-7b2c-7000-8000-000000000009",
+        resource: {
+          source: null,
+          template: { id: "敌人", version: "1.0.0" },
+          presentation: { width: "63", height: "88", unit: "mm", mode: "split", fixedRatio: true },
+          data: { 名称: "旧尺寸敌人" },
+          labels: [],
+          replacements: [],
+          media: {},
+        },
+        state: {},
+        position: { x: 0, y: 0 },
+      },
+      { capabilities },
+    ).document;
+
+    await repository.save(model, new Map());
+    const [stored] = await repository.list();
+
+    expect(stored?.model.instances[0]?.resource.presentation).toEqual({
+      width: "63",
+      height: "88",
+      unit: "mm",
+      mode: "split",
+      fixedRatio: true,
+    });
+  });
+
+  test("duplicates a tabletop with new document and instance IDs", async () => {
+    const source = executeTabletopCommand(
+      createTabletopDocument("01989f4e-7b2c-7000-8000-000000000040", "原桌面"),
+      {
+        type: "place",
+        instanceId: "01989f4e-7b2c-7000-8000-000000000041",
+        resource: {
+          source: null,
+          template: { id: "pbdh.adversary", version: "1.0.0" },
+          presentation: { width: "88", height: "126", unit: "mm", mode: "text", fixedRatio: true },
+          data: { 名称: "敌人" },
+          labels: [],
+          replacements: [],
+          media: {},
+        },
+        state: { currentHp: "3" },
+        position: { x: 10, y: 20 },
+      },
+      { capabilities },
+    ).document;
+
+    const copy = duplicateTabletopModel(
+      source,
+      "01989f4e-7b2c-7000-8000-000000000042",
+      ["01989f4e-7b2c-7000-8000-000000000043"],
+    );
+
+    expect(copy.id).not.toBe(source.id);
+    expect(copy.instances[0]?.id).not.toBe(source.instances[0]?.id);
+    expect(copy).toMatchObject({ name: "原桌面 副本", instances: [{ state: { currentHp: "3" } }] });
+    copy.instances[0]!.state.currentHp = "1";
+    expect(source.instances[0]?.state.currentHp).toBe("3");
+  });
+
+  test("requires an explicit choice before importing an existing document ID", async () => {
+    const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
+    const current = createTabletopDocument(
+      "01989f4e-7b2c-7000-8000-000000000050",
+      "当前桌面",
+    );
+    await repository.save(current, new Map());
+    const incoming = {
+      document: {
+        ...(await repository.save({ ...current, name: "导入桌面" }, new Map())).document,
+        name: "导入桌面",
+      },
+      media: new Map<string, Uint8Array>(),
+    };
+    await repository.save(current, new Map());
+
+    await expect(repository.import(incoming)).rejects.toThrow("请选择保留副本或覆盖");
+    expect((await repository.list())[0]?.model.name).toBe("当前桌面");
+
+    await repository.import(incoming, null, "replace");
+    expect((await repository.list())[0]?.model.name).toBe("导入桌面");
+
+    const copyIncoming = structuredClone(incoming);
+    copyIncoming.document.name = "另一个导入桌面";
+    const copy = await repository.import(copyIncoming, null, "copy");
+    expect(copy.id).not.toBe(current.id);
+    expect(copy.name).toBe("另一个导入桌面 副本");
+    expect(await repository.list()).toHaveLength(2);
+  });
+
+  test("opens an identical tabletop import as a no-op", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const repository = new TabletopDocumentRepository(store);
+    const model = createTabletopDocument("01989f4e-7b2c-7000-8000-000000000060", "相同桌面");
+    const candidate = await repository.save(model, new Map());
+    const before = await store.get("gm-tabletop-document", model.id);
+
+    expect(await repository.importDisposition(candidate)).toBe("same");
+    expect(await repository.import(candidate)).toEqual(model);
+    expect(await store.get("gm-tabletop-document", model.id)).toEqual(before);
+
+    const legacyShape = structuredClone(candidate);
+    delete legacyShape.document.canvas;
+    expect(await repository.importDisposition(legacyShape)).toBe("same");
   });
 
   test("keeps a clean cloud revision clean until the tabletop content changes", async () => {

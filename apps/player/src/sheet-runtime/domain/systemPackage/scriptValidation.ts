@@ -13,12 +13,12 @@ export function collectScriptValidationIssues(context: ValidationContext): void 
       pointer: ["resourceFormatAdapters", index, "importScriptContent"] as Array<string | number>,
     })),
     ...(systemPackage.characterFormatAdapters ?? []).flatMap((adapter, index) => [
-      {
+      ...(adapter.importScriptContent ? [{
         content: adapter.importScriptContent,
         id: adapter.ID,
         path: `characterFormatAdapters.${index}.importScriptContent`,
         pointer: ["characterFormatAdapters", index, "importScriptContent"] as Array<string | number>,
-      },
+      }] : []),
       ...(adapter.exportScriptContent ? [{
         content: adapter.exportScriptContent,
         id: adapter.ID,

@@ -1,6 +1,7 @@
 import type { ContractDiagnostic } from "./index.ts";
 
-export const TABLETOP_DOCUMENT_VERSION = "1.0.0-alpha.1";
+export const TABLETOP_DOCUMENT_VERSION = "1.0.0";
+export const LEGACY_TABLETOP_DOCUMENT_VERSION = "1.0.0-alpha.1";
 
 export type TabletopAsset = {
   id: string;
@@ -22,15 +23,17 @@ export type TabletopResourceCopy = {
   };
   data: Record<string, unknown>;
   labels: string[];
+  replacements?: Array<{ replacementId: string; targetResourceId: string }>;
   media: Record<string, string>;
 };
 
 export type TabletopDocument = {
-  contractVersion: typeof TABLETOP_DOCUMENT_VERSION;
+  contractVersion: typeof TABLETOP_DOCUMENT_VERSION | typeof LEGACY_TABLETOP_DOCUMENT_VERSION;
   documentId: string;
   name: string;
   createdAt: string;
   updatedAt: string;
+  canvas?: { width: number; height: number };
   instances: Array<{
     instanceId: string;
     resourceCopy: TabletopResourceCopy;
@@ -50,6 +53,7 @@ export type TabletopDocument = {
 export type TabletopMedia = ReadonlyMap<string, Uint8Array>;
 
 function diagnostic(
+  version: TabletopDocument["contractVersion"],
   code: string,
   location: string,
   params: Record<string, unknown> = {},
@@ -58,7 +62,7 @@ function diagnostic(
     code,
     severity: "error",
     family: "tabletop-document",
-    version: TABLETOP_DOCUMENT_VERSION,
+    version,
     location,
     params,
   };
@@ -79,7 +83,7 @@ export async function validateTabletopDocumentSemantics(
   const instanceIds = new Set<string>();
   document.instances.forEach((instance, index) => {
     if (instanceIds.has(instance.instanceId)) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.instance-id.duplicate",
         `/instances/${index}/instanceId`,
         { instanceId: instance.instanceId },
@@ -91,7 +95,7 @@ export async function validateTabletopDocumentSemantics(
   const assets = new Map<string, TabletopAsset>();
   document.assets.forEach((asset, index) => {
     if (assets.has(asset.id)) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.asset-id.duplicate",
         `/assets/${index}/id`,
         { assetId: asset.id },
@@ -104,7 +108,7 @@ export async function validateTabletopDocumentSemantics(
     Object.values(instance.resourceCopy.media)));
   for (const assetId of referenced) {
     if (!assets.has(assetId)) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.asset-reference.missing",
         "/instances",
         { assetId },
@@ -115,7 +119,7 @@ export async function validateTabletopDocumentSemantics(
   for (const [index, asset] of document.assets.entries()) {
     const bytes = media.get(asset.id);
     if (!bytes) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.media.missing",
         `/assets/${index}`,
         { assetId: asset.id },
@@ -123,7 +127,7 @@ export async function validateTabletopDocumentSemantics(
       continue;
     }
     if (String(bytes.byteLength) !== asset.byteLength) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.media.byte-length-mismatch",
         `/assets/${index}/byteLength`,
         { actual: String(bytes.byteLength), expected: asset.byteLength },
@@ -132,7 +136,7 @@ export async function validateTabletopDocumentSemantics(
     }
     const actual = await sha256AssetId(bytes);
     if (actual !== asset.id) {
-      diagnostics.push(diagnostic(
+      diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.media.digest-mismatch",
         `/assets/${index}/id`,
         { actual, expected: asset.id },

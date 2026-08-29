@@ -9,6 +9,7 @@ export {
 } from "./resource-package.ts";
 export type {
   ResourcePresentation,
+  ResourceReplacement,
   ResourcePackageLogicalDocument,
   ResourcePackageMedia,
 } from "./resource-package.ts";
@@ -30,6 +31,7 @@ export {
   writeResourcePackageDirectory,
 } from "./portable-archive.ts";
 export {
+  LEGACY_TABLETOP_DOCUMENT_VERSION,
   TABLETOP_DOCUMENT_VERSION,
   validateTabletopDocumentSemantics,
 } from "./tabletop-document.ts";
@@ -279,7 +281,9 @@ export class ContractRuntime {
     if (!validator) throw new Error(`Missing compiled Contract validator: ${key}`);
     if (validator(request.candidate)) return [];
     return sortDiagnostics(
-      (validator.errors ?? []).map((error) => mapSchemaError(request, error)),
+      (validator.errors ?? [])
+        .filter((error) => error.keyword !== "if")
+        .map((error) => mapSchemaError(request, error)),
     );
   }
 }

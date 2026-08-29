@@ -31,11 +31,13 @@
     "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-weapon-card-design.mjs --check && node scripts/generate-player-design.mjs --check && node scripts/generate-market-design.mjs --check",
     "test:ts": "vitest run tests",
     "test:python": "node scripts/python.mjs -m pytest tests",
+    "measure:renderer": "tsx scripts/measure-renderer-performance.ts",
+    "system-package": "tsx scripts/system-package-cli.ts",
     "typecheck": "tsc --noEmit",
     "dev:platform": "npm run dev -w @pbdh/platform",
     "build:platform": "npm run build -w @pbdh/platform",
     "dev:backend": "node --env-file-if-exists=.env.local scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload --port 8001",
-    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run build:platform"
+    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run measure:renderer && npm run build:platform"
   },
   "dependencies": {
     "dexie": "4.4.4",

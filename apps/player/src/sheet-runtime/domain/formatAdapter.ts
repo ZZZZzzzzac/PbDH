@@ -41,18 +41,30 @@ export const zipCarrierSchema = z.object({
 export const formatCarrierSchema = z.discriminatedUnion("类型", [jsonCarrierSchema, embeddedJsonCarrierSchema, zipCarrierSchema]);
 export type FormatCarrier = z.infer<typeof formatCarrierSchema>;
 
-export const adapterBaseSourceSchema = z.object({
+const adapterIdentitySchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
+});
+
+export const adapterBaseSourceSchema = adapterIdentitySchema.extend({
   载体: z.array(formatCarrierSchema).min(1),
   导入脚本: safeRelativeFilePathSchema,
 });
 
 export const resourceFormatAdapterSourceSchema = adapterBaseSourceSchema;
 
-export const characterFormatAdapterSourceSchema = adapterBaseSourceSchema.extend({
+export const characterFormatAdapterSourceSchema = adapterIdentitySchema.extend({
+  载体: z.array(formatCarrierSchema).min(1).optional(),
+  导入脚本: safeRelativeFilePathSchema.optional(),
   导出脚本: safeRelativeFilePathSchema.optional(),
   导出文件后缀: z.literal(".json").default(".json"),
+}).superRefine((adapter, context) => {
+  if ((adapter.导入脚本 === undefined) !== (adapter.载体 === undefined)) {
+    context.addIssue({ code: "custom", message: "Character Format Adapter 的载体与导入脚本必须同时存在。" });
+  }
+  if (!adapter.导入脚本 && !adapter.导出脚本) {
+    context.addIssue({ code: "custom", message: "Character Format Adapter 必须至少支持导入或导出。" });
+  }
 });
 
 const adapterRuntimeBaseSchema = adapterBaseSourceSchema.extend({
@@ -62,11 +74,13 @@ const adapterRuntimeBaseSchema = adapterBaseSourceSchema.extend({
 export const resourceFormatAdapterSchema = adapterRuntimeBaseSchema;
 export type ResourceFormatAdapter = z.infer<typeof resourceFormatAdapterSchema>;
 
-export const characterFormatAdapterSchema = adapterRuntimeBaseSchema.extend({
-  导出脚本: safeRelativeFilePathSchema.optional(),
+export const characterFormatAdapterSchema = characterFormatAdapterSourceSchema.extend({
+  importScriptContent: z.string().min(1).optional(),
   exportScriptContent: z.string().min(1).optional(),
-  导出文件后缀: z.literal(".json").default(".json"),
 }).superRefine((adapter, context) => {
+  if ((adapter.导入脚本 === undefined) !== (adapter.importScriptContent === undefined)) {
+    context.addIssue({ code: "custom", message: "Character Format Adapter 的导入脚本与 importScriptContent 必须同时存在。" });
+  }
   if ((adapter.导出脚本 === undefined) !== (adapter.exportScriptContent === undefined)) {
     context.addIssue({ code: "custom", message: "Character Format Adapter 的 导出脚本 与 exportScriptContent 必须同时存在。" });
   }

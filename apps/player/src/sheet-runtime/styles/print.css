@@ -47,7 +47,7 @@
 body:has(.app-shell.print-mode) > .player-image-crop-backdrop {
   display: none !important;
 }
-.print-mode .card-detail-backdrop { display: none !important; }
+.print-mode [data-pbdh-card-preview-backdrop] { display: none !important; }
 .print-mode [data-markdown-editor] { display: none !important; }
 .print-mode [data-markdown-preview] { display: block !important; }
 .print-mode [data-markdown-editor][data-markdown-empty="true"] { display: block !important; }

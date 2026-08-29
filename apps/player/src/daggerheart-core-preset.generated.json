@@ -1,7 +1,7 @@
 {
   "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
   "urlPath": "daggerheart",
-  "name": "匕首心",
+  "name": "匕首之心",
   "version": "1.0.0",
   "releaseVersion": "0.0.0-dev",
   "directory": "daggerheart-core",
@@ -12,8 +12,8 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.3",
-      "snapshotDigest": "sha256:801bc36e5c4fd07522f1c0cb5542f60b65356456077393827d1dab63f7a42385"
+      "version": "1.0.7",
+      "snapshotDigest": "sha256:8ff783dd3b3e027f259eafb9f760532ba80a4f7db0f904f5626a43aaa1a038a3"
     }
   ],
   "loadingPresentation": {

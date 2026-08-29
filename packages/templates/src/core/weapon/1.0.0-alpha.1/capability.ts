@@ -63,8 +63,8 @@ export const weaponTemplate = deepFreeze<TemplateCoreCapability<WeaponData>>({
     { id: "portrait", label: "主图", required: false, accepts: ["image/webp"] },
   ],
   defaultPresentation: {
-    width: "90",
-    height: "142",
+    width: "63",
+    height: "88",
     unit: "mm",
     mode: "text",
     fixedRatio: true,

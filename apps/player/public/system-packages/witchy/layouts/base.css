@@ -1,0 +1,297 @@
+:scope {
+  width: min(100%, 210mm);
+  margin-inline: auto;
+}
+
+.witchy-page {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  aspect-ratio: 210 / 297;
+  margin-inline: auto;
+  padding: 7mm;
+  display: grid;
+  align-content: start;
+  gap: 3mm;
+  color: var(--witchy-ink);
+  background: var(--witchy-paper);
+  font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
+}
+
+.witchy-page h1,
+.witchy-page h2,
+.witchy-page p {
+  margin: 0;
+}
+
+.witchy-page h2 {
+  font-size: 16px;
+}
+
+.witchy-title {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  border-bottom: 1px solid var(--witchy-line);
+  padding-bottom: 2mm;
+}
+
+.witchy-title p {
+  color: var(--witchy-accent);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.witchy-title h1 {
+  font-size: 26px;
+}
+
+.witchy-title small {
+  margin-left: auto;
+}
+
+.character-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 2mm;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.character-summary > [data-module-slot-id="character-portrait"],
+.character-summary > [data-module-slot-id="character-portrait"] > [data-module-type="imageField"] {
+  height: 100%;
+}
+
+.character-summary [data-part="surface-frame"] {
+  min-height: 0;
+}
+
+.character-summary-details {
+  display: grid;
+  align-content: start;
+  gap: 2mm;
+  min-width: 0;
+}
+
+.identity-fields {
+  display: grid;
+  grid-template-rows: repeat(3, auto);
+  align-content: space-between;
+  gap: 2mm;
+  min-width: 0;
+}
+
+.resource-panel,
+.sheet-region,
+.sheet-column,
+.magic-list,
+.familiar-panel,
+.familiar-fields {
+  display: grid;
+  gap: 2mm;
+  min-width: 0;
+}
+
+.resource-panel {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: start;
+  align-items: stretch;
+}
+
+.magic-resource-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.5mm;
+  min-width: 0;
+}
+
+.essence-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 1mm;
+  min-width: 0;
+}
+
+.essence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5mm;
+  min-width: 0;
+}
+
+.essence-grid > .module-slot {
+  min-width: 0;
+}
+
+.essence-grid [data-module-type="freeText"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  height: 100%;
+}
+
+.essence-grid [data-part="label"] {
+  min-height: 20px;
+  justify-content: center;
+  border-right: 0;
+  border-bottom: 1px solid var(--witchy-line);
+  font-size: 11px;
+}
+
+.essence-grid [data-part="input"] {
+  min-height: 44px;
+  height: 100%;
+  padding-inline: 2px;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+  text-align: center;
+}
+
+.sheet-content-grid {
+  display: grid;
+  grid-template-columns: repeat(2, calc(50% - 1.5mm));
+  gap: 3mm;
+  align-items: start;
+  min-width: 0;
+}
+
+.sheet-region {
+  padding: 2mm;
+  border: 1px solid var(--witchy-line);
+  border-radius: 2mm;
+  background: var(--witchy-panel);
+}
+
+.picker-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11mm;
+  gap: 1mm;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.picker-field [data-module-type="resourcePicker"] {
+  display: flex;
+  align-self: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.picker-field [data-part="button"] {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  font-size: 0;
+}
+
+.experience-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5mm;
+}
+
+.experience-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 15mm;
+  gap: 1mm;
+  min-width: 0;
+}
+
+/* 常规文本 freeText：统一比框架默认 0.92rem 小 1px，并用固定行高/最小高度取代 1lh，
+   避免中文行高比数字/拉丁大时把输入框撑高。magic-words（魔法三词）与 essence-grid（三界本源）
+   在下面用更高优先级规则覆盖，不参与此处统一。 */
+.witchy-page [data-module-type="freeText"] [data-part="input"] {
+  min-height: 30px;
+  height: auto;
+  line-height: 1.2;
+  font-size: calc(0.92rem - 1px);
+}
+
+.witchy-page .essence-grid [data-module-type="freeText"] [data-part="input"] {
+  min-height: 44px;
+  height: 100%;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+}
+
+.magic-list article {
+  display: grid;
+  gap: 1mm;
+  min-width: 0;
+}
+
+.magic-words {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1mm;
+  min-width: 0;
+  align-items: stretch;
+}
+
+/* 魔法词条输入框：固定单行高度，避免中文输入把行撑高；缩小字号以容纳占位文本。 */
+.magic-words [data-module-type="freeText"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  height: 8mm;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.magic-words [data-module-type="freeText"] [data-part="input"] {
+  height: 100%;
+  min-height: 0;
+  padding-inline: 1.5px;
+  padding-block: 1px;
+  line-height: 1.2;
+  font-size: 14px;
+  overflow: hidden;
+  field-sizing: fixed;
+}
+
+.omen-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5mm;
+}
+
+.familiar-layout {
+  display: grid;
+  grid-template-columns: 45mm minmax(0, 1fr);
+  gap: 2mm;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.familiar-layout [data-part="surface-frame"] {
+  min-height: 0;
+}
+
+.familiar-layout > [data-module-slot-id="familiar-portrait"],
+.familiar-layout > [data-module-slot-id="familiar-portrait"] > [data-module-type="imageField"] {
+  height: 100%;
+}
+
+.witchy-page .module-slot,
+.witchy-page [data-module-type="freeText"],
+.witchy-page [data-module-type="longText"] {
+  min-width: 0;
+}
+
+@media print {
+  .magic-resource-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .witchy-page {
+    padding: 5mm;
+  }
+
+  .resource-panel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,7 +4,7 @@ import { allowedHtmlTags, findModule } from "../domain/systemPackage";
 import type { SheetValue } from "../domain/characterData";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RenderSheetModule } from "./moduleRegistry";
-import { printablePages, resolveCurrentPageId, runtimeVisiblePages } from "./pagePresentation";
+import { loadPagePreference, printablePages, resolveCurrentPageId, runtimeVisiblePages, savePagePreference } from "./pagePresentation";
 
 interface SheetRendererProps {
   systemPackage: SystemPackage;
@@ -241,19 +241,26 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
+  const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
   const characterValues = useRuntimeStore((state) => state.characterData?.character.values);
-  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(() =>
+    loadPagePreference(globalThis.localStorage, systemPackage.manifest.ID, activeCharacterSaveId));
   const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
   const requestedVisiblePageId = requestedPageId && visiblePages.some((page) => page.ID === requestedPageId) ? requestedPageId : null;
   const resolvedCurrentPageId = requestedVisiblePageId ?? resolveCurrentPageId(visiblePages, currentPageId);
   const renderedPages = outputMode ? printablePages(systemPackage.pages, pageVisibility) : visiblePages.filter((page) => page.ID === resolvedCurrentPageId);
   const skinCss = scopeSkinCss(systemPackage, selectedSkinId, packageAssetUrls);
   const resolvedSkinId = activeSkin(systemPackage, selectedSkinId)?.ID;
-  useEffect(() => setCurrentPageId(null), [systemPackage.manifest.ID, systemPackage.manifest.版本]);
+  useEffect(() => setCurrentPageId(
+    loadPagePreference(globalThis.localStorage, systemPackage.manifest.ID, activeCharacterSaveId),
+  ), [activeCharacterSaveId, systemPackage.manifest.ID, systemPackage.manifest.版本]);
   useEffect(() => { if (currentPageId !== resolvedCurrentPageId) setCurrentPageId(resolvedCurrentPageId); }, [currentPageId, resolvedCurrentPageId]);
 
   const outlet = <>
-    {!outputMode && visiblePages.length > 1 ? <nav className="page-navigation" aria-label="页面导航">{visiblePages.map((page) => <button type="button" className={page.ID === resolvedCurrentPageId ? "active" : undefined} aria-current={page.ID === resolvedCurrentPageId ? "page" : undefined} onClick={() => setCurrentPageId(page.ID)} key={page.ID}>{page.名称}</button>)}</nav> : null}
+    {!outputMode && visiblePages.length > 1 ? <nav className="page-navigation" aria-label="页面导航">{visiblePages.map((page) => <button type="button" className={page.ID === resolvedCurrentPageId ? "active" : undefined} aria-current={page.ID === resolvedCurrentPageId ? "page" : undefined} onClick={() => {
+      setCurrentPageId(page.ID);
+      savePagePreference(globalThis.localStorage, systemPackage.manifest.ID, activeCharacterSaveId, page.ID);
+    }} key={page.ID}>{page.名称}</button>)}</nav> : null}
     {!outputMode && visiblePages.length === 0 ? <p className="empty-page-state">当前没有可见页面。</p> : null}
     {renderedPages.map((page) =>
       (

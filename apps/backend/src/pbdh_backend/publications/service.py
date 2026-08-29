@@ -51,6 +51,9 @@ class PublicationService:
         document = candidate["document"]
         media = candidate["media"]
         document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+        fork_diagnostics = self._validate_fork_source(document)
+        if fork_diagnostics:
+            raise PublicationValidationError(fork_diagnostics)
         cover_asset_id = metadata["coverAssetId"]
         if cover_asset_id not in {asset["id"] for asset in document["assets"]}:
             raise PublicationValidationError([{
@@ -74,6 +77,39 @@ class PublicationService:
         publication["created"] = write.created
         publication["idempotent"] = write.idempotent
         return publication
+
+    def _validate_fork_source(self, document: Mapping[str, Any]) -> list[dict[str, Any]]:
+        fork_source = document.get("forkSource")
+        if fork_source is None:
+            return []
+        source = self._repository.get_publication_snapshot(fork_source["publicationId"])
+        expected = {
+            "packageId": fork_source["packageId"],
+            "version": fork_source["version"],
+            "snapshotDigest": fork_source["snapshotDigest"],
+        }
+        if source is None or any(source[key] != value for key, value in expected.items()):
+            return [self._fork_diagnostic("publication.fork-source.snapshot-mismatch", "/forkSource")]
+        source_resource_ids = {resource["id"] for resource in source["document"]["resources"]}
+        for index, reference in enumerate(fork_source["copiedResources"]):
+            if (reference["packageId"] != source["packageId"]
+                    or reference["resourceId"] not in source_resource_ids):
+                return [self._fork_diagnostic(
+                    "publication.fork-source.resource-mismatch",
+                    f"/forkSource/copiedResources/{index}",
+                )]
+        return []
+
+    @staticmethod
+    def _fork_diagnostic(code: str, location: str) -> dict[str, Any]:
+        return {
+            "code": code,
+            "severity": "error",
+            "family": "resource-package",
+            "version": "1.0.0",
+            "location": location,
+            "params": {},
+        }
 
     def download(
         self,
@@ -123,6 +159,21 @@ class PublicationService:
                     {"mode": self._mode},
                 ))
                 continue
+            allowed_replacements = {
+                replacement["id"]
+                for replacement in template.get("tabletopReplacements", [])
+            }
+            for replacement_index, replacement in enumerate(
+                resource.get("replacements", [])
+            ):
+                if replacement["replacementId"] not in allowed_replacements:
+                    diagnostics.append(self._template_diagnostic(
+                        resource,
+                        index,
+                        "template.replacement.unsupported",
+                        {"replacementId": replacement["replacementId"]},
+                        f"/replacements/{replacement_index}/replacementId",
+                    ))
             for error in template["validator"].iter_errors(resource["data"]):
                 pointer = "".join(
                     f"/{str(segment).replace('~', '~0').replace('/', '~1')}"

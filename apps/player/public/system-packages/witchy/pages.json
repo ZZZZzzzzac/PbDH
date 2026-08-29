@@ -1,0 +1,11 @@
+[
+  {
+    "ID": "witch-sheet",
+    "名称": "女巫人物卡",
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/witch-sheet.html",
+      "css": "layouts/base.css"
+    }
+  }
+]

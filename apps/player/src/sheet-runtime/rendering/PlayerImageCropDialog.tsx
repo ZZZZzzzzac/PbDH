@@ -27,16 +27,20 @@ interface PlayerImageCropDialogProps {
   processingError: string | null;
   onCancel: () => void;
   onConfirm: (selection: PlayerImageCropSelection) => void;
-  aspectRatio?: number;
 }
 
-export function PlayerImageCropDialog({ file, label, working, processingError, onCancel, onConfirm, aspectRatio }: PlayerImageCropDialogProps) {
+type AspectRatioChoice = "free" | "original" | "square" | "card";
+
+export function PlayerImageCropDialog({ file, label, working, processingError, onCancel, onConfirm }: PlayerImageCropDialogProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const layoutRef = useRef<CropLayout | null>(null);
   const [layout, setLayout] = useState<CropLayout | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [aspectRatioChoice, setAspectRatioChoice] = useState<AspectRatioChoice>("free");
+
+  const selectedAspectRatio = resolveAspectRatio(aspectRatioChoice, imageRef.current);
 
   useEffect(() => {
     const image = new Image();
@@ -48,7 +52,7 @@ export function PlayerImageCropDialog({ file, label, working, processingError, o
       if (cancelled) return;
       imageRef.current = image;
       try {
-        setLayout(initialCropLayout(image.naturalWidth, image.naturalHeight, aspectRatio));
+        setLayout(initialCropLayout(image.naturalWidth, image.naturalHeight));
       } catch (error) {
         setLoadError(error instanceof Error ? error.message : "图片尺寸无效。");
       }
@@ -60,7 +64,7 @@ export function PlayerImageCropDialog({ file, label, working, processingError, o
       imageRef.current = null;
       URL.revokeObjectURL(url);
     };
-  }, [aspectRatio, file]);
+  }, [file]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -128,8 +132,8 @@ export function PlayerImageCropDialog({ file, label, working, processingError, o
     const cursor = point(event.clientX, event.clientY);
     const origin = dragRef.current;
     setLayout(origin.mode === "resize"
-      ? aspectRatio
-        ? resizeFixedCrop(layout, origin.corner, cursor.x, cursor.y, aspectRatio)
+      ? selectedAspectRatio
+        ? resizeFixedCrop(layout, origin.corner, cursor.x, cursor.y, selectedAspectRatio)
         : resizeFreeCrop(layout, origin.corner, cursor.x, cursor.y)
       : moveCrop(layout, origin.cropX + cursor.x - origin.pointerX, origin.cropY + cursor.y - origin.pointerY));
   };
@@ -138,8 +142,35 @@ export function PlayerImageCropDialog({ file, label, working, processingError, o
     <div className="player-image-crop-backdrop" data-output-exclude="true">
       <section className="player-image-crop-dialog" role="dialog" aria-modal="true" aria-label={`裁剪${label}`}>
         <header className="player-image-crop-header">
-          <div><p>Player Image</p><h2>裁剪{label}</h2></div>
-          <span>拖动位置或四角 · 滚轮缩放</span>
+          <div className="player-image-crop-heading">
+            <div><p>Player Image</p><h2>裁剪{label}</h2></div>
+            <span>拖动位置或四角 · 滚轮缩放</span>
+          </div>
+          <div className="player-image-crop-actions">
+            <label>
+              <span className="visually-hidden">裁剪比例</span>
+              <select
+                aria-label="裁剪比例"
+                value={aspectRatioChoice}
+                disabled={!layout || working}
+                onChange={(event) => {
+                  const choice = event.target.value as AspectRatioChoice;
+                  setAspectRatioChoice(choice);
+                  const image = imageRef.current;
+                  if (image) setLayout(initialCropLayout(image.naturalWidth, image.naturalHeight, resolveAspectRatio(choice, image)));
+                }}
+              >
+                <option value="free">不限制比例</option>
+                <option value="original">原图比例</option>
+                <option value="square">1:1</option>
+                <option value="card">63:88</option>
+              </select>
+            </label>
+            <button className="icon-button secondary-button" type="button" onClick={onCancel} disabled={working}>取消</button>
+            <button className="icon-button" type="button" onClick={() => layout && onConfirm(cropSelectionFromLayout(layout))} disabled={!layout || working || Boolean(loadError)}>
+              {working ? "正在处理…" : "应用裁剪"}
+            </button>
+          </div>
         </header>
         <div className="player-image-crop-workspace">
           <canvas
@@ -156,16 +187,17 @@ export function PlayerImageCropDialog({ file, label, working, processingError, o
           {loadError ? <div className="player-image-crop-status is-error" role="alert">{loadError}</div> : null}
         </div>
         {processingError ? <p className="player-image-crop-error" role="alert">{processingError}</p> : null}
-        <div className="player-image-crop-actions">
-          <button className="icon-button secondary-button" type="button" onClick={onCancel} disabled={working}>取消</button>
-          <button className="icon-button" type="button" onClick={() => layout && onConfirm(cropSelectionFromLayout(layout))} disabled={!layout || working || Boolean(loadError)}>
-            {working ? "正在处理…" : "应用裁剪"}
-          </button>
-        </div>
       </section>
     </div>,
     document.body,
   );
+}
+
+function resolveAspectRatio(choice: AspectRatioChoice, image: HTMLImageElement | null): number | undefined {
+  if (choice === "original") return image ? image.naturalWidth / image.naturalHeight : undefined;
+  if (choice === "square") return 1;
+  if (choice === "card") return 63 / 88;
+  return undefined;
 }
 
 function drawCropper(canvas: HTMLCanvasElement, image: HTMLImageElement, layout: CropLayout) {

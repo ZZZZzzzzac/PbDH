@@ -55,6 +55,18 @@ def apply_mutation(document: dict[str, Any], mutation: dict[str, Any]) -> None:
     if kind == "set-target-version":
         document["targets"][mutation["targetIndex"]]["version"] = mutation["value"]
         return
+    if kind == "set-replacements":
+        document["resources"][mutation["resourceIndex"]]["replacements"] = copy.deepcopy(
+            mutation["value"]
+        )
+        return
+    if kind == "set-presentation-size":
+        presentation = document["resources"][mutation["resourceIndex"]]["presentation"]
+        presentation["width"] = mutation["width"]
+        presentation["height"] = mutation["height"]
+        if "fixedRatio" in mutation:
+            presentation["fixedRatio"] = mutation["fixedRatio"]
+        return
     raise AssertionError(f"Unknown fixture mutation: {kind}")
 
 

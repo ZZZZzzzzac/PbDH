@@ -16,5 +16,6 @@ export const ancestryTemplate = deepFreeze<TemplateCoreCapability<AncestryData>>
   version: "1.0.0",
   schema,
   rendererRevision: "ancestry-card-r1",
+  defaultPresentation: { ...temporaryAncestryTemplate.defaultPresentation, width: "63", height: "88" },
   upgradeFrom: { version: "0.0.0-dev.1", upgrade },
 });

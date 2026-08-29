@@ -1,0 +1,23 @@
+{
+  "id": "01a05400-0000-7000-8000-000000000201",
+  "urlPath": "tttri",
+  "name": "罗德岛旅记",
+  "version": "1.0.1",
+  "releaseVersion": "0.0.0-dev",
+  "directory": "tttri",
+  "inventoryPath": ".pbdh-runtime-files.json",
+  "fileCount": 51,
+  "metadataFileCount": 29,
+  "embeddedResourceIndex": [
+    {
+      "path": "resources/tttri.pbres",
+      "packageId": "01a05400-0000-7000-8000-000000000202",
+      "version": "1.0.1",
+      "snapshotDigest": "sha256:dc873d2f7f89b74d56028ec0b1411d0c4141d3e8cbdadbd6d2200e768f128c98"
+    }
+  ],
+  "loadingPresentation": {
+    "标语": "正在连接PRTS...",
+    "强调色": "#63bfd1"
+  }
+}

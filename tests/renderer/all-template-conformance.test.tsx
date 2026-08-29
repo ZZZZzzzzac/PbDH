@@ -14,10 +14,15 @@ import {
   itemTemplate,
   professionTemplate,
   subclassTemplate,
+  templateRegistry,
   weaponTemplate,
   type TemplateCoreCapability,
 } from "../../packages/templates/src/core/index.ts";
 import { trustedRendererFor } from "../../packages/templates/src/frontend/index.ts";
+import {
+  listLazyRendererBindings,
+  loadTrustedRenderer,
+} from "../../packages/templates/src/frontend/lazy-renderer-registry.ts";
 
 const firstVersionTemplates: readonly TemplateCoreCapability<any>[] = [
   adversaryTemplate,
@@ -34,6 +39,15 @@ const firstVersionTemplates: readonly TemplateCoreCapability<any>[] = [
 ];
 
 describe("首版可信 Template 的 Canonical Surface conformance", () => {
+  test("所有仍可解析的模板都不会再产出 90×142 卡面", () => {
+    for (const template of templateRegistry.list()) {
+      expect(template.defaultPresentation.width, `${template.id}@${template.version}`).toBe("63");
+      if (template.defaultPresentation.fixedRatio) {
+        expect(template.defaultPresentation.height, `${template.id}@${template.version}`).toBe("88");
+      }
+    }
+  });
+
   test.each(firstVersionTemplates)("$id@$version 在四个宿主解析同一精确 Renderer", (template) => {
     const renderer = trustedRendererFor(template.id, template.version);
     expect(renderer).toBeDefined();
@@ -69,5 +83,13 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     expect(trustedRendererFor("未知", "1.0.0")).toBeUndefined();
     expect(trustedRendererFor(adversaryTemplate.id, "2.0.0")).toBeUndefined();
     expect(trustedRendererFor(weaponTemplate.id, "1.0.1")).toBeUndefined();
+  });
+
+  test("历史 Renderer 可以按精确 Template 版本按需加载", async () => {
+    expect(listLazyRendererBindings()).toContain("敌人@1.0.0-alpha.1");
+    expect(listLazyRendererBindings()).toContain("敌人@1.0.0");
+    await expect(loadTrustedRenderer("敌人", "1.0.0-alpha.1"))
+      .resolves.toMatchObject({ revision: "enemy-card-r1", templateVersion: "1.0.0-alpha.1" });
+    await expect(loadTrustedRenderer("敌人", "2.0.0")).resolves.toBeUndefined();
   });
 });

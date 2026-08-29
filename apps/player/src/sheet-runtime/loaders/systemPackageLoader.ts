@@ -126,6 +126,8 @@ export async function loadSystemPackageFromVfs(
   if (!validationChecks.ok) {
     return { ok: false, issues: [validationChecks.issue] };
   }
+  const characterDataMigrations = loadCharacterDataMigrationFilesFromVfs(vfs, runtime.characterDataMigrations ?? []);
+  if (!characterDataMigrations.ok) return { ok: false, issues: [characterDataMigrations.issue] };
 
   const packageAssets = resolvePackageAssets(vfs);
   const effectivePackageAssets = [...packageAssets, ...(overrides.packageAssets ?? [])];
@@ -136,6 +138,7 @@ export async function loadSystemPackageFromVfs(
     overrides.resourceLibraries ?? [],
     dependenciesJson?.value,
     validationChecks.value,
+    characterDataMigrations.value,
     guideJson?.value,
     questionnaire?.value,
     characterFormatAdapters?.value,
@@ -162,6 +165,7 @@ async function normalizeSystemPackage(
   resourceLibraries: Array<ResourceLibraryReference & { entries: unknown }> = [],
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
+  characterDataMigrations?: Array<{ fromVersion: string; toVersion: string; script: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
   questionnaireCharacterCreation?: unknown,
   characterFormatAdapters?: unknown,
@@ -193,6 +197,7 @@ async function normalizeSystemPackage(
     resourceLibraries,
     dependencies,
     validationChecks,
+    characterDataMigrations,
     characterCreationGuide,
     questionnaireCharacterCreation,
     characterFormatAdapters,
@@ -219,6 +224,9 @@ function buildPackageSourceMap(document: SystemPackageDocument, pages: unknown):
   };
   runtime.validationChecks?.forEach((check, index) => {
     sourceMap[`validationChecks.${index}`] = check.script;
+  });
+  runtime.characterDataMigrations?.forEach((migration, index) => {
+    sourceMap[`characterDataMigrations.${index}`] = migration.script;
   });
   runtime.skins?.forEach((skin) => {
     sourceMap[`skins.${skin.id}.css`] = skin.css;
@@ -343,6 +351,19 @@ function loadValidationScriptFilesFromVfs(
   }
 
   return { ok: true as const, value: normalizedChecks };
+}
+
+function loadCharacterDataMigrationFilesFromVfs(
+  vfs: PackageVirtualFileSystem,
+  migrations: NonNullable<SystemPackageDocument["runtime"]["characterDataMigrations"]>,
+) {
+  const normalized = [];
+  for (const migration of migrations) {
+    const script = vfs.readText(migration.script);
+    if (!script.ok) return { ok: false as const, issue: script.issue };
+    normalized.push({ ...migration, script: script.path, scriptContent: script.value });
+  }
+  return { ok: true as const, value: normalized };
 }
 
 function loadFormatAdapterScriptFilesFromVfs(vfs: PackageVirtualFileSystem, adapters: unknown, includeExport: boolean) {

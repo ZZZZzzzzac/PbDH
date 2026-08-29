@@ -62,6 +62,7 @@ class CloudDocumentRepository:
     ) -> list[dict[str, Any]]:
         connection = self._database.connect()
         try:
+            self._purge_expired(connection)
             rows = connection.execute(
                 "SELECT * FROM cloud_documents WHERE account_id = ? "
                 "AND (? IS NULL OR document_kind = ?) "
@@ -76,6 +77,7 @@ class CloudDocumentRepository:
     def get_document(self, account_id: str, document_id: str) -> dict[str, Any] | None:
         connection = self._database.connect()
         try:
+            self._purge_expired(connection)
             row = connection.execute(
                 "SELECT * FROM cloud_documents WHERE document_id = ? AND account_id = ?",
                 (document_id, account_id),
@@ -183,6 +185,35 @@ class CloudDocumentRepository:
     ) -> dict[str, Any]:
         return self._set_deleted(account_id, document_id, mutation_id, base_revision, False)
 
+    def delete_document(
+        self,
+        account_id: str,
+        document_id: str,
+        base_revision: int,
+    ) -> None:
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT revision, deleted_at FROM cloud_documents "
+                "WHERE document_id = ? AND account_id = ?",
+                (document_id, account_id),
+            ).fetchone()
+            if current is None:
+                raise CloudDocumentNotFound(document_id)
+            if int(current["revision"]) != base_revision:
+                raise CloudDocumentRevisionConflict(document_id)
+            if current["deleted_at"] is None:
+                raise CloudDocumentStateConflict(document_id)
+            connection.execute("DELETE FROM cloud_documents WHERE document_id = ?", (document_id,))
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+
     def get_media(
         self,
         account_id: str,
@@ -191,6 +222,7 @@ class CloudDocumentRepository:
     ) -> tuple[str, bytes] | None:
         connection = self._database.connect()
         try:
+            self._purge_expired(connection)
             row = connection.execute(
                 "SELECT b.media_type, b.bytes FROM media_blobs b "
                 "JOIN cloud_document_media m ON m.asset_id = b.asset_id "
@@ -254,6 +286,14 @@ class CloudDocumentRepository:
             raise
         finally:
             connection.close()
+
+    @staticmethod
+    def _purge_expired(connection: sqlite3.Connection) -> None:
+        connection.execute(
+            "DELETE FROM cloud_documents WHERE deleted_at IS NOT NULL "
+            "AND purge_after <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
+        )
+        connection.commit()
 
     @staticmethod
     def _json(value: object) -> str:

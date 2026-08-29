@@ -18,7 +18,7 @@ import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { PackageLoadResult } from "../loaders/systemPackageLoader";
 import type { PresetLoadProgress, PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
 import type { NormalizedResourceExtensionArtifact, ResourceExtensionFileLoadResult } from "../loaders/resourceExtensionLoader";
-import type { CharacterSaveSummary, RuntimeStorage } from "../storage/runtimeStorage";
+import type { CharacterDataMigrationCandidate, CharacterSaveSummary, PackageScriptConsentCandidate, RuntimeStorage, SystemPackageCacheMetadata } from "../storage/runtimeStorage";
 import type { runValidationChecks } from "../domain/validationRunner";
 
 export type BootStatus = "idle" | "loading" | "ready" | "error";
@@ -26,11 +26,16 @@ export type StorageStatus = "idle" | "saving" | "saved" | "error";
 export type ValidationStatus = "idle" | "running" | "complete";
 export type FrameworkColorSchemePreference = "follow-skin" | "light" | "dark";
 
+export type RuntimePackageLoadResult = PackageLoadResult & {
+  cacheMetadata?: SystemPackageCacheMetadata;
+  commit?: () => Promise<void>;
+};
+
 export interface RuntimeDependencies {
-  loadSystemPackageFromFile: (file: Blob) => Promise<PackageLoadResult>;
-  loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<PackageLoadResult>;
-  loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<PackageLoadResult>;
-  loadPresetSystemPackage: (preset: PresetSystemPackage, onProgress?: (progress: PresetLoadProgress) => void) => Promise<PackageLoadResult>;
+  loadSystemPackageFromFile: (file: Blob) => Promise<RuntimePackageLoadResult>;
+  loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<RuntimePackageLoadResult>;
+  loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<RuntimePackageLoadResult>;
+  loadPresetSystemPackage: (preset: PresetSystemPackage, onProgress?: (progress: PresetLoadProgress) => void) => Promise<RuntimePackageLoadResult>;
   loadPreviewDirectoryHandle: () => Promise<PackageDirectoryHandle | null>;
   savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: RuntimeStorage;
@@ -113,6 +118,16 @@ export interface PendingQuestionnaireResult {
   nextCharacterData: CharacterData;
 }
 
+export type PendingCharacterDataMigration = CharacterDataMigrationCandidate;
+export type PendingPackageScriptConsent = PackageScriptConsentCandidate;
+
+export interface PendingSystemPackageImport {
+  packageId: string;
+  packageName: string;
+  packageVersion: string;
+  replacesCurrent: boolean;
+}
+
 export interface PackageSlice {
   basePackage: SystemPackage | null;
   currentPackage: SystemPackage | null;
@@ -127,15 +142,22 @@ export interface PackageSlice {
   importError: string | null;
   importNotice: string | null;
   authorPreviewActive: boolean;
+  pendingSystemPackageImport: PendingSystemPackageImport | null;
+  pendingPackageScriptConsent: PendingPackageScriptConsent | null;
   initialize: (presets?: PresetSystemPackage[]) => Promise<void>;
+  refreshPlatformResources: (basePackage: SystemPackage, packageAssets: RuntimePackageAsset[]) => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
+  confirmSystemPackageImport: () => Promise<void>;
+  cancelSystemPackageImport: () => void;
   switchToPresetSystemPackage: (preset: PresetSystemPackage, forceReload?: boolean) => Promise<void>;
   selectSystemPackageSkin: (skinId: string) => void;
   setFrameworkColorSchemePreference: (preference: FrameworkColorSchemePreference) => void;
   enterAuthorPreview: (handle: PackageDirectoryHandle) => Promise<void>;
   exitAuthorPreview: () => void;
   clearImportMessage: () => void;
+  confirmPackageScriptConsent: () => Promise<void>;
+  cancelPackageScriptConsent: () => void;
 }
 
 export interface ResourceExtensionSlice {
@@ -161,7 +183,9 @@ export interface ResourceExtensionSlice {
 export interface CharacterSlice {
   characterData: CharacterData | null;
   characterSaves: CharacterSaveSummary[];
+  allCharacterSaves: CharacterSaveSummary[];
   activeCharacterSaveId: string | null;
+  pendingCharacterDataMigration: PendingCharacterDataMigration | null;
   derivedReadOnlyDisplayContent: Record<string, string>;
   derivedTextPlaceholders: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
@@ -169,6 +193,8 @@ export interface CharacterSlice {
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
   createCharacterSave: (name?: string) => Promise<void>;
   switchCharacterSave: (saveId: string) => Promise<void>;
+  confirmCharacterDataMigration: () => Promise<void>;
+  cancelCharacterDataMigration: () => void;
   renameCharacterSave: (saveId: string, name: string) => Promise<void>;
   duplicateCharacterSave: (saveId: string, name?: string) => Promise<void>;
   deleteCharacterSave: (saveId: string) => Promise<void>;

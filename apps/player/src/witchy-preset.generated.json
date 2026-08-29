@@ -1,0 +1,23 @@
+{
+  "id": "01a05400-0000-7000-8000-000000000001",
+  "urlPath": "witchy",
+  "name": "巫趣 Witchy",
+  "version": "1.2.0",
+  "releaseVersion": "0.0.0-dev",
+  "directory": "witchy",
+  "inventoryPath": ".pbdh-runtime-files.json",
+  "fileCount": 15,
+  "metadataFileCount": 11,
+  "embeddedResourceIndex": [
+    {
+      "path": "resources/witchy.pbres",
+      "packageId": "01a05400-0000-7000-8000-000000000002",
+      "version": "1.2.0",
+      "snapshotDigest": "sha256:bf3dc219dd2a4df2adcfa7604ed98c2b38be719ade488f21ab10854fe79d4a5c"
+    }
+  ],
+  "loadingPresentation": {
+    "标语": "正在熬煮秘药...",
+    "强调色": "#553a75"
+  }
+}

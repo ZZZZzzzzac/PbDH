@@ -17,6 +17,7 @@ import { restorePlayerResourceLibrary } from "../../apps/player/src/PlayerSheetS
 
 const root = process.cwd();
 const databases: PbDHLocalDatabase[] = [];
+const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 
 function fixture(): ResourcePackageCandidate {
   const document = JSON.parse(readFileSync(path.join(
@@ -48,8 +49,8 @@ describe("Dexie Resource Package Repository", () => {
     const store = repository().repository;
     const candidate = fixture();
 
-    await store.replace(candidate, "file");
-    const [installed] = await store.list();
+    await store.replace(systemPackageId, candidate, "file");
+    const [installed] = await store.list(systemPackageId);
 
     expect(installed?.document).toEqual(candidate.document);
     expect(installed?.media.get(candidate.document.assets[0]!.id)).toEqual(
@@ -58,12 +59,24 @@ describe("Dexie Resource Package Repository", () => {
     expect(installed?.source).toBe("file");
   });
 
+  test("isolates installed packages by System Package", async () => {
+    const store = repository().repository;
+    const candidate = fixture();
+    const daggerheartId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
+    const tttriId = "01a05400-0000-7000-8000-000000000201";
+
+    await store.replace(daggerheartId, candidate, "file");
+
+    expect(await store.list(daggerheartId)).toHaveLength(1);
+    expect(await store.list(tttriId)).toEqual([]);
+  });
+
   test("restores a Market-installed package and media without a Market request", async () => {
     const store = repository().repository;
     const candidate = fixture();
 
-    await store.replace(candidate, "market");
-    const [restored] = await store.list();
+    await store.replace(systemPackageId, candidate, "market");
+    const [restored] = await store.list(systemPackageId);
 
     expect(restored?.source).toBe("market");
     expect(restored?.document.snapshotDigest).toBe(candidate.document.snapshotDigest);
@@ -75,7 +88,7 @@ describe("Dexie Resource Package Repository", () => {
   test("restores only packages installed in IndexedDB", async () => {
     const store = repository().repository;
     const marketPackage = fixture();
-    await store.replace(marketPackage, "market");
+    await store.replace(systemPackageId, marketPackage, "market");
 
     const restored = await restorePlayerResourceLibrary(store);
 
@@ -86,15 +99,15 @@ describe("Dexie Resource Package Repository", () => {
   test("rejects an incomplete update and preserves the previous snapshot", async () => {
     const store = repository().repository;
     const original = fixture();
-    await store.replace(original, "bundled");
+    await store.replace(systemPackageId, original, "bundled");
     const incomplete = fixture();
     incomplete.document.package.version = "1.1.0";
     incomplete.document.snapshotDigest = "sha256:incoming";
     incomplete.media.clear();
 
-    await expect(store.replace(incomplete, "file")).rejects.toThrow("Missing installed media");
+    await expect(store.replace(systemPackageId, incomplete, "file")).rejects.toThrow("Missing installed media");
 
-    const [installed] = await store.list();
+    const [installed] = await store.list(systemPackageId);
     expect(installed?.document.package.version).toBe(original.document.package.version);
     expect(installed?.document.snapshotDigest).toBe(original.document.snapshotDigest);
   });
@@ -107,14 +120,14 @@ describe("Dexie Resource Package Repository", () => {
     second.document.package.name = "共享媒体测试包";
     second.document.snapshotDigest = "sha256:shared-media-test";
 
-    await store.replace(first, "file");
-    await store.replace(second, "market");
+    await store.replace(systemPackageId, first, "file");
+    await store.replace(systemPackageId, second, "market");
     expect(await database.mediaAssets.count()).toBe(1);
 
-    await store.remove(first.document.package.id);
+    await store.remove(systemPackageId, first.document.package.id);
     expect(await database.mediaAssets.count()).toBe(1);
 
-    await store.remove(second.document.package.id);
+    await store.remove(systemPackageId, second.document.package.id);
     expect(await database.mediaAssets.count()).toBe(0);
   });
 });

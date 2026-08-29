@@ -75,6 +75,11 @@ export interface CloudDocumentApi {
     baseRevision: number,
     credentials: CloudCredentials,
   ): Promise<RemoteCloudDocument>;
+  deleteDocument(
+    documentId: string,
+    baseRevision: number,
+    credentials: CloudCredentials,
+  ): Promise<void>;
 }
 
 type LocalDocumentStore = Pick<
@@ -355,6 +360,19 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
     credentials: CloudCredentials,
   ): Promise<RemoteCloudDocument> {
     return this.#lifecycle(documentId, "restore", mutationId, baseRevision, credentials);
+  }
+
+  async deleteDocument(
+    documentId: string,
+    baseRevision: number,
+    credentials: CloudCredentials,
+  ): Promise<void> {
+    const query = new URLSearchParams({ baseRevision: String(baseRevision) });
+    const response = await this.#fetch(
+      `/api/cloud/documents/${encodeURIComponent(documentId)}?${query}`,
+      { method: "DELETE", headers: requestHeaders(credentials) },
+    );
+    if (!response.ok) await throwApiError(response, "云文档永久删除失败。");
   }
 
   async #lifecycle(

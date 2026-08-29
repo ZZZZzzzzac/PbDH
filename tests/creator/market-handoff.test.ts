@@ -15,6 +15,7 @@ describe("Creator Market handoff ingress", () => {
       packageId: "package-1",
       packageVersion: "1.0.0",
       snapshotDigest: "sha256:abc",
+      creatorMode: "import",
       focusResourceId: "res-1",
     });
     expect(parseCreatorMarketHandoff("http://localhost:5173/gm?target=gm")).toBeNull();
@@ -22,8 +23,13 @@ describe("Creator Market handoff ingress", () => {
   });
 
   test("removes one-shot handoff parameters without disturbing other URL state", () => {
-    const cleaned = withoutCreatorMarketHandoff("http://localhost:5173/creator?state=empty&pbdhHandoff=publication&target=creator&publicationId=pub-1&packageId=package-1&packageVersion=1.0.0&snapshotDigest=digest");
+    const cleaned = withoutCreatorMarketHandoff("http://localhost:5173/creator?state=empty&pbdhHandoff=publication&target=creator&creatorMode=fork&publicationId=pub-1&packageId=package-1&packageVersion=1.0.0&snapshotDigest=digest");
     expect(cleaned.search).toBe("?state=empty");
+  });
+
+  test("recognizes an explicit Market fork without changing ordinary imports", () => {
+    expect(parseCreatorMarketHandoff("http://localhost:5173/creator?pbdhHandoff=publication&target=creator&creatorMode=fork&publicationId=pub-1&packageId=package-1&packageVersion=1.0.0&snapshotDigest=digest")?.creatorMode).toBe("fork");
+    expect(parseCreatorMarketHandoff("http://localhost:5173/creator?pbdhHandoff=publication&target=creator&publicationId=pub-1&packageId=package-1&packageVersion=1.0.0&snapshotDigest=digest")?.creatorMode).toBe("import");
   });
 
   test("binds the downloaded package to the complete stable handoff locator", () => {

@@ -1,0 +1,112 @@
+[
+  { "ID": "passenger-name", "类型": "freeText", "标签": "乘客姓名", "占位文本": "你叫什么？" },
+  { "ID": "face-cast", "类型": "freeText", "标签": "面部选角", "占位文本": "演员、音乐人、网红……" },
+  { "ID": "vibes", "类型": "longText", "标签": "你的气质", "行数": 3, "占位文本": "描述角色的整体气质氛围" },
+
+  {
+    "ID": "pick-archetype",
+    "类型": "resourcePicker",
+    "按钮文本": "选择原型",
+    "资源库": [
+      {
+        "ID": "archetypes",
+        "字段模板": [
+          { "键": "名称", "标签": "原型", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "原名", "标签": "英文", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "简介", "标签": "团队定位", "默认显示": true, "可筛选": false, "可排序": false },
+          { "键": "增益名称", "标签": "增益", "默认显示": true, "可筛选": false, "可排序": false },
+          { "键": "增益", "标签": "增益效果", "默认显示": true, "可筛选": false, "可排序": false },
+          { "键": "缺陷名称", "标签": "缺陷", "默认显示": true, "可筛选": false, "可排序": false },
+          { "键": "缺陷", "标签": "缺陷效果", "默认显示": true, "可筛选": false, "可排序": false }
+        ]
+      }
+    ]
+  },
+  { "ID": "archetype-name", "类型": "freeText", "标签": "原型" },
+  { "ID": "archetype-abilities", "类型": "longText", "标签": "增益与缺陷", "行数": 8, "占位文本": "选择原型后自动填写；可继续添加裁定或备注" },
+
+  {
+    "ID": "pick-approaches",
+    "类型": "resourcePicker",
+    "按钮文本": "按等级顺序选择 4 项",
+    "多选": true,
+    "资源库": [
+      {
+        "ID": "approaches",
+        "字段模板": [
+          { "键": "名称", "标签": "行事风格", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "原名", "标签": "英文", "默认显示": true, "可筛选": false, "可排序": true }
+        ]
+      }
+    ]
+  },
+  { "ID": "approach-expert", "类型": "freeText", "标签": "专家 +3" },
+  { "ID": "approach-good", "类型": "freeText", "标签": "擅长 +2" },
+  { "ID": "approach-practiced", "类型": "freeText", "标签": "熟练 +1" },
+  { "ID": "approach-poor", "类型": "freeText", "标签": "生疏 -1" },
+
+  {
+    "ID": "fuel-die",
+    "类型": "freeText",
+    "标签": "燃料骰",
+    "默认值": "D12",
+    "选项": ["D12", "D10", "D8", "D6", "D4", "燃油耗尽"]
+  },
+  {
+    "ID": "fuel-points",
+    "类型": "countableResource",
+    "标签": "燃料点",
+    "最小值": 0,
+    "默认值": 0,
+    "步长": 1,
+    "显示方式": "数值"
+  },
+
+  { "ID": "memento-1", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-1", "类型": "longText", "标签": "经历 1", "行数": 3 },
+  { "ID": "memento-status-1", "类型": "checkboxResource", "标签": "纪念物 1 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "memento-2", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-2", "类型": "longText", "标签": "经历 2", "行数": 3 },
+  { "ID": "memento-status-2", "类型": "checkboxResource", "标签": "纪念物 2 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "memento-3", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-3", "类型": "longText", "标签": "经历 3", "行数": 3 },
+  { "ID": "memento-status-3", "类型": "checkboxResource", "标签": "纪念物 3 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+
+  { "ID": "finish-line", "类型": "longText", "标签": "", "行数": 5, "占位文本": "团队竞速前往的终点或避风港" },
+
+  {
+    "ID": "pick-ride",
+    "类型": "resourcePicker",
+    "按钮文本": "选择座驾",
+    "资源库": [
+      {
+        "ID": "rides",
+        "字段模板": [
+          { "键": "名称", "标签": "座驾", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "原名", "标签": "英文", "默认显示": true, "可筛选": false, "可排序": true },
+          { "键": "初始座驾骰", "标签": "初始座驾骰", "默认显示": true, "可筛选": true, "可排序": true },
+          { "键": "特性", "标签": "特性", "默认显示": true, "可筛选": false, "可排序": false }
+        ]
+      }
+    ]
+  },
+  { "ID": "ride-name", "类型": "freeText", "标签": "座驾" },
+  { "ID": "ride-starting-die", "类型": "freeText", "标签": "初始座驾骰", "选项": ["D12", "D10", "D8", "D6", "D4"] },
+  { "ID": "ride-current-die", "类型": "freeText", "标签": "当前座驾骰", "选项": ["D12", "D10", "D8", "D6", "D4"] },
+  { "ID": "ride-trait", "类型": "longText", "标签": "座驾特性", "行数": 4, "占位文本": "选择座驾后自动填写；可继续编辑" },
+  {
+    "ID": "ride-damage",
+    "类型": "countableResource",
+    "标签": "损伤点",
+    "最小值": 0,
+    "默认值": 0,
+    "步长": 1,
+    "显示方式": "数值"
+  },
+  { "ID": "gear-1", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-1", "类型": "checkboxResource", "标签": "装备 1 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "gear-2", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-2", "类型": "checkboxResource", "标签": "装备 2 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "gear-3", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-3", "类型": "checkboxResource", "标签": "装备 3 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] }
+]

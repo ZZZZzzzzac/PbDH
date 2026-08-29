@@ -15,5 +15,6 @@ export const professionTemplate = deepFreeze<TemplateCoreCapability<ProfessionDa
   version: "1.0.0",
   schema,
   rendererRevision: "profession-card-r1",
+  defaultPresentation: { ...temporaryProfessionTemplate.defaultPresentation, width: "63", height: "88" },
   upgradeFrom: { version: "0.0.0-dev.1", upgrade },
 });

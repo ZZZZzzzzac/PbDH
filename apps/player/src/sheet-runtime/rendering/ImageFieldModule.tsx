@@ -83,7 +83,6 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
         <PlayerImageCropDialog
           file={pendingFile}
           label={module.标签}
-          aspectRatio={1}
           working={processing}
           processingError={processingError}
           onCancel={() => { setPendingFile(null); setProcessingError(null); }}

@@ -91,23 +91,25 @@ describe("系统包内置 .pbres 安装", () => {
 });
 
 class MemoryRepository implements ResourcePackageRepository {
-  packages: StoredResourcePackage[] = [];
+  packages: Array<StoredResourcePackage & { systemPackageId: string }> = [];
 
-  async list(): Promise<StoredResourcePackage[]> {
-    return this.packages;
+  async list(systemPackageId: string): Promise<StoredResourcePackage[]> {
+    return this.packages.filter((item) => item.systemPackageId === systemPackageId);
   }
 
-  async replace(candidate: StoredResourcePackage, source: StoredResourcePackage["source"]): Promise<void> {
+  async replace(systemPackageId: string, candidate: StoredResourcePackage, source: StoredResourcePackage["source"]): Promise<void> {
     this.packages = this.packages.filter((item) =>
-      item.document.package.id !== candidate.document.package.id);
+      item.systemPackageId !== systemPackageId || item.document.package.id !== candidate.document.package.id);
     this.packages.push({
       ...candidate,
+      systemPackageId,
       installedAt: "2026-08-26T00:00:00.000Z",
       source,
     });
   }
 
-  async remove(packageId: string): Promise<void> {
-    this.packages = this.packages.filter((item) => item.document.package.id !== packageId);
+  async remove(systemPackageId: string, packageId: string): Promise<void> {
+    this.packages = this.packages.filter((item) =>
+      item.systemPackageId !== systemPackageId || item.document.package.id !== packageId);
   }
 }

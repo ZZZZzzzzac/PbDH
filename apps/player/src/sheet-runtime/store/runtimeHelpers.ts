@@ -10,6 +10,7 @@ import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resou
 import type { CompositeResource } from "../domain/resourceComposer";
 import { findCardTableResourceLibrarySource, type SystemPackage } from "../domain/systemPackage";
 import type { CharacterSaveSummary, RuntimeStorage } from "../storage/runtimeStorage";
+import type { PendingCharacterDataMigration } from "./runtimeTypes";
 
 export interface DependencyMergeState {
   derivedReadOnlyDisplayContent: Record<string, string>;
@@ -60,12 +61,15 @@ export async function loadActiveCharacterForPackage(
   systemPackage: SystemPackage,
   storage: RuntimeStorage,
 ): Promise<{
-  characterData: CharacterData;
+  characterData: CharacterData | null;
   characterSaves: CharacterSaveSummary[];
-  activeCharacterSaveId: string;
+  allCharacterSaves: CharacterSaveSummary[];
+  activeCharacterSaveId: string | null;
+  pendingCharacterDataMigration: PendingCharacterDataMigration | null;
 }> {
   const packageId = systemPackage.manifest.ID;
   let characterSaves = await storage.listCharacterSaves(packageId);
+  const allCharacterSaves = await storage.listAllCharacterSaves();
   let activeCharacterSaveId = await storage.loadActiveCharacterSaveId(packageId);
 
   if (!activeCharacterSaveId || !characterSaves.some((save) => save.id === activeCharacterSaveId)) {
@@ -73,13 +77,26 @@ export async function loadActiveCharacterForPackage(
   }
 
   if (activeCharacterSaveId) {
+    const preparation = await storage.prepareCharacterSaveMigration(packageId, activeCharacterSaveId);
+    if (preparation.status === "error") throw new Error(preparation.message);
+    if (preparation.status === "ready") {
+      return {
+        characterData: null,
+        characterSaves,
+        allCharacterSaves,
+        activeCharacterSaveId: null,
+        pendingCharacterDataMigration: preparation.candidate,
+      };
+    }
     const saved = ensureCardState(await storage.loadCharacterSave(packageId, activeCharacterSaveId), systemPackage);
     if (saved) {
       await storage.setActiveCharacterSaveId(packageId, activeCharacterSaveId);
       return {
         characterData: saved,
         characterSaves,
+        allCharacterSaves,
         activeCharacterSaveId,
+        pendingCharacterDataMigration: null,
       };
     }
   }
@@ -94,10 +111,13 @@ export async function loadActiveCharacterForPackage(
   });
   await storage.setActiveCharacterSaveId(packageId, characterData.character.id);
   characterSaves = await storage.listCharacterSaves(packageId);
+  const refreshedAllCharacterSaves = await storage.listAllCharacterSaves();
   return {
     characterData,
     characterSaves,
+    allCharacterSaves: refreshedAllCharacterSaves,
     activeCharacterSaveId: characterData.character.id,
+    pendingCharacterDataMigration: null,
   };
 }
 

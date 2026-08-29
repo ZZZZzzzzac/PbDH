@@ -1,0 +1,77 @@
+import { readFile } from "node:fs/promises";
+
+import { adversaryTemplate, armorTemplate, weaponTemplate } from "@pbdh/templates/core";
+import { describe, expect, it } from "vitest";
+
+describe("共享卡牌详情与 GM 工作区回归", () => {
+  it("Player 资源、Player 桌面与 GM 桌面使用同一个详情外壳", async () => {
+    const [shared, manager, playerTable, playerFace, creator, market] = await Promise.all([
+      readFile("packages/resource-renderer/src/react.tsx", "utf8"),
+      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
+      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardActionSurfaces.tsx", "utf8"),
+      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8"),
+      readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8"),
+      readFile("apps/market/src/MarketApp.tsx", "utf8"),
+    ]);
+
+    expect(shared).toContain("export function CardDisplay");
+    expect(shared).toContain("export function CardPreviewDialog");
+    expect(manager).toContain("<CardPreviewDialog");
+    expect(playerTable).toContain("<CardPreviewDialog");
+    expect(playerFace).toContain("<CardDisplay");
+    expect(creator).toContain("<CardPreviewDialog");
+    expect(creator).toContain("renderInstance={(instance) => <CardDisplay");
+    expect(market).toContain("<CardDisplay");
+  });
+
+  it("GM 工作区常驻且资源包、文件夹都使用可动画的独立折叠容器", async () => {
+    const [creator, tree, styles] = await Promise.all([
+      readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8"),
+      readFile("apps/creator/src/workspace-prototype/WorkspaceTree.tsx", "utf8"),
+      readFile("apps/creator/src/workspace-prototype/workspace.css", "utf8"),
+    ]);
+
+    expect(creator).not.toContain("tabletop-tab-resource-toggle");
+    expect(creator).toContain("expandedWorkspaceKeys");
+    expect(creator).toContain("workspace-package-contents");
+    expect(tree).toContain("workspace-tree-children");
+    expect(styles).toContain("grid-template-rows: 0fr");
+    expect(styles).toContain("grid-template-rows: 1fr");
+    expect(styles).toContain("transition: grid-template-rows");
+    expect(styles).toMatch(/\.workspace-tree-children\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*0fr\)/s);
+    expect(styles).toMatch(/\.workspace-tree-children\.is-open\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/s);
+    expect(styles).toMatch(/\.workspace-package-list\s*\{[^}]*flex:\s*1/s);
+  });
+
+  it("固定卡面使用 63:88 设计比例，宿主只决定实际显示大小", async () => {
+    for (const template of [adversaryTemplate, weaponTemplate, armorTemplate]) {
+      expect(template.defaultPresentation.width).toBe("63");
+      expect(template.defaultPresentation.height).toBe("88");
+    }
+    const shared = await readFile("packages/resource-renderer/src/react.tsx", "utf8");
+    expect(shared).toContain("const displayWidth = 480");
+    expect(shared).toContain('"--pbdh-preview-width": `${displayWidth}px`');
+    expect(shared).toContain("displayAspectRatio={displayAspectRatio}");
+    expect(shared).toContain("width: `${safeWidth}mm`");
+    expect(shared).toContain("height: `${safeHeight}mm`");
+    expect(shared).toContain("translate(-50%, -50%) scale(${scale})");
+    const creator = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
+    expect(creator).toContain("const widthScale = (stage.clientWidth * 0.7) / width");
+    expect(creator).toContain("const heightScale = (stage.clientHeight * 0.7) / height");
+    expect(creator).toContain("Math.max(0, Math.min(widthScale, heightScale))");
+    expect(creator).toContain('displayWidth="250px"');
+    expect(creator).not.toContain('displayWidth="63mm"');
+  });
+
+  it("规范卡面只允许宿主等比缩放或裁剪，不允许非等比压扁和固定旧预览框", async () => {
+    const [adversaryRenderer, weaponRenderer, creatorStyles] = await Promise.all([
+      readFile("packages/templates/src/frontend/adversary/1.0.0/renderer.tsx", "utf8"),
+      readFile("packages/templates/src/frontend/weapon/1.0.0/renderer.tsx", "utf8"),
+      readFile("apps/creator/src/workspace-prototype/workspace.css", "utf8"),
+    ]);
+
+    expect(adversaryRenderer).not.toMatch(/scale\([^),]+,\s*[^)]+\)/);
+    expect(weaponRenderer).not.toMatch(/scale\([^),]+,\s*[^)]+\)/);
+    expect(creatorStyles).not.toContain(".card-scale { position: absolute; top: 50%; left: 50%; width: 90mm; height: 142mm");
+  });
+});

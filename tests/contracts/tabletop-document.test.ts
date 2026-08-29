@@ -16,7 +16,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/tabletop-document/1.0.0-alpha.1";
+const fixtureProfiles = ["1.0.0-alpha.1", "1.0.0"];
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
@@ -29,7 +29,6 @@ const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
     readJson<AnySchema>(`contracts/${version.schema}`),
   ])));
 const runtime = new ContractRuntime(catalog, schemas);
-const fixture = readJson<TabletopDocument>(`${fixtureRoot}/valid/basic.json`);
 
 type Mutation =
   | null
@@ -52,7 +51,7 @@ function mutate(source: TabletopDocument, mutation: Mutation): TabletopDocument 
 async function validate(document: TabletopDocument, media: TabletopMedia = new Map()) {
   const diagnostics = runtime.validate({
     family: "tabletop-document",
-    version: "1.0.0-alpha.1",
+    version: document.contractVersion,
     mode: "development",
     candidate: document,
   });
@@ -61,7 +60,9 @@ async function validate(document: TabletopDocument, media: TabletopMedia = new M
     : validateTabletopDocumentSemantics(document, media);
 }
 
-describe("Tabletop Document 1.0.0-alpha.1 conformance", () => {
+for (const version of fixtureProfiles) describe(`Tabletop Document ${version} conformance`, () => {
+  const fixtureRoot = `contracts/conformance/tabletop-document/${version}`;
+  const fixture = readJson<TabletopDocument>(`${fixtureRoot}/valid/basic.json`);
   const cases = readJson<Array<{
     name: string;
     mutation: Mutation;

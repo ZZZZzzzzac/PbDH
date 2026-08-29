@@ -1,0 +1,22 @@
+[
+  {
+    "ID": "passenger-sheet",
+    "名称": "乘客卡",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/passenger-sheet.html",
+      "css": "layouts/base.css"
+    }
+  },
+  {
+    "ID": "ride-sheet",
+    "名称": "座驾卡",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/ride-sheet.html",
+      "css": "layouts/base.css"
+    }
+  }
+]

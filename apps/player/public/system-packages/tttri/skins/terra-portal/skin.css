@@ -1,0 +1,867 @@
+/* terra-portal 「泰拉门户」— 柔和蓝黑底、灰白字、低饱和青强调、中英双标、扁平几何。 */
+:scope {
+  color-scheme: dark;
+
+  --tp-black: #101416;
+  --tp-ink: #1c2327;
+  --tp-panel: #151b1e;
+  --tp-panel-2: #242d31;
+  --tp-panel-soft: #303a3f;
+  --tp-module-surface: #23292d;
+  --tp-line: #46535a;
+  --tp-line-soft: #647279;
+  --tp-line-strong: #8e9ba1;
+  --tp-text: #e7ecee;
+  --tp-text-soft: #c1c8cb;
+  --tp-muted: #909a9f;
+  --tp-muted-deep: #626b70;
+  --tp-cyan: #63bfd1;
+  --tp-cyan-deep: #4aaabd;
+  --tp-cyan-hover: #78c9d8;
+  --tp-font-display: "Oswald", "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --tp-font-wide: "Bahnschrift", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --tp-font-body: system-ui, "Segoe UI", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+
+  --framework-canvas: var(--tp-black);
+  --framework-surface: var(--tp-panel);
+  --framework-surface-subtle: var(--tp-panel-2);
+  --framework-surface-muted: var(--tp-panel-soft);
+  --framework-text: var(--tp-text);
+  --framework-text-strong: var(--tp-text);
+  --framework-text-secondary: var(--tp-text-soft);
+  --framework-text-muted: var(--tp-muted);
+  --framework-border: var(--tp-line);
+  --framework-border-strong: var(--tp-line-strong);
+  --framework-border-subtle: var(--tp-line-soft);
+  --framework-accent: var(--tp-cyan);
+  --framework-accent-active: var(--tp-cyan-deep);
+  --framework-on-accent: var(--tp-black);
+  --framework-focus: var(--tp-cyan);
+  --framework-disabled-surface: var(--tp-panel-soft);
+  --framework-disabled-text: var(--tp-muted);
+  --framework-danger: #e87979;
+  --framework-danger-strong: #cf6262;
+  --framework-danger-border: #a85858;
+  --framework-danger-surface: #2b181a;
+  --framework-success: #6fc4a5;
+  --framework-success-border: #509b80;
+  --framework-warning: #d4b374;
+  --framework-warning-border: #a98d58;
+  --framework-warning-surface: #2b261c;
+  --framework-shadow: rgba(0, 0, 0, 0.45);
+  --framework-shadow-strong: rgba(0, 0, 0, 0.7);
+  --framework-overlay: rgba(0, 0, 0, 0.85);
+}
+
+/* ========== 工作区与页面外盒 ========== */
+
+.tttri-workspace {
+  background: var(--tp-black);
+}
+
+.tttri-sheet-pane {
+  border: 1px solid var(--tp-line-soft);
+  background: var(--tp-ink);
+  box-shadow: 0 0 0 1px rgba(99, 191, 209, 0.14);
+}
+
+/* ========== 页面：深蓝灰门户，无网格纹理 ========== */
+
+.tttri-sheet {
+  position: relative;
+  background: var(--tp-ink);
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.tttri-sheet {
+  --restricted-markdown-red: #ff6b6b;
+  --restricted-markdown-orange: #e0a060;
+  --restricted-markdown-yellow: #e0b35a;
+  --restricted-markdown-green: #4fd1a5;
+  --restricted-markdown-blue: var(--tp-cyan);
+  --restricted-markdown-purple: #b48ead;
+  --restricted-markdown-gray: var(--tp-muted);
+}
+
+/* 页缘：官网式细角标 L 形 */
+.tp-frame {
+  position: absolute;
+  width: 5mm;
+  height: 5mm;
+  border: 0 solid var(--tp-text);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.tp-frame-tl { top: 1.1mm; left: 1.1mm; border-top-width: 1px; border-left-width: 1px; }
+.tp-frame-tr { top: 1.1mm; right: 1.1mm; border-top-width: 1px; border-right-width: 1px; }
+.tp-frame-bl { bottom: 1.1mm; left: 1.1mm; border-bottom-width: 1px; border-left-width: 1px; }
+.tp-frame-br { bottom: 1.1mm; right: 1.1mm; border-bottom-width: 1px; border-right-width: 1px; }
+
+/* 页顶：纯青细轨（官网 MEDIA 选中色） */
+.tp-page-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--tp-cyan);
+  pointer-events: none;
+}
+
+/* ========== 分区：近黑面板 + 1px 灰边 ========== */
+
+.identity-panel,
+.upper-stat-layout,
+.sheet-region,
+.question-column,
+.advancement-region {
+  background: var(--tp-panel);
+  box-shadow: 0 0 0 1px var(--tp-line);
+}
+
+.story-overview > [data-module-slot-id] {
+  background: var(--tp-panel);
+  box-shadow: 0 0 0 1px var(--tp-line);
+}
+
+/* ========== 身份头：PROFILE 式黑底 + 青底线 ========== */
+
+.identity-panel {
+  position: relative;
+  background: var(--tp-black);
+  color: var(--tp-text);
+  box-shadow:
+    0 0 0 1px var(--tp-line),
+    inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.identity-panel [data-part="label"] {
+  color: var(--tp-muted);
+}
+
+.identity-panel [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: var(--tp-line);
+  background: var(--tp-panel);
+  color: var(--tp-text);
+}
+
+/* 品牌块：美工 SLOGAN 字标，等比缩放适配面板 */
+.brand-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 4rem;
+  padding: 0.25rem;
+  border: 0;
+  background: var(--tp-black);
+  box-shadow: inset 0 0 0 1px var(--tp-line);
+}
+
+.brand-logo {
+  position: absolute;
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  object-fit: contain;
+  filter: invert(1) brightness(0.82);
+}
+
+/* 头版选择器：实心青底黑字（官网 CTA） */
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 0;
+  background: var(--tp-cyan);
+  color: var(--tp-black);
+  box-shadow: none;
+}
+
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: var(--tp-cyan-hover);
+  color: var(--tp-black);
+}
+
+.identity-panel .level-field [data-part="label"] {
+  border-bottom-color: var(--tp-line);
+  color: var(--tp-muted);
+}
+
+.identity-panel .level-field [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  color: var(--tp-cyan);
+  background: var(--tp-black);
+}
+
+/* ========== 上排属性 ========== */
+
+.upper-stat-layout {
+  background: var(--tp-panel);
+}
+
+.trait-summary > [data-module-slot-id],
+.defense-summary > [data-module-slot-id] {
+  background: var(--tp-black);
+  box-shadow:
+    inset 0 2px 0 var(--tp-cyan),
+    0 0 0 1px var(--tp-line);
+}
+
+.trait-summary [data-part="label"],
+.defense-summary [data-part="label"] {
+  border-bottom-color: var(--tp-line);
+  color: var(--tp-muted);
+  font-family: var(--tp-font-display);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.trait-summary [data-part="input"],
+.defense-summary [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  color: var(--tp-text);
+  background: var(--tp-black);
+}
+
+/* ========== 分区题签：中文 + 英文码（Oswald 感） ========== */
+
+.upper-stat-layout > .section-title,
+.sheet-region > .section-title,
+.region-heading-row > .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--tp-line);
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.upper-stat-layout > .section-title::before,
+.sheet-region > .section-title::before,
+.region-heading-row > .section-title::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.18em;
+  height: 0.95em;
+  background: var(--tp-cyan);
+  transform: translateY(0.1em);
+}
+
+.title-tag {
+  margin-left: auto;
+  color: var(--tp-muted);
+  font-family: var(--tp-font-display);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.region-heading-row > h2:not(.section-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.15rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
+  border-bottom: 1px solid var(--tp-line);
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+/* ========== 模块零件 ========== */
+
+[data-module-type] [data-part="label"] {
+  color: var(--tp-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: var(--tp-line);
+  background: var(--tp-black);
+  color: var(--tp-text);
+  caret-color: var(--tp-cyan);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: var(--tp-line-soft);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+[data-module-type] button:focus-visible {
+  outline: 2px solid var(--tp-cyan);
+  outline-offset: 1px;
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="longText"] [data-markdown-preview] {
+  background: var(--tp-module-surface);
+  color: var(--tp-text);
+}
+
+/* 选择器：青底黑字实心钮 */
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 0;
+  background: var(--tp-cyan);
+  color: var(--tp-black);
+  box-shadow: none;
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: var(--tp-cyan-hover);
+  color: var(--tp-black);
+}
+
+/* 文本与计数资源共用同一套黑签青字标签。 */
+:is(
+  [data-module-type="countableResource"],
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) > [data-part="label"] {
+  background: var(--tp-black) !important;
+  color: var(--tp-cyan) !important;
+  font-family: var(--tp-font-display) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  box-shadow: inset 0 0 0 1px var(--tp-line) !important;
+}
+
+/* 三类常用信息模块共享稍浅的正文底，和整页深底形成稳定层级。 */
+:is(
+  [data-module-type="countableResource"],
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) {
+  background: var(--tp-module-surface);
+}
+
+:is(
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) :is([data-markdown-editor], [data-markdown-preview], [data-part="input"]),
+[data-module-type="countableResource"] :is(
+  [data-part="counter"],
+  [data-part="value-group"],
+  [data-part="input"]
+) {
+  background: var(--tp-module-surface);
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid var(--tp-line);
+  background: var(--tp-panel-2);
+  color: var(--tp-text);
+  box-shadow: none;
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  border-color: var(--tp-cyan);
+  background: var(--tp-black);
+  color: var(--tp-cyan);
+}
+
+.experience-list > div {
+  box-shadow: 0 1px 0 var(--tp-line);
+}
+
+.experience-list > div:last-child {
+  box-shadow: none;
+}
+
+.experience-list [data-module-id^="experience-modifier-"] [data-part="input"],
+.experience-list [data-module-id="ancestry-experience-modifier"] [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  text-align: center;
+  color: var(--tp-cyan);
+}
+
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  border-left-color: var(--tp-line);
+}
+
+[data-module-type="checkboxResource"] [data-part="input"] {
+  accent-color: var(--tp-cyan);
+}
+
+[data-module-type="imageField"] [data-part="surface-frame"] {
+  border: 1px solid var(--tp-line-soft);
+  background: var(--tp-black);
+}
+
+/* ========== 背景与关系页 ========== */
+
+.question-column h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding-bottom: 0.15rem;
+  box-shadow: 0 1px 0 var(--tp-line);
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+
+.question-column h2::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.18em;
+  height: 0.95em;
+  background: var(--tp-cyan);
+}
+
+/* 升级记录：纯黑条 + 青底线 */
+.advancement-region > h2 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.18rem 0.5rem 0.34rem;
+  background: var(--tp-black);
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  box-shadow: inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.advancement-region > h2 .title-tag {
+  color: var(--tp-muted);
+}
+
+.advancement-grid article {
+  border: 1px solid var(--tp-line);
+  background: var(--tp-black);
+  box-shadow: inset 0 2px 0 var(--tp-cyan);
+}
+
+.advancement-grid article h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  color: var(--tp-text);
+  font-family: var(--tp-font-display);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.advancement-grid article h3::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.4em;
+  height: 0.4em;
+  background: var(--tp-cyan);
+}
+
+.advancement-grid [data-module-type="readOnlyDisplay"] [data-part="value"] {
+  color: var(--tp-muted);
+}
+
+/* ========== 卡牌桌面 ========== */
+
+.tttri-card-pane {
+  color: var(--tp-text);
+}
+
+.card-desk-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem 0.62rem;
+  background: var(--tp-black);
+  box-shadow:
+    0 0 0 1px var(--tp-line),
+    inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.card-desk-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.02rem;
+}
+
+.card-desk-kicker {
+  font-family: var(--tp-font-wide);
+  font-size: 0.46rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--tp-cyan);
+  text-transform: uppercase;
+}
+
+.card-desk-title {
+  font-family: var(--tp-font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--tp-text);
+}
+
+.card-desk-sub {
+  font-family: var(--tp-font-display);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--tp-muted);
+  text-transform: uppercase;
+}
+
+.card-desk-index {
+  margin-left: auto;
+  font-family: var(--tp-font-display);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--tp-text);
+}
+
+[data-module-slot-id="pick-domain-card"] [data-part="button"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.1rem;
+  padding: 0 0.6rem;
+  border: 0;
+  background: var(--tp-cyan);
+  color: var(--tp-black);
+  font-family: var(--tp-font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+[data-module-slot-id="pick-domain-card"] [data-part="button"]:hover:not(:disabled) {
+  background: var(--tp-cyan-hover);
+}
+
+.tttri-card-table-slot {
+  box-shadow: 0 0 0 1px var(--tp-line);
+}
+
+/* 桌面底纹:顶部一线青辉 + 点阵坐标网,纯背景层不改几何 */
+[data-module-type="cardTable"] [data-part="surface"] {
+  border-color: var(--tp-line);
+  background:
+    radial-gradient(ellipse 72% 44% at 50% 0%, rgba(99, 191, 209, 0.07), rgba(99, 191, 209, 0) 72%),
+    radial-gradient(circle, rgba(142, 155, 161, 0.13) 1px, rgba(142, 155, 161, 0) 1.4px),
+    var(--tp-black);
+  background-size: 100% 100%, 26px 26px, 100% 100%;
+}
+
+/* 桌面纹章:领域星芒(动画规范·奇迹)居中水印。SVG 内置 SMIL 入场+有限循环(皮肤 CSS 不支持 @keyframes);
+   z-index 0 压在所有卡牌(内联 z-index ≥ 1)之下,不抢主角。 */
+[data-module-type="cardTable"] [data-part="surface"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("assets/icons/domain-miracle.svg");
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: min(38vmin, 320px);
+}
+
+/* 主领域联动:Sheet 根元素暴露 freeText 值为 data-value-<模块ID>,按主领域切换纹章;默认即奇迹 */
+:scope[data-value-primary-domain="远见"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-foresight.svg");
+}
+:scope[data-value-primary-domain="攻坚"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-assault.svg");
+}
+:scope[data-value-primary-domain="坚阵"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-bulwark.svg");
+}
+:scope[data-value-primary-domain="秘行"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-stealth.svg");
+}
+:scope[data-value-primary-domain="精准"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-precision.svg");
+}
+:scope[data-value-primary-domain="支柱"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-pillar.svg");
+}
+:scope[data-value-primary-domain="奥术"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-arcane.svg");
+}
+:scope[data-value-primary-domain="工业"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-industrial.svg");
+}
+:scope[data-value-primary-domain="心界"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-mindsphere.svg");
+}
+:scope[data-value-primary-domain="迅攻"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-blitz.svg");
+}
+
+/* 艺术字水印:TERRA / PORTAL 描边大字贴右下,低透明描边与官网背景排印同调 */
+[data-module-type="cardTable"] [data-part="surface"]::before {
+  content: "TERRA\A PORTAL";
+  white-space: pre;
+  position: absolute;
+  right: 1.1rem;
+  bottom: 0.7rem;
+  z-index: 0;
+  pointer-events: none;
+  font-family: var(--tp-font-display);
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: 0.16em;
+  text-align: right;
+  text-transform: uppercase;
+  color: rgba(99, 191, 209, 0.05);
+  -webkit-text-stroke: 1px rgba(99, 191, 209, 0.12);
+}
+
+[data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
+  border: 1px solid var(--tp-line);
+  background: var(--tp-panel);
+  color: var(--tp-text);
+}
+
+.play-card-tag {
+  border-color: var(--tp-line);
+  background: var(--tp-panel-2);
+  color: var(--tp-text-soft);
+}
+
+.play-card-text {
+  background: var(--tp-ink);
+  color: var(--tp-text);
+}
+
+/* ========== 输出 / 打印：保留结构，整体切换为浅色纸面 ========== */
+
+.print-mode :scope {
+  color-scheme: light;
+  --tp-black: #ffffff;
+  --tp-ink: #ffffff;
+  --tp-panel: #f4f7f7;
+  --tp-panel-2: #e9eeee;
+  --tp-panel-soft: #dde5e6;
+  --tp-module-surface: #f7f9f9;
+  --tp-line: #7b898d;
+  --tp-line-soft: #aab4b7;
+  --tp-line-strong: #39484c;
+  --tp-text: #20292c;
+  --tp-text-soft: #3f4b4f;
+  --tp-muted: #5e696d;
+  --tp-muted-deep: #768084;
+  --tp-cyan: #3f7480;
+  --tp-cyan-deep: #315f69;
+  --tp-cyan-hover: #c9e2e6;
+}
+
+.print-mode :scope .tttri-workspace {
+  background: #ffffff;
+}
+
+/* 打印纸面为浅色：品牌 logo 恢复原色深字，反白仅在深色屏幕保留 */
+.print-mode :scope .brand-logo {
+  filter: none;
+}
+
+.print-mode :scope .card-desk-banner {
+  display: none;
+}
+
+.print-mode :scope .tttri-sheet {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"] {
+  background: #ffffff;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::before,
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::after {
+  display: none;
+}
+
+.print-mode :scope :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 1px solid var(--tp-line-strong);
+  background: #dcebed;
+  color: var(--tp-text);
+}
+
+.print-mode :scope :is(
+  .advancement-region,
+  .advancement-region > h2,
+  .advancement-grid article,
+  .advancement-grid [data-module-type]
+) {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+.print-mode :scope .advancement-grid :is(
+  h3,
+  [data-part="label"],
+  [data-part="value"],
+  [data-part="option-label"]
+) {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+.print-mode :scope .play-card-text {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+.print-mode :scope .play-card-tag {
+  border-color: #9ca8ac !important;
+  background: #f2f4f4 !important;
+  color: #30383b !important;
+  -webkit-text-fill-color: #30383b !important;
+}
+
+.print-mode :scope .currency-row :is(
+  [data-module-type="countableResource"],
+  [data-part="label"],
+  [data-part="counter"],
+  [data-part="value-group"],
+  [data-part="input"]
+) {
+  background: #ffffff !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+@media print {
+  :scope {
+    color-scheme: light;
+    --tp-black: #ffffff;
+    --tp-ink: #ffffff;
+    --tp-panel: #f4f7f7;
+    --tp-panel-2: #e9eeee;
+    --tp-panel-soft: #dde5e6;
+    --tp-module-surface: #f7f9f9;
+    --tp-line: #7b898d;
+    --tp-line-soft: #aab4b7;
+    --tp-line-strong: #39484c;
+    --tp-text: #20292c;
+    --tp-text-soft: #3f4b4f;
+    --tp-muted: #5e696d;
+    --tp-muted-deep: #768084;
+    --tp-cyan: #3f7480;
+    --tp-cyan-deep: #315f69;
+    --tp-cyan-hover: #c9e2e6;
+  }
+
+  .tttri-workspace {
+    background: #ffffff;
+  }
+
+  .brand-logo {
+    filter: none;
+  }
+
+  .tttri-sheet-pane {
+    overflow: visible;
+  }
+
+  .tttri-sheet {
+    background: #ffffff;
+    color: #0a0a0a;
+  }
+
+  .card-desk-banner {
+    display: none;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"] {
+    background: #ffffff;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"]::before,
+  [data-module-type="cardTable"] [data-part="surface"]::after {
+    display: none;
+  }
+
+  :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+    border: 1px solid var(--tp-line-strong);
+    background: #dcebed;
+    color: var(--tp-text);
+  }
+
+  :is(
+    .advancement-region,
+    .advancement-region > h2,
+    .advancement-grid article,
+    .advancement-grid [data-module-type]
+  ) {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .advancement-grid :is(
+    h3,
+    [data-part="label"],
+    [data-part="value"],
+    [data-part="option-label"]
+  ) {
+    color: #111111 !important;
+    -webkit-text-fill-color: #111111 !important;
+  }
+
+  .play-card-text {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .play-card-tag {
+    border-color: #9ca8ac !important;
+    background: #f2f4f4 !important;
+    color: #30383b !important;
+    -webkit-text-fill-color: #30383b !important;
+  }
+
+  .currency-row :is(
+    [data-module-type="countableResource"],
+    [data-part="label"],
+    [data-part="counter"],
+    [data-part="value-group"],
+    [data-part="input"]
+  ) {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .tp-frame,
+  .tp-page-rail {
+    display: none;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"]::before {
+    font-size: 2.4rem;
+  }
+}

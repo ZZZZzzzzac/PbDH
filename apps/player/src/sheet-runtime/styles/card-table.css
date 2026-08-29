@@ -180,6 +180,10 @@
   cursor: grabbing;
 }
 
+.play-card > [data-pbdh-card-display] {
+  width: 100% !important;
+}
+
 .play-card-delete {
   position: absolute;
   top: -10px;
@@ -439,8 +443,8 @@
   display: grid;
   min-width: 148px;
   padding: 6px;
-  border: 1px solid var(--framework-text-strong);
-  background: var(--framework-surface);
+  border: 1px solid var(--framework-text-strong, #202426);
+  background: var(--framework-surface, #fffdf7);
   box-shadow: 0 14px 32px rgba(32, 36, 38, 0.28);
 }
 
@@ -449,21 +453,19 @@
   border: 0;
   padding: 0 10px;
   background: transparent;
-  color: var(--framework-text-strong);
+  color: var(--framework-text-strong, #202426);
   text-align: left;
   cursor: pointer;
 }
 
 .card-context-menu button:hover {
-  background: var(--framework-surface-muted);
+  background: var(--framework-surface-muted, #f1ece4);
 }
 
 .card-context-menu button.danger {
-  color: var(--framework-danger);
+  color: var(--framework-danger, #b42318);
 }
 
-.card-detail-backdrop { position: fixed; inset: 0; z-index: 140; display: grid; place-items: center; padding: 24px; background: rgba(15, 22, 24, 0.72); }
-.card-detail-dialog { position: relative; width: min(520px, 92vw); max-height: 92vh; overflow: auto; padding: 18px; background: var(--framework-surface); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
 .card-detail-face { position: relative; width: 100%; }
 .card-detail-face .play-card-state-badge { top: 8px; right: 52px; font-size: 0.95rem; transform: none; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
@@ -472,7 +474,6 @@
 .card-detail-face .play-card-split-art .play-card-image { height: 100%; max-height: none; object-fit: cover; }
 .card-detail-face .play-card-split-text { min-height: 50%; font-size: 1.1rem; }
 .card-detail-face .play-card-description { max-height: none; overflow: visible; }
-.card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); cursor: pointer; }
 
 @media (max-width: 640px) {
   .card-table-surface {

@@ -138,6 +138,7 @@ function api(put = vi.fn<CloudDocumentApi["putDocument"]>()): CloudDocumentApi &
     async restoreDocument(documentId) {
       return remote(envelope(documentId), 3);
     },
+    async deleteDocument() {},
   };
 }
 
@@ -185,13 +186,14 @@ describe("Cloud Document durable outbox", () => {
       lastError: null,
     };
     store.documents.set(pending.documentId, pending);
-    const coordinator = new CloudDocumentCoordinator(store, cloud, () => "mutation-unused");
+    let coordinator = new CloudDocumentCoordinator(store, cloud, () => "mutation-unused");
 
     expect(await coordinator.flush("creator-workspace", credentials))
       .toEqual({ synced: 0, pending: 1, conflicts: 0 });
     expect((await store.get("creator-workspace", pending.documentId))?.sync.mutationId)
       .toBe("mutation-stable");
 
+    coordinator = new CloudDocumentCoordinator(store, cloud, () => "mutation-after-restart");
     expect(await coordinator.flush("creator-workspace", credentials))
       .toEqual({ synced: 1, pending: 0, conflicts: 0 });
     expect(put.mock.calls.map(([, mutationId]) => mutationId))
@@ -242,6 +244,35 @@ describe("Cloud Document durable outbox", () => {
       .toEqual({ synced: 0, pending: 1, conflicts: 0 });
     expect(cloud.calls).toEqual([]);
     expect((await store.get("creator-workspace", pending.documentId))?.sync.state).toBe("pending");
+  });
+
+  test("one failed tabletop does not block another tabletop from syncing", async () => {
+    const store = new FakeStore();
+    const first = envelope("tabletop-failed", "gm-tabletop-document");
+    const second = envelope("tabletop-synced", "gm-tabletop-document");
+    for (const document of [first, second]) {
+      document.sync = {
+        scope: "cloud",
+        state: "pending",
+        baseRevision: null,
+        accountId: "account-1",
+        mutationId: `mutation-${document.documentId}`,
+        lastError: null,
+      };
+      store.documents.set(document.documentId, document);
+    }
+    const cloud = api(vi.fn<CloudDocumentApi["putDocument"]>().mockImplementation(async (local) => {
+      if (local.documentId === first.documentId) throw new TypeError("offline for one document");
+      return remote(local, 1);
+    }));
+
+    expect(await new CloudDocumentCoordinator(store, cloud).flush("gm-tabletop-document", credentials))
+      .toEqual({ synced: 1, pending: 1, conflicts: 0 });
+    expect((await store.get("gm-tabletop-document", first.documentId))?.sync.state).toBe("pending");
+    expect((await store.get("gm-tabletop-document", second.documentId))?.sync).toMatchObject({
+      state: "clean",
+      baseRevision: "1",
+    });
   });
 
   test("explicit local overwrite uploads media and resolves a conflict with the new revision", async () => {

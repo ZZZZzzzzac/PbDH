@@ -159,6 +159,14 @@ export class CreatorCloudDocumentService {
     return this.localSnapshot(credentials.accountId);
   }
 
+  async deleteFromTrash(
+    remote: RemoteCloudDocument,
+    credentials: CloudCredentials,
+  ): Promise<void> {
+    if (remote.deletedAt === null) throw new Error("只有回收站里的云文档可以永久删除。");
+    await this.#api.deleteDocument(remote.documentId, remote.revision, credentials);
+  }
+
   async #recoverKind(
     documentKind: Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">,
     credentials: CloudCredentials,

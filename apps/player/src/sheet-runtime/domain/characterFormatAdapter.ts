@@ -48,7 +48,7 @@ export function parseAndDetectCharacterSource(text: string, fileName: string, ad
   let jsonDocument: unknown;
   let jsonParsed = false;
   try { jsonDocument = JSON.parse(text); jsonParsed = true; } catch { /* Embedded JSON carriers may still match. */ }
-  for (const adapter of adapters) for (const carrier of adapter.载体) {
+  for (const adapter of adapters) for (const carrier of adapter.载体 ?? []) {
     if (carrier.类型 === "zip") continue;
     let document: unknown;
     if (carrier.类型 === "json") { if (!jsonParsed) continue; document = jsonDocument; }
@@ -70,6 +70,7 @@ export function parseAndDetectCharacterSource(text: string, fileName: string, ad
 }
 
 export async function convertExternalCharacterSource(source: ExternalCharacterSource, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): Promise<CharacterAdapterConversion | { error: FormatDiagnostic }> {
+  if (!adapter.importScriptContent) return { error: { level: "error", code: "CHARACTER_ADAPTER_IMPORT_UNSUPPORTED", text: `${adapter.名称} 不支持导入。` } };
   let raw: unknown;
   try {
     raw = await executePackageScriptInWorker(adapter.importScriptContent, {

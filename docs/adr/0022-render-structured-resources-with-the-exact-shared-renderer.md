@@ -2,7 +2,7 @@
 
 Status: accepted
 
-Canonical Card Surfaces will be rendered at runtime from structured Game Resource data, an exact Resource Template version, presentation dimensions, and Assets. PbDH will not rasterize every completed card or include a pre-rendered canonical image in each Resource Package. “Treat it like an image” is an immutability and consistency rule, not a storage format.
+Canonical Card Surfaces will be rendered at runtime from structured Game Resource data, an exact Resource Template version, the canonical `63:88` design viewport or same-width variable height, and Assets. Presentation numbers are design coordinates rather than host display millimetres. PbDH will not rasterize every completed card or include a pre-rendered canonical image in each Resource Package. “Treat it like an image” is an immutability and consistency rule, not a storage format.
 
 Player App, Creator App, GM App, and Market frontend use the same `packages/resource-renderer` implementation, immutable Renderer Revision, and scoped styles resolved by an exact Template version. Output outside Creator App must match its preview for the same inputs. Hosts may uniformly scale or clip that output but cannot substitute their own internal card renderer.
 

@@ -66,6 +66,12 @@ def classify_resource_package_version_change(
                 "resource-package.version.resource-template-compatible",
                 old_resource["id"],
             )
+        _classify_replacement_changes(
+            old_resource["id"],
+            old_resource.get("replacements", []),
+            resource.get("replacements", []),
+            add_reason,
+        )
     for resource in current["resources"]:
         if resource["id"] not in previous_resource_ids:
             add_reason(
@@ -117,8 +123,51 @@ def _version_content(document: Mapping[str, Any]) -> dict[str, Any]:
     )
     content["assets"].sort(key=lambda item: item["id"])
     content["resources"].sort(key=lambda item: (item["path"], item["id"]))
+    for resource in content["resources"]:
+        resource.get("replacements", []).sort(
+            key=lambda item: (item["replacementId"], item["targetResourceId"])
+        )
     content["emptyDirectories"].sort()
     return content
+
+
+def _classify_replacement_changes(
+    resource_id: str,
+    previous_replacements: list[Mapping[str, str]],
+    current_replacements: list[Mapping[str, str]],
+    add_reason: Any,
+) -> None:
+    current = {
+        replacement["replacementId"]: replacement
+        for replacement in current_replacements
+    }
+    previous_ids = {
+        replacement["replacementId"] for replacement in previous_replacements
+    }
+    for replacement in previous_replacements:
+        replacement_id = replacement["replacementId"]
+        next_replacement = current.get(replacement_id)
+        subject = f"{resource_id}:{replacement_id}"
+        if next_replacement is None:
+            add_reason(
+                "major",
+                "resource-package.version.replacement-removed",
+                subject,
+            )
+        elif next_replacement["targetResourceId"] != replacement["targetResourceId"]:
+            add_reason(
+                "major",
+                "resource-package.version.replacement-target-changed",
+                subject,
+            )
+    for replacement in current_replacements:
+        replacement_id = replacement["replacementId"]
+        if replacement_id not in previous_ids:
+            add_reason(
+                "minor",
+                "resource-package.version.replacement-added",
+                f"{resource_id}:{replacement_id}",
+            )
 
 
 def _classify_target_changes(

@@ -1,0 +1,77 @@
+[
+  {
+    "name": "valid tabletop document with one replacement pointer",
+    "mutation": null,
+    "expected": []
+  },
+  {
+    "name": "rejects missing replacement list",
+    "mutation": { "op": "delete", "path": ["instances", 0, "resourceCopy", "replacements"] },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.0.0",
+        "location": "/instances/0/resourceCopy/replacements",
+        "params": { "property": "replacements" }
+      }
+    ]
+  },
+  {
+    "name": "rejects non-positive instance scale",
+    "mutation": { "op": "set", "path": ["instances", 0, "geometry", "scale"], "value": 0 },
+    "expected": [
+      {
+        "code": "contract.schema.invalid",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.0.0",
+        "location": "/instances/0/geometry/scale",
+        "params": { "keyword": "exclusiveMinimum" }
+      }
+    ]
+  },
+  {
+    "name": "rejects a fixed card outside the 63:88 design ratio",
+    "mutation": { "op": "set", "path": ["instances", 0, "resourceCopy", "presentation", "width"], "value": "90" },
+    "expected": [
+      {
+        "code": "contract.schema.const",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.0.0",
+        "location": "/instances/0/resourceCopy/presentation/width",
+        "params": { "expected": "63" }
+      }
+    ]
+  },
+  {
+    "name": "rejects a fixed card with a non-88 design height",
+    "mutation": { "op": "set", "path": ["instances", 0, "resourceCopy", "presentation", "height"], "value": "142" },
+    "expected": [
+      {
+        "code": "contract.schema.const",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.0.0",
+        "location": "/instances/0/resourceCopy/presentation/height",
+        "params": { "expected": "88" }
+      }
+    ]
+  },
+  {
+    "name": "rejects hidden replacement forms",
+    "mutation": { "op": "set", "path": ["instances", 0, "materializedForms"], "value": [] },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.0.0",
+        "location": "/instances/0/materializedForms",
+        "params": { "property": "materializedForms" }
+      }
+    ]
+  }
+]

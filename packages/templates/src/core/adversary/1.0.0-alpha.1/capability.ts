@@ -103,8 +103,8 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
     { id: "portrait", label: "主图", required: false, accepts: ["image/webp"] },
   ],
   defaultPresentation: {
-    width: "90",
-    height: "142",
+    width: "63",
+    height: "88",
     unit: "mm",
     mode: "split",
     fixedRatio: true,
@@ -133,7 +133,7 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
     commands: [
       { id: "adjust-hp", capability: "adjust-decimal-string", field: "currentHp" },
       { id: "adjust-stress", capability: "adjust-decimal-string", field: "currentStress" },
-      { id: "set-focused", capability: "set-string", field: "focused" },
+      { id: "set-focused", capability: "set-string", field: "focused", values: ["true", "false"] },
       { id: "set-notes", capability: "set-string", field: "notes" },
     ],
     replacements: [],

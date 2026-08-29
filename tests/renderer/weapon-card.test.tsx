@@ -52,8 +52,8 @@ describe("weapon-card-r1 Canonical Surface", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.widthMm).toBe(90);
-    expect(result.heightMm).toBe(142);
+    expect(result.widthMm).toBe(63);
+    expect(result.heightMm).toBe(88);
     expect(result.renderInput.state).toEqual({});
     expect(result.renderer).toBe(weaponRendererRevision);
     expect(weaponRendererRevision.requiredMediaSlots).toEqual([]);
@@ -94,8 +94,8 @@ describe("weapon-card-r1 Canonical Surface", () => {
   });
 
   test("keeps fixed-ratio overflow clipped and allows explicit fluid growth", () => {
-    expect(weaponRendererStyles).toContain(".weapon-card {\n");
-    expect(weaponRendererStyles).toContain("overflow: hidden;");
+    expect(weaponRendererStyles).toContain(".weapon-card{");
+    expect(weaponRendererStyles).toContain("overflow:hidden");
     expect(weaponRendererStyles).toContain(".weapon-description");
     expect(weaponRendererStyles).toContain(".weapon-card.is-fluid");
 
@@ -124,8 +124,8 @@ describe("weapon-card-r1 Canonical Surface", () => {
       />,
     );
     expect(markup).toContain("data-pbdh-canonical-surface");
-    expect(markup).toContain("width:90mm");
-    expect(markup).toContain("height:142mm");
+    expect(markup).toContain("width:63mm");
+    expect(markup).toContain("height:88mm");
     expect(markup).not.toContain("weapon-card");
   });
 
@@ -135,7 +135,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
       page: "30 Components",
       surface: "#28 / Canonical Card Surface",
       component: "weapon-card-r1 / Canonical",
-      presentation: { width: "90mm", height: "142mm" },
+      presentation: { ratio: "63:88", variableHeight: false },
       statNames: ["核心数据 / 属性", "核心数据 / 距离", "核心数据 / 伤害"],
       detailNames: ["规则 / 伤害类型", "规则 / 负荷"],
     });
@@ -147,7 +147,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("7d65677973706b5a6d1c0456ddd8d1556e99b38f663c17789f298ec7c58faab6");
+    expect(signature).toBe("dd24d20e287f46d01e8b619d7607cdb3eae61c2cef9b730d07de9ed8981815bd");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {

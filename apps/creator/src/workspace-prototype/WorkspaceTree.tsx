@@ -152,7 +152,9 @@ export function WorkspaceTree({
                 : <button type="button" className="tree-node-label" onClick={() => onSelectFolder(folder.id)}>{folder.name}</button>}
               <small>{count || ""}</small>
             </div>
-            {!folder.collapsed && renderLevel(folder.id, depth + 1)}
+            <div className={`workspace-tree-children${folder.collapsed ? "" : " is-open"}`} aria-hidden={folder.collapsed} inert={folder.collapsed}>
+              <div>{renderLevel(folder.id, depth + 1)}</div>
+            </div>
           </div>;
         }
 

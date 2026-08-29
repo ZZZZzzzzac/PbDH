@@ -64,6 +64,11 @@
           "version": "1.0.0-alpha.1",
           "state": "development",
           "schema": "tabletop-document/1.0.0-alpha.1/schema.json"
+        },
+        {
+          "version": "1.0.0",
+          "state": "development",
+          "schema": "tabletop-document/1.0.0/schema.json"
         }
       ]
     },

@@ -3,6 +3,7 @@ import Dexie, { type Table } from "dexie";
 export type LocalDocumentKind =
   | "creator-workspace"
   | "gm-tabletop-document"
+  | "gm-tabletop-document-trash"
   | "character-save";
 
 export type LocalDocumentSync = {
@@ -34,6 +35,7 @@ export type LocalMediaAssetRecord = {
 };
 
 export type InstalledResourcePackageRecord = {
+  systemPackageId: string;
   packageId: string;
   snapshotDigest: string;
   version: string;
@@ -42,18 +44,27 @@ export type InstalledResourcePackageRecord = {
   document: unknown;
 };
 
+type LegacyInstalledResourcePackageRecord = Omit<InstalledResourcePackageRecord, "systemPackageId">;
+
 type AuthorPreviewHandleRecord = {
   id: string;
   handle: unknown;
+};
+
+type RuntimeCacheRecord = {
+  id: string;
+  value: unknown;
 };
 
 type LegacyResourceMediaRecord = LocalMediaAssetRecord;
 
 export class PbDHLocalDatabase extends Dexie {
   authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
-  installedResourcePackages!: Table<InstalledResourcePackageRecord, string>;
+  installedResourcePackages!: Table<LegacyInstalledResourcePackageRecord, string>;
+  installedSystemResourcePackages!: Table<InstalledResourcePackageRecord, [string, string]>;
   localDocuments!: Table<LocalDocumentEnvelope, string>;
   mediaAssets!: Table<LocalMediaAssetRecord, string>;
+  runtimeCaches!: Table<RuntimeCacheRecord, string>;
 
   constructor(name = "pbdh-platform") {
     super(name);
@@ -82,6 +93,57 @@ export class PbDHLocalDatabase extends Dexie {
       mediaAssets: "&assetId, byteLength",
       authorPreviewHandles: "&id",
     });
+    this.version(5).stores({
+      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
+      localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
+      mediaAssets: "&assetId, byteLength",
+      authorPreviewHandles: "&id",
+      runtimeCaches: "&id",
+    });
+    this.version(6).stores({
+      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
+      installedSystemResourcePackages: "&[systemPackageId+packageId], systemPackageId, packageId, snapshotDigest, version, installedAt",
+      localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
+      mediaAssets: "&assetId, byteLength",
+      authorPreviewHandles: "&id",
+      runtimeCaches: "&id",
+    }).upgrade(async (transaction) => {
+      const legacyTable = transaction.table("installedResourcePackages");
+      const targetTable = transaction.table("installedSystemResourcePackages");
+      const legacyRecords = await legacyTable.toArray() as LegacyInstalledResourcePackageRecord[];
+      const migrated = legacyRecords.flatMap((record) => {
+        const document = record.document as { targets?: Array<{ systemPackageId?: unknown }> };
+        const targetIds = [...new Set((document.targets ?? []).flatMap((target) =>
+          typeof target.systemPackageId === "string" ? [target.systemPackageId] : []))];
+        const systemPackageIds = targetIds.length > 0
+          ? targetIds
+          : ["01a0132c-4eef-7703-94ac-ec8d1a660001"];
+        return systemPackageIds.map((systemPackageId) => ({ ...record, systemPackageId }));
+      });
+      if (migrated.length > 0) await targetTable.bulkPut(migrated);
+      await legacyTable.clear();
+    });
+  }
+}
+
+export class DexieRuntimeCacheStore<T> {
+  readonly #database: PbDHLocalDatabase;
+
+  constructor(database = new PbDHLocalDatabase()) {
+    this.#database = database;
+  }
+
+  async load(id: string): Promise<T | null> {
+    const record = await this.#database.runtimeCaches.get(id);
+    return record ? structuredClone(record.value) as T : null;
+  }
+
+  async save(id: string, value: T): Promise<void> {
+    await this.#database.runtimeCaches.put({ id, value: structuredClone(value) });
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.#database.runtimeCaches.delete(id);
   }
 }
 
@@ -155,6 +217,29 @@ export class DexieLocalDocumentStore {
       const record = await this.#database.localDocuments.get(documentId);
       if (record?.documentKind === documentKind) await this.#database.localDocuments.delete(documentId);
     });
+  }
+
+  async replace<T>(
+    currentKind: LocalDocumentKind,
+    currentDocumentId: string,
+    replacement: LocalDocumentEnvelope<T>,
+  ): Promise<void> {
+    await this.#database.transaction(
+      "rw",
+      this.#database.localDocuments,
+      this.#database.mediaAssets,
+      async () => {
+        const current = await this.#database.localDocuments.get(currentDocumentId);
+        if (!current || current.documentKind !== currentKind) {
+          throw new Error(`Local document not found: ${currentDocumentId}`);
+        }
+        const stored = await this.#database.mediaAssets.bulkGet(replacement.assetIds);
+        const missing = replacement.assetIds.filter((_, index) => !stored[index]);
+        if (missing.length > 0) throw new Error(`Missing local media: ${missing.join(", ")}`);
+        await this.#database.localDocuments.delete(currentDocumentId);
+        await this.#database.localDocuments.put(structuredClone(replacement));
+      },
+    );
   }
 
   async getMedia(assetIds: readonly string[]): Promise<Map<string, Uint8Array>> {

@@ -98,8 +98,8 @@ describe("敌人 Template Core", () => {
     ]);
     expect(Object.keys(resource.media)).toEqual(["portrait"]);
     expect(adversaryTemplate.defaultPresentation).toEqual({
-      width: "90",
-      height: "142",
+      width: "63",
+      height: "88",
       unit: "mm",
       mode: "split",
       fixedRatio: true,
@@ -120,7 +120,13 @@ describe("敌人 Template Core", () => {
     expect(new Set(adversaryTemplate.tabletop.commands.map((command) => command.capability))).toEqual(
       new Set(["adjust-decimal-string", "set-string"]),
     );
-    expect(adversaryTemplate.tabletop.replacements).toEqual([]);
+    expect(adversaryTemplate.tabletop.commands.find((command) => command.id === "set-focused")?.values)
+      .toEqual(["true", "false"]);
+    expect(adversaryTemplate.tabletop.editableDataFields).toContainEqual(["名称"]);
+    expect(adversaryTemplate.tabletop.editableDataFields).toContainEqual(["特性", "*", "特性描述"]);
+    expect(adversaryTemplate.tabletop.replacements).toEqual([
+      { id: "alternate-form", label: "切换形态" },
+    ]);
     expect(adversaryTemplate.rendererRevision).toBe("enemy-card-r1");
     expect(adversaryTemplate.upgradeFrom).toBeNull();
   });

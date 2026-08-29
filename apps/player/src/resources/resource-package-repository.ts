@@ -15,9 +15,9 @@ export type StoredResourcePackage = ResourcePackageCandidate & {
 };
 
 export interface ResourcePackageRepository {
-  list(): Promise<StoredResourcePackage[]>;
-  replace(candidate: ResourcePackageCandidate, source: ResourcePackageSource): Promise<void>;
-  remove(packageId: string): Promise<void>;
+  list(systemPackageId: string): Promise<StoredResourcePackage[]>;
+  replace(systemPackageId: string, candidate: ResourcePackageCandidate, source: ResourcePackageSource): Promise<void>;
+  remove(systemPackageId: string, packageId: string): Promise<void>;
 }
 
 export { PbDHLocalDatabase } from "@pbdh/local-storage";
@@ -43,8 +43,11 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     this.#database = database;
   }
 
-  async list(): Promise<StoredResourcePackage[]> {
-    const records = await this.#database.installedResourcePackages.orderBy("installedAt").toArray();
+  async list(systemPackageId: string): Promise<StoredResourcePackage[]> {
+    const records = await this.#database.installedSystemResourcePackages
+      .where("systemPackageId")
+      .equals(systemPackageId)
+      .sortBy("installedAt");
     const result: StoredResourcePackage[] = [];
     for (const record of records) {
       const document = record.document as ResourcePackageLogicalDocument;
@@ -67,11 +70,11 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     return result;
   }
 
-  async replace(candidate: ResourcePackageCandidate, source: ResourcePackageSource): Promise<void> {
+  async replace(systemPackageId: string, candidate: ResourcePackageCandidate, source: ResourcePackageSource): Promise<void> {
     assertCompleteCandidate(candidate);
     await this.#database.transaction(
       "rw",
-      this.#database.installedResourcePackages,
+      this.#database.installedSystemResourcePackages,
       this.#database.localDocuments,
       this.#database.mediaAssets,
       async () => {
@@ -81,7 +84,8 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
           byteLength: asset.byteLength,
           bytes: copyBytes(candidate.media.get(asset.id)!),
         })));
-        await this.#database.installedResourcePackages.put({
+        await this.#database.installedSystemResourcePackages.put({
+          systemPackageId,
           packageId: candidate.document.package.id,
           snapshotDigest: candidate.document.snapshotDigest,
           version: candidate.document.package.version,
@@ -94,21 +98,21 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
     );
   }
 
-  async remove(packageId: string): Promise<void> {
+  async remove(systemPackageId: string, packageId: string): Promise<void> {
     await this.#database.transaction(
       "rw",
-      this.#database.installedResourcePackages,
+      this.#database.installedSystemResourcePackages,
       this.#database.localDocuments,
       this.#database.mediaAssets,
       async () => {
-        await this.#database.installedResourcePackages.delete(packageId);
+        await this.#database.installedSystemResourcePackages.delete([systemPackageId, packageId]);
         await this.#removeUnreferencedMedia();
       },
     );
   }
 
   async #removeUnreferencedMedia(): Promise<void> {
-    const packages = await this.#database.installedResourcePackages.toArray();
+    const packages = await this.#database.installedSystemResourcePackages.toArray();
     const documents = await this.#database.localDocuments.toArray();
     const referenced = new Set([
       ...packages.flatMap((record) =>

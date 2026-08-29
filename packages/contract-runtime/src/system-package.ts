@@ -17,6 +17,11 @@ const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/i;
 
 export type SystemPackageRuntime = {
   characterDataVersion: string;
+  characterDataMigrations?: Array<{
+    fromVersion: string;
+    toVersion: string;
+    script: string;
+  }>;
   loadingPresentation?: {
     tagline: string;
     accentColor: string;
@@ -242,6 +247,7 @@ export function validateSystemPackageSemantics(
     }
     validationCheckIds.add(check.id);
   });
+  validateCharacterDataMigrationChain(document, diagnostics);
   document.embeddedResources.forEach((embedded, index) => {
     if (embeddedPaths.has(embedded.path)) {
       diagnostics.push(diagnostic(
@@ -393,7 +399,51 @@ function collectRuntimePaths(runtime: SystemPackageDocument["runtime"]): Set<str
     skin.layoutOverrides?.pages?.forEach((page) => add(page.html));
   });
   runtime.validationChecks?.forEach((check) => add(check.script));
+  runtime.characterDataMigrations?.forEach((migration) => add(migration.script));
   return paths;
+}
+
+function validateCharacterDataMigrationChain(
+  document: SystemPackageDocument,
+  diagnostics: ContractDiagnostic[],
+): void {
+  const migrations = document.runtime.characterDataMigrations ?? [];
+  if (migrations.length === 0) return;
+  const byFrom = new Map<string, number>();
+  const byTo = new Map<string, number>();
+  migrations.forEach((migration, index) => {
+    if (compareSemVer(migration.fromVersion, migration.toVersion) >= 0) {
+      diagnostics.push(diagnostic(
+        "system-package.runtime.character-data-migration.not-forward",
+        `/runtime/characterDataMigrations/${index}`,
+      ));
+    }
+    if (byFrom.has(migration.fromVersion)) {
+      diagnostics.push(diagnostic(
+        "system-package.runtime.character-data-migration.branch",
+        `/runtime/characterDataMigrations/${index}/fromVersion`,
+        { version: migration.fromVersion },
+      ));
+    }
+    if (byTo.has(migration.toVersion)) {
+      diagnostics.push(diagnostic(
+        "system-package.runtime.character-data-migration.merge",
+        `/runtime/characterDataMigrations/${index}/toVersion`,
+        { version: migration.toVersion },
+      ));
+    }
+    byFrom.set(migration.fromVersion, index);
+    byTo.set(migration.toVersion, index);
+  });
+  const starts = migrations.filter((migration) => !byTo.has(migration.fromVersion));
+  const ends = migrations.filter((migration) => !byFrom.has(migration.toVersion));
+  if (starts.length !== 1 || ends.length !== 1 || ends[0]?.toVersion !== document.runtime.characterDataVersion) {
+    diagnostics.push(diagnostic(
+      "system-package.runtime.character-data-migration.chain-incomplete",
+      "/runtime/characterDataMigrations",
+      { currentVersion: document.runtime.characterDataVersion },
+    ));
+  }
 }
 
 export function writePbsys(

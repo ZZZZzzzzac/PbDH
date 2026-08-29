@@ -124,6 +124,7 @@ export function createEffectiveResourceCatalog(systemPackage: SystemPackage, ext
       entries: source.entries.map((entry) => ({
         ...qualifyExtensionAssetReferences(entry.fields, source.entryProvenance[entry.ID]),
         ID: entry.ID,
+        ...(entry.resourceCopy ? { __pbdhResourceCopy: entry.resourceCopy } : {}),
         ...(entry.aliases?.length ? { 旧ID: entry.aliases.length === 1 ? entry.aliases[0] : entry.aliases } : {}),
       })),
     }]);

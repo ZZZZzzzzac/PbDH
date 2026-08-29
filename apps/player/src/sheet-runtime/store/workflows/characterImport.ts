@@ -39,6 +39,7 @@ export async function persistImportedCharacter(
     .setActiveCharacterSaveId(data.systemPackage.id, data.character.id);
   set({
     characterSaves: await environment.dependencies.storage.listCharacterSaves(data.systemPackage.id),
+    allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
     activeCharacterSaveId: data.character.id,
   });
   scheduleAutosave(environment, () => get().characterData, (storageStatus) => set({ storageStatus }));
@@ -63,29 +64,18 @@ export async function importCharacterSource(
   ]);
   const native = parseCharacterDataText(text, currentPackage);
   if (native.ok) {
-    if (isLossyCharacterConversion(native.report)) {
-      set({
-        pendingCharacterConversion: {
-          sourceName: "PbDH Character Data",
-          data: native.data,
-          suggestedSaveName: "导入角色",
-          successNotice: "Character Data 已兼容导入为新的 Character Save。",
-          report: native.report,
-        },
-        pendingCharacterFormatSelection: null,
-        importError: null,
-        importNotice: null,
-      });
-      return;
-    }
-    await persistImportedCharacter(
-      environment,
-      native.data,
-      "导入角色",
-      "Character Data 已导入为 Character Save。",
-      set,
-      get,
-    );
+    set({
+      pendingCharacterConversion: {
+        sourceName: "PbDH Character Data",
+        data: native.data,
+        suggestedSaveName: "导入角色",
+        successNotice: "Character Data 已导入为新的 Character Save。",
+        report: native.report,
+      },
+      pendingCharacterFormatSelection: null,
+      importError: null,
+      importNotice: null,
+    });
     return;
   }
   const detection = parseAndDetectCharacterSource(
@@ -156,39 +146,16 @@ export async function importCharacterSource(
     skippedImages: conversion.report.skippedImages + normalized.report.skippedImages,
     diagnostics: [...conversion.report.diagnostics, ...normalized.report.diagnostics],
   };
-  if (isLossyCharacterConversion(conversion.report)) {
-    set({
-      pendingCharacterConversion: {
-        sourceName: adapter.名称,
-        data: conversion.data,
-        ...(conversion.suggestedSaveName ? { suggestedSaveName: conversion.suggestedSaveName } : {}),
-        successNotice: `${adapter.名称} 已导入为新的 Character Save。`,
-        report: conversion.report,
-      },
-      pendingCharacterFormatSelection: null,
-      importError: null,
-      importNotice: null,
-    });
-    return;
-  }
-  await persistImportedCharacter(
-    environment,
-    conversion.data,
-    conversion.suggestedSaveName ?? "导入角色",
-    `${adapter.名称} 已导入为新的 Character Save。`,
-    set,
-    get,
-  );
-}
-
-function isLossyCharacterConversion(report: {
-  skippedFields: number;
-  skippedCards: number;
-  skippedImages: number;
-  diagnostics: unknown[];
-}): boolean {
-  return report.diagnostics.length > 0
-    || report.skippedCards > 0
-    || report.skippedFields > 0
-    || report.skippedImages > 0;
+  set({
+    pendingCharacterConversion: {
+      sourceName: adapter.名称,
+      data: conversion.data,
+      ...(conversion.suggestedSaveName ? { suggestedSaveName: conversion.suggestedSaveName } : {}),
+      successNotice: `${adapter.名称} 已导入为新的 Character Save。`,
+      report: conversion.report,
+    },
+    pendingCharacterFormatSelection: null,
+    importError: null,
+    importNotice: null,
+  });
 }

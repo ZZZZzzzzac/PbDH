@@ -5,6 +5,7 @@ import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbd
 import { describe, expect, test } from "vitest";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
@@ -14,6 +15,7 @@ import {
   armorData,
   clearAdversaryFeature,
   closeWorkspaceResourceTab,
+  copyWorkspaceResourceToPackage,
   createBlankWorkspace,
   createWorkspaceFolder,
   createWorkspace,
@@ -34,12 +36,13 @@ import {
   updateAdversaryData,
   updateArmorData,
   updateResourcePresentation,
+  updateResourceReplacement,
   updateWorkspaceResourceData,
   updateWeaponData,
   weaponData,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import {
-  ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, environmentTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
+  adversaryTemplate, ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, environmentTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
 } from "@pbdh/templates/core";
 
 const root = process.cwd();
@@ -68,6 +71,24 @@ describe("Creator Workspace prototype state model", () => {
     expect(adversaryData(edited).名称).toBe("伤痕牛头人");
     expect(adversaryData(workspace).名称).toBe("牛头人破坏者");
     expect(edited.dirtyResourceIds).toEqual([workspace.document.resources[0]!.id]);
+  });
+
+  test("stores only the chosen replacement target on the source resource", () => {
+    const workspace = createWorkspace({
+      document: structuredClone(stableMinotaurPackage) as ResourcePackageLogicalDocument,
+      media,
+    });
+    const added = addTemplateResource(workspace, adversaryTemplate.id, adversaryTemplate.version);
+    const targetId = workspace.document.resources[0]!.id;
+    const linked = updateResourceReplacement(
+      added.workspace,
+      added.resourceId,
+      "alternate-form",
+      targetId,
+    );
+    expect(linked.document.resources.find((resource) => resource.id === added.resourceId)?.replacements)
+      .toEqual([{ replacementId: "alternate-form", targetResourceId: targetId }]);
+    expect(linked.document).not.toHaveProperty("materializedForms");
   });
 
   test("opening and pinning resources does not create a modification marker", () => {
@@ -273,6 +294,30 @@ describe("Creator Workspace prototype state model", () => {
     expect(duplicated.workspace.openResourceIds).toContain(copy.id);
   });
 
+  test("copies a resource, its media, and linked forms into another package", async () => {
+    let source = createWorkspace({
+      document: structuredClone(stableMinotaurPackage) as ResourcePackageLogicalDocument,
+      media,
+    });
+    const sourceId = source.document.resources[0]!.id;
+    const linked = addTemplateResource(source, adversaryTemplate.id, adversaryTemplate.version);
+    source = updateResourceReplacement(linked.workspace, sourceId, "alternate-form", linked.resourceId);
+    const target = await createBlankWorkspace("组合资源包");
+
+    const copied = copyWorkspaceResourceToPackage(source, target, sourceId);
+    const copiedSource = copied.workspace.document.resources.find((resource) => resource.id === copied.resourceId)!;
+    const copiedTargetId = copiedSource.replacements?.[0]?.targetResourceId;
+
+    expect(copied.copiedResourceIds).toHaveLength(2);
+    expect(copiedSource.id).not.toBe(sourceId);
+    expect(copiedTargetId).not.toBe(linked.resourceId);
+    expect(copied.workspace.document.resources.some((resource) => resource.id === copiedTargetId)).toBe(true);
+    expect(copied.workspace.document.assets).toEqual(source.document.assets);
+    expect(copied.workspace.media.get(asset.id)).toEqual(source.media.get(asset.id));
+    expect(copied.workspace.media.get(asset.id)).not.toBe(source.media.get(asset.id));
+    expect(copied.workspace.openResourceIds).toContain(copied.resourceId);
+  });
+
   test("replaces a temporary tab in place and selects the resource folder", () => {
     let workspace = createWorkspace({ document, media });
     const second = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
@@ -350,6 +395,31 @@ describe("Creator Workspace prototype state model", () => {
     expect(fork.document.package.version).toBe("1.0.0");
     expect(fork.dirty).toBe(false);
     expect(await validateResourcePackageCandidate(fork.document, fork.media)).toEqual([]);
+  });
+
+  test("an explicit Publication fork records the exact source while a local copy does not invent one", async () => {
+    const source = createWorkspace({ document, media });
+    const publicationFork = await forkCurrentWorkspace(source, {
+      publicationId: "01989f4e-7b2c-7000-8000-000000000071",
+      packageId: document.package.id,
+      version: document.package.version,
+      snapshotDigest: document.snapshotDigest,
+    });
+    const localCopy = await forkCurrentWorkspace(publicationFork);
+
+    expect(localCopy.document.forkSource).toBeNull();
+    expect(publicationFork.document.forkSource).toEqual({
+      publicationId: "01989f4e-7b2c-7000-8000-000000000071",
+      packageId: document.package.id,
+      version: document.package.version,
+      snapshotDigest: document.snapshotDigest,
+      copiedResources: document.resources.map((resource) => ({
+        packageId: document.package.id,
+        resourceId: resource.id,
+      })),
+    });
+    expect(publicationFork.document.package.id).not.toBe(document.package.id);
+    expect(await validateResourcePackageCandidate(publicationFork.document, publicationFork.media)).toEqual([]);
   });
 
   test("exports and reloads an edited complete .pbres through the formal archive boundary", async () => {
@@ -482,10 +552,25 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain("event.button !== 1 && event.button !== 2");
     expect(creatorSource).toContain("if (!event.ctrlKey) return");
     expect(creatorSource).toContain("application/x-pbdh-resource");
+    expect(creatorSource).toContain("放到当前桌面");
+    expect(creatorSource).toContain('className="package-license"');
     expect(creatorSource).not.toContain("发送到桌面");
     expect(creatorSource).toContain("requestTabletopRename");
+    expect(creatorSource).toContain("prepareWorkspaceReplacement");
+    expect(creatorSource).toContain("切换形态");
+    expect(creatorSource).toContain("selectedInstanceIds={selectedInstanceIds}");
+    expect(creatorSource).toContain('type: "edit-instance-data"');
+    expect(creatorSource).not.toContain('type: "replace-instance-resource"');
     expect(creatorSource).toContain('dialog.kind === "new-tabletop"');
+    expect(creatorSource).toContain('aria-label="导入桌面"');
+    expect(creatorSource).toContain('aria-label="桌面回收站"');
+    expect(creatorSource).toContain("duplicateTabletop");
+    expect(creatorSource).toContain('dialog.kind === "tabletop-import-conflict"');
+    expect(creatorSource).toContain("保留两份");
     expect(surfaceSource).toContain("onPointerMove={moveDrag}");
+    expect(surfaceSource).toContain('event.ctrlKey || event.metaKey ? "toggle"');
+    expect(surfaceSource).toContain('type: "move-many"');
+    expect(surfaceSource).toContain("ArrowRight");
     expect(surfaceSource).toContain("onInstanceContextMenu");
     expect(surfaceSource).toContain("onDragStart={(event) => event.preventDefault()}");
   });
@@ -516,6 +601,9 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain('usePlatformAccountManagement("creator", "云端回收站", openCloudTrash)');
     expect(creatorSource).toContain('usePlatformAccountManagement("gm", "云端回收站", openCloudTrash)');
     expect(creatorSource).toContain("<strong>回收站为空</strong>");
+    expect(creatorSource).toContain("仅保存在此浏览器，不等于云备份");
+    expect(creatorSource).toContain("cloudDocumentService.deleteFromTrash(remote, credentials)");
+    expect(creatorSource).toContain("永久删除");
     expect(creatorSource).not.toContain('role="menuitem" onClick={() => void openCloudTrash()}>云端回收站');
     expect(platformUiSource).toContain("accountManageLabel={accountManagement?.accountManageLabel}");
     expect(platformUiSource).toContain("onAccountManage={accountManagement?.onAccountManage}");

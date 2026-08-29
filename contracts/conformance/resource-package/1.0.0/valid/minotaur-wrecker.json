@@ -35,8 +35,8 @@
         "version": "1.0.0"
       },
       "presentation": {
-        "width": "90",
-        "height": "142",
+        "width": "63",
+        "height": "88",
         "unit": "mm",
         "mode": "split",
         "fixedRatio": true
@@ -87,5 +87,5 @@
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:4c9283bd802f810f92930779d6c05c68485851cd7f55cab21304b2b94bc7a284"
+  "snapshotDigest": "sha256:ef05cb7aa1ac235bd07cd29b127a95c72511b56d136cc9c5d142b163226a8f59"
 }

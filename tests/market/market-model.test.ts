@@ -179,6 +179,15 @@ describe("Market handoff intents", () => {
     expect(url.searchParams.get("snapshotDigest")).toBe(enemy.snapshotDigest);
   });
 
+  test("serializes an explicit Creator fork separately from an ordinary import", () => {
+    const intent = createHandoffIntent(enemy, "creator", "resource-minotaur", false, "fork");
+    const url = createCreatorHandoffUrl(intent, "http://localhost:5173/creator");
+    expect(intent.creatorMode).toBe("fork");
+    expect(url.searchParams.get("creatorMode")).toBe("fork");
+    expect(() => createHandoffIntent(enemy, "gm", undefined, false, "fork"))
+      .toThrow("handoff.fork.target-not-creator");
+  });
+
   test("serializes Player handoff with stable publication and package locators only", () => {
     const url = createPlayerHandoffUrl(
       createHandoffIntent(weapon, "player", "resource-broadsword"),

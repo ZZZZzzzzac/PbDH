@@ -334,7 +334,7 @@ function normalizeTableColumnWidths(fields: ResourceLibraryField[], entries: Res
   return effectiveFields.map((field) => ({
     ...field,
     columnWidth: `${(resourceTableColumnWidthWeights[field.effectiveWidth] / totalWeight) * 100}%`,
-    centered: [field.label, ...entries.map((entry) => entry.fields[field.key] ?? "")]
+    centered: field.key === "名称" || [field.label, ...entries.map((entry) => entry.fields[field.key] ?? "")]
       .every((value) => [...value].length <= 10),
   }));
 }

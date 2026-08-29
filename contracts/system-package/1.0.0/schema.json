@@ -22,6 +22,20 @@
       "required": ["characterDataVersion", "pages", "modules"],
       "properties": {
         "characterDataVersion": { "$ref": "#/$defs/semver" },
+        "characterDataMigrations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["fromVersion", "toVersion", "script"],
+            "properties": {
+              "fromVersion": { "$ref": "#/$defs/semver" },
+              "toVersion": { "$ref": "#/$defs/semver" },
+              "script": { "$ref": "#/$defs/packagePath" }
+            },
+            "additionalProperties": false
+          }
+        },
         "loadingPresentation": {
           "type": "object",
           "required": ["tagline", "accentColor"],

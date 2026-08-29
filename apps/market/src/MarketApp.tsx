@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
 import { useAuth } from "@pbdh/platform-auth/provider";
 import { PublicationDialog, type PublicationFormValue } from "@pbdh/publication-ui";
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
@@ -230,13 +230,19 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
     <header><strong>{resource.name}</strong><button type="button"><Icon name="maximize" />放大</button></header>
     <div className="canonical-stage">
       <div className="canonical-scale">
-        {renderer ? <CanonicalCardSurface
+        {renderer ? <CardDisplay
+            width={Number((resource.source as SurfaceResource<Record<string, unknown>>).presentation.width)}
+            height={Number((resource.source as SurfaceResource<Record<string, unknown>>).presentation.height)}
+            fixedRatio={(resource.source as SurfaceResource<Record<string, unknown>>).presentation.fixedRatio}
+            displayAspectRatio={63 / 88}
+            fit="contain"
+          ><CanonicalCardSurface
               resource={resource.source as SurfaceResource<Record<string, unknown>>}
               expectedRendererRevision={renderer.revision}
               renderer={renderer}
               assets={assets}
               label={`${resource.name}规范卡面`}
-            /> : <p>当前版本尚不能预览此模板。</p>}
+            /></CardDisplay> : <p>当前版本尚不能预览此模板。</p>}
       </div>
     </div>
   </div>;
@@ -249,7 +255,7 @@ function AcquisitionActions({
   includeDownload = true,
 }: {
   publication: Publication;
-  onHandoff: (target: HandoffTarget) => void;
+  onHandoff: (target: HandoffTarget, creatorMode?: "import" | "fork") => void;
   onDownload: () => void;
   includeDownload?: boolean;
 }) {
@@ -257,6 +263,7 @@ function AcquisitionActions({
     {includeDownload && <button type="button" className="primary-button" onClick={onDownload}><Icon name="download" />下载 .pbres</button>}
     <button type="button" onClick={() => onHandoff("player")}><Icon name="user" />安装到玩家</button>
     <button type="button" onClick={() => onHandoff("creator")}><Icon name="cards" />导入卡片工坊</button>
+    <button type="button" onClick={() => onHandoff("creator", "fork")}><Icon name="cards" />创建 Fork 草稿</button>
     <button type="button" onClick={() => onHandoff("gm")}><Icon name="grid" />发送到桌面…</button>
   </div>;
 }
@@ -277,7 +284,7 @@ function PublicationDetail({
   resourceId?: string;
   onBack: () => void;
   onSelectResource: (resourceId: string) => void;
-  onHandoff: (target: HandoffTarget) => void;
+  onHandoff: (target: HandoffTarget, creatorMode?: "import" | "fork") => void;
   onDownload: () => void;
   onEditMetadata: () => void;
   onUnpublish: () => void;
@@ -311,7 +318,7 @@ function PublicationDetail({
       </aside>
     </div>
     {canAcquire && <button className="mobile-acquire" type="button" onClick={() => setMobileActions(true)}>取得资源包</button>}
-    {canAcquire && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions publication={publication} onHandoff={(target) => { setMobileActions(false); onHandoff(target); }} onDownload={onDownload} includeDownload={false} /></section></div>}
+    {canAcquire && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions publication={publication} onHandoff={(target, creatorMode) => { setMobileActions(false); onHandoff(target, creatorMode); }} onDownload={onDownload} includeDownload={false} /></section></div>}
   </div>;
 }
 
@@ -320,7 +327,7 @@ function HandoffDialog({ intent, publication, onClose, onComplete }: { intent: H
   return <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
     <section className="handoff-dialog" role="dialog" aria-modal="true" aria-labelledby="handoff-title" onMouseDown={(event) => event.stopPropagation()}>
       <header><h2 id="handoff-title">交接到{targetLabels[intent.target]}</h2><button type="button" aria-label="关闭" onClick={onClose}><Icon name="x" /></button></header>
-      <dl><dt>取得内容</dt><dd>完整资源包</dd>{focused && <><dt>聚焦资源</dt><dd>{focused.name}</dd></>}<dt>目标入口</dt><dd>{routeLabels[intent.targetRoute]}</dd>{intent.target === "gm" && <><dt>放置</dt><dd>从共享工作区拖入桌面</dd></>}</dl>
+      <dl><dt>取得内容</dt><dd>{intent.creatorMode === "fork" ? "完整资源包 · Fork 草稿" : "完整资源包"}</dd>{focused && <><dt>聚焦资源</dt><dd>{focused.name}</dd></>}<dt>目标入口</dt><dd>{routeLabels[intent.targetRoute]}</dd>{intent.target === "gm" && <><dt>放置</dt><dd>从共享工作区拖入桌面</dd></>}</dl>
       <footer><button type="button" onClick={onClose}>取消</button><button type="button" className="primary-button" onClick={onComplete}>继续</button></footer>
     </section>
   </div>;
@@ -407,7 +414,7 @@ export function MarketApp({
     }
   }
 
-  function openHandoff(target: HandoffTarget) {
+  function openHandoff(target: HandoffTarget, creatorMode: "import" | "fork" = "import") {
     if (!publication) return;
     const canManage = Boolean(auth.credentials && canManagePublication(
       publication,
@@ -419,6 +426,7 @@ export function MarketApp({
       target,
       view.page === "detail" ? view.resourceId ?? publication.resources[0]?.id : undefined,
       canManage,
+      creatorMode,
     ));
   }
 

@@ -1,0 +1,689 @@
+/* rhodes-island 「罗德岛」— 工业机能档案风：暖灰纸面、近黑墨块、警示黄标记、危险斜纹与条码。 */
+:scope {
+  color-scheme: light;
+
+  --ak-ink: #1f1f1c;
+  --ak-ink-2: #2b2b27;
+  --ak-paper: #f1efe8;
+  --ak-surface: #faf8f1;
+  --ak-surface-muted: #e8e5da;
+  --ak-line: #c7c4b7;
+  --ak-line-soft: #d8d5c8;
+  --ak-line-strong: #3a3a35;
+  --ak-muted: #6b695f;
+  --ak-yellow: #f2c200;
+  --ak-yellow-deep: #d9ae00;
+  --ak-hazard: repeating-linear-gradient(
+    -45deg,
+    var(--ak-yellow) 0,
+    var(--ak-yellow) 0.4rem,
+    var(--ak-ink) 0.4rem,
+    var(--ak-ink) 0.8rem
+  );
+  --ak-font-display: "Bahnschrift", "DIN Alternate", "Franklin Gothic Medium", "Arial Narrow", "Microsoft YaHei", sans-serif;
+  --ak-font-body: system-ui, "Microsoft YaHei", sans-serif;
+
+  --framework-canvas: #e4e2da;
+  --framework-surface: #faf8f1;
+  --framework-surface-subtle: #f2f0e7;
+  --framework-surface-muted: #e8e5da;
+  --framework-text: #2a2a26;
+  --framework-text-strong: #1f1f1c;
+  --framework-text-secondary: #55534a;
+  --framework-text-muted: #75736a;
+  --framework-border: #c7c4b7;
+  --framework-border-strong: #3a3a35;
+  --framework-border-subtle: #d8d5c8;
+  --framework-accent: #d9ae00;
+  --framework-accent-active: #b89600;
+  --framework-on-accent: #1f1f1c;
+  --framework-focus: #d9ae00;
+  --framework-danger: #a63a2a;
+  --framework-danger-strong: #8c2f22;
+  --framework-danger-border: #c46a58;
+  --framework-danger-surface: #f7e9e4;
+  --framework-success: #2f6b46;
+  --framework-success-border: #5f8c68;
+  --framework-warning: #8a6d00;
+  --framework-warning-border: #d9ae00;
+  --framework-warning-surface: #f6efd6;
+  --framework-shadow: rgba(31, 31, 28, 0.16);
+  --framework-shadow-strong: rgba(31, 31, 28, 0.3);
+  --framework-overlay: rgba(31, 31, 28, 0.55);
+}
+
+/* ========== 工作区与页面外盒(仅屏幕) ========== */
+
+.tttri-workspace {
+  background:
+    repeating-linear-gradient(-45deg, rgba(31, 31, 28, 0.022) 0, rgba(31, 31, 28, 0.022) 2px, transparent 2px, transparent 10px),
+    linear-gradient(165deg, #e7e5dd, #dfddd3 60%, #e3e1d7);
+}
+
+.tttri-sheet-pane {
+  border: 1px solid var(--ak-line-strong);
+  background: var(--ak-paper);
+  box-shadow:
+    0 0 0 0.25rem rgba(250, 248, 241, 0.6),
+    0 0 0 calc(0.25rem + 1px) rgba(58, 58, 53, 0.55),
+    0 0.9rem 2rem rgba(31, 31, 28, 0.2);
+}
+
+/* ========== 页面基底:档案纸 + 浅格线 + 绝对定位装饰 ========== */
+
+.tttri-sheet {
+  position: relative;
+  background:
+    linear-gradient(rgba(58, 58, 53, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 58, 53, 0.032) 1px, transparent 1px),
+    linear-gradient(160deg, #f2f0e9, #efede4 55%, #f1efe7);
+  background-size: 1rem 1rem, 1rem 1rem, auto;
+  color: var(--ak-ink);
+  font-family: var(--ak-font-body);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.tttri-sheet {
+  --restricted-markdown-red: #a63a2a;
+  --restricted-markdown-orange: #a05e1f;
+  --restricted-markdown-yellow: #8a6d00;
+  --restricted-markdown-green: #2f6b46;
+  --restricted-markdown-blue: #2f5d7a;
+  --restricted-markdown-purple: #6b4e7a;
+  --restricted-markdown-gray: #6b6960;
+}
+
+/* 页缘角标:套准十字线,不占版面。 */
+.ak-corner {
+  position: absolute;
+  width: 3.5mm;
+  height: 3.5mm;
+  border: 0 solid var(--ak-line-strong);
+  pointer-events: none;
+}
+
+.ak-corner-tl { top: 1.4mm; left: 1.4mm; border-top-width: 2px; border-left-width: 2px; }
+.ak-corner-tr { top: 1.4mm; right: 1.4mm; border-top-width: 2px; border-right-width: 2px; }
+.ak-corner-bl { bottom: 1.4mm; left: 1.4mm; border-bottom-width: 2px; border-left-width: 2px; }
+.ak-corner-br { bottom: 1.4mm; right: 1.4mm; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* 页顶危险纹条:压在页内 padding 区,不推高内容。 */
+.ak-page-top {
+  position: absolute;
+  top: 0.6mm;
+  left: 0;
+  right: 0;
+  height: 1.1mm;
+  background: var(--ak-hazard);
+  pointer-events: none;
+}
+
+/* ========== 分区卡片:白面 + 描边影(零高度代价) ========== */
+
+.identity-panel,
+.upper-stat-layout,
+.sheet-region,
+.question-column,
+.advancement-region {
+  background: var(--ak-surface);
+  box-shadow: 0 0 0 1px var(--ak-line-strong);
+}
+
+.story-overview > [data-module-slot-id] {
+  background: var(--ak-surface);
+  box-shadow: 0 0 0 1px var(--ak-line-strong);
+}
+
+/* ========== 身份头版:深色档案头 ========== */
+
+.identity-panel {
+  position: relative;
+  background:
+    linear-gradient(105deg, var(--ak-ink) 0%, var(--ak-ink-2) 72%, #35352f 100%);
+  color: var(--ak-paper);
+  box-shadow: 0 0 0 1px var(--ak-ink);
+}
+
+/* 头版下缘危险纹。 */
+.identity-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.4mm;
+  background: var(--ak-hazard);
+  pointer-events: none;
+}
+
+.identity-panel [data-part="label"] {
+  color: #cfcdbf;
+}
+
+.identity-panel [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: var(--ak-line-strong);
+  background: var(--ak-surface);
+  color: var(--ak-ink);
+}
+
+/* 品牌黄签:美工 SLOGAN 字标。 */
+.brand-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 4rem;
+  padding: 0.25rem;
+  border: 0;
+  background: linear-gradient(150deg, var(--ak-yellow) 0%, #e5b800 100%);
+  box-shadow: 0 0 0 1px rgba(31, 31, 28, 0.85);
+}
+
+.brand-logo {
+  position: absolute;
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  object-fit: contain;
+}
+
+/* 头版内选择器:黄底黑字。 */
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 1px solid rgba(31, 31, 28, 0.85);
+  background: linear-gradient(150deg, var(--ak-yellow), #e0b400);
+  color: var(--ak-ink);
+  box-shadow: none;
+}
+
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: linear-gradient(150deg, #ffd21a, var(--ak-yellow));
+}
+
+/* 等级格:白面大数字,与头版形成档案编号感。 */
+.identity-panel .level-field [data-part="label"] {
+  border-bottom-color: rgba(207, 205, 191, 0.45);
+  color: var(--ak-muted);
+}
+
+.identity-panel .level-field [data-part="input"] {
+  font-family: var(--ak-font-display);
+  font-weight: 700;
+}
+
+/* ========== 上排属性区 ========== */
+
+.upper-stat-layout {
+  background: var(--ak-surface);
+}
+
+.trait-summary > [data-module-slot-id],
+.defense-summary > [data-module-slot-id] {
+  background: #ffffff;
+  box-shadow: inset 0 2px 0 var(--ak-ink), 0 0 0 1px var(--ak-line);
+}
+
+.trait-summary [data-part="label"],
+.defense-summary [data-part="label"] {
+  border-bottom-color: var(--ak-line-soft);
+  color: var(--ak-muted);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.trait-summary [data-part="input"],
+.defense-summary [data-part="input"] {
+  font-family: var(--ak-font-display);
+  font-weight: 700;
+}
+
+/* ========== 分区题签:黑方块 + 题字 + 英文码 ========== */
+
+.upper-stat-layout > .section-title,
+.sheet-region > .section-title,
+.region-heading-row > .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  border-bottom: 1.5px solid var(--ak-ink);
+  color: var(--ak-ink);
+  font-family: var(--ak-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.upper-stat-layout > .section-title::before,
+.sheet-region > .section-title::before,
+.region-heading-row > .section-title::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.52em;
+  height: 0.52em;
+  background: var(--ak-ink);
+  box-shadow: 0.16em 0.16em 0 0 var(--ak-yellow);
+  transform: translateY(0.02em);
+}
+
+.title-tag {
+  margin-left: auto;
+  color: var(--ak-muted);
+  font-family: var(--ak-font-display);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+}
+
+.region-heading-row > h2:not(.section-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin: 0.15rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
+  border-bottom: 1.5px solid var(--ak-ink);
+  color: var(--ak-ink);
+  font-family: var(--ak-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+}
+
+/* ========== 模块零件 ========== */
+
+[data-module-type] [data-part="label"] {
+  color: var(--ak-muted);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+:is(
+  [data-module-type="countableResource"],
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) > [data-part="label"] {
+  color: var(--ak-muted);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: var(--ak-line);
+  background: #ffffff;
+  color: var(--ak-ink);
+  caret-color: var(--ak-yellow-deep);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: var(--ak-line-strong);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+[data-module-type] button:focus-visible {
+  outline: 2px solid var(--ak-yellow-deep);
+  outline-offset: 1px;
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="longText"] [data-markdown-preview] {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ak-ink);
+}
+
+/* 选择器按钮（亮面区）：浅纸面、深色图标。 */
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 1px solid var(--ak-ink);
+  background: var(--ak-surface-muted);
+  color: var(--ak-ink);
+  box-shadow: none;
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: var(--ak-yellow);
+  color: var(--ak-ink);
+}
+
+/* 计数资源：浅色标签与按钮，保持纸面主题。 */
+[data-module-type="countableResource"] [data-part="label"] {
+  background: var(--ak-surface-muted);
+  color: var(--ak-muted);
+  font-family: var(--ak-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid var(--ak-ink);
+  background: var(--ak-surface-muted);
+  color: var(--ak-ink);
+  box-shadow: none;
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  background: var(--ak-yellow);
+  color: var(--ak-ink);
+}
+
+/* 经历清单:发丝分隔线。 */
+.experience-list > div {
+  box-shadow: 0 1px 0 var(--ak-line-soft);
+}
+
+.experience-list > div:last-child {
+  box-shadow: none;
+}
+
+.experience-list [data-module-id^="experience-modifier-"] [data-part="input"],
+.experience-list [data-module-id="ancestry-experience-modifier"] [data-part="input"] {
+  font-family: var(--ak-font-display);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* 金币区标签块沿用浅色标签，输入居中。 */
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  border-left-color: var(--ak-line-strong);
+}
+
+/* 复选框:警示黄强调色。 */
+[data-module-type="checkboxResource"] [data-part="input"] {
+  accent-color: var(--ak-yellow-deep);
+}
+
+/* 头像框:虚线档案相框。 */
+[data-module-type="imageField"] [data-part="surface-frame"] {
+  border: 1.5px dashed var(--ak-line-strong);
+  background: var(--ak-surface-subtle, #f2f0e7);
+}
+
+/* ========== 背景与关系页 ========== */
+
+.question-column h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding-bottom: 0.15rem;
+  box-shadow: 0 1.5px 0 var(--ak-ink);
+  color: var(--ak-ink);
+  font-family: var(--ak-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-align: left;
+}
+
+.question-column h2::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.52em;
+  height: 0.52em;
+  background: var(--ak-ink);
+  box-shadow: 0.16em 0.16em 0 0 var(--ak-yellow);
+}
+
+/* 升级记录:墨带标题 + 黄阶页签。 */
+.advancement-region > h2 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.16rem 0.5rem 0.3rem;
+  background: linear-gradient(100deg, var(--ak-ink), var(--ak-ink-2) 70%, #35352f);
+  color: var(--ak-paper);
+  font-family: var(--ak-font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+}
+
+.advancement-region > h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.2mm;
+  background: var(--ak-hazard);
+  pointer-events: none;
+}
+
+.advancement-region > h2 .title-tag {
+  color: rgba(241, 239, 232, 0.55);
+}
+
+.advancement-grid article {
+  border: 1px solid var(--ak-line);
+  background: #ffffff;
+  box-shadow: inset 0 2px 0 var(--ak-ink);
+}
+
+.advancement-grid article h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  color: var(--ak-ink);
+  font-family: var(--ak-font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+}
+
+.advancement-grid article h3::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.5em;
+  height: 0.5em;
+  background: var(--ak-yellow);
+  box-shadow: 0 0 0 1px var(--ak-ink);
+}
+
+.advancement-grid [data-module-type="readOnlyDisplay"] [data-part="value"] {
+  color: var(--ak-muted);
+}
+
+/* ========== 卡牌桌面(屏幕) ========== */
+
+.tttri-card-pane {
+  color: var(--ak-paper);
+}
+
+.card-desk-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem 0.55rem;
+  background: linear-gradient(100deg, var(--ak-ink), var(--ak-ink-2) 70%, #35352f);
+  box-shadow: 0 0 0 1px var(--ak-ink);
+}
+
+.card-desk-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.card-desk-title {
+  font-family: var(--ak-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--ak-paper);
+}
+
+.card-desk-sub {
+  font-family: var(--ak-font-display);
+  font-size: 0.52rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: rgba(241, 239, 232, 0.55);
+}
+
+.card-desk-barcode {
+  flex: 0 0 auto;
+  width: 4.2rem;
+  height: 0.85rem;
+  margin-left: auto;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ak-paper) 0 1px, transparent 1px 3px,
+    var(--ak-paper) 3px 6px, transparent 6px 7px,
+    var(--ak-paper) 7px 8px, transparent 8px 12px,
+    var(--ak-paper) 12px 15px, transparent 15px 16px,
+    var(--ak-paper) 16px 17px, transparent 17px 19px
+  );
+  opacity: 0.8;
+}
+
+.card-desk-banner {
+  position: relative;
+}
+
+.card-desk-banner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.2mm;
+  background: var(--ak-hazard);
+  pointer-events: none;
+}
+
+/* 桌面上的领域卡选择器:整宽黄钮。 */
+[data-module-slot-id="pick-domain-card"] [data-part="button"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.1rem;
+  padding: 0 0.6rem;
+  border: 1px solid rgba(31, 31, 28, 0.9);
+  background: linear-gradient(150deg, var(--ak-yellow), #e0b400);
+  color: var(--ak-ink);
+  font-family: var(--ak-font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  box-shadow: none;
+}
+
+[data-module-slot-id="pick-domain-card"] [data-part="button"]:hover:not(:disabled) {
+  background: linear-gradient(150deg, #ffd21a, var(--ak-yellow));
+}
+
+.tttri-card-table-slot {
+  box-shadow: 0 0 0 1px var(--ak-ink);
+}
+
+[data-module-type="cardTable"] [data-part="surface"] {
+  border-color: var(--ak-ink);
+  background:
+    repeating-linear-gradient(-45deg, rgba(241, 239, 232, 0.025) 0, rgba(241, 239, 232, 0.025) 2px, transparent 2px, transparent 9px),
+    linear-gradient(155deg, #2b2b27, #232320 55%, #1f1f1c);
+}
+
+/* 桌面纹章：保留终末地底纹，叠加领域 SVG 自带的入场与循环动画。 */
+[data-module-type="cardTable"] [data-part="surface"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("assets/icons/domain-miracle.svg");
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: min(38vmin, 320px);
+}
+
+:scope[data-value-primary-domain="远见"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-foresight.svg");
+}
+:scope[data-value-primary-domain="攻坚"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-assault.svg");
+}
+:scope[data-value-primary-domain="坚阵"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-bulwark.svg");
+}
+:scope[data-value-primary-domain="秘行"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-stealth.svg");
+}
+:scope[data-value-primary-domain="精准"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-precision.svg");
+}
+:scope[data-value-primary-domain="支柱"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-pillar.svg");
+}
+:scope[data-value-primary-domain="奥术"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-arcane.svg");
+}
+:scope[data-value-primary-domain="工业"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-industrial.svg");
+}
+:scope[data-value-primary-domain="心界"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-mindsphere.svg");
+}
+:scope[data-value-primary-domain="迅攻"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-blitz.svg");
+}
+
+[data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
+  border: 1px solid var(--ak-ink);
+  background: var(--ak-surface);
+  color: var(--ak-ink);
+}
+
+.play-card-tag {
+  border-color: var(--ak-line-strong);
+  background: var(--ak-surface-muted);
+  color: var(--ak-ink);
+}
+
+/* ========== 输出准备态与打印 ========== */
+
+.print-mode :scope .tttri-workspace {
+  background: #ffffff;
+}
+
+.print-mode :scope .card-desk-banner {
+  display: none;
+}
+
+.print-mode :scope .tttri-sheet {
+  background: #ffffff;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"] {
+  background: #ffffff;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::after {
+  display: none;
+}
+
+@media print {
+  .tttri-workspace {
+    background: #ffffff;
+  }
+
+  .tttri-sheet {
+    background: #ffffff;
+  }
+
+  .card-desk-banner {
+    display: none;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"] {
+    background: #ffffff;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"]::after {
+    display: none;
+  }
+}
+
+/* ========== 窄屏:角标与页顶纹让位 ========== */
+
+@media screen and (max-width: 800px) {
+  .ak-corner,
+  .ak-page-top {
+    display: none;
+  }
+}

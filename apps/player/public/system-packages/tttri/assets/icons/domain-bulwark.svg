@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5.98 -7.04 46.13 54.3">
+  <!-- 领域纹章·坚阵 BULWARK:几何源自 docs/pbdh/粥/图标PNG及SVG/资源 6.svg;SMIL 内置入场淡入+无限循环,依领域图标动画规范。 -->
+  <defs>
+    <filter id="ak-ring-halo">
+      <feMorphology in="SourceGraphic" operator="dilate" radius="0.2" result="dilated"/>
+      <feComposite in="dilated" in2="SourceGraphic" operator="out"/>
+    </filter>
+  </defs>
+  <!-- ak-ring 光环:0.05s 起 0.6s ease-out 扩散淡出(scale 1→1.35, opacity 1→0),feMorphology 融合多形状后描边 -->
+  <g transform="translate(17.09 20.11)">
+    <g>
+      <animateTransform attributeName="transform" type="scale" from="1" to="1.35" begin="0.05s" dur="0.6s" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" fill="freeze"/>
+      <animate attributeName="opacity" from="1" to="0" begin="0.05s" dur="0.6s" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" fill="freeze"/>
+      <g transform="translate(-17.09 -20.11)" fill="#63bfd1" filter="url(#ak-ring-halo)">
+        <polygon points="30.38 4.76 30.38 10.71 23.73 12.71 17.08 14.7 10.43 12.71 3.78 10.71 3.78 4.76 0 5.82 0 18.56 8.54 21.11 17.08 23.67 25.63 21.11 34.17 18.56 34.17 5.76 30.38 4.76"/>
+        <polygon points="15.96 18.79 7.34 15.65 7.34 2.22 15.96 0 15.96 18.79"/>
+        <polygon points="18.21 18.79 26.83 15.65 26.83 2.22 18.21 0 18.21 18.79"/>
+        <polygon points="17.08 26.22 3.47 22.02 3.47 30.05 17.08 40.22 30.7 30.05 30.7 22.02 17.08 26.22"/>
+      </g>
+    </g>
+  </g>
+  <!-- ak-starburst 实体:0.15s 起 0.4s ease-out 淡入;0.8s 起 divineFloat 3.5s indefinite(translateY 0↔-0.8, scale 1↔1.015, opacity 1↔0.95) -->
+  <g transform="translate(0 0.8)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 -1.6;0 0" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+      <animate attributeName="opacity" values="0.7;1;0.7" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="indefinite" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+      <g opacity="0">
+        <animate attributeName="opacity" from="0" to="1" begin="0.15s" dur="0.4s" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" fill="freeze"/>
+        <g fill="#63bfd1" opacity="0.08">
+          <polygon points="30.38 4.76 30.38 10.71 23.73 12.71 17.08 14.7 10.43 12.71 3.78 10.71 3.78 4.76 0 5.82 0 18.56 8.54 21.11 17.08 23.67 25.63 21.11 34.17 18.56 34.17 5.76 30.38 4.76"/>
+          <polygon points="15.96 18.79 7.34 15.65 7.34 2.22 15.96 0 15.96 18.79"/>
+          <polygon points="18.21 18.79 26.83 15.65 26.83 2.22 18.21 0 18.21 18.79"/>
+          <polygon points="17.08 26.22 3.47 22.02 3.47 30.05 17.08 40.22 30.7 30.05 30.7 22.02 17.08 26.22"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

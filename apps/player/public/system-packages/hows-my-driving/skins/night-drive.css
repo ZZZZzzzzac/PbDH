@@ -1,0 +1,53 @@
+:scope {
+  --hmd-paper: #d8d4c4;
+  --hmd-panel: rgba(238, 234, 218, 0.9);
+  --hmd-ink: #171719;
+  --hmd-line: #5a5752;
+  --hmd-muted: #4f4c48;
+  --hmd-title: #811d22;
+  --hmd-title-ink: #fff4df;
+  --hmd-accent: #8f2024;
+  --hmd-shadow: #363439;
+  --hmd-warning: #d59e27;
+  --hmd-warning-ink: #171719;
+  --restricted-markdown-red: #8f2024;
+  --restricted-markdown-orange: #9d4f1b;
+  color-scheme: light;
+}
+
+:scope .hmd-page {
+  background-image:
+    linear-gradient(rgba(19, 19, 21, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 19, 21, 0.025) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+:scope [data-part="input"],
+:scope [data-part="button"] {
+  border-radius: 0;
+}
+
+:scope [data-part="input"] {
+  background: rgba(255, 252, 239, 0.78);
+  border-color: var(--hmd-line);
+  color: var(--hmd-ink);
+}
+
+:scope [data-module-type="countableResource"] [data-part="input"] {
+  background: transparent;
+  color: var(--framework-text);
+}
+
+:scope [data-part="button"] {
+  color: var(--hmd-title-ink);
+  background: var(--hmd-accent);
+  border-color: var(--hmd-ink);
+}
+
+@media print {
+  :scope {
+    --hmd-paper: #f1eee4;
+    --hmd-panel: rgba(255, 255, 255, 0.82);
+    --hmd-shadow: #555555;
+  }
+}

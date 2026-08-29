@@ -1,4 +1,10 @@
-import type { TabletopInstanceResourceCopy } from "@pbdh/tabletop/core";
+import type {
+  TabletopCommand,
+  TabletopDocumentModel,
+  TabletopInstance,
+  TabletopInstanceResourceCopy,
+} from "@pbdh/tabletop/core";
+import { templateRegistry } from "@pbdh/templates/core";
 
 import type { CreatorWorkspace, WorkspaceResource } from "./workspace-model.ts";
 
@@ -7,6 +13,42 @@ export type TabletopPlacementSnapshot = {
   assets: CreatorWorkspace["document"]["assets"];
   media: Map<string, Uint8Array>;
 };
+
+export type PreparedTabletopReplacement = {
+  command: Extract<TabletopCommand, { type: "replace" }>;
+  media: Map<string, Uint8Array>;
+};
+
+const daggerheartOfficialResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+
+export function restoreOfficialTabletopImageModes(
+  document: TabletopDocumentModel,
+  workspaces: readonly CreatorWorkspace[],
+): TabletopDocumentModel {
+  let changed = false;
+  const instances = document.instances.map((instance) => {
+    const source = instance.resource.source;
+    if (!source || source.packageId !== daggerheartOfficialResourcePackageId) return instance;
+    const workspace = workspaces.find((candidate) => candidate.document.package.id === source.packageId);
+    const resource = workspace?.document.resources.find((candidate) => candidate.id === source.resourceId);
+    if (!resource || resource.media.portrait !== instance.resource.media.portrait) return instance;
+    const restoreMode = instance.resource.presentation.mode === "text"
+      && resource.presentation.mode !== "text";
+    if (!restoreMode) return instance;
+    changed = true;
+    return {
+      ...instance,
+      resource: {
+        ...instance.resource,
+        presentation: {
+          ...instance.resource.presentation,
+          mode: resource.presentation.mode,
+        },
+      },
+    };
+  });
+  return changed ? { ...document, instances } : document;
+}
 
 export function snapshotWorkspaceResourceForTabletop(
   workspace: CreatorWorkspace,
@@ -33,6 +75,41 @@ export function snapshotWorkspaceResourceForTabletop(
   };
 }
 
+export function prepareWorkspaceReplacement(
+  workspaces: readonly CreatorWorkspace[],
+  instance: TabletopInstance,
+  replacementId: string,
+  newInstanceId: string,
+): PreparedTabletopReplacement {
+  const source = instance.resource.source;
+  if (!source) throw new Error("tabletop.replacement.source-missing");
+  const replacement = instance.resource.replacements.find(
+    (candidate) => candidate.replacementId === replacementId,
+  );
+  if (!replacement) throw new Error("tabletop.replacement.unsupported");
+  const workspace = workspaces.find((candidate) => candidate.document.package.id === source.packageId);
+  if (!workspace) throw new Error("tabletop.replacement.workspace-not-found");
+  const target = workspace.document.resources.find(
+    (candidate) => candidate.id === replacement.targetResourceId,
+  );
+  if (!target) throw new Error("tabletop.replacement.target-not-found");
+  const template = templateRegistry.resolve(target.template.id, target.template.version);
+  if (!template) throw new Error("tabletop.replacement.template-unsupported");
+  const snapshot = snapshotWorkspaceResourceForTabletop(workspace, target.id);
+  return {
+    command: {
+      type: "replace",
+      instanceId: instance.id,
+      newInstanceId,
+      replacementId,
+      resource: snapshot.resource,
+      state: template.tabletop.defaultState(target.data as never),
+      assets: snapshot.assets,
+    },
+    media: snapshot.media,
+  };
+}
+
 function tabletopResourceCopy(
   workspace: CreatorWorkspace,
   resource: WorkspaceResource,
@@ -43,6 +120,7 @@ function tabletopResourceCopy(
     presentation: structuredClone(resource.presentation),
     data: structuredClone(resource.data) as Record<string, unknown>,
     labels: [],
+    replacements: structuredClone(resource.replacements ?? []),
     media: structuredClone(resource.media),
   };
 }

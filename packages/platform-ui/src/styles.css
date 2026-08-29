@@ -27,12 +27,14 @@
 .pbdh-platform-nav button.is-current::after { background: #d65458; }
 .pbdh-platform-extra { display: flex; justify-content: flex-end; align-items: center; gap: 5px; }
 .pbdh-platform-actions { display: flex; justify-content: end; align-items: center; gap: 5px; }
-.pbdh-platform-actions > button { min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 9px; border: 0; border-radius: 5px; color: #d9cfc3; background: transparent; font: inherit; cursor: pointer; }
-.pbdh-platform-actions > button:hover { color: #fffdf8; background: #38271e; }
+.pbdh-platform-actions > button, .pbdh-platform-notification-menu > button { min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 9px; border: 0; border-radius: 5px; color: #d9cfc3; background: transparent; font: inherit; cursor: pointer; }
+.pbdh-platform-actions > button:hover, .pbdh-platform-notification-menu > button:hover { color: #fffdf8; background: #38271e; }
 .pbdh-platform-actions svg { width: 18px; height: 18px; }
+.pbdh-platform-notification-menu { position: relative; height: 34px; display: flex; align-items: center; }
+.pbdh-platform-notification-menu::after { content: ""; position: absolute; top: 100%; right: 0; width: 100%; height: 8px; }
 .pbdh-platform-notification-button { position: relative; }
 .pbdh-platform-notification-button > span { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; display: grid; place-items: center; padding: 0 3px; border-radius: 8px; color: #fff; background: #d65458; box-sizing: border-box; font-size: 9px; font-weight: 800; line-height: 1; }
-.pbdh-platform-notification-panel { position: absolute; top: calc(100% + 8px); right: 12px; width: min(360px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #59453a; border-radius: 8px; color: #2a1d17; background: #fffdf8; box-shadow: 0 16px 40px #0005; }
+.pbdh-platform-notification-panel { position: absolute; top: calc(100% + 8px); right: 0; width: min(360px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #59453a; border-radius: 8px; color: #2a1d17; background: #fffdf8; box-shadow: 0 16px 40px #0005; }
 .pbdh-platform-notification-panel header { min-height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid #e1d8cf; }
 .pbdh-platform-notification-panel header strong { font-size: 13px; }
 .pbdh-platform-notification-panel button { border: 0; color: #765f52; background: transparent; cursor: pointer; }
