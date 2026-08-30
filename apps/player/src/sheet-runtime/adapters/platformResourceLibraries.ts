@@ -44,10 +44,14 @@ export function replacePlatformResourceLibraries(input: {
   currentSystem: SystemPackageDocument;
   basePackage: SystemPackage;
   installedPackages: PlatformResourceLibrary;
+  preloadedPackageIds?: ReadonlySet<string>;
 }): SystemPackage {
+  const packagesToMerge = input.preloadedPackageIds?.size
+    ? new Map([...input.installedPackages].filter(([packageId]) => !input.preloadedPackageIds!.has(packageId)))
+    : input.installedPackages;
   const platformLibraries = new Map(buildSheetResourceLibraries({
     currentSystem: input.currentSystem,
-    installedPackages: input.installedPackages,
+    installedPackages: packagesToMerge,
   }).map((library) => [library.ID, library]));
   const mergedInputs = (input.basePackage.resourceLibraries ?? []).flatMap((library) => {
     const platform = platformLibraries.get(library.ID);

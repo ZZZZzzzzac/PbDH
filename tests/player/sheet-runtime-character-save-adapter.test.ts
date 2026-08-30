@@ -26,12 +26,12 @@ describe("Sheet Runtime Character Save adapter", () => {
         resourceCompatibility: [
           {
             templateId: "种族",
-            versionRange: { minimumInclusive: "0.0.0-dev.1" },
+            versionRange: { minimumInclusive: "1.0.0" },
             nativeEntry: { id: "ancestries" },
           },
           {
             templateId: "社群",
-            versionRange: { minimumInclusive: "0.0.0-dev.1" },
+            versionRange: { minimumInclusive: "1.0.0" },
             nativeEntry: { id: "communities" },
           },
         ],
@@ -56,7 +56,7 @@ describe("Sheet Runtime Character Save adapter", () => {
     expect(table.instances[0]?.resourceCopy.media).toEqual({ portrait: `sha256:${"a".repeat(64)}` });
     expect(table.instances[1]?.resourceCopy).toMatchObject({
       source: null,
-      template: { id: "种族", version: "0.0.0-dev.1" },
+      template: { id: "种族", version: "1.0.0" },
       data: {
         名称: "人类 / 精灵",
         特性: [{ 描述: "**适应**：说明" }, { 描述: "**冥想**：说明" }],
@@ -73,8 +73,8 @@ describe("Sheet Runtime Character Save adapter", () => {
         id: systemPackageId,
         version: "1.0.0",
         resourceCompatibility: [
-          { templateId: "种族", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "ancestries" } },
-          { templateId: "社群", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "communities" } },
+          { templateId: "种族", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "ancestries" } },
+          { templateId: "社群", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "communities" } },
         ],
       },
       sheetSystemPackage: sheetSystemPackage(),
@@ -86,12 +86,12 @@ describe("Sheet Runtime Character Save adapter", () => {
         resourceCompatibility: [
           {
             templateId: "种族",
-            versionRange: { minimumInclusive: "0.0.0-dev.1", maximumExclusive: "1.0.0" },
+            versionRange: { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" },
             nativeEntry: { id: "ancestries" },
           },
           {
             templateId: "社群",
-            versionRange: { minimumInclusive: "0.0.0-dev.1", maximumExclusive: "1.0.0" },
+            versionRange: { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" },
             nativeEntry: { id: "communities" },
           },
         ],
@@ -120,8 +120,8 @@ describe("Sheet Runtime Character Save adapter", () => {
         id: systemPackageId,
         version: "1.0.0",
         resourceCompatibility: [
-          { templateId: "种族", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "ancestries" } },
-          { templateId: "社群", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "communities" } },
+          { templateId: "种族", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "ancestries" } },
+          { templateId: "社群", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "communities" } },
         ],
       },
       sheetSystemPackage: sheetSystemPackage(),
@@ -151,8 +151,8 @@ describe("Sheet Runtime Character Save adapter", () => {
         id: systemPackageId,
         version: "1.0.0",
         resourceCompatibility: [
-          { templateId: "种族", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "ancestries" } },
-          { templateId: "社群", versionRange: { minimumInclusive: "0.0.0-dev.1" }, nativeEntry: { id: "communities" } },
+          { templateId: "种族", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "ancestries" } },
+          { templateId: "社群", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "communities" } },
         ],
       },
       sheetSystemPackage: sheetSystemPackage(),
@@ -282,7 +282,7 @@ function installedPackages(): ResourceLibrary {
   const resource = {
     id: "community:forest",
     path: "社群/荒野之民.json",
-    template: { id: "社群", version: "0.0.0-dev.1" },
+    template: { id: "社群", version: "1.0.0" },
     presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
     data: {
       名称: "荒野之民",

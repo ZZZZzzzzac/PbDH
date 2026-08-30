@@ -14,24 +14,28 @@ const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validate = ajv.compile(freeTemplate.schema as AnySchema);
 const data = {
   名称: "复仇誓言",
-  类型: "专属",
-  简介: "你不会忘记那一天。",
   内容: [
+    { 标题: "类型", 正文: "专属" },
+    { 标题: "简介", 正文: "你不会忘记那一天。" },
     { 标题: "触发条件", 正文: "当你对仇敌造成伤害时" },
     { 标题: "效果", 正文: "标记1点压力，伤害+2。" },
   ],
 };
 
 describe("自由 Template 1.0.0", () => {
-  test("registers a strict visible-content model", () => {
+  test("registers a strict name-and-content-block model", () => {
     expect(templateRegistry.resolve("自由", "1.0.0")).toBe(freeTemplate);
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
     expect(validate({ ...data, raw: { hidden: true } })).toBe(false);
+    expect(validate({ ...data, 类型: "不应预设" })).toBe(false);
+    expect(validate({ ...data, 简介: "不应预设" })).toBe(false);
     expect(validate({ ...data, 内容: [{ 标题: "效果", 正文: "文本", extra: "invalid" }] })).toBe(false);
     expect(freeTemplate.project(data).searchText).toContain("标记1点压力");
   });
 
   test("has complete authoring and renderer support", () => {
+    expect(freeAuthoringLayout.sections.flatMap((section) => section.fields).map((field) => field.path))
+      .toEqual(["名称"]);
     expect(freeAuthoringLayout.sections.flatMap((section) => section.repeats ?? []).map((repeat) => repeat.path))
       .toEqual(["内容"]);
     expect(buildTemplateSupportManifest({

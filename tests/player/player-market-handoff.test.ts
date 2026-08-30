@@ -68,7 +68,6 @@ const handoff: PlayerMarketHandoff = {
   packageId: document.package.id,
   packageVersion: document.package.version,
   snapshotDigest: document.snapshotDigest,
-  focusResourceId: document.resources[0]!.id,
 };
 
 describe("Player Market handoff ingress", () => {
@@ -80,8 +79,7 @@ describe("Player Market handoff ingress", () => {
     url.searchParams.set("packageId", handoff.packageId);
     url.searchParams.set("packageVersion", handoff.packageVersion);
     url.searchParams.set("snapshotDigest", handoff.snapshotDigest);
-    url.searchParams.set("focusResourceId", handoff.focusResourceId!);
-
+    url.searchParams.set("focusResourceId", document.resources[0]!.id);
     expect(parsePlayerMarketHandoff(url)).toEqual(handoff);
     expect(playerMarketArchiveUrl(handoff)).toBe(`/api/publications/${handoff.publicationId}/download`);
     expect(withoutPlayerMarketHandoff(url).search).toBe("?keep=1");
@@ -129,7 +127,6 @@ describe("Player Market handoff ingress", () => {
         packageId: creatorDocument.package.id,
         packageVersion: creatorDocument.package.version,
         snapshotDigest: creatorDocument.snapshotDigest,
-        focusResourceId: creatorDocument.resources[0]!.id,
       },
     });
 
@@ -153,7 +150,6 @@ describe("Player Market handoff ingress", () => {
         packageId: adversaryDocument.package.id,
         packageVersion: adversaryDocument.package.version,
         snapshotDigest: adversaryDocument.snapshotDigest,
-        focusResourceId: adversaryDocument.resources[0]!.id,
       },
     });
 

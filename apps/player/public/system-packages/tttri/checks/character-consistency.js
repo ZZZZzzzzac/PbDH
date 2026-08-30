@@ -87,12 +87,12 @@ function checkRequiredSelections(issues, context) {
   const subclassName = text(context.values["subclass-name"]);
   const subclassStage = text(context.values["subclass-stage"]);
   if (!subclassName) {
-    warn(issues, "SUBCLASS_MISSING", "character.values.subclass-name", "尚未选择干员。");
+    warn(issues, "SUBCLASS_MISSING", "character.values.subclass-name", "尚未选择子职。");
   }
   if (subclassName && !ALL_STAGES.includes(subclassStage)) {
-    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", "干员等级必须是预备、正式、资深、精英X或精英Y。");
+    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", "子职等级必须是预备、正式、资深、精英X或精英Y。");
   } else if (subclassName && !context.subclassEntry) {
-    warn(issues, "SUBCLASS_UNKNOWN", "character.values.subclass-name", "当前干员类型及等级组合不在干员资源库中。");
+    warn(issues, "SUBCLASS_UNKNOWN", "character.values.subclass-name", "当前子职类型及等级组合不在子职资源库中。");
   }
 }
 
@@ -110,13 +110,13 @@ function checkSubclassProgression(issues, context) {
   const isElite = ELITE_STAGES.includes(stage);
 
   if (selected(t2, "subclass") && !["正式", "资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选提升武器原型，但当前干员仍是预备等级。");
+    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选提升武器原型，但当前子职仍是预备等级。");
   }
   if (selected(t3, "subclass") && !["资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选提升武器原型，但当前干员尚未达到资深等级。");
+    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选提升武器原型，但当前子职尚未达到资深等级。");
   }
   if (selected(t4, "subclass-elite") && !isElite) {
-    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "已在 T4 勾选提升武器原型，应选择精英X或精英Y的干员。");
+    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "已在 T4 勾选提升武器原型，应选择精英X或精英Y的子职。");
   } else if (!selected(t4, "subclass-elite") && isElite) {
     warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未在 T4 选择提升武器原型，不应提前选择精英X或精英Y。");
   }
@@ -320,7 +320,7 @@ function checkDerivedValues(issues, context) {
       issues,
       "CURRENT_THRESHOLDS_MISMATCH",
       "character.values.major-threshold",
-      `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久干员修正），当前为 ${actualText}。`,
+      `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久子职修正），当前为 ${actualText}。`,
     );
   }
 }

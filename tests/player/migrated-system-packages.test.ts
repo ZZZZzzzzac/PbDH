@@ -5,9 +5,11 @@ import { loadPbres, validateSystemPackageSemantics, type SystemPackageDocument }
 import { describe, expect, test } from "vitest";
 
 import { playerSystemPackageCatalog } from "../../apps/player/src/playerSystemPackageCatalog.ts";
+import { embeddedResourcePackageAction } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
 import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
-import type { ResourceLibrary } from "../../apps/player/src/resources/resource-library.ts";
+import { commitResourcePackageRemoval, type ResourceLibrary } from "../../apps/player/src/resources/resource-library.ts";
 import { routeResourcePackage } from "../../apps/player/src/resources/route-resource-package.ts";
+import { replacePlatformResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 
 const root = path.resolve("apps/player/public/system-packages");
@@ -115,5 +117,66 @@ describe("additional migrated System Packages", () => {
         expect(getResourceLibraryFields(library, link.字段模板).some((field) => field.visible)).toBe(true);
       }
     }
+  });
+
+  test("keeps Witchy official resources while installing and removing other systems' official packages", async () => {
+    const witchy = playerSystemPackageCatalog.find((candidate) => candidate.preset.directory === "witchy")!;
+    const archives = await Promise.all([
+      ["witchy", "resources/witchy.pbres"],
+      ["daggerheart-core", "resources/daggerheart-core.pbres"],
+      ["heart-of-hopefind", "resources/heart-of-hopefind.pbres"],
+    ].map(async ([directory, archivePath]) => {
+      const loaded = await loadPbres(
+        new Uint8Array(await readFile(path.join(root, directory!, archivePath!))),
+        validateResourcePackageCandidate,
+      );
+      if (!loaded.candidate) throw new Error(loaded.diagnostics.map((item) => item.code).join("\n"));
+      return loaded.candidate;
+    }));
+    const library = new Map(archives.map((candidate) => [candidate.document.package.id, {
+      ...candidate,
+      routes: routeResourcePackage({ currentSystem: witchy.system, resourcePackage: candidate.document }),
+    }]));
+    const embeddedIndex = new Map(witchy.preset.embeddedResourceIndex.map((item) => [item.packageId, item]));
+    const [witchyResources, daggerheartResources, hopefindResources] = archives;
+
+    expect(library).toHaveLength(3);
+    expect(embeddedResourcePackageAction(library.get(witchyResources!.document.package.id)!, embeddedIndex)).toBe("locked");
+    expect(embeddedResourcePackageAction(library.get(daggerheartResources!.document.package.id)!, embeddedIndex)).toBe("remove");
+    expect(embeddedResourcePackageAction(library.get(hopefindResources!.document.package.id)!, embeddedIndex)).toBe("remove");
+
+    const marker = "/system-packages/witchy/";
+    const fetchFile: typeof fetch = async (url) => {
+      const pathname = new URL(String(url), "https://preset.invalid").pathname;
+      const relativePath = decodeURIComponent(pathname.slice(pathname.indexOf(marker) + marker.length));
+      try {
+        return new Response(await readFile(path.join(root, "witchy", relativePath)), { status: 200 });
+      } catch {
+        return new Response(null, { status: 404 });
+      }
+    };
+    const officialOnly = new Map([[witchyResources!.document.package.id, library.get(witchyResources!.document.package.id)!]]);
+    const loaded = await witchy.load({
+      currentSystem: witchy.system,
+      installedPackages: officialOnly,
+      baseUrl: "/",
+      fetchFile,
+    });
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues, null, 2));
+    const refreshed = replacePlatformResourceLibraries({
+      currentSystem: witchy.system,
+      basePackage: loaded.package,
+      installedPackages: library,
+      preloadedPackageIds: new Set(embeddedIndex.keys()),
+    });
+    expect(refreshed.resourceLibraries?.reduce((total, resourceLibrary) => total + resourceLibrary.entries.length, 0))
+      .toBe(witchyResources!.document.resources.length
+        + daggerheartResources!.document.resources.length
+        + hopefindResources!.document.resources.length);
+
+    const withoutDaggerheart = commitResourcePackageRemoval(library, daggerheartResources!.document.package.id);
+    const restored = commitResourcePackageRemoval(withoutDaggerheart, hopefindResources!.document.package.id);
+    expect([...restored.keys()]).toEqual([witchyResources!.document.package.id]);
+    expect(restored.get(witchyResources!.document.package.id)?.document.package.name).toBe("巫趣 Witchy官方资源");
   });
 });

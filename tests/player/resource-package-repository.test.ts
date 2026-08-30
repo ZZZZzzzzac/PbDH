@@ -13,6 +13,7 @@ import {
   DexieResourcePackageRepository,
   PbDHLocalDatabase,
 } from "../../apps/player/src/resources/resource-package-repository.ts";
+import { DexieLocalDocumentStore } from "../../packages/local-storage/src/index.ts";
 import { restorePlayerResourceLibrary } from "../../apps/player/src/PlayerSheetSurface.tsx";
 
 const root = process.cwd();
@@ -129,5 +130,34 @@ describe("Dexie Resource Package Repository", () => {
 
     await store.remove(systemPackageId, second.document.package.id);
     expect(await database.mediaAssets.count()).toBe(0);
+  });
+
+  test("keeps installed package media when an expired local document shares the asset", async () => {
+    const { database, repository: store } = repository();
+    const candidate = fixture();
+    const assetId = candidate.document.assets[0]!.id;
+    await store.replace(systemPackageId, candidate, "bundled");
+
+    const documents = new DexieLocalDocumentStore(database);
+    await documents.put({
+      documentId: "tabletop-sharing-package-media",
+      documentKind: "gm-tabletop-document",
+      contractFamily: "tabletop-document",
+      contractVersion: "1.0.0-alpha.1",
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+      assetIds: [assetId],
+      sync: { scope: "local-only", state: "clean", baseRevision: null },
+      payload: {},
+    });
+    await documents.trash(
+      "gm-tabletop-document",
+      "tabletop-sharing-package-media",
+      "2026-07-01T00:00:00.000Z",
+    );
+
+    await documents.purgeExpiredTrash("2026-08-01T00:00:00.000Z");
+
+    await expect(store.list(systemPackageId)).resolves.toHaveLength(1);
   });
 });

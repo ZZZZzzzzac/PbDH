@@ -56,6 +56,7 @@ export function useSheetOutput({
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [preparedOutputMode, setPreparedOutputMode] = useState<PreparedOutputMode | null>(null);
   const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
+  const [outputOperation, setOutputOperation] = useState<"validation" | "export" | null>(null);
   const cardLayoutSnapshotRef = useRef<Array<{ tableModuleId: string; cards: CardLayoutSnapshotEntry[] }> | null>(null);
   const titleBeforePrintRef = useRef<string | null>(null);
 
@@ -176,6 +177,9 @@ export function useSheetOutput({
   };
 
   const beginOutput = async (kind: OutputKind) => {
+    if (outputOperation) return;
+    setOutputOperation("export");
+    try {
     let frameworkIssues: ValidationIssue[] = [];
     let printableContentPrepared = false;
     if (kind !== "json") {
@@ -192,10 +196,15 @@ export function useSheetOutput({
       return;
     }
     await performOutput(kind, printableContentPrepared);
+    } finally {
+      setOutputOperation(null);
+    }
   };
 
   const exportWithCharacterAdapter = async (adapterId: string) => {
-    if (!characterData || !currentPackage) return;
+    if (!characterData || !currentPackage || outputOperation) return;
+    setOutputOperation("export");
+    try {
     const adapter = currentPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
     if (!adapter?.exportScriptContent) return;
     const { exportExternalCharacterData } = await import("../../domain/characterFormatAdapter");
@@ -211,22 +220,31 @@ export function useSheetOutput({
       return;
     }
     downloadText(`${JSON.stringify(result.document, null, 2)}\n`, fileName, "application/json");
+    } finally {
+      setOutputOperation(null);
+    }
   };
 
   const exportCharacterText = async (exportId: string) => {
-    if (!characterData || !currentPackage) return;
+    if (!characterData || !currentPackage || outputOperation) return;
     const definition = currentPackage.characterTextExports?.find((candidate) => candidate.ID === exportId);
     if (!definition) return;
     const { formatCharacterTextExport } = await import("../../domain/characterTextFormatter");
+    setOutputOperation("export");
     try {
       await navigator.clipboard.writeText(formatCharacterTextExport(definition, characterData));
       useRuntimeStore.setState({ importError: null, importNotice: `${definition.名称}已复制。` });
     } catch {
       useRuntimeStore.setState({ importError: `${definition.名称}复制失败，请检查浏览器剪贴板权限。`, importNotice: null });
+    } finally {
+      setOutputOperation(null);
     }
   };
 
   const handleValidation = async () => {
+    if (outputOperation) return;
+    setOutputOperation("validation");
+    try {
     let frameworkIssues: ValidationIssue[] = [];
     if (await preparePrintableContent(false)) {
       const { collectFrameworkValidationIssues } = await import("../frameworkChecks");
@@ -236,6 +254,9 @@ export function useSheetOutput({
     await runValidationChecks();
     useRuntimeStore.setState({ validationIssues: [...frameworkIssues, ...useRuntimeStore.getState().validationIssues] });
     setValidationDialogOpen(true);
+    } finally {
+      setOutputOperation(null);
+    }
   };
 
   const closeValidationDialog = () => {
@@ -246,10 +267,12 @@ export function useSheetOutput({
 
   const continuePendingOutput = pendingOutput
     ? () => {
+        if (outputOperation) return;
         const output = pendingOutput;
         setPendingOutput(null);
         setValidationDialogOpen(false);
-        void performOutput(output, output !== "json");
+        setOutputOperation("export");
+        void performOutput(output, output !== "json").finally(() => setOutputOperation(null));
       }
     : undefined;
 
@@ -264,6 +287,7 @@ export function useSheetOutput({
     longScreenshotMode: preparedOutputMode === "long-screenshot",
     validationDialogOpen,
     pendingExternalExport,
+    outputOperation,
     beginOutput,
     exportCharacterText,
     exportWithCharacterAdapter,

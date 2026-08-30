@@ -54,10 +54,14 @@ export class DexieResourcePackageRepository implements ResourcePackageRepository
       const mediaRecords = await this.#database.mediaAssets.bulkGet(
         document.assets.map((asset) => asset.id),
       );
+      const missingAsset = document.assets.find((_, index) => !mediaRecords[index]);
+      if (missingAsset) {
+        if (record.source === "bundled") continue;
+        throw new Error(`Installed media record is missing: ${missingAsset.id}`);
+      }
       const media = new Map<string, Uint8Array>();
       document.assets.forEach((asset, index) => {
-        const stored = mediaRecords[index];
-        if (!stored) throw new Error(`Installed media record is missing: ${asset.id}`);
+        const stored = mediaRecords[index]!;
         media.set(asset.id, copyBytes(stored.bytes));
       });
       result.push({

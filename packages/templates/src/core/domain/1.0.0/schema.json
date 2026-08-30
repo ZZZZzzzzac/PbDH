@@ -7,9 +7,9 @@
   "properties": {
     "名称": { "type": "string" },
     "领域": { "type": "string" },
-    "等级": { "type": "string", "pattern": "^(?:|[0-9]+)$" },
+    "等级": { "type": "string" },
     "属性": { "type": "string" },
-    "回想": { "type": "string", "pattern": "^(?:|[0-9]+)$" },
+    "回想": { "type": "string" },
     "描述": { "type": "string" },
     "风味描述": { "type": "string" }
   },

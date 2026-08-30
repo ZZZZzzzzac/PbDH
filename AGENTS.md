@@ -21,6 +21,15 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - 新增 App、共享 package、Contract 实现或 Python 消费端时，必须接入该命令；不得建立只在子目录运行的隐藏验证入口。
 - 重启本地 Platform Backend 与 Platform Shell 时运行 `node scripts/restart-dev.mjs`；只有 Backend 和 Shell 内三个 App Surface 的模块级健康检查全部通过后才能报告启动完成。
 
+## 本机执行环境
+
+- 当前主工作环境是 Windows、PowerShell，仓库位于 `D:\Game\Daggerheart\PbDH`。命令示例应使用 PowerShell 语法，不得把 Bash 路径或转义规则直接套用到本机。
+- 受管沙箱中的 Node/npm 有时无法读取 `C:\Users\zinge`，表现为 `EPERM ... lstat 'C:\Users\zinge'`；这属于沙箱边界，不是项目测试失败。遇到该错误时，应使用相同命令申请跳出沙箱运行，不得据此修改项目代码或依赖。
+- GitHub Issue 操作使用 `gh` CLI，并需要网络访问；本机执行 `gh` 时直接申请跳出沙箱。查询、评论、关闭等操作仍须遵守 `docs/agents/issue-tracker.md`，不得因跳出沙箱扩大操作范围。
+- 本地开发服务使用 `node scripts/restart-dev.mjs`，通常也应跳出沙箱运行。脚本报告 Backend `8001` 与 Platform `5173` 均为 `OK` 后，才可使用或报告本地页面可用。
+- 浏览器验收使用已安装的 Browser 插件与 `node_repl`，不要改用另一套临时自动化。若出现 `failed to write kernel assets`，先确认 Browser 插件、Codex 的 `cua_node` runtime 和系统临时目录存在；本机已确认该错误可能来自失效的常驻 `node_repl` 进程，重启 Codex 后可恢复。不得为规避该问题关闭 `node_repl` 沙箱。
+- 浏览器控制恢复后，至少用真实本地页面完成一次导航、DOM 读取或截图，不能仅凭运行环境初始化成功宣称浏览器可用。
+
 ## 工作规则
 
 - 默认使用中文沟通；代码、命令、变量名使用英文，注释使用中文。

@@ -33,6 +33,10 @@ class PublicationPermissionDenied(Exception):
     pass
 
 
+class PublicationMustBeUnpublished(Exception):
+    pass
+
+
 class PublicationCoverInvalid(Exception):
     pass
 
@@ -202,58 +206,6 @@ class PublicationRepository:
         finally:
             connection.close()
 
-    def update_metadata(
-        self,
-        publication_id: str,
-        account_id: str,
-        metadata: Mapping[str, Any],
-        allow_all: bool = False,
-    ) -> dict[str, Any]:
-        connection = self._database.connect()
-        try:
-            connection.execute("BEGIN IMMEDIATE")
-            current = connection.execute(
-                "SELECT p.logical_document_json, o.account_id "
-                "FROM publications p "
-                "JOIN package_ownership o ON o.package_id = p.package_id "
-                "WHERE p.publication_id = ?",
-                (publication_id,),
-            ).fetchone()
-            if current is None:
-                raise PublicationNotFound(publication_id)
-            if current["account_id"] != account_id and not allow_all:
-                raise PublicationPermissionDenied(publication_id)
-            document = json.loads(current["logical_document_json"])
-            if metadata["coverAssetId"] not in {
-                asset["id"] for asset in document["assets"]
-            }:
-                raise PublicationCoverInvalid(metadata["coverAssetId"])
-            connection.execute(
-                "UPDATE publications SET title = ?, summary = ?, language = ?, "
-                "tags_json = ?, cover_asset_id = ?, "
-                "updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
-                "WHERE publication_id = ?",
-                (
-                    metadata["title"],
-                    metadata["summary"],
-                    metadata["language"],
-                    json.dumps(metadata["tags"], ensure_ascii=False, separators=(",", ":")),
-                    metadata["coverAssetId"],
-                    publication_id,
-                ),
-            )
-            connection.commit()
-        except Exception:
-            if connection.in_transaction:
-                connection.rollback()
-            raise
-        finally:
-            connection.close()
-        publication = self.get_manageable_publication(publication_id, account_id, allow_all)
-        if publication is None:
-            raise RuntimeError("Publication disappeared after metadata update")
-        return publication
-
     def set_status(
         self,
         publication_id: str,
@@ -295,22 +247,327 @@ class PublicationRepository:
             raise RuntimeError("Publication disappeared after status update")
         return publication
 
-    def list_publications(self, query: str | None = None) -> list[dict[str, Any]]:
+    def update_information(
+        self,
+        publication_id: str,
+        account_id: str,
+        document: Mapping[str, Any],
+        metadata: Mapping[str, Any],
+        allow_all: bool = False,
+        allow_same_version_replace: bool = False,
+        cover_media: tuple[Mapping[str, Any], bytes] | None = None,
+    ) -> dict[str, Any]:
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT p.package_version, p.logical_document_json, o.account_id "
+                "FROM publications p JOIN package_ownership o ON o.package_id = p.package_id "
+                "WHERE p.publication_id = ?",
+                (publication_id,),
+            ).fetchone()
+            if current is None:
+                raise PublicationNotFound(publication_id)
+            if current["account_id"] != account_id and not allow_all:
+                raise PublicationPermissionDenied(publication_id)
+            previous_document = json.loads(current["logical_document_json"])
+            if cover_media is not None:
+                cover_asset, cover_bytes = cover_media
+                connection.execute(
+                    "INSERT INTO media_blobs(asset_id, media_type, byte_length, bytes) "
+                    "VALUES (?, ?, ?, ?) ON CONFLICT(asset_id) DO NOTHING",
+                    (cover_asset["id"], cover_asset["mediaType"], len(cover_bytes), cover_bytes),
+                )
+                connection.execute(
+                    "INSERT INTO publication_media(publication_id, asset_id) VALUES (?, ?) "
+                    "ON CONFLICT(publication_id, asset_id) DO NOTHING",
+                    (publication_id, cover_asset["id"]),
+                )
+            if document["package"]["id"] != previous_document["package"]["id"]:
+                raise PublicationVersionConflict(document["package"]["id"])
+            version_order = _compare_semver(
+                document["package"]["version"], current["package_version"]
+            )
+            if version_order < 0:
+                raise PublicationVersionConflict(document["package"]["id"])
+            classification = classify_resource_package_version_change(
+                previous_document, document
+            )
+            if (
+                classification["level"] != "none"
+                and not allow_same_version_replace
+                and not resource_package_version_meets_minimum(
+                    document["package"]["version"],
+                    classification["minimumVersion"],
+                )
+            ):
+                raise PublicationVersionConflict(document["package"]["id"])
+            cover_exists = connection.execute(
+                "SELECT 1 FROM publication_media WHERE publication_id = ? AND asset_id = ?",
+                (publication_id, metadata["coverAssetId"]),
+            ).fetchone()
+            if cover_exists is None:
+                raise PublicationCoverInvalid(metadata["coverAssetId"])
+            connection.execute(
+                "UPDATE publications SET package_version = ?, snapshot_digest = ?, "
+                "title = ?, summary = ?, language = ?, tags_json = ?, cover_asset_id = ?, "
+                "logical_document_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
+                "WHERE publication_id = ?",
+                (
+                    document["package"]["version"],
+                    document["snapshotDigest"],
+                    metadata["title"],
+                    metadata["summary"],
+                    metadata["language"],
+                    json.dumps(metadata["tags"], ensure_ascii=False, separators=(",", ":")),
+                    metadata["coverAssetId"],
+                    json.dumps(document, ensure_ascii=False, separators=(",", ":"), sort_keys=True),
+                    publication_id,
+                ),
+            )
+            retained_asset_ids = {asset["id"] for asset in document["assets"]}
+            retained_asset_ids.add(metadata["coverAssetId"])
+            for row in connection.execute(
+                "SELECT asset_id FROM publication_media WHERE publication_id = ?",
+                (publication_id,),
+            ).fetchall():
+                if row["asset_id"] not in retained_asset_ids:
+                    connection.execute(
+                        "DELETE FROM publication_media WHERE publication_id = ? AND asset_id = ?",
+                        (publication_id, row["asset_id"]),
+                    )
+            connection.execute(
+                "DELETE FROM media_blobs WHERE NOT EXISTS ("
+                "SELECT 1 FROM publication_media pm WHERE pm.asset_id = media_blobs.asset_id"
+                ") AND NOT EXISTS ("
+                "SELECT 1 FROM cloud_document_media cm WHERE cm.asset_id = media_blobs.asset_id"
+                ")"
+            )
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+        publication = self.get_manageable_publication(publication_id, account_id, allow_all)
+        if publication is None:
+            raise RuntimeError("Publication disappeared after information update")
+        return publication
+
+    def delete_publication(
+        self,
+        publication_id: str,
+        account_id: str,
+        allow_all: bool = False,
+    ) -> None:
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            current = connection.execute(
+                "SELECT o.account_id, p.status FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "WHERE p.publication_id = ?",
+                (publication_id,),
+            ).fetchone()
+            if current is None:
+                raise PublicationNotFound(publication_id)
+            if current["account_id"] != account_id and not allow_all:
+                raise PublicationPermissionDenied(publication_id)
+            if current["status"] != "unpublished":
+                raise PublicationMustBeUnpublished(publication_id)
+            connection.execute(
+                "DELETE FROM publications WHERE publication_id = ?",
+                (publication_id,),
+            )
+            connection.execute(
+                "DELETE FROM media_blobs WHERE NOT EXISTS ("
+                "SELECT 1 FROM publication_media pm WHERE pm.asset_id = media_blobs.asset_id"
+                ") AND NOT EXISTS ("
+                "SELECT 1 FROM cloud_document_media cm WHERE cm.asset_id = media_blobs.asset_id"
+                ")"
+            )
+            connection.commit()
+        except Exception:
+            if connection.in_transaction:
+                connection.rollback()
+            raise
+        finally:
+            connection.close()
+
+    def search_publications(
+        self,
+        *,
+        query: str | None = None,
+        template_ids: list[str] | None = None,
+        target_system_package_ids: list[str] | None = None,
+        languages: list[str] | None = None,
+        categories: list[str] | None = None,
+        author_account_id: str | None = None,
+        sort: str = "recent",
+        page: int = 1,
+        page_size: int = 24,
+    ) -> dict[str, Any]:
+        if sort not in {"relevance", "recent", "title"}:
+            raise ValueError(f"Invalid publication sort: {sort}")
+        if page < 1 or not 1 <= page_size <= 60:
+            raise ValueError("Invalid publication page")
+
         connection = self._database.connect()
         try:
             terms = query.strip() if query else ""
+            template_ids = list(dict.fromkeys(template_ids or []))
+            target_system_package_ids = list(dict.fromkeys(target_system_package_ids or []))
+            languages = list(dict.fromkeys(languages or []))
+            categories = list(dict.fromkeys(categories or []))
+            clauses = ["p.status = 'published'"]
+            parameters: list[Any] = []
+
+            if author_account_id:
+                clauses.append("o.account_id = ?")
+                parameters.append(author_account_id)
+
+            if terms:
+                like = f"%{terms}%"
+                clauses.append(
+                    "(p.title LIKE ? OR p.summary LIKE ? OR p.tags_json LIKE ? "
+                    "OR a.username LIKE ? OR EXISTS (SELECT 1 FROM publication_resources r "
+                    "WHERE r.publication_id = p.publication_id AND r.search_text LIKE ?))"
+                )
+                parameters.extend([like] * 5)
+            if template_ids:
+                placeholders = ",".join("?" for _ in template_ids)
+                clauses.append(
+                    "EXISTS (SELECT 1 FROM publication_resources r "
+                    f"WHERE r.publication_id = p.publication_id AND r.template_id IN ({placeholders}))"
+                )
+                parameters.extend(template_ids)
+            if target_system_package_ids:
+                include_unspecified = "__none__" in target_system_package_ids
+                target_ids = [value for value in target_system_package_ids if value != "__none__"]
+                target_clauses: list[str] = []
+                if target_ids:
+                    placeholders = ",".join("?" for _ in target_ids)
+                    target_clauses.append(
+                        "EXISTS (SELECT 1 FROM json_each(p.logical_document_json, '$.targets') target "
+                        f"WHERE json_extract(target.value, '$.systemPackageId') IN ({placeholders}))"
+                    )
+                    parameters.extend(target_ids)
+                if include_unspecified:
+                    target_clauses.append(
+                        "json_array_length(json_extract(p.logical_document_json, '$.targets')) = 0"
+                    )
+                clauses.append(f"({' OR '.join(target_clauses)})")
+            if languages:
+                placeholders = ",".join("?" for _ in languages)
+                clauses.append(f"p.language IN ({placeholders})")
+                parameters.extend(languages)
+            if categories:
+                placeholders = ",".join("?" for _ in categories)
+                clauses.append(
+                    "EXISTS (SELECT 1 FROM json_each(p.tags_json) tag "
+                    f"WHERE tag.value IN ({placeholders}))"
+                )
+                parameters.extend(categories)
+
+            where_sql = " AND ".join(clauses)
+            total = connection.execute(
+                "SELECT COUNT(*) AS total FROM publications p "
+                "JOIN package_ownership o ON o.package_id = p.package_id "
+                "JOIN accounts a ON a.account_id = o.account_id "
+                f"WHERE {where_sql}",
+                parameters,
+            ).fetchone()["total"]
+            order_sql = {
+                "recent": "p.updated_at DESC, p.publication_id",
+                "title": "p.title COLLATE NOCASE, p.publication_id",
+                "relevance": (
+                    "CASE WHEN ? <> '' AND p.title = ? THEN 0 "
+                    "WHEN ? <> '' AND p.title LIKE ? THEN 1 "
+                    "WHEN ? <> '' AND p.title LIKE ? THEN 2 ELSE 3 END, "
+                    "p.updated_at DESC, p.publication_id"
+                ),
+            }[sort]
+            order_parameters: list[Any] = []
+            if sort == "relevance":
+                order_parameters = [
+                    terms,
+                    terms,
+                    terms,
+                    f"{terms}%",
+                    terms,
+                    f"%{terms}%",
+                ]
             rows = connection.execute(
                 "SELECT p.*, o.account_id, a.username FROM publications p "
                 "JOIN package_ownership o ON o.package_id = p.package_id "
                 "JOIN accounts a ON a.account_id = o.account_id "
-                "WHERE p.status = 'published' AND ("
-                "? = '' OR p.title LIKE ? OR p.summary LIKE ? OR p.tags_json LIKE ? "
-                "OR EXISTS (SELECT 1 FROM publication_resources r "
-                "WHERE r.publication_id = p.publication_id AND r.search_text LIKE ?)) "
-                "ORDER BY p.updated_at DESC, p.publication_id",
-                (terms, *(f"%{terms}%",) * 4),
+                f"WHERE {where_sql} ORDER BY {order_sql} LIMIT ? OFFSET ?",
+                [*parameters, *order_parameters, page_size, (page - 1) * page_size],
             ).fetchall()
-            return [self._public_row(row) for row in rows]
+            publications = [self._public_row(row) for row in rows]
+            if terms and publications:
+                publication_ids = [item["publicationId"] for item in publications]
+                placeholders = ",".join("?" for _ in publication_ids)
+                matches = connection.execute(
+                    "SELECT publication_id, resource_id FROM publication_resources "
+                    f"WHERE publication_id IN ({placeholders}) AND search_text LIKE ? "
+                    "ORDER BY publication_id, path, resource_id",
+                    [*publication_ids, f"%{terms}%"],
+                ).fetchall()
+                by_publication: dict[str, list[str]] = {}
+                for match in matches:
+                    by_publication.setdefault(match["publication_id"], []).append(match["resource_id"])
+                for publication in publications:
+                    publication["matchedResourceIds"] = by_publication.get(
+                        publication["publicationId"], []
+                    )
+            return {"publications": publications, "total": total}
+        finally:
+            connection.close()
+
+    def list_publications(self, query: str | None = None) -> list[dict[str, Any]]:
+        return self.search_publications(query=query)["publications"]
+
+    def list_publication_facets(self) -> dict[str, list[dict[str, Any]]]:
+        connection = self._database.connect()
+        try:
+            def values(sql: str) -> list[dict[str, Any]]:
+                return [
+                    {"value": row["value"], "count": row["count"]}
+                    for row in connection.execute(sql).fetchall()
+                    if row["count"] > 0
+                ]
+
+            return {
+                "templateIds": values(
+                    "SELECT r.template_id AS value, COUNT(DISTINCT r.publication_id) AS count "
+                    "FROM publication_resources r JOIN publications p USING(publication_id) "
+                    "WHERE p.status = 'published' GROUP BY r.template_id ORDER BY r.template_id"
+                ),
+                "targetSystemPackageIds": [
+                    *values(
+                        "SELECT json_extract(target.value, '$.systemPackageId') AS value, "
+                        "COUNT(DISTINCT p.publication_id) AS count FROM publications p, "
+                        "json_each(p.logical_document_json, '$.targets') target "
+                        "WHERE p.status = 'published' GROUP BY value ORDER BY value"
+                    ),
+                    *values(
+                        "SELECT '__none__' AS value, COUNT(*) AS count FROM publications p "
+                        "WHERE p.status = 'published' "
+                        "AND json_array_length(json_extract(p.logical_document_json, '$.targets')) = 0 "
+                    ),
+                ],
+                "languages": values(
+                    "SELECT p.language AS value, COUNT(*) AS count FROM publications p "
+                    "WHERE p.status = 'published' GROUP BY p.language ORDER BY p.language"
+                ),
+                "categories": values(
+                    "SELECT tag.value AS value, COUNT(DISTINCT p.publication_id) AS count "
+                    "FROM publications p, json_each(p.tags_json) tag "
+                    "WHERE p.status = 'published' GROUP BY tag.value ORDER BY tag.value"
+                ),
+            }
         finally:
             connection.close()
 
@@ -421,10 +678,8 @@ class PublicationRepository:
         account_id: str | None = None,
         allow_all: bool = False,
     ) -> tuple[dict[str, Any], dict[str, bytes]] | None:
-        publication = (
-            self.get_manageable_publication(publication_id, account_id, allow_all)
-            if account_id is not None
-            else self.get_publication(publication_id)
+        publication = self.get_accessible_publication(
+            publication_id, account_id, allow_all
         )
         if publication is None:
             return None
@@ -436,6 +691,20 @@ class PublicationRepository:
                 raise RuntimeError(f"Publication media missing: {asset['id']}")
             media[asset["id"]] = found[1]
         return document, media
+
+    def get_accessible_publication(
+        self,
+        publication_id: str,
+        account_id: str | None = None,
+        allow_all: bool = False,
+    ) -> dict[str, Any] | None:
+        if account_id is not None:
+            manageable = self.get_manageable_publication(
+                publication_id, account_id, allow_all
+            )
+            if manageable is not None:
+                return manageable
+        return self.get_publication(publication_id)
 
     @staticmethod
     def _public_row(row: sqlite3.Row) -> dict[str, Any]:
@@ -471,7 +740,9 @@ class PublicationRepository:
                     "id": resource["id"],
                     "path": resource["path"],
                     "template": resource["template"],
-                    "name": resource["path"].rsplit("/", 1)[-1].removesuffix(".json"),
+                    "name": str(resource.get("data", {}).get("名称") or (
+                        resource["path"].rsplit("/", 1)[-1].removesuffix(".json")
+                    )),
                 }
                 for resource in document["resources"]
             ],

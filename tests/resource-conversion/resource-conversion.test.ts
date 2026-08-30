@@ -309,6 +309,53 @@ describe("third-party resource source engines", () => {
     expect(dhsheetEngineRead(dhcb.artifact.bytes, true).variant).toEqual(dhsheetPack.variant);
   });
 
+  test("dhsheet imports its explicit equipment-pack variant", async () => {
+    const imported = await resourceConversionRegistry.import("dhsheet", input({
+      format: "daggerheart.equipment-pack.v1",
+      name: "旱土巨像武器包",
+      version: "1.0.0",
+      equipment: {
+        weapons: [{
+          id: "dryland-revolver-t1",
+          name: "左轮手枪（位阶1）",
+          tier: "T1",
+          weaponType: "primary",
+          trait: "finesse",
+          damageType: "physical",
+          range: "far",
+          burden: "oneHanded",
+          damage: "d8+1",
+          featureName: "六发",
+          description: "花费 1 弹药指示物进行攻击。",
+        }],
+        armor: [],
+      },
+    }, "旱土巨像武器包.json"));
+
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) throw new Error(imported.report.diagnostics[0]?.message ?? "import failed");
+    expect(imported.batch.resources).toHaveLength(1);
+    expect(imported.batch.resources[0]).toMatchObject({
+      sourceId: "dryland-revolver-t1",
+      kind: "weapon",
+      name: "左轮手枪（位阶1）",
+      fields: {
+        名称: "左轮手枪（位阶1）",
+        类型: "主武器",
+        属性: "灵巧",
+        距离: "远距离",
+        伤害: "d8+1",
+        负荷: "单手",
+        伤害类型: "物理",
+        描述: "六发：花费 1 弹药指示物进行攻击。",
+        位阶: "1",
+      },
+    });
+    const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
+    expect(candidate?.template).toMatchObject({ id: "武器" });
+    expect(candidate?.diagnostics).toEqual([]);
+  });
+
   test("ZZZ preserves opaque string entries even though the upstream reader skips them", async () => {
     const { imported, exported } = await roundTrip("zzz", zzzPack);
     expect(imported.batch.resources).toHaveLength(2);
@@ -333,7 +380,7 @@ describe("registered Template mapping and native pbres", () => {
     const mapped = mapBatchToRegisteredCandidates([...rink.batch.resources, ...kid.batch.resources]);
     expect(mapped.unmapped).toEqual([]);
     expect(mapped.candidates.map((item) => item.template.id)).toEqual(["敌人", "武器"]);
-    expect(mapped.candidates[1]?.template.version).toBe("1.0.0-alpha.2");
+    expect(mapped.candidates[1]?.template.version).toBe("1.0.0");
     expect(mapped.candidates[0]?.data.难度).toBe("15");
     expect(mapped.candidates[1]?.data.伤害).toBe("d8");
   });
@@ -412,7 +459,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "武器", version: "1.0.0-alpha.2" });
+    expect(candidate?.template).toEqual({ id: "武器", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
       描述: "可靠：攻击掷骰+1。", 风味描述: "一把朴素的短剑。", 位阶: "",
     });
@@ -566,7 +613,8 @@ describe("registered Template mapping and native pbres", () => {
       const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
       expect(mapped.unmapped).toEqual([]);
       expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.0" });
-      expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}`, 简介: "可见简介" });
+      expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}` });
+      expect(mapped.candidates[0]?.data.内容).toContainEqual({ 标题: "简介", 正文: "可见简介" });
       expect(mapped.candidates[0]?.data.内容).toEqual(expect.any(Array));
       expect((mapped.candidates[0]?.data.内容 as JsonValue[]).length).toBeGreaterThan(0);
       expect(mapped.candidates[0]?.diagnostics).toEqual([]);
@@ -603,6 +651,27 @@ describe("registered Template mapping and native pbres", () => {
     const rinkcx = await resourceConversionRegistry.export("rinkcx", imported.batch);
     expect(rinkcx.ok).toBe(false);
     expect(rinkcx.report.diagnostics).toContainEqual(expect.objectContaining({ code: "rinkcx.kind.unsupported" }));
+  });
+
+  test("dhsheet keeps structured free fields as content blocks instead of object strings", async () => {
+    const fileName = "【滋孽】基础领域&职业&魂素（种族重构）_2.0版本.json";
+    const imported = await resourceConversionRegistry.import("dhsheet", {
+      bytes: new Uint8Array(readFileSync(path.join(process.cwd(), "docs/third", fileName))),
+      fileName,
+      container: "json",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) throw new Error("real dhsheet import failed");
+
+    const freeCandidates = mapBatchToRegisteredCandidates(imported.batch.resources).candidates
+      .filter((candidate) => candidate.template.id === "自由");
+    expect(freeCandidates.length).toBeGreaterThan(0);
+    for (const candidate of freeCandidates) {
+      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称"]);
+      expect(JSON.stringify(candidate.data)).not.toContain("[object Object]");
+      expect(candidate.data.内容).toEqual(expect.any(Array));
+      expect(candidate.diagnostics).toEqual([]);
+    }
   });
 
   test("unknown open records do not enter the Free Template without an explicit visible mapping", async () => {
@@ -1025,8 +1094,10 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "环境", version: "0.0.0-dev.1" });
-    expect(candidate?.data).toEqual(environmentBatch.resources[0]?.fields);
+    expect(candidate?.template).toEqual({ id: "环境", version: "1.0.0" });
+    expect(candidate?.data).toMatchObject(environmentBatch.resources[0]?.fields ?? {});
+    expect(candidate?.data.原文).toBe("Burning Library");
+    expect((candidate?.data.特性 as Array<Record<string, unknown>>)[0]?.原名).toBe("");
     expect(candidate?.diagnostics).toEqual([]);
 
     const exported = await resourceConversionRegistry.export("rinkcx", environmentBatch);
@@ -1049,7 +1120,8 @@ describe("registered Template mapping and native pbres", () => {
     }));
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
-    expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]?.data).toEqual(environmentBatch.resources[0]?.fields);
+    expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]?.data)
+      .toMatchObject(environmentBatch.resources[0]?.fields ?? {});
 
     const exported = await resourceConversionRegistry.export("kid", environmentBatch, { creator: "测试", owner: "测试" });
     expect(exported.ok).toBe(true);
@@ -1071,14 +1143,14 @@ describe("registered Template mapping and native pbres", () => {
       expect(imported.ok).toBe(true);
       if (!imported.ok) throw new Error("re-import failed");
       const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-      expect(candidate?.data).toEqual(environmentBatch.resources[0]?.fields);
+      expect(candidate?.data).toMatchObject(environmentBatch.resources[0]?.fields ?? {});
       expect(candidate?.diagnostics).toEqual([]);
     }
   });
 
   test("authoritative pbres reader and writer remain the native adapter engine", async () => {
     const bytes = new Uint8Array(readFileSync(path.join(
-      process.cwd(), "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+      process.cwd(), "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
     )));
     const imported = await resourceConversionRegistry.import("pbres", { bytes, fileName: "minotaur-wrecker.pbres", container: "pbres" });
     expect(imported.ok).toBe(true);
@@ -1092,7 +1164,7 @@ describe("registered Template mapping and native pbres", () => {
 
   test("pbres restores the exact Free Template identity", async () => {
     const bytes = new Uint8Array(readFileSync(path.join(
-      process.cwd(), "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+      process.cwd(), "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
     )));
     const loaded = await loadPbres(bytes, validatePbresConversionCandidate);
     expect(loaded.candidate).toBeDefined();
@@ -1101,8 +1173,13 @@ describe("registered Template mapping and native pbres", () => {
     const resource = document.resources[0]!;
     resource.template = { id: "自由", version: "1.0.0" };
     resource.data = {
-      名称: "复仇誓言", 类型: "专属", 简介: "你不会忘记那一天。",
-      内容: [{ 标题: "触发条件", 正文: "造成伤害时" }, { 标题: "效果", 正文: "伤害+2" }],
+      名称: "复仇誓言",
+      内容: [
+        { 标题: "类型", 正文: "专属" },
+        { 标题: "简介", 正文: "你不会忘记那一天。" },
+        { 标题: "触发条件", 正文: "造成伤害时" },
+        { 标题: "效果", 正文: "伤害+2" },
+      ],
     };
     document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, loaded.candidate.media);
     const imported = await resourceConversionRegistry.import("pbres", {
@@ -1119,7 +1196,7 @@ describe("registered Template mapping and native pbres", () => {
 
   test("pbres rejects resource data that violates its exact registered Template", async () => {
     const bytes = new Uint8Array(readFileSync(path.join(
-      process.cwd(), "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+      process.cwd(), "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
     )));
     const loaded = await loadPbres(bytes, validatePbresConversionCandidate);
     expect(loaded.candidate).toBeDefined();

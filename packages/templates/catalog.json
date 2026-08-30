@@ -3,25 +3,11 @@
   "templates": [
     {
       "id": "敌人",
-      "version": "1.0.0-alpha.1",
-      "state": "development",
-      "schema": "src/core/adversary/1.0.0-alpha.1/schema.json",
-      "publication": { "development": false, "production": false }
-    },
-    {
-      "id": "敌人",
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/adversary/1.0.0/schema.json",
       "tabletopReplacements": [{ "id": "alternate-form", "label": "切换形态" }],
       "publication": { "development": true, "production": false }
-    },
-    {
-      "id": "武器",
-      "version": "1.0.0-alpha.1",
-      "state": "development",
-      "schema": "src/core/weapon/1.0.0-alpha.1/schema.json",
-      "publication": { "development": false, "production": false }
     },
     {
       "id": "武器",
@@ -31,11 +17,11 @@
       "publication": { "development": true, "production": false }
     },
     {
-      "id": "护甲",
-      "version": "0.0.0-dev.1",
+      "id": "自由",
+      "version": "1.0.0",
       "state": "development",
-      "schema": "src/core/armor/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
+      "schema": "src/core/free/1.0.0/schema.json",
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "护甲",
@@ -46,24 +32,10 @@
     },
     {
       "id": "种族",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/ancestry/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
-    },
-    {
-      "id": "种族",
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/ancestry/1.0.0/schema.json",
       "publication": { "development": true, "production": false }
-    },
-    {
-      "id": "社群",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/community/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
     },
     {
       "id": "社群",
@@ -74,24 +46,10 @@
     },
     {
       "id": "职业",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/profession/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
-    },
-    {
-      "id": "职业",
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/profession/1.0.0/schema.json",
       "publication": { "development": true, "production": false }
-    },
-    {
-      "id": "子职业",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/subclass/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
     },
     {
       "id": "子职业",
@@ -102,13 +60,6 @@
     },
     {
       "id": "环境",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/environment/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
-    },
-    {
-      "id": "环境",
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/environment/1.0.0/schema.json",
@@ -116,24 +67,10 @@
     },
     {
       "id": "物品",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/item/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
-    },
-    {
-      "id": "物品",
       "version": "1.0.0",
       "state": "development",
       "schema": "src/core/item/1.0.0/schema.json",
       "publication": { "development": true, "production": false }
-    },
-    {
-      "id": "领域卡",
-      "version": "0.0.0-dev.1",
-      "state": "development",
-      "schema": "src/core/domain/0.0.0-dev.1/schema.json",
-      "publication": { "development": false, "production": false }
     },
     {
       "id": "领域卡",

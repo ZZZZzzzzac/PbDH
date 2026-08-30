@@ -15,6 +15,9 @@ export type Publication = {
   id: string;
   packageId: string;
   packageVersion: string;
+  packageName?: string;
+  packageDescription?: string;
+  targets?: Array<{ systemPackageId: string; version: string }>;
   snapshotDigest: string;
   title: string;
   ownerAccountId: string;
@@ -22,8 +25,8 @@ export type Publication = {
   summary: string;
   kind: PublicationKind;
   templateIds: string[];
-  system: string;
-  systemLabel: string;
+  systems: string[];
+  systemLabels: string[];
   language: string;
   categories: string[];
   tags: string[];
@@ -35,6 +38,7 @@ export type Publication = {
   archiveUrl: string;
   archiveName: string;
   resources: PublicationResource[];
+  matchedResourceIds?: string[];
   mediaUrls?: Record<string, string>;
 };
 
@@ -49,6 +53,57 @@ export type CatalogFilters = {
   languages: string[];
   categories: string[];
 };
+
+export type CatalogSort = "relevance" | "recent" | "title";
+
+export type CatalogFacet = { value: string; count: number };
+
+export type CatalogFacets = {
+  templateIds: CatalogFacet[];
+  systems: CatalogFacet[];
+  languages: CatalogFacet[];
+  categories: CatalogFacet[];
+};
+
+export type CatalogQuery = {
+  query: string;
+  filters: CatalogFilters;
+  sort: CatalogSort;
+  page: number;
+  pageSize: number;
+  authorAccountId?: string;
+};
+
+export type CatalogPage = {
+  publications: Publication[];
+  facets: CatalogFacets;
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+};
+
+export function summarizePublicationTemplates(
+  publication: Pick<Publication, "templateIds" | "resources">,
+  limit = 3,
+): { templateIds: string[]; omittedCount: number } {
+  const counts = new Map(publication.templateIds.map((templateId, index) => [
+    templateId,
+    { count: 0, index },
+  ]));
+  for (const resource of publication.resources) {
+    const current = counts.get(resource.templateId);
+    if (current) current.count += 1;
+    else counts.set(resource.templateId, { count: 1, index: counts.size });
+  }
+  const sorted = [...counts.entries()]
+    .sort((left, right) => right[1].count - left[1].count || left[1].index - right[1].index)
+    .map(([templateId]) => templateId);
+  return {
+    templateIds: sorted.slice(0, limit),
+    omittedCount: Math.max(0, sorted.length - limit),
+  };
+}
 
 export const emptyCatalogFilters: CatalogFilters = {
   templateIds: [],
@@ -69,7 +124,7 @@ export function filterPublications(
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
   return publications.filter((publication) => {
     if (!intersects(filters.templateIds, publication.templateIds)) return false;
-    if (!intersects(filters.systems, [publication.system])) return false;
+    if (!intersects(filters.systems, publication.systems)) return false;
     if (!intersects(filters.languages, [publication.language])) return false;
     if (!intersects(filters.categories, publication.categories)) return false;
     if (!normalizedQuery) return true;
@@ -109,10 +164,11 @@ export function createHandoffIntent(
   if (!canAcquirePublication(publication, allowUnpublished)) {
     throw new Error("publication.unpublished");
   }
-  const focusedResource = focusedResourceId
-    ? publication.resources.find((resource) => resource.id === focusedResourceId)
+  const effectiveFocusResourceId = target === "player" ? undefined : focusedResourceId;
+  const focusedResource = effectiveFocusResourceId
+    ? publication.resources.find((resource) => resource.id === effectiveFocusResourceId)
     : undefined;
-  if (focusedResourceId && !focusedResource) throw new Error("focus.resource.not-found");
+  if (effectiveFocusResourceId && !focusedResource) throw new Error("focus.resource.not-found");
   if (creatorMode === "fork" && target !== "creator") throw new Error("handoff.fork.target-not-creator");
 
   let targetRoute: HandoffIntent["targetRoute"];
@@ -146,7 +202,7 @@ export function createHandoffIntent(
     snapshotDigest: publication.snapshotDigest,
     acquisition: "complete-resource-package",
     creatorMode,
-    ...(focusedResourceId ? { focusLocator: { resourceId: focusedResourceId } } : {}),
+    ...(effectiveFocusResourceId ? { focusLocator: { resourceId: effectiveFocusResourceId } } : {}),
     targetRoute,
     autoInstall: false,
     autoPlace: false,
@@ -191,7 +247,6 @@ export function createPlayerHandoffUrl(
   url.searchParams.set("packageId", intent.packageId);
   url.searchParams.set("packageVersion", intent.packageVersion);
   url.searchParams.set("snapshotDigest", intent.snapshotDigest);
-  if (intent.focusLocator) url.searchParams.set("focusResourceId", intent.focusLocator.resourceId);
   return url;
 }
 

@@ -1,4 +1,5 @@
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
+import { TabletopContextMenu } from "@pbdh/tabletop/react";
 import type { CSSProperties } from "react";
 import { maxCardIndicators, readCardIndicators, type CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
@@ -36,8 +37,9 @@ export function CardContextMenu({
   const nextState = nextCardState(stateOptions, instance.state);
 
   return (
-    <div className="card-context-menu" data-guide-interaction-surface="true" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
-      <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
+    <TabletopContextMenu className="card-context-menu" x={x} y={y} estimatedWidth={148} estimatedHeight={280} onClose={onClose}>
+      <div data-guide-interaction-surface="true" data-output-exclude="true">
+        <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
       {canFlip ? (
         <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>
           翻至{instance.face === "front" ? "背面" : "正面"}
@@ -47,7 +49,7 @@ export function CardContextMenu({
       {instance.rotation !== 0 ? (
         <button type="button" role="menuitem" onClick={() => { setCardInstanceUpright(instance.instanceId); onClose(); }}>恢复竖置</button>
       ) : null}
-      <button
+        <button
         type="button"
         role="menuitem"
         disabled={readCardIndicators(instance).length >= maxCardIndicators}
@@ -77,8 +79,9 @@ export function CardContextMenu({
         }}
       >
         删除
-      </button>
-    </div>
+        </button>
+      </div>
+    </TabletopContextMenu>
   );
 }
 

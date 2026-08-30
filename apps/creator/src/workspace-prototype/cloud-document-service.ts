@@ -115,14 +115,19 @@ export class CreatorCloudDocumentService {
     let local = await this.#store.get(documentKind, documentId);
     if (!local) throw new Error("没有找到要移入回收站的本地文档。");
     if (local.sync.scope !== "cloud") {
-      await this.#store.remove(documentKind, documentId);
+      await this.#store.trash(documentKind, documentId);
       return this.localSnapshot(credentials.accountId);
     }
     await this.#coordinator.flush(documentKind, credentials);
     local = await this.#store.get(documentKind, documentId);
     if (!local || local.sync.state !== "clean" || local.sync.baseRevision === null) {
+      if (local?.sync.baseRevision === null) {
+        await this.#store.trash(documentKind, documentId);
+        return this.localSnapshot(credentials.accountId);
+      }
       throw new Error("文档尚未完成同步，暂时不能移到云端回收站。");
     }
+    if (!credentials.canWrite) throw new Error("当前会话不能删除已经上传的云文档。");
     await this.#api.trashDocument(
       documentId,
       crypto.randomUUID(),
@@ -145,7 +150,8 @@ export class CreatorCloudDocumentService {
     remote: RemoteCloudDocument,
     credentials: CloudCredentials,
   ): Promise<CreatorCloudRecovery> {
-    const local = await this.#store.get(remote.documentKind, remote.documentId);
+    const local = await this.#store.get(remote.documentKind, remote.documentId)
+      ?? await this.#store.getTrash(remote.documentKind, remote.documentId);
     if (local && (local.sync.scope === "local-only" || local.sync.accountId !== credentials.accountId)) {
       throw new Error("本地已有同 ID 文档，不能直接恢复云端版本。");
     }
@@ -173,7 +179,8 @@ export class CreatorCloudDocumentService {
   ): Promise<void> {
     const remotes = await this.#api.listDocuments(documentKind, true, credentials);
     for (const remote of remotes) {
-      const local = await this.#store.get(documentKind, remote.documentId);
+      const local = await this.#store.get(documentKind, remote.documentId)
+        ?? await this.#store.getTrash(documentKind, remote.documentId);
       if (remote.deletedAt !== null) {
         if (local?.sync.scope === "cloud" && local.sync.accountId === credentials.accountId) {
           await this.#store.remove(documentKind, remote.documentId);

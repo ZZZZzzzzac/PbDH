@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+  clampTabletopPosition,
   createTabletopDocument,
   executeTabletopCommand,
   executeTemplateStateCommand,
@@ -64,6 +65,14 @@ function place(document = createTabletopDocument("table-1", "第一幕"), instan
 }
 
 describe("Tabletop Core", () => {
+  test("can keep the whole card inside finite tabletop bounds", () => {
+    expect(clampTabletopPosition(
+      { resource, scale: 1, rotation: 0 },
+      { width: 2400, height: 1600, containment: "full" },
+      { x: -1000, y: -1000 },
+    )).toEqual({ x: 0, y: 0 });
+  });
+
   test("each placement owns a deep independent resource copy and runtime state", () => {
     const first = place();
     const second = place(first, "enemy-2");
@@ -74,7 +83,6 @@ describe("Tabletop Core", () => {
       value: "伤痕牛头人",
     }, {
       capabilities: allCapabilities,
-      editableDataFields: () => [["名称"]],
     }).document;
 
     expect(edited.instances[0]?.resource.data.名称).toBe("伤痕牛头人");
@@ -272,30 +280,36 @@ describe("Tabletop Core", () => {
     expect(rejected.document).toBe(document);
   });
 
-  test("edits only string leaves declared by the exact Template", () => {
+  test("edits every instance data field by default", () => {
     const document = place();
-    const options = {
-      capabilities: allCapabilities,
-      editableDataFields: () => [["名称"], ["特性", "*", "描述"]],
-    };
-    const allowed = executeTabletopCommand(document, {
+    const renamed = executeTabletopCommand(document, {
       type: "edit-instance-data",
       instanceId: "enemy-1",
       path: ["名称"],
       value: "临时名称",
-    }, options);
-    expect(allowed.document.instances[0]?.resource.data.名称).toBe("临时名称");
-    expect(allowed.document.instances[0]?.resource.presentation).toEqual(resource.presentation);
+    }, { capabilities: allCapabilities });
+    expect(renamed.document.instances[0]?.resource.data.名称).toBe("临时名称");
+    expect(renamed.document.instances[0]?.resource.presentation).toEqual(resource.presentation);
     expect(document.instances[0]?.resource.data.名称).toBe("牛头人破坏者");
 
-    const denied = executeTabletopCommand(document, {
+    const changed = executeTabletopCommand(document, {
       type: "edit-instance-data",
       instanceId: "enemy-1",
       path: ["生命点"],
       value: "99",
-    }, options);
-    expect(denied.document).toBe(document);
-    expect(denied.diagnostics[0]?.code).toBe("tabletop.instance-data.field-denied");
+    }, { capabilities: allCapabilities });
+    expect(changed.document.instances[0]?.resource.data.生命点).toBe("99");
+    expect(changed.diagnostics).toEqual([]);
+
+    const replacedFeatures = executeTabletopCommand(document, {
+      type: "edit-instance-data",
+      instanceId: "enemy-1",
+      path: ["特性"],
+      value: [{ 名称: "新特性", 描述: "可编辑结构化字段" }],
+    }, { capabilities: allCapabilities });
+    expect(replacedFeatures.document.instances[0]?.resource.data.特性).toEqual([
+      { 名称: "新特性", 描述: "可编辑结构化字段" },
+    ]);
   });
 
   test("rejects invalid commands with stable diagnostics and zero writes", () => {

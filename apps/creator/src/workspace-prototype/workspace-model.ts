@@ -183,6 +183,18 @@ export function updateResourcePresentation(
   return next;
 }
 
+export function updateWorkspacePackageMetadata(
+  workspace: CreatorWorkspace,
+  metadata: { name: string; description: string; version: string; targets?: ResourcePackageLogicalDocument["targets"] },
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  next.document.package.name = metadata.name.trim();
+  next.document.package.description = metadata.description.trim();
+  next.document.package.version = metadata.version.trim();
+  if (metadata.targets) next.document.targets = structuredClone(metadata.targets);
+  return next;
+}
+
 export function updateResourceReplacement(
   workspace: CreatorWorkspace,
   resourceId: string,
@@ -241,6 +253,7 @@ export function addTemplateResource(
 export function treeItemsInFolder(
   workspace: CreatorWorkspace,
   parentId: string | null,
+  direction: "ascending" | "descending" = "ascending",
 ): WorkspaceTreeItem[] {
   return sortWorkspaceTreeItems(workspace.document, workspace.folders, [
     ...workspace.folders
@@ -249,7 +262,7 @@ export function treeItemsInFolder(
     ...workspace.resourceLocations
       .filter((location) => location.parentId === parentId)
       .map((location) => ({ kind: "resource" as const, id: location.resourceId, parentId, order: location.order })),
-  ]).map((item, order) => ({ ...item, order }));
+  ], direction).map((item, order) => ({ ...item, order }));
 }
 
 export function createWorkspaceFolder(
@@ -648,10 +661,10 @@ export async function createBlankWorkspace(name: string): Promise<CreatorWorkspa
       id: packageId,
       version: "1.0.0",
       name: name.trim() || "未命名资源包",
-      description: "Creator Workspace 本地原型",
+      description: "",
     },
     targets: [],
-    license: { label: "Public Domain", declaration: "Public Domain" },
+    license: { label: "", declaration: "" },
     forkSource: null,
     assets: [],
     resources: [],
@@ -840,6 +853,7 @@ function sortWorkspaceTreeItems(
   document: ResourcePackageLogicalDocument,
   folders: WorkspaceFolder[],
   items: WorkspaceTreeItem[],
+  direction: "ascending" | "descending" = "ascending",
 ): WorkspaceTreeItem[] {
   const label = (item: WorkspaceTreeItem) => item.kind === "folder"
     ? folders.find((folder) => folder.id === item.id)?.name ?? item.id
@@ -847,6 +861,7 @@ function sortWorkspaceTreeItems(
   return items.sort((left, right) => {
     if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
     const byLabel = label(left).localeCompare(label(right), "zh-CN", { numeric: true, sensitivity: "base" });
-    return byLabel || left.id.localeCompare(right.id);
+    const byId = left.id.localeCompare(right.id);
+    return direction === "ascending" ? byLabel || byId : -(byLabel || byId);
   });
 }

@@ -121,6 +121,72 @@ describe("shared local document store", () => {
     expect(await reopenedStore.load()).toEqual({ kind: "directory", name: "system-package-dev" });
   });
 
+  test("keeps active documents separate from the shared 30-day trash", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    await store.put(envelope("character-1", "character-save"));
+
+    await store.trash("character-save", "character-1", "2026-08-20T10:00:00.000Z");
+
+    expect(await store.get("character-save", "character-1")).toBeUndefined();
+    expect(await store.list("character-save")).toEqual([]);
+    expect(await store.listTrash("character-save")).toMatchObject([{
+      documentId: "character-1",
+      deletedAt: "2026-08-20T10:00:00.000Z",
+      purgeAfter: "2026-09-19T10:00:00.000Z",
+    }]);
+
+    await store.restore("character-save", "character-1");
+    expect(await store.get("character-save", "character-1")).toMatchObject({ documentId: "character-1" });
+    expect(await store.listTrash("character-save")).toEqual([]);
+  });
+
+  test("purges expired trash and releases media that no remaining document uses", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const assetId = `sha256:${"d".repeat(64)}`;
+    await store.put(envelope("tabletop-1", "gm-tabletop-document", [assetId]), [{
+      assetId,
+      mediaType: "image/webp",
+      byteLength: "1",
+      bytes: new Uint8Array([9]),
+    }]);
+    await store.trash("gm-tabletop-document", "tabletop-1", "2026-08-01T00:00:00.000Z");
+
+    expect(await store.purgeExpiredTrash("2026-09-01T00:00:00.000Z")).toBe(1);
+    expect(await store.getTrash("gm-tabletop-document", "tabletop-1")).toBeUndefined();
+    expect(await store.getMedia([assetId])).toEqual(new Map());
+  });
+
+  test("migrates the former GM-only trash document into the shared lifecycle", async () => {
+    const name = `pbdh-platform-test-${crypto.randomUUID()}`;
+    const legacy = new Dexie(name);
+    legacy.version(6).stores({
+      installedResourcePackages: "&packageId, snapshotDigest, version, installedAt",
+      installedSystemResourcePackages: "&[systemPackageId+packageId], systemPackageId, packageId, snapshotDigest, version, installedAt",
+      localDocuments: "&documentId, documentKind, [documentKind+updatedAt], updatedAt",
+      mediaAssets: "&assetId, byteLength",
+      authorPreviewHandles: "&id",
+      runtimeCaches: "&id",
+    });
+    await legacy.table("localDocuments").put({
+      ...envelope("gm-tabletop-document-trash:tabletop-1", "gm-tabletop-document"),
+      documentKind: "gm-tabletop-document-trash",
+      updatedAt: "2026-08-20T10:00:00.000Z",
+      payload: { name: "旧桌面" },
+    });
+    legacy.close();
+
+    const upgraded = new PbDHLocalDatabase(name);
+    databases.push(upgraded);
+    const store = new DexieLocalDocumentStore(upgraded);
+    expect(await store.listTrash("gm-tabletop-document")).toMatchObject([{
+      documentId: "tabletop-1",
+      documentKind: "gm-tabletop-document",
+      payload: { name: "旧桌面" },
+    }]);
+  });
+
   test("migrates globally installed resource packages into their target System Package", async () => {
     const name = `pbdh-platform-test-${crypto.randomUUID()}`;
     const legacy = new Dexie(name);

@@ -6,17 +6,14 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { describe, expect, test } from "vitest";
 
 import {
-  legacyWeaponTemplate,
   templateRegistry,
   weaponTemplate,
-  weaponTemplateV2,
   type WeaponData,
 } from "../../packages/templates/src/core/index.ts";
 import {
   adversaryAuthoringLayout,
   buildTemplateSupportManifest,
   weaponAuthoringLayout,
-  weaponAuthoringLayoutV2,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const root = process.cwd();
@@ -25,13 +22,6 @@ function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
 }
 
-const legacyResource = readJson<{ resources: Array<{
-  template: { id: string; version: string };
-  data: WeaponData;
-  media: Record<string, string>;
-}> }>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
-).resources[0]!;
 const resource = readJson<{ resources: Array<{
   template: { id: string; version: string };
   data: WeaponData;
@@ -44,16 +34,12 @@ const validateData = ajv.compile(weaponTemplate.schema as AnySchema);
 
 describe("武器 Template Core", () => {
   test("resolves only the exact trusted Template version", () => {
-    expect(legacyResource.template).toEqual({ id: "武器", version: "1.0.0-alpha.1" });
-    expect(templateRegistry.resolve(legacyResource.template.id, legacyResource.template.version)).toBe(
-      legacyWeaponTemplate,
-    );
     expect(resource.template).toEqual({ id: "武器", version: "1.0.0" });
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       weaponTemplate,
     );
-    expect(templateRegistry.resolve("武器", "1.0.0-alpha.2")).toBe(weaponTemplateV2);
-    expect(templateRegistry.resolve("主武器", "1.0.0-alpha.1")).toBeUndefined();
+    expect(templateRegistry.resolve("武器", "1.0.0-alpha.2")).toBeUndefined();
+    expect(templateRegistry.resolve("武器", "1.0.0-alpha.1")).toBeUndefined();
   });
 
   test("validates the shared fixture and complete defaults", () => {
@@ -92,50 +78,10 @@ describe("武器 Template Core", () => {
       mode: "text",
       fixedRatio: true,
     });
-    expect(weaponTemplate.rendererRevision).toBe("weapon-card-r1");
+    expect(weaponTemplate.rendererRevision).toBe("weapon-card-r2");
     expect(weaponTemplate.tabletop.defaultState(resource.data)).toEqual({});
     expect(weaponTemplate.tabletop.commands).toEqual([]);
     expect(weaponTemplate.tabletop.replacements).toEqual([]);
-    expect(weaponTemplate.tabletop.editableDataFields).toContainEqual(["名称"]);
-    expect(weaponTemplate.tabletop.editableDataFields).toContainEqual(["描述"]);
-    expect(weaponTemplate.upgradeFrom).toBeNull();
-  });
-});
-
-describe("武器 Template 1.0.0-alpha.2 风味描述", () => {
-  const validateV2 = ajv.compile(weaponTemplateV2.schema as AnySchema);
-
-  test("keeps gameplay feature and flavor description as separate fields", () => {
-    const data = {
-      ...weaponTemplateV2.defaultData,
-      名称: "月刃",
-      描述: "可靠：攻击掷骰+1。",
-      风味描述: "刀身映着冷白月光。",
-    };
-    expect(validateV2(data), JSON.stringify(validateV2.errors)).toBe(true);
-    expect(weaponTemplateV2.project(data).searchText).toContain("可靠：攻击掷骰+1。");
-    expect(weaponTemplateV2.project(data).searchText).toContain("刀身映着冷白月光。");
-  });
-
-  test("upgrades alpha.1 without reinterpreting its gameplay description", () => {
-    expect(weaponTemplateV2.upgradeFrom?.version).toBe("1.0.0-alpha.1");
-    expect(weaponTemplateV2.upgradeFrom?.upgrade(resource.data)).toEqual({
-      ...resource.data,
-      风味描述: "",
-    });
-  });
-
-  test("has complete authoring and renderer support", () => {
-    const fields = new Set(weaponAuthoringLayoutV2.sections.flatMap((section) =>
-      section.fields.map((field) => field.path)));
-    expect(fields).toEqual(new Set(Object.keys((weaponTemplateV2.schema as { properties: object }).properties)));
-    expect(buildTemplateSupportManifest({
-      templates: templateRegistry.list(),
-      authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout, weaponAuthoringLayoutV2],
-      rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r1", "weapon-card-r2"]),
-    }).templates).toContainEqual({
-      id: "武器", version: "1.0.0-alpha.2", rendererRevision: "weapon-card-r2",
-    });
   });
 });
 
@@ -150,7 +96,7 @@ describe("武器 Template Authoring 与支持清单", () => {
     expect(JSON.parse(JSON.stringify(weaponAuthoringLayout))).toEqual(weaponAuthoringLayout);
   });
 
-  test("stays out of complete frontend support until weapon-card-r1 exists", () => {
+  test("stays out of complete frontend support until weapon-card-r2 exists", () => {
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
       authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout],
@@ -163,11 +109,11 @@ describe("武器 Template Authoring 与支持清单", () => {
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
       authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout],
-      rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r1"]),
+      rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r2"]),
     })).toEqual({
       templates: [
         { id: "敌人", version: "1.0.0", rendererRevision: "enemy-card-r1" },
-        { id: "武器", version: "1.0.0", rendererRevision: "weapon-card-r1" },
+        { id: "武器", version: "1.0.0", rendererRevision: "weapon-card-r2" },
       ],
     });
   });

@@ -312,6 +312,6 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("7e59576c59c95425c10f877121ab2893752fc0f83d47744eb8a64c53bed45100");
+    expect(signature).toBe("13ed76418089308f7eeaedf64be778fe62d3a941e706ab5cc510703c7c03ed11");
   });
 });

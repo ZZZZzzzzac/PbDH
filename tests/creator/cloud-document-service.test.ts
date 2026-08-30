@@ -22,7 +22,7 @@ import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/
 import { CreatorCloudDocumentService } from "../../apps/creator/src/workspace-prototype/cloud-document-service.ts";
 import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
-import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import { createBlankWorkspace, createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 
 const databases: PbDHLocalDatabase[] = [];
 const credentials: CloudCredentials = {
@@ -84,6 +84,29 @@ class RecoveryApi implements CloudDocumentApi {
 }
 
 describe("Creator and GM cloud recovery", () => {
+  test("closes a signed-in workspace locally when its first cloud upload has not succeeded", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const workspaceRepository = new CreatorWorkspaceRepository(store);
+    const tabletopRepository = new TabletopDocumentRepository(store);
+    const workspace = await createBlankWorkspace("匕首之心官方资源");
+    await workspaceRepository.save(workspace, credentials.accountId);
+    const api = new RecoveryApi([], new Map());
+    const service = new CreatorCloudDocumentService(
+      store,
+      workspaceRepository,
+      tabletopRepository,
+      api,
+    );
+
+    await service.trash("creator-workspace", workspace.key, credentials);
+
+    expect(await workspaceRepository.list()).toEqual([]);
+    expect(await workspaceRepository.listTrash()).toMatchObject([{
+      workspace: { key: workspace.key },
+      sync: { scope: "cloud", state: "pending", baseRevision: null },
+    }]);
+  });
+
   test("restores a real workspace media and an independent tabletop instance", async () => {
     const sourceStore = new DexieLocalDocumentStore(database());
     const sourceWorkspaceRepository = new CreatorWorkspaceRepository(sourceStore);

@@ -326,11 +326,6 @@
   color: var(--framework-danger-strong);
 }
 
-.message-info {
-  border-color: var(--framework-success-border);
-  color: var(--framework-success);
-}
-
 .sheet-tool {
   width: 100%;
   margin: 0;

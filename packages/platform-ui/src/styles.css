@@ -1,3 +1,38 @@
+.pbdh-operation-status { display: inline-flex; min-width: 0; align-items: center; justify-content: center; gap: .5em; color: inherit; font: inherit; line-height: 1.2; white-space: nowrap; }
+.pbdh-operation-status.is-regular { gap: .6em; }
+.pbdh-operation-status-spinner { width: 1em; height: 1em; flex: 0 0 auto; box-sizing: border-box; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: pbdh-operation-status-spin .75s linear infinite; }
+.pbdh-operation-status.is-regular .pbdh-operation-status-spinner { width: 1.15em; height: 1.15em; }
+@keyframes pbdh-operation-status-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pbdh-operation-status-spinner { animation-duration: 1.8s; } }
+
+.player-image-crop-backdrop { position: fixed; inset: 0; z-index: 1400; display: grid; place-items: center; padding: 24px; background: #000a; box-sizing: border-box; }
+.player-image-crop-dialog { box-sizing: border-box; width: min(760px, 100%); max-height: calc(100vh - 48px); overflow: auto; border: 1px solid var(--framework-border-strong, #75675e); border-radius: 12px; background: var(--framework-surface, #fffdf8); color: var(--framework-text, #2a1d17); box-shadow: 0 18px 56px var(--framework-shadow-strong, #0008); }
+.player-image-crop-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border-bottom: 1px solid var(--framework-border, #ddd2c8); }
+.player-image-crop-header p, .player-image-crop-header h2 { margin: 0; }
+.player-image-crop-header p { color: var(--framework-text-muted, #806e62); font-size: .75rem; letter-spacing: .12em; }
+.player-image-crop-header h2 { margin-top: 2px; font-size: 1.2rem; }
+.player-image-crop-heading { display: flex; align-items: end; gap: 18px; }
+.player-image-crop-heading > span { color: var(--framework-text-secondary, #655247); font-size: .85rem; }
+.player-image-crop-workspace { position: relative; width: min(720px, calc(100% - 40px), 80vh); margin: 20px auto; overflow: hidden; border: 1px solid var(--framework-border-strong, #75675e); border-radius: 8px; background: #182022; }
+.player-image-crop-workspace canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; touch-action: none; cursor: grab; }
+.player-image-crop-workspace canvas:active { cursor: grabbing; }
+.player-image-crop-status { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: #182022; color: #d9e5e7; text-align: center; }
+.player-image-crop-status.is-error, .player-image-crop-error { color: var(--framework-danger-strong, #991b1b); }
+.player-image-crop-error { margin: 0 20px 18px; }
+.player-image-crop-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.player-image-crop-actions select { min-height: 36px; border: 1px solid var(--framework-border-strong, #75675e); border-radius: 6px; background: var(--framework-surface, #fffdf8); color: var(--framework-text, #2a1d17); padding: 0 30px 0 10px; }
+.player-image-crop-actions button { min-height: 36px; padding: 0 14px; border: 1px solid #6f201f; border-radius: 6px; color: #fff; background: #7a2322; cursor: pointer; }
+.player-image-crop-actions button.secondary-button { border-color: #c8bbb0; color: #45342b; background: #fff; }
+.player-image-crop-actions button:disabled { cursor: wait; opacity: .58; }
+@media (max-width: 640px) {
+  .player-image-crop-backdrop { padding: 10px; }
+  .player-image-crop-dialog { max-height: calc(100vh - 20px); }
+  .player-image-crop-header, .player-image-crop-heading { display: block; }
+  .player-image-crop-heading > span { display: block; margin-top: 8px; }
+  .player-image-crop-actions { justify-content: flex-start; margin-top: 12px; }
+  .player-image-crop-workspace { width: min(720px, calc(100% - 24px), 72vh); margin: 12px auto; }
+}
+
 .pbdh-platform-appbar {
   position: relative;
   z-index: 100;
@@ -11,16 +46,16 @@
   border-bottom: 1px solid #4a382d;
   box-sizing: border-box;
   font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.3;
 }
 .pbdh-platform-appbar button { font: inherit; }
 .pbdh-platform-brand { display: inline-flex; align-items: center; justify-self: start; gap: 10px; border: 0; color: inherit; background: transparent; cursor: pointer; }
-.pbdh-platform-brand b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; color: #21150f; background: #fffdf8; font-size: 11px; font-weight: 800; letter-spacing: -.5px; }
+.pbdh-platform-brand b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; color: #21150f; background: #fffdf8; font-size: 13px; font-weight: 800; letter-spacing: -.5px; }
 .pbdh-platform-brand strong { font-size: 16px; font-weight: 800; letter-spacing: .04em; }
 .pbdh-platform-nav { height: 100%; display: flex; justify-content: flex-start; align-items: stretch; }
-.pbdh-platform-nav button { position: relative; min-width: 94px; padding: 0 15px; border: 0; color: #c8bcae; background: transparent; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.pbdh-platform-nav button { position: relative; min-width: 94px; padding: 0 15px; border: 0; color: #c8bcae; background: transparent; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pbdh-platform-nav button::after { content: ""; position: absolute; right: 14px; bottom: 0; left: 14px; height: 3px; background: transparent; }
 .pbdh-platform-nav button:hover, .pbdh-platform-nav button.is-current { color: #fffdf8; }
 .pbdh-platform-nav button.is-current { font-weight: 750; }
@@ -33,10 +68,10 @@
 .pbdh-platform-notification-menu { position: relative; height: 34px; display: flex; align-items: center; }
 .pbdh-platform-notification-menu::after { content: ""; position: absolute; top: 100%; right: 0; width: 100%; height: 8px; }
 .pbdh-platform-notification-button { position: relative; }
-.pbdh-platform-notification-button > span { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; display: grid; place-items: center; padding: 0 3px; border-radius: 8px; color: #fff; background: #d65458; box-sizing: border-box; font-size: 9px; font-weight: 800; line-height: 1; }
+.pbdh-platform-notification-button > span { position: absolute; top: 2px; right: 2px; min-width: 15px; height: 15px; display: grid; place-items: center; padding: 0 3px; border-radius: 8px; color: #fff; background: #d65458; box-sizing: border-box; font-size: 11px; font-weight: 800; line-height: 1; }
 .pbdh-platform-notification-panel { position: absolute; top: calc(100% + 8px); right: 0; width: min(360px, calc(100vw - 24px)); overflow: hidden; border: 1px solid #59453a; border-radius: 8px; color: #2a1d17; background: #fffdf8; box-shadow: 0 16px 40px #0005; }
 .pbdh-platform-notification-panel header { min-height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid #e1d8cf; }
-.pbdh-platform-notification-panel header strong { font-size: 13px; }
+.pbdh-platform-notification-panel header strong { font-size: 15px; }
 .pbdh-platform-notification-panel button { border: 0; color: #765f52; background: transparent; cursor: pointer; }
 .pbdh-platform-notification-panel > p { margin: 0; padding: 22px 14px; color: #88766b; text-align: center; }
 .pbdh-platform-notification-panel ol { max-height: min(420px, calc(100vh - 90px)); margin: 0; padding: 0; overflow: auto; list-style: none; }
@@ -45,6 +80,24 @@
 .pbdh-platform-notification-panel li button { width: 24px; height: 24px; border-radius: 4px; font-size: 18px; line-height: 1; }
 .pbdh-platform-notification-panel li button:hover { color: #21150f; background: #eee7e1; }
 .pbdh-platform-account { width: auto; max-width: 150px; }
+.pbdh-platform-trash-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 20px; background: #160e09a8; box-sizing: border-box; }
+.pbdh-platform-trash-dialog { width: min(680px, 100%); max-height: min(680px, calc(100vh - 40px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #6e584b; border-radius: 10px; color: #2a1d17; background: #fffdf8; box-shadow: 0 24px 70px #0007; }
+.pbdh-platform-trash-dialog > header { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 18px; border-bottom: 1px solid #e1d8cf; }
+.pbdh-platform-trash-dialog > header > div { display: grid; gap: 4px; }
+.pbdh-platform-trash-dialog > header strong { font-size: 17px; }
+.pbdh-platform-trash-dialog > header small, .pbdh-platform-trash-dialog li small { color: #806e62; }
+.pbdh-platform-trash-dialog > header button { width: 34px; height: 34px; border: 0; border-radius: 5px; color: #655247; background: transparent; font-size: 24px; cursor: pointer; }
+.pbdh-platform-trash-dialog > header button:hover { background: #eee7e1; }
+.pbdh-platform-trash-dialog > ol { min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.pbdh-platform-trash-dialog li { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 18px; border-bottom: 1px solid #eee7e1; box-sizing: border-box; }
+.pbdh-platform-trash-dialog li > div:first-child { min-width: 0; display: grid; gap: 4px; }
+.pbdh-platform-trash-dialog li > div:first-child strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbdh-platform-trash-dialog li > div:last-child { display: flex; gap: 7px; }
+.pbdh-platform-trash-dialog li button { min-height: 32px; padding: 0 11px; border: 1px solid #cfc2b6; border-radius: 5px; color: #45342b; background: #fff; cursor: pointer; }
+.pbdh-platform-trash-dialog li button.danger { border-color: #b76464; color: #8c2020; }
+.pbdh-platform-trash-dialog button:disabled { cursor: wait; opacity: .58; }
+.pbdh-platform-trash-empty { min-height: 230px; display: grid; place-items: center; margin: 0; color: #806e62; }
+.pbdh-platform-trash-error { margin: 0; padding: 10px 18px; color: #851f1f; background: #fff0ef; }
 .pbdh-platform-mobile-button { display: none !important; }
 .pbdh-platform-mobile-menu, .pbdh-platform-mobile-pages, .pbdh-platform-mobile-extra { display: none; }
 body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none; }

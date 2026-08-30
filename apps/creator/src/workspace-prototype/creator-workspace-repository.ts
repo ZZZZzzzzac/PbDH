@@ -38,6 +38,11 @@ export type StoredCreatorWorkspace = {
   sync: LocalDocumentSync;
 };
 
+export type TrashedCreatorWorkspace = StoredCreatorWorkspace & {
+  deletedAt: string;
+  purgeAfter: string | null;
+};
+
 function payload(workspace: CreatorWorkspace): CreatorWorkspacePayload {
   return {
     version: 1,
@@ -198,6 +203,46 @@ export class CreatorWorkspaceRepository {
 
   async remove(workspaceKey: string): Promise<void> {
     await this.#store.remove("creator-workspace", workspaceKey);
+  }
+
+  async trash(workspaceKey: string): Promise<void> {
+    await this.#store.trash("creator-workspace", workspaceKey, this.#now());
+  }
+
+  async listTrash(): Promise<TrashedCreatorWorkspace[]> {
+    const envelopes = await this.#store.listTrash<CreatorWorkspacePayload>("creator-workspace");
+    const results: TrashedCreatorWorkspace[] = [];
+    for (const envelope of envelopes) {
+      if (!isCreatorWorkspacePayload(envelope.payload)) continue;
+      const media = await this.#store.getMedia(envelope.assetIds);
+      results.push({
+        workspace: createWorkspace({
+          document: envelope.payload.document,
+          media,
+          folders: envelope.payload.folders,
+          resourceLocations: envelope.payload.resourceLocations,
+          openResourceIds: envelope.payload.openResourceIds,
+          previewResourceId: envelope.payload.previewResourceId,
+          currentFolderId: envelope.payload.currentFolderId,
+          dirtyResourceIds: envelope.payload.dirtyResourceIds ?? [],
+        } as CreatorWorkspace, envelope.payload.dirty),
+        sync: envelope.sync,
+        deletedAt: envelope.deletedAt!,
+        purgeAfter: envelope.purgeAfter ?? null,
+      });
+    }
+    return results;
+  }
+
+  async restore(workspaceKey: string): Promise<StoredCreatorWorkspace> {
+    const trashed = (await this.listTrash()).find((item) => item.workspace.key === workspaceKey);
+    if (!trashed) throw new Error("回收站里找不到这个资源工作区。");
+    await this.#store.restore("creator-workspace", workspaceKey);
+    return trashed;
+  }
+
+  async deleteFromTrash(workspaceKey: string): Promise<void> {
+    await this.#store.deletePermanently("creator-workspace", workspaceKey);
   }
 }
 

@@ -7,7 +7,7 @@ export const subclassAuthoringLayout: AuthoringLayout = {
     { id: "identity", label: "基本信息", fields: [
       { path: "名称", label: "名称", control: "text" },
       { path: "主职", label: "主职", control: "text" },
-      { path: "等级", label: "等级", control: "text" },
+      { path: "等级", label: "等级", control: "text", enum: ["基础", "进阶", "精通"] },
       { path: "施法属性", label: "施法属性", control: "text" },
     ] },
     { id: "description", label: "说明", fields: [

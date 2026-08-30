@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { createTabletopDocument, executeTabletopCommand, type TabletopCapability } from "@pbdh/tabletop/core";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 import { loadPbtab, writePbtab } from "@pbdh/contract-runtime";
-import { filterTabletopWorkspaceResources } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
+import { filterWorkspaceResources } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 import { validateTabletopDocumentCandidate } from "../../apps/creator/src/workspace-prototype/tabletop-document-validator.ts";
 
@@ -24,20 +24,52 @@ describe("GM Tabletop L1 regressions", () => {
   test("provides working resource filters, batch placement, fixed zoom and fit controls", async () => {
     const source = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
     expect(source).toContain("value={resourceSearch}");
-    expect(source).toContain("value={resourceTemplateFilter}");
-    expect(source).toContain("placeWorkspaceResources(selectedTabletopResources)");
+    expect(source).toContain('role="menuitemcheckbox"');
+    expect(source).toContain("value.includes(templateId)");
+    expect(source).toContain("placeWorkspaceResources(selectedWorkspaceResources)");
+    expect(source).toContain("const [resourceMultiSelect, setResourceMultiSelect] = useState(false)");
+    expect(source).toContain("aria-pressed={resourceMultiSelect}");
+    expect(source).toContain("批量放到当前桌面（{selectedWorkspaceResources.length}）");
+    expect(source).toContain("删除已选（{selectedWorkspaceResources.length}）");
+    expect(source).toContain('kind: "delete-selected-resources"');
+    expect(source).toContain("selectionMode={resourceMultiSelect}");
+    expect(source).toContain("filtered-resource-row");
+    expect(source).toContain('aria-label="跨资源包筛选结果" role="tree"');
+    expect(source).toContain('kind: "resource", workspaceKey: workspace.key, resourceId: item.id');
+    expect(source).not.toContain('className="tabletop-resource-result"');
     expect(source).toContain("tabletopZoomSteps");
     expect(source).toContain("fitTabletopContent");
     expect(source).toContain("pbdh:gm-tabletop-view:");
-    expect(source).toContain("positionBounds={{ ...activeTabletop.canvas, minimumVisible: 48 }}");
+    expect(source).toContain('positionBounds={{ ...activeTabletop.canvas, containment: "full", pixelsPerUnit: gmCardPixelsPerDesignUnit }}');
+    expect(source).toContain("updateTabletopPanPreview");
+    expect(source).toContain("selectAndRaiseTabletopInstance(instanceId, mode)");
+    expect(source).not.toContain("setCanvasPan({ x: drag.startPan.x + dx, y: drag.startPan.y + dy })");
+    expect(source).not.toContain(">置于顶层</button>");
+    expect(source).not.toContain(">上移一层</button>");
+    expect(source).not.toContain(">下移一层</button>");
+    expect(source).not.toContain(">置于底层</button>");
     expect(source).not.toContain("className=\"tabletop-tab-resource-toggle\"");
     expect(source).toContain('appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open"');
-    expect(source).toContain("className=\"tabletop-selection-toolbar\"");
+    expect(source).not.toContain("className=\"tabletop-selection-toolbar\"");
+    expect(source).toContain(">编辑卡牌</button>");
+    expect(source).not.toContain("editableDataFields");
+    const treeSource = await readFile("apps/creator/src/workspace-prototype/WorkspaceTree.tsx", "utf8");
+    expect(treeSource).toContain("selectionMode ? onToggleResourceSelection?.(resource.id) : onActivateResource(resource.id)");
+    expect(treeSource).toContain('className="filtered-resource-select"');
     const css = await readFile("apps/creator/src/workspace-prototype/workspace.css", "utf8");
     expect(css).toContain(".creator-prototype.is-resource-panel-open .resource-explorer");
     expect(css).toContain("transform: translateX(-100%)");
     expect(css).toContain(".creator-prototype.is-gm-mode .resource-explorer");
     expect(css).toContain("visibility: visible; transform: none");
+    const zoomStatus = css.slice(css.indexOf(".tabletop-zoom-status"), css.indexOf(".tabletop-renderer-error"));
+    expect(zoomStatus).toContain("top: 16px");
+    expect(zoomStatus).toContain("right: 16px");
+    expect(zoomStatus).toContain("flex-direction: row");
+    expect(zoomStatus).toContain("width: auto");
+    expect(zoomStatus).toContain("min-height: 48px");
+    expect(zoomStatus).toContain("backdrop-filter: blur(6px)");
+    expect(zoomStatus).not.toContain("button:nth-of-type(4)");
+    expect(zoomStatus).not.toContain("bottom:");
   });
 
   test("indexes 1000 resources and saves, reopens and exports a 200-card tabletop", async () => {
@@ -55,8 +87,8 @@ describe("GM Tabletop L1 regressions", () => {
         })),
       },
     })) as never;
-    expect(filterTabletopWorkspaceResources(workspaces, "首领", "pbdh.adversary").length).toBeGreaterThan(0);
-    expect(filterTabletopWorkspaceResources(workspaces, "", "")).toHaveLength(1000);
+    expect(filterWorkspaceResources(workspaces, "首领", ["pbdh.adversary"]).length).toBeGreaterThan(0);
+    expect(filterWorkspaceResources(workspaces, "", ["pbdh.adversary", "pbdh.item"])).toHaveLength(1000);
 
     const capabilities = new Set<TabletopCapability>(["place", "arrange"]);
     let tabletop = createTabletopDocument("00000000-0000-7000-8000-000000000001", "压力桌面");
@@ -99,5 +131,15 @@ describe("GM Tabletop L1 regressions", () => {
       database.close();
       await database.delete();
     }
+  });
+
+  test("indexes workspace tree lookups instead of rescanning the package for every row", async () => {
+    const source = await readFile("apps/creator/src/workspace-prototype/WorkspaceTree.tsx", "utf8");
+
+    expect(source).toContain("const folderById = useMemo");
+    expect(source).toContain("const resourceById = useMemo");
+    expect(source).toContain("const treeItemsByParent = useMemo");
+    expect(source).toContain("resourceById.get(item.id)");
+    expect(source).not.toContain("workspace.document.resources.find((candidate) => candidate.id === item.id)");
   });
 });

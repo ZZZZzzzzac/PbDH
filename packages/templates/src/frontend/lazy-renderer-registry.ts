@@ -6,9 +6,7 @@ type TrustedRenderer = RendererRevisionCapability<any, any, ReactNode>;
 type RendererLoader = () => Promise<TrustedRenderer>;
 
 const loaders = new Map<string, RendererLoader>([
-  ["敌人@1.0.0-alpha.1", async () => (await import("./adversary/1.0.0-alpha.1/renderer.tsx")).adversaryRendererRevision],
   ["敌人@1.0.0", async () => (await import("./adversary/1.0.0/renderer.tsx")).adversaryRendererRevision],
-  ["武器@1.0.0-alpha.1", async () => (await import("./weapon/1.0.0-alpha.1/renderer.tsx")).weaponRendererRevision],
   ["武器@1.0.0", async () => (await import("./weapon/1.0.0/renderer.tsx")).weaponRendererRevision],
   ["自由@1.0.0", async () => (await import("./free/1.0.0/renderer.tsx")).freeRendererRevision],
   ["护甲@1.0.0", async () => (await import("./armor/1.0.0/renderer.tsx")).armorRendererRevision],

@@ -1,9 +1,16 @@
-import type { Publication, PublicationKind, PublicationResource } from "./market-model.ts";
+import type {
+  CatalogPage,
+  CatalogQuery,
+  Publication,
+  PublicationKind,
+  PublicationResource,
+} from "./market-model.ts";
 import type { AuthStatus } from "@pbdh/platform-auth/core";
 import {
   platformRequestHeaders,
   type PlatformCredentials,
 } from "@pbdh/platform-auth/provider";
+import { systemPackageLabel } from "./system-package-labels.ts";
 
 type ApiResourceSummary = {
   id: string;
@@ -30,10 +37,30 @@ type ApiPublication = {
   resourceCount: number;
   resources: ApiResourceSummary[];
   status: "published" | "unpublished";
+  matchedResourceIds?: string[];
   document?: {
-    package?: { name: string };
+    package?: { name: string; version: string; description: string };
+    targets?: Array<{ systemPackageId: string; version: string }>;
     assets: Array<{ id: string }>;
     resources: Array<ApiResourceSummary & { data: Record<string, unknown>; presentation: unknown; media: Record<string, string> }>;
+  };
+};
+
+type ApiCatalogFacet = { value: string; count: number };
+
+type ApiCatalogPayload = ApiErrorPayload & {
+  publications?: ApiPublication[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    hasMore: boolean;
+  };
+  facets?: {
+    templateIds: ApiCatalogFacet[];
+    targetSystemPackageIds: ApiCatalogFacet[];
+    languages: ApiCatalogFacet[];
+    categories: ApiCatalogFacet[];
   };
 };
 
@@ -47,6 +74,18 @@ export type PublicationMetadataInput = {
   coverAssetId: string;
 };
 
+export type PublicationInformationInput = PublicationMetadataInput & {
+  package: { name: string; version: string; description: string };
+  targets: Array<{ systemPackageId: string; version: string }>;
+  coverAsset?: {
+    id: string;
+    mediaType: "image/webp";
+    byteLength: string;
+    width: string;
+    height: string;
+  };
+};
+
 export class MarketApiError extends Error {
   constructor(
     message: string,
@@ -58,10 +97,46 @@ export class MarketApiError extends Error {
 }
 
 export async function loadPublications(fetcher: typeof fetch = fetch): Promise<Publication[]> {
-  const response = await fetcher("/api/publications", { headers: { Accept: "application/json" } });
-  const payload = await response.json() as ApiErrorPayload & { publications?: ApiPublication[] };
-  if (!response.ok || !payload.publications) throw new Error(payload.error?.message ?? "资源市场暂不可用。");
-  return payload.publications.map(publicationFromApi);
+  return (await loadPublicationCatalog({
+    query: "",
+    filters: { templateIds: [], systems: [], languages: [], categories: [] },
+    sort: "recent",
+    page: 1,
+    pageSize: 24,
+  }, fetcher)).publications;
+}
+
+export async function loadPublicationCatalog(
+  query: CatalogQuery,
+  fetcher: typeof fetch = fetch,
+): Promise<CatalogPage> {
+  const parameters = new URLSearchParams();
+  if (query.query.trim()) parameters.set("q", query.query.trim());
+  if (query.authorAccountId) parameters.set("authorAccountId", query.authorAccountId);
+  for (const value of query.filters.templateIds) parameters.append("templateId", value);
+  for (const value of query.filters.systems) parameters.append("targetSystemPackageId", value);
+  for (const value of query.filters.languages) parameters.append("language", value);
+  for (const value of query.filters.categories) parameters.append("category", value);
+  parameters.set("sort", query.sort);
+  parameters.set("page", String(query.page));
+  parameters.set("pageSize", String(query.pageSize));
+  const response = await fetcher(`/api/publications?${parameters}`, {
+    headers: { Accept: "application/json" },
+  });
+  const payload = await response.json() as ApiCatalogPayload;
+  if (!response.ok || !payload.publications || !payload.pagination || !payload.facets) {
+    throw new Error(payload.error?.message ?? "资源市场暂不可用。");
+  }
+  return {
+    publications: payload.publications.map(publicationFromApi),
+    facets: {
+      templateIds: payload.facets.templateIds,
+      systems: payload.facets.targetSystemPackageIds,
+      languages: payload.facets.languages,
+      categories: payload.facets.categories,
+    },
+    ...payload.pagination,
+  };
 }
 
 export async function loadPublication(
@@ -72,7 +147,7 @@ export async function loadPublication(
     headers: { Accept: "application/json" },
   });
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw new Error(payload.error?.message ?? "无法打开该出版物。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法打开该资源包。");
   return publicationFromApi(payload.publication);
 }
 
@@ -151,6 +226,19 @@ export function unpublishPublication(
   return mutatePublication(publicationId, "unpublish", "POST", undefined, credentials, fetcher);
 }
 
+export async function unpublishLoadedPublication(
+  publication: Publication,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<Publication> {
+  const updated = await unpublishPublication(publication.id, credentials, fetcher);
+  return {
+    ...publication,
+    status: updated.status,
+    updatedAt: updated.updatedAt,
+  };
+}
+
 export function republishPublication(
   publicationId: string,
   credentials: PlatformCredentials,
@@ -159,20 +247,61 @@ export function republishPublication(
   return mutatePublication(publicationId, "republish", "POST", undefined, credentials, fetcher);
 }
 
-export function updatePublicationMetadata(
+export function updatePublicationInformation(
   publicationId: string,
-  metadata: PublicationMetadataInput,
+  information: PublicationInformationInput,
   credentials: PlatformCredentials,
   fetcher: typeof fetch = fetch,
+  cover: Blob | undefined = undefined,
 ): Promise<Publication> {
-  return mutatePublication(publicationId, "metadata", "PATCH", metadata, credentials, fetcher);
+  if (cover) return updatePublicationInformationWithCover(publicationId, information, cover, credentials, fetcher);
+  return mutatePublication(publicationId, "information", "PATCH", information, credentials, fetcher);
+}
+
+async function updatePublicationInformationWithCover(
+  publicationId: string,
+  information: PublicationInformationInput,
+  cover: Blob,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch,
+): Promise<Publication> {
+  if (!credentials.canWrite) {
+    throw new MarketApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
+  }
+  const body = new FormData();
+  body.set("information", JSON.stringify(information));
+  body.set("cover", cover, "publication-cover.webp");
+  const response = await fetcher(
+    `/api/publications/${encodeURIComponent(publicationId)}/information-with-cover`,
+    { method: "PATCH", headers: authenticatedHeaders(credentials), body },
+  );
+  const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包封面。");
+  return publicationFromApi(payload.publication);
+}
+
+export async function deletePublication(
+  publicationId: string,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<void> {
+  if (!credentials.canWrite) {
+    throw new MarketApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
+  }
+  const response = await fetcher(`/api/publications/${encodeURIComponent(publicationId)}`, {
+    method: "DELETE",
+    headers: authenticatedHeaders(credentials),
+  });
+  if (response.ok) return;
+  const payload = await response.json() as ApiErrorPayload;
+  throw apiError(response, payload, "无法永久删除该资源包。");
 }
 
 async function mutatePublication(
   publicationId: string,
-  action: "unpublish" | "republish" | "metadata",
+  action: "unpublish" | "republish" | "information",
   method: "POST" | "PATCH",
-  body: PublicationMetadataInput | undefined,
+  body: PublicationMetadataInput | PublicationInformationInput | undefined,
   credentials: PlatformCredentials,
   fetcher: typeof fetch,
 ): Promise<Publication> {
@@ -188,7 +317,7 @@ async function mutatePublication(
     },
   );
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新出版物。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包。");
   return publicationFromApi(payload.publication);
 }
 
@@ -205,7 +334,7 @@ async function publicationFromManageableApi(
   createObjectUrl: (blob: Blob) => string,
 ): Promise<Publication> {
   const publication = publicationFromApi(source);
-  const assetIds = source.document?.assets.map((asset) => asset.id) ?? [source.coverAssetId];
+  const assetIds = [...new Set([source.coverAssetId, ...(source.document?.assets.map((asset) => asset.id) ?? [])])];
   const mediaEntries = await Promise.all(assetIds.map(async (assetId) => {
     const response = await fetcher(mediaUrl(source.publicationId, assetId), {
       headers: platformRequestHeaders(credentials, { Accept: "image/webp,image/*" }),
@@ -248,11 +377,14 @@ function publicationFromApi(source: ApiPublication): Publication {
         source: resource,
       }));
   const kind = publicationKind(source.templateIds);
-  const firstSystem = source.targetSystemPackageIds[0] ?? "未指定";
+  const systemLabels = source.targetSystemPackageIds.map(systemPackageLabel);
   return {
     id: source.publicationId,
     packageId: source.packageId,
     packageVersion: source.packageVersion,
+    packageName: source.document?.package?.name ?? source.title,
+    packageDescription: source.document?.package?.description ?? source.summary,
+    targets: source.document?.targets ?? source.targetSystemPackageIds.map((systemPackageId) => ({ systemPackageId, version: "1.0.0" })),
     snapshotDigest: source.snapshotDigest,
     title: source.title,
     ownerAccountId: source.author.accountId,
@@ -260,10 +392,10 @@ function publicationFromApi(source: ApiPublication): Publication {
     summary: source.summary,
     kind,
     templateIds: source.templateIds,
-    system: firstSystem,
-    systemLabel: firstSystem === "01a0132c-4eef-7703-94ac-ec8d1a660001" ? "Daggerheart Core" : firstSystem,
+    systems: source.targetSystemPackageIds,
+    systemLabels,
     language: source.language,
-    categories: source.templateIds,
+    categories: source.tags,
     tags: source.tags,
     license: source.license.label,
     updatedAt: source.updatedAt,
@@ -277,6 +409,7 @@ function publicationFromApi(source: ApiPublication): Publication {
     archiveUrl: `/api/publications/${encodeURIComponent(source.publicationId)}/download`,
     archiveName: pbresArchiveName(source.document?.package?.name ?? source.title),
     resources: mappedResources,
+    matchedResourceIds: source.matchedResourceIds,
     mediaUrls: Object.fromEntries(
       (source.document?.assets ?? [{ id: source.coverAssetId }]).map((asset) => [
         asset.id,

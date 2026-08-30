@@ -1,20 +1,37 @@
 import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
-import { temporaryItemTemplate, type TemporaryItemData } from "../0.0.0-dev.1/capability.ts";
 
-export type ItemData = TemporaryItemData;
+export type ItemData = {
+  名称: string; 类型: string; 掷骰: string; 描述: string; 风味描述: string;
+};
 
-function upgrade(data: unknown): ItemData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Item Template upgrade requires an object");
-  return structuredClone(data) as ItemData;
-}
+const defaultData: ItemData = { 名称: "", 类型: "", 掷骰: "", 描述: "", 风味描述: "" };
+
+function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
 
 export const itemTemplate = deepFreeze<TemplateCoreCapability<ItemData>>({
-  ...temporaryItemTemplate,
+  id: "物品",
   version: "1.0.0",
+  state: "development",
   schema,
+  defaultData,
+  proposeResourceId(data) {
+    return normalize(data.名称 || "未命名物品").normalize("NFC").replaceAll("/", "-");
+  },
+  project(data) {
+    const title = normalize(data.名称 || "未命名物品");
+    const summary = [data.类型, data.掷骰].map(normalize).filter(Boolean).join(" · ");
+    const searchText = Object.values(data).map(normalize).filter(Boolean).join(" ");
+    return { title, summary, searchText };
+  },
+  mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
+  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
   rendererRevision: "item-card-r1",
-  defaultPresentation: { ...temporaryItemTemplate.defaultPresentation, width: "63", height: "88" },
-  upgradeFrom: { version: "0.0.0-dev.1", upgrade },
+  tabletop: {
+    stateSchema: { type: "object", properties: {}, additionalProperties: false },
+    defaultState() { return {}; },
+    commands: [],
+    replacements: [],
+  },
 });

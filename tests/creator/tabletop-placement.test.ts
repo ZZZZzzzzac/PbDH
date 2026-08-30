@@ -23,6 +23,7 @@ import {
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-prototype/market-handoff.ts";
 import {
+  containGmTabletopInstances,
   prepareWorkspaceReplacement,
   restoreOfficialTabletopImageModes,
   snapshotWorkspaceResourceForTabletop,
@@ -37,6 +38,26 @@ const capabilities = new Set<TabletopCapability>([
   "template-state-command",
   "replace",
 ]);
+
+test("repairs existing GM cards that were saved almost entirely outside the tabletop", () => {
+  const document = executeTabletopCommand(createTabletopDocument("table-contained", "边界修复"), {
+    type: "place",
+    instanceId: "enemy-outside",
+    resource: {
+      source: { packageId: "package-1", resourceId: "enemy-1" },
+      template: { id: "敌人", version: "1.0.0" },
+      presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+      data: { 名称: "越界敌人" },
+      labels: [],
+      replacements: [],
+      media: {},
+    },
+    state: {},
+    position: { x: -202, y: -302 },
+  }, { capabilities }).document;
+
+  expect(containGmTabletopInstances(document).instances[0]?.position).toEqual({ x: 0, y: 0 });
+});
 
 afterEach(async () => {
   await Promise.all(databases.splice(0).map(async (database) => {

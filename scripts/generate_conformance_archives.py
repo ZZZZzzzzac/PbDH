@@ -17,14 +17,8 @@ def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def main() -> None:
-    resource_root = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
-    system_root = ROOT / "contracts/conformance/system-package/1.0.0-alpha.1"
-    system_directory = system_root / "valid/daggerheart"
-    embedded_path = system_directory / "resources/daggerheart-core-primary-weapon.pbres"
-    embedded_path.parent.mkdir(parents=True, exist_ok=True)
-
-    document = read_json(resource_root / "valid/daggerheart-core-primary-weapon.json")
+def write_resource_archive(resource_root: Path, name: str) -> bytes:
+    document = read_json(resource_root / "valid" / f"{name}.json")
     media = {
         asset["id"]: (
             resource_root / "media" / f"{asset['id'].removeprefix('sha256:')}.webp"
@@ -37,6 +31,22 @@ def main() -> None:
         compression_level=6,
         export_time=datetime(2000, 1, 1),
     )
+    (resource_root / "valid" / f"{name}.pbres").write_bytes(archive)
+    return archive
+
+
+def main() -> None:
+    resource_root = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
+    current_resource_root = ROOT / "contracts/conformance/resource-package/1.0.0"
+    system_root = ROOT / "contracts/conformance/system-package/1.0.0-alpha.1"
+    system_directory = system_root / "valid/daggerheart"
+    embedded_path = system_directory / "resources/daggerheart-core-primary-weapon.pbres"
+    embedded_path.parent.mkdir(parents=True, exist_ok=True)
+
+    archive = write_resource_archive(resource_root, "daggerheart-core-primary-weapon")
+    write_resource_archive(resource_root, "minotaur-wrecker")
+    write_resource_archive(current_resource_root, "daggerheart-core-primary-weapon")
+    write_resource_archive(current_resource_root, "minotaur-wrecker")
     embedded_path.write_bytes(archive)
 
     pbsys_path = system_root / "daggerheart.pbsys"

@@ -6,7 +6,7 @@
   "required": ["名称", "类型", "掷骰", "描述", "风味描述"],
   "properties": {
     "名称": { "type": "string" },
-    "类型": { "type": "string", "enum": ["物品", "消耗品"] },
+    "类型": { "type": "string" },
     "掷骰": { "type": "string" },
     "描述": { "type": "string" },
     "风味描述": { "type": "string" }

@@ -47,6 +47,14 @@ export async function preparePublicationCandidate(
 
   if (license) document.license = structuredClone(license);
 
+  document.package.name = metadata.title;
+  document.package.description = metadata.summary;
+  document.publication = {
+    language: metadata.language,
+    tags: [...metadata.tags],
+    coverAssetId: metadata.coverAssetId,
+  };
+
   if (cover) {
     const existingAssetIndex = document.assets.findIndex((asset) => asset.id === cover.asset.id);
     if (existingAssetIndex >= 0) document.assets[existingAssetIndex] = structuredClone(cover.asset);

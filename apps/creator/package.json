@@ -15,8 +15,10 @@
     "@pbdh/publication-ui": "0.0.0",
     "@pbdh/contract-runtime": "0.0.0",
     "@pbdh/resource-renderer": "0.0.0",
+    "@pbdh/resource-conversion": "0.0.0",
     "@pbdh/tabletop": "0.0.0",
     "@pbdh/templates": "0.0.0",
+    "lucide-react": "1.23.0",
     "react": "19.2.7"
   }
 }

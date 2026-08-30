@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import type { CSSProperties, MouseEvent, PointerEvent } from "react";
+import type { CSSProperties } from "react";
 import type { CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
 import type { ResourceLibraryEntry } from "../../domain/resourceLibrary";
@@ -9,35 +9,19 @@ import { CardFace, CardStateBadge } from "./CardFace";
 import { CardIndicatorColumn } from "./CardIndicators";
 import { definitionReferenceId, resolveRenderedCardPresentation } from "./cardDefinition";
 
-export interface CardDragState {
-  instanceId: string;
-  pointerId: number;
-  offsetXPct: number;
-  offsetYPct: number;
-  pendingXPct: number;
-  pendingYPct: number;
-}
-
 export function CardView({
   instance,
-  dragState,
   definition,
   module,
   presentation,
-  onPointerDown,
-  onContextMenu,
 }: {
   instance: CardInstance;
-  dragState: CardDragState | null;
   definition?: ResourceLibraryEntry;
   module: CardTableModule;
   presentation?: CardPresentation;
-  onPointerDown: (event: PointerEvent<HTMLElement>, instance: CardInstance) => void;
-  onContextMenu: (event: MouseEvent<HTMLElement>, instance: CardInstance) => void;
 }) {
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
   const name = resolveRenderedCardPresentation(definition, module, presentation).name || definitionReferenceId(instance);
-  const isDragging = dragState?.instanceId === instance.instanceId;
   const stateAppearance = module.状态外观?.[instance.state];
   const stateBadgeId = stateAppearance ? `card-state-${instance.instanceId}` : undefined;
 
@@ -47,15 +31,9 @@ export function CardView({
       data-card-instance-id={instance.instanceId}
       data-card-state={instance.state}
       style={{
-        left: `${isDragging ? dragState.pendingXPct : instance.xPct}%`,
-        top: `${isDragging ? dragState.pendingYPct : instance.yPct}%`,
-        zIndex: instance.zIndex,
-        transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
         "--card-control-counter-rotation": `${-instance.rotation}deg`,
         "--play-card-state-color": stateAppearance?.描边颜色,
       } as CSSProperties}
-      onPointerDown={(event) => onPointerDown(event, instance)}
-      onContextMenu={(event) => onContextMenu(event, instance)}
       aria-label={name}
       aria-describedby={stateBadgeId}
     >

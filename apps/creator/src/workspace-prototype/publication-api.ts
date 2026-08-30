@@ -8,6 +8,7 @@ export class PublicationApiError extends Error {
     message: string,
     public readonly code: string,
     public readonly status: number,
+    public readonly fieldErrors: ReadonlyArray<{ path: string; code: string; message: string }> = [],
   ) {
     super(message);
   }
@@ -50,13 +51,22 @@ export async function publishCandidate(
   });
   const payload = await response.json() as {
     publication?: PublishedPublication;
-    error?: { code?: string; message?: string };
+    error?: {
+      code?: string;
+      message?: string;
+      fieldErrors?: Array<{ path?: string; code?: string; message?: string }>;
+    };
   };
   if (!response.ok || !payload.publication) {
     throw new PublicationApiError(
       payload.error?.message ?? "发布失败。",
       payload.error?.code ?? "PUBLICATION_REQUEST_FAILED",
       response.status,
+      (payload.error?.fieldErrors ?? []).map((item) => ({
+        path: item.path ?? "/publication",
+        code: item.code ?? "PUBLICATION_CANDIDATE_INVALID",
+        message: item.message ?? item.code ?? "发布校验失败",
+      })),
     );
   }
   return { publication: payload.publication };

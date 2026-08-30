@@ -36,7 +36,8 @@ export class PlayerCloudDocumentService {
   async recover(credentials: CloudCredentials): Promise<StoredCharacterSave[]> {
     const remotes = await this.#api.listDocuments("character-save", true, credentials);
     for (const remote of remotes) {
-      const local = await this.#store.get("character-save", remote.documentId);
+      const local = await this.#store.get("character-save", remote.documentId)
+        ?? await this.#store.getTrash("character-save", remote.documentId);
       if (remote.deletedAt !== null) {
         if (local?.sync.scope === "cloud" && local.sync.accountId === credentials.accountId) {
           await this.#store.remove("character-save", remote.documentId);
@@ -102,14 +103,19 @@ export class PlayerCloudDocumentService {
     let local = await this.#store.get("character-save", documentId);
     if (!local) throw new Error("没有找到要删除的人物存档。");
     if (local.sync.scope !== "cloud") {
-      await this.#store.remove("character-save", documentId);
+      await this.#store.trash("character-save", documentId);
       return this.localSnapshot(credentials.accountId);
     }
     await this.#coordinator.flush("character-save", credentials);
     local = await this.#store.get("character-save", documentId);
     if (!local || local.sync.state !== "clean" || local.sync.baseRevision === null) {
+      if (local?.sync.baseRevision === null) {
+        await this.#store.trash("character-save", documentId);
+        return this.localSnapshot(credentials.accountId);
+      }
       throw new Error("人物存档尚未完成同步，暂时不能移到云端回收站。");
     }
+    if (!credentials.canWrite) throw new Error("当前会话不能删除已经上传的云端人物存档。");
     await this.#api.trashDocument(
       documentId,
       crypto.randomUUID(),
@@ -129,7 +135,8 @@ export class PlayerCloudDocumentService {
     remote: RemoteCloudDocument,
     credentials: CloudCredentials,
   ): Promise<StoredCharacterSave[]> {
-    const local = await this.#store.get("character-save", remote.documentId);
+    const local = await this.#store.get("character-save", remote.documentId)
+      ?? await this.#store.getTrash("character-save", remote.documentId);
     if (local && (local.sync.scope === "local-only" || local.sync.accountId !== credentials.accountId)) {
       throw new Error("本地已有同 ID 人物存档，不能直接恢复云端版本。");
     }

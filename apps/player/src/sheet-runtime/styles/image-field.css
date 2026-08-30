@@ -85,8 +85,8 @@
   overflow: auto;
   border: 1px solid var(--framework-border-strong);
   border-radius: 12px;
-  background: var(--framework-surface);
-  color: var(--framework-text);
+  background: var(--framework-surface, #fffdf8);
+  color: var(--framework-text, #2a1d17);
   box-shadow: 0 18px 56px var(--framework-shadow-strong);
 }
 
@@ -182,8 +182,8 @@
   min-height: 36px;
   border: 1px solid var(--framework-border-strong);
   border-radius: 6px;
-  background: var(--framework-surface);
-  color: var(--framework-text);
+  background: var(--framework-surface, #fffdf8);
+  color: var(--framework-text, #2a1d17);
   padding: 0 30px 0 10px;
 }
 

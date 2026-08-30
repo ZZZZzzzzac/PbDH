@@ -8,12 +8,25 @@ import {
   type SurfaceResource,
 } from "./core.ts";
 
+export {
+  RestrictedMarkdown,
+  RestrictedMarkdownRenderer,
+  type RestrictedMarkdownProps,
+} from "./RestrictedMarkdown.tsx";
+
 const boundaryStyles = `
 :host {
   all: initial;
   display: block;
   contain: layout paint style;
   color-scheme: light;
+  --restricted-markdown-red: #a8443e;
+  --restricted-markdown-orange: #a35f24;
+  --restricted-markdown-yellow: #8a741f;
+  --restricted-markdown-green: #39704f;
+  --restricted-markdown-blue: #356a83;
+  --restricted-markdown-purple: #71558a;
+  --restricted-markdown-gray: #667074;
 }
 *, *::before, *::after { box-sizing: border-box; }
 .pbdh-surface-root {
@@ -37,6 +50,19 @@ const boundaryStyles = `
   text-align: center;
 }
 .pbdh-surface-status code { font: 500 2.5mm/1.4 Consolas, monospace; }
+[data-restricted-markdown] { min-width: 0; }
+[data-restricted-markdown] :is(p, ul, ol) { margin: 0; }
+[data-restricted-markdown] :is(ul, ol) { padding-inline-start: 1.25em; }
+[data-restricted-markdown] li + li { margin-top: .2em; }
+[data-restricted-markdown] > :first-child { margin-top: 0; }
+[data-restricted-markdown] > :last-child { margin-bottom: 0; }
+.restricted-markdown-color[data-markdown-color="red"] { color: var(--restricted-markdown-red); }
+.restricted-markdown-color[data-markdown-color="orange"] { color: var(--restricted-markdown-orange); }
+.restricted-markdown-color[data-markdown-color="yellow"] { color: var(--restricted-markdown-yellow); }
+.restricted-markdown-color[data-markdown-color="green"] { color: var(--restricted-markdown-green); }
+.restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
+.restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
+.restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }
 @media print {
   :host { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }

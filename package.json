@@ -32,6 +32,7 @@
     "test:ts": "vitest run tests",
     "test:python": "node scripts/python.mjs -m pytest tests",
     "measure:renderer": "tsx scripts/measure-renderer-performance.ts",
+    "template:status": "tsx scripts/template-status.ts",
     "system-package": "tsx scripts/system-package-cli.ts",
     "typecheck": "tsc --noEmit",
     "dev:platform": "npm run dev -w @pbdh/platform",

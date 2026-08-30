@@ -85,11 +85,11 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     expect(trustedRendererFor(weaponTemplate.id, "1.0.1")).toBeUndefined();
   });
 
-  test("历史 Renderer 可以按精确 Template 版本按需加载", async () => {
-    expect(listLazyRendererBindings()).toContain("敌人@1.0.0-alpha.1");
+  test("只有当前 Renderer 可以按精确 Template 版本按需加载", async () => {
+    expect(listLazyRendererBindings()).not.toContain("敌人@1.0.0-alpha.1");
     expect(listLazyRendererBindings()).toContain("敌人@1.0.0");
     await expect(loadTrustedRenderer("敌人", "1.0.0-alpha.1"))
-      .resolves.toMatchObject({ revision: "enemy-card-r1", templateVersion: "1.0.0-alpha.1" });
+      .resolves.toBeUndefined();
     await expect(loadTrustedRenderer("敌人", "2.0.0")).resolves.toBeUndefined();
   });
 });

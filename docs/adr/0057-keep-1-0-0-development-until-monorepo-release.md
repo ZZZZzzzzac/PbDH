@@ -8,7 +8,7 @@ Development `1.0.0` content may still change before the monorepo release. At rel
 
 Issue #39 exercises Creator → Market → anonymous download inside the development deployment. The development Backend may accept lifecycle-state `development` candidates for that tracer bullet, but production publication mode must continue rejecting them. This development path is not evidence that PbDH Market or the monorepo has been publicly released.
 
-Existing prerelease readers remain available for development artifacts already created during earlier stages. New first-party Creator content and System Packages use `1.0.0`; importing an alpha artifact does not silently rewrite its Contract or Template version.
+Existing prerelease Platform Contract readers remain available for development artifacts already created during earlier stages. Resource Template prerelease readers were retired by ADR-0062 because those Template versions were never published. New first-party Creator content and System Packages use `1.0.0`; importing an alpha Contract artifact does not silently rewrite its Contract version.
 
 ## Consequences
 

@@ -44,13 +44,13 @@
   { "ID": "class-hope-feature", "类型": "longText", "标签": "希望特性", "行数": 5 },
   { "ID": "class-feature", "类型": "longText", "标签": "", "行数": 14 },
   {
-    "ID": "pick-subclass-t1", "类型": "resourcePicker", "按钮文本": "选择干员",
+    "ID": "pick-subclass-t1", "类型": "resourcePicker", "按钮文本": "选择子职",
     "资源库": [{
       "ID": "subclasses",
       "字段模板": [
         { "键": "主职", "默认显示": true }, { "键": "名称", "默认显示": true },
         { "键": "等级", "默认显示": true }, { "键": "推荐次领域", "默认显示": true },
-        { "键": "武器原型", "默认显示": true }, { "键": "子职提升", "标签": "干员提升", "默认显示": true },
+        { "键": "武器原型", "默认显示": true }, { "键": "子职提升", "标签": "子职提升", "默认显示": true },
         { "键": "类型", "默认显示": false }, { "键": "阶段", "默认显示": false },
         { "键": "子职特性", "默认显示": false }, { "键": "职业特性", "默认显示": false },
         { "键": "希望特性", "默认显示": false }
@@ -58,10 +58,10 @@
       "默认查询": { "sort": { "field": "主职", "direction": "asc" } }
     }]
   },
-  { "ID": "subclass-name", "类型": "freeText", "标签": "干员类型" },
+  { "ID": "subclass-name", "类型": "freeText", "标签": "子职" },
   { "ID": "subclass-stage", "类型": "freeText", "标签": "等级" },
-  { "ID": "subclass-current", "类型": "longText", "标签": "干员特性", "行数": 10 },
-  { "ID": "weapon-summary", "类型": "freeText", "标签": "", "占位文本": "选择干员后自动填充" },
+  { "ID": "subclass-current", "类型": "longText", "标签": "子职特性", "行数": 10 },
+  { "ID": "weapon-summary", "类型": "freeText", "标签": "", "占位文本": "选择子职后自动填充" },
   { "ID": "weapon-feature", "类型": "longText", "标签": "", "占位文本": "记录武器特性", "行数": 2 },
   { "ID": "ancestry-name", "类型": "freeText", "标签": "种族" },
   { "ID": "ancestry-experience", "类型": "freeText", "标签": "种族经历", "占位文本": "选择种族后显示推荐经历" },

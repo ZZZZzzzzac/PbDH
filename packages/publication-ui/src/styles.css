@@ -5,26 +5,21 @@
 .pbdh-publication-dialog h2 { margin: 0; font-size: 20px; line-height: 1.4; }
 .pbdh-publication-dialog header button { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; color: #746a62; background: transparent; }
 .pbdh-publication-dialog svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.pbdh-publication-package-summary { height: 74px; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 14px; padding: 12px; border: 1px solid #d8d0c7; border-radius: 6px; background: #f5f0e9; }
-.pbdh-publication-package-summary > svg { width: 28px; height: 28px; color: #8f3036; }
-.pbdh-publication-package-summary span { min-width: 0; }
-.pbdh-publication-package-summary strong, .pbdh-publication-package-summary small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pbdh-publication-package-summary strong { font-size: 14px; }
-.pbdh-publication-package-summary small { margin-top: 3px; color: #356a50; font-size: 11px; }
-.pbdh-publication-package-summary > b { height: 24px; display: flex; align-items: center; padding: 0 8px; border-radius: 4px; color: #356a50; background: #dbebe1; font-size: 11px; }
+.pbdh-resource-package-fields { margin-top: 14px; padding: 14px; border: 1px solid #ddd4ca; border-radius: 6px; background: #fffdf8; }
+.pbdh-resource-package-fields.has-cover { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: start; gap: 14px; }
 .pbdh-publication-fields { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: start; gap: 14px; margin-top: 14px; }
 .pbdh-publication-cover-field { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.pbdh-publication-cover-field > strong { width: 100%; font-size: 12px; }
+.pbdh-publication-cover-field > strong { width: 100%; font-size: 14px; }
 .pbdh-publication-cover-preview { width: 94.5px; height: 132px; display: grid; place-items: center; overflow: hidden; border: 1px solid #d8d0c7; border-radius: 5px; color: #746a62; background: #ded6cc; }
 .pbdh-publication-cover-preview img { width: 100%; height: 100%; object-fit: cover; }
 .pbdh-publication-cover-preview svg { width: 24px; height: 24px; }
-.pbdh-publication-cover-field > button { width: 94.5px; height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0; border: 1px solid #c8beb3; border-radius: 5px; color: #3b302a; background: #fffdf8; font-size: 12px; font-weight: 650; }
+.pbdh-publication-cover-field > button { width: 94.5px; height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0; border: 1px solid #c8beb3; border-radius: 5px; color: #3b302a; background: #fffdf8; font-size: 14px; font-weight: 650; }
 .pbdh-publication-cover-field > button:disabled { opacity: .45; cursor: default; }
 .pbdh-publication-cover-field > button svg { width: 14px; height: 14px; }
 .pbdh-publication-copy-fields { display: flex; flex-direction: column; gap: 8px; }
 .pbdh-publication-copy-fields > label, .pbdh-publication-tag-field { width: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; }
-.pbdh-publication-copy-fields label > span { padding-top: 8px; font-size: 12px; font-weight: 700; }
-.pbdh-publication-copy-fields input, .pbdh-publication-copy-fields textarea, .pbdh-publication-copy-fields select { width: 100%; min-width: 0; height: 34px; padding: 0 9px; border: 1px solid #c8beb3; border-radius: 5px; outline: 0; color: #3b302a; background: #fffdf8; font-family: inherit; font-size: 12px; font-weight: 550; }
+.pbdh-publication-copy-fields label > span { padding-top: 8px; font-size: 14px; font-weight: 700; }
+.pbdh-publication-copy-fields input, .pbdh-publication-copy-fields textarea, .pbdh-publication-copy-fields select { width: 100%; min-width: 0; height: 34px; padding: 0 9px; border: 1px solid #c8beb3; border-radius: 5px; outline: 0; color: #3b302a; background: #fffdf8; font-family: inherit; font-size: 14px; font-weight: 550; }
 .pbdh-publication-copy-fields textarea { height: 84px; padding-block: 8px; resize: vertical; }
 .pbdh-publication-copy-fields input:focus, .pbdh-publication-copy-fields textarea:focus, .pbdh-publication-copy-fields select:focus { border-color: #8b2d31; box-shadow: 0 0 0 2px rgba(139, 45, 49, .1); }
 .pbdh-publication-meta-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -33,10 +28,20 @@
 .pbdh-publication-tag-field > div { min-height: 34px; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 4px 6px; border: 1px solid #c8beb3; border-radius: 5px; background: #fffdf8; }
 .pbdh-publication-tag-field > div:focus-within { border-color: #8b2d31; box-shadow: 0 0 0 2px rgba(139, 45, 49, .1); }
 .pbdh-publication-tag-field > div > input { width: 80px; flex: 1; height: 24px; padding: 0 4px; border: 0; box-shadow: none; background: transparent; }
-.pbdh-publication-tag-field b { height: 24px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px 0 8px; border-radius: 12px; color: #6f272b; background: #f1dddd; font-size: 11px; font-weight: 650; }
+.pbdh-publication-tag-field b { height: 24px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px 0 8px; border-radius: 12px; color: #6f272b; background: #f1dddd; font-size: 13px; font-weight: 650; }
 .pbdh-publication-tag-field b button { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; color: #8b5557; background: transparent; line-height: 1; }
+.pbdh-target-system-field { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; margin: 0; padding: 0; border: 0; }
+.pbdh-target-system-field > legend { float: left; width: 76px; padding: 8px 0 0; font-size: 14px; font-weight: 700; }
+.pbdh-target-system-field > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pbdh-target-system-field > div > label { min-width: 0; min-height: 34px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid #c8beb3; border-radius: 5px; background: #fffdf8; font-size: 14px; }
+.pbdh-target-system-field > div > label:has(input:checked) { border-color: #8f3036; background: #f6e8e6; }
+.pbdh-target-system-field > div input { width: 14px; height: 14px; margin: 0; accent-color: #8f3036; }
+.pbdh-target-system-field > div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+.pbdh-target-system-field > div small { color: #746a62; font-size: 12px; }
+.pbdh-target-system-field > div p { margin: 8px 0; color: #746a62; font-size: 14px; }
+.pbdh-target-system-field > small { grid-column: 2; color: #746a62; font-size: 12px; }
 .pbdh-publication-dialog > footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-.pbdh-publication-dialog > footer button { height: 34px; padding: 0 12px; border: 1px solid #d8d0c7; border-radius: 5px; color: #211c18; background: #fbf8f3; font-size: 12.5px; font-weight: 650; }
-.pbdh-publication-dialog > footer .primary { border-color: #8f3036; color: #fff; background: #8f3036; }
+.pbdh-publication-dialog > footer button { height: 34px; padding: 0 12px; border: 1px solid #d8d0c7; border-radius: 5px; color: #211c18; background: #fbf8f3; font-size: 14.5px; font-weight: 650; }
+.pbdh-publication-dialog > footer .primary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-color: #8f3036; color: #fff; background: #8f3036; }
 .pbdh-publication-dialog > footer button:disabled { opacity: .55; }
-@media (max-width: 640px) { .pbdh-publication-fields { grid-template-columns: 1fr; } .pbdh-publication-cover-field { align-items: flex-start; } .pbdh-publication-meta-fields { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .pbdh-publication-fields, .pbdh-resource-package-fields.has-cover { grid-template-columns: 1fr; } .pbdh-publication-cover-field { align-items: flex-start; } .pbdh-publication-meta-fields, .pbdh-target-system-field > div { grid-template-columns: 1fr; } }

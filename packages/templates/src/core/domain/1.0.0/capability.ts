@@ -1,20 +1,38 @@
 import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
-import { temporaryDomainTemplate, type TemporaryDomainData } from "../0.0.0-dev.1/capability.ts";
 
-export type DomainData = TemporaryDomainData;
+export type DomainData = {
+  名称: string; 领域: string; 等级: string; 属性: string; 回想: string; 描述: string; 风味描述: string;
+};
 
-function upgrade(data: unknown): DomainData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Domain Template upgrade requires an object");
-  return structuredClone(data) as DomainData;
-}
+const defaultData: DomainData = { 名称: "", 领域: "", 等级: "", 属性: "", 回想: "", 描述: "", 风味描述: "" };
+
+function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
 
 export const domainTemplate = deepFreeze<TemplateCoreCapability<DomainData>>({
-  ...temporaryDomainTemplate,
+  id: "领域卡",
   version: "1.0.0",
+  state: "development",
   schema,
+  defaultData,
+  proposeResourceId(data) {
+    return `${normalize(data.领域)}:${normalize(data.名称 || "未命名领域卡")}`.normalize("NFC").replaceAll("/", "-");
+  },
+  project(data) {
+    const title = normalize(data.名称 || "未命名领域卡");
+    const summary = [data.领域, data.等级 ? `${data.等级}级` : "", data.属性, data.回想 ? `${data.回想}⚡` : ""]
+      .map(normalize).filter(Boolean).join(" · ");
+    const searchText = Object.values(data).map(normalize).filter(Boolean).join(" ");
+    return { title, summary, searchText };
+  },
+  mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
+  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
   rendererRevision: "domain-card-r1",
-  defaultPresentation: { ...temporaryDomainTemplate.defaultPresentation, width: "63", height: "88" },
-  upgradeFrom: { version: "0.0.0-dev.1", upgrade },
+  tabletop: {
+    stateSchema: { type: "object", properties: {}, additionalProperties: false },
+    defaultState() { return {}; },
+    commands: [],
+    replacements: [],
+  },
 });

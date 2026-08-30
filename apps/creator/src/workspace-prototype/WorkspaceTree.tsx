@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
@@ -14,13 +15,18 @@ import {
   type WorkspaceNodeRef,
   type WorkspaceResource,
 } from "./workspace-model.ts";
+import { templateMarkClassName } from "./TemplateIcon.tsx";
 
 const workspaceNodeDataType = "application/x-pbdh-workspace-node";
 
 export function WorkspaceTree({
   workspace,
   activeResourceId,
+  selectionMode,
+  selectedResourceIds,
+  sortDirection = "ascending",
   onActivateResource,
+  onToggleResourceSelection,
   onPinResource,
   onSelectFolder,
   onToggleFolder,
@@ -34,7 +40,11 @@ export function WorkspaceTree({
 }: {
   workspace: CreatorWorkspace;
   activeResourceId: string;
+  selectionMode?: boolean;
+  selectedResourceIds?: ReadonlySet<string>;
+  sortDirection?: "ascending" | "descending";
   onActivateResource: (resourceId: string) => void;
+  onToggleResourceSelection?: (resourceId: string) => void;
   onPinResource: (resourceId: string) => void;
   onSelectFolder: (folderId: string | null) => void;
   onToggleFolder: (folderId: string) => void;
@@ -51,6 +61,19 @@ export function WorkspaceTree({
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const folderById = useMemo(() => new Map(workspace.folders.map((folder) => [folder.id, folder])), [workspace.folders]);
+  const resourceById = useMemo(() => new Map(workspace.document.resources.map((resource) => [resource.id, resource])), [workspace.document.resources]);
+  const resourceCountByParent = useMemo(() => {
+    const counts = new Map<string | null, number>();
+    for (const location of workspace.resourceLocations) {
+      counts.set(location.parentId, (counts.get(location.parentId) ?? 0) + 1);
+    }
+    return counts;
+  }, [workspace.resourceLocations]);
+  const treeItemsByParent = useMemo(() => new Map<string | null, ReturnType<typeof treeItemsInFolder>>([
+    [null, treeItemsInFolder(workspace, null, sortDirection)],
+    ...workspace.folders.map((folder) => [folder.id, treeItemsInFolder(workspace, folder.id, sortDirection)] as const),
+  ]), [sortDirection, workspace]);
 
   useEffect(() => {
     if (!menu) return;
@@ -84,7 +107,7 @@ export function WorkspaceTree({
   };
 
   const beginRename = (folderId: string) => {
-    const folder = workspace.folders.find((candidate) => candidate.id === folderId);
+    const folder = folderById.get(folderId);
     if (!folder) return;
     setMenu(null);
     setError(null);
@@ -122,11 +145,11 @@ export function WorkspaceTree({
       event.preventDefault();
       move(node, null);
     } : undefined}>
-      {treeItemsInFolder(workspace, parentId).map((item) => {
+      {(treeItemsByParent.get(parentId) ?? []).map((item) => {
         if (item.kind === "folder") {
-          const folder = workspace.folders.find((candidate) => candidate.id === item.id)!;
+          const folder = folderById.get(item.id)!;
           const node = { kind: "folder" as const, id: folder.id };
-          const count = workspace.resourceLocations.filter((location) => location.parentId === folder.id).length;
+          const count = resourceCountByParent.get(folder.id) ?? 0;
           return <div className="workspace-tree-node" key={folder.id}>
             <div
               className={`folder-row${workspace.currentFolderId === folder.id ? " is-current" : ""}`}
@@ -158,21 +181,23 @@ export function WorkspaceTree({
           </div>;
         }
 
-        const resource = workspace.document.resources.find((candidate) => candidate.id === item.id)!;
+        const resource = resourceById.get(item.id)!;
         const node = { kind: "resource" as const, id: resource.id };
+        const selected = selectedResourceIds?.has(resource.id) ?? false;
         return <div className="workspace-tree-node" key={resource.id}>
           <div
-            className={`file-row${resource.id === activeResourceId ? " is-current" : ""}`}
+            className={`file-row${resource.id === activeResourceId && !selectionMode ? " is-current" : ""}${selectionMode && selected ? " is-multi-selected" : ""}`}
             style={{ paddingLeft: 24 + depth * 14 }}
             role="treeitem"
-            aria-selected={resource.id === activeResourceId}
+            aria-selected={selectionMode ? selected : resource.id === activeResourceId}
             draggable
             onDragStart={(event) => writeDraggedNode(event, node)}
             onContextMenu={(event) => openMenu(event, node)}
           >
             <i />
-            <span className={`template-mark ${resource.template.id === "敌人" ? "adversary" : "weapon"}`}>{renderResourceIcon(resource)}</span>
-            <button type="button" className="tree-node-label" onClick={() => onActivateResource(resource.id)} onDoubleClick={() => onPinResource(resource.id)}>{resourceTitle(resource)}</button>
+            <span className={templateMarkClassName(resource.template.id)}>{renderResourceIcon(resource)}</span>
+            <button type="button" className="tree-node-label" onClick={() => selectionMode ? onToggleResourceSelection?.(resource.id) : onActivateResource(resource.id)} onDoubleClick={() => { if (!selectionMode) onPinResource(resource.id); }}>{resourceTitle(resource)}</button>
+            {selectionMode && <label className="filtered-resource-select" title="选择资源"><input type="checkbox" checked={selected} onChange={() => onToggleResourceSelection?.(resource.id)} aria-label={`选择 ${resourceTitle(resource)}`} /></label>}
           </div>
         </div>;
       })}

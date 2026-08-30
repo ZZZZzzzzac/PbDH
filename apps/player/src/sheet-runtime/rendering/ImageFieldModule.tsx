@@ -1,10 +1,10 @@
 import { X } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
+import type { ImageCropSelection } from "@pbdh/media-admission";
+import { ImageCropDialog } from "@pbdh/platform-ui";
 import type { PlayerImageValue } from "../domain/characterData";
 import type { ImageFieldModule as ImageFieldModuleConfig } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
-import { PlayerImageCropDialog } from "./PlayerImageCropDialog";
-import type { PlayerImageCropSelection } from "./playerImageCrop";
 
 interface ImageFieldModuleProps {
   module: ImageFieldModuleConfig;
@@ -33,7 +33,7 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
     event.target.value = "";
   };
 
-  const applyCrop = async (selection: PlayerImageCropSelection) => {
+  const applyCrop = async (selection: ImageCropSelection) => {
     if (!pendingFile) return;
     setProcessing(true);
     setProcessingError(null);
@@ -80,7 +80,7 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
         onChange={handleFileChange}
       />
       {pendingFile ? (
-        <PlayerImageCropDialog
+        <ImageCropDialog
           file={pendingFile}
           label={module.标签}
           working={processing}

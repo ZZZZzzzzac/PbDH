@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -121,10 +122,12 @@ def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_
     listing = api.get("/api/publications", params={"q": "牛头人"})
     assert listing.status_code == 200
     assert [item["publicationId"] for item in listing.json()["publications"]] == [publication_id]
+    assert listing.json()["publications"][0]["resources"][0]["name"] == "牛头人破坏者"
 
     detail = api.get(f"/api/publications/{publication_id}")
     assert detail.status_code == 200
-    assert detail.json()["publication"]["document"] == document
+    expected_document = self_contained_document(document, media)
+    assert detail.json()["publication"]["document"] == expected_document
 
     cover = api.get(f"/api/publications/{publication_id}/media/{document['assets'][0]['id']}")
     assert cover.status_code == 200
@@ -133,10 +136,193 @@ def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_
     download = api.get(f"/api/publications/{publication_id}/download")
     assert download.status_code == 200
     assert "filename*=UTF-8''" in download.headers["content-disposition"]
-    assert "%E7%89%9B%E5%A4%B4%E4%BA%BA" in download.headers["content-disposition"]
+    assert "%E8%8D%92%E9%87%8E%E9%81%AD%E9%81%87%E9%9B%86" in download.headers["content-disposition"]
     loaded = load_pbres(download.content, validate_resource_package_semantics)
     assert loaded["diagnostics"] == []
-    assert loaded["candidate"] == {"document": document, "media": media}
+    assert loaded["candidate"] == {"document": expected_document, "media": media}
+
+
+def test_logged_in_non_author_can_download_a_public_package(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    created = publish(api, claim(api, "public-download-author"), document, media)
+    publication_id = created.json()["publication"]["publicationId"]
+
+    download = api.get(
+        f"/api/publications/{publication_id}/download",
+        headers=claim(api, "public-download-reader"),
+    )
+
+    assert download.status_code == 200, download.text
+    assert "%E8%8D%92%E9%87%8E%E9%81%AD%E9%81%87%E9%9B%86" in download.headers[
+        "content-disposition"
+    ]
+    loaded = load_pbres(download.content, validate_resource_package_semantics)
+    assert loaded["diagnostics"] == []
+    assert loaded["candidate"] is not None
+
+
+def test_heart_of_hopefind_text_resources_can_be_published(tmp_path: Path) -> None:
+    loaded = load_pbres(
+        (ROOT / "apps/player/public/system-packages/heart-of-hopefind/resources/heart-of-hopefind.pbres").read_bytes(),
+        validate_resource_package_semantics,
+    )
+    assert loaded["diagnostics"] == []
+    assert loaded["candidate"] is not None
+    document = copy.deepcopy(loaded["candidate"]["document"])
+    media = dict(loaded["candidate"]["media"])
+    fixture_document, fixture_media = candidate()
+    cover_asset = copy.deepcopy(fixture_document["assets"][0])
+    document["assets"].append(cover_asset)
+    media[cover_asset["id"]] = fixture_media[cover_asset["id"]]
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+    api = client(tmp_path)
+    response = publish(api, claim(api, "hopefind-author"), document, media, {
+        "title": "寻望之心官方资源",
+        "summary": "寻望之心系统包随附的求生者风格。",
+        "language": "zh-CN",
+        "tags": ["寻望之心"],
+        "coverAssetId": cover_asset["id"],
+    })
+
+    assert response.status_code == 200, response.text
+
+
+def test_current_converted_weapon_template_can_be_published(tmp_path: Path) -> None:
+    document, media = candidate()
+    document["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000091"
+    document["package"]["name"] = "第三方武器包"
+    document["resources"][0]["template"] = {
+        "id": "武器",
+        "version": "1.0.0",
+    }
+
+
+def self_contained_document(
+    document: dict[str, Any],
+    media: dict[str, bytes],
+    publication_metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    embedded = copy.deepcopy(document)
+    values = publication_metadata or metadata(document)
+    embedded["package"]["name"] = values["title"]
+    embedded["package"]["description"] = values["summary"]
+    embedded["publication"] = {
+        "language": values["language"],
+        "tags": copy.deepcopy(values["tags"]),
+        "coverAssetId": values["coverAssetId"],
+    }
+    embedded["snapshotDigest"] = compute_resource_package_snapshot_digest(embedded, media)
+    return embedded
+    document["resources"][0]["data"] = {
+        "名称": "砍刀",
+        "类型": "主武器",
+        "属性": "敏捷",
+        "距离": "近战",
+        "伤害": "d8",
+        "负荷": "单手",
+        "伤害类型": "物理",
+        "描述": "可靠：你的攻击掷骰+1。",
+        "风味描述": "",
+        "位阶": "1",
+    }
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+    api = client(tmp_path)
+    response = publish(api, claim(api, "weapon-author"), document, media, {
+        **metadata(document),
+        "title": "第三方武器包",
+        "tags": ["武器"],
+    })
+
+    assert response.status_code == 200, response.text
+
+
+def test_public_catalog_filters_sorts_paginates_and_reports_facets(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    first = publish(api, claim(api, "author-one"), document, media)
+    assert first.status_code == 200, first.text
+
+    multi_target = copy.deepcopy(document)
+    multi_target["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000081"
+    multi_target["package"]["name"] = "边境敌人集"
+    multi_target["resources"][0]["id"] = "01989f4e-7b2c-7000-8000-000000000082"
+    multi_target["resources"][0]["path"] = "敌人/边境哨兵.json"
+    multi_target["resources"][0]["data"]["名称"] = "边境哨兵"
+    multi_target["targets"].append({
+        "systemPackageId": "01989f4e-7b2c-7000-8000-000000000083",
+        "version": "2.0.0",
+    })
+    multi_target["snapshotDigest"] = compute_resource_package_snapshot_digest(multi_target, media)
+    second = publish(api, claim(api, "author-two"), multi_target, media, {
+        **metadata(multi_target),
+        "title": "边境敌人集",
+        "language": "en-US",
+        "tags": ["敌人", "远征"],
+    })
+    assert second.status_code == 200, second.text
+
+    unspecified = copy.deepcopy(document)
+    unspecified["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000084"
+    unspecified["package"]["name"] = "无系统资源"
+    unspecified["resources"][0]["id"] = "01989f4e-7b2c-7000-8000-000000000085"
+    unspecified["targets"] = []
+    unspecified["snapshotDigest"] = compute_resource_package_snapshot_digest(unspecified, media)
+    third = publish(api, claim(api, "author-three"), unspecified, media, {
+        **metadata(unspecified),
+        "title": "无系统资源",
+        "tags": ["通用"],
+    })
+    assert third.status_code == 200, third.text
+
+    resource_search = api.get("/api/publications", params={"q": "边境哨兵"}).json()
+    assert [item["title"] for item in resource_search["publications"]] == ["边境敌人集"]
+    assert resource_search["publications"][0]["matchedResourceIds"] == [
+        multi_target["resources"][0]["id"]
+    ]
+
+    filtered = api.get("/api/publications", params=[
+        ("targetSystemPackageId", "01989f4e-7b2c-7000-8000-000000000083"),
+        ("language", "en-US"),
+        ("category", "远征"),
+        ("templateId", "敌人"),
+    ]).json()
+    assert [item["title"] for item in filtered["publications"]] == ["边境敌人集"]
+
+    no_target = api.get(
+        "/api/publications", params={"targetSystemPackageId": "__none__"}
+    ).json()
+    assert [item["title"] for item in no_target["publications"]] == ["无系统资源"]
+
+    by_author = api.get(
+        "/api/publications",
+        params={"authorAccountId": filtered["publications"][0]["author"]["accountId"]},
+    ).json()
+    assert [item["title"] for item in by_author["publications"]] == ["边境敌人集"]
+
+    first_page = api.get(
+        "/api/publications", params={"sort": "title", "page": 1, "pageSize": 2}
+    ).json()
+    second_page = api.get(
+        "/api/publications", params={"sort": "title", "page": 2, "pageSize": 2}
+    ).json()
+    assert [item["title"] for item in first_page["publications"]] == ["无系统资源", "荒野遭遇集"]
+    assert [item["title"] for item in second_page["publications"]] == ["边境敌人集"]
+    assert first_page["pagination"] == {
+        "page": 1,
+        "pageSize": 2,
+        "total": 3,
+        "hasMore": True,
+    }
+    assert {item["value"]: item["count"] for item in first_page["facets"]["templateIds"]} == {"敌人": 3}
+    assert {item["value"]: item["count"] for item in first_page["facets"]["languages"]} == {"en-US": 1, "zh-CN": 2}
+    assert {item["value"] for item in first_page["facets"]["targetSystemPackageIds"]} == {
+        "01a0132c-4eef-7703-94ac-ec8d1a660001",
+        "01989f4e-7b2c-7000-8000-000000000083",
+        "__none__",
+    }
 
 
 def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: Path) -> None:
@@ -145,14 +331,15 @@ def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: P
     source = publish(api, claim(api, "source-author"), source_document, media).json()["publication"]
     assert source["publicationId"].split("-")[2].startswith("7")
 
-    derived = copy.deepcopy(source_document)
+    published_source_document = self_contained_document(source_document, media)
+    derived = copy.deepcopy(published_source_document)
     derived["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000072"
     derived["package"]["name"] = "牛头人破坏者 Fork"
     derived["forkSource"] = {
         "publicationId": source["publicationId"],
         "packageId": source_document["package"]["id"],
         "version": source_document["package"]["version"],
-        "snapshotDigest": source_document["snapshotDigest"],
+        "snapshotDigest": source["snapshotDigest"],
         "copiedResources": [{
             "packageId": source_document["package"]["id"],
             "resourceId": resource["id"],
@@ -236,7 +423,7 @@ def test_legacy_reference_templates_are_not_publishable(tmp_path: Path) -> None:
 
         assert response.status_code == 422, response.text
 
-    assert api.get("/api/publications").json() == {"publications": []}
+    assert api.get("/api/publications").json()["publications"] == []
 
 
 def test_publication_requires_active_account_session(tmp_path: Path) -> None:
@@ -268,7 +455,7 @@ def test_invalid_archive_and_unpublishable_template_leave_zero_rows(tmp_path: Pa
     }
     unpublishable = publish(api, headers, alpha_document, alpha_media)
     assert unpublishable.status_code == 422
-    assert api.get("/api/publications").json() == {"publications": []}
+    assert api.get("/api/publications").json()["publications"] == []
 
 
 def test_package_ownership_idempotency_and_monotonic_versions(tmp_path: Path) -> None:
@@ -295,7 +482,8 @@ def test_package_ownership_idempotency_and_monotonic_versions(tmp_path: Path) ->
     assert development_replace.json()["publication"]["created"] is False
     assert development_replace.json()["publication"]["idempotent"] is False
     assert development_replace.json()["publication"]["packageVersion"] == "1.0.0"
-    assert development_replace.json()["publication"]["snapshotDigest"] == changed["snapshotDigest"]
+    expected_changed = self_contained_document(changed, media)
+    assert development_replace.json()["publication"]["snapshotDigest"] == expected_changed["snapshotDigest"]
 
     changed["package"]["version"] = "1.0.1"
     changed["snapshotDigest"] = compute_resource_package_snapshot_digest(changed, media)
@@ -341,13 +529,16 @@ def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_acc
     outsider = claim(api, "author-two")
     created = publish(api, owner, document, media).json()["publication"]
     publication_id = created["publicationId"]
-    original_digest = created["snapshotDigest"]
-    original_archive = api.get(f"/api/publications/{publication_id}/download").content
-
     denied = api.patch(
-        f"/api/publications/{publication_id}/metadata",
+        f"/api/publications/{publication_id}/information",
         headers=outsider,
         json={
+            "package": {
+                "name": "越权修改",
+                "version": document["package"]["version"],
+                "description": "",
+            },
+            "targets": document["targets"],
             "title": "越权修改",
             "summary": "",
             "language": "zh-CN",
@@ -355,24 +546,43 @@ def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_acc
             "coverAssetId": document["assets"][0]["id"],
         },
     )
-    assert denied.status_code == 403
+    assert denied.status_code == 404
 
-    metadata_update = api.patch(
-        f"/api/publications/{publication_id}/metadata",
+    information_update = api.patch(
+        f"/api/publications/{publication_id}/information",
         headers=owner,
         json={
-            "title": "荒野遭遇集·修订展示",
-            "summary": "只修改市场展示信息。",
+            "package": {
+                "name": "匕首之心扩展资源",
+                "version": document["package"]["version"],
+                "description": "资源包本体信息已更新。",
+            },
+            "targets": [{
+                "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+                "version": "1.0.0",
+            }],
+            "title": "匕首之心扩展资源",
+            "summary": "市场展示同步更新。",
             "language": "zh-CN",
-            "tags": ["敌人", "修订"],
+            "tags": ["扩展"],
             "coverAssetId": document["assets"][0]["id"],
         },
     )
-    assert metadata_update.status_code == 200, metadata_update.text
-    edited = metadata_update.json()["publication"]
-    assert edited["title"] == "荒野遭遇集·修订展示"
-    assert edited["snapshotDigest"] == original_digest
-    assert api.get(f"/api/publications/{publication_id}/download").content == original_archive
+    assert information_update.status_code == 200, information_update.text
+    assert information_update.json()["publication"]["targetSystemPackageIds"] == [
+        "01a0132c-4eef-7703-94ac-ec8d1a660001"
+    ]
+    updated_archive = api.get(f"/api/publications/{publication_id}/download").content
+    downloaded = load_pbres(
+        updated_archive,
+        validate_resource_package_semantics,
+    )["candidate"]
+    assert downloaded is not None
+    assert downloaded["document"]["package"]["name"] == "匕首之心扩展资源"
+    assert downloaded["document"]["targets"] == [{
+        "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
+        "version": "1.0.0",
+    }]
 
     assert api.post(f"/api/publications/{publication_id}/unpublish", headers=outsider).status_code == 403
     unpublished = api.post(f"/api/publications/{publication_id}/unpublish", headers=owner)
@@ -382,7 +592,7 @@ def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_acc
     assert repeated_unpublish.status_code == 200
     assert repeated_unpublish.json()["publication"]["status"] == "unpublished"
     assert repeated_unpublish.json()["publication"]["updatedAt"] == unpublished.json()["publication"]["updatedAt"]
-    assert api.get("/api/publications").json() == {"publications": []}
+    assert api.get("/api/publications").json()["publications"] == []
     assert api.get(f"/api/publications/{publication_id}").status_code == 404
     assert api.get(f"/api/publications/{publication_id}/download").status_code == 404
     assert api.get(
@@ -393,7 +603,7 @@ def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_acc
         f"/api/publications/{publication_id}/media/{document['assets'][0]['id']}",
         headers=outsider,
     ).status_code == 404
-    assert api.get(f"/api/publications/{publication_id}/download", headers=owner).content == original_archive
+    assert api.get(f"/api/publications/{publication_id}/download", headers=owner).content == updated_archive
     assert api.get(
         f"/api/publications/{publication_id}/media/{document['assets'][0]['id']}",
         headers=owner,
@@ -412,8 +622,9 @@ def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_acc
     updated_while_unpublished = publish(api, owner, updated_document, media)
     assert updated_while_unpublished.status_code == 200, updated_while_unpublished.text
     assert updated_while_unpublished.json()["publication"]["status"] == "unpublished"
-    assert updated_while_unpublished.json()["publication"]["snapshotDigest"] == updated_document["snapshotDigest"]
-    assert api.get("/api/publications").json() == {"publications": []}
+    expected_updated = self_contained_document(updated_document, media)
+    assert updated_while_unpublished.json()["publication"]["snapshotDigest"] == expected_updated["snapshotDigest"]
+    assert api.get("/api/publications").json()["publications"] == []
 
     assert api.post(f"/api/publications/{publication_id}/republish", headers=outsider).status_code == 403
     republished = api.post(f"/api/publications/{publication_id}/republish", headers=owner)
@@ -436,9 +647,15 @@ def test_platform_admin_can_manage_another_authors_publication(tmp_path: Path) -
     publication_id = created["publicationId"]
 
     edited = api.patch(
-        f"/api/publications/{publication_id}/metadata",
+        f"/api/publications/{publication_id}/information",
         headers=admin,
         json={
+            "package": {
+                "name": "管理员修订展示",
+                "version": document["package"]["version"],
+                "description": "",
+            },
+            "targets": document["targets"],
             "title": "管理员修订展示",
             "summary": "",
             "language": "zh-CN",
@@ -464,6 +681,113 @@ def test_platform_admin_can_manage_another_authors_publication(tmp_path: Path) -
     assert republished.status_code == 200, republished.text
     assert republished.json()["publication"]["status"] == "published"
     assert api.get(f"/api/publications/{publication_id}").status_code == 200
+
+
+def test_author_can_replace_the_self_contained_market_cover(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    document["resources"][0]["media"] = {}
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+    owner = claim(api, "cover-author")
+    outsider = claim(api, "cover-outsider")
+    created = publish(api, owner, document, media).json()["publication"]
+    publication_id = created["publicationId"]
+    original_archive = api.get(f"/api/publications/{publication_id}/download").content
+    original_cover = next(iter(media.values()))
+    replacement_cover = original_cover[:12] + b"market-display-cover"
+    replacement_cover_id = f"sha256:{hashlib.sha256(replacement_cover).hexdigest()}"
+    information = {
+        "package": {
+            "name": document["package"]["name"],
+            "version": document["package"]["version"],
+            "description": document["package"]["description"],
+        },
+        "targets": document["targets"],
+        "title": "新的市场封面",
+        "summary": "资源包本体保持不变。",
+        "language": "zh-CN",
+        "tags": ["封面"],
+        "coverAssetId": replacement_cover_id,
+        "coverAsset": {
+            "id": replacement_cover_id,
+            "mediaType": "image/webp",
+            "byteLength": str(len(replacement_cover)),
+            "width": "630",
+            "height": "880",
+        },
+    }
+
+    denied = api.patch(
+        f"/api/publications/{publication_id}/information-with-cover",
+        headers=outsider,
+        data={"information": json.dumps(information, ensure_ascii=False)},
+        files={"cover": ("cover.webp", replacement_cover, "image/webp")},
+    )
+    assert denied.status_code == 404
+
+    updated = api.patch(
+        f"/api/publications/{publication_id}/information-with-cover",
+        headers=owner,
+        data={"information": json.dumps(information, ensure_ascii=False)},
+        files={"cover": ("cover.webp", replacement_cover, "image/webp")},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["publication"]["coverAssetId"] == replacement_cover_id
+    assert api.get(
+        f"/api/publications/{publication_id}/media/{replacement_cover_id}"
+    ).content == replacement_cover
+    updated_archive = api.get(f"/api/publications/{publication_id}/download").content
+    assert updated_archive != original_archive
+    downloaded = load_pbres(updated_archive, validate_resource_package_semantics)["candidate"]
+    assert downloaded is not None
+    assert downloaded["document"]["publication"] == {
+        "language": "zh-CN",
+        "tags": ["封面"],
+        "coverAssetId": replacement_cover_id,
+    }
+    assert downloaded["document"]["license"] == document["license"]
+    assert downloaded["media"][replacement_cover_id] == replacement_cover
+    assert created["coverAssetId"] not in downloaded["media"]
+
+    invalid = api.patch(
+        f"/api/publications/{publication_id}/information-with-cover",
+        headers=owner,
+        data={"information": json.dumps(information, ensure_ascii=False)},
+        files={"cover": ("cover.png", b"not-webp", "image/png")},
+    )
+    assert invalid.status_code == 422
+
+
+def test_unpublished_publication_can_be_permanently_deleted_by_its_owner(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    owner = claim(api, "delete-owner")
+    outsider = claim(api, "delete-outsider")
+    created = publish(api, owner, document, media).json()["publication"]
+    publication_id = created["publicationId"]
+
+    still_public = api.delete(f"/api/publications/{publication_id}", headers=owner)
+    assert still_public.status_code == 409
+    assert still_public.json()["error"]["code"] == "PUBLICATION_MUST_BE_UNPUBLISHED"
+
+    unpublished = api.post(f"/api/publications/{publication_id}/unpublish", headers=owner)
+    assert unpublished.status_code == 200
+    assert api.delete(f"/api/publications/{publication_id}", headers=outsider).status_code == 403
+
+    deleted = api.delete(f"/api/publications/{publication_id}", headers=owner)
+    assert deleted.status_code == 204
+    assert api.get(f"/api/publications/{publication_id}/manage", headers=owner).status_code == 404
+    assert api.get(f"/api/publications/{publication_id}").status_code == 404
+    assert api.get(f"/api/publications/{publication_id}/download", headers=owner).status_code == 404
+    assert api.get(
+        f"/api/publications/{publication_id}/media/{document['assets'][0]['id']}",
+        headers=owner,
+    ).status_code == 404
+
+    republished = publish(api, owner, document, media)
+    assert republished.status_code == 200, republished.text
+    assert republished.json()["publication"]["publicationId"] != publication_id
+    assert publish(api, outsider, document, media).status_code == 409
 
 
 def test_status_migration_preserves_existing_publications_as_published(tmp_path: Path) -> None:
@@ -544,7 +868,8 @@ def test_invalid_update_preserves_current_snapshot(tmp_path: Path) -> None:
     assert rejected.json()["error"]["code"] == "PUBLICATION_CANDIDATE_INVALID"
 
     unchanged = api.get(f"/api/publications/{publication_id}").json()["publication"]
-    assert unchanged["snapshotDigest"] == document["snapshotDigest"]
+    expected_original = self_contained_document(document, media)
+    assert unchanged["snapshotDigest"] == expected_original["snapshotDigest"]
     assert unchanged["packageVersion"] == "1.0.0"
 
 
@@ -555,4 +880,4 @@ def test_production_mode_rejects_development_contract(tmp_path: Path) -> None:
     assert response.status_code == 422
     field_errors = response.json()["error"]["fieldErrors"]
     assert field_errors[0]["code"] == "contract.version.development-not-allowed"
-    assert api.get("/api/publications").json() == {"publications": []}
+    assert api.get("/api/publications").json()["publications"] == []

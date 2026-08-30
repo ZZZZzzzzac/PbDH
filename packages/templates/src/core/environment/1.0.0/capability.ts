@@ -1,10 +1,6 @@
 import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
-import {
-  temporaryEnvironmentTemplate,
-  type TemporaryEnvironmentData,
-} from "../0.0.0-dev.1/capability.ts";
 
 export type EnvironmentFeature = {
   名称: string;
@@ -14,28 +10,20 @@ export type EnvironmentFeature = {
   引导问题: string;
 };
 
-export type EnvironmentData = Omit<TemporaryEnvironmentData, "特性"> & {
+export type EnvironmentData = {
+  名称: string;
   原文: string;
+  位阶: string;
+  种类: string;
+  简介: string;
+  趋向: string;
+  难度: string;
+  潜在敌人: string;
   特性: EnvironmentFeature[];
 };
 
 function normalize(value: string): string {
   return value.trim().replace(/\s+/g, " ");
-}
-
-function upgradeLegacyEnvironment(data: unknown): EnvironmentData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Environment Template upgrade requires an object");
-  }
-  const legacy = structuredClone(data) as TemporaryEnvironmentData;
-  if (!Array.isArray(legacy.特性)) {
-    throw new Error("Environment Template upgrade requires feature data");
-  }
-  return {
-    ...legacy,
-    原文: "",
-    特性: legacy.特性.map((feature) => ({ ...feature, 原名: "" })),
-  };
 }
 
 const defaultData: EnvironmentData = {
@@ -79,9 +67,5 @@ export const environmentTemplate = deepFreeze<TemplateCoreCapability<Environment
     },
     commands: [],
     replacements: [],
-  },
-  upgradeFrom: {
-    version: temporaryEnvironmentTemplate.version,
-    upgrade: upgradeLegacyEnvironment,
   },
 });

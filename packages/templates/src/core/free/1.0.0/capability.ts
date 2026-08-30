@@ -9,15 +9,11 @@ export type FreeContentBlock = {
 
 export type FreeData = {
   名称: string;
-  类型: string;
-  简介: string;
   内容: FreeContentBlock[];
 };
 
 const defaultData: FreeData = {
   名称: "",
-  类型: "自由资源",
-  简介: "",
   内容: [],
 };
 
@@ -36,8 +32,8 @@ export const freeTemplate = deepFreeze<TemplateCoreCapability<FreeData>>({
   },
   project(data) {
     const title = normalize(data.名称 || "未命名自由资源");
-    const summary = normalize(data.类型);
-    const searchText = [data.名称, data.类型, data.简介, ...data.内容.flatMap((block) => [block.标题, block.正文])]
+    const summary = normalize(data.内容[0]?.正文 ?? "");
+    const searchText = [data.名称, ...data.内容.flatMap((block) => [block.标题, block.正文])]
       .map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };
   },
@@ -54,5 +50,4 @@ export const freeTemplate = deepFreeze<TemplateCoreCapability<FreeData>>({
     commands: [],
     replacements: [],
   },
-  upgradeFrom: null,
 });

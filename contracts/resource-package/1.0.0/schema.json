@@ -19,6 +19,7 @@
     "package": { "$ref": "#/$defs/packageIdentity" },
     "targets": { "type": "array", "items": { "$ref": "#/$defs/target" } },
     "license": { "$ref": "#/$defs/license" },
+    "publication": { "$ref": "#/$defs/publicationMetadata" },
     "forkSource": {
       "oneOf": [
         { "type": "null" },
@@ -144,6 +145,20 @@
           "then": { "properties": { "height": { "const": "88" } } }
         }
       ],
+      "additionalProperties": false
+    },
+    "publicationMetadata": {
+      "type": "object",
+      "required": ["language", "tags", "coverAssetId"],
+      "properties": {
+        "language": { "type": "string", "minLength": 2, "maxLength": 35 },
+        "tags": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 50 }
+        },
+        "coverAssetId": { "$ref": "#/$defs/assetId" }
+      },
       "additionalProperties": false
     },
     "replacement": {

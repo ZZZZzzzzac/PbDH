@@ -23,9 +23,11 @@ import {
 } from "@pbdh/local-storage";
 import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
 import {
-  usePlatformAccountManagement,
+  OperationStatus,
   usePlatformAppBarActions,
   usePlatformNotifications,
+  usePlatformTrashSource,
+  type PlatformTrashSource,
 } from "@pbdh/platform-ui";
 
 import { CharacterSaveRepository } from "./character-saves/character-save-repository.ts";
@@ -225,7 +227,7 @@ export function PlayerSheetSurface({
       if (credentials && stored.sync.scope === "cloud" && stored.sync.accountId === credentials.accountId) {
         await cloudDocumentService.trash(stored.document.documentId, credentials);
       } else {
-        await characterSaveRepository.remove(stored.document.documentId);
+        await characterSaveRepository.trash(stored.document.documentId);
       }
     },
     systemPackageCache,
@@ -237,8 +239,8 @@ export function PlayerSheetSurface({
   const [incomingPackage, setIncomingPackage] = useState<ResourcePackageIngress>();
   const [surfaceError, setSurfaceError] = useState<string>();
   const [cloudNotice, setCloudNotice] = useState<string>();
-  const [cloudTrash, setCloudTrash] = useState<RemoteCloudDocument[]>([]);
-  const [cloudDialog, setCloudDialog] = useState<"conflict" | "trash" | null>(null);
+  const [cloudDialog, setCloudDialog] = useState<"conflict" | null>(null);
+  const [playerOperation, setPlayerOperation] = useState<"save" | "cloud-sync" | "cloud-conflict" | "character-import" | "character-export" | "pending-delete" | null>(null);
   const [selectedCharacterSaveId, setSelectedCharacterSaveId] = useState("");
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [pendingNativeCharacterImport, setPendingNativeCharacterImport] = useState<{
@@ -310,6 +312,7 @@ export function PlayerSheetSurface({
     printMode,
     validationDialogOpen,
     pendingExternalExport,
+    outputOperation,
     beginOutput,
     handleValidation,
     exportCharacterText,
@@ -412,7 +415,7 @@ export function PlayerSheetSurface({
             ?? defaultPlayerSystemPackage;
           const importedWasRestored = cachedMetadata?.source === "imported"
             && cachedMetadata.systemDocument?.package.id === state.currentPackage?.manifest.ID;
-          if (!importedWasRestored && state.currentPackage?.manifest.ID !== preferred.system.package.id) {
+          if (!importedWasRestored) {
             await switchToPresetSystemPackage(preferred.preset, true);
           }
         }
@@ -596,6 +599,9 @@ export function PlayerSheetSurface({
       currentSystem,
       basePackage,
       installedPackages: next,
+      ...(currentCatalogEntry?.embeddedResourceLibraries === "legacy-static"
+        ? { preloadedPackageIds: new Set(currentEmbeddedPackageIndex().keys()) }
+        : {}),
     });
     const currentAssets = await runtimeStorage.loadCurrentPackageAssets(currentSystem.package.id);
     await refreshPlatformResources(
@@ -612,7 +618,6 @@ export function PlayerSheetSurface({
       await switchToPresetSystemPackage(entry.preset, true);
       if (useRuntimeStore.getState().currentPackage?.manifest.ID === entry.system.package.id) {
         localStorage.setItem(preferredSystemPackageKey, entry.system.package.id);
-        setCloudNotice(`已切换到系统包：${entry.system.package.name}`);
       }
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "系统包切换失败");
@@ -674,26 +679,53 @@ export function PlayerSheetSurface({
   }
 
   async function handleCreateSave() {
+    if (playerOperation) return;
     const name = window.prompt("新角色存档名称", "未命名角色")?.trim();
-    await createCharacterSave(name || "未命名角色");
+    setPlayerOperation("save");
+    try {
+      await createCharacterSave(name || "未命名角色");
+    } finally {
+      setPlayerOperation(null);
+    }
   }
 
   async function handleRenameSave() {
-    if (!activeCharacterSaveId) return;
+    if (!activeCharacterSaveId || playerOperation) return;
     const currentName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "未命名角色";
     const name = window.prompt("角色存档名称", currentName)?.trim();
-    if (name) await renameCharacterSave(activeCharacterSaveId, name);
+    if (!name) return;
+    setPlayerOperation("save");
+    try {
+      await renameCharacterSave(activeCharacterSaveId, name);
+    } finally {
+      setPlayerOperation(null);
+    }
   }
 
   async function handleDeleteSave() {
-    if (activeCharacterSaveId && window.confirm("删除当前角色存档？")) {
+    if (!activeCharacterSaveId || playerOperation || !window.confirm("删除当前角色存档？")) return;
+    setPlayerOperation("save");
+    try {
       await deleteCharacterSave(activeCharacterSaveId);
+    } finally {
+      setPlayerOperation(null);
+    }
+  }
+
+  async function handleDuplicateSave() {
+    if (!activeCharacterSaveId || playerOperation) return;
+    setPlayerOperation("save");
+    try {
+      await duplicateCharacterSave(activeCharacterSaveId);
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
   async function syncActiveCharacter() {
     const credentials = credentialsRef.current;
-    if (!credentials || !activeCharacterSaveId) return;
+    if (!credentials || !activeCharacterSaveId || playerOperation) return;
+    setPlayerOperation("cloud-sync");
     try {
       await flushCurrentCharacter();
       const stored = (await cloudDocumentService.localSnapshot(credentials.accountId)).find((save) =>
@@ -712,12 +744,15 @@ export function PlayerSheetSurface({
       await reloadActiveSystemPackage();
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档同步失败");
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
   async function resolveConflict(action: "local" | "cloud" | "copy") {
     const credentials = credentialsRef.current;
-    if (!credentials || !activeCharacterSaveId) return;
+    if (!credentials || !activeCharacterSaveId || playerOperation) return;
+    setPlayerOperation("cloud-conflict");
     try {
       if (action === "local") {
         await cloudDocumentService.overwriteWithLocal(activeCharacterSaveId, credentials);
@@ -744,32 +779,59 @@ export function PlayerSheetSurface({
       await reloadActiveSystemPackage();
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档冲突处理失败");
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
-  const openCloudTrash = useCallback(async () => {
-    const credentials = credentialsRef.current;
-    if (!credentials) return setCloudNotice("请先登录再查看云端回收站。");
-    try {
-      setCloudTrash(await cloudDocumentService.listTrash(credentials));
-      setCloudDialog("trash");
-    } catch (error) {
-      setCloudNotice(error instanceof Error ? error.message : "云端回收站读取失败");
-    }
-  }, [cloudDocumentService]);
-  usePlatformAccountManagement("player", "云端回收站", openCloudTrash);
-
-  async function restoreTrashItem(remote: RemoteCloudDocument) {
-    const credentials = credentialsRef.current;
-    if (!credentials) return;
-    try {
-      await cloudDocumentService.restoreFromTrash(remote, credentials);
-      setCloudTrash(await cloudDocumentService.listTrash(credentials));
+  const playerTrashSource = useMemo<PlatformTrashSource>(() => ({
+    id: "player-character-saves",
+    async list() {
+      const local = (await characterSaveRepository.listTrash()).map((item) => ({
+        id: `local:${item.document.documentId}`,
+        name: item.document.name || "未命名角色",
+        documentType: "人物存档" as const,
+        location: "local" as const,
+        deletedAt: item.deletedAt,
+        purgeAfter: item.purgeAfter,
+      }));
+      const credentials = credentialsRef.current;
+      if (!credentials) return local;
+      const cloud = (await cloudDocumentService.listTrash(credentials)).map((remote) => ({
+        id: `cloud:${remote.documentId}`,
+        name: remoteDocumentName(remote),
+        documentType: "人物存档" as const,
+        location: "cloud" as const,
+        deletedAt: remote.deletedAt!,
+        purgeAfter: remote.purgeAfter,
+      }));
+      return [...local, ...cloud];
+    },
+    async restore(itemId) {
+      const [location, documentId] = splitTrashItemId(itemId);
+      if (location === "local") await characterSaveRepository.restore(documentId);
+      else {
+        const credentials = credentialsRef.current;
+        if (!credentials) throw new Error("请先登录再恢复云端人物存档。");
+        const remote = (await cloudDocumentService.listTrash(credentials))
+          .find((item) => item.documentId === documentId);
+        if (!remote) throw new Error("云端回收站里找不到这个人物存档。");
+        await cloudDocumentService.restoreFromTrash(remote, credentials);
+      }
       await reloadActiveSystemPackage();
-    } catch (error) {
-      setCloudNotice(error instanceof Error ? error.message : "云端人物存档恢复失败");
-    }
-  }
+    },
+    async deletePermanently(itemId) {
+      const [location, documentId] = splitTrashItemId(itemId);
+      if (location === "local") return characterSaveRepository.deleteFromTrash(documentId);
+      const credentials = credentialsRef.current;
+      if (!credentials) throw new Error("请先登录再永久删除云端人物存档。");
+      const remote = (await cloudDocumentService.listTrash(credentials))
+        .find((item) => item.documentId === documentId);
+      if (!remote) throw new Error("云端回收站里找不到这个人物存档。");
+      await cloudDocumentService.deleteFromTrash(remote, credentials);
+    },
+  }), [characterSaveRepository, cloudDocumentService]);
+  usePlatformTrashSource(playerTrashSource);
 
   function currentEmbeddedPackageIndex(): Map<string, { version: string; snapshotDigest: string }> {
     if (currentCatalogEntry) {
@@ -851,22 +913,10 @@ export function PlayerSheetSurface({
     useRuntimeStore.setState({ allCharacterSaves: await runtimeStorage.listAllCharacterSaves() });
   }
 
-  async function deleteTrashItem(remote: RemoteCloudDocument) {
-    const credentials = credentialsRef.current;
-    if (!credentials) return;
-    if (!window.confirm(`永久删除“${remoteDocumentName(remote)}”？删除后不能恢复。`)) return;
-    try {
-      await cloudDocumentService.deleteFromTrash(remote, credentials);
-      setCloudTrash(await cloudDocumentService.listTrash(credentials));
-      setCloudNotice("云端人物存档已永久删除");
-    } catch (error) {
-      setCloudNotice(error instanceof Error ? error.message : "云端人物存档永久删除失败");
-    }
-  }
-
   async function handleCharacterFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || playerOperation) return;
+    setPlayerOperation("character-import");
     try {
       if (!file.name.toLowerCase().endsWith(".pbcha")) {
         await importCharacterDataFromFile(file);
@@ -897,12 +947,14 @@ export function PlayerSheetSurface({
       setCloudNotice(error instanceof Error ? error.message : "人物存档导入失败");
     } finally {
       event.target.value = "";
+      setPlayerOperation(null);
     }
   }
 
   async function confirmNativeCharacterImport(mode: "new" | "copy" | "replace") {
     const pending = pendingNativeCharacterImport;
-    if (!pending) return;
+    if (!pending || playerOperation) return;
+    setPlayerOperation("character-import");
     try {
       const imported = mode === "copy"
         ? await characterSaveRepository.importAsCopy(
@@ -933,10 +985,14 @@ export function PlayerSheetSurface({
       setPendingNativeCharacterImport(null);
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档导入失败");
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
   async function exportCharacterSave(saveId: string) {
+    if (playerOperation) return;
+    setPlayerOperation("character-export");
     try {
       if (saveId === activeCharacterSaveId) await flushCurrentCharacter();
       const stored = (await cloudDocumentService.localSnapshot(credentialsRef.current?.accountId)).find((save) =>
@@ -953,6 +1009,8 @@ export function PlayerSheetSurface({
       URL.revokeObjectURL(url);
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "人物存档导出失败");
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
@@ -962,14 +1020,17 @@ export function PlayerSheetSurface({
 
   async function deletePendingCharacterSave(saveId: string) {
     const save = allCharacterSaves.find((candidate) => candidate.id === saveId);
-    if (!save || characterSystemAvailable(save.packageId)) return;
+    if (!save || playerOperation || characterSystemAvailable(save.packageId)) return;
     if (!window.confirm(`删除待匹配人物存档“${save.name}”？`)) return;
+    setPlayerOperation("pending-delete");
     try {
       await runtimeStorage.deleteCharacterSave(save.packageId, save.id);
       await refreshAllCharacterSaves();
       setCloudNotice(`已删除待匹配人物存档：${save.name}`);
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "待匹配人物存档删除失败");
+    } finally {
+      setPlayerOperation(null);
     }
   }
 
@@ -996,7 +1057,7 @@ export function PlayerSheetSurface({
   const appBarActions = useMemo(() => (
     <nav className="player-toolbar" aria-label="玩家工具栏">
       <div className="player-menu">
-        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span></button>
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span>{outputOperation === "validation" ? <OperationStatus label="正在审核…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
           <button className="player-menu-resource-manager" type="button" role="menuitem" onClick={() => setManagerOpen(true)}><span>资源管理器</span><strong>{library.size}</strong></button>
           {currentPackage?.characterCreationGuide ? (
@@ -1005,12 +1066,12 @@ export function PlayerSheetSurface({
           {currentPackage?.questionnaireCharacterCreation ? (
             <button type="button" role="menuitem" disabled={!characterData} onClick={startQuestionnaire}>问卷创建</button>
           ) : null}
-          <button type="button" role="menuitem" disabled={!characterData} onClick={() => void handleValidation()}>车卡审核</button>
+          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void handleValidation()}>车卡审核</button>
         </div>
       </div>
 
       <div className="player-menu">
-        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家存档</span></button>
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家存档</span>{playerOperation === "cloud-sync" ? <OperationStatus label="正在同步云端…" /> : playerOperation === "save" ? <OperationStatus label="正在保存…" /> : playerOperation === "pending-delete" ? <OperationStatus label="正在删除…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
           <label className="player-menu-field">
             <span>切换存档</span>
@@ -1023,40 +1084,40 @@ export function PlayerSheetSurface({
                 setSelectedCharacterSaveId(save.id);
                 void openCharacterSave(save);
               }}
-              disabled={allCharacterSaves.length === 0}
+              disabled={allCharacterSaves.length === 0 || Boolean(playerOperation)}
             >
               {allCharacterSaves.map((save) => <option key={save.id} value={save.id}>{characterSaveOptionLabel(save)}</option>)}
             </select>
           </label>
           {selectedCharacterSave && !characterSystemAvailable(selectedCharacterSave.packageId) ? (
             <div className="player-menu-character-actions">
-              <button type="button" role="menuitem" onClick={() => void exportCharacterSave(selectedCharacterSave.id)}>导出待匹配存档</button>
-              <button className="danger" type="button" role="menuitem" onClick={() => void deletePendingCharacterSave(selectedCharacterSave.id)}>删除待匹配存档</button>
+              <button type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => void exportCharacterSave(selectedCharacterSave.id)}>导出待匹配存档</button>
+              <button className="danger" type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => void deletePendingCharacterSave(selectedCharacterSave.id)}>删除待匹配存档</button>
             </div>
           ) : null}
           {auth.credentials ? (
-            <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void syncActiveCharacter()}>同步到云</button>
+            <button type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void syncActiveCharacter()}>同步到云</button>
           ) : null}
-          <button type="button" role="menuitem" onClick={() => void handleCreateSave()}>新建人物</button>
-          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void handleRenameSave()}>重命名</button>
-          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void duplicateCharacterSave(activeCharacterSaveId!)}>复制</button>
-          <button className="danger" type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void handleDeleteSave()}>删除</button>
+          <button type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => void handleCreateSave()}>新建人物</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void handleRenameSave()}>重命名</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void handleDuplicateSave()}>复制</button>
+          <button className="danger" type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void handleDeleteSave()}>删除</button>
         </div>
       </div>
 
       <div className="player-menu">
-        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>导入导出</span></button>
+        <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>导入导出</span>{playerOperation === "character-import" ? <OperationStatus label="正在导入人物…" /> : playerOperation === "character-export" ? <OperationStatus label="正在导出人物…" /> : outputOperation === "export" ? <OperationStatus label="正在生成导出文件…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
-          <button type="button" role="menuitem" onClick={() => characterFileInputRef.current?.click()}>导入人物</button>
-          <button type="button" role="menuitem" disabled={!activeCharacterSaveId} onClick={() => void exportActiveCharacter()}>导出人物</button>
+          <button type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => characterFileInputRef.current?.click()}>导入人物</button>
+          <button type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void exportActiveCharacter()}>导出人物</button>
           {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
-            <button key={adapter.ID} type="button" role="menuitem" disabled={!characterData} onClick={() => void exportWithCharacterAdapter(adapter.ID)}>{characterAdapterExportLabel(adapter)}</button>
+            <button key={adapter.ID} type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void exportWithCharacterAdapter(adapter.ID)}>{characterAdapterExportLabel(adapter)}</button>
           ))}
           {currentPackage?.characterTextExports?.map((definition) => (
-            <button key={definition.ID} type="button" role="menuitem" disabled={!characterData} onClick={() => void exportCharacterText(definition.ID)}>{characterTextExportLabel(definition)}</button>
+            <button key={definition.ID} type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void exportCharacterText(definition.ID)}>{characterTextExportLabel(definition)}</button>
           ))}
-          <button type="button" role="menuitem" disabled={!characterData} onClick={() => void beginOutput("html")}>导出HTML</button>
-          <button type="button" role="menuitem" disabled={!characterData} onClick={() => void beginOutput("print")}>导出PDF</button>
+          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("html")}>导出HTML</button>
+          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("print")}>导出PDF</button>
         </div>
       </div>
 
@@ -1078,7 +1139,7 @@ export function PlayerSheetSurface({
          </div>
       </div>
     </nav>
-  ), [activeCharacterSaveId, allCharacterSaves, auth.credentials, authorPreviewActive, bootStatus, characterData, currentCatalogEntry, currentPackage, currentSystem, duplicateCharacterSave, exitAuthorPreview, library.size, selectedCharacterSave, selectedCharacterSaveId]);
+  ), [activeCharacterSaveId, allCharacterSaves, auth.credentials, authorPreviewActive, bootStatus, characterData, currentCatalogEntry, currentPackage, currentSystem, exitAuthorPreview, library.size, outputOperation, playerOperation, selectedCharacterSave, selectedCharacterSaveId]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
@@ -1176,14 +1237,15 @@ export function PlayerSheetSurface({
               : pendingNativeCharacterImport.targetSystem
                 ? `目标系统人物数据也已校验。确认后才会写入本地存档并切换到 ${pendingNativeCharacterImport.targetSystem.system.package.name}。`
                 : `尚未安装系统包 ${pendingNativeCharacterImport.candidate.document.systemPackage.id} v${pendingNativeCharacterImport.candidate.document.systemPackage.version}。确认后会仅在本机保存为待匹配存档，不会运行人物数据或上传云端。`}</p>
+            {playerOperation === "character-import" ? <OperationStatus label="正在写入人物存档…" size="regular" /> : null}
             <footer>
-              <button type="button" onClick={() => setPendingNativeCharacterImport(null)}>取消</button>
+              <button type="button" disabled={Boolean(playerOperation)} onClick={() => setPendingNativeCharacterImport(null)}>取消</button>
               {pendingNativeCharacterImport.importKind === "conflict" ? (
                 <>
-                  <button type="button" onClick={() => void confirmNativeCharacterImport("replace")}>替换现有存档</button>
-                  <button className="primary" type="button" onClick={() => void confirmNativeCharacterImport("copy")}>另存为副本</button>
+                  <button type="button" disabled={Boolean(playerOperation)} onClick={() => void confirmNativeCharacterImport("replace")}>替换现有存档</button>
+                  <button className="primary" type="button" disabled={Boolean(playerOperation)} onClick={() => void confirmNativeCharacterImport("copy")}>另存为副本</button>
                 </>
-              ) : <button className="primary" type="button" onClick={() => void confirmNativeCharacterImport("new")}>确认导入</button>}
+              ) : <button className="primary" type="button" disabled={Boolean(playerOperation)} onClick={() => void confirmNativeCharacterImport("new")}>确认导入</button>}
             </footer>
           </section>
         </div>
@@ -1206,29 +1268,12 @@ export function PlayerSheetSurface({
           <section className="character-save-dialog" role="dialog" aria-modal="true">
             <h2>人物存档存在冲突</h2>
             <p>选择要保留的版本，或先把本地版本另存为副本。</p>
+            {playerOperation === "cloud-conflict" ? <OperationStatus label="正在处理云端版本…" size="regular" /> : null}
             <footer>
-              <button onClick={() => void resolveConflict("cloud")}>使用云端版本</button>
-              <button onClick={() => void resolveConflict("copy")}>另存本地副本并使用云端</button>
-              <button className="primary" onClick={() => void resolveConflict("local")}>使用本地版本覆盖云端</button>
+              <button disabled={Boolean(playerOperation)} onClick={() => void resolveConflict("cloud")}>使用云端版本</button>
+              <button disabled={Boolean(playerOperation)} onClick={() => void resolveConflict("copy")}>另存本地副本并使用云端</button>
+              <button className="primary" disabled={Boolean(playerOperation)} onClick={() => void resolveConflict("local")}>使用本地版本覆盖云端</button>
             </footer>
-          </section>
-        </div>
-      ) : null}
-      {cloudDialog === "trash" ? (
-        <div className="character-save-dialog-backdrop">
-          <section className="character-save-dialog wide" role="dialog" aria-modal="true">
-            <h2>云端回收站</h2>
-            {cloudTrash.length === 0 ? <p className="character-save-empty">云端回收站为空</p> : (
-              <div className="character-save-list">
-                {cloudTrash.map((remote) => (
-                  <div className="character-save-row" key={remote.documentId}>
-                    <span className="character-save-main"><strong>{remoteDocumentName(remote)}</strong></span>
-                    <span><button onClick={() => void restoreTrashItem(remote)}>恢复</button><button onClick={() => void deleteTrashItem(remote)}>永久删除</button></span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <footer><button onClick={() => setCloudDialog(null)}>关闭</button></footer>
           </section>
         </div>
       ) : null}
@@ -1242,6 +1287,15 @@ function remoteDocumentName(remote: RemoteCloudDocument): string {
     if (typeof name === "string" && name.trim()) return name;
   }
   return "未命名角色";
+}
+
+function splitTrashItemId(itemId: string): ["local" | "cloud", string] {
+  const separator = itemId.indexOf(":");
+  const location = itemId.slice(0, separator);
+  if ((location !== "local" && location !== "cloud") || separator < 0) {
+    throw new Error("回收站项目编号无效。");
+  }
+  return [location, itemId.slice(separator + 1)];
 }
 
 function safeFileName(value: string): string {

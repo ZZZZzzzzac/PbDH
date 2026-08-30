@@ -7,7 +7,6 @@ import { describe, expect, test } from "vitest";
 
 import {
   adversaryTemplate,
-  legacyAdversaryTemplate,
   type AdversaryData,
   TemplateRegistry,
   templateRegistry,
@@ -23,13 +22,6 @@ function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
 }
 
-const legacyResource = readJson<{ resources: Array<{
-  template: { id: string; version: string };
-  data: AdversaryData;
-  media: Record<string, string>;
-}> }>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
-).resources[0]!;
 const resource = readJson<{ resources: Array<{
   template: { id: string; version: string };
   data: AdversaryData;
@@ -42,15 +34,11 @@ const validateData = ajv.compile(adversaryTemplate.schema as AnySchema);
 
 describe("敌人 Template Core", () => {
   test("resolves only the exact trusted Template version", () => {
-    expect(legacyResource.template).toEqual({ id: "敌人", version: "1.0.0-alpha.1" });
-    expect(templateRegistry.resolve(legacyResource.template.id, legacyResource.template.version)).toBe(
-      legacyAdversaryTemplate,
-    );
     expect(resource.template).toEqual({ id: "敌人", version: "1.0.0" });
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       adversaryTemplate,
     );
-    expect(templateRegistry.resolve("敌人", "1.0.0-alpha.2")).toBeUndefined();
+    expect(templateRegistry.resolve("敌人", "1.0.0-alpha.1")).toBeUndefined();
     expect(templateRegistry.resolve("敌人", "2.0.0")).toBeUndefined();
   });
 
@@ -122,13 +110,10 @@ describe("敌人 Template Core", () => {
     );
     expect(adversaryTemplate.tabletop.commands.find((command) => command.id === "set-focused")?.values)
       .toEqual(["true", "false"]);
-    expect(adversaryTemplate.tabletop.editableDataFields).toContainEqual(["名称"]);
-    expect(adversaryTemplate.tabletop.editableDataFields).toContainEqual(["特性", "*", "特性描述"]);
     expect(adversaryTemplate.tabletop.replacements).toEqual([
       { id: "alternate-form", label: "切换形态" },
     ]);
     expect(adversaryTemplate.rendererRevision).toBe("enemy-card-r1");
-    expect(adversaryTemplate.upgradeFrom).toBeNull();
   });
 });
 

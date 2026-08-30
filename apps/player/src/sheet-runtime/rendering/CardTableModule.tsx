@@ -1,6 +1,8 @@
 import { Layers } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
+import type { TabletopCapability, TabletopCommand, TabletopDocumentModel } from "@pbdh/tabletop/core";
+import { TabletopSurface } from "@pbdh/tabletop/react";
 import {
   clampCardTablePosition,
   createCardTableLayout,
@@ -13,7 +15,7 @@ import {
 import { type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { CardContextMenu, CardDetailOverlay } from "./cardTable/CardActionSurfaces";
-import { CardView, type CardDragState } from "./cardTable/CardView";
+import { CardView } from "./cardTable/CardView";
 import {
   findCardPresentation,
   hasReverseCardDefinition,
@@ -39,8 +41,6 @@ interface HeightResizeState {
 
 export function CardTableModule({ module, systemPackage }: CardTableModuleProps) {
   const tableRef = useRef<HTMLDivElement>(null);
-  const longPressTimerRef = useRef<number | null>(null);
-  const [dragState, setDragState] = useState<CardDragState | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenuState | null>(null);
   const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
   const characterData = useRuntimeStore((state) => state.characterData);
@@ -66,6 +66,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     preferredCardWidthPx: cardWidthPx,
     minSurfaceHeightPx: Math.max(surfaceViewportHeightPx, manualSurfaceHeightPx ?? 0),
   });
+  const visibleInstanceById = new Map(visibleInstances.map((instance) => [instance.instanceId, instance]));
+  const tabletopDocument = createPlayerTabletopDocument(visibleInstances, module.ID, tableLayout);
   const menuInstance = cardMenu
     ? visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)
     : undefined;
@@ -119,70 +121,16 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     tableLayout.stepYPct,
   ]);
 
-  const clearLongPressTimer = () => {
-    if (longPressTimerRef.current === null) return;
-    window.clearTimeout(longPressTimerRef.current);
-    longPressTimerRef.current = null;
-  };
-
   const closeCardMenu = () => {
-    clearLongPressTimer();
     setCardMenu(null);
   };
 
-  const beginDrag = (event: PointerEvent<HTMLElement>, instance: CardInstance) => {
-    if (!tableRef.current || event.button !== 0) return;
-
-    event.preventDefault();
-    const point = pointerToPct(event, tableRef.current);
-    bringCardInstanceToFront(instance.instanceId);
-    event.currentTarget.setPointerCapture(event.pointerId);
-    closeCardMenu();
-    if (event.pointerType === "touch") {
-      longPressTimerRef.current = window.setTimeout(() => {
-        longPressTimerRef.current = null;
-        setDragState(null);
-        setCardMenu({ instanceId: instance.instanceId, x: event.clientX, y: event.clientY });
-      }, 500);
+  const applySharedSurfaceCommand = (command: TabletopCommand) => {
+    const moves = command.type === "move" ? [command] : command.type === "move-many" ? command.moves : [];
+    for (const move of moves) {
+      const position = pixelPositionToPercent(tableLayout, move.position);
+      updateCardInstancePosition(move.instanceId, position.xPct, position.yPct);
     }
-    setDragState({
-      instanceId: instance.instanceId,
-      pointerId: event.pointerId,
-      offsetXPct: point.xPct - instance.xPct,
-      offsetYPct: point.yPct - instance.yPct,
-      pendingXPct: instance.xPct,
-      pendingYPct: instance.yPct,
-    });
-  };
-
-  const continueDrag = (event: PointerEvent<HTMLElement>) => {
-    if (!dragState || dragState.pointerId !== event.pointerId || !tableRef.current) return;
-
-    event.preventDefault();
-    const point = pointerToPct(event, tableRef.current);
-    const nextXPct = point.xPct - dragState.offsetXPct;
-    const nextYPct = point.yPct - dragState.offsetYPct;
-    if (Math.abs(nextXPct - dragState.pendingXPct) > 0.8 || Math.abs(nextYPct - dragState.pendingYPct) > 0.8) {
-      clearLongPressTimer();
-    }
-    const nextPosition = clampCardTablePosition(tableLayout, nextXPct, nextYPct);
-    setDragState({ ...dragState, pendingXPct: nextPosition.xPct, pendingYPct: nextPosition.yPct });
-  };
-
-  const endDrag = (event: PointerEvent<HTMLElement>) => {
-    if (dragState?.pointerId !== event.pointerId) return;
-    clearLongPressTimer();
-    if (dragState.pendingXPct !== getInstanceX(visibleInstances, dragState.instanceId)
-        || dragState.pendingYPct !== getInstanceY(visibleInstances, dragState.instanceId)) {
-      updateCardInstancePosition(dragState.instanceId, dragState.pendingXPct, dragState.pendingYPct);
-    }
-    setDragState(null);
-  };
-
-  const openCardMenu = (event: MouseEvent<HTMLElement>, instance: CardInstance) => {
-    event.preventDefault();
-    bringCardInstanceToFront(instance.instanceId);
-    setCardMenu({ instanceId: instance.instanceId, x: event.clientX, y: event.clientY });
   };
 
   const applyManualSurfaceHeight = (heightPx: number) => {
@@ -234,9 +182,6 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         style={cardTableSurfaceStyle(tableLayout)}
         aria-label={`${module.标签}自由桌面`}
         onPointerDown={closeCardMenu}
-        onPointerMove={continueDrag}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
       >
         <div className="card-table-actions card-table-side-actions" data-part="actions" onPointerDown={(event) => event.stopPropagation()}>
           <button className="card-action-button" data-part="tidy-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
@@ -258,18 +203,31 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
           </label>
           <span className="card-count">{visibleInstances.length} 张</span>
         </div>
-        {visibleInstances.map((instance) => (
-          <CardView
-            instance={instance}
-            dragState={dragState}
-            definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
-            module={module}
-            presentation={findCardPresentation(systemPackage, module, instance)}
-            onPointerDown={beginDrag}
-            onContextMenu={openCardMenu}
-            key={instance.instanceId}
-          />
-        ))}
+        <TabletopSurface
+          className="player-tabletop-surface"
+          document={tabletopDocument}
+          capabilities={playerSurfaceCapabilities}
+          renderInstance={(surfaceInstance) => {
+            const instance = visibleInstanceById.get(surfaceInstance.id);
+            return instance ? <CardView
+              instance={instance}
+              definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
+              module={module}
+              presentation={findCardPresentation(systemPackage, module, instance)}
+            /> : null;
+          }}
+          onSelect={(instanceId) => {
+            bringCardInstanceToFront(instanceId);
+            closeCardMenu();
+          }}
+          onCommand={applySharedSurfaceCommand}
+          onInstanceContextMenu={(instanceId, position) => {
+            bringCardInstanceToFront(instanceId);
+            setCardMenu({ instanceId, x: position.x, y: position.y });
+          }}
+          clampPosition={(_instance, position) => clampPlayerPixelPosition(tableLayout, position)}
+          style={{ width: tableLayout.surfaceWidthPx, height: tableLayout.surfaceHeightPx }}
+        />
         <button
           className="card-table-resize-handle"
           data-part="resize-handle"
@@ -321,18 +279,54 @@ function compareCards(left: CardInstance, right: CardInstance): number {
   return left.zIndex - right.zIndex || left.instanceId.localeCompare(right.instanceId);
 }
 
-function pointerToPct(event: PointerEvent, element: HTMLElement): { xPct: number; yPct: number } {
-  const rect = element.getBoundingClientRect();
+const playerSurfaceCapabilities = new Set<TabletopCapability>(["move"]);
+
+function createPlayerTabletopDocument(
+  instances: CardInstance[],
+  tableModuleId: string,
+  layout: CardTableLayout,
+): TabletopDocumentModel {
   return {
-    xPct: ((event.clientX - rect.left) / rect.width) * 100,
-    yPct: ((event.clientY - rect.top) / rect.height) * 100,
+    id: `player:${tableModuleId}`,
+    name: tableModuleId,
+    canvas: { width: layout.surfaceWidthPx, height: layout.surfaceHeightPx },
+    assets: [],
+    instances: instances.map((instance) => ({
+      id: instance.instanceId,
+      resource: {
+        source: null,
+        template: { id: "player.card", version: "1.0.0" },
+        presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+        data: {},
+        labels: [],
+        replacements: [],
+        media: {},
+      },
+      state: {},
+      position: {
+        x: instance.xPct * layout.surfaceWidthPx / 100,
+        y: instance.yPct * layout.surfaceHeightPx / 100,
+      },
+      layer: instance.zIndex,
+      rotation: instance.rotation,
+      flipped: instance.face === "back",
+      scale: instance.scale,
+    })),
   };
 }
 
-function getInstanceX(instances: CardInstance[], instanceId: string): number {
-  return instances.find((instance) => instance.instanceId === instanceId)?.xPct ?? 0;
+function pixelPositionToPercent(layout: CardTableLayout, position: { x: number; y: number }) {
+  return clampCardTablePosition(
+    layout,
+    position.x / layout.surfaceWidthPx * 100,
+    position.y / layout.surfaceHeightPx * 100,
+  );
 }
 
-function getInstanceY(instances: CardInstance[], instanceId: string): number {
-  return instances.find((instance) => instance.instanceId === instanceId)?.yPct ?? 0;
+function clampPlayerPixelPosition(layout: CardTableLayout, position: { x: number; y: number }) {
+  const percent = pixelPositionToPercent(layout, position);
+  return {
+    x: percent.xPct * layout.surfaceWidthPx / 100,
+    y: percent.yPct * layout.surfaceHeightPx / 100,
+  };
 }

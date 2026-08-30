@@ -10,12 +10,11 @@ import {
   RendererRevisionRegistry,
 } from "../../packages/resource-renderer/src/core.ts";
 import { CanonicalCardSurface } from "../../packages/resource-renderer/src/react.tsx";
-import { weaponTemplateV2, type WeaponData } from "../../packages/templates/src/core/index.ts";
+import { weaponTemplate, type WeaponData } from "../../packages/templates/src/core/index.ts";
 import {
   weaponCardDesignSource,
   weaponRendererRevision,
   weaponRendererStyles,
-  weaponRendererRevisionV2,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const root = process.cwd();
@@ -41,13 +40,13 @@ const resource = packageFixture.resources[0]!;
 function prepare(candidate = resource, assets = new Map()) {
   return prepareCanonicalSurface({
     resource: candidate,
-    expectedRendererRevision: "weapon-card-r1",
+    expectedRendererRevision: "weapon-card-r2",
     renderer: weaponRendererRevision,
     assets,
   });
 }
 
-describe("weapon-card-r1 Canonical Surface", () => {
+describe("weapon-card-r2 Canonical Surface", () => {
   test("binds the exact weapon Template and stateless Renderer Revision", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
@@ -71,7 +70,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
     }
     expect(markup).not.toContain("<img");
     expect(markup).not.toContain("weapon-art");
-    expect(markup).toContain("data-renderer-revision=\"weapon-card-r1\"");
+    expect(markup).toContain("data-renderer-revision=\"weapon-card-r2\"");
   });
 
   test("renders split and image presentation modes from the optional portrait", () => {
@@ -117,7 +116,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
     const markup = renderToStaticMarkup(
       <CanonicalCardSurface
         resource={resource}
-        expectedRendererRevision="weapon-card-r1"
+        expectedRendererRevision="weapon-card-r2"
         renderer={weaponRendererRevision}
         assets={new Map()}
         label="武器卡预览"
@@ -134,7 +133,7 @@ describe("weapon-card-r1 Canonical Surface", () => {
       document: "docs/design/creator-app.op",
       page: "30 Components",
       surface: "#28 / Canonical Card Surface",
-      component: "weapon-card-r1 / Canonical",
+      component: "weapon-card-r2 / Canonical",
       presentation: { ratio: "63:88", variableHeight: false },
       statNames: ["核心数据 / 属性", "核心数据 / 距离", "核心数据 / 伤害"],
       detailNames: ["规则 / 伤害类型", "规则 / 负荷"],
@@ -147,24 +146,24 @@ describe("weapon-card-r1 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("dd24d20e287f46d01e8b619d7607cdb3eae61c2cef9b730d07de9ed8981815bd");
+    expect(signature).toBe("a38bb27dfe584d0f9c82f6b0d0cb1f7d99868a008c1c9891369646b0e4bdaa0b");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {
     const registry = new RendererRevisionRegistry([weaponRendererRevision]);
-    expect(registry.resolve("weapon-card-r1")).toBe(weaponRendererRevision);
-    expect(registry.resolve("weapon-card-r2")).toBeUndefined();
-    expect(registry.list()).toEqual(["weapon-card-r1"]);
+    expect(registry.resolve("weapon-card-r2")).toBe(weaponRendererRevision);
+    expect(registry.resolve("weapon-card-r1")).toBeUndefined();
+    expect(registry.list()).toEqual(["weapon-card-r2"]);
   });
 });
 
 describe("weapon-card-r2 flavor surface", () => {
   test("renders flavor separately from the gameplay feature", () => {
     const candidate = {
-      template: { id: weaponTemplateV2.id, version: weaponTemplateV2.version },
-      presentation: weaponTemplateV2.defaultPresentation,
+      template: { id: weaponTemplate.id, version: weaponTemplate.version },
+      presentation: weaponTemplate.defaultPresentation,
       data: {
-        ...weaponTemplateV2.defaultData,
+        ...weaponTemplate.defaultData,
         名称: "月刃",
         描述: "可靠：攻击掷骰+1。",
         风味描述: "刀身映着冷白月光。",
@@ -174,7 +173,7 @@ describe("weapon-card-r2 flavor surface", () => {
     const result = prepareCanonicalSurface({
       resource: candidate,
       expectedRendererRevision: "weapon-card-r2",
-      renderer: weaponRendererRevisionV2,
+      renderer: weaponRendererRevision,
       assets: new Map(),
     });
     expect(result.status).toBe("ready");

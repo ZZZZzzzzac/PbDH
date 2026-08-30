@@ -14,12 +14,12 @@ import { validateTemplateData } from "../template-validation.ts";
 import type { JsonObject, JsonValue, ResourceFormatAdapter, ResourceKind, TemporaryResource } from "../types.ts";
 
 import catalogJson from "../../../../contracts/catalog.json";
-import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0-alpha.1/schema.json";
+import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0/schema.json";
 
-const upstreamRevision = "pbdh.resource-package@1.0.0-alpha.1";
+const upstreamRevision = "pbdh.resource-package@1.0.0";
 const resourceFamily = (catalogJson as ContractCatalog).families.find((family) => family.id === "resource-package");
-const contractVersion = resourceFamily?.versions.find((version) => version.version === "1.0.0-alpha.1");
-if (!contractVersion) throw new Error("Missing Resource Package Contract 1.0.0-alpha.1");
+const contractVersion = resourceFamily?.versions.find((version) => version.version === "1.0.0");
+if (!contractVersion) throw new Error("Missing Resource Package Contract 1.0.0");
 const contractRuntime = new ContractRuntime({
   catalogVersion: 1,
   families: [{ id: "resource-package", versions: [contractVersion] }],
@@ -33,7 +33,7 @@ function templateContractDiagnostic(
     code: diagnostic.code,
     severity: diagnostic.severity,
     family: "resource-package",
-    version: "1.0.0-alpha.1",
+    version: "1.0.0",
     location: `/resources/${resourceIndex}/data${diagnostic.path ?? ""}`,
     params: diagnostic.details ?? {},
   };

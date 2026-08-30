@@ -1,29 +1,42 @@
 import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
-import {
-  temporaryArmorTemplate,
-  type TemporaryArmorData,
-} from "../0.0.0-dev.1/capability.ts";
 
-export type ArmorData = TemporaryArmorData;
+export type ArmorData = {
+  名称: string; 类型: string; 护甲值: string; 重度伤害阈值: string; 严重伤害阈值: string;
+  描述: string; 风味描述: string; 位阶: string;
+};
 
-function upgradeLegacyArmor(data: unknown): ArmorData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Armor Template upgrade requires an object");
-  }
-  return structuredClone(data) as ArmorData;
-}
+const defaultData: ArmorData = {
+  名称: "", 类型: "护甲", 护甲值: "", 重度伤害阈值: "", 严重伤害阈值: "",
+  描述: "", 风味描述: "", 位阶: "",
+};
+
+function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
 
 export const armorTemplate = deepFreeze<TemplateCoreCapability<ArmorData>>({
-  ...temporaryArmorTemplate,
+  id: "护甲",
   version: "1.0.0",
   state: "development",
   schema,
+  defaultData,
+  proposeResourceId(data) {
+    return normalize(data.名称 || "未命名护甲").normalize("NFC").replaceAll("/", "-");
+  },
+  project(data) {
+    const title = normalize(data.名称 || "未命名护甲");
+    const summary = [data.护甲值, data.重度伤害阈值, data.严重伤害阈值]
+      .map(normalize).filter(Boolean).join(" · ");
+    const searchText = Object.values(data).map(normalize).filter(Boolean).join(" ");
+    return { title, summary, searchText };
+  },
+  mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
+  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
   rendererRevision: "armor-card-r1",
-  defaultPresentation: { ...temporaryArmorTemplate.defaultPresentation, width: "63", height: "88" },
-  upgradeFrom: {
-    version: "0.0.0-dev.1",
-    upgrade: upgradeLegacyArmor,
+  tabletop: {
+    stateSchema: { type: "object", properties: {}, additionalProperties: false },
+    defaultState() { return {}; },
+    commands: [],
+    replacements: [],
   },
 });

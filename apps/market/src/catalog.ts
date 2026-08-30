@@ -1,9 +1,9 @@
-import minotaurImageUrl from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
-import minotaurArchiveUrl from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres?url";
-import minotaurPackage from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
-import weaponArchiveUrl from "../../../contracts/conformance/system-package/1.0.0-alpha.1/valid/daggerheart/resources/daggerheart-core-primary-weapon.pbres?url";
-import weaponPackage from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
-import weaponCoverUrl from "../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp?url";
+import minotaurImageUrl from "../../../contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
+import minotaurArchiveUrl from "../../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres?url";
+import minotaurPackage from "../../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
+import weaponArchiveUrl from "../../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.pbres?url";
+import weaponPackage from "../../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json";
+import weaponCoverUrl from "../../../contracts/conformance/resource-package/1.0.0/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp?url";
 
 import type { Publication, PublicationResource } from "./market-model.ts";
 export { catalogOptions } from "./catalog-options.ts";
@@ -45,8 +45,8 @@ export const publications: Publication[] = [
     summary: "适合荒野与遗迹场景的高威胁敌人资源。",
     kind: "enemy",
     templateIds: ["敌人"],
-    system: systemId,
-    systemLabel: "Daggerheart Core",
+    systems: [systemId],
+    systemLabels: ["匕首之心"],
     language: "中文",
     categories: ["敌人", "遭遇"],
     tags: ["荒野", "遗迹", "高威胁"],
@@ -74,8 +74,8 @@ export const publications: Publication[] = [
     summary: "为近战角色准备的 Daggerheart Core 主武器资源。",
     kind: "weapon",
     templateIds: ["武器"],
-    system: systemId,
-    systemLabel: "Daggerheart Core",
+    systems: [systemId],
+    systemLabels: ["匕首之心"],
     language: "中文",
     categories: ["武器", "装备"],
     tags: ["主武器", "近战", "Daggerheart"],

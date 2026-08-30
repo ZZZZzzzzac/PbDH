@@ -4,6 +4,7 @@ export type AuthoringField = {
   path: string;
   label: string;
   control: AuthoringControl;
+  enum?: readonly string[];
 };
 
 export type AuthoringRepeat = {

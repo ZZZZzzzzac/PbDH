@@ -170,6 +170,15 @@ def validate_resource_package_semantics(
                 version,
             ))
 
+    publication = document.get("publication")
+    if publication is not None and publication["coverAssetId"] not in asset_ids:
+        diagnostics.append(_diagnostic(
+            "resource-package.publication-cover.asset-undeclared",
+            "/publication/coverAssetId",
+            {"assetId": publication["coverAssetId"]},
+            version,
+        ))
+
     for resource_index, resource in enumerate(document["resources"]):
         replacement_ids: set[str] = set()
         for replacement_index, replacement in enumerate(resource.get("replacements", [])):

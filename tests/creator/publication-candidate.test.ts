@@ -54,15 +54,21 @@ describe("Creator publication candidate", () => {
     expect(source.media.size).toBe(0);
   });
 
-  test("keeps discovery metadata outside the resource package content", async () => {
+  test("keeps the complete market information inside the resource package", async () => {
     const source = createWorkspace({ document, media: new Map([[asset.id, bytes]]) });
     const result = await preparePublicationCandidate(source, metadata);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.candidate.metadata).toEqual(metadata);
-    expect(result.candidate.document.package.name).toBe(document.package.name);
-    expect(JSON.stringify(result.candidate.document)).not.toContain(metadata.title);
+    expect(result.candidate.document.package.name).toBe(metadata.title);
+    expect(result.candidate.document.package.description).toBe(metadata.summary);
+    expect(result.candidate.document.publication).toEqual({
+      language: metadata.language,
+      tags: metadata.tags,
+      coverAssetId: metadata.coverAssetId,
+    });
+    expect(result.candidate.document.license).toEqual(document.license);
   });
 
   test("returns diagnostics without mutating the workspace when the cover bytes do not match", async () => {

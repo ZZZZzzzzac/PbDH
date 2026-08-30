@@ -4,13 +4,13 @@ import {
   armorTemplate,
   communityTemplate,
   domainTemplate,
-  temporaryEnvironmentTemplate,
+  environmentTemplate,
   freeTemplate,
   itemTemplate,
   professionTemplate,
   subclassTemplate,
   templateRegistry,
-  weaponTemplateV2,
+  weaponTemplate,
 } from "@pbdh/templates/core";
 
 import { isObject, text } from "./shared.ts";
@@ -38,10 +38,10 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     return { id: adversaryTemplate.id, version: adversaryTemplate.version, data };
   }
   if (resource.kind === "weapon") {
-    const data = structuredClone(weaponTemplateV2.defaultData) as unknown as JsonObject;
+    const data = structuredClone(weaponTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: weaponTemplateV2.id, version: weaponTemplateV2.version, data };
+    return { id: weaponTemplate.id, version: weaponTemplate.version, data };
   }
   if (resource.kind === "armor") {
     const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
@@ -101,7 +101,7 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     return { id: domainTemplate.id, version: domainTemplate.version, data };
   }
   if (resource.kind === "environment") {
-    const data = structuredClone(temporaryEnvironmentTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(environmentTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if (key !== "特性") data[key] = text(resource.fields[key] ?? data[key]);
     }
@@ -109,17 +109,15 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return {
-        名称: text(feature.名称), 类型: text(feature.类型),
+        名称: text(feature.名称), 原名: text(feature.原名), 类型: text(feature.类型),
         描述: text(feature.描述 || feature.特性描述), 引导问题: text(feature.引导问题 || feature.问题),
       };
     }) : [];
-    return { id: temporaryEnvironmentTemplate.id, version: temporaryEnvironmentTemplate.version, data };
+    return { id: environmentTemplate.id, version: environmentTemplate.version, data };
   }
   if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
     const data: JsonObject = {
       名称: resource.name,
-      类型: text(resource.fields.类型),
-      简介: text(resource.fields.简介),
       内容: resource.fields.内容.map((value) => {
         const block = isObject(value) ? value : {};
         return { 标题: text(block.标题), 正文: text(block.正文) };

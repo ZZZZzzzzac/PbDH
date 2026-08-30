@@ -8,7 +8,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 
-import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
 import {
   adversaryData,
@@ -39,7 +39,7 @@ describe("Creator Workspace local repository", () => {
     const asset = document.assets[0]!;
     const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
       process.cwd(),
-      "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+      "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
     )))]]);
     let workspace = createWorkspace({ document, media });
     workspace = updateAdversaryData(workspace, (data) => { data.名称 = "刷新后仍存在"; });
@@ -72,6 +72,27 @@ describe("Creator Workspace local repository", () => {
 
     await repository.remove(workspace.key);
     expect(await store.get("creator-workspace", workspace.key)).toBeUndefined();
+  });
+
+  test("moves a local Creator Workspace through the shared recoverable trash lifecycle", async () => {
+    const repository = new CreatorWorkspaceRepository(
+      new DexieLocalDocumentStore(database()),
+      () => "2026-08-20T10:00:00.000Z",
+    );
+    const workspace = await createBlankWorkspace("待恢复资源包");
+    await repository.save(workspace);
+
+    await repository.trash(workspace.key);
+    expect(await repository.list()).toEqual([]);
+    expect(await repository.listTrash()).toMatchObject([{
+      workspace: { key: workspace.key },
+      deletedAt: "2026-08-20T10:00:00.000Z",
+      purgeAfter: "2026-09-19T10:00:00.000Z",
+    }]);
+
+    const restored = await repository.restore(workspace.key);
+    expect(restored.workspace.document.package.name).toBe("待恢复资源包");
+    expect(await repository.list()).toHaveLength(1);
   });
 
   test("only marks a cloud workspace pending when its persisted content changes", async () => {

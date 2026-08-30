@@ -30,6 +30,9 @@
     "license": {
       "$ref": "#/$defs/license"
     },
+    "publication": {
+      "$ref": "#/$defs/publicationMetadata"
+    },
     "forkSource": {
       "oneOf": [
         { "type": "null" },
@@ -103,6 +106,20 @@
       "properties": {
         "label": { "type": "string", "minLength": 1 },
         "declaration": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "publicationMetadata": {
+      "type": "object",
+      "required": ["language", "tags", "coverAssetId"],
+      "properties": {
+        "language": { "type": "string", "minLength": 2, "maxLength": 35 },
+        "tags": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "minLength": 1, "maxLength": 50 }
+        },
+        "coverAssetId": { "$ref": "#/$defs/assetId" }
       },
       "additionalProperties": false
     },

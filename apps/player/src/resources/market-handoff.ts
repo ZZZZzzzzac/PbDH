@@ -6,14 +6,12 @@ export type PlayerMarketHandoff = {
   packageId: string;
   packageVersion: string;
   snapshotDigest: string;
-  focusResourceId?: string;
 };
 
 export type PlayerMarketHandoffMismatch =
   | "player.market-handoff.package-id-mismatch"
   | "player.market-handoff.package-version-mismatch"
-  | "player.market-handoff.snapshot-mismatch"
-  | "player.market-handoff.focus-resource-not-found";
+  | "player.market-handoff.snapshot-mismatch";
 
 const handoffKeys = [
   "pbdhHandoff",
@@ -34,14 +32,12 @@ export function parsePlayerMarketHandoff(sourceUrl: string | URL): PlayerMarketH
   const packageVersion = url.searchParams.get("packageVersion")?.trim();
   const snapshotDigest = url.searchParams.get("snapshotDigest")?.trim();
   if (!publicationId || !packageId || !packageVersion || !snapshotDigest) return null;
-  const focusResourceId = url.searchParams.get("focusResourceId")?.trim();
   return {
     target: "player",
     publicationId,
     packageId,
     packageVersion,
     snapshotDigest,
-    ...(focusResourceId ? { focusResourceId } : {}),
   };
 }
 
@@ -67,10 +63,6 @@ export function playerMarketHandoffMismatch(
   }
   if (candidate.document.snapshotDigest !== handoff.snapshotDigest) {
     return "player.market-handoff.snapshot-mismatch";
-  }
-  if (handoff.focusResourceId
-    && !candidate.document.resources.some((resource) => resource.id === handoff.focusResourceId)) {
-    return "player.market-handoff.focus-resource-not-found";
   }
   return null;
 }

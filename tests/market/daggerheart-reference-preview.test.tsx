@@ -20,7 +20,7 @@ describe("Market 六类稳定资源预览", () => {
     const publication: Publication = {
       id: `publication-${template.id}`, packageId: `package-${template.id}`, packageVersion: "1.0.0",
       snapshotDigest: "sha256:test", title: `测试${template.id}`, ownerAccountId: "author", author: "作者",
-      summary: "测试", kind: "mixed", templateIds: [template.id], system: "daggerheart-core", systemLabel: "Daggerheart Core",
+      summary: "测试", kind: "mixed", templateIds: [template.id], systems: ["daggerheart-core"], systemLabels: ["匕首之心"],
       language: "中文", categories: [template.id], tags: [], license: "CC0", updatedAt: "2026-08-27", resourceCount: 1,
       status: "published", cover: { assetId: "", url: "", alt: "" }, archiveUrl: "test.pbres", archiveName: "test.pbres",
       resources: [{ id: "resource", name: `测试${template.id}`, templateId: template.id, path: `${template.id}/测试.json`, data: source.data, source }],

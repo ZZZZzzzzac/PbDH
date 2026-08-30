@@ -304,8 +304,17 @@ function transformFree(entry: SourceEntry, type: string) {
   const content = Object.entries(entry).flatMap(([title, value]) => excluded.has(title)
     ? []
     : [{ 标题: title, 正文: typeof value === "string" ? value : JSON.stringify(value) }]);
-  if (entry.描述 !== undefined) content.unshift({ 标题: "描述", 正文: string(entry.描述) });
-  return { 名称: string(entry.名称), 类型: type, 简介: string(entry.简介 ?? entry.描述), 内容: content };
+  const summary = string(entry.简介 ?? entry.描述);
+  const description = string(entry.描述);
+  if (description && description !== summary) content.unshift({ 标题: "描述", 正文: description });
+  return {
+    名称: string(entry.名称),
+    内容: [
+      ...(type ? [{ 标题: "类型", 正文: type }] : []),
+      ...(summary ? [{ 标题: "简介", 正文: summary }] : []),
+      ...content,
+    ],
+  };
 }
 
 function transformAncestry(entry: SourceEntry) {

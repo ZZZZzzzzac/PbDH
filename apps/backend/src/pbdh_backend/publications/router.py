@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
@@ -23,6 +24,7 @@ from pbdh_backend.publications.repository import (
     PublicationNotFound,
     PublicationPermissionDenied,
     PublicationRepository,
+    PublicationMustBeUnpublished,
     PublicationVersionConflict,
 )
 from pbdh_backend.publications.service import (
@@ -47,6 +49,37 @@ class PublicationMetadata(BaseModel):
     language: str = Field(min_length=2, max_length=35)
     tags: list[str] = Field(max_length=20)
     cover_asset_id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class ResourcePackageTarget(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, extra="forbid", populate_by_name=True)
+
+    system_package_id: str
+    version: str
+
+
+class ResourcePackageInformation(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, extra="forbid", populate_by_name=True)
+
+    name: str = Field(min_length=1, max_length=120)
+    version: str
+    description: str = Field(max_length=500)
+
+
+class PublicationCoverAsset(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, extra="forbid", populate_by_name=True)
+
+    id: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+    media_type: Literal["image/webp"]
+    byte_length: str = Field(pattern=r"^[1-9][0-9]*$")
+    width: str = Field(pattern=r"^[1-9][0-9]*$")
+    height: str = Field(pattern=r"^[1-9][0-9]*$")
+
+
+class PublicationInformation(PublicationMetadata):
+    package: ResourcePackageInformation
+    targets: list[ResourcePackageTarget]
+    cover_asset: PublicationCoverAsset | None = None
 
 
 def service(request: Request) -> PublicationService:
@@ -98,9 +131,39 @@ async def publish(
 @router.get("")
 def list_publications(
     q: Annotated[str | None, Query(max_length=120)] = None,
+    template_id: Annotated[list[str] | None, Query(alias="templateId")] = None,
+    target_system_package_id: Annotated[
+        list[str] | None, Query(alias="targetSystemPackageId")
+    ] = None,
+    language: Annotated[list[str] | None, Query()] = None,
+    category: Annotated[list[str] | None, Query()] = None,
+    author_account_id: Annotated[str | None, Query(alias="authorAccountId")] = None,
+    sort: Annotated[Literal["relevance", "recent", "title"], Query()] = "recent",
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(alias="pageSize", ge=1, le=60)] = 24,
     publication_repository: PublicationRepository = Depends(repository),
 ) -> dict[str, object]:
-    return {"publications": publication_repository.list_publications(q)}
+    result = publication_repository.search_publications(
+        query=q,
+        template_ids=template_id or [],
+        target_system_package_ids=target_system_package_id or [],
+        languages=language or [],
+        categories=category or [],
+        author_account_id=author_account_id,
+        sort=sort,
+        page=page,
+        page_size=page_size,
+    )
+    return {
+        "publications": result["publications"],
+        "pagination": {
+            "page": page,
+            "pageSize": page_size,
+            "total": result["total"],
+            "hasMore": page * page_size < result["total"],
+        },
+        "facets": publication_repository.list_publication_facets(),
+    }
 
 
 @router.get("/manageable")
@@ -117,31 +180,90 @@ def list_manageable_publications(
     }
 
 
-@router.patch("/{publication_id}/metadata")
-def update_publication_metadata(
+@router.patch("/{publication_id}/information")
+def update_publication_information(
     publication_id: str,
     payload: Annotated[dict[str, object], Body()],
     authenticated: AuthenticatedAccount = Depends(active_account),
-    publication_repository: PublicationRepository = Depends(repository),
+    publication_service: PublicationService = Depends(service),
     resolved: Settings = Depends(settings),
 ) -> dict[str, object]:
     try:
-        parsed = PublicationMetadata.model_validate(payload)
+        parsed = PublicationInformation.model_validate(payload)
     except ValidationError as error:
-        raise ApiError(422, "PUBLICATION_METADATA_INVALID", "发布信息不完整或格式错误。") from error
+        raise ApiError(422, "PUBLICATION_INFORMATION_INVALID", "资源包信息不完整或格式错误。") from error
+    return _commit_publication_information(
+        publication_id, parsed, authenticated, publication_service, resolved
+    )
+
+
+@router.patch("/{publication_id}/information-with-cover")
+async def update_publication_information_with_cover(
+    publication_id: str,
+    information: Annotated[str, Form()],
+    cover: Annotated[UploadFile, File()],
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_service: PublicationService = Depends(service),
+    resolved: Settings = Depends(settings),
+) -> dict[str, object]:
     try:
-        publication = publication_repository.update_metadata(
+        parsed = PublicationInformation.model_validate(json.loads(information))
+    except (json.JSONDecodeError, ValidationError) as error:
+        raise ApiError(422, "PUBLICATION_INFORMATION_INVALID", "资源包信息不完整或格式错误。") from error
+    cover_bytes = await cover.read()
+    if (
+        cover.content_type != "image/webp"
+        or not cover_bytes.startswith(b"RIFF")
+        or cover_bytes[8:12] != b"WEBP"
+        or len(cover_bytes) > 5 * 1024 * 1024
+    ):
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面必须是有效且不超过 5 MB 的 WebP 图片。")
+    cover_asset_id = f"sha256:{hashlib.sha256(cover_bytes).hexdigest()}"
+    if parsed.cover_asset_id != cover_asset_id:
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面内容与图片编号不一致。")
+    if parsed.cover_asset is None or parsed.cover_asset.id != cover_asset_id:
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面缺少包内资产信息。")
+    if parsed.cover_asset.byte_length != str(len(cover_bytes)):
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面大小与包内资产信息不一致。")
+    return _commit_publication_information(
+        publication_id,
+        parsed,
+        authenticated,
+        publication_service,
+        resolved,
+        (parsed.cover_asset.model_dump(by_alias=True), cover_bytes),
+    )
+
+
+def _commit_publication_information(
+    publication_id: str,
+    parsed: PublicationInformation,
+    authenticated: AuthenticatedAccount,
+    publication_service: PublicationService,
+    resolved: Settings,
+    cover_media: tuple[dict[str, object], bytes] | None = None,
+) -> dict[str, object]:
+    try:
+        publication = publication_service.update_information(
             publication_id,
             authenticated.account.account_id,
             parsed.model_dump(by_alias=True),
             resolved.is_admin_subject(authenticated.account.auth_subject),
+            cover_media,
         )
     except PublicationNotFound as error:
-        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该出版物。") from error
+        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该资源包。") from error
     except PublicationPermissionDenied as error:
-        raise ApiError(403, "PUBLICATION_PERMISSION_DENIED", "只有该出版物的作者或平台管理员可以修改展示信息。") from error
+        raise ApiError(403, "PUBLICATION_PERMISSION_DENIED", "只有该资源包的作者或平台管理员可以修改信息。") from error
     except PublicationCoverInvalid as error:
-        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面必须来自当前资源包资产。") from error
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面不存在或不可用。") from error
+    except PublicationVersionConflict as error:
+        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", "资源包内容有变化时需要提高版本号。") from error
+    except PublicationValidationError as error:
+        raise ApiError(422, "PUBLICATION_CANDIDATE_INVALID", "资源包信息未通过校验。", [
+            {"path": item["location"], "code": item["code"], "message": item["code"]}
+            for item in error.diagnostics
+        ]) from error
     return {"publication": publication}
 
 
@@ -179,6 +301,28 @@ def republish_publication(
             resolved.is_admin_subject(authenticated.account.auth_subject),
         )
     }
+
+
+@router.delete("/{publication_id}", status_code=204)
+def delete_publication(
+    publication_id: str,
+    authenticated: AuthenticatedAccount = Depends(active_account),
+    publication_repository: PublicationRepository = Depends(repository),
+    resolved: Settings = Depends(settings),
+) -> Response:
+    try:
+        publication_repository.delete_publication(
+            publication_id,
+            authenticated.account.account_id,
+            resolved.is_admin_subject(authenticated.account.auth_subject),
+        )
+    except PublicationNotFound as error:
+        raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该出版物。") from error
+    except PublicationPermissionDenied as error:
+        raise ApiError(403, "PUBLICATION_PERMISSION_DENIED", "只有该出版物的作者或平台管理员可以永久删除。") from error
+    except PublicationMustBeUnpublished as error:
+        raise ApiError(409, "PUBLICATION_MUST_BE_UNPUBLISHED", "永久删除前必须先取消发布。") from error
+    return Response(status_code=204)
 
 
 @router.get("/{publication_id}/manage")
@@ -237,10 +381,8 @@ def download_publication(
     archive = publication_service.download(publication_id, account_id, allow_all)
     if archive is None:
         raise ApiError(404, "PUBLICATION_NOT_FOUND", "没有找到该资源包。")
-    publication = (
-        publication_repository.get_manageable_publication(publication_id, account_id, allow_all)
-        if account_id is not None
-        else publication_repository.get_publication(publication_id)
+    publication = publication_repository.get_accessible_publication(
+        publication_id, account_id, allow_all
     )
     package_name = publication["title"] if publication else "资源包"
     if publication:

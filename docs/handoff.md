@@ -1,237 +1,83 @@
 # PbDH 开发交接
 
-更新时间：2026-08-29
+更新时间：2026-08-31
 
-## 当前落点
+## 当前状态
 
-- 分支：`main`；本轮开始时已快进拉取 `origin/main`。#14、#16—#21 的实现当前仍在本地工作区，尚未提交或推送；下次开始时先检查状态，不要覆盖这些修改。
-- 问卷弹窗修复与回归测试已提交：问卷 Host 改为静态导入，确保 `window.open()` 在菜单点击的同步调用栈中执行。
-- 阶段 6 的 #38—#45 已全部完成并关闭。敌人与武器两条真实纵切的本地、Market、运行时、刷新、公开取得、取消/重新发布和独立设备云恢复均已验证。
-- 本轮 Player 迁移固定来源为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`。
-- 详细迁移范围、路径映射和验收标准见 [`docs/pbdh-sheet-player-migration.md`](pbdh-sheet-player-migration.md)；Character Save 边界见 [`docs/pbdh-sheet-character-save-migration.md`](pbdh-sheet-character-save-migration.md)。不要在本文件复制两份文档的内容。
-- #34“快速即兴敌人卡”按用户决定延后到 PbDH 本体完成后，不修改、不关闭，也不作为当前候选。
-- [GitHub Issue #47](https://github.com/ZZZZzzzzac/PbDH/issues/47)“AFK：完成护甲 Creator → Market → Player 真实纵切”已完成自动化与 Chrome 实机验收；最终验收记录已发布并关闭 Issue。
-- [GitHub Issue #48](https://github.com/ZZZZzzzzac/PbDH/issues/48)“AFK：一次完成 Daggerheart Core 剩余六类资源真实纵切”已完成种族、社群、职业、子职业、物品、领域卡的稳定 Template、Creator/Market/Player 纵切、真实发布与更新/no-op 验收；最终验收记录已发布并关闭 Issue。
-- [GitHub Issue #49](https://github.com/ZZZZzzzzac/PbDH/issues/49)“AFK：完成环境 Template 1.0.0 真实纵切”已完成稳定 Core、旧开发版升级候选、Authoring Layout、Canonical Renderer、Creator/Market/Player/GM 接线、自动封面、`.pbres` 往返、Backend 发布门禁与 Chrome 真实纵切；最终证据已记录，等待标签已移除，Issue 已关闭。
-- [GitHub Issue #50](https://github.com/ZZZZzzzzac/PbDH/issues/50)“AFK：合并 System Package 为单一 `system.json` 根定义”已完成 `1.0.0-alpha.2`、两个真实包生成、Player ZIP/目录/预置/Author Preview Loader 迁移和实机 `.pbsys` 验收；公开包不再包含 `manifest.json`。
-- [GitHub Issue #51](https://github.com/ZZZZzzzzac/PbDH/issues/51)“System Package Contract 收敛为开发期 1.0.0”已完成 Schema、双语言 conformance、Reader 归一化、两个真实包和构建期内嵌资源索引；稳定 `system.json` 的 `embeddedResources[]` 只保留 `path`。
-- [GitHub Issue #52](https://github.com/ZZZZzzzzac/PbDH/issues/52)记录高保真人物存档格式转换与结构化损失处理，当前为 `needs-triage`，不并入 System Package `1.0.0`。
-- [GitHub Issue #53](https://github.com/ZZZZzzzzac/PbDH/issues/53)“稳定 Character Save 1.0.0 与 Module 状态持久化”已完成 Contract、Module 状态投影、`.pbcha` 媒体边界、开发期存档补全迁移和云恢复门禁；最终验收记录已发布并关闭 Issue。
-- L2 #9、#10、#12、#13、#15、#22 已按当前实现与真实纵切证据发布验收记录并关闭；#9/#10 正文已补充公开上线前继续在开发期 `1.0.0` 修改的版本规则。
-- #11“规范资源呈现”已补齐统一可信 Renderer 解析：Player 与 Market 不再维护各自的 Template 特判列表，十个专用 Template 与自由 Template 均可通过精确版本进入同一 Canonical Card Surface；未知 Template/版本仍明确降级。
-- #11 已完成：Creator 敌人实时预览可模拟生命、压力、聚焦和备注，状态命令与 Player/GM 桌面共用同一个处理入口且不写回源资源；历史 Renderer 可按精确 Template 版本按需加载。统一性能命令分别报告 Renderer 修订与代码大小、单卡呈现耗时、同时呈现数量和图片内存，不再拿资源总数代替页面负担。
-- #18 的 Replacement 产品模型已由用户确认改为“每次从 Creator Workspace 实例化目标卡”，不缓存曾经成功切换过的形态：当前桌面卡仍是独立副本；每次切换都重新查找目标资源并生成新实例；目标已删除时本次切换失败且当前卡不变；切回也要求工作区中仍存在目标。桌面只沿用位置、尺寸、旋转与层级，卡牌自身状态按新实例建立；`.pbtab` 只保存当前桌面实例，不保存隐藏形态、历史形态或 Replacement 闭包。
-- #18 已完成本地实现、自动检查和浏览器操作验收：稳定敌人卡可配置“切换形态”目标；GM 桌面可通过资源右键菜单“放到当前桌面”或拖放明确放置；实例右键切换时重新读取当前 Workspace 的目标卡，成功后替换为新实例并保留位置、大小、旋转和层级，失败时原卡不变；旧桌面文件继续可读。GitHub Issue #18 正文、`CONTEXT.md` 与 ADR-0060 已同步改成这套规则。
-- #18 完整验收记录已发布到 [Issue 评论](https://github.com/ZZZZzzzzac/PbDH/issues/18#issuecomment-5453479315)，并按用户指示关闭。
-- #17 已补齐桌面文档生命周期缺口并关闭：整个桌面可复制为新编号且卡片实例编号一并更新；本地删除改为进入可恢复回收站；空状态也能导入 `.pbtab`；导入同编号桌面时必须明确选择保留两份或覆盖，取消时不写入。
-- #19 已补齐桌面卡片操作缺口：Ctrl/Command 切换多选、Shift 追加选择，拖动或方向键会通过一条明确命令移动全部已选卡；模板可列出允许 GM 修改的实例文字字段，平台拒绝修改未声明字段、卡图、规范尺寸、显示模式、Template 和来源信息；Template 状态命令的有限取值也会在执行前检查。
-- #20 已补齐并逐条验收 GM 桌面云连续性：每张桌面独立同步与计数；先存本地再上传媒体和文档；程序重启后沿用同一待传编号；单桌面失败不阻塞其他桌面；冲突可保留云端、用本地覆盖或另存新桌面；会话被顶替时停止云写入但保留本地改动；云端回收站保留 30 天并支持永久删除，删除会解除桌面媒体引用。真实敌人桌面可在没有来源工作区的另一份本地数据库中连同卡图、状态与位置恢复。
-- #21 已补齐 Market 出版生命周期的最后缺口：普通导入与“创建 Fork 草稿”分成两个入口；只有明确 Fork 才换新 Package ID 并记录来源 Publication、Package、版本、Snapshot Digest 与复制资源清单。Backend 会反查来源当前快照，伪造来源或资源引用时整包拒绝且零公开写入。新 Publication ID 使用符合 Contract 的 UUIDv7。
-- #14 已完成 Creator Workspace 云连续性核对：共享云服务已覆盖显式首次同步、本地先写、媒体先传、可靠重试、冲突三选一、会话接管、30 天回收站和永久删除；此前 Chrome 与 IAB 独立数据库的真实敌人 Workspace 跨设备恢复证据继续有效。本轮修正冲突“本地另存”会清除 Fork 上游，并把本地状态明确标成“仅保存在此浏览器，不等于云备份”。
-- #16 已完成 Character Save 云连续性核对：人物字段与玩家卡牌桌面作为同一份存档同步；资源选择只保存执行后的最终值和自包含卡牌副本，不保存资源包安装状态或来源引用。已有跨设备恢复、冲突三选一、会话接管、自动重试和回收站证据继续有效；本轮补齐云端永久删除，并把匿名状态明确标成“仅本机（不是云备份）”。
-- #46 后续迁移缺口已补齐：Player 普通状态消息进入统一 PbDH 通知；System Package ZIP/文件夹上传与 Author Preview 入口恢复；寻望之心计数资源 WebP 已修复。
-- Player 现有 5 个预置系统包：匕首之心、寻望之心、巫趣 Witchy、我的车技如何？、罗德岛旅记。后三个固定迁移自 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`；角色页、皮肤、审核规则和人物格式能力随包加载，罗德岛旅记的 682 份资源与 271 份 WebP 媒体已进入内置官方资源包。
-- 内置资源包统一命名为“系统名＋官方资源”。匕首之心官方资源提升到 `1.0.4`，Digest 为 `sha256:38476e464a2e3580a8429a70a0dea9a5eb371ca9b6dc6464a37ea821fd483a21`；寻望之心等内置包依据当前系统包的内嵌索引进入“原生资源包”，不再依赖手工名单。
-- Player 资源管理器已把 ZZZ、Rink、dhsheet、不咕鸟四种导入改成顶栏直接入口；资源单击即打开共享卡面预览；底部“移除/浏览资源”已删除，可移除包改在左侧包卡片右上角显示删除按钮。
-- Player 已安装资源改为按 System Package ID 隔离：切换系统只读取该系统自己的资源库，新上传、Market 导入、更新和移除也只写当前系统；旧的全局安装记录会按资源包声明的目标系统自动迁移。当前系统的官方资源始终位于“原生资源包”，只允许锁定或恢复官方版本，不提供删除。
-- 罗德岛旅记 Runtime 回归固定验证 35 份种族与 15 份社群的名称、简介非空；`terra-portal` 暗色皮肤已补齐禁用表面与文字变量，资源选择表头不再出现浅底浅字。
+- 当前分支：`main`。
+- L1 已关闭：#3 System Authoring Workflow、#4 Player App、#6 GM Tabletop、#7 Market。
+- L1 仍开放：#5 Creator App、#2 Contracts & Template Platform。
+- #8“平台合约生命周期治理”开放；正式发布门槛未满足前，不得擅自把 Contract 状态改为 published。
+- #34“快速即兴敌人卡”按用户决定延后到 PbDH 主体完成后。
+- #52“高保真人物存档格式转换”仍为 `needs-triage`，应先设计损失模型，不直接实现。
+- 用户已授权：确认功能完成且测试通过的 Issue 可以直接关闭，无须逐项申请。
 
-## 本轮完成
+## 已落地的产品边界
 
-- Resource Package `1.0.0` 的资源可保存换卡按钮 ID 与目标 Resource ID；TypeScript、Python 和 Backend 发布检查会拒绝重复按钮、目标缺失以及 Template 没有声明的按钮。
-- Tabletop Document 已收敛为开发期 `1.0.0`。文件只保存当前桌面实例及其换卡目标，不保存隐藏卡、历史卡或预先复制的其他形态；旧 `1.0.0-alpha.1` 文件仍可读取并补为空换卡列表。
-- 稳定敌人 Template 声明“切换形态”按钮。Creator 敌人编辑页可从同一 Workspace 的其他资源中选目标；GM 桌面实例菜单按 Template 标签显示按钮。
-- 换卡时会现场读取目标资源、Template 和媒体，用全新的默认状态建立新桌面卡；位置、大小、旋转与层级沿用原卡。目标被删、按钮失效、类型不支持或媒体缺失时不会改动原卡，并显示中文说明。
-- GM 资源菜单新增“放到当前桌面”，让用户在拖放之外也有清楚、可点击的放置入口；Creator 或 Market 的导入与导航仍不会自动放置。
-- GM 左侧每个 Creator 资源包会在名称旁显示许可名称；许可信息不参与放置或换卡判断。
-- 自动测试覆盖 A→B、A→B→C、A→B→A、切回前修改目标、删除目标、目标不匹配、失败保持原实例，以及稳定 `.pbtab` 往返和拒绝隐藏形态数据。
+### Player
 
-- Character Save Contract 已直接收敛到开发期 `1.0.0`：`characterData` 以有状态 Module ID 为持久键，`freeText` / `longText`、Checkbox、Countable、`imageField` 和每个 `cardTable` 均保存可逆状态；System Package Runtime 必须声明 `characterDataVersion`。
-- Card Table 不再使用平台特判的统一 `characterData.tabletop`。每张卡的 Resource Copy、运行状态、Indicators、Token Count 和几何布局均位于所属 `cardTable` Module 下；卡图缺失时仍保留实例，当前资源包可用时重新解析媒体。
-- `.pbcha` 逻辑文档不含 `assets`；Writer 和 Repository 只携带顶层 `imageField` 引用的玩家 WebP，系统包图片与卡图不会进入人物归档或云媒体列表。旧 `1.0.0-alpha.1` 可确定性转换，开发期缺失 Module 状态按当前包默认值补齐。
-- 导入 `.pbcha` 和云端恢复会先加载目标预置 System Package，再校验 Package ID、版本、Character Data 版本、Module 集合和值形状；验证失败不会写入 Repository。
-- 寻望之心 System Package 已从开发期误用的 `1.1.0` 回到 `1.0.0`；生成器改为消费源 Manifest 版本，不再硬编码。已有本地 `1.1.0` 人物档会迁回当前 `1.0.0`。
+- 五个预置系统包及其资源库按 System Package ID 隔离；刷新、切换、安装和移除不会串包。
+- 官方资源属于“原生资源包”，不可删除；额外资源包可移入回收站。
+- 人物存档、Creator 工作区、GM 桌面统一采用本机优先、显式首次上传、可靠重试、冲突处理、本机/云端 30 天回收站的策略。
+- 所有卡面由共享 Canonical Renderer 呈现。固定卡比例只能是 `63:88`；可变高度卡同宽，只允许高度变化；宿主只负责等比缩放或裁剪。
+- Player 与 GM 共用 Tabletop Surface、拖动核心、卡牌详情窗口和右键菜单机制。
 
-- 新增可信 `种族`、`社群`、`职业`、`子职业`、`物品`、`领域卡` 六个 `1.0.0` Template，覆盖封闭 Schema、默认值、投影、媒体槽位、Tabletop、Authoring Layout、Canonical Renderer 与 Catalog；旧 `0.0.0-dev.1` 保留精确读取但禁止发布。
-- Creator 使用通用结构化编辑器完成六类资源的新建、编辑、预览与 `.pbres` 导出；Market 与 Player 复用相同 Canonical Card Surface，Player 将六类资源路由到 Daggerheart 原生 Picker、人物字段、物品栏和卡牌桌面。
-- 匕首之心官方资源当前为 `1.0.4`，仍为 625 个资源、280 个媒体；剩余 399 份官方资源全部迁移到稳定 Template，包 Digest 为 `sha256:38476e464a2e3580a8429a70a0dea9a5eb371ca9b6dc6464a37ea821fd483a21`。
-- 浏览器验收出版物 ID 为 `734fcbba-cedc-4210-be35-61a03e5344da`，Package ID 为 `01a04392-34a8-7807-8798-79efb6ff5d5d`。最终公开归档 116021 bytes，文件 SHA256 为 `4F32370477B7C4789F60BB3F62CF89703ECE1220AF36976F74ABDEAF8B28622A`，Snapshot Digest 为 `sha256:6ea401f92d838443594a07144cdbd97e0e3c0667d73b49a02c1790682182603a`。
+### Creator / GM
 
-- 新增可信 `护甲@1.0.0`：封闭 Schema、默认值、投影、媒体槽位、Authoring Layout、不可变 `armor-card-r1` Renderer、Tabletop 空状态、旧版精确升级候选与双运行时 conformance fixture 均已接入。
-- Creator、Market、Player 与 GM Tabletop 均使用同一 Armor Canonical Resource Renderer；Creator 支持护甲新建、全字段编辑、预览、媒体与 `.pbres` 导出—重新导入，Market 支持匿名取得与规范卡面，Player 资源管理器支持规范预览。
-- Daggerheart Core 的 34 份护甲已全部迁移到 `护甲@1.0.0`，内置资源包提升到 `1.0.2`；仍为 625 个资源、280 个媒体，Digest 为 `sha256:aba2fb68884b84c32466592d89a3bafeb106dd01af32e7f8f0ad952704ac86b4`。
-- Player 真实 Daggerheart Runtime 集成测试证明护甲 Picker 原子写入名称、护甲值、描述与护甲槽，Character Data 导出—恢复后字段保留，且不保存 Resource Package、Game Resource Reference 或 `pick-armor` selection snapshot。
-- 实机发布发现 Backend 的可信 Template Catalog 漏登 `护甲`；现已登记旧 `0.0.0-dev.1`（禁止发布）与稳定 `1.0.0`（开发环境可发布），并新增服务端发布回归测试。
-- Market 的 Player 交接现在把护甲明确显示为 `Daggerheart Core / 护甲`，不再误标为“其他资源”；Player 仍以 System Package Compatibility 为权威完成原生路由。
+- Creator 与 GM 共用左侧 Workspace Tree，包括文件夹、搜索、多模板筛选、多选、右键菜单和排序。
+- 当前排序为名称升序/降序，入口在“多选”右侧；footer 只显示资源总数。
+- 模板筛选支持多选；不选择等于显示全部。
+- 工作区不设最小宽度；Creator 三栏可拖动调整，GM 同一工作区也可拉伸。
+- Creator 字段编辑失焦后才进入延时保存，不再每输入一个字就同步。
+- Schema 的 `enum` 只作为可选建议：编辑器可下拉自动填写，也允许任意手输值。
+- 模板不声明“可编辑字段”；资源实例的所有数据字段默认都能在 Creator/GM 编辑。
+- GM 已移除左下角选择工具条；卡牌右键菜单保留“编辑卡牌”，拖动时自动置顶。
+- OpenPencil 一比一视觉还原已按用户要求暂缓，等待在设计环境齐全的电脑上继续。
 
-- Player 已挂载完整 `SheetRenderer`、正式 Character Save Repository、云同步、`.pbcha`、统一图片准入、创建向导、问卷和打印。
-- Daggerheart Core 已原生化为单个 `daggerheart-core.pbres`，共 625 个资源和 280 个唯一媒体资产；`.pbres` 已去除压缩归档总字节数限制。
-- 修复首次打开 Player 时预置 System Package 尚未进入 Platform Runtime Storage、默认人物就提前保存的问题；现在先建立包缓存边界，再激活系统包和创建默认人物，并补了真实 Storage seam 的回归测试。
-- Player 人物存档已从页面左栏移回 Platform App Bar；顶部按旧 `PbDH_Sheet` 保留“玩家功能 / 玩家存档 / 导入导出 / 系统包”四组下拉菜单。打印媒体样式会隐藏完整 Platform App Bar。
-- Platform App Bar 已明确分成左右两组：PB/PbDH 与四个主页面 Tab 靠左且位置固定，各 App 独有工具、通知、设置与账号靠右；资源管理器详情栏恢复内部滚动；资源表行样式改为专用类名，避免与系统包 `.resource-row` 碰撞并挤压“生命 / 压力 / 护甲 / 希望”到“希望特性”区域。
-- Creator 发布资源包时，未手动上传封面会按确定顺序尝试包内资源卡，取第一张可渲染卡，强制固定比例并通过同一 Canonical Renderer Revision 渲染为 WebP；单张卡失败会继续尝试下一张，不把独立封面缺失当作发布阻塞。生成资产加入完整发布快照。带图媒体先内联为 Data URL，避免 Canvas 污染；`react-dom/server` 仅在点击发布时动态加载，不增加主入口常驻体积。
-- Player 的 Sheet Runtime 桥接现在只注入原生资源卡实际使用的 `portrait` / `back` 媒体；资源包独立封面继续保存在安装快照中，但不再被误当成 System Package 图片并报告 `UNUSED_PACKAGE_IMAGE`。
-- 修复创建向导 Portal 脱离主题变量作用域后遮罩与面板透明的问题：向导现在挂入 Player App Shell，并为遮罩、面板和操作区保留实色回退值。
-- “生命 / 压力 / 护甲 / 希望”的图片标志会按可用宽度自适应缩放，并覆盖布局皮肤的 `11px` 后代字号；常规数量下与熟练度统一为 `26px`。
-- “系统包”下拉菜单已移除重复的“管理资源包”入口；资源管理器仍保留在“玩家功能”菜单。
-- Daggerheart Core 的 280 个带图资源现在写入 `image` 卡面模式，无图的武器、护甲等继续使用文字卡；内置资源包版本提升到 `1.0.1`，已有 `1.0.0` 安装会按最低版本自动刷新；运行时媒体资产带上资源包来源键，Card Table 能解析到对应 Blob URL。
-- Player Resource Picker 的 `字段模板` 已改为显示白名单，并为种族、社群、职业、子职、武器、护甲、物品和领域卡配置了玩家有价值的精简列，不再显示 `ID`、卡图路径、卡背路径等内部列。
-- 寻望之心已从 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6` 的 `public/system-packages/heart-of-hopefind` 迁移为第二个真实预置 System Package。旧 `survivor-styles` 已转换为使用“自由”Template 的标准内嵌 `.pbres`；页面、Modules、Dependencies、Character Text Export、3 个 Validation Scripts 与 Skin 均走正式 Loader/Validator/Player Runtime。
-- Player 现在可在 Daggerheart 与寻望之心间显式切换，当前系统偏好跨刷新保存；Character Save 与 active save 按稳定 System Package ID 隔离。移动端 Platform 主菜单同时暴露当前 App 的四组 Player 操作。
-- 旧原型 `apps/player/src/PlayerAppPrototype.tsx` 和旧图片处理器 `apps/player/src/sheet-runtime/rendering/playerImageProcessor.ts` 已移入 Windows 回收站；Git 中记录为删除。
-- Platform App Bar 的通知铃铛现在拥有统一通知队列、数量、查看、逐条关闭与全部清除；Player 已移除两处 `message message-info` 横幅，错误横幅仍保留。
-- Player “系统包”菜单已恢复 ZIP、文件夹上传与 Author Preview。输入目录会同时经过权威 `system.json` Contract 和正式 Sheet Loader/Validator；嵌入 `.pbres` 复用现有资源路由，动态 System Document 进入 Character Save resolver，避免自定义包只能打开却不能保存。
-- 寻望之心作者源中 10 个曾被文本复制损坏的 WebP 已从固定来源仓库按二进制恢复，并重新生成公开 System Package。
-- Countable 图片标志恢复按内容数量自动缩放；图片型 Countable 的减号也会拦截右键并减少上限，不再打开浏览器右键菜单。
-- Player “系统包”菜单不再显示资源包数量；数量改为跟随“玩家功能 → 资源管理器”入口。资源管理器外壳、详情标题和资源表已使用 Player 专用类名，避免 Sheet Runtime 与 Market 的全局样式污染；分类横向滚动条也不再遮挡按钮。
-- 正确的 ZSeven-W OpenPencil CLI `op 0.8.4` 已安装到 `C:\Users\zinge\.local\bin\op.exe`，该目录在用户 PATH 中；不要误装同名的 `open-pencil/open-pencil`。
-- Player 资源管理器按当前 System Package 的 `embeddedResources` 分成“原生资源包 / 额外资源包”。“同步到云”已归入“玩家存档”；“系统包”改为可用的当前包下拉框和独立版本号，只保留 `.pbsys` 与文件夹两个上传入口。
-- 文件夹入口现在就是 Author Preview：目录句柄按 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6:src/storage/storageService.ts` 的机制持久化到共享 IndexedDB `authorPreviewHandles` 表；同一标签页刷新会重新读取目录，恢复成功后不会再被首选预制包覆盖。
-- Daggerheart 主武器、副武器与护甲 Picker 已显示“位阶”并默认按位阶升序；主/副武器的“伤害类型”表头显示为“类型”，底层字段键不变。预置系统包加载器现在保留调用方注入的 Resource Package 媒体资产，不再把 Daggerheart 子职业和领域卡错误回退为文字卡。
-- 环境 Template 已从 `PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe:frontend/src/templates/environment/**` 提升为 `环境@1.0.0`。稳定结构补入“原文”和特性“原名”，旧 `0.0.0-dev.1` 保持精确读取并可生成不修改源数据的升级候选；Creator 可新建和完整编辑，四个资源 Surface 共用 `environment-card-r1`。
-- Player 资源管理器的环境入口判断已补齐；Market 安装的环境包位于“额外资源包 / 其他资源”，可直接打开共享 `environment-card-r1`，刷新后从 IndexedDB 恢复。
-- Creator Workspace 目录不再保存或执行同目录手动重排；文件夹优先，文件夹按名称、资源按文件名确定排序。拖到其他文件夹或根目录仍会更新资源路径并保持 Resource ID，旧本地/云 payload 的 `order` 值会在读取时规范化，无需持久化 schema 迁移。
-- Resource Package Structural SemVer Classifier 已在 TypeScript 与 Python 两端落地并消费同一组 `1.0.0` conformance cases：集合重排与版本/Digest 变化为 `none`，字段、路径、媒体、展示、许可、来源及兼容 Template/目标变化为 `PATCH`，新增资源/目标为 `MINOR`，删除或改变稳定 Resource/Template/目标引用为 `MAJOR`；作者可过度升级但不可低于最低版本。正式 Publication Repository 在同一事务内执行门禁并保证拒绝时零写入，development 的 `1.0.0` 同版本替换仍按 ADR-0057 保留。
-- Resource Package Directory/ZIP Portable Archive Profile 的容器诊断版本已从遗留的 `1.0.0-alpha.1` 提升到当前 `1.0.0`。TypeScript 与 Python 现在共同消费 `contracts/conformance/resource-package/1.0.0/archive-cases.json`，覆盖路径安全、跨平台碰撞、特殊条目、媒体缺失/篡改/孤儿、未知文件和空目录一致性；旧 alpha `.pbres` 仍有双实现读取回归，不会被静默升级。
-- 浏览器侧 Resource Package Contract 测试已从只消费 alpha fixture 改为同时消费 `1.0.0-alpha.1` 与 `1.0.0` 的逻辑文档和 Snapshot Digest known-answer fixtures，与 Python Backend 的双版本证据对齐。
-- System Package Loader 已将“合法但未声明的归档文件”与“不安全的可移植路径”分离：前者报告 `system-package.archive.file.unknown`，绝对路径、反斜杠、`.` / `..`、空段、控制字符、尾随空格或点及 Windows 保留名仍报告 `system-package.archive.path.invalid`。
-- System Package Contract 已收敛为开发期 `1.0.0`：`resourceCompatibility` 与 `embeddedResources` 均可省略并由 Reader 归一化为空数组；`embeddedResources[]` 只声明 `.pbres` 路径，包身份、版本和 Digest 由嵌套 Resource Package 提供。`alpha.2` 仍可精确校验、读取并归一化。
-- 两个公开预置包在构建时从权威 `.pbres` 派生快速索引。Player 已安装相同版本时直接通过 ID、版本和 Digest 判断，不再为了识别资源包而在每次启动下载、解压 Daggerheart 的 20.8 MB 归档；首次安装仍读取并完整校验 `.pbres`。
+### Market
 
-## 已验证
+- Market 是爱好者分享资源的空间，不是商业出版物平台；不建设审核、举报、版权处理、后台治理、人工精选或相关数据表。
+- 发布、更新、取消发布、永久删除、下载、安装到 Player、导入 Creator、Fork 草稿均已完成。
+- 长操作统一使用可定制文案的公共忙碌遮罩；取消发布不再重复写入大型归档。
+- `.pbres` 自包含资源、媒体以及市场展示信息、语言、许可和封面；开放阶段不兼容旧市场资源，可直接更新或删除旧数据。
+- “编辑资源包信息”由 Creator 新建/右键编辑/发布和 Market 作者编辑共用同一表单。
+- 应用级消息统一进入右上角通知中心；切换 App/系统包等普通导航不产生通知。
 
-- #19 当前 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 491 个测试、123 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大文件警告。
-- 内置浏览器用“多选敌人甲 / 多选敌人乙”验证 Ctrl 多选后同时选中两张卡，并用方向键触发整组移动；实例编辑页不再提供卡面模式、固定比例、卡图、特性增删等越权入口。把乙改名为“多选敌人乙·仅桌面”后，左侧源卡仍为“多选敌人乙”；刷新后实例名恢复且临时选择清空。
-- `node scripts/restart-dev.mjs` 已确认 Backend `8001` 与 Platform `5173` 均为 `OK`。内置浏览器从空状态新建“生命周期检查桌面”，复制出独立副本，删除副本后在本地回收站恢复；刷新页面后原桌面与副本仍然存在。
-- 最终改动审查发现并修复旧版资源包版本比较记录没有 `replacements` 时的前端读取错误；旧记录现在与 Python 端一致，按空换卡列表处理，并有单独回归测试。
-- `node scripts/restart-dev.mjs` 已确认 Backend `8001` 与 Platform `5173` 均为 `OK`。内置浏览器已实际创建含“形态 A / 形态 B”的稳定敌人资源包，通过“放到当前桌面”建立实例，并完成 A→B→A。把 B 改名为“形态 B（已修改）”后再次从 A 切换，桌面立即取得新名称；换卡产生新实例 ID。卡片先从 `(56, 88)` 移到 `(206, 163)`、再从 `1.0` 放大到 `1.2` 后切换，位置、大小、旋转与层级样式逐项保持。B 的压力从 `0/4` 改为 `3/4` 后切到 A 再切回 B，压力恢复为 `0/4`、生命恢复为默认 `5/5`。刷新后当前形态和布局恢复，控制台 error 为 0。
-- 经用户授权删除目标“形态 B（已修改）”后，在当前“形态 A”上执行“切换形态”，页面显示“目标卡已不存在，原卡没有变化。”；实例 ID 与 `(206, 163)`、`1.2`、`0deg`、层级 `0` 全部保持，控制台 error 为 0。最终页面同时显示资源包许可 `Public Domain`，放置和现有桌面实例不受影响。
+### Contracts / Templates / Renderer
 
-- #48 最终 `npm run verify` 完整通过：63 个 TypeScript 测试文件 / 399 个测试、87 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
-- Creator 导出的六资源 `.pbres` 经正式 Loader/Validator 验证为 0 诊断；最终 Market 下载包同样为 0 诊断、6 个稳定 `1.0.0` 资源与 1 个封面资产。六种 Canonical Surface 在 Creator、Market、Player 均逐项显示。
-- Chrome 实机完成 Creator 登录发布、Market 取得、Player 安装与原生使用：种族、社群、职业、子职业、物品与领域卡分别进入人物字段、物品栏或卡牌桌面；刷新后状态保留。对同 Package ID、同版本但不同 Digest 的出版物，Player 明确要求“更新”；更新后再取得相同 Digest，明确 no-op 且不创建副本。
-- Creator 390×844 下无横向溢出；本地测试账号继续仅保存在被 Git 忽略的 `.env.local`，文档和提交不含凭据值。
+- JSON Schema 2020-12 是文件与持久化 Contract 的唯一权威；TypeScript 和 Python 消费同一组版本化样例。
+- 当前可信资源模板统一为稳定 `1.0.0`；未发布的 alpha/dev 模板和兼容代码已移除。
+- 平台与模板不得用正则理解游戏字段语义；例如“等级”和“姓名”对平台都是普通作者数据。
+- `additionalProperties: false` 仍用于封闭平台结构；不得借此预设自由模板的“简介”“类型”等游戏字段。
+- 受限 Markdown 支持 `_斜体_`、`__粗体__` 和 `:red[染色]`，并由共享渲染链消费。
+- Workspace 文件图标采用 Lucide，不再使用自绘图标。
 
-- #47 最终 `npm run verify` 完整通过：59 个 TypeScript 测试文件 / 361 个测试、78 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍只有既有 Pydantic 警告，Vite 仍只有既有大 chunk 警告。
-- #47 Creator、Market、Player 护甲定向集成测试为 3 个文件 / 29 个测试；Python Resource Package conformance 为 17 个测试。`node scripts/restart-dev.mjs` 已确认 Backend `8001` 与 Platform `5173` 均为 `OK`。
-- Chrome 实机桌面纵切已通过：Creator 新建、全字段编辑、保存与刷新恢复；登录后上传封面并发布；退出账号后匿名 Market 可发现、打开 Canonical 护甲卡面并下载 `护甲纵切验收包.pbres`；交接对话框显示 `Daggerheart Core / 护甲`，Player 安装后资源管理器显示“护甲 1”，Picker 为 35 条结果，选择发布包的“填充布甲”后写入阈值 `5/11`、护甲值 `3`、护甲槽上限 `3` 与特性，刷新后完整恢复。各 Surface 控制台无 error。
-- 390×844 实机验收通过：Creator、Market、Player 均无横向溢出，Creator 编辑器的移动端最小宽度已收敛；临时 viewport 已恢复默认桌面尺寸。
+## 本轮最后完成
 
-- 本轮资源包与 Player 改动通过 54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界与 Platform build；单包归档实测 20,796,696 bytes。
-- 真实浏览器已验证：Player 连续刷新稳定启动；资源管理器只安装一个 Daggerheart Core（625 资源、280 图片、8 个类型）；主武器选择、人物编辑、自动保存与刷新恢复正常；人物复制产生第二份可切换存档；正式 `.pbcha` 导入产生第三份存档且无诊断；头像经统一裁剪入口上传后可跨刷新恢复；创建向导显示 18 步；打印会在缺少必填车卡内容时给出预检查提示。
-- `.pbcha` 导出按钮在真实页面执行后没有错误；内嵌浏览器不暴露应用通过 Blob 链接触发的下载事件，归档字节级写入/读取往返继续由 Contract 测试覆盖。
-- `npm run verify` 已完整通过，既有的 Creator 设计一致性阻断在当前基线中已不存在。
-- `node scripts/restart-dev.mjs` 最近一次健康检查通过：Backend `8001`，Platform `5173`。
-- 本地 Supabase 登录沿用 `DaggerHeart_Battle/js/enemy_library_online.js` 的公开客户端 URL 与 anon key，已写入被 Git 忽略的 `.env.local`；重启后 `/api/auth/config` 返回 `configured: true`，Backend 与 Platform 健康检查通过。
-- Creator 默认发布封面回归通过：相关 3 个测试文件共 31 个测试与 `npm run typecheck` 均通过。
-- 带独立封面的真实 Daggerheart Core Runtime 加载回归通过；Player 资源桥接、Market 交接、离线仓库与系统包相关 4 个测试文件共 19 个测试及类型检查通过。
-- 本轮五项 Player 回归的 5 个定向测试文件共 16 个测试通过；完整 `tests/player` 共 15 个文件、58 个测试通过。真实浏览器确认：向导遮罩为 `rgba(18, 25, 27, 0.68)`、面板为实白色；四项图片标志和熟练度均为 `26px`；主武器 Picker 只显示“名称 / 属性 / 距离 / 伤害 / 负荷 / 伤害类型 / 描述”，领域卡只显示“名称 / 领域 / 等级 / 属性 / 回想 / 描述”；升级后新选子职卡使用 Blob 卡图。复测产生的临时卡牌已从本地人物存档清理。
-- #44 已移除 `ready-for-human` 标签，发布真实验收记录并关闭。
-- 新电脑上的 `npm run verify` 已完整通过：54 个 TypeScript 测试文件、328 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
-- 本地测试账号凭据保存在被 Git 忽略的 `.env.local` 中，键为 `PBDH_TEST_ACCOUNT_EMAIL` 与 `PBDH_TEST_ACCOUNT_PASSWORD`；不要把值写入文档、日志或 Git。
-- 内嵌浏览器自动化连续完成登录、会话接管、云恢复、刷新和 30 题问卷，没有导致 Codex 应用崩溃；全局 `C:\Users\zinge\.codex\AGENTS.md` 中对应风险限制已删除。
-- #45 真实敌人纵切已验证：Market 单资源入口交接完整包；同 Package ID 不同 Digest 必须显式更新；Creator Ingress 只导入并聚焦、不自动放置；“陨落神殿”两个牛头人实例分别保持压力 `3/5` 与 `0/5`，刷新后不互相污染；桌面已同步云端，`.pbtab` 导出无控制台错误。
-- #45 真实武器纵切已验证：Market 的“测试资源包”以标准 `.pbres` 安装到 Daggerheart Core 原生“武器”入口；Player 显示 2 个资源，主武器 Dependency 产出与描述在刷新后恢复；人物存档已同步；重复安装同一快照为明确 no-op。随后经 Market“导入卡片工坊”完整回到 Creator 并同步云端；只读核对 Backend 证明 Market 与云 Workspace 的完整逻辑文档相同，Package ID、版本、Digest、2 个资源和 2 个媒体一致。用户确认后已公开重新发布；退出账号后的匿名 Market 仍可发现并打开详情，匿名 API 返回同一快照且 `.pbres` 下载为 200、正确媒体类型、110251 bytes。
-- 修复 Market 武器卡图被误报为 `UNUSED_PACKAGE_IMAGE`：动态资源媒体继续参与存在性与卡图引用校验，但只有真正的 System Package 图片进入“未使用图片”警告。新增回归测试后，真实 Player 资源管理器不再显示该警告。
-- 390×844 自动化验收通过：关闭资源管理器后 Player、Market、GM 页面均无横向溢出；Player 主武器、Market 两个出版物、GM 两个独立敌人实例和移动端主导航均可见，控制台无错误；临时 viewport 已恢复默认值。
-- 当前 `npm run verify` 通过：54 个 TypeScript 测试文件、329 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告，均不影响退出码。
-- #45 定向证据集通过：15 个 TypeScript 文件 / 93 个测试覆盖归档、Contract、Market 交接、Publication、Creator/GM 放置、Player 安装与 Dependency、云恢复和冲突；Backend Publication/Cloud Document 12 个测试覆盖匿名下载、权限/会话、媒体原子提交、revision 冲突与零部分写入。运行中匿名 API 证明：武器未发布时下载返回 404；用户确认重新发布后，同一快照返回 200、正确媒体类型和 110251 bytes。
-- Chrome 扩展提供了与 IAB 独立的 IndexedDB 验收环境：初始没有 Market 测试资源包；登录会话自行恢复后，云端 Character Save 恢复人物名、主武器最终字段和描述，且当时源武器包尚未安装；随后公开武器包完整安装为第 9 个包，同快照再次取得明确 no-op。Creator Workspaces 和“陨落神殿”也从云端恢复，两个同源敌人实例压力分别为 `3/5` 与 `0/5`，刷新并重新选择桌面后仍一致；全程无控制台错误。
-- #42 真实敌人取消/重新发布验收通过：取消后匿名目录不再包含该 Publication，详情、`.pbres` 下载和媒体均返回 404；作者管理页仍保留同一 Publication。重新发布后公开目录、详情、下载和媒体恢复，Publication ID、Package ID、版本与 Digest 均不变；下载为 200、44,809 bytes，媒体为 200、42,822-byte WebP。#42 与 #45 的最终验收记录已发布，`ready-for-human` 已移除，两个 Issue 均已关闭。
-- #46 自动化浏览器验收通过：寻望之心的 8 个求生者风格可组合为实际人物字段，人物编辑、生命/压力、噪音 d12→d20→d12、切换保存和刷新恢复正常；Daggerheart 原人物与武器数据未被串写。390×844 下页面宽度为 390px、无横向溢出，移动端系统包面板可展开，控制台无 error；临时 viewport 已恢复。
-- 当前 `npm run verify` 通过：55 个 TypeScript 测试文件、335 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
-- 后续修复的浏览器验收通过：系统包菜单显示“上传系统包(zip) / 上传系统包(文件夹) / 系统包预览”；寻望之心页面存在 33 个有效 `128×128` 标记图片、fallback 与破图均为 0；`.message.message-info` 为 0；PbDH 通知显示数量并可打开查看。自动化期间 Codex 未崩溃，浏览器风险旧规则已确认不再存在。
-- Countable 浏览器回归通过：Daggerheart 生命上限从 6 增至 14 时，14 个图片标志由 `26px` 自动缩至 `17px`，容器无溢出；右键减号可将上限从 14 减至 13，且不弹浏览器菜单。验收后已把生命上限恢复为 6，字号恢复为 `26px`，控制台无 error。
-- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、342 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
-- Player 资源管理器布局浏览器验收通过：660×756 下弹窗底部未越界，详情标题为 48px，分类栏为 38px、按钮为 30px，横向滚动条不再遮挡分类；1280×720 下顶栏 64px、汇总 58px、搜索 36px、底部操作 38px，控制台无 error，临时 viewport 已恢复。
-- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、345 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
-- Player 菜单与资源分组浏览器验收通过：资源管理器显示“原生资源包 / 额外资源包”；系统包选择框为正常深色可用状态，选项为 Daggerheart / 寻望之心，版本号独立显示，菜单只显示“上传系统包(.pbsys) / 上传系统包(文件夹)”，控制台无 error。浏览器安全策略拒绝自动执行下拉切换，未绕过；切换逻辑由回归测试和类型检查覆盖。
-- 当前 `npm run verify` 通过：56 个 TypeScript 测试文件、349 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。Python 仍输出既有 FastAPI/Pydantic 弃用警告，Vite 仍输出既有大 chunk 警告。
-- 装备 Picker 与卡图修复浏览器验收通过：主/副武器表头均为“名称 / 属性 / 距离 / 伤害 / 负荷 / 位阶 / 类型 / 描述”，护甲包含位阶，三者默认位阶升序；不刷新页面切换寻望之心再切回 Daggerheart 后，领域卡“符文护符”为图片卡（图片 1、文字卡 0）。当前 `npm run verify` 通过：56 个 TypeScript 测试文件、350 个测试，76 个 Python 测试、类型检查、依赖边界、设计检查与 Platform build 全部通过。
-- #49 最终 `npm run verify` 通过：66 个 TypeScript 测试文件 / 409 个测试、88 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。Creator 实机确认环境入口、9 个顶层字段、可变长特性编辑、实时规范卡面，以及无图环境卡和带图敌人卡的自动 WebP 封面。
-- #49 公开 Publication ID 为 `e6ccb6d0-2320-495c-803d-db16817e559b`，Package ID 为 `01a04620-97cd-757c-b8c0-df43207b9562`，Snapshot Digest 为 `sha256:7410244b3e701db783efd35dd7edfd3d637f2138d828bb1bf26393d19605e761`。匿名 Market 可发现并下载；Player 安装到“其他资源”、共享卡面与刷新恢复通过；Chrome 原生 HTML5 拖放把环境卡显式放入 GM 桌面，刷新后实例恢复。全程控制台无 error。
-- Creator 目录确定排序完整验证通过：`npm run verify` 为 66 个 TypeScript 测试文件 / 411 个测试、88 个 Python 测试，类型检查、依赖边界、设计检查和 Platform build 全通过。内嵌浏览器中同一父目录的 `0 文件夹 / A 文件夹` 会立即按名称排序，刷新后顺序保持，控制台无 error；跨目录移动、资源路径更新、旧 `order` 规范化与同目录 no-op 由模型/仓库测试覆盖。浏览器自动化无法为该目录树构造原生 HTML5 `DataTransfer`，因此未把坐标拖拽结果作为验收证据。
-- Structural SemVer 与封面回退收紧后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 436 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。共同 fixture 还覆盖了同一 System Package 多个精确目标版本的匹配顺序，证明集合顺序不会改变分类。
-- 内嵌浏览器使用未上传独立封面的“环境 Template 验收包”打开发布窗口，自动封面成功显示；图片自然尺寸为 `680×1073`、来源为本地 Blob，证明走固定比例 Canonical Renderer → WebP 链路。未点击最终发布，控制台无 error，临时验收标签页已关闭。
-- Portable Archive Profile `1.0.0` 提升后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 437 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
-- 双版本 Resource Package Schema/Digest 浏览器 conformance 补齐后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 448 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
-- System Package 未知文件诊断修复后的 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
-- #50 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 449 个测试、113 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证 Daggerheart / 寻望之心切换与刷新保持；上传 20.8 MB、只有 `system.json` 根且不含 `manifest.json` 的真实 Daggerheart `.pbsys` 后完整加载，控制台无 error。
-- #51 最终 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 453 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器中已安装 Daggerheart 刷新到可交互约 421 ms，寻望之心切换后刷新保持约 946 ms；资源管理器原生/额外分组正常，20.8 MB 稳定版 Daggerheart `.pbsys` 上传成功，全程控制台无 error。原生目录选择器不能由浏览器自动化注入路径，目录 VFS 由共用 Loader 测试覆盖。
-- #53 `npm run verify` 完整通过：67 个 TypeScript 测试文件 / 456 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。内嵌浏览器验证旧 Daggerheart 存档补全后正常启动并保留“符文护符”卡图；寻望之心姓名与希望点修改可跨刷新恢复，恢复验收前状态后再次刷新无 error；两包菜单均显示 `v1.0.0`。
-- #11 Renderer 收敛后的 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 468 个测试、116 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。11 个首版可信 Template 的精确 Renderer、四宿主同输入输出和未知版本不回退由共同测试锁定；真实 Player 与 Market 武器预览均显示 Canonical Surface，新标签页冷启动控制台无 error。
-- #20 最终 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 492 个测试、125 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。本地 Backend 与 Platform 重启后健康检查正常；内嵌浏览器确认匿名本地桌面、实例私有状态和卡面跨重启恢复，控制台无 error。云端永久删除、30 天到期清理、媒体引用解除、换程序实例重试、单文档失败隔离与无来源工作区的真实敌人跨设备恢复由自动测试覆盖。
-- #21 最终 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 495 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。既有测试覆盖真实敌人包首发、更新、同 ID 所有权、版本门禁、原子失败、展示信息、撤回和恢复；新增测试覆盖明确 Fork、普通导入不冒充 Fork、精确来源反查和伪造来源零写入。内嵌浏览器从真实 Market 出版物创建“测试（Fork 草稿）”成功，卡片工坊资源与卡面正常，控制台无 error。
-- #16 最终 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 497 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。新增测试覆盖 Character Save 回收站永久删除及对未删除文档的拒绝。内嵌浏览器确认当前存档显示“仅本机（不是云备份）”，页面控制台无 error。
-- #11 最终 `npm run verify` 完整通过：68 个 TypeScript 测试文件 / 499 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform build 全部通过。本机测得 11 个 Renderer Revision 按需产出 13 个代码块，压缩后 13,717 bytes；1000 个目录资源的代表场景只同时呈现 4 张卡；唯一图片内存 42,822 bytes；单卡服务端呈现第 95 百分位 1.691 ms。内嵌浏览器实际操作压力、聚焦和备注模拟均成功，控制台无 error。
-- #3“System Authoring Workflow”全部 45 条用户故事已完成或由后续已接受 ADR 明确替代并关闭：`npm run system-package` 支持骨架、目录/`.pbsys` 验证、人读/机器诊断、Character Data Schema 与打包；人物迁移、人物格式转换、外部脚本确认和真实 Player 联合验收均已完成。
-- System Package CLI 加入后的 `npm run verify` 完整通过：69 个 TypeScript 测试文件 / 502 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform build 全部通过。
-- #3 的 Character Data Migration 已落地：System Package `1.0.0` 可声明只向前的完整单链；Player 在隔离 Worker 中逐步生成候选并做最终 Module 校验，只有用户确认才一次写入。缺步、分支、倒退、越过目标、脚本异常、无效 JSON、最终校验失败、用户取消及确认前并发变化均不会改写原存档。
-- 外部上传与 Author Preview System Package 的脚本会在任何人物打开或脚本执行前列出并确认；许可绑定包 ID、版本、脚本路径、用途与内容 SHA-256，首次运行及同版本内容变化都会重新询问。内置预置包直接使用应用信任边界。
-- CLI 新增 `schema`，可从正式验证后的目录或 `.pbsys` 按有状态 Modules 输出只读 Character Data JSON Schema。Character Format Adapter 现支持只导入、只导出和双向声明；外部与原生人物文件都先形成候选，原生文件内部复用 Character Save Reader、Character Data Migration 与最终校验，确认前零写入。Player 主工具栏已接通第三方人物导入、格式选择、转换确认、第三方导出及损失报告。
-- 新增 `docs/system-package-authoring.md`，记录 CLI、Schema、迁移脚本输入输出、确认范围、隔离限制与交付检查。上述改动后的 `npm run verify` 完整通过：71 个 TypeScript 测试文件 / 514 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform build 全部通过；本地 Backend、Platform 与三个页面入口健康检查通过，Player 实际页面已显示原生导出、两个第三方格式导出及文本导出入口，控制台无错误或警告。
-- #4“Player App”已完成并关闭：全局人物列表按系统分组并显示版本/同步状态；未知系统 `.pbcha` 可待匹配保存、列出、导出、删除，并在导入对应系统包后继续验证；同 ID 导入覆盖相同/no-op、默认副本和明确替换。2026-08-29 用户完成最后一轮实际使用验收并确认暂未发现更多问题；最终验收记录已发布到 Issue。
-- 自定义 `.pbsys` 现在连同运行时素材、原始 System Document 与内嵌资源索引持久保存到 IndexedDB，刷新后恢复当前包而不回退预置包。文件与目录导入先生成候选，用户确认后才写入并切换；预置包出现新快照时继续运行旧缓存，确认后才更新。外部脚本仍在人物打开前单独确认。
-- Resource Manager 已补齐第三方转换（明确选择格式、逐条损失报告、直接安装或导出 `.pbres`）、内嵌官方包保护与恢复、安装确认信息以及普通包移除影响确认。Player 菜单已接通手动检查、只读 HTML 与打印。
-- #4 最终自动证据：Player 25 个测试文件 / 117 个测试通过；根目录 `npm run verify` 完整通过，共 73 个 TypeScript 测试文件 / 528 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK。尝试自动执行最后一轮真实页面检查时，本机浏览器连接环境因运行目录缺失而无法建立；不是应用启动或构建失败，需在用户验收时人工核对新增确认页。
-- 罗德岛旅记的社群与领域卡选择器已补回可见字段：社群显示名称、简介、描述与参考出身；领域卡显示名称、领域、等级、属性、回想与描述。回归测试会实际加载预置系统并断言两个资源库既有记录也有可见列，避免再次出现“数据存在但窗口看起来为空”。
-- dhsheet 的未知 `variant` 类型现按明确字段映射进入可信“自由”模板：名称、类型、简略信息保留，其他可见字段按原顺序成为标题/正文内容块；平台自己的自由卡经 dhsheet 往返仍保持原结构。用户提供的两个完整文件实测分别为 26/26 与 688/688 条转换成功，均为 0 跳过、0 错误；后者 18 条未知类型进入自由模板。
-- 上述修复后的完整检查通过：74 个 TypeScript 测试文件 / 546 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK。浏览器连接仍因本机运行环境路径缺失而无法建立，不能把页面点击列作已验收证据。
-- Resource Picker 的“名称”列不再根据最长内容动态改变对齐；即使导入长名称自制领域卡，表头和内容也保持居中。平台资源进入人物卡运行时时，会把所有 `other-resources` 路由统一合并为唯一的“其他”资源库，并保留卡图；声明 `资源库: "其他"` 的 `pick-other-resources` 以及 `otherResourceLibraries` 卡牌来源可以选择使用，未声明入口的系统仍不展示它。两个滋孽完整卡包同时加载时实测为领域卡 322 条、其他资源 44 条、其他资源库 1 个，没有重复分流。
-- 上述修复后的完整检查通过：74 个 TypeScript 测试文件 / 548 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK；浏览器连接仍因同一本机路径问题无法建立，页面点击验收仍留给用户。
-- Player 顶栏四组下拉菜单在桌面端只随鼠标停留展开，移出菜单整体范围即关闭；全局通知把按钮和面板合为同一鼠标范围，移出后同样关闭。移动端仍保留点按/焦点展开能力。
-- Resource Manager 的资源预览已移除标题栏、外框和底部按钮，只保留规范卡面及右上角关闭按钮；红色入口改名为“导入pbres格式”。原先所有包都会显示的“离线 / 离线状态”已删除：它只是表示完整副本已存入本机，并非实时联网状态，而当前产品没有流式在线资源包，无法形成有用区分。
-- 上述修复后的完整检查通过：74 个 TypeScript 测试文件 / 552 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK。浏览器连接仍因本机运行环境缺失路径而无法建立，因此没有把页面点击列为本轮验收证据。
-- Resource Package 安装、更新和移除不再重新读取当前 System Package，也不再进入整页加载状态。Player 只原地替换平台资源目录和对应卡图 URL，保留系统包自带资源、旧 Resource Extension、当前人物对象与已经写入的人物字段；更新后的运行时快照和图片同时写回本地缓存，刷新后不会退回旧资源。
-- 上述无感资源更新后的完整检查通过：74 个 TypeScript 测试文件 / 556 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK；浏览器连接仍被同一本机缺失路径阻止，没有把真实页面点击列为验收证据。
-- Resource Manager 预览的关闭按钮已从卡面内部移到卡面右侧外部，顶部与卡面对齐，并为右侧按钮预留遮罩内边距。Player 卡牌拖动改由整个桌面持续接管移动、松开和取消事件，单张卡只负责开始拖动，避免通用卡面内部区域导致拖动中断。
-- 上述修复后的完整检查通过：74 个 TypeScript 测试文件 / 557 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 健康检查均为 OK；浏览器连接仍被本机缺失路径阻止，卡牌真实拖拽和按钮视觉位置需要用户在页面中确认。
-- #6“GM Tabletop”剩余实现已补齐，停在用户要求的 L1 人工验收点，尚未关闭。Player 与 GM 的移动、旋转、翻面、层级、整理和删除已收敛到共享 Tabletop Core；GM 新增跨 Workspace 搜索、Template 筛选、多选批量放置、固定缩放档位、100%、适合内容、设备本地视角、桌面边界/宽高、详情视图、移动端资源抽屉、触屏操作栏和 A4 网格打印。
-- Creator 资源右键菜单已补“复制到资源包…”：可选择已有资源包或当场新建，复制品使用新资源编号，媒体字节独立复制；关联的切换形态会按有限闭包一起复制并改写为目标包内的新编号。相同内容的同 ID `.pbtab` 现在直接打开且不重复导入；不同内容才提供覆盖或保留两份。打印网格保留卡牌自身规范尺寸，不把小卡拉伸到整列。
-- Tabletop Document `1.0.0` 新增可选 `canvas`，新写入文件保存宽高，旧文件读取时补 `2400×1600`。压力测试覆盖 1,000 个跨 Workspace 资源和 200 个桌面实例，并实际完成 IndexedDB 保存、重新打开及 `.pbtab` 写入—读取。#6 最终 `npm run verify` 完整通过：76 个 TypeScript 测试文件 / 565 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功；Backend `8001` 与 Platform `5173` 健康检查均为 OK。浏览器自动连接仍被本机缺失运行目录阻止，需要用户完成最终页面验收。
-- Player、GM 桌面的“查看详情”和资源管理器预览现共用 `CardPreviewDialog`：同一遮罩、关闭方式、视口适配和规范卡面渲染入口；关闭按钮位于卡面右上外侧。预览严格按资源声明的宽高比呈现，不再由 GM 样式覆盖为自动高度。
-- GM 资源工作区改为始终可见，移除了红色“资源”隐藏按钮；每个资源包都能独立折叠，折叠状态与当前工作区分离，打开或关闭不会重排资源包。资源包与文件夹内容采用 180ms 展开/收起动画。
-- 11 个稳定可信 Template 的固定卡面统一为 `63:88` 比例；内置“匕首之心官方资源”升级至 `1.0.7` 并重新生成（625 个资源、280 个媒体）。`63:88` 是内部设计比例，不是实际显示为 63 毫米宽；各宿主使用像素尺寸等比放大或缩小，不再各自挤压卡面内容。
-- 本轮 `npm run verify` 完整通过：77 个 TypeScript 测试文件 / 568 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend `8001` 与 Platform `5173` 重启后健康检查均为 OK；#6 仍等待用户最终页面验收，尚未关闭。
-- GM 验收复测后补修三项：文件夹折叠改为浏览器可连续计算的 `minmax(0, 0fr) → minmax(0, 1fr)` 动画；资源列表占满侧栏剩余高度，使 footer 固定在底部；所有仍可解析的 Template 默认值都改为固定 `63:88`，不再产生 `90×142` 卡面，并保留文字/图文/纯图片模式。
-- 卡牌展示已进一步收敛：Creator、Player、GM、Market、资源预览和右键详情都消费同一个 Canonical Renderer；共享 `CardDisplay` 只做等比缩放和裁剪。固定卡只能声明 `63:88`，可变高度卡也必须同宽且只允许高度变化；错误比例会被 Contract 与 Renderer 拒绝，而不是显示时偷偷改值。桌面和详情使用各自的像素宽度，卡面内部排版不会随容器重新换行。
-- 修复曾被临时迁移错误改成文字模式的官方桌面实例：当实例仍指向“匕首之心官方资源”且图片编号一致时，按当前工作区资源恢复图片/图文模式。重新生成的 `daggerheart-core.pbres` 中“滨海之民”等资源仍为图片模式，图片字节存在。
-- 补修后的 `npm run verify` 完整通过：77 个 TypeScript 测试文件 / 571 个测试、126 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。Backend、Platform、Player、Creator/GM 与 Market 五个本地健康入口均返回 200；视觉效果仍需用户最终确认。
-- 卡面比例规则最终改为拒绝错误源，而不是显示时换算：固定卡只能声明 `63:88`，可变高度卡也必须宽 `63` 且只允许高度变化。旧的 alpha/dev Template 默认值、寻望之心及另外三个迁移系统包、匕首之心官方资源和桌面测试数据均已按正确比例重新生成；正式敌人和武器 Renderer 也已改为原生 `63:88` 排版，不再复用 `90×142` 排版后缩放。内置匕首之心官方资源版本为 `1.0.7`。完整检查通过 77 个 TypeScript 测试文件 / 577 个测试和 128 个 Python 测试，类型检查、依赖边界、设计检查、Renderer 性能测量与生产构建也全部通过；五个本地健康入口均返回 200。
-- 卡片工坊实时预览按可用预览区域的宽、高各 `70%` 计算最大等比缩放，不再限制只能缩小；GM 桌面在桌面缩放 `100%`、实例缩放 `100%` 时卡宽为 `250px`。两处只改变统一卡面的外部缩放，卡面内部布局、换行和相对尺寸不变。修改后的完整检查仍通过 77 个 TypeScript 测试文件 / 577 个测试、128 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和生产构建。
-- 系统包重复文件已收敛：`apps/player/system-package-sources` 只保留 32 个清单、资源 JSON 与来源说明文件；实际运行文件统一放在 `apps/player/public/system-packages`。原先重复保留的运行页面、布局、皮肤和 671 个资源图片/重复文件已移入 Windows 回收站。生成脚本在源图片不存在时会从现有 `.pbres` 复用同一资源的媒体字节，实测重新生成匕首之心 625 个资源/280 个媒体、罗德岛旅记 682 个资源/271 个媒体均成功。运行目录仍保留 50 个皮肤、界面和领域图标，逐一核对均有引用，不能由 `.pbres` 代替。本轮 `npm run verify` 完整通过：77 个 TypeScript 测试文件 / 577 个测试、128 个 Python 测试、类型检查、依赖边界、设计检查、Renderer 性能测量和生产构建全部成功。
+- Creator/GM Workspace 排序入口移到“多选”右侧，名称升序/降序实际生效。
+- 模板筛选改为可同时勾选多个类型，搜索、筛选、排序可以组合使用。
+- Workspace 宽度下限移除，Creator 和 GM 均可继续缩窄或拉宽。
+- GM 桌面移除多余的左下角选择工具条，恢复卡牌右键“编辑卡牌”。
+- Template 的 `editableDataFields` 声明及相关限制代码全部删除，默认允许编辑全部实例数据字段。
+- 清理演示残留、旧 alpha/dev 模板、错误的游戏语义正则与相应兼容分支。
 
-## 接下来
+## 验证基线
 
-1. 等待用户验收 L1 #6“GM Tabletop”。重点核对常驻资源区、多个资源包独立折叠及动画、桌面“查看详情”和资源预览的一致性、固定 `63:88` 卡面与各处等比缩放、官方卡图恢复、跨包筛选/批量放置、资源“复制到资源包…”，卡牌操作、固定缩放与 A4 打印预览；用户确认后发布最终验收记录并关闭 #6。#8 仍受 ADR-0057 的整个平台正式发布门槛阻塞，不能提前把 Contract 状态改为 published。
-2. 本轮代码仍在本地工作区，尚未提交或推送。
-3. 用户已授权直接关闭确认完成并测试通过的 Issue，不需要逐单确认。
-4. #34“快速即兴敌人卡”继续按用户决定延后，不要自行恢复。
-5. #52 高保真人物存档转换为后续复杂需求，保持 `needs-triage`，不要在未设计损失 Contract 前直接扩写现有脚本。
+- 最新完整 `npm run verify` 通过：87 个 TypeScript 测试文件、654 项测试；134 项 Python 测试；类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。
+- Python 输出仍有 30 条既有 Pydantic 弃用警告，不影响验证结果。
+- 若修改 Backend 或 Platform 运行代码，交付前运行 `node scripts/restart-dev.mjs`，以五个模块级健康入口均通过为准。
 
-## 换机交接
+## 下一步
 
-### 当前电脑离开前
+1. 继续核对 #5 Creator App 的剩余验收条目；OpenPencil 视觉还原不计入当前收尾，等待用户换到完整设计环境。
+2. 然后推进 #2 Contracts & Template Platform 与 #8，先检查正式发布门槛和当前 Contract 清单。
+3. #34 保持延后；#52 先补产品与损失模型设计。
 
-1. 本次 handoff 提交并推送后，当前工作区应已提交且干净，`main` 与 `origin/main` 同步。
-2. #47 与 #48 的实现、验收和交接提交均已推送到 `origin/main`，另一台电脑可直接快进拉取。
-3. 被忽略的 `.env.local` 不会随 Git 传输，应通过安全方式单独重建，不要写入交接文档或提交。
-4. 离开前可再次运行 `git status --short --branch`，预期显示 `## main...origin/main` 且没有文件状态。
+## 环境与操作提醒
 
-### 另一台电脑开始时
-
-1. 运行 `git pull --ff-only origin main`；确认近期日志包含 #47 与 #48 的实现及交接提交，并确认 `git status --short` 为空。如果使用完整仓库副本，直接做相同检查。
-2. 检查单包存在：`apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`。该包应包含 625 个资源与 280 个媒体资产。
-3. 安装 Node 依赖：`npm install`。创建项目 `.venv` 后安装 Python 开发依赖：`python -m pip install -r requirements-dev.txt`；不要使用全局 Python 包。
-4. 单独重建被 Git 忽略的 `.env.local`。测试账号键名见“已验证”小节；凭据只从安全的本地来源复制，不写入 handoff、日志或 Git。
-5. 运行 `node scripts/restart-dev.mjs`，确认 Backend `8001` 与 Platform `5173` 均为 `OK`，只从 `http://localhost:5173` 访问四个 App。
-6. 运行 `npm run verify`；当前基线为 68 个 TypeScript 测试文件 / 491 个测试、123 个 Python 测试、类型检查、依赖边界、设计检查和 Platform build 全部通过。
-7. 浏览器本地数据不会随 Git 迁移。新电脑首次打开 Player 会安装 Daggerheart Core 与寻望之心两个预置包；Daggerheart 子职业和领域卡应直接显示卡图，不应先显示文字再依赖刷新修复。
-
-## 建议 skills
-
-- `$diagnosing-bugs`：真实 Player 交互、持久化或云恢复出现难以定位的问题时使用。
-- `$browser:control-in-app-browser`：需要对本地 Player、Creator、GM 或 Market 做真实交互与视觉验收时使用。
-- `$code-review`：指定本次迁移前的固定提交后，对 Player 大范围迁移做 Standards / Spec 双轴审查。
-- `$domain-modeling`：#18 开始时先修订领域规则和 ADR，明确 Replacement 与桌面实例的关系，再设计 Contract。
-- `$handoff`：下次跨设备暂停时更新本文件。
+- 安装依赖：`npm install`；Python 依赖只能装入项目 `.venv`。
+- 唯一完整验证入口：`npm run verify`。
+- GitHub Issue 使用 `gh`；本机沙箱内网络不可用时，直接申请在沙箱外运行，不要反复在沙箱内重试。
+- 浏览器操作环境与排障记录见根目录 `AGENTS.md`，不要再次假定插件不可用。
+- IndexedDB 数据不会因代码更新自动迁移；涉及旧浏览器数据时必须明确迁移或说明需要清库。
+- 不提交密钥、token、密码或本地环境文件。

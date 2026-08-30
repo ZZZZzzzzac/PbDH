@@ -47,11 +47,6 @@ export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
     defaultState: (data: TData) => Record<string, string>;
     commands: readonly TabletopCommand[];
     replacements: readonly TabletopReplacement[];
-    editableDataFields?: readonly (readonly string[])[];
-  };
-  upgradeFrom: null | {
-    version: string;
-    upgrade: (data: unknown) => TData;
   };
 };
 

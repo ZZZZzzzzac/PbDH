@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -14,7 +15,7 @@ from pbdh_backend.contracts import (
     validate_resource_package_semantics,
     write_pbres,
 )
-from pbdh_backend.publications.repository import PublicationRepository
+from pbdh_backend.publications.repository import PublicationNotFound, PublicationRepository
 
 
 class PublicationValidationError(Exception):
@@ -50,7 +51,17 @@ class PublicationService:
         candidate = result["candidate"]
         document = candidate["document"]
         media = candidate["media"]
+        document["package"]["name"] = metadata["title"]
+        document["package"]["description"] = metadata["summary"]
+        document["publication"] = {
+            "language": metadata["language"],
+            "tags": copy.deepcopy(metadata["tags"]),
+            "coverAssetId": metadata["coverAssetId"],
+        }
         document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+        diagnostics = self._validate_candidate(document, media)
+        if diagnostics:
+            raise PublicationValidationError(diagnostics)
         fork_diagnostics = self._validate_fork_source(document)
         if fork_diagnostics:
             raise PublicationValidationError(fork_diagnostics)
@@ -77,6 +88,70 @@ class PublicationService:
         publication["created"] = write.created
         publication["idempotent"] = write.idempotent
         return publication
+
+    def update_information(
+        self,
+        publication_id: str,
+        account_id: str,
+        information: Mapping[str, Any],
+        allow_all: bool = False,
+        cover_media: tuple[Mapping[str, Any], bytes] | None = None,
+    ) -> dict[str, Any]:
+        current_publication = self._repository.get_manageable_publication(
+            publication_id, account_id, allow_all
+        )
+        if current_publication is None:
+            raise PublicationNotFound(publication_id)
+        candidate = self._repository.get_archive_candidate(
+            publication_id, account_id, allow_all
+        )
+        if candidate is None:
+            raise PublicationNotFound(publication_id)
+        previous_document, media = candidate
+        normalized_information = copy.deepcopy(dict(information))
+        normalized_information["title"] = normalized_information["package"]["name"]
+        normalized_information["summary"] = normalized_information["package"]["description"]
+        document = copy.deepcopy(previous_document)
+        document["package"]["name"] = normalized_information["package"]["name"]
+        document["package"]["version"] = normalized_information["package"]["version"]
+        document["package"]["description"] = normalized_information["package"]["description"]
+        document["targets"] = copy.deepcopy(normalized_information["targets"])
+        if cover_media is not None:
+            cover_asset, cover_bytes = cover_media
+            old_cover_id = current_publication["coverAssetId"]
+            referenced_asset_ids = {
+                asset_id
+                for resource in document["resources"]
+                for asset_id in resource["media"].values()
+            }
+            if old_cover_id != cover_asset["id"] and old_cover_id not in referenced_asset_ids:
+                document["assets"] = [
+                    asset for asset in document["assets"] if asset["id"] != old_cover_id
+                ]
+                media.pop(old_cover_id, None)
+            document["assets"] = [
+                asset for asset in document["assets"] if asset["id"] != cover_asset["id"]
+            ]
+            document["assets"].append(copy.deepcopy(cover_asset))
+            media[cover_asset["id"]] = cover_bytes
+        document["publication"] = {
+            "language": normalized_information["language"],
+            "tags": copy.deepcopy(normalized_information["tags"]),
+            "coverAssetId": normalized_information["coverAssetId"],
+        }
+        document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+        diagnostics = self._validate_candidate(document, media)
+        if diagnostics:
+            raise PublicationValidationError(diagnostics)
+        return self._repository.update_information(
+            publication_id,
+            account_id,
+            document,
+            normalized_information,
+            allow_all,
+            allow_same_version_replace=self._mode == "development",
+            cover_media=cover_media,
+        )
 
     def _validate_fork_source(self, document: Mapping[str, Any]) -> list[dict[str, Any]]:
         fork_source = document.get("forkSource")

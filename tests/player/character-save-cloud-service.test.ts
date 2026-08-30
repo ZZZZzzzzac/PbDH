@@ -77,6 +77,26 @@ class RecoveryApi implements CloudDocumentApi {
 }
 
 describe("Player Character Save cloud recovery", () => {
+  test("moves a signed-in save to local trash when its first cloud upload has not succeeded", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    const document = structuredClone(characterJson) as CharacterSaveDocument;
+    await repository.save(document, new Map(), credentials.accountId);
+    const service = new PlayerCloudDocumentService(
+      store,
+      repository,
+      new RecoveryApi([], new Map()),
+    );
+
+    await service.trash(document.documentId, credentials);
+
+    expect(await repository.list()).toEqual([]);
+    expect(await repository.listTrash()).toMatchObject([{
+      document: { documentId: document.documentId },
+      sync: { scope: "cloud", state: "pending", baseRevision: null },
+    }]);
+  });
+
   test("restores final weapon data and tabletop Resource Copy without a source resource package", async () => {
     const document = structuredClone(characterJson) as CharacterSaveDocument;
     const remote: RemoteCloudDocument = {

@@ -6,7 +6,7 @@ const root = process.cwd();
 const sourcePath = path.join(root, "docs/design/creator-app.op");
 const outputPath = path.join(
   root,
-  "packages/templates/src/frontend/adversary/1.0.0-alpha.1/design.generated.ts",
+  "packages/templates/src/frontend/adversary/1.0.0/design.generated.ts",
 );
 const workspaceOutputPath = path.join(
   root,

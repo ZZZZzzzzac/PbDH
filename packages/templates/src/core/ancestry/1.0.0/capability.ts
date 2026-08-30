@@ -1,21 +1,39 @@
 import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
-import { temporaryAncestryTemplate, type TemporaryAncestryData, type TemporaryAncestryFeature } from "../0.0.0-dev.1/capability.ts";
 
-export type AncestryFeature = TemporaryAncestryFeature;
-export type AncestryData = TemporaryAncestryData;
+export type AncestryFeature = { 名称: string; 描述: string };
+export type AncestryData = { 名称: string; 简介: string; 特性: AncestryFeature[] };
 
-function upgrade(data: unknown): AncestryData {
-  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Ancestry Template upgrade requires an object");
-  return structuredClone(data) as AncestryData;
+const defaultData: AncestryData = { 名称: "", 简介: "", 特性: [] };
+
+function normalize(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 export const ancestryTemplate = deepFreeze<TemplateCoreCapability<AncestryData>>({
-  ...temporaryAncestryTemplate,
+  id: "种族",
   version: "1.0.0",
+  state: "development",
   schema,
+  defaultData,
+  proposeResourceId(data) {
+    return normalize(data.名称 || "未命名种族").normalize("NFC").replaceAll("/", "-");
+  },
+  project(data) {
+    const title = normalize(data.名称 || "未命名种族");
+    const summary = data.特性.map((feature) => normalize(feature.名称)).filter(Boolean).join(" · ");
+    const searchText = [data.名称, data.简介, ...data.特性.flatMap((feature) => [feature.名称, feature.描述])]
+      .map(normalize).filter(Boolean).join(" ");
+    return { title, summary, searchText };
+  },
+  mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
+  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
   rendererRevision: "ancestry-card-r1",
-  defaultPresentation: { ...temporaryAncestryTemplate.defaultPresentation, width: "63", height: "88" },
-  upgradeFrom: { version: "0.0.0-dev.1", upgrade },
+  tabletop: {
+    stateSchema: { type: "object", properties: {}, additionalProperties: false },
+    defaultState() { return {}; },
+    commands: [],
+    replacements: [],
+  },
 });

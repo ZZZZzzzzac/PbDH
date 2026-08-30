@@ -28,6 +28,7 @@ import type { PackageLoadResult } from "./sheet-runtime/loaders/systemPackageLoa
 export type PlayerSystemPackageCatalogEntry = {
   system: SystemPackageDocument;
   preset: PresetSystemPackage;
+  embeddedResourceLibraries: "platform" | "legacy-static";
   load(input: {
     currentSystem: SystemPackageDocument;
     installedPackages: ResourceLibrary;
@@ -40,31 +41,42 @@ export const playerSystemPackageCatalog: readonly PlayerSystemPackageCatalogEntr
   {
     system: daggerheartSystemJson as SystemPackageDocument,
     preset: daggerheartCorePreset,
+    embeddedResourceLibraries: "platform",
     load: loadDaggerheartCoreRuntimePackage,
   },
   {
     system: heartOfHopefindSystemJson as SystemPackageDocument,
     preset: heartOfHopefindPreset,
+    embeddedResourceLibraries: "platform",
     load: loadHeartOfHopefindRuntimePackage,
   },
   {
     system: witchySystemJson as SystemPackageDocument,
     preset: witchyPreset,
+    embeddedResourceLibraries: "legacy-static",
     load: loadWitchyRuntimePackage,
   },
   {
     system: howsMyDrivingSystemJson as SystemPackageDocument,
     preset: howsMyDrivingPreset,
+    embeddedResourceLibraries: "legacy-static",
     load: loadHowsMyDrivingRuntimePackage,
   },
   {
     system: tttriSystemJson as SystemPackageDocument,
     preset: tttriPreset,
+    embeddedResourceLibraries: "legacy-static",
     load: loadTttriRuntimePackage,
   },
 ];
 
 export const defaultPlayerSystemPackage = playerSystemPackageCatalog[0]!;
+
+export const playerSystemPackageOptions = playerSystemPackageCatalog.map(({ system }) => ({
+  id: system.package.id,
+  name: system.package.name,
+  version: system.package.version,
+}));
 
 export function findPlayerSystemPackage(packageId: string | undefined) {
   return playerSystemPackageCatalog.find((entry) => entry.system.package.id === packageId);

@@ -164,6 +164,8 @@ button.character-save-status { cursor: pointer; }
 .manager-resource-row span { color: #756a5e; font-size: 11px; }
 .manager-resource-row .template-icon { color: #641f1d; font-size: 15px; }
 .player-dialog footer button, .empty-library button { min-width: 84px; height: 36px; padding: 0 12px; border: 1px solid var(--player-line); border-radius: 7px; background: #faf7f1; cursor: pointer; }
+.player-dialog footer button { display: inline-flex; align-items: center; justify-content: center; }
+.player-package-manager button:disabled, .player-dialog button:disabled { cursor: wait; opacity: .58; }
 button.primary { border-color: var(--player-primary, #641f1d) !important; color: #fffdf8; background: var(--player-primary, #641f1d) !important; }
 .empty-library { display: grid; flex: 1; place-content: center; justify-items: center; gap: 12px; }
 .empty-library h2 { margin: 0; font-size: 17px; }
@@ -251,7 +253,6 @@ button.primary { border-color: var(--player-primary, #641f1d) !important; color:
 .character-save-trash-list > div > span { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 3px; }
 .character-save-trash-list small { color: #756a5e; }
 .character-save-trash-empty { display: grid; flex: 1; place-content: center; justify-items: center; color: #756a5e; }
-.character-save-toast { position: fixed; z-index: 90; right: 20px; bottom: 20px; max-width: 460px; min-height: 44px; padding: 10px 14px; border: 1px solid #c9c1b6; border-radius: 7px; background: #fffdf8; box-shadow: 0 5px 16px #21150f2a; cursor: pointer; text-align: left; }
 @media (max-height: 820px) { .player-package-manager { height: calc(100vh - 78px); } .resource-manager-layer { padding: 10px; } }
 
 @media (max-width: 900px) {

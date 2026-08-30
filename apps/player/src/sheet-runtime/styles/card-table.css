@@ -180,6 +180,27 @@
   cursor: grabbing;
 }
 
+.player-tabletop-surface {
+  position: absolute;
+  inset: 0;
+}
+
+.player-tabletop-surface .tabletop-instance {
+  position: absolute;
+  left: var(--tabletop-x);
+  top: var(--tabletop-y);
+  width: min(var(--play-card-width), calc(100% - 32px));
+  transform: rotate(var(--tabletop-rotation)) scale(var(--tabletop-scale));
+  transform-origin: center center;
+  touch-action: none;
+  user-select: none;
+}
+
+.player-tabletop-surface .play-card {
+  position: relative;
+  width: 100%;
+}
+
 .play-card > [data-pbdh-card-display] {
   width: 100% !important;
 }
@@ -456,6 +477,10 @@
   color: var(--framework-text-strong, #202426);
   text-align: left;
   cursor: pointer;
+}
+
+.card-context-menu > div {
+  display: contents;
 }
 
 .card-context-menu button:hover {

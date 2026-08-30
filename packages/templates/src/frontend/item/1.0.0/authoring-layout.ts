@@ -6,7 +6,7 @@ export const itemAuthoringLayout: AuthoringLayout = {
   sections: [
     { id: "identity", label: "基本信息", fields: [
       { path: "名称", label: "名称", control: "text" },
-      { path: "类型", label: "类型", control: "text" },
+      { path: "类型", label: "类型", control: "text", enum: ["物品", "消耗品"] },
       { path: "掷骰", label: "掷骰", control: "text" },
     ] },
     { id: "description", label: "说明", fields: [

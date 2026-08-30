@@ -1,3 +1,5 @@
+import "fake-indexeddb/auto";
+
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -6,6 +8,10 @@ import { describe, expect, it } from "vitest";
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 
 import { installMissingEmbeddedResourcePackages } from "../../apps/player/src/resources/install-embedded-resource-packages.ts";
+import {
+  DexieResourcePackageRepository,
+  PbDHLocalDatabase,
+} from "../../apps/player/src/resources/resource-package-repository.ts";
 import type { PresetSystemPackage } from "../../apps/player/src/sheet-runtime/loaders/presetSystemPackageLoader.ts";
 import type {
   ResourcePackageRepository,
@@ -87,6 +93,47 @@ describe("系统包内置 .pbres 安装", () => {
     expect(result.installedPackageIds).toEqual([embedded.packageId]);
     expect(repository.packages[0]?.document.package.version).toBe(embedded.version);
     expect(repository.packages[0]?.document.snapshotDigest).toBe(embedded.snapshotDigest);
+  });
+
+  it("自动重装媒体记录缺失的内置资源包", async () => {
+    const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
+    const database = new PbDHLocalDatabase(`pbdh-platform-test-${crypto.randomUUID()}`);
+    const repository = new DexieResourcePackageRepository(database);
+    let fetchCount = 0;
+    const fetchFile: typeof fetch = async (url) => {
+      fetchCount += 1;
+      const relativePath = decodeURIComponent(String(url).replace("https://preset.invalid/", ""));
+      return new Response(await readFile(path.join(packageRoot, relativePath)), { status: 200 });
+    };
+
+    try {
+      await installMissingEmbeddedResourcePackages({
+        systemPackage,
+        embeddedResourceIndex: preset.embeddedResourceIndex,
+        systemPackageBaseUrl: "https://preset.invalid",
+        repository,
+        fetchFile,
+      });
+      const [installed] = await database.installedSystemResourcePackages.toArray();
+      const missingAssetId = (installed!.document as { assets: Array<{ id: string }> }).assets[0]!.id;
+      await database.mediaAssets.delete(missingAssetId);
+
+      const repaired = await installMissingEmbeddedResourcePackages({
+        systemPackage,
+        embeddedResourceIndex: preset.embeddedResourceIndex,
+        systemPackageBaseUrl: "https://preset.invalid",
+        repository,
+        fetchFile,
+      });
+
+      expect(repaired.installedPackageIds).toEqual([preset.embeddedResourceIndex[0]!.packageId]);
+      await expect(repository.list(systemPackage.package.id)).resolves.toHaveLength(1);
+      expect(fetchCount).toBe(2);
+    } finally {
+      database.close();
+      await database.delete();
+    }
   });
 });
 

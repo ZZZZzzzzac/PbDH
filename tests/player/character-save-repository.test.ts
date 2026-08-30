@@ -115,6 +115,27 @@ describe("CharacterSaveRepository", () => {
     expect(restored.characterData).toEqual(character.characterData);
   });
 
+  test("moves a local Character Save through the shared recoverable trash lifecycle", async () => {
+    const repository = new CharacterSaveRepository(
+      new DexieLocalDocumentStore(database()),
+      () => "2026-08-20T10:00:00.000Z",
+    );
+    const document = structuredClone(fixtureJson) as CharacterSaveDocument;
+    await repository.save(document, new Map());
+
+    await repository.trash(document.documentId);
+    expect(await repository.list()).toEqual([]);
+    expect(await repository.listTrash()).toMatchObject([{
+      document: { documentId: document.documentId },
+      deletedAt: "2026-08-20T10:00:00.000Z",
+      purgeAfter: "2026-09-19T10:00:00.000Z",
+    }]);
+
+    const restored = await repository.restore(document.documentId);
+    expect(restored.document.name).toBe(document.name);
+    expect(await repository.list()).toHaveLength(1);
+  });
+
   test("同 ID 导入区分已存在、默认副本和明确替换", async () => {
     const repository = new CharacterSaveRepository(
       new DexieLocalDocumentStore(database()),

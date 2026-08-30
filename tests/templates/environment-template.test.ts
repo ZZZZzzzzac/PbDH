@@ -4,7 +4,6 @@ import { describe, expect, test } from "vitest";
 
 import {
   environmentTemplate,
-  temporaryEnvironmentTemplate,
   templateRegistry,
 } from "../../packages/templates/src/core/index.ts";
 import {
@@ -13,27 +12,7 @@ import {
 } from "../../packages/templates/src/frontend/index.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
-const validate = ajv.compile(temporaryEnvironmentTemplate.schema as AnySchema);
 const validateStable = ajv.compile(environmentTemplate.schema as AnySchema);
-
-describe("环境临时 Template 0.0.0-dev.1", () => {
-  test("registers environment features without fear metadata", () => {
-    expect(templateRegistry.resolve("环境", "0.0.0-dev.1")).toBe(temporaryEnvironmentTemplate);
-    const data = {
-      ...temporaryEnvironmentTemplate.defaultData,
-      名称: "燃烧的图书馆", 位阶: "2", 种类: "险境", 难度: "14",
-      特性: [{ 名称: "坍塌", 类型: "动作", 描述: "书架轰然倒下。", 引导问题: "谁被困住了？" }],
-    };
-    expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
-  });
-
-  test("rejects discarded fear fields", () => {
-    expect(validate({
-      ...temporaryEnvironmentTemplate.defaultData,
-      特性: [{ 名称: "坍塌", 类型: "动作", 描述: "效果", 引导问题: "问题", 恐惧: true }],
-    })).toBe(false);
-  });
-});
 
 describe("环境 Template 1.0.0", () => {
   const abandonedGrove = {
@@ -56,27 +35,11 @@ describe("环境 Template 1.0.0", () => {
 
   test("registers complete stable data from the fixed PbDH_Cards fixture", () => {
     expect(templateRegistry.resolve("环境", "1.0.0")).toBe(environmentTemplate);
-    expect(templateRegistry.resolve("环境", "0.0.0-dev.1")).toBe(temporaryEnvironmentTemplate);
+    expect(templateRegistry.resolve("环境", "0.0.0-dev.1")).toBeUndefined();
     expect(validateStable(abandonedGrove), JSON.stringify(validateStable.errors)).toBe(true);
     expect(validateStable(environmentTemplate.defaultData), JSON.stringify(validateStable.errors)).toBe(true);
     expect(environmentTemplate.project(abandonedGrove).searchText).toContain("Overgrown Battlefield");
     expect(environmentTemplate.rendererRevision).toBe("environment-card-r1");
-  });
-
-  test("upgrades the legacy shape by candidate copy without changing the source", () => {
-    const legacy = {
-      ...temporaryEnvironmentTemplate.defaultData,
-      名称: "荒废林地",
-      特性: [{ 名称: "蔓生战场", 类型: "被动", 描述: "描述", 引导问题: "问题" }],
-    };
-    const upgraded = environmentTemplate.upgradeFrom!.upgrade(legacy);
-    expect(upgraded).toEqual({
-      ...legacy,
-      原文: "",
-      特性: [{ ...legacy.特性[0], 原名: "" }],
-    });
-    expect(upgraded).not.toBe(legacy);
-    expect(legacy).not.toHaveProperty("原文");
   });
 
   test("covers every schema field and enters full-support manifest only with its Renderer", () => {

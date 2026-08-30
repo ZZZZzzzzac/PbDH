@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
+import { freeAuthoringLayout, trustedRendererFor } from "@pbdh/templates/frontend";
 import { describe, expect, test } from "vitest";
 
-import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
 import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
@@ -37,6 +37,7 @@ import {
   updateArmorData,
   updateResourcePresentation,
   updateResourceReplacement,
+  updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
   updateWeaponData,
   weaponData,
@@ -46,17 +47,19 @@ import {
 } from "@pbdh/templates/core";
 
 const root = process.cwd();
-const document = minotaurPackage as ResourcePackageLogicalDocument;
+const document = stableMinotaurPackage as ResourcePackageLogicalDocument;
 const asset = document.assets[0]!;
 const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+  "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
 )))]]);
 
 describe("Creator Workspace prototype state model", () => {
   test("creates an empty Workspace draft and requires a resource before Contract export", async () => {
     const workspace = await createBlankWorkspace("本地敌人包");
     expect(workspace.document.package.name).toBe("本地敌人包");
+    expect(workspace.document.package.description).toBe("");
+    expect(workspace.document.license).toEqual({ label: "", declaration: "" });
     expect(workspace.document.resources).toEqual([]);
     expect(workspace.openResourceIds).toEqual([]);
     expect(await validateResourcePackageCandidate(workspace.document, workspace.media)).toContainEqual(
@@ -71,6 +74,29 @@ describe("Creator Workspace prototype state model", () => {
     expect(adversaryData(edited).名称).toBe("伤痕牛头人");
     expect(adversaryData(workspace).名称).toBe("牛头人破坏者");
     expect(edited.dirtyResourceIds).toEqual([workspace.document.resources[0]!.id]);
+  });
+
+  test("edits resource package identity fields without changing its stable id", () => {
+    const workspace = createWorkspace({ document, media });
+    const edited = updateWorkspacePackageMetadata(workspace, {
+      name: "荒野敌人集",
+      description: "用于荒野冒险的敌人资源。",
+      version: "1.2.0",
+      targets: [{ systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660001", version: "1.0.0" }],
+    });
+
+    expect(edited.document.package).toEqual({
+      ...workspace.document.package,
+      name: "荒野敌人集",
+      description: "用于荒野冒险的敌人资源。",
+      version: "1.2.0",
+    });
+    expect(edited.document.package.id).toBe(workspace.document.package.id);
+    expect(edited.document.targets).toEqual([
+      { systemPackageId: "01a0132c-4eef-7703-94ac-ec8d1a660001", version: "1.0.0" },
+    ]);
+    expect(edited.dirty).toBe(true);
+    expect(workspace.document.package.name).not.toBe(edited.document.package.name);
   });
 
   test("stores only the chosen replacement target on the source resource", () => {
@@ -118,6 +144,7 @@ describe("Creator Workspace prototype state model", () => {
       伤害类型: "物理",
       负荷: "双手",
       描述: "命中后将目标推开。",
+      风味描述: "",
     };
     const edited = updateWeaponData(created.workspace, (data) => Object.assign(data, values), created.resourceId);
     expect(weaponData(edited, created.resourceId)).toEqual(values);
@@ -227,6 +254,7 @@ describe("Creator Workspace prototype state model", () => {
     const restored = createWorkspace(legacyWorkspace);
 
     expect(treeItemsInFolder(restored, null).map((item) => item.id)).toEqual(["a-resource", "z-resource"]);
+    expect(treeItemsInFolder(restored, null, "descending").map((item) => item.id)).toEqual(["z-resource", "a-resource"]);
     expect(restored.resourceLocations.map((item) => [item.resourceId, item.order])).toEqual([
       ["z-resource", 1],
       ["a-resource", 0],
@@ -292,6 +320,37 @@ describe("Creator Workspace prototype state model", () => {
     expect(copy.data).toEqual(source.data);
     expect(duplicated.workspace.dirtyResourceIds).toContain(copy.id);
     expect(duplicated.workspace.openResourceIds).toContain(copy.id);
+  });
+
+  test("imports the Witchy package with an editable and renderable free-resource template", async () => {
+    const result = await loadPbres(new Uint8Array(readFileSync(path.join(
+      root,
+      "apps/player/public/system-packages/witchy/resources/witchy.pbres",
+    ))), validateResourcePackageCandidate);
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.candidate).not.toBeNull();
+    const workspace = createWorkspace(result.candidate!);
+    expect(workspace.document.resources).toHaveLength(12);
+    expect(workspace.document.resources.every((resource) =>
+      resource.template.id === "自由" && resource.template.version === "1.0.0")).toBe(true);
+    const helper = workspace.document.resources.find((resource) => resource.id === "使魔类型:小帮手");
+    expect(helper?.data).toMatchObject({
+      名称: "小帮手",
+      内容: [
+        { 标题: "类型", 正文: "使魔类型" },
+        { 标题: "简介", 正文: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。" },
+      ],
+    });
+    expect(freeAuthoringLayout.templateId).toBe("自由");
+    expect(trustedRendererFor("自由", "1.0.0")?.revision).toBe("free-card-r1");
+
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    expect(creatorSource).toContain("trustedAuthoringLayoutFor(resource.template.id, resource.template.version)");
+    expect(creatorSource).toContain("trustedRendererFor(displayResource.template.id, displayResource.template.version)");
   });
 
   test("copies a resource, its media, and linked forms into another package", async () => {
@@ -553,7 +612,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain("if (!event.ctrlKey) return");
     expect(creatorSource).toContain("application/x-pbdh-resource");
     expect(creatorSource).toContain("放到当前桌面");
-    expect(creatorSource).toContain('className="package-license"');
+    expect(creatorSource).not.toContain('className="package-license"');
     expect(creatorSource).not.toContain("发送到桌面");
     expect(creatorSource).toContain("requestTabletopRename");
     expect(creatorSource).toContain("prepareWorkspaceReplacement");
@@ -562,9 +621,15 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain('type: "edit-instance-data"');
     expect(creatorSource).not.toContain('type: "replace-instance-resource"');
     expect(creatorSource).toContain('dialog.kind === "new-tabletop"');
-    expect(creatorSource).toContain('aria-label="导入桌面"');
-    expect(creatorSource).toContain('aria-label="桌面回收站"');
+    expect(creatorSource).toContain('usePlatformAppBarActions("gm", gmAppBarActions)');
+    expect(creatorSource).toContain('<span>GM 功能</span>');
+    expect(creatorSource).toContain('>导入 .pbtab</button>');
+    expect(creatorSource).not.toContain('>本地桌面回收站</button>');
+    expect(creatorSource).toContain("usePlatformTrashSource(creatorTrashSource)");
+    expect(creatorSource).not.toContain('className="tabletop-tab-action" aria-label="导入桌面"');
+    expect(creatorSource).not.toContain('aria-label="桌面回收站"');
     expect(creatorSource).toContain("duplicateTabletop");
+    expect(creatorSource).toContain("openTabletopContextMenu(tabletop.id, event.clientX, event.clientY)");
     expect(creatorSource).toContain('dialog.kind === "tabletop-import-conflict"');
     expect(creatorSource).toContain("保留两份");
     expect(surfaceSource).toContain("onPointerMove={moveDrag}");
@@ -588,7 +653,128 @@ describe("Creator Workspace prototype state model", () => {
     );
   });
 
-  test("opens the shared cloud recycle bin from the account dialog and renders its empty state", () => {
+  test("uses neutral package defaults, editable enum menus, and separately debounced cloud sync", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(creatorSource).toContain('useState("新资源包")');
+    expect(creatorSource).not.toContain('useState("牛头人敌人资源包")');
+    expect(creatorSource).toContain("enum: options = []");
+    expect(creatorSource).toContain('className="compact-field-enum-menu"');
+    expect(creatorSource).toContain('<Icon name="chevronDown" />');
+    expect(creatorSource).not.toContain('<option value="">选择</option>');
+    expect(creatorSource).not.toContain("<datalist");
+    expect(styles).toContain(".compact-field-control > input { box-sizing: border-box; width: 100%; }");
+    expect(styles).toContain(".compact-field > .compact-field-control { position: relative; min-width: 0; display: flex; flex: 1 1 0; }");
+    expect(creatorSource).toContain("CREATOR_LOCAL_SAVE_DELAY_MS");
+    expect(creatorSource).toContain("CREATOR_CLOUD_SYNC_DELAY_MS");
+    expect(creatorSource).toContain("onFocusCapture={requestWorkspaceCloudSyncAfterEditing}");
+    expect(creatorSource).toContain("onBlurCapture={requestWorkspaceCloudSyncAfterEditing}");
+    expect(creatorSource).toContain("isCreatorAuthoringInputFocused()");
+    expect(creatorSource).toContain("const pendingLocalWrites = workspaceWriteQueueRef.current;");
+    expect(creatorSource).toContain("const write = pendingLocalWrites.then(async () => {");
+    expect(creatorSource).not.toContain('}, 120);');
+  });
+
+  test("balances the Creator workspace, editor, and preview at a 3:3:4 ratio", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(creatorSource).not.toContain("creatorWorkspaceDesign.columns.resourceNavigationWidth + 30");
+    expect(styles).toContain(".creator-prototype.is-resource-panel-open .creator-workspace { grid-template-columns: minmax(0, var(--creator-workspace-share)) 8px minmax(0, 1fr)");
+    expect(styles).toContain("grid-template-columns: minmax(480px, var(--creator-editor-share)) 20px minmax(380px, 1fr)");
+    expect(styles).toContain("@media (max-width: 1220px)");
+  });
+
+  test("puts a working name sort control beside multi-select instead of the footer", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+
+    expect(creatorSource).toContain('className="workspace-sort-button"');
+    expect(creatorSource).toContain('sortDirection={workspaceSortDirection}');
+    expect(creatorSource).not.toContain("<footer><span>{active?.document.resources.length ?? 0} 个资源</span><span>名称 ↑</span></footer>");
+  });
+
+  test("lets users resize both Creator column boundaries and remembers their choices", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(creatorSource).toContain('role="separator"');
+    expect(creatorSource).toContain('aria-orientation="vertical"');
+    expect(creatorSource).toContain("pbdh.creator.columns.workspace");
+    expect(creatorSource).toContain("pbdh.creator.columns.editor");
+    expect(creatorSource).toContain('{resourcePanelOpen && <CreatorColumnResizeHandle');
+    expect(creatorSource).toContain("setPointerCapture");
+    expect(creatorSource).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
+    expect(styles).toContain(".creator-column-resize-handle:hover::before");
+    expect(styles).toContain("align-self: stretch");
+    expect(styles).toContain("margin-block: calc(-1 * var(--creator-body-padding))");
+    expect(styles).toContain("inset-block: 0");
+    expect(styles).toContain("touch-action: none");
+  });
+
+  test("uses the same searchable and filterable workspace explorer in Creator and GM", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(creatorSource).toContain('className="workspace-resource-filters"');
+    expect(creatorSource).toContain('className="workspace-resource-results resource-tree"');
+    expect(creatorSource).not.toContain('appMode === "gm" && <div className="workspace-resource-filters"');
+    expect(creatorSource).not.toContain('appMode === "gm" && (resourceSearch.trim() || resourceTemplateFilters.length > 0)');
+    expect(creatorSource).toContain('workspace-package-list${resourceSearch.trim() || resourceTemplateFilters.length > 0 ? " is-filtering" : ""}');
+    expect(styles).toContain(".workspace-resource-filters");
+    expect(styles).toContain(".workspace-resource-results");
+  });
+
+  test("makes the GM tabletop bounds visible against the surrounding viewport", () => {
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(styles).toContain(".tabletop-viewport > [data-pbdh-tabletop-surface]");
+    expect(styles).toContain("radial-gradient");
+    expect(styles).toContain("box-shadow: 0 0 0 1px");
+  });
+
+  test("lets the workspace package list use the full height above its pinned footer", () => {
+    const stylesheet = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+
+    expect(stylesheet).toContain(".workspace-package-list { min-height: 0; overflow: auto; display: flex; flex: 1;");
+    expect(stylesheet).not.toMatch(/\.workspace-package-contents \.resource-tree\s*\{[^}]*max-height:/u);
+    expect(stylesheet).not.toMatch(/\.workspace-package-contents \.resource-tree\s*\{[^}]*overflow:\s*auto/u);
+  });
+
+  test("registers local and cloud Creator/GM documents in the platform recycle bin", () => {
     const creatorSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
@@ -598,13 +784,14 @@ describe("Creator Workspace prototype state model", () => {
       "packages/platform-ui/src/index.tsx",
     ), "utf8");
 
-    expect(creatorSource).toContain('usePlatformAccountManagement("creator", "云端回收站", openCloudTrash)');
-    expect(creatorSource).toContain('usePlatformAccountManagement("gm", "云端回收站", openCloudTrash)');
-    expect(creatorSource).toContain("<strong>回收站为空</strong>");
+    expect(creatorSource).toContain('id: "creator-and-gm-documents"');
+    expect(creatorSource).toContain("creatorWorkspaceRepository.listTrash()");
+    expect(creatorSource).toContain("tabletopRepository.listTrash()");
     expect(creatorSource).toContain("仅保存在此浏览器，不等于云备份");
     expect(creatorSource).toContain("cloudDocumentService.deleteFromTrash(remote, credentials)");
-    expect(creatorSource).toContain("永久删除");
-    expect(creatorSource).not.toContain('role="menuitem" onClick={() => void openCloudTrash()}>云端回收站');
+    expect(platformUiSource).toContain('aria-label="回收站"');
+    expect(platformUiSource).toContain("内容保留 30 天");
+    expect(platformUiSource).toContain('item.location === "cloud" ? "云端" : "本机"');
     expect(platformUiSource).toContain("accountManageLabel={accountManagement?.accountManageLabel}");
     expect(platformUiSource).toContain("onAccountManage={accountManagement?.onAccountManage}");
     expect(platformUiSource).toContain("AppBarRegistration[]");
@@ -617,5 +804,44 @@ describe("Creator Workspace prototype state model", () => {
     expect(marketSource).not.toContain("window.open");
     expect(marketSource).toContain("onHandoffNavigate(handoff.target, url)");
     expect(platformSource).toContain("onHandoffNavigate={navigateHandoff}");
+  });
+
+  test("offers every shared resource conversion format from the Creator import menu", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+
+    expect(creatorSource).toContain('resourceConversionRegistry.import(formatId');
+    expect(creatorSource).toContain("materializeCreatorResourceConversion(imported.batch)");
+    expect(creatorSource).toContain("导入 pbres 格式");
+    expect(creatorSource).toContain("导入 ZZZ 格式");
+    expect(creatorSource).toContain("导入 Rink 格式");
+    expect(creatorSource).toContain("导入 dhsheet 格式");
+    expect(creatorSource).toContain("导入不咕鸟格式");
+    expect(creatorSource).toContain("导入工作区");
+  });
+
+  test("starts publication tags empty and routes both Creator image uploads through crop selection", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+
+    expect(creatorSource).toContain("useState<string[]>([])");
+    expect(creatorSource).not.toContain('useState<string[]>(["敌人", "Daggerheart"])');
+    expect(creatorSource).toContain("<ImageCropDialog");
+    expect(creatorSource).toContain('purpose: "resource-image"');
+    expect(creatorSource).toContain('purpose: "publication-cover"');
+  });
+
+  test("exposes package metadata editing in the Creator workspace menu", () => {
+    const creatorSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+
+    expect(creatorSource).toContain("编辑资源包信息");
+    expect(creatorSource).toContain("updateWorkspacePackageMetadata");
   });
 });

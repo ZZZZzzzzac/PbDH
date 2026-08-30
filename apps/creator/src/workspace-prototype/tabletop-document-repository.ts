@@ -91,12 +91,11 @@ export type StoredTabletopDocument = TabletopDocumentCandidate & {
 
 export type TrashedTabletopDocument = StoredTabletopDocument & {
   deletedAt: string;
+  purgeAfter: string | null;
 };
 
 export type TabletopImportConflictResolution = "reject" | "replace" | "copy";
 export type TabletopImportDisposition = "new" | "same" | "conflict";
-
-const trashDocumentId = (documentId: string) => `gm-tabletop-document-trash:${documentId}`;
 
 export function duplicateTabletopModel(
   source: TabletopDocumentModel,
@@ -225,7 +224,7 @@ export class TabletopDocumentRepository {
   }
 
   async listTrash(): Promise<TrashedTabletopDocument[]> {
-    const envelopes = await this.#store.list<TabletopDocument>("gm-tabletop-document-trash");
+    const envelopes = await this.#store.listTrash<TabletopDocument>("gm-tabletop-document");
     const results: TrashedTabletopDocument[] = [];
     for (const envelope of envelopes) {
       const media = await this.#store.getMedia(envelope.assetIds);
@@ -238,37 +237,21 @@ export class TabletopDocumentRepository {
         media,
         model: toModel(envelope.payload),
         sync: envelope.sync,
-        deletedAt: envelope.updatedAt,
+        deletedAt: envelope.deletedAt!,
+        purgeAfter: envelope.purgeAfter ?? null,
       });
     }
     return results;
   }
 
   async trash(documentId: string): Promise<void> {
-    const existing = await this.#store.get<TabletopDocument>("gm-tabletop-document", documentId);
-    if (!existing) return;
-    const deletedAt = this.#now();
-    await this.#store.replace("gm-tabletop-document", documentId, {
-      ...existing,
-      documentId: trashDocumentId(documentId),
-      documentKind: "gm-tabletop-document-trash",
-      updatedAt: deletedAt,
-    });
+    await this.#store.trash("gm-tabletop-document", documentId, this.#now());
   }
 
   async restore(documentId: string): Promise<StoredTabletopDocument> {
-    const trashId = trashDocumentId(documentId);
-    const trashed = await this.#store.get<TabletopDocument>("gm-tabletop-document-trash", trashId);
+    const trashed = await this.#store.getTrash<TabletopDocument>("gm-tabletop-document", documentId);
     if (!trashed) throw new Error("回收站里找不到这个桌面。");
-    if (await this.#store.get("gm-tabletop-document", documentId)) {
-      throw new Error("已有编号相同的桌面，暂时不能恢复。");
-    }
-    await this.#store.replace("gm-tabletop-document-trash", trashId, {
-      ...trashed,
-      documentId,
-      documentKind: "gm-tabletop-document",
-      updatedAt: this.#now(),
-    });
+    await this.#store.restore("gm-tabletop-document", documentId);
     const media = await this.#store.getMedia(trashed.assetIds);
     return {
       document: trashed.payload,
@@ -276,6 +259,10 @@ export class TabletopDocumentRepository {
       model: toModel(trashed.payload),
       sync: trashed.sync,
     };
+  }
+
+  async deleteFromTrash(documentId: string): Promise<void> {
+    await this.#store.deletePermanently("gm-tabletop-document", documentId);
   }
 
   async restoreRemote(

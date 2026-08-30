@@ -5,7 +5,7 @@ import {
   type CreatorAppMode,
 } from "@pbdh/creator/surface";
 import { MarketAppSurface } from "@pbdh/market/surface";
-import { PlayerAppSurface } from "@pbdh/player/surface";
+import { PlayerAppSurface, playerSystemPackageOptions } from "@pbdh/player/surface";
 import { PlatformChrome, type PlatformPage } from "@pbdh/platform-ui";
 
 type PlatformLocation = {
@@ -42,6 +42,10 @@ export function PlatformApp() {
     commitLocation(url, false);
   }, [commitLocation]);
 
+  const navigateMarket = useCallback((url: URL, replace = false) => {
+    commitLocation(url, replace);
+  }, [commitLocation]);
+
   const consumeHandoff = useCallback((cleanedUrl: URL) => {
     commitLocation(cleanedUrl, true);
   }, [commitLocation]);
@@ -69,10 +73,16 @@ export function PlatformApp() {
           onModeChange={navigate}
           handoffUrl={location.href}
           onHandoffConsumed={consumeHandoff}
+          systemPackageOptions={playerSystemPackageOptions}
         />
       </section>
       <section className="pbdh-platform-surface" hidden={location.page !== "market"}>
-        <MarketAppSurface onHandoffNavigate={navigateHandoff} />
+        <MarketAppSurface
+          locationHref={location.href}
+          onLocationNavigate={navigateMarket}
+          onHandoffNavigate={navigateHandoff}
+          systemPackageOptions={playerSystemPackageOptions}
+        />
       </section>
     </div>
   </PlatformChrome>;

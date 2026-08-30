@@ -26,8 +26,7 @@ function hasCompleteCore(template: AnyTemplate): boolean {
     && tabletop?.stateSchema
     && typeof tabletop.defaultState === "function"
     && Array.isArray(tabletop.commands)
-    && Array.isArray(tabletop.replacements)
-    && Object.hasOwn(candidate, "upgradeFrom"),
+    && Array.isArray(tabletop.replacements),
   );
 }
 

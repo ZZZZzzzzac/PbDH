@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  collapsePublicationFieldErrors,
   publicationErrorMessage,
   publicationSuccessMessage,
 } from "../../apps/creator/src/workspace-prototype/publication-feedback.ts";
@@ -22,6 +23,17 @@ describe("Creator publication feedback", () => {
     expect(publicationErrorMessage("PUBLICATION_VERSION_CONFLICT", "fallback")).toBe(
       "当前内容与已发布版本不同，请重新发布开发中的 1.0.0。",
     );
+  });
+
+  test("collapses repeated per-resource publication errors", () => {
+    expect(collapsePublicationFieldErrors([
+      { path: "/resources/0", code: "template.version.unsupported", message: "template.version.unsupported" },
+      { path: "/resources/1", code: "template.version.unsupported", message: "template.version.unsupported" },
+      { path: "/resources/2/data", code: "template.data.invalid", message: "template.data.invalid" },
+    ])).toEqual([
+      { path: "/resources/0", code: "template.version.unsupported", message: "template.version.unsupported", count: 2 },
+      { path: "/resources/2/data", code: "template.data.invalid", message: "template.data.invalid", count: 1 },
+    ]);
   });
 
   test("distinguishes created, updated and idempotent publication results", () => {

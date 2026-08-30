@@ -188,9 +188,11 @@ describe("Sheet Runtime 平台资源适配", () => {
     const portraitId = "sha256:other-portrait";
     const other = resource("madness", "自由", {
       名称: "记忆障碍",
-      类型: "疯狂",
-      简介: "一张疯狂卡",
-      内容: [{ 标题: "效果", 正文: "无法清晰回忆。" }],
+      内容: [
+        { 标题: "类型", 正文: "疯狂" },
+        { 标题: "简介", 正文: "一张疯狂卡" },
+        { 标题: "效果", 正文: "无法清晰回忆。" },
+      ],
     }, { portrait: portraitId }, "image");
     const installed = installedPackage(
       packageId,

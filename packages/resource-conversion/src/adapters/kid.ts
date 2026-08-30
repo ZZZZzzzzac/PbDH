@@ -124,14 +124,18 @@ function freeFieldBody(value: unknown, itemFields?: FreeField["itemFields"]): st
 }
 
 function freeFieldsFor(raw: JsonObject, type: string): JsonObject {
+  const typeLabel = freeTypeLabels[type] ?? type;
+  const description = text(raw.description);
   return {
     名称: text(raw.name),
-    类型: freeTypeLabels[type] ?? type,
-    简介: text(raw.description),
-    内容: (freeFields[type] ?? []).map(({ field, title, itemFields }) => ({
-      标题: title,
-      正文: freeFieldBody(raw[field], itemFields),
-    })).filter((block) => block.正文),
+    内容: [
+      ...(typeLabel ? [{ 标题: "类型", 正文: typeLabel }] : []),
+      ...(description ? [{ 标题: "简介", 正文: description }] : []),
+      ...(freeFields[type] ?? []).map(({ field, title, itemFields }) => ({
+        标题: title,
+        正文: freeFieldBody(raw[field], itemFields),
+      })).filter((block) => block.正文),
+    ],
   };
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
-import weaponPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
+import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
+import weaponPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json";
 import { publications } from "../../apps/market/src/catalog.ts";
 import { pbresArchiveName } from "../../apps/market/src/market-api.ts";
 import {
@@ -14,6 +14,7 @@ import {
   filterPublications,
   publicationsOwnedBy,
   setPublicationStatus,
+  summarizePublicationTemplates,
   updatePublicationDisplayMetadata,
   type Publication,
 } from "../../apps/market/src/market-model.ts";
@@ -30,8 +31,8 @@ function publication(overrides: Partial<Publication> = {}): Publication {
     summary: "荒野敌人",
     kind: "enemy",
     templateIds: ["敌人"],
-    system: "daggerheart-core",
-    systemLabel: "Daggerheart Core",
+    systems: ["daggerheart-core"],
+    systemLabels: ["匕首之心"],
     language: "中文",
     categories: ["敌人", "遭遇"],
     tags: ["荒野"],
@@ -106,6 +107,26 @@ describe("Market catalog filters", () => {
   });
 });
 
+describe("Market publication template summary", () => {
+  test("sorts templates by resource count and limits cards to three plus an omission badge", () => {
+    const mixed = publication({
+      templateIds: ["社群", "护甲", "武器", "职业", "种族"],
+      resources: [
+        ...Array.from({ length: 4 }, (_, index) => ({ id: `weapon-${index}`, name: "武器", templateId: "武器", path: "", data: {}, source: {} })),
+        ...Array.from({ length: 3 }, (_, index) => ({ id: `armor-${index}`, name: "护甲", templateId: "护甲", path: "", data: {}, source: {} })),
+        ...Array.from({ length: 2 }, (_, index) => ({ id: `community-${index}`, name: "社群", templateId: "社群", path: "", data: {}, source: {} })),
+        { id: "profession", name: "职业", templateId: "职业", path: "", data: {}, source: {} },
+        { id: "ancestry", name: "种族", templateId: "种族", path: "", data: {}, source: {} },
+      ],
+    });
+
+    expect(summarizePublicationTemplates(mixed)).toEqual({
+      templateIds: ["武器", "护甲", "社群"],
+      omittedCount: 2,
+    });
+  });
+});
+
 describe("Market handoff intents", () => {
   const enemy = publication();
   const weapon = publication({
@@ -146,13 +167,14 @@ describe("Market handoff intents", () => {
     expect(createHandoffIntent(native, "player").targetRoute).toBe(targetRoute);
   });
 
-  test("routes the focused weapon in a mixed package to Player weapons", () => {
+  test("does not use a focused card to change a whole-package Player handoff", () => {
     const mixed = publication({
       kind: "mixed",
       templateIds: ["敌人", "武器"],
       resources: [...enemy.resources, ...weapon.resources],
     });
-    expect(createHandoffIntent(mixed, "player", "resource-broadsword").targetRoute).toBe("weapons");
+    expect(createHandoffIntent(mixed, "player", "resource-broadsword")).not.toHaveProperty("focusLocator");
+    expect(createHandoffIntent(mixed, "player", "resource-broadsword").targetRoute).toBe("other-resources");
     expect(createHandoffIntent(mixed, "player", "resource-minotaur").targetRoute).toBe("other-resources");
   });
 
@@ -188,7 +210,7 @@ describe("Market handoff intents", () => {
       .toThrow("handoff.fork.target-not-creator");
   });
 
-  test("serializes Player handoff with stable publication and package locators only", () => {
+  test("serializes Player handoff as a whole-package install without a focused resource", () => {
     const url = createPlayerHandoffUrl(
       createHandoffIntent(weapon, "player", "resource-broadsword"),
       "http://localhost:5173/player",
@@ -202,13 +224,13 @@ describe("Market handoff intents", () => {
       packageId: weapon.packageId,
       packageVersion: weapon.packageVersion,
       snapshotDigest: weapon.snapshotDigest,
-      focusResourceId: "resource-broadsword",
     });
   });
 
   test("rejects unpublished acquisition and forged focus locators", () => {
     expect(() => createHandoffIntent(publication({ status: "unpublished" }), "player")).toThrow("publication.unpublished");
     expect(() => createHandoffIntent(enemy, "creator", "missing")).toThrow("focus.resource.not-found");
+    expect(createHandoffIntent(enemy, "player", "missing")).not.toHaveProperty("focusLocator");
   });
 
   test("allows authors and administrators to acquire an unpublished publication", () => {

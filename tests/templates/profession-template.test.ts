@@ -3,18 +3,18 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { describe, expect, test } from "vitest";
 
 import {
-  temporaryProfessionTemplate,
+  professionTemplate,
   templateRegistry,
 } from "../../packages/templates/src/core/index.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
-const validate = ajv.compile(temporaryProfessionTemplate.schema as AnySchema);
+const validate = ajv.compile(professionTemplate.schema as AnySchema);
 
-describe("职业临时 Template 0.0.0-dev.1", () => {
+describe("职业 Template 1.0.0", () => {
   test("registers structured domains, attributes, and questions", () => {
-    expect(templateRegistry.resolve("职业", "0.0.0-dev.1")).toBe(temporaryProfessionTemplate);
+    expect(templateRegistry.resolve("职业", "1.0.0")).toBe(professionTemplate);
     const data = {
-      ...temporaryProfessionTemplate.defaultData,
+      ...professionTemplate.defaultData,
       名称: "吟游诗人",
       领域: ["优雅", "典籍"],
       推荐初始属性: { 敏捷: "+0", 风度: "+2" },
@@ -22,11 +22,11 @@ describe("职业临时 Template 0.0.0-dev.1", () => {
       关系问题: ["我们为何成为朋友？"],
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
-    expect(temporaryProfessionTemplate.project(data).searchText).toContain("风度 +2");
+    expect(professionTemplate.project(data).searchText).toContain("风度 +2");
   });
 
   test("rejects delimiter strings in structured fields", () => {
-    expect(validate({ ...temporaryProfessionTemplate.defaultData, 领域: "优雅+典籍" })).toBe(false);
-    expect(validate({ ...temporaryProfessionTemplate.defaultData, 背景问题: "问题一" })).toBe(false);
+    expect(validate({ ...professionTemplate.defaultData, 领域: "优雅+典籍" })).toBe(false);
+    expect(validate({ ...professionTemplate.defaultData, 背景问题: "问题一" })).toBe(false);
   });
 });

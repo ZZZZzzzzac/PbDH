@@ -149,6 +149,30 @@ describe("Player layout regressions", () => {
     expect(resourceChanges.match(/await refreshInstalledResources\(next\)/gu)).toHaveLength(2);
   });
 
+  it("Market 整包安装后只选中资源包，不自动打开单卡预览", async () => {
+    const source = await readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8");
+    const commit = source.slice(
+      source.indexOf("async function commit(plan"),
+      source.indexOf("async function removeSelectedPackage"),
+    );
+
+    expect(source).not.toContain("expectedMarketHandoff?.focusResourceId");
+    expect(commit).not.toContain("setPreview(");
+    expect(source).toContain("查看资源包");
+  });
+
+  it("刷新后按实际恢复的预置系统重新装载对应资源库", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const startup = source.slice(
+      source.indexOf("const cachedMetadata = await runtimeStorage.loadCurrentSystemPackageCacheMetadata()"),
+      source.indexOf("runtimeReadyRef.current = true"),
+    );
+
+    expect(startup).toContain("if (!importedWasRestored) {");
+    expect(startup).toContain("await switchToPresetSystemPackage(preferred.preset, true)");
+    expect(startup).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
+  });
+
   it("Player 卡牌桌面使用与 Creator、Market、GM 相同的规范卡面渲染器", async () => {
     const source = await Promise.all([
       readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
@@ -161,18 +185,19 @@ describe("Player layout regressions", () => {
     expect(source).toContain("assets");
   });
 
-  it("由整个卡牌桌面持续接管卡牌拖动，卡面只负责开始拖动", async () => {
-    const [table, card] = await Promise.all([
+  it("由共享卡牌桌面持续接管拖动，卡面不再拥有指针流程", async () => {
+    const [table, card, shared] = await Promise.all([
       readFile("apps/player/src/sheet-runtime/rendering/CardTableModule.tsx", "utf8"),
       readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
+      readFile("packages/tabletop/src/react/index.tsx", "utf8"),
     ]);
-    const surface = table.slice(table.indexOf('className="card-table-surface"'), table.indexOf('className="card-table-actions'));
 
-    expect(surface).toContain("onPointerMove={continueDrag}");
-    expect(surface).toContain("onPointerUp={endDrag}");
-    expect(surface).toContain("onPointerCancel={endDrag}");
-    expect(card).not.toContain("onPointerMove={onPointerMove}");
-    expect(card).not.toContain("onPointerUp={onPointerUp}");
+    expect(table).toContain("<TabletopSurface");
+    expect(shared).toContain("onPointerMove={moveDrag}");
+    expect(shared).toContain("onPointerUp={finishDrag}");
+    expect(shared).toContain("onPointerCancel={() =>");
+    expect(card).not.toContain("onPointerMove");
+    expect(card).not.toContain("onPointerUp");
   });
 
   it("按资源包身份查找共用卡面所需的图片", async () => {
@@ -190,12 +215,22 @@ describe("Player layout regressions", () => {
   });
 
   it("头像裁剪的确认和取消操作始终位于可见的对话框头部", async () => {
-    const source = await readFile("apps/player/src/sheet-runtime/rendering/PlayerImageCropDialog.tsx", "utf8");
+    const source = await readFile("packages/platform-ui/src/ImageCropDialog.tsx", "utf8");
     const header = source.slice(source.indexOf("<header"), source.indexOf("</header>"));
 
     expect(header).toContain("onCancel");
     expect(header).toContain("onConfirm");
     expect(source).toContain("不限制比例");
+  });
+
+  it("头像裁剪挂到页面外层后仍有明确的不透明底色", async () => {
+    const styles = await readFile("packages/platform-ui/src/styles.css", "utf8");
+    const dialog = styles.slice(styles.indexOf(".player-image-crop-dialog {"), styles.indexOf(".player-image-crop-header {"));
+    const select = styles.slice(styles.indexOf(".player-image-crop-actions select {"), styles.indexOf("@media (max-width: 640px)"));
+
+    expect(dialog).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
+    expect(dialog).toMatch(/color:\s*var\(--framework-text,\s*#[0-9a-f]{6}\)/iu);
+    expect(select).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
   });
 
   it("隔离资源管理器表格行与系统包的 resource-row", async () => {

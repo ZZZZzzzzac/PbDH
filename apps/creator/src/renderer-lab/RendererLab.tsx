@@ -7,8 +7,8 @@ import {
 } from "@pbdh/templates/frontend";
 import type { AdversaryData } from "@pbdh/templates/core";
 
-import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
-import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import minotaurImageUrl from "../../../../contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp?url";
+import minotaurPackage from "../../../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 
 import { rendererLabHosts, type RendererLabScenario } from "./lab-model.ts";
 
@@ -85,7 +85,7 @@ export function RendererLab() {
         <div>
           <p className="eyebrow">PBDH / RENDERER PROOF 001</p>
           <h1>同一张卡，四个宿主。</h1>
-          <p className="lede">敌人@1.0.0-alpha.1 · enemy-card-r1 · 90 × 142 mm</p>
+          <p className="lede">敌人@1.0.0 · enemy-card-r1 · 63:88 设计比例</p>
         </div>
         <div className="proof-mark" aria-hidden="true">R1</div>
       </header>

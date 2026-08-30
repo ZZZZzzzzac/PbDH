@@ -1,8 +1,9 @@
-import type {
-  TabletopCommand,
-  TabletopDocumentModel,
-  TabletopInstance,
-  TabletopInstanceResourceCopy,
+import {
+  clampTabletopPosition,
+  type TabletopCommand,
+  type TabletopDocumentModel,
+  type TabletopInstance,
+  type TabletopInstanceResourceCopy,
 } from "@pbdh/tabletop/core";
 import { templateRegistry } from "@pbdh/templates/core";
 
@@ -20,6 +21,22 @@ export type PreparedTabletopReplacement = {
 };
 
 const daggerheartOfficialResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+export const gmCardPixelsPerDesignUnit = 250 / 63;
+
+export function containGmTabletopInstances(document: TabletopDocumentModel): TabletopDocumentModel {
+  let changed = false;
+  const instances = document.instances.map((instance) => {
+    const position = clampTabletopPosition(instance, {
+      ...document.canvas,
+      containment: "full",
+      pixelsPerUnit: gmCardPixelsPerDesignUnit,
+    }, instance.position);
+    if (position.x === instance.position.x && position.y === instance.position.y) return instance;
+    changed = true;
+    return { ...instance, position };
+  });
+  return changed ? { ...document, instances } : document;
+}
 
 export function restoreOfficialTabletopImageModes(
   document: TabletopDocumentModel,

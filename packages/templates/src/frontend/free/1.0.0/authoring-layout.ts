@@ -9,8 +9,6 @@ export const freeAuthoringLayout: AuthoringLayout = {
       label: "自由资源",
       fields: [
         { path: "名称", label: "名称", control: "text" },
-        { path: "类型", label: "类型", control: "text" },
-        { path: "简介", label: "简介", control: "textarea" },
       ],
     },
     {

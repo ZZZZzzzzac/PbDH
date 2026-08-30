@@ -13,6 +13,7 @@
     "负荷": { "type": "string" },
     "伤害类型": { "type": "string" },
     "描述": { "type": "string" },
+    "风味描述": { "type": "string" },
     "位阶": { "type": "string" }
   },
   "additionalProperties": false

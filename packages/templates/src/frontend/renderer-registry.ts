@@ -2,9 +2,6 @@ import type { ReactNode } from "react";
 
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 
-import {
-  adversaryRendererRevision as legacyAdversaryRendererRevision,
-} from "./adversary/1.0.0-alpha.1/renderer.tsx";
 import { adversaryRendererRevision } from "./adversary/1.0.0/renderer.tsx";
 import { freeRendererRevision } from "./free/1.0.0/renderer.tsx";
 import { armorRendererRevision } from "./armor/1.0.0/renderer.tsx";
@@ -15,9 +12,6 @@ import { environmentRendererRevision } from "./environment/1.0.0/renderer.tsx";
 import { itemRendererRevision } from "./item/1.0.0/renderer.tsx";
 import { professionRendererRevision } from "./profession/1.0.0/renderer.tsx";
 import { subclassRendererRevision } from "./subclass/1.0.0/renderer.tsx";
-import {
-  weaponRendererRevision as legacyWeaponRendererRevision,
-} from "./weapon/1.0.0-alpha.1/renderer.tsx";
 import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
 
 type TrustedRenderer = RendererRevisionCapability<any, any, ReactNode>;
@@ -25,19 +19,13 @@ type TrustedRenderer = RendererRevisionCapability<any, any, ReactNode>;
 const rendererResolvers = new Map<string, (version: string) => TrustedRenderer>();
 
 export function adversaryRendererFor(version: string) {
-  if (version === legacyAdversaryRendererRevision.templateVersion) {
-    return legacyAdversaryRendererRevision;
-  }
   if (version === adversaryRendererRevision.templateVersion) {
     return adversaryRendererRevision;
   }
   throw new Error(`Unsupported adversary Renderer version: ${version}`);
 }
 
-export function weaponRendererFor(version: string) {
-  if (version === legacyWeaponRendererRevision.templateVersion) {
-    return legacyWeaponRendererRevision;
-  }
+export function weaponRendererFor(version: string): TrustedRenderer {
   if (version === weaponRendererRevision.templateVersion) {
     return weaponRendererRevision;
   }

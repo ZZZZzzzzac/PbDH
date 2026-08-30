@@ -37,11 +37,39 @@ const cases = [
   [domainTemplate, domainAuthoringLayout, domainRendererFor],
 ] as const;
 
+const gameValueConstraintKeywords = new Set([
+  "pattern",
+  "format",
+  "enum",
+  "const",
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "multipleOf",
+]);
+
+function collectGameValueConstraints(value: unknown, path = "schema"): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) => collectGameValueConstraints(entry, `${path}[${index}]`));
+  }
+  if (!value || typeof value !== "object") return [];
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, entry]) => [
+    ...(gameValueConstraintKeywords.has(key) ? [`${path}.${key}`] : []),
+    ...collectGameValueConstraints(entry, `${path}.${key}`),
+  ]);
+}
+
 describe("Daggerheart Core 剩余稳定 Templates", () => {
-  test.each(cases)("%s@1.0.0 保留旧版本读取并提供完整作者与渲染能力", (template, layout, rendererFor) => {
+  test("Template Schema 只约束数据结构，不校验游戏字段的含义", () => {
+    for (const template of templateRegistry.list()) {
+      expect(collectGameValueConstraints(template.schema), template.id).toEqual([]);
+    }
+  });
+
+  test.each(cases)("%s@1.0.0 是唯一版本并提供完整作者与渲染能力", (template, layout, rendererFor) => {
     expect(templateRegistry.resolve(template.id, "1.0.0")).toBe(template);
-    expect(templateRegistry.resolve(template.id, "0.0.0-dev.1")).toBeDefined();
-    expect(template.upgradeFrom?.version).toBe("0.0.0-dev.1");
+    expect(templateRegistry.resolve(template.id, "0.0.0-dev.1")).toBeUndefined();
     expect(layout.templateId).toBe(template.id);
     expect(layout.templateVersion).toBe(template.version);
 
@@ -52,9 +80,6 @@ describe("Daggerheart Core 剩余稳定 Templates", () => {
     ]).map((path) => path.split(".")[0]!))].sort();
     expect(authoringFields).toEqual(schemaFields);
 
-    const upgraded = template.upgradeFrom!.upgrade(template.defaultData);
-    expect(upgraded).toEqual(template.defaultData);
-    expect(upgraded).not.toBe(template.defaultData);
     expect(rendererFor("1.0.0").revision).toBe(template.rendererRevision);
     expect(() => rendererFor("0.0.0-dev.1")).toThrow();
   });

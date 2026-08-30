@@ -14,3 +14,4 @@ import "./sheet-runtime/styles/guide.css";
 import "./sheet-runtime/styles/print.css";
 
 export { PlayerSheetSurface as PlayerAppSurface } from "./PlayerSheetSurface.tsx";
+export { playerSystemPackageOptions } from "./playerSystemPackageCatalog.ts";

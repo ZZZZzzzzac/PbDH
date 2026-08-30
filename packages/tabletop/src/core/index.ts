@@ -107,13 +107,12 @@ export type TabletopCommand =
       state: Record<string, string>;
       assets?: TabletopAsset[];
     }
-  | { type: "edit-instance-data"; instanceId: string; path: string[]; value: string }
+  | { type: "edit-instance-data"; instanceId: string; path: string[]; value: unknown }
   | { type: "template-state"; instanceId: string; commandId: string; value: string };
 
 export type ExecuteTabletopCommandOptions = {
   capabilities: TabletopCapabilitySet;
   templateCommands?: (instance: TabletopInstance) => readonly TemplateStateCommandDefinition[];
-  editableDataFields?: (instance: TabletopInstance) => readonly (readonly string[])[];
 };
 
 export type TabletopCommandResult = {
@@ -505,13 +504,6 @@ export function executeTabletopCommand(
     if (command.path.length === 0) {
       return fail(document, "tabletop.instance-data.path-empty", "/command/path");
     }
-    const sourceInstance = document.instances[instanceIndex]!;
-    const allowed = options.editableDataFields?.(sourceInstance) ?? [];
-    if (!allowed.some((pattern) => pathMatches(pattern, command.path))) {
-      return fail(document, "tabletop.instance-data.field-denied", "/command/path", {
-        path: command.path,
-      });
-    }
     const next = cloneDocument(document);
     let parent: unknown = next.instances[instanceIndex]!.resource.data;
     for (const segment of command.path.slice(0, -1)) {
@@ -522,16 +514,6 @@ export function executeTabletopCommand(
           : undefined;
     }
     const leaf = command.path.at(-1)!;
-    const current = Array.isArray(parent)
-      ? parent[Number(leaf)]
-      : parent && typeof parent === "object"
-        ? (parent as Record<string, unknown>)[leaf]
-        : undefined;
-    if (typeof current !== "string") {
-      return fail(document, "tabletop.instance-data.not-string-leaf", "/command/path", {
-        path: command.path,
-      });
-    }
     if (Array.isArray(parent)) parent[Number(leaf)] = command.value;
     else (parent as Record<string, unknown>)[leaf] = command.value;
     return { document: next, diagnostics: [] };
@@ -557,20 +539,38 @@ export function toggleTabletopFlipped(flipped: boolean): boolean {
 }
 
 export function clampTabletopPosition(
-  instance: Pick<TabletopInstance, "resource" | "scale">,
-  bounds: { width: number; height: number; minimumVisible?: number },
+  instance: Pick<TabletopInstance, "resource" | "scale"> & Partial<Pick<TabletopInstance, "rotation">>,
+  bounds: {
+    width: number;
+    height: number;
+    minimumVisible?: number;
+    containment?: "partial" | "full";
+    pixelsPerUnit?: number;
+  },
   position: { x: number; y: number },
 ): { x: number; y: number } {
   const visible = bounds.minimumVisible ?? 40;
-  const width = Number(instance.resource.presentation.width) * (96 / 25.4) * instance.scale;
-  const height = Number(instance.resource.presentation.height) * (96 / 25.4) * instance.scale;
+  const pixelsPerUnit = bounds.pixelsPerUnit ?? 96 / 25.4;
+  const width = Number(instance.resource.presentation.width) * pixelsPerUnit * instance.scale;
+  const height = Number(instance.resource.presentation.height) * pixelsPerUnit * instance.scale;
+  const rotation = normalizeQuarterRotation(instance.rotation ?? 0);
+  const extents = rotation === 90
+    ? { left: -height, top: 0, right: 0, bottom: width }
+    : rotation === 180
+      ? { left: -width, top: -height, right: 0, bottom: 0 }
+      : rotation === 270
+        ? { left: 0, top: -width, right: height, bottom: 0 }
+        : { left: 0, top: 0, right: width, bottom: height };
+  const clampAxis = (value: number, lower: number, upper: number) => lower <= upper
+    ? Math.min(upper, Math.max(lower, value))
+    : (lower + upper) / 2;
+  const full = bounds.containment === "full";
+  const minimumX = (full ? 0 : visible) - extents.left;
+  const maximumX = bounds.width - (full ? 0 : visible) - extents.right;
+  const minimumY = (full ? 0 : visible) - extents.top;
+  const maximumY = bounds.height - (full ? 0 : visible) - extents.bottom;
   return {
-    x: Math.min(bounds.width - visible, Math.max(visible - width, position.x)),
-    y: Math.min(bounds.height - visible, Math.max(visible - height, position.y)),
+    x: clampAxis(position.x, minimumX, maximumX),
+    y: clampAxis(position.y, minimumY, maximumY),
   };
-}
-
-function pathMatches(pattern: readonly string[], path: readonly string[]): boolean {
-  return pattern.length === path.length
-    && pattern.every((segment, index) => segment === "*" || segment === path[index]);
 }

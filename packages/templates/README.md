@@ -1,13 +1,11 @@
-# Templates
+# 资源模板版本
 
-可信 Template Registry。`core` 保持无 React；`frontend` 承载 Authoring 与前端能力。实现由 #10 子项进入。
+模板版本只保留一种用途：
 
-## 目录
+- **当前新内容**：Creator 新建、第三方转换和开发环境 Market 发布只能生成不带预发布后缀的当前版本。
 
-- `src/core/<template-id>/<exact-semver>/`：不可变 Schema 与 Core 原子能力；
-- `src/core/registry.ts`：精确版本 Registry，不做近似 SemVer 回退；
-- `src/frontend/<template-id>/<exact-semver>/`：纯声明 Authoring Layout；
-- `src/frontend/support-manifest.ts`：按实际 Core、Authoring、Renderer 能力生成支持清单。
+开放开发阶段产生的 `alpha` 与 `dev` 模板未正式发布，已经退役；注册表、编辑器、渲染器和转换流程不再读取或升级这些版本。
 
-`core` 禁止 React、DOM、浏览器存储与 `frontend` 反向依赖。Authoring Layout 只使用
-固定控件声明，不接受函数、脚本、HTML 或 CSS。
+每个允许创建新内容的精确版本必须同时具备核心模板、编辑器和卡面渲染器，并登记在 `catalog.json`。`npm run verify` 会检查这些登记完全一致。
+
+运行 `npm run template:status` 可以查看当前全部模板版本及其用途。

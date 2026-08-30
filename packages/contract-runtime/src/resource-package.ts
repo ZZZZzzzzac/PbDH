@@ -23,6 +23,11 @@ export type ResourcePackageLogicalDocument = {
   };
   targets: Array<{ systemPackageId: string; version: string }>;
   license: { label: string; declaration: string };
+  publication?: {
+    language: string;
+    tags: string[];
+    coverAssetId: string;
+  };
   forkSource: JsonValue;
   assets: Array<{
     id: string;
@@ -264,6 +269,14 @@ export async function validateResourcePackageSemantics(
         { actual: String(bytes.byteLength), expected: asset.byteLength },
       ));
     }
+  }
+
+  if (document.publication && !assetIds.has(document.publication.coverAssetId)) {
+    diagnostics.push(semanticDiagnostic(document.contractVersion,
+      "resource-package.publication-cover.asset-undeclared",
+      "/publication/coverAssetId",
+      { assetId: document.publication.coverAssetId },
+    ));
   }
 
   document.resources.forEach((resource, resourceIndex) => {

@@ -32,6 +32,80 @@ const upstreamRevision = "fdc1f9e1423a5e044fc547b84f4dbe02af6a5b38";
 const groups = ["profession", "ancestry", "community", "subclass", "domain", "variant"] as const;
 type Group = typeof groups[number];
 
+const equipmentValueLabels: Record<string, string> = {
+  agility: "敏捷",
+  strength: "力量",
+  finesse: "灵巧",
+  instinct: "本能",
+  presence: "风度",
+  knowledge: "知识",
+  melee: "近战",
+  veryClose: "极近距离",
+  close: "近距离",
+  far: "远距离",
+  veryFar: "极远距离",
+  oneHanded: "单手",
+  twoHanded: "双手",
+  physical: "物理",
+  magic: "魔法",
+};
+
+function equipmentValue(value: unknown): string {
+  const raw = text(value);
+  return equipmentValueLabels[raw] ?? raw;
+}
+
+function equipmentTier(value: unknown): string {
+  return text(value).replace(/^T(?=\d+$)/iu, "");
+}
+
+function equipmentFeature(raw: JsonObject): string {
+  const name = text(raw.featureName);
+  const description = text(raw.description);
+  return name && description ? `${name}：${description}` : name || description;
+}
+
+function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
+  if (text(document.format) !== "daggerheart.equipment-pack.v1") return null;
+  const equipment = asJsonObject(document.equipment);
+  if (!equipment) return null;
+  const weapons = Array.isArray(equipment.weapons) ? equipment.weapons : [];
+  const armor = Array.isArray(equipment.armor) ? equipment.armor : [];
+  const variant: JsonObject[] = [];
+  weapons.forEach((value) => {
+    const raw = asJsonObject(value);
+    if (!raw) return;
+    variant.push({
+      id: text(raw.id),
+      名称: text(raw.name),
+      类型: text(raw.weaponType) === "secondary" ? "副武器" : "主武器",
+      属性: equipmentValue(raw.trait),
+      距离: equipmentValue(raw.range),
+      伤害: text(raw.damage),
+      负荷: equipmentValue(raw.burden),
+      伤害类型: equipmentValue(raw.damageType),
+      描述: equipmentFeature(raw),
+      位阶: equipmentTier(raw.tier),
+    });
+  });
+  armor.forEach((value) => {
+    const raw = asJsonObject(value);
+    if (!raw) return;
+    const thresholds = asJsonObject(raw.baseThresholds) ?? {};
+    variant.push({
+      id: text(raw.id),
+      名称: text(raw.name),
+      类型: "护甲",
+      护甲值: text(raw.baseArmorMax),
+      重度伤害阈值: text(thresholds.minor),
+      严重伤害阈值: text(thresholds.major),
+      描述: equipmentFeature(raw),
+      位阶: equipmentTier(raw.tier),
+    });
+  });
+  return { ...document, variant };
+}
+
 function subclassName(value: unknown): string {
   return text(value).replace(/[\s\-－—]*(?:基础|进阶|精通|基石|专精|大师)$/u, "").trim();
 }
@@ -68,26 +142,24 @@ function freeFieldBody(value: JsonValue): string {
 }
 
 function freeVariantFields(raw: JsonObject): JsonObject {
+  const omitted = new Set(["id", "名称", "内容", "imageUrl"]);
+  const looseBlocks = Object.entries(raw)
+    .filter(([key, value]) => !omitted.has(key)
+      && !(key === "类型" && Array.isArray(raw.内容) && text(value) === "自由"))
+    .map(([key, value]) => ({ 标题: key, 正文: freeFieldBody(value) }))
+    .filter((block) => block.正文.trim().length > 0);
   if (Array.isArray(raw.内容)) {
     return {
       名称: text(raw.名称),
-      类型: text(raw.类型) || "其他",
-      简介: text(raw.简介 || raw.简略信息),
-      内容: raw.内容.map((value) => {
+      内容: [...looseBlocks, ...raw.内容.map((value) => {
         const block = asJsonObject(value) ?? {};
-        return { 标题: text(block.标题), 正文: text(block.正文) };
-      }),
+        return { 标题: text(block.标题), 正文: freeFieldBody(block.正文) };
+      })],
     };
   }
-  const omitted = new Set(["id", "名称", "类型", "简介", "简略信息", "imageUrl"]);
   return {
     名称: text(raw.名称),
-    类型: text(raw.类型) || "其他",
-    简介: text(raw.简略信息 || raw.简介),
-    内容: Object.entries(raw)
-      .filter(([key]) => !omitted.has(key))
-      .map(([key, value]) => ({ 标题: key, 正文: freeFieldBody(value) }))
-      .filter((block) => block.正文.trim().length > 0),
+    内容: looseBlocks,
   };
 }
 
@@ -216,6 +288,12 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
     风味描述: text(fields.风味描述),
     位阶: text(fields.位阶),
   };
+  if (resource.kind === "free") return {
+    id,
+    名称: resource.name,
+    类型: "自由",
+    内容: Array.isArray(fields.内容) ? fields.内容 : [],
+  };
   return {
     id,
     名称: resource.name,
@@ -265,13 +343,14 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
         : "dhsheet JSON 无法解析。");
     }
     const document = asJsonObject(read.document);
-    if (!document || !groups.some((group) => Array.isArray(document[group]))) {
+    const normalizedDocument = document ? normalizeEquipmentPack(document) ?? document : null;
+    if (!normalizedDocument || !groups.some((group) => Array.isArray(normalizedDocument[group]))) {
       return importFailure("dhsheet", "dhsheet.pack.invalid", "dhsheet 卡包没有六类分组数组。");
     }
     const resources: TemporaryResource[] = [];
     const diagnostics: ConversionDiagnostic[] = [];
     for (const group of groups) {
-      const records = document[group];
+      const records = normalizedDocument[group];
       if (!Array.isArray(records)) continue;
       if (group === "ancestry") {
         const ancestryGroups = new Map<string, Array<{ raw: JsonObject; index: number }>>();
@@ -332,8 +411,8 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
     return {
       ok: true,
       batch: {
-        name: text(document.name) || input.fileName.replace(/\.(?:json|dhcb)$/iu, ""),
-        version: text(document.version) || undefined,
+        name: text(normalizedDocument.name) || input.fileName.replace(/\.(?:json|dhcb)$/iu, ""),
+        version: text(normalizedDocument.version) || undefined,
         resources,
         sourceDocument: { formatId: "dhsheet", upstreamRevision, container: dhcb ? "dhcb" : "json", raw: document },
         media: read.media,
@@ -373,7 +452,8 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
       if (group === "variant") {
         const definitions = output.customFieldDefinitions as JsonObject;
         const variants = definitions.variants as JsonValue[];
-        const type = resource.kind === "adversary" ? "敌人"
+        const type = resource.kind === "free" ? "自由"
+          : resource.kind === "adversary" ? "敌人"
           : resource.kind === "environment" ? "环境"
             : text(resource.fields.类型 || resource.kind);
         if (!variants.includes(type)) variants.push(type);
