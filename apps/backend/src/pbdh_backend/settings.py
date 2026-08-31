@@ -47,6 +47,7 @@ class Settings:
     supabase_audience: str = "authenticated"
     admin_auth_subject: str | None = None
     publication_mode: str = "development"
+    account_media_quota_bytes: int | None = None
 
     @property
     def auth_configured(self) -> bool:
@@ -73,9 +74,20 @@ class Settings:
             supabase_audience=value("SUPABASE_AUDIENCE", "authenticated") or "authenticated",
             admin_auth_subject=clean_optional(value("PBDH_ADMIN_AUTH_SUBJECT")),
             publication_mode=value("PBDH_PUBLICATION_MODE", "development") or "development",
+            account_media_quota_bytes=positive_int_or_none(value("PBDH_ACCOUNT_MEDIA_QUOTA_BYTES")),
         )
 
 
 def clean_optional(value: str | None) -> str | None:
     cleaned = value.strip() if value else ""
     return cleaned or None
+
+
+def positive_int_or_none(value: str | None) -> int | None:
+    cleaned = clean_optional(value)
+    if cleaned is None:
+        return None
+    parsed = int(cleaned)
+    if parsed <= 0:
+        raise ValueError("PBDH_ACCOUNT_MEDIA_QUOTA_BYTES must be a positive integer")
+    return parsed

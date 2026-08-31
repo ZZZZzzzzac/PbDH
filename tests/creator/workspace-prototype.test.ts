@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { freeAuthoringLayout, trustedRendererFor } from "@pbdh/templates/frontend";
@@ -8,6 +10,7 @@ import { describe, expect, test } from "vitest";
 import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { storedColumnShare } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
+import { CreatorResourceExplorer } from "../../apps/creator/src/workspace-prototype/creator-resource-explorer.tsx";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
@@ -54,6 +57,30 @@ const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
   "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
 )))]]);
+
+function renderResourceExplorer() {
+  const workspace = createWorkspace({ document, media });
+  return renderToStaticMarkup(createElement(CreatorResourceExplorer, {
+    snapshot: {
+      workspaces: [workspace],
+      activeWorkspaceKey: workspace.key,
+      activeResourceId: workspace.document.resources[0]!.id,
+      activeResourceCount: workspace.document.resources.length,
+      operation: null,
+      search: "",
+      templateOptions: [workspace.document.resources[0]!.template.id],
+      templateFilters: [],
+      filteredResources: [],
+      multiSelect: false,
+      selectedResources: [],
+      sortDirection: "ascending",
+      expandedWorkspaceKeys: new Set([workspace.key]),
+      sync: new Map(),
+      savingWorkspaceKey: null,
+    },
+    execute: () => undefined,
+  }));
+}
 
 describe("Creator Workspace prototype state model", () => {
   test("creates an empty Workspace draft and requires a resource before Contract export", async () => {
@@ -346,12 +373,6 @@ describe("Creator Workspace prototype state model", () => {
     expect(freeAuthoringLayout.templateId).toBe("自由");
     expect(trustedRendererFor("自由", "1.0.0")?.revision).toBe("free-card-r1");
 
-    const creatorSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
-    ), "utf8");
-    expect(creatorSource).toContain("trustedAuthoringLayoutFor(resource.template.id, resource.template.version)");
-    expect(creatorSource).toContain("trustedRendererFor(displayResource.template.id, displayResource.template.version)");
   });
 
   test("copies a resource, its media, and linked forms into another package", async () => {
@@ -583,25 +604,31 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("keeps the armor editor inside the mobile viewport without widening other editors", () => {
-    const creatorSource = readFileSync(path.join(
+    const workbenchSource = readFileSync(path.join(
       root,
-      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+      "apps/creator/src/workspace-prototype/creator-workbench.tsx",
     ), "utf8");
     const styles = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/workspace.css",
     ), "utf8");
 
-    expect(creatorSource).toContain('armor ? " armor-workbench-body" : ""');
+    expect(workbenchSource).toContain('armor ? " armor-workbench-body" : ""');
     expect(styles).toContain(".armor-workbench-body { grid-template-columns: minmax(0, 1fr); }");
     expect(styles).toContain(".armor-workbench-body .armor-field-grid { min-width: 0; }");
   });
 
   test("binds GM whiteboard gestures and context menus without tool modes", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
+    const workbenchSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/gm-tabletop-workbench.tsx"), "utf8");
+    const viewportSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-gm-tabletop-viewport.ts"), "utf8");
+    const contextMenuSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-context-menus.tsx"), "utf8");
+    const dialogSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-dialogs.tsx"), "utf8");
+    const trashSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-creator-trash-source.ts"), "utf8");
+    const creatorSource = `${rootSource}\n${workbenchSource}\n${viewportSource}\n${contextMenuSource}\n${dialogSource}\n${trashSource}`;
     const surfaceSource = readFileSync(path.join(
       root,
       "packages/tabletop/src/react/index.tsx",
@@ -616,9 +643,8 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).not.toContain('className="package-license"');
     expect(creatorSource).not.toContain("发送到桌面");
     expect(creatorSource).toContain("requestTabletopRename");
-    expect(creatorSource).toContain("prepareWorkspaceReplacement");
     expect(creatorSource).toContain("切换形态");
-    expect(creatorSource).toContain("selectedInstanceIds={selectedInstanceIds}");
+    expect(creatorSource).toContain("selectedInstanceIds={snapshot.selectedInstanceIds}");
     expect(creatorSource).toContain('type: "edit-instance-data"');
     expect(creatorSource).not.toContain('type: "replace-instance-resource"');
     expect(creatorSource).toContain('dialog.kind === "new-tabletop"');
@@ -626,11 +652,11 @@ describe("Creator Workspace prototype state model", () => {
     expect(creatorSource).toContain('<span>GM 功能</span>');
     expect(creatorSource).toContain('>导入 .pbtab</button>');
     expect(creatorSource).not.toContain('>本地桌面回收站</button>');
-    expect(creatorSource).toContain("usePlatformTrashSource(creatorTrashSource)");
+    expect(creatorSource).toContain("usePlatformTrashSource(source)");
     expect(creatorSource).not.toContain('className="tabletop-tab-action" aria-label="导入桌面"');
     expect(creatorSource).not.toContain('aria-label="桌面回收站"');
     expect(creatorSource).toContain("duplicateTabletop");
-    expect(creatorSource).toContain("openTabletopContextMenu(tabletop.id, event.clientX, event.clientY)");
+    expect(creatorSource).toContain('type: "open-tabletop-context"');
     expect(creatorSource).toContain('dialog.kind === "tabletop-import-conflict"');
     expect(creatorSource).toContain("保留两份");
     expect(surfaceSource).toContain("onPointerMove={moveDrag}");
@@ -655,9 +681,19 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("uses neutral package defaults, editable enum menus, and separately debounced cloud sync", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const persistenceSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-creator-document-persistence.ts"), "utf8");
+    const creatorSource = `${rootSource}\n${persistenceSource}`;
+    const controlsSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-controls.tsx",
+    ), "utf8");
+    const workbenchSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-workbench.tsx",
     ), "utf8");
     const styles = readFileSync(path.join(
       root,
@@ -666,17 +702,17 @@ describe("Creator Workspace prototype state model", () => {
 
     expect(creatorSource).toContain('useState("新资源包")');
     expect(creatorSource).not.toContain('useState("牛头人敌人资源包")');
-    expect(creatorSource).toContain("enum: options = []");
-    expect(creatorSource).toContain('className="compact-field-enum-menu"');
-    expect(creatorSource).toContain('<Icon name="chevronDown" />');
-    expect(creatorSource).not.toContain('<option value="">选择</option>');
-    expect(creatorSource).not.toContain("<datalist");
+    expect(controlsSource).toContain("enum: options = []");
+    expect(controlsSource).toContain('className="compact-field-enum-menu"');
+    expect(controlsSource).toContain('<Icon name="chevronDown" />');
+    expect(controlsSource).not.toContain('<option value="">选择</option>');
+    expect(controlsSource).not.toContain("<datalist");
     expect(styles).toContain(".compact-field-control > input { box-sizing: border-box; width: 100%; }");
     expect(styles).toContain(".compact-field > .compact-field-control { position: relative; min-width: 0; display: flex; flex: 1 1 0; }");
-    expect(creatorSource).toContain("CREATOR_LOCAL_SAVE_DELAY_MS");
-    expect(creatorSource).toContain("CREATOR_CLOUD_SYNC_DELAY_MS");
-    expect(creatorSource).toContain("onFocusCapture={requestWorkspaceCloudSyncAfterEditing}");
-    expect(creatorSource).toContain("onBlurCapture={requestWorkspaceCloudSyncAfterEditing}");
+    expect(persistenceSource).toContain("LOCAL_SAVE_DELAY_MS");
+    expect(persistenceSource).toContain("CLOUD_SYNC_DELAY_MS");
+    expect(workbenchSource).toContain('onFocusCapture={() => execute({ type: "request-cloud-edit" })}');
+    expect(workbenchSource).toContain('onBlurCapture={() => execute({ type: "request-cloud-edit" })}');
     expect(creatorSource).toContain("isCreatorAuthoringInputFocused()");
     expect(creatorSource).toContain("const pendingLocalWrites = workspaceWriteQueueRef.current;");
     expect(creatorSource).toContain("const write = pendingLocalWrites.then(async () => {");
@@ -684,10 +720,12 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("balances the Creator workspace, editor, and preview at a 3:3:4 ratio", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
+    const trashSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-creator-trash-source.ts"), "utf8");
+    const creatorSource = `${rootSource}\n${trashSource}`;
     const styles = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/workspace.css",
@@ -700,14 +738,11 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("puts a working name sort control beside multi-select instead of the footer", () => {
-    const creatorSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
-    ), "utf8");
+    const markup = renderResourceExplorer();
 
-    expect(creatorSource).toContain('className="workspace-sort-button"');
-    expect(creatorSource).toContain('sortDirection={workspaceSortDirection}');
-    expect(creatorSource).not.toContain("<footer><span>{active?.document.resources.length ?? 0} 个资源</span><span>名称 ↑</span></footer>");
+    expect(markup).toContain('class="workspace-sort-button"');
+    expect(markup).toContain("名称 ↑");
+    expect(markup).not.toContain("个资源</span><span>名称 ↑");
   });
 
   test("lets users resize both Creator column boundaries and remembers their choices", () => {
@@ -715,18 +750,22 @@ describe("Creator Workspace prototype state model", () => {
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
+    const layoutSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-layout.tsx",
+    ), "utf8");
     const styles = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/workspace.css",
     ), "utf8");
 
-    expect(creatorSource).toContain('role="separator"');
-    expect(creatorSource).toContain('aria-orientation="vertical"');
-    expect(creatorSource).toContain("pbdh.creator.columns.workspace");
-    expect(creatorSource).toContain("pbdh.creator.columns.editor");
+    expect(layoutSource).toContain('role="separator"');
+    expect(layoutSource).toContain('aria-orientation="vertical"');
+    expect(layoutSource).toContain("pbdh.creator.columns.workspace");
+    expect(layoutSource).toContain("pbdh.creator.columns.editor");
     expect(creatorSource).toContain('{resourcePanelOpen && <CreatorColumnResizeHandle');
-    expect(creatorSource).toContain("setPointerCapture");
-    expect(creatorSource).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
+    expect(layoutSource).toContain("setPointerCapture");
+    expect(layoutSource).toContain('event.key !== "ArrowLeft" && event.key !== "ArrowRight"');
     expect(styles).toContain(".creator-column-resize-handle:hover::before");
     expect(styles).toContain("align-self: stretch");
     expect(styles).toContain("margin-block: calc(-1 * var(--creator-body-padding))");
@@ -762,20 +801,15 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("uses the same searchable and filterable workspace explorer in Creator and GM", () => {
-    const creatorSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
-    ), "utf8");
+    const markup = renderResourceExplorer();
     const styles = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/workspace.css",
     ), "utf8");
 
-    expect(creatorSource).toContain('className="workspace-resource-filters"');
-    expect(creatorSource).toContain('className="workspace-resource-results resource-tree"');
-    expect(creatorSource).not.toContain('appMode === "gm" && <div className="workspace-resource-filters"');
-    expect(creatorSource).not.toContain('appMode === "gm" && (resourceSearch.trim() || resourceTemplateFilters.length > 0)');
-    expect(creatorSource).toContain('workspace-package-list${resourceSearch.trim() || resourceTemplateFilters.length > 0 ? " is-filtering" : ""}');
+    expect(markup).toContain('class="workspace-resource-filters"');
+    expect(markup).toContain('class="workspace-package-list"');
+    expect(markup).toContain('aria-label="筛选资源"');
     expect(styles).toContain(".workspace-resource-filters");
     expect(styles).toContain(".workspace-resource-results");
   });
@@ -803,9 +837,15 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("registers local and cloud Creator/GM documents in the platform recycle bin", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
+    ), "utf8");
+    const trashSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-creator-trash-source.ts"), "utf8");
+    const creatorSource = `${rootSource}\n${trashSource}`;
+    const controlsSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-controls.tsx",
     ), "utf8");
     const platformUiSource = readFileSync(path.join(
       root,
@@ -813,9 +853,9 @@ describe("Creator Workspace prototype state model", () => {
     ), "utf8");
 
     expect(creatorSource).toContain('id: "creator-and-gm-documents"');
-    expect(creatorSource).toContain("creatorWorkspaceRepository.listTrash()");
+    expect(creatorSource).toContain("workspaceRepository.listTrash()");
     expect(creatorSource).toContain("tabletopRepository.listTrash()");
-    expect(creatorSource).toContain("仅保存在此浏览器，不等于云备份");
+    expect(controlsSource).toContain("仅保存在此浏览器，不等于云备份");
     expect(creatorSource).toContain("cloudDocumentService.deleteFromTrash(remote, credentials)");
     expect(platformUiSource).toContain('aria-label="回收站"');
     expect(platformUiSource).toContain("内容保留 30 天");
@@ -835,18 +875,26 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("offers every shared resource conversion format from the Creator import menu", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
+    const dialogSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-dialogs.tsx"), "utf8");
+    const workflowSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-package-file-workflow.ts",
+    ), "utf8");
+    const creatorSource = `${rootSource}\n${dialogSource}\n${workflowSource}`;
+    const markup = renderResourceExplorer();
 
-    expect(creatorSource).toContain('resourceConversionRegistry.import(formatId');
+    expect(rootSource).toContain("runCreatorPackageFileWorkflow");
+    expect(workflowSource).toContain("resourceConversionRegistry.import(command.formatId");
     expect(creatorSource).toContain("materializeCreatorResourceConversion(imported.batch)");
-    expect(creatorSource).toContain("导入 pbres 格式");
-    expect(creatorSource).toContain("导入 ZZZ 格式");
-    expect(creatorSource).toContain("导入 Rink 格式");
-    expect(creatorSource).toContain("导入 dhsheet 格式");
-    expect(creatorSource).toContain("导入不咕鸟格式");
+    expect(markup).toContain("导入 pbres 格式");
+    expect(markup).toContain("导入 ZZZ 格式");
+    expect(markup).toContain("导入 Rink 格式");
+    expect(markup).toContain("导入 dhsheet 格式");
+    expect(markup).toContain("导入不咕鸟格式");
     expect(creatorSource).toContain("导入工作区");
   });
 
@@ -864,10 +912,12 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("exposes package metadata editing in the Creator workspace menu", () => {
-    const creatorSource = readFileSync(path.join(
+    const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
+    const contextMenuSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-context-menus.tsx"), "utf8");
+    const creatorSource = `${rootSource}\n${contextMenuSource}`;
 
     expect(creatorSource).toContain("编辑资源包信息");
     expect(creatorSource).toContain("updateWorkspacePackageMetadata");

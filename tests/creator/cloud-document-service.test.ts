@@ -129,7 +129,7 @@ describe("Creator and GM cloud recovery", () => {
       resource: {
         source: { packageId: workspace.key, resourceId: packageDocument.resources[0]!.id },
         template: structuredClone(packageDocument.resources[0]!.template),
-        presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(packageDocument.resources[0]!.presentation) },
+        presentation: structuredClone(packageDocument.resources[0]!.presentation),
         data: structuredClone(packageDocument.resources[0]!.data) as Record<string, unknown>,
         labels: [],
         replacements: [],

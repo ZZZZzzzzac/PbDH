@@ -162,6 +162,60 @@ def test_logged_in_non_author_can_download_a_public_package(tmp_path: Path) -> N
     assert loaded["candidate"] is not None
 
 
+def test_market_media_is_retained_only_by_the_document_that_acquired_it(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    document, media = candidate()
+    author = claim(api, "market-media-author")
+    reader = claim(api, "market-media-reader")
+    publication = publish(api, author, document, media).json()["publication"]
+    publication_id = publication["publicationId"]
+    asset_id = document["assets"][0]["id"]
+
+    acquired = api.put(
+        "/api/cloud/documents/acquired-workspace",
+        headers=reader,
+        json={
+            "mutationId": "acquire-public-media",
+            "documentKind": "creator-workspace",
+            "contractFamily": "creator-workspace-draft",
+            "contractVersion": "1",
+            "baseRevision": None,
+            "assetIds": [asset_id],
+            "payload": {"name": "已取得的市场资源"},
+            "force": False,
+        },
+    )
+    assert acquired.status_code == 200, acquired.text
+    assert api.post(
+        f"/api/publications/{publication_id}/unpublish",
+        headers=author,
+    ).status_code == 200
+
+    retained = api.get(
+        f"/api/cloud/documents/acquired-workspace/media/{asset_id}",
+        headers=reader,
+    )
+    assert retained.status_code == 200
+    assert retained.content == media[asset_id]
+
+    unrelated = api.put(
+        "/api/cloud/documents/unrelated-workspace",
+        headers=reader,
+        json={
+            "mutationId": "reuse-withdrawn-media",
+            "documentKind": "creator-workspace",
+            "contractFamily": "creator-workspace-draft",
+            "contractVersion": "1",
+            "baseRevision": None,
+            "assetIds": [asset_id],
+            "payload": {"name": "不应取得的市场资源"},
+            "force": False,
+        },
+    )
+    assert unrelated.status_code == 422
+    assert unrelated.json()["error"]["code"] == "CLOUD_MEDIA_NOT_READY"
+
+
 def test_heart_of_hopefind_text_resources_can_be_published(tmp_path: Path) -> None:
     loaded = load_pbres(
         (ROOT / "apps/player/public/system-packages/heart-of-hopefind/resources/heart-of-hopefind.pbres").read_bytes(),

@@ -46,9 +46,9 @@ function number(node, property) {
   return value;
 }
 
-const mm = (value) => `${Number((value / 4).toFixed(3))}mm`;
-const cssFont = (node) => `${node.fontWeight ?? 400} ${mm(number(node, "fontSize"))}/${node.lineHeight ?? 1.2} ${JSON.stringify(node.fontFamily ?? "Noto Sans SC")}, sans-serif`;
-const padding = (values) => values.map(mm).join(" ");
+const designUnit = (value) => `${Number((value / 4).toFixed(3))}px`;
+const cssFont = (node) => `${node.fontWeight ?? 400} ${designUnit(number(node, "fontSize"))}/${node.lineHeight ?? 1.2} ${JSON.stringify(node.fontFamily ?? "Noto Sans SC")}, sans-serif`;
+const padding = (values) => values.map(designUnit).join(" ");
 
 const page = unique(document.pages, "30 Components");
 const pageNodes = descendants(page);
@@ -118,65 +118,65 @@ const css = `
   --oxblood: ${solid(attack)};
   box-sizing: border-box;
   position: relative;
-  width: ${mm(number(card, "width"))};
-  height: ${mm(number(card, "height"))};
+  width: ${designUnit(number(card, "width"))};
+  height: ${designUnit(number(card, "height"))};
   overflow: hidden;
   background: var(--bone);
   color: #1D1713;
   font-family: ${JSON.stringify(summary.fontFamily)}, sans-serif;
-  border: ${mm(number(card.stroke, "thickness"))} solid ${solid(card, "stroke")};
+  border: ${designUnit(number(card.stroke, "thickness"))} solid ${solid(card, "stroke")};
 }
-.enemy-card.is-fluid { height: auto; min-height: ${mm(number(card, "height"))}; overflow: visible; }
-.enemy-art { position: relative; height: ${mm(number(art, "height"))}; overflow: hidden; background: ${solid(art)}; }
+.enemy-card.is-fluid { height: auto; min-height: ${designUnit(number(card, "height"))}; overflow: visible; }
+.enemy-art { position: relative; height: ${designUnit(number(art, "height"))}; overflow: hidden; background: ${solid(art)}; }
 .enemy-art img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .enemy-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent ${overlayStart}%, ${solid(overlay)} 100%); }
 .enemy-art.is-text-only::after { background: none; }
-.enemy-card.is-text .enemy-art { height: 32mm; background: ${solid(overlay)}; }
-.enemy-card.is-text .enemy-body { height: calc(${mm(number(card, "height"))} - 32mm); }
-.enemy-card.is-text .enemy-kicker { top: 5mm; }
-.enemy-card.is-text .enemy-heading h1 { top: 4mm; }
-.enemy-card.is-text .enemy-heading .enemy-original-title { top: 13mm; }
-.enemy-card.is-text .enemy-heading .enemy-summary { top: 19mm; }
+.enemy-card.is-text .enemy-art { height: 32px; background: ${solid(overlay)}; }
+.enemy-card.is-text .enemy-body { height: calc(${designUnit(number(card, "height"))} - 32px); }
+.enemy-card.is-text .enemy-kicker { top: 5px; }
+.enemy-card.is-text .enemy-heading h1 { top: 4px; }
+.enemy-card.is-text .enemy-heading .enemy-original-title { top: 13px; }
+.enemy-card.is-text .enemy-heading .enemy-summary { top: 19px; }
 .enemy-card.is-image .enemy-art { height: 100%; }
 .enemy-card.is-image .enemy-art::after { display: none; }
-.enemy-image-missing { width: 100%; height: 100%; display: grid; place-items: center; color: #F8F3EA; font: 700 4mm/1.3 "Noto Sans SC", sans-serif; }
-.enemy-kicker { position: absolute; z-index: 2; right: ${mm(kickerRight)}; top: ${mm(number(kicker, "y"))}; width: ${mm(number(kicker, "width"))}; color: ${solid(kicker)}; font: ${cssFont(kicker)}; text-align: ${kicker.textAlign}; }
+.enemy-image-missing { width: 100%; height: 100%; display: grid; place-items: center; color: #F8F3EA; font: 700 4px/1.3 "Noto Sans SC", sans-serif; }
+.enemy-kicker { position: absolute; z-index: 2; right: ${designUnit(kickerRight)}; top: ${designUnit(number(kicker, "y"))}; width: ${designUnit(number(kicker, "width"))}; color: ${solid(kicker)}; font: ${cssFont(kicker)}; text-align: ${kicker.textAlign}; }
 .enemy-heading { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
-.enemy-heading h1 { position: absolute; left: ${mm(number(title, "x"))}; right: ${mm(titleRight)}; top: ${mm(number(title, "y"))}; margin: 0; color: ${solid(title)}; font: ${cssFont(title)}; }
-.enemy-heading .enemy-original-title { position: absolute; left: ${mm(number(originalTitle, "x"))}; top: ${mm(number(originalTitle, "y"))}; margin: 0; color: ${solid(originalTitle)}; font: ${cssFont(originalTitle)}; }
-.enemy-heading .enemy-summary { position: absolute; left: ${mm(number(summary, "x"))}; top: ${mm(number(summary, "y"))}; width: ${mm(number(summary, "width"))}; margin: 0; color: ${solid(summary)}; font: ${cssFont(summary)}; font-style: ${summary.fontStyle}; }
-.enemy-body { box-sizing: border-box; height: ${mm(number(body, "height"))}; padding: ${padding(body.padding)}; display: flex; flex-direction: column; gap: ${mm(number(body, "gap"))}; }
-.enemy-brief { height: ${mm(number(brief, "height"))}; display: flex; align-items: center; gap: ${mm(number(brief, "gap"))}; }
-.enemy-motives { box-sizing: border-box; width: ${mm(number(motives, "width"))}; height: ${mm(number(motives, "height"))}; padding: ${padding(motives.padding)}; display: flex; flex-direction: column; justify-content: center; gap: ${mm(number(motives, "gap"))}; color: ${solid(motiveText)}; font: ${cssFont(motiveText)}; background: ${solid(motives)}; border: ${mm(number(motives.stroke, "thickness"))} solid ${solid(motives, "stroke")}; border-radius: ${mm(number(motives, "cornerRadius"))}; }
+.enemy-heading h1 { position: absolute; left: ${designUnit(number(title, "x"))}; right: ${designUnit(titleRight)}; top: ${designUnit(number(title, "y"))}; margin: 0; color: ${solid(title)}; font: ${cssFont(title)}; }
+.enemy-heading .enemy-original-title { position: absolute; left: ${designUnit(number(originalTitle, "x"))}; top: ${designUnit(number(originalTitle, "y"))}; margin: 0; color: ${solid(originalTitle)}; font: ${cssFont(originalTitle)}; }
+.enemy-heading .enemy-summary { position: absolute; left: ${designUnit(number(summary, "x"))}; top: ${designUnit(number(summary, "y"))}; width: ${designUnit(number(summary, "width"))}; margin: 0; color: ${solid(summary)}; font: ${cssFont(summary)}; font-style: ${summary.fontStyle}; }
+.enemy-body { box-sizing: border-box; height: ${designUnit(number(body, "height"))}; padding: ${padding(body.padding)}; display: flex; flex-direction: column; gap: ${designUnit(number(body, "gap"))}; }
+.enemy-brief { height: ${designUnit(number(brief, "height"))}; display: flex; align-items: center; gap: ${designUnit(number(brief, "gap"))}; }
+.enemy-motives { box-sizing: border-box; width: ${designUnit(number(motives, "width"))}; height: ${designUnit(number(motives, "height"))}; padding: ${padding(motives.padding)}; display: flex; flex-direction: column; justify-content: center; gap: ${designUnit(number(motives, "gap"))}; color: ${solid(motiveText)}; font: ${cssFont(motiveText)}; background: ${solid(motives)}; border: ${designUnit(number(motives.stroke, "thickness"))} solid ${solid(motives, "stroke")}; border-radius: ${designUnit(number(motives, "cornerRadius"))}; }
 .enemy-motives p { margin: 0; }
 .enemy-motives p + p { color: ${solid(experienceText)}; font: ${cssFont(experienceText)}; }
-.enemy-stats { width: ${mm(number(stats, "width"))}; height: ${mm(number(stats, "height"))}; display: grid; grid-template-columns: ${statColumns}; }
-.enemy-stat { display: grid; place-content: center; text-align: center; border: ${mm(number(stats.children[0].stroke, "thickness"))} solid ${solid(stats.children[0], "stroke")}; }
+.enemy-stats { width: ${designUnit(number(stats, "width"))}; height: ${designUnit(number(stats, "height"))}; display: grid; grid-template-columns: ${statColumns}; }
+.enemy-stat { display: grid; place-content: center; text-align: center; border: ${designUnit(number(stats.children[0].stroke, "thickness"))} solid ${solid(stats.children[0], "stroke")}; }
 .enemy-stat b { font: ${cssFont(stats.children[0].children[0])}; color: ${solid(stats.children[0].children[0])}; }
 .enemy-stat span { font: ${cssFont(stats.children[0].children[1])}; color: ${solid(stats.children[0].children[1])}; }
-.enemy-attack { box-sizing: border-box; height: ${mm(number(attack, "height"))}; display: flex; align-items: center; padding: ${padding(attack.padding)}; background: ${solid(attack)}; }
+.enemy-attack { box-sizing: border-box; height: ${designUnit(number(attack, "height"))}; display: flex; align-items: center; padding: ${padding(attack.padding)}; background: ${solid(attack)}; }
 .enemy-attack strong { display: block; color: ${solid(attackText)}; font: ${cssFont(attackText)}; }
-.enemy-state { height: ${mm(number(state, "height"))}; display: flex; flex-direction: column; gap: ${mm(number(state, "gap"))}; }
-.enemy-state-row { height: ${mm(number(hpRow, "height"))}; display: flex; align-items: center; gap: ${mm(number(hpRow, "gap"))}; }
-.enemy-state-label { box-sizing: border-box; width: ${mm(number(hpLabel, "width"))}; height: ${mm(number(hpLabel, "height"))}; display: grid; place-items: center; background: ${solid(hpLabel)}; color: ${solid(hpText)}; font: ${cssFont(hpText)}; }
-.enemy-state-markers { display: flex; gap: ${mm(number(hpRow, "gap"))}; color: ${solid(hpMarkers[0])}; }
-.enemy-state-marker { width: ${mm(number(hpMarkers[0], "width"))}; height: ${mm(number(hpMarkers[0], "height"))}; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: ${mm(number(hpMarkers[0], "height"))}; line-height: 1; }
+.enemy-state { height: ${designUnit(number(state, "height"))}; display: flex; flex-direction: column; gap: ${designUnit(number(state, "gap"))}; }
+.enemy-state-row { height: ${designUnit(number(hpRow, "height"))}; display: flex; align-items: center; gap: ${designUnit(number(hpRow, "gap"))}; }
+.enemy-state-label { box-sizing: border-box; width: ${designUnit(number(hpLabel, "width"))}; height: ${designUnit(number(hpLabel, "height"))}; display: grid; place-items: center; background: ${solid(hpLabel)}; color: ${solid(hpText)}; font: ${cssFont(hpText)}; }
+.enemy-state-markers { display: flex; gap: ${designUnit(number(hpRow, "gap"))}; color: ${solid(hpMarkers[0])}; }
+.enemy-state-marker { width: ${designUnit(number(hpMarkers[0], "width"))}; height: ${designUnit(number(hpMarkers[0], "height"))}; display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: ${designUnit(number(hpMarkers[0], "height"))}; line-height: 1; }
 .enemy-state-marker:not(:disabled) { cursor: pointer; }
-.enemy-state-row.is-stress { height: ${mm(number(stressRow, "height"))}; }
-.enemy-state-row.is-stress .enemy-state-label { width: ${mm(number(stressLabel, "width"))}; height: ${mm(number(stressLabel, "height"))}; color: ${solid(stressText)}; font: ${cssFont(stressText)}; }
-.enemy-state-row.is-stress .enemy-state-markers { gap: ${mm(number(stressRow, "gap"))}; color: ${solid(stressMarkers[0])}; }
-.enemy-state-row.is-stress .enemy-state-marker { width: ${mm(number(stressMarkers[0], "width"))}; height: ${mm(number(stressMarkers[0], "height"))}; font-size: ${mm(number(stressMarkers[0], "height") * 0.7)}; }
-.enemy-feature-heading { height: ${mm(number(featureHeader, "height"))}; display: flex; align-items: center; gap: ${mm(number(featureHeader, "gap"))}; color: ${solid(featureHeaderText)}; font: ${cssFont(featureHeaderText)}; }
-.enemy-feature-heading::after { content: ""; flex: 1; height: ${mm(number(featureHeaderLine, "height"))}; background: ${solid(featureHeaderLine)}; }
-.enemy-features { height: ${mm(number(features, "height"))}; display: grid; grid-template-rows: ${features.children.map((node) => mm(number(node, "height"))).join(" ")}; gap: ${mm(number(features, "gap"))}; }
-.enemy-feature { box-sizing: border-box; display: grid; grid-template-columns: ${mm(number(featureHeading, "width"))} ${mm(number(featureBody, "width"))}; align-items: start; gap: ${mm(number(featureRow, "gap"))}; padding: ${padding(featureRow.padding)}; overflow: hidden; background: ${solid(featureRow)}; border: ${mm(number(featureRow.stroke, "thickness"))} solid ${solid(featureRow, "stroke")}; border-radius: ${mm(number(featureRow, "cornerRadius"))}; }
+.enemy-state-row.is-stress { height: ${designUnit(number(stressRow, "height"))}; }
+.enemy-state-row.is-stress .enemy-state-label { width: ${designUnit(number(stressLabel, "width"))}; height: ${designUnit(number(stressLabel, "height"))}; color: ${solid(stressText)}; font: ${cssFont(stressText)}; }
+.enemy-state-row.is-stress .enemy-state-markers { gap: ${designUnit(number(stressRow, "gap"))}; color: ${solid(stressMarkers[0])}; }
+.enemy-state-row.is-stress .enemy-state-marker { width: ${designUnit(number(stressMarkers[0], "width"))}; height: ${designUnit(number(stressMarkers[0], "height"))}; font-size: ${designUnit(number(stressMarkers[0], "height") * 0.7)}; }
+.enemy-feature-heading { height: ${designUnit(number(featureHeader, "height"))}; display: flex; align-items: center; gap: ${designUnit(number(featureHeader, "gap"))}; color: ${solid(featureHeaderText)}; font: ${cssFont(featureHeaderText)}; }
+.enemy-feature-heading::after { content: ""; flex: 1; height: ${designUnit(number(featureHeaderLine, "height"))}; background: ${solid(featureHeaderLine)}; }
+.enemy-features { height: ${designUnit(number(features, "height"))}; display: grid; grid-template-rows: ${features.children.map((node) => designUnit(number(node, "height"))).join(" ")}; gap: ${designUnit(number(features, "gap"))}; }
+.enemy-feature { box-sizing: border-box; display: grid; grid-template-columns: ${designUnit(number(featureHeading, "width"))} ${designUnit(number(featureBody, "width"))}; align-items: start; gap: ${designUnit(number(featureRow, "gap"))}; padding: ${padding(featureRow.padding)}; overflow: hidden; background: ${solid(featureRow)}; border: ${designUnit(number(featureRow.stroke, "thickness"))} solid ${solid(featureRow, "stroke")}; border-radius: ${designUnit(number(featureRow, "cornerRadius"))}; }
 .enemy-feature h2 { margin: 0; color: ${solid(featureName)}; font: ${cssFont(featureName)}; }
 .enemy-feature h2 small { display: block; color: ${solid(featureMeta)}; font: ${cssFont(featureMeta)}; }
 .enemy-feature h2 small span { display: block; }
 .enemy-feature p { margin: 0; color: ${solid(featureBody)}; font: ${cssFont(featureBody)}; }
 .enemy-card.is-fluid .enemy-body { height: auto; }
 .enemy-card.is-fluid .enemy-features { height: auto; grid-template-rows: none; }
-.enemy-card.is-fluid .enemy-feature { min-height: ${mm(number(featureRow, "height"))}; }
+.enemy-card.is-fluid .enemy-feature { min-height: ${designUnit(number(featureRow, "height"))}; }
 `;
 
 const generated = `// 此文件由 scripts/generate-adversary-card-design.mjs 从 docs/design/creator-app.op 生成，禁止手改。\n\nexport const adversaryCardDesignSource = ${JSON.stringify({
@@ -185,8 +185,8 @@ const generated = `// 此文件由 scripts/generate-adversary-card-design.mjs �
   surface: surface.name,
   component: card.name,
   presentation: {
-    width: mm(number(card, "width")),
-    height: mm(number(card, "height")),
+    width: designUnit(number(card, "width")),
+    height: designUnit(number(card, "height")),
   },
   featureNames,
 }, null, 2)} as const;\n\nexport const adversaryRendererStyles = ${JSON.stringify(css.trim())};\n`;

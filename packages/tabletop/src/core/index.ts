@@ -32,9 +32,6 @@ export type TabletopInstanceResourceCopy = {
     version: string;
   };
   presentation: {
-    width: string;
-    height: string;
-    unit: "mm";
     mode: "text" | "split" | "image";
     fixedRatio: boolean;
   };
@@ -550,9 +547,11 @@ export function clampTabletopPosition(
   position: { x: number; y: number },
 ): { x: number; y: number } {
   const visible = bounds.minimumVisible ?? 40;
-  const pixelsPerUnit = bounds.pixelsPerUnit ?? 96 / 25.4;
-  const width = Number(instance.resource.presentation.width) * pixelsPerUnit * instance.scale;
-  const height = Number(instance.resource.presentation.height) * pixelsPerUnit * instance.scale;
+  const pixelsPerUnit = bounds.pixelsPerUnit ?? 1;
+  const canonicalWidth = 63;
+  const canonicalHeight = 88;
+  const width = canonicalWidth * pixelsPerUnit * instance.scale;
+  const height = canonicalHeight * pixelsPerUnit * instance.scale;
   const rotation = normalizeQuarterRotation(instance.rotation ?? 0);
   const extents = rotation === 90
     ? { left: -height, top: 0, right: 0, bottom: width }

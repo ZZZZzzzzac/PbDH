@@ -32,7 +32,7 @@ const allCapabilities = new Set<TabletopCapability>([
 const resource: TabletopInstanceResourceCopy = {
   source: { packageId: "package-1", resourceId: "minotaur" },
   template: { id: "敌人", version: "1.0.0" },
-  presentation: { width: "63", height: "88", unit: "mm", mode: "split", fixedRatio: true },
+  presentation: { mode: "split", fixedRatio: true },
   data: { 名称: "牛头人破坏者", 生命点: "7" },
   labels: ["敌人"],
   replacements: [{ replacementId: "alternate-form", targetResourceId: "minotaur-rage" }],

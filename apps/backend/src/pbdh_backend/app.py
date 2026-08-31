@@ -14,6 +14,7 @@ from pbdh_backend.database import Database
 from pbdh_backend.identity.repository import IdentityRepository
 from pbdh_backend.identity.router import router as identity_router
 from pbdh_backend.identity.tokens import SupabaseJwtVerifier, TokenVerifier
+from pbdh_backend.managed_media import ManagedMedia
 from pbdh_backend.openapi_contract import (
     BACKEND_API_VERSION,
     install_openapi_contract,
@@ -42,10 +43,12 @@ def create_app(
         generate_unique_id_function=stable_operation_id,
     )
     database = Database(resolved.database_path, resolved.migrations_path)
-    publication_repository = PublicationRepository(database)
-    cloud_document_repository = CloudDocumentRepository(database)
+    managed_media = ManagedMedia(database, resolved.account_media_quota_bytes)
+    publication_repository = PublicationRepository(database, managed_media)
+    cloud_document_repository = CloudDocumentRepository(database, managed_media)
     application.state.settings = resolved
     application.state.identity_repository = IdentityRepository(database)
+    application.state.managed_media = managed_media
     application.state.publication_repository = publication_repository
     application.state.cloud_document_repository = cloud_document_repository
     application.state.publication_service = PublicationService(

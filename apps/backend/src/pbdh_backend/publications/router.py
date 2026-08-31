@@ -18,6 +18,7 @@ from pbdh_backend.identity.router import (
     optional_active_account,
     settings,
 )
+from pbdh_backend.managed_media import ManagedMediaQuotaExceeded
 from pbdh_backend.publications.repository import (
     PackageOwnershipConflict,
     PublicationCoverInvalid,
@@ -126,6 +127,8 @@ async def publish(
         raise ApiError(409, "PACKAGE_ID_OWNED_BY_ANOTHER_ACCOUNT", "该资源包 ID 已由其他账号发布。") from error
     except PublicationVersionConflict as error:
         raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", "新快照必须提高资源包版本。") from error
+    except ManagedMediaQuotaExceeded as error:
+        raise ApiError(413, "ACCOUNT_MEDIA_QUOTA_EXCEEDED", "账号托管媒体空间不足。") from error
     return {"publication": publication}
 
 
@@ -268,6 +271,8 @@ def _commit_publication_information(
             {"path": item["location"], "code": item["code"], "message": item["code"]}
             for item in error.diagnostics
         ]) from error
+    except ManagedMediaQuotaExceeded as error:
+        raise ApiError(413, "ACCOUNT_MEDIA_QUOTA_EXCEEDED", "账号托管媒体空间不足。") from error
     return {"publication": publication}
 
 

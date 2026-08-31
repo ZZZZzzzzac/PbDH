@@ -1,0 +1,55 @@
+import { readFileSync } from "node:fs";
+
+import { loadPbres } from "@pbdh/contract-runtime";
+import { describe, expect, test } from "vitest";
+
+import { runCreatorPackageFileWorkflow } from "../../apps/creator/src/workspace-prototype/creator-package-file-workflow.ts";
+import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
+import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+
+const archive = new Uint8Array(readFileSync(new URL(
+  "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
+  import.meta.url,
+)));
+
+describe("Creator package file workflow", () => {
+  test("inspects a package archive without mutating workspace state", async () => {
+    const result = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
+
+    expect(result.type).toBe("import-ready");
+    if (result.type !== "import-ready") return;
+    expect(result.candidate.document.package.name).toBe("牛头人破坏者测试资源包");
+  });
+
+  test("prepares, validates and writes one export result", async () => {
+    const inspected = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
+    if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
+
+    const result = await runCreatorPackageFileWorkflow({
+      type: "export-workspace",
+      workspace: createWorkspace(inspected.candidate),
+    });
+
+    expect(result.type).toBe("workspace-export");
+    if (result.type !== "workspace-export") return;
+    expect(result.fileName).toBe("牛头人破坏者测试资源包.pbres");
+    const reopened = await loadPbres(result.bytes, validateResourcePackageCandidate);
+    expect(reopened.diagnostics).toEqual([]);
+    expect(reopened.candidate?.document.snapshotDigest).toBe(result.workspace.document.snapshotDigest);
+  });
+
+  test("returns conversion diagnostics instead of leaking adapter failures", async () => {
+    const result = await runCreatorPackageFileWorkflow({
+      type: "convert",
+      formatId: "zzz",
+      bytes: new Uint8Array([0xff]),
+      fileName: "broken.json",
+    });
+
+    expect(result.type).toBe("conversion-review");
+    if (result.type !== "conversion-review") return;
+    expect(result.review).toMatchObject({ candidate: null, converted: 0 });
+    expect(result.review.failed).toBeGreaterThan(0);
+    expect(result.review.diagnostics.some((item) => item.severity === "error")).toBe(true);
+  });
+});

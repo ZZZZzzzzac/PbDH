@@ -69,9 +69,6 @@ function toModel(document: TabletopDocument): TabletopDocumentModel {
       resource: {
         ...structuredClone(instance.resourceCopy),
         presentation: {
-          width: instance.resourceCopy.presentation.width ?? "63",
-          height: instance.resourceCopy.presentation.height ?? "88",
-          unit: instance.resourceCopy.presentation.unit ?? "mm",
           mode: instance.resourceCopy.presentation.mode,
           fixedRatio: instance.resourceCopy.presentation.fixedRatio,
         },

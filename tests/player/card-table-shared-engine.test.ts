@@ -34,7 +34,7 @@ function card(instanceId: string, zIndex: number): CardInstance {
 describe("Player card table shared geometry", () => {
   test("mounts the same shared React tabletop surface as GM", async () => {
     const player = await readFile("apps/player/src/sheet-runtime/rendering/CardTableModule.tsx", "utf8");
-    const gm = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
+    const gm = await readFile("apps/creator/src/workspace-prototype/gm-tabletop-workbench.tsx", "utf8");
 
     expect(player).toContain('from "@pbdh/tabletop/react"');
     expect(player).toContain("<TabletopSurface");
@@ -45,7 +45,7 @@ describe("Player card table shared geometry", () => {
   test("uses the shared context-menu shell in Player and GM", async () => {
     const shared = await readFile("packages/tabletop/src/react/index.tsx", "utf8");
     const player = await readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardActionSurfaces.tsx", "utf8");
-    const gm = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
+    const gm = await readFile("apps/creator/src/workspace-prototype/creator-context-menus.tsx", "utf8");
 
     expect(shared).toContain("export function TabletopContextMenu");
     expect(player).toContain("<TabletopContextMenu");

@@ -35,13 +35,14 @@ class FakeTokenVerifier:
         return VerifiedIdentity(token.removeprefix("token:"))
 
 
-def client(tmp_path: Path) -> TestClient:
+def client(tmp_path: Path, account_media_quota_bytes: int | None = None) -> TestClient:
     return TestClient(create_app(Settings(
         database_path=tmp_path / "pbdh.sqlite3",
         migrations_path=ROOT / "apps/backend/migrations",
         supabase_url="https://example.supabase.co",
         supabase_anon_key="public-anon-key",
         admin_auth_subject="platform-admin",
+        account_media_quota_bytes=account_media_quota_bytes,
     ), FakeTokenVerifier()))
 
 
@@ -100,6 +101,20 @@ def test_cloud_document_requires_media_before_atomic_revision_commit(tmp_path: P
     assert prepared.status_code == 200
     assert prepared.json() == {"assetId": asset_id, "byteLength": len(media), "ready": True}
 
+    unauthorized = api.put(
+        "/api/cloud/documents/workspace-outsider",
+        headers=outsider,
+        json=document_write(
+            "mutation-outsider",
+            "creator-workspace",
+            {"name": "不应取得他人私有媒体"},
+            [asset_id],
+            None,
+        ),
+    )
+    assert unauthorized.status_code == 422
+    assert unauthorized.json()["error"]["code"] == "CLOUD_MEDIA_NOT_READY"
+
     committed = api.put(f"/api/cloud/documents/{document_id}", headers=owner, json=write)
     assert committed.status_code == 200, committed.text
     cloud_document = committed.json()["document"]
@@ -153,6 +168,41 @@ def test_cloud_media_rejects_invalid_or_oversized_webp_before_storage(tmp_path: 
     )
     assert wrong_dimensions.status_code == 422
     assert wrong_dimensions.json()["error"]["code"] == "CLOUD_MEDIA_INVALID"
+
+
+def test_cloud_media_quota_is_atomic_and_counts_unique_owned_bytes(tmp_path: Path) -> None:
+    media = webp()
+    asset_id = f"sha256:{hashlib.sha256(media).hexdigest()}"
+    api = client(tmp_path, len(media))
+    owner = claim(api, "quota-owner")
+
+    first = api.put(
+        f"/api/cloud/media/{asset_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=media,
+    )
+    repeated = api.put(
+        f"/api/cloud/media/{asset_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=media,
+    )
+    assert first.status_code == repeated.status_code == 200
+
+    second_buffer = bytearray(media)
+    second_buffer[-1] ^= 1
+    second_media = bytes(second_buffer)
+    second_id = f"sha256:{hashlib.sha256(second_media).hexdigest()}"
+    exceeded = api.put(
+        f"/api/cloud/media/{second_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=second_media,
+    )
+    assert exceeded.status_code == 413
+    assert exceeded.json()["error"]["code"] == "ACCOUNT_MEDIA_QUOTA_EXCEEDED"
+    with sqlite3.connect(tmp_path / "pbdh.sqlite3") as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM media_blobs WHERE asset_id = ?", (second_id,)
+        ).fetchone()[0] == 0
 
 
 def test_cloud_document_mutations_are_idempotent_and_conflicts_are_explicit(tmp_path: Path) -> None:
@@ -273,6 +323,14 @@ def test_cloud_document_permanent_delete_requires_trash_and_releases_media_refer
         assert connection.execute(
             "SELECT COUNT(*) FROM cloud_document_media WHERE document_id = ?",
             ("tabletop-delete",),
+        ).fetchone()[0] == 0
+        assert connection.execute(
+            "SELECT COUNT(*) FROM account_media_ownership WHERE asset_id = ?",
+            (asset_id,),
+        ).fetchone()[0] == 0
+        assert connection.execute(
+            "SELECT COUNT(*) FROM media_blobs WHERE asset_id = ?",
+            (asset_id,),
         ).fetchone()[0] == 0
 
 

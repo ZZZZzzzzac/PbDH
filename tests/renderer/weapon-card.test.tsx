@@ -25,9 +25,6 @@ const packageFixture = JSON.parse(readFileSync(
   resources: Array<{
     template: { id: string; version: string };
     presentation: {
-      width: string;
-      height: string;
-      unit: "mm";
       mode: "text";
       fixedRatio: boolean;
     };
@@ -146,7 +143,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("a38bb27dfe584d0f9c82f6b0d0cb1f7d99868a008c1c9891369646b0e4bdaa0b");
+    expect(signature).toBe("6952062945d8315b24c41ad370b60e72b42ba1fdb8d187f5fdafbec0f35718f1");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {

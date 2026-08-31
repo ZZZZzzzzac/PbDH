@@ -3,7 +3,7 @@
   "family": "system-package",
   "version": "1.0.0",
   "schema": "system-package/1.0.0/schema.json",
-  "schemaSha256": "sha256:3594ec2a3e9132132cf1c333b2e4c4a41ff0f4a8b2ce17fc73f329aa0b57e716",
+  "schemaSha256": "sha256:8f032f168646d412a364c34bb0da7877e9dafa537b666911aef3e021bb1ca8f3",
   "reviewedAt": "2026-08-31",
   "conformance": [
     "conformance/system-package/1.0.0/cases.json"

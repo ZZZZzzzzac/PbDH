@@ -3,7 +3,7 @@
   "family": "tabletop-document",
   "version": "1.0.0",
   "schema": "tabletop-document/1.0.0/schema.json",
-  "schemaSha256": "sha256:4c311b55f3a3954048da61b2d0bd20cea9ab8d459f99220d6a77a6a11addc012",
+  "schemaSha256": "sha256:5554f320a9783e2884f9fdae165f801a38833771d9185f2a733b864d661835a7",
   "reviewedAt": "2026-08-31",
   "conformance": [
     "conformance/tabletop-document/1.0.0/cases.json"

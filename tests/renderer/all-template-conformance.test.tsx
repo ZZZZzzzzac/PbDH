@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
-import { rendererLabHosts } from "../../apps/creator/src/renderer-lab/lab-model.ts";
+import { rendererHosts } from "./renderer-host-fixture.ts";
 import { prepareCanonicalSurface, type SurfaceResource } from "../../packages/resource-renderer/src/core.ts";
 import {
   adversaryTemplate,
@@ -71,7 +71,7 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
       ? { width: 63, height: 88 }
       : null);
 
-    const hostOutputs = rendererLabHosts.map(() => renderToStaticMarkup(
+    const hostOutputs = rendererHosts.map(() => renderToStaticMarkup(
       result.renderer.render(result.renderInput),
     ));
     expect(new Set(hostOutputs)).toHaveLength(1);

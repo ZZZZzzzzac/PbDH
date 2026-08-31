@@ -15,6 +15,9 @@ export type SurfacePresentation = {
   fixedRatio: boolean;
 };
 
+export const canonicalCardDesignSize = { width: 63, height: 88 } as const;
+export type CardDesignSize = { width: number; height: number };
+
 export type SurfaceResource<TData> = {
   template: { id: string; version: string };
   presentation: SurfacePresentation;
@@ -43,7 +46,7 @@ export type RendererRevisionCapability<TData, TState, TOutput> = {
 export type SurfaceReady<TData, TState, TOutput> = {
   status: "ready";
   diagnostics: [];
-  designRatio: { width: 63; height: 88 } | null;
+  designRatio: typeof canonicalCardDesignSize | null;
   renderer: RendererRevisionCapability<TData, TState, TOutput>;
   renderInput: {
     data: TData;
@@ -57,7 +60,7 @@ export type SurfaceReady<TData, TState, TOutput> = {
 export type SurfaceUnavailable = {
   status: "loading" | "error";
   diagnostics: RendererDiagnostic[];
-  designRatio: { width: 63; height: 88 } | null;
+  designRatio: typeof canonicalCardDesignSize | null;
 };
 
 export type SurfacePreparation<TData, TState, TOutput> =
@@ -104,7 +107,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
 }): SurfacePreparation<TData, TState, TOutput> {
   const diagnostics: RendererDiagnostic[] = [];
   const presentation = input.resource.presentation;
-  const designRatio = presentation.fixedRatio ? { width: 63, height: 88 } as const : null;
+  const designRatio = presentation.fixedRatio ? canonicalCardDesignSize : null;
   const validMode = presentation.mode === "text"
     || presentation.mode === "split"
     || presentation.mode === "image";

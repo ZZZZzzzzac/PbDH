@@ -14,9 +14,6 @@ export type TabletopResourceCopy = {
   source: { packageId: string; resourceId: string } | null;
   template: { id: string; version: string };
   presentation: {
-    width?: string;
-    height?: string;
-    unit?: "mm";
     mode: "text" | "split" | "image";
     fixedRatio: boolean;
   };

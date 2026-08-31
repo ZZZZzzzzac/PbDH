@@ -5,7 +5,7 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
-import { rendererLabHosts } from "../../apps/creator/src/renderer-lab/lab-model.ts";
+import { rendererHosts } from "./renderer-host-fixture.ts";
 import {
   prepareCanonicalSurface,
   RendererRevisionRegistry,
@@ -32,9 +32,6 @@ const packageFixture = JSON.parse(readFileSync(
   resources: Array<{
     template: { id: string; version: string };
     presentation: {
-      width: string;
-      height: string;
-      unit: "mm";
       mode: "text" | "split" | "image";
       fixedRatio: boolean;
     };
@@ -203,8 +200,8 @@ describe("Canonical Surface Renderer Port", () => {
       assets: readyAssets,
     });
 
-    expect(cover.width).toBe(476);
-    expect(cover.height).toBe(665);
+    expect(cover.width).toBe(630);
+    expect(cover.height).toBe(880);
     expect(cover.svg).toContain("data-renderer-revision=\"enemy-card-r1\"");
     expect(cover.svg).toContain("牛头人破坏者");
     expect(cover.svg).not.toContain("enemy-card is-fluid");
@@ -264,14 +261,14 @@ describe("enemy-card-r1 structure and visual baseline", () => {
   });
 
   test("four host shells vary only external scale and decoration", () => {
-    expect(rendererLabHosts.map((host) => host.id)).toEqual([
+    expect(rendererHosts.map((host) => host.id)).toEqual([
       "creator",
       "player",
       "gm",
       "market",
     ]);
-    expect(new Set(rendererLabHosts.map((host) => host.scale)).size).toBe(4);
-    expect(rendererLabHosts.every((host) => host.scale > 0)).toBe(true);
+    expect(new Set(rendererHosts.map((host) => host.scale)).size).toBe(4);
+    expect(rendererHosts.every((host) => host.scale > 0)).toBe(true);
   });
 
   test("matches the reviewed Revision source baseline", () => {
@@ -294,6 +291,6 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("13ed76418089308f7eeaedf64be778fe62d3a941e706ab5cc510703c7c03ed11");
+    expect(signature).toBe("17be9b1c03e6b082ba70dea2942e8493b4c4ded2e1781565c707464ce79525f4");
   });
 });

@@ -13,7 +13,7 @@ import {
   type ResourcePackageEditorValue,
   type SystemPackageOption,
 } from "@pbdh/publication-ui";
-import type { SurfaceResource } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { trustedRendererFor } from "@pbdh/templates/frontend";
 
 import { marketDesignSource } from "../design.generated.ts";
@@ -302,8 +302,8 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
   }, [enlarged]);
 
   const card = source && renderer ? <CardDisplay
-    width={63}
-    height={88}
+    designWidth={canonicalCardDesignSize.width}
+    designHeight={canonicalCardDesignSize.height}
     fixedRatio={source.presentation.fixedRatio}
     displayAspectRatio={63 / 88}
     fit="contain"

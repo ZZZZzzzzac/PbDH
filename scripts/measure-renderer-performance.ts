@@ -23,7 +23,7 @@ const fixture = JSON.parse(readFileSync(path.join(
   assets: Array<{ id: string }>;
   resources: Array<{
     template: { id: string; version: string };
-    presentation: { width: string; height: string; unit: "mm"; mode: "text" | "split" | "image"; fixedRatio: boolean };
+    presentation: { mode: "text" | "split" | "image"; fixedRatio: boolean };
     data: AdversaryData;
     media: Record<string, string>;
   }>;

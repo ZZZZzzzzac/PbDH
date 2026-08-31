@@ -15,6 +15,7 @@ from pbdh_backend.cloud_documents.repository import (
     CloudMediaInvalid,
     CloudMediaNotReady,
 )
+from pbdh_backend.managed_media import ManagedMediaQuotaExceeded
 from pbdh_backend.media import MAX_WEBP_BYTES
 from pbdh_backend.identity.router import AuthenticatedAccount, active_account
 
@@ -55,7 +56,7 @@ def repository(request: Request) -> CloudDocumentRepository:
 async def prepare_media(
     asset_id: str,
     request: Request,
-    _: AuthenticatedAccount = Depends(active_account),
+    authenticated: AuthenticatedAccount = Depends(active_account),
     cloud_repository: CloudDocumentRepository = Depends(repository),
 ) -> dict[str, object]:
     media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
@@ -66,9 +67,16 @@ async def prepare_media(
         chunks.extend(chunk)
     content = bytes(chunks)
     try:
-        return cloud_repository.prepare_media(asset_id, media_type, content)
+        return cloud_repository.prepare_media(
+            authenticated.account.account_id,
+            asset_id,
+            media_type,
+            content,
+        )
     except CloudMediaInvalid as error:
         raise ApiError(422, "CLOUD_MEDIA_INVALID", "媒体必须是宽 630px、内容与 Asset ID 匹配的 WebP。") from error
+    except ManagedMediaQuotaExceeded as error:
+        raise ApiError(413, "ACCOUNT_MEDIA_QUOTA_EXCEEDED", "账号托管媒体空间不足。") from error
 
 
 @router.get("/documents")

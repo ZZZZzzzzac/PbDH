@@ -3,7 +3,7 @@
   "family": "resource-package",
   "version": "1.0.0",
   "schema": "resource-package/1.0.0/schema.json",
-  "schemaSha256": "sha256:f2b417967ba3a3b0417441c96589ec83a1aff3b4e5370c0b9c66163321a6a505",
+  "schemaSha256": "sha256:fb8df45ac343f870e09579011591e315a758b014638de855243055e156203735",
   "reviewedAt": "2026-08-31",
   "conformance": [
     "conformance/resource-package/1.0.0/cases.json",

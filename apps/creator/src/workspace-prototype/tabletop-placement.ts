@@ -5,6 +5,7 @@ import {
   type TabletopInstance,
   type TabletopInstanceResourceCopy,
 } from "@pbdh/tabletop/core";
+import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import { templateRegistry } from "@pbdh/templates/core";
 
 import { gmTabletopBaseCardWidth } from "./tabletop-document-repository.ts";
@@ -21,8 +22,7 @@ export type PreparedTabletopReplacement = {
   media: Map<string, Uint8Array>;
 };
 
-const daggerheartOfficialResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
-export const gmCardPixelsPerDesignUnit = gmTabletopBaseCardWidth / 63;
+export const gmCardPixelsPerDesignUnit = gmTabletopBaseCardWidth / canonicalCardDesignSize.width;
 
 export function containGmTabletopInstances(document: TabletopDocumentModel): TabletopDocumentModel {
   let changed = false;
@@ -35,35 +35,6 @@ export function containGmTabletopInstances(document: TabletopDocumentModel): Tab
     if (position.x === instance.position.x && position.y === instance.position.y) return instance;
     changed = true;
     return { ...instance, position };
-  });
-  return changed ? { ...document, instances } : document;
-}
-
-export function restoreOfficialTabletopImageModes(
-  document: TabletopDocumentModel,
-  workspaces: readonly CreatorWorkspace[],
-): TabletopDocumentModel {
-  let changed = false;
-  const instances = document.instances.map((instance) => {
-    const source = instance.resource.source;
-    if (!source || source.packageId !== daggerheartOfficialResourcePackageId) return instance;
-    const workspace = workspaces.find((candidate) => candidate.document.package.id === source.packageId);
-    const resource = workspace?.document.resources.find((candidate) => candidate.id === source.resourceId);
-    if (!resource || resource.media.portrait !== instance.resource.media.portrait) return instance;
-    const restoreMode = instance.resource.presentation.mode === "text"
-      && resource.presentation.mode !== "text";
-    if (!restoreMode) return instance;
-    changed = true;
-    return {
-      ...instance,
-      resource: {
-        ...instance.resource,
-        presentation: {
-          ...instance.resource.presentation,
-          mode: resource.presentation.mode,
-        },
-      },
-    };
   });
   return changed ? { ...document, instances } : document;
 }
@@ -135,7 +106,7 @@ function tabletopResourceCopy(
   return {
     source: { packageId: workspace.document.package.id, resourceId: resource.id },
     template: structuredClone(resource.template),
-    presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(resource.presentation) },
+    presentation: structuredClone(resource.presentation),
     data: structuredClone(resource.data) as Record<string, unknown>,
     labels: [],
     replacements: structuredClone(resource.replacements ?? []),

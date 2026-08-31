@@ -22,34 +22,40 @@ describe("GM Tabletop L1 regressions", () => {
   });
 
   test("provides working resource filters, batch placement, fixed zoom and fit controls", async () => {
-    const source = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
-    expect(source).toContain("value={resourceSearch}");
-    expect(source).toContain('role="menuitemcheckbox"');
-    expect(source).toContain("value.includes(templateId)");
+    const rootSource = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
+    const controls = await readFile("apps/creator/src/workspace-prototype/creator-controls.tsx", "utf8");
+    const explorer = await readFile("apps/creator/src/workspace-prototype/creator-resource-explorer.tsx", "utf8");
+    const contextMenus = await readFile("apps/creator/src/workspace-prototype/creator-context-menus.tsx", "utf8");
+    const workbench = await readFile("apps/creator/src/workspace-prototype/gm-tabletop-workbench.tsx", "utf8");
+    const viewport = await readFile("apps/creator/src/workspace-prototype/use-gm-tabletop-viewport.ts", "utf8");
+    const source = `${rootSource}\n${explorer}\n${contextMenus}\n${workbench}\n${viewport}`;
+    const implementation = source;
+    expect(explorer).toContain("value={snapshot.search}");
+    expect(controls).toContain('role="menuitemcheckbox"');
+    expect(controls).toContain("value.includes(templateId)");
     expect(source).toContain("placeWorkspaceResources(selectedWorkspaceResources)");
     expect(source).toContain("const [resourceMultiSelect, setResourceMultiSelect] = useState(false)");
-    expect(source).toContain("aria-pressed={resourceMultiSelect}");
-    expect(source).toContain("批量放到当前桌面（{selectedWorkspaceResources.length}）");
-    expect(source).toContain("删除已选（{selectedWorkspaceResources.length}）");
+    expect(explorer).toContain("aria-pressed={snapshot.multiSelect}");
+    expect(contextMenus).toContain("批量放到当前桌面（{snapshot.selectedWorkspaceResources.length}）");
+    expect(contextMenus).toContain("删除已选（{snapshot.selectedWorkspaceResources.length}）");
     expect(source).toContain('kind: "delete-selected-resources"');
-    expect(source).toContain("selectionMode={resourceMultiSelect}");
-    expect(source).toContain("filtered-resource-row");
-    expect(source).toContain('aria-label="跨资源包筛选结果" role="tree"');
-    expect(source).toContain('kind: "resource", workspaceKey: workspace.key, resourceId: item.id');
+    expect(explorer).toContain("selectionMode={snapshot.multiSelect}");
+    expect(explorer).toContain("filtered-resource-row");
+    expect(explorer).toContain('aria-label="跨资源包筛选结果" role="tree"');
+    expect(explorer).toContain('type: "open-resource-context", workspaceKey: workspace.key, resourceId: resource.id');
     expect(source).not.toContain('className="tabletop-resource-result"');
-    expect(source).toContain("tabletopZoomSteps");
     expect(source).toContain("fitTabletopContent");
     expect(source).toContain("pbdh:gm-tabletop-view:");
-    expect(source).toContain('positionBounds={{ ...activeTabletop.canvas, containment: "full", pixelsPerUnit: gmCardPixelsPerDesignUnit }}');
+    expect(source).toContain('positionBounds={{ ...snapshot.activeTabletop.canvas, containment: "full", pixelsPerUnit: gmCardPixelsPerDesignUnit }}');
     expect(source).toContain("updateTabletopPanPreview");
-    expect(source).toContain("selectAndRaiseTabletopInstance(instanceId, mode)");
+    expect(rootSource).toContain("selectAndRaiseTabletopInstance(command.instanceId, command.mode)");
     expect(source).not.toContain("setCanvasPan({ x: drag.startPan.x + dx, y: drag.startPan.y + dy })");
     expect(source).not.toContain(">置于顶层</button>");
     expect(source).not.toContain(">上移一层</button>");
     expect(source).not.toContain(">下移一层</button>");
     expect(source).not.toContain(">置于底层</button>");
     expect(source).not.toContain("className=\"tabletop-tab-resource-toggle\"");
-    expect(source).toContain('appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open"');
+    expect(implementation).toContain('appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open"');
     expect(source).not.toContain("className=\"tabletop-selection-toolbar\"");
     expect(source).toContain(">编辑卡牌</button>");
     expect(source).not.toContain("editableDataFields");
@@ -82,7 +88,7 @@ describe("GM Tabletop L1 regressions", () => {
           path: `目录/${resourceIndex}.json`,
           template: { id: resourceIndex % 2 ? "pbdh.adversary" : "pbdh.item", version: "1.0.0" },
           data: { 名称: `压力资源 ${resourceIndex}`, 标签: resourceIndex % 3 ? "普通" : "首领" },
-          presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+          presentation: { mode: "text", fixedRatio: true },
           media: {},
         })),
       },
@@ -100,7 +106,7 @@ describe("GM Tabletop L1 regressions", () => {
         resource: {
           source: null,
           template: { id: "物品", version: "1.0.0" },
-          presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+          presentation: { mode: "text", fixedRatio: true },
           data: { 名称: `卡牌 ${index}` }, labels: [], replacements: [], media: {},
         },
         state: {}, position: { x: 0, y: 0 },

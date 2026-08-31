@@ -13,7 +13,8 @@ function readJson(filePath) {
 }
 
 function sha256(filePath) {
-  return `sha256:${createHash("sha256").update(readFileSync(filePath)).digest("hex")}`;
+  const canonicalText = readFileSync(filePath, "utf8").replace(/\r\n?/g, "\n");
+  return `sha256:${createHash("sha256").update(canonicalText, "utf8").digest("hex")}`;
 }
 
 const catalog = readJson(path.join(contractsRoot, "catalog.json"));

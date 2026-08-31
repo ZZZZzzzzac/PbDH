@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
 from pbdh_backend.database import Database
-from pbdh_backend.media import InvalidWebP, validate_normalized_webp
+from pbdh_backend.managed_media import ManagedMedia, ManagedMediaInvalid
 
 
 class CloudDocumentNotFound(Exception):
@@ -36,28 +35,21 @@ class CloudMediaInvalid(Exception):
 
 
 class CloudDocumentRepository:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, managed_media: ManagedMedia | None = None) -> None:
         self._database = database
+        self._managed_media = managed_media or ManagedMedia(database)
 
-    def prepare_media(self, asset_id: str, media_type: str, content: bytes) -> dict[str, object]:
-        expected = f"sha256:{hashlib.sha256(content).hexdigest()}"
+    def prepare_media(
+        self,
+        account_id: str,
+        asset_id: str,
+        media_type: str,
+        content: bytes,
+    ) -> dict[str, object]:
         try:
-            validate_normalized_webp(content)
-        except InvalidWebP:
+            return self._managed_media.prepare_owned(account_id, asset_id, media_type, content)
+        except ManagedMediaInvalid:
             raise CloudMediaInvalid(asset_id) from None
-        if asset_id != expected or media_type != "image/webp":
-            raise CloudMediaInvalid(asset_id)
-        connection = self._database.connect()
-        try:
-            connection.execute(
-                "INSERT INTO media_blobs(asset_id, media_type, byte_length, bytes) "
-                "VALUES (?, ?, ?, ?) ON CONFLICT(asset_id) DO NOTHING",
-                (asset_id, media_type, len(content), content),
-            )
-            connection.commit()
-        finally:
-            connection.close()
-        return {"assetId": asset_id, "byteLength": len(content), "ready": True}
 
     def list_documents(
         self,
@@ -125,9 +117,11 @@ class CloudDocumentRepository:
             if current is not None and current["document_kind"] != document_kind:
                 raise CloudDocumentStateConflict(document_id)
             unique_assets = sorted(set(asset_ids))
-            missing = self._missing_media(connection, unique_assets)
-            if missing:
-                raise CloudMediaNotReady(missing)
+            authorization, denied = self._managed_media.authorize_document_assets(
+                connection, account_id, document_id, unique_assets
+            )
+            if denied:
+                raise CloudMediaNotReady(denied)
             revision = 1 if current_revision is None else current_revision + 1
             payload_json = self._json(payload)
             if current is None:
@@ -156,10 +150,11 @@ class CloudDocumentRepository:
                     "WHERE document_id = ?",
                     (contract_family, contract_version, revision, payload_json, document_id),
                 )
-            connection.execute("DELETE FROM cloud_document_media WHERE document_id = ?", (document_id,))
-            connection.executemany(
-                "INSERT INTO cloud_document_media(document_id, asset_id) VALUES (?, ?)",
-                [(document_id, asset_id) for asset_id in unique_assets],
+            self._managed_media.replace_document_references(
+                connection,
+                account_id,
+                document_id,
+                authorization,
             )
             result = self._required_document(connection, account_id, document_id)
             self._record_mutation(connection, account_id, mutation_id, document_id, result)
@@ -210,7 +205,18 @@ class CloudDocumentRepository:
                 raise CloudDocumentRevisionConflict(document_id)
             if current["deleted_at"] is None:
                 raise CloudDocumentStateConflict(document_id)
+            owned_assets = {
+                row["asset_id"]
+                for row in connection.execute(
+                    "SELECT asset_id FROM cloud_document_media "
+                    "WHERE document_id = ? AND owns_asset = 1",
+                    (document_id,),
+                ).fetchall()
+            }
             connection.execute("DELETE FROM cloud_documents WHERE document_id = ?", (document_id,))
+            self._managed_media.release_unreferenced_ownership(
+                connection, account_id, owned_assets
+            )
             connection.commit()
         except Exception:
             if connection.in_transaction:
@@ -292,31 +298,31 @@ class CloudDocumentRepository:
         finally:
             connection.close()
 
-    @staticmethod
-    def _purge_expired(connection: sqlite3.Connection) -> None:
+    def _purge_expired(self, connection: sqlite3.Connection) -> None:
+        expired = connection.execute(
+            "SELECT d.document_id, d.account_id, m.asset_id "
+            "FROM cloud_documents d "
+            "JOIN cloud_document_media m ON m.document_id = d.document_id "
+            "WHERE d.deleted_at IS NOT NULL "
+            "AND d.purge_after <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now') "
+            "AND m.owns_asset = 1"
+        ).fetchall()
         connection.execute(
             "DELETE FROM cloud_documents WHERE deleted_at IS NOT NULL "
             "AND purge_after <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
         )
+        by_account: dict[str, set[str]] = {}
+        for row in expired:
+            by_account.setdefault(row["account_id"], set()).add(row["asset_id"])
+        for account_id, asset_ids in by_account.items():
+            self._managed_media.release_unreferenced_ownership(
+                connection, account_id, asset_ids
+            )
         connection.commit()
 
     @staticmethod
     def _json(value: object) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-
-    @staticmethod
-    def _missing_media(connection: sqlite3.Connection, asset_ids: list[str]) -> list[str]:
-        if not asset_ids:
-            return []
-        placeholders = ",".join("?" for _ in asset_ids)
-        found = {
-            row["asset_id"]
-            for row in connection.execute(
-                f"SELECT asset_id FROM media_blobs WHERE asset_id IN ({placeholders})",
-                asset_ids,
-            )
-        }
-        return [asset_id for asset_id in asset_ids if asset_id not in found]
 
     @staticmethod
     def _mutation_result(

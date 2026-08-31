@@ -242,7 +242,7 @@ function snapshotCard(
       resourceCopy: {
         source: { packageId: parsed.packageId, resourceId: parsed.resourceId },
         template: structuredClone(resource.template),
-        presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(resource.presentation) },
+        presentation: structuredClone(resource.presentation),
         data: structuredClone(resource.data),
         labels: [],
         media: structuredClone(resource.media),
@@ -270,7 +270,7 @@ function snapshotCard(
   const resourceCopy: TabletopResourceCopy = {
     source: null,
     template: { id: compatibility.templateId, version: compatibility.versionRange.minimumInclusive },
-    presentation: { width: "63", height: "88", unit: "mm", ...template.defaultPresentation },
+    presentation: { ...template.defaultPresentation },
     data: compositeData(compatibility.templateId, composite.fields),
     labels: [],
     media: compositeMedia(composite.fields),

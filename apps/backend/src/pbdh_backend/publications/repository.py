@@ -15,6 +15,7 @@ from pbdh_backend.contracts import (
     resource_package_version_meets_minimum,
 )
 from pbdh_backend.database import Database
+from pbdh_backend.managed_media import ManagedMedia
 
 
 class PackageOwnershipConflict(Exception):
@@ -49,8 +50,9 @@ class PublicationWrite:
 
 
 class PublicationRepository:
-    def __init__(self, database: Database) -> None:
+    def __init__(self, database: Database, managed_media: ManagedMedia | None = None) -> None:
         self._database = database
+        self._managed_media = managed_media or ManagedMedia(database)
 
     def publish(
         self,
@@ -111,13 +113,11 @@ class PublicationRepository:
                 created = True
 
             assets = {asset["id"]: asset for asset in document["assets"]}
-            for asset_id, media_bytes in media.items():
-                asset = assets[asset_id]
-                connection.execute(
-                    "INSERT INTO media_blobs(asset_id, media_type, byte_length, bytes) "
-                    "VALUES (?, ?, ?, ?) ON CONFLICT(asset_id) DO NOTHING",
-                    (asset_id, asset["mediaType"], len(media_bytes), media_bytes),
-                )
+            self._managed_media.store_blobs(connection, {
+                asset_id: (assets[asset_id]["mediaType"], media_bytes)
+                for asset_id, media_bytes in media.items()
+            })
+            self._managed_media.claim_ownership(connection, account_id, media)
 
             encoded_document = json.dumps(
                 document, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -126,6 +126,7 @@ class PublicationRepository:
                 metadata["tags"], ensure_ascii=False, separators=(",", ":")
             )
             if created:
+                previous_asset_ids: set[str] = set()
                 connection.execute(
                     "INSERT INTO publications("
                     "publication_id, package_id, contract_version, package_version, "
@@ -149,6 +150,13 @@ class PublicationRepository:
                     ),
                 )
             else:
+                previous_asset_ids = {
+                    row["asset_id"]
+                    for row in connection.execute(
+                        "SELECT asset_id FROM publication_media WHERE publication_id = ?",
+                        (publication_id,),
+                    ).fetchall()
+                }
                 connection.execute(
                     "UPDATE publications SET contract_version = ?, package_version = ?, "
                     "snapshot_digest = ?, title = ?, summary = ?, language = ?, tags_json = ?, "
@@ -196,6 +204,11 @@ class PublicationRepository:
             connection.executemany(
                 "INSERT INTO publication_media(publication_id, asset_id) VALUES (?, ?)",
                 [(publication_id, asset["id"]) for asset in document["assets"]],
+            )
+            self._managed_media.release_unreferenced_ownership(
+                connection,
+                account_id,
+                previous_asset_ids - set(assets),
             )
             connection.commit()
             return PublicationWrite(publication_id, created, False)
@@ -273,10 +286,11 @@ class PublicationRepository:
             previous_document = json.loads(current["logical_document_json"])
             if cover_media is not None:
                 cover_asset, cover_bytes = cover_media
-                connection.execute(
-                    "INSERT INTO media_blobs(asset_id, media_type, byte_length, bytes) "
-                    "VALUES (?, ?, ?, ?) ON CONFLICT(asset_id) DO NOTHING",
-                    (cover_asset["id"], cover_asset["mediaType"], len(cover_bytes), cover_bytes),
+                self._managed_media.store_blobs(connection, {
+                    cover_asset["id"]: (cover_asset["mediaType"], cover_bytes),
+                })
+                self._managed_media.claim_ownership(
+                    connection, current["account_id"], [cover_asset["id"]]
                 )
                 connection.execute(
                     "INSERT INTO publication_media(publication_id, asset_id) VALUES (?, ?) "
@@ -327,21 +341,21 @@ class PublicationRepository:
             )
             retained_asset_ids = {asset["id"] for asset in document["assets"]}
             retained_asset_ids.add(metadata["coverAssetId"])
+            removed_asset_ids: set[str] = set()
             for row in connection.execute(
                 "SELECT asset_id FROM publication_media WHERE publication_id = ?",
                 (publication_id,),
             ).fetchall():
                 if row["asset_id"] not in retained_asset_ids:
+                    removed_asset_ids.add(row["asset_id"])
                     connection.execute(
                         "DELETE FROM publication_media WHERE publication_id = ? AND asset_id = ?",
                         (publication_id, row["asset_id"]),
                     )
-            connection.execute(
-                "DELETE FROM media_blobs WHERE NOT EXISTS ("
-                "SELECT 1 FROM publication_media pm WHERE pm.asset_id = media_blobs.asset_id"
-                ") AND NOT EXISTS ("
-                "SELECT 1 FROM cloud_document_media cm WHERE cm.asset_id = media_blobs.asset_id"
-                ")"
+            self._managed_media.release_unreferenced_ownership(
+                connection,
+                current["account_id"],
+                removed_asset_ids,
             )
             connection.commit()
         except Exception:
@@ -376,16 +390,21 @@ class PublicationRepository:
                 raise PublicationPermissionDenied(publication_id)
             if current["status"] != "unpublished":
                 raise PublicationMustBeUnpublished(publication_id)
+            asset_ids = {
+                row["asset_id"]
+                for row in connection.execute(
+                    "SELECT asset_id FROM publication_media WHERE publication_id = ?",
+                    (publication_id,),
+                ).fetchall()
+            }
             connection.execute(
                 "DELETE FROM publications WHERE publication_id = ?",
                 (publication_id,),
             )
-            connection.execute(
-                "DELETE FROM media_blobs WHERE NOT EXISTS ("
-                "SELECT 1 FROM publication_media pm WHERE pm.asset_id = media_blobs.asset_id"
-                ") AND NOT EXISTS ("
-                "SELECT 1 FROM cloud_document_media cm WHERE cm.asset_id = media_blobs.asset_id"
-                ")"
+            self._managed_media.release_unreferenced_ownership(
+                connection,
+                current["account_id"],
+                asset_ids,
             )
             connection.commit()
         except Exception:

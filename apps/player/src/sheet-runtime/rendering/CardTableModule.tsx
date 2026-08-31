@@ -296,7 +296,7 @@ function createPlayerTabletopDocument(
       resource: {
         source: null,
         template: { id: "player.card", version: "1.0.0" },
-        presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+        presentation: { mode: "text", fixedRatio: true },
         data: {},
         labels: [],
         replacements: [],

@@ -283,7 +283,7 @@ function installedPackages(): ResourceLibrary {
     id: "community:forest",
     path: "社群/荒野之民.json",
     template: { id: "社群", version: "1.0.0" },
-    presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+    presentation: { mode: "text", fixedRatio: true },
     data: {
       名称: "荒野之民",
       简介: "荒野社群",

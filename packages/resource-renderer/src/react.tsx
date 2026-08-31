@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import {
   prepareCanonicalSurface,
+  canonicalCardDesignSize,
   type ManagedAsset,
   type RendererRevisionCapability,
   type SurfaceResource,
@@ -41,15 +42,15 @@ const boundaryStyles = `
   height: 100%;
   display: grid;
   place-content: center;
-  gap: 2mm;
-  padding: 5mm;
-  border: 0.35mm solid #6f6559;
+  gap: 2px;
+  padding: 5px;
+  border: 0.35px solid #6f6559;
   background: #e8e0d3;
   color: #2b2520;
-  font: 600 3.2mm/1.35 Georgia, serif;
+  font: 600 3.2px/1.35 Georgia, serif;
   text-align: center;
 }
-.pbdh-surface-status code { font: 500 2.5mm/1.4 Consolas, monospace; }
+.pbdh-surface-status code { font: 500 2.5px/1.4 Consolas, monospace; }
 [data-restricted-markdown] { min-width: 0; }
 [data-restricted-markdown] :is(p, ul, ol) { margin: 0; }
 [data-restricted-markdown] :is(ul, ol) { padding-inline-start: 1.25em; }
@@ -91,7 +92,7 @@ export type CanonicalCardCoverWebp = {
   height: number;
 };
 
-const cssPixelsPerMillimetre = 96 / 25.4;
+const coverPixelsPerDesignUnit = 10;
 
 const previewStyles = `
 [data-pbdh-card-preview-backdrop] {
@@ -138,16 +139,16 @@ const previewStyles = `
 `;
 
 export function CardDisplay({
-  width: _width,
-  height,
+  designWidth = canonicalCardDesignSize.width,
+  designHeight,
   fixedRatio = true,
   displayWidth = "100%",
   displayAspectRatio,
   fit = "cover",
   children,
 }: {
-  width: number;
-  height: number;
+  designWidth?: number;
+  designHeight: number;
   fixedRatio?: boolean;
   displayWidth?: CSSProperties["width"];
   displayAspectRatio?: number;
@@ -155,8 +156,14 @@ export function CardDisplay({
   children: ReactNode;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
-  const safeWidth = 63;
-  const safeHeight = fixedRatio ? 88 : (Number.isFinite(height) && height > 0 ? height : 88);
+  const safeWidth = Number.isFinite(designWidth) && designWidth > 0
+    ? designWidth
+    : canonicalCardDesignSize.width;
+  const safeHeight = fixedRatio
+    ? canonicalCardDesignSize.height
+    : (Number.isFinite(designHeight) && designHeight > 0
+        ? designHeight
+        : canonicalCardDesignSize.height);
   const safeDisplayAspectRatio = Number.isFinite(displayAspectRatio) && Number(displayAspectRatio) > 0
     ? Number(displayAspectRatio)
     : safeWidth / safeHeight;
@@ -166,8 +173,8 @@ export function CardDisplay({
     const frame = frameRef.current;
     if (!frame) return;
     const resize = () => {
-      const widthScale = frame.clientWidth / (safeWidth * cssPixelsPerMillimetre);
-      const heightScale = frame.clientHeight / (safeHeight * cssPixelsPerMillimetre);
+      const widthScale = frame.clientWidth / safeWidth;
+      const heightScale = frame.clientHeight / safeHeight;
       const next = fit === "contain" ? Math.min(widthScale, heightScale) : Math.max(widthScale, heightScale);
       setScale(Math.max(0.01, next));
     };
@@ -186,8 +193,8 @@ export function CardDisplay({
       position: "absolute",
       left: "50%",
       top: "50%",
-      width: `${safeWidth}mm`,
-      height: `${safeHeight}mm`,
+      width: `${safeWidth}px`,
+      height: `${safeHeight}px`,
       transform: `translate(-50%, -50%) scale(${scale})`,
       transformOrigin: "center",
     }}>
@@ -197,15 +204,15 @@ export function CardDisplay({
 }
 
 export function CardPreviewDialog({
-  width: _width,
-  height,
+  designWidth = canonicalCardDesignSize.width,
+  designHeight,
   fixedRatio = true,
   label,
   onClose,
   children,
 }: {
-  width: number;
-  height: number;
+  designWidth?: number;
+  designHeight: number;
   fixedRatio?: boolean;
   label: string;
   onClose: () => void;
@@ -219,8 +226,14 @@ export function CardPreviewDialog({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
 
-  const safeWidth = 63;
-  const safeHeight = fixedRatio ? 88 : (Number.isFinite(height) && height > 0 ? height : 88);
+  const safeWidth = Number.isFinite(designWidth) && designWidth > 0
+    ? designWidth
+    : canonicalCardDesignSize.width;
+  const safeHeight = fixedRatio
+    ? canonicalCardDesignSize.height
+    : (Number.isFinite(designHeight) && designHeight > 0
+        ? designHeight
+        : canonicalCardDesignSize.height);
   const displayWidth = 480;
   const displayAspectRatio = 63 / 88;
   const dialog = <div data-pbdh-card-preview-backdrop="" onClick={onClose}>
@@ -238,8 +251,8 @@ export function CardPreviewDialog({
     >
       <button data-pbdh-card-preview-close="" type="button" aria-label="关闭卡牌详情" onClick={onClose}>×</button>
       <div data-pbdh-card-preview-stage=""><CardDisplay
-        width={safeWidth}
-        height={safeHeight}
+        designWidth={safeWidth}
+        designHeight={safeHeight}
         fixedRatio={fixedRatio}
         displayAspectRatio={displayAspectRatio}
         fit="contain"
@@ -251,7 +264,7 @@ export function CardPreviewDialog({
 
 export async function buildCanonicalCardCoverSvg<TData, TState>(
   props: CanonicalCardSurfaceProps<TData, TState>,
-  pixelRatio = 2,
+  pixelsPerDesignUnit = coverPixelsPerDesignUnit,
 ): Promise<CanonicalCardCoverSvg> {
   const resource = {
     ...props.resource,
@@ -261,8 +274,8 @@ export async function buildCanonicalCardCoverSvg<TData, TState>(
   if (prepared.status !== "ready") {
     throw new Error(prepared.diagnostics.map((item) => item.code).join(", ") || "renderer.cover.unavailable");
   }
-  const cssWidth = 63 * cssPixelsPerMillimetre;
-  const cssHeight = 88 * cssPixelsPerMillimetre;
+  const designWidth = canonicalCardDesignSize.width;
+  const designHeight = canonicalCardDesignSize.height;
   const { renderToStaticMarkup } = await import("react-dom/server");
   const markup = renderToStaticMarkup(<>
     <style>{boundaryStyles}</style>
@@ -272,24 +285,24 @@ export async function buildCanonicalCardCoverSvg<TData, TState>(
     </div>
   </>);
   const svg = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${cssWidth}" height="${cssHeight}" viewBox="0 0 ${cssWidth} ${cssHeight}">`,
-    `<foreignObject width="${cssWidth}" height="${cssHeight}">`,
-    `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${cssWidth}px;height:${cssHeight}px;overflow:hidden">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${designWidth}" height="${designHeight}" viewBox="0 0 ${designWidth} ${designHeight}">`,
+    `<foreignObject width="${designWidth}" height="${designHeight}">`,
+    `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${designWidth}px;height:${designHeight}px;overflow:hidden">`,
     markup,
     "</div></foreignObject></svg>",
   ].join("");
   return {
     svg,
-    width: Math.round(cssWidth * pixelRatio),
-    height: Math.round(cssHeight * pixelRatio),
+    width: Math.round(designWidth * pixelsPerDesignUnit),
+    height: Math.round(designHeight * pixelsPerDesignUnit),
   };
 }
 
 export async function renderCanonicalCardCoverToWebp<TData, TState>(
   props: CanonicalCardSurfaceProps<TData, TState>,
-  pixelRatio = 2,
+  pixelsPerDesignUnit = coverPixelsPerDesignUnit,
 ): Promise<CanonicalCardCoverWebp> {
-  const cover = await buildCanonicalCardCoverSvg(props, pixelRatio);
+  const cover = await buildCanonicalCardCoverSvg(props, pixelsPerDesignUnit);
   const image = new Image();
   image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cover.svg)}`;
   await image.decode();

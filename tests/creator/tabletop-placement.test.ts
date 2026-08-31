@@ -25,7 +25,6 @@ import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-p
 import {
   containGmTabletopInstances,
   prepareWorkspaceReplacement,
-  restoreOfficialTabletopImageModes,
   snapshotWorkspaceResourceForTabletop,
 } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
@@ -46,7 +45,7 @@ test("repairs existing GM cards that were saved almost entirely outside the tabl
     resource: {
       source: { packageId: "package-1", resourceId: "enemy-1" },
       template: { id: "敌人", version: "1.0.0" },
-      presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+      presentation: { mode: "text", fixedRatio: true },
       data: { 名称: "越界敌人" },
       labels: [],
       replacements: [],
@@ -67,36 +66,6 @@ afterEach(async () => {
 });
 
 describe("Market enemy handoff to local GM tabletop", () => {
-  test("restores image mode for official cards corrupted by the temporary size migration", () => {
-    const document = structuredClone(minotaurPackage) as ResourcePackageLogicalDocument;
-    document.package.id = "01a0132c-4eef-7703-94ac-ec8d1a660002";
-    const source = document.resources[0]!;
-    source.presentation = { ...source.presentation, mode: "image" };
-    const workspace = createWorkspace({ document, media: new Map() });
-    const tabletop = executeTabletopCommand(
-      createTabletopDocument("01989f4e-7b2c-7000-8000-000000000005", "卡图恢复"),
-      {
-        type: "place",
-        instanceId: "01989f4e-7b2c-7000-8000-000000000006",
-        resource: {
-          source: { packageId: document.package.id, resourceId: source.id },
-          template: structuredClone(source.template),
-          presentation: { width: "63", height: "88", unit: "mm", ...source.presentation, mode: "text" },
-          data: structuredClone(source.data) as Record<string, unknown>,
-          labels: [],
-          replacements: [],
-          media: structuredClone(source.media),
-        },
-        state: {},
-        position: { x: 0, y: 0 },
-      },
-      { capabilities },
-    ).document;
-
-    const repaired = restoreOfficialTabletopImageModes(tabletop, [workspace]);
-    expect(repaired.instances[0]?.resource.presentation.mode).toBe("image");
-  });
-
   test("places a self-contained minotaur copy and restores commands independently of its Workspace", async () => {
     const assetId = minotaurPackage.assets[0]!.id;
     const bytes = new Uint8Array(await readFile(new URL(
@@ -111,12 +80,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
     const resourceId = workspace.document.resources[0]!.id;
     const snapshot = snapshotWorkspaceResourceForTabletop(workspace, resourceId);
 
-    expect(snapshot.resource.presentation).toEqual({
-      width: "63",
-      height: "88",
-      unit: "mm",
-      ...workspace.document.resources[0]!.presentation,
-    });
+    expect(snapshot.resource.presentation).toEqual(workspace.document.resources[0]!.presentation);
 
     let tabletop = createTabletopDocument("01989f4e-7b2c-7000-8000-000000000010", "荒野伏击");
     tabletop = executeTabletopCommand(tabletop, {

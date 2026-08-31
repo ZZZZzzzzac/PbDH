@@ -83,9 +83,6 @@ describe("GM Tabletop Document Repository", () => {
         },
         template: { id: "敌人", version: "1.0.0" },
         presentation: {
-          width: "63",
-          height: "88",
-          unit: "mm",
           mode: "split",
           fixedRatio: true,
         },
@@ -156,7 +153,7 @@ describe("GM Tabletop Document Repository", () => {
     expect((await repository.list())[0]?.model).toEqual(model);
   });
 
-  test("persists the card's actual tabletop width without presentation dimensions", async () => {
+  test("persists the card's tabletop geometry separately from canonical presentation", async () => {
     const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
     const model = executeTabletopCommand(
       createTabletopDocument("01989f4e-7b2c-7000-8000-000000000008", "旧尺寸桌面"),
@@ -166,7 +163,7 @@ describe("GM Tabletop Document Repository", () => {
         resource: {
           source: null,
           template: { id: "敌人", version: "1.0.0" },
-          presentation: { width: "63", height: "88", unit: "mm", mode: "split", fixedRatio: true },
+          presentation: { mode: "split", fixedRatio: true },
           data: { 名称: "旧尺寸敌人" },
           labels: [],
           replacements: [],
@@ -188,9 +185,6 @@ describe("GM Tabletop Document Repository", () => {
     });
     expect(stored?.document.instances[0]?.geometry.width).toBe(375);
     expect(stored?.model.instances[0]?.resource.presentation).toEqual({
-      width: "63",
-      height: "88",
-      unit: "mm",
       mode: "split",
       fixedRatio: true,
     });
@@ -206,7 +200,7 @@ describe("GM Tabletop Document Repository", () => {
         resource: {
           source: null,
           template: { id: "pbdh.adversary", version: "1.0.0" },
-          presentation: { width: "88", height: "126", unit: "mm", mode: "text", fixedRatio: true },
+          presentation: { mode: "text", fixedRatio: true },
           data: { 名称: "敌人" },
           labels: [],
           replacements: [],

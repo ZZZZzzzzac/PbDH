@@ -1,4 +1,5 @@
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
+import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import { TabletopContextMenu } from "@pbdh/tabletop/react";
 import type { CSSProperties } from "react";
 import { maxCardIndicators, readCardIndicators, type CardInstance } from "../../domain/cardEngine";
@@ -102,12 +103,10 @@ export function CardDetailOverlay({
 
   const name = resolveRenderedCardPresentation(definition, module, presentation).name || definitionReferenceId(instance);
   const stateAppearance = module.状态外观?.[instance.state];
-  const width = Number(definition?.resourceCopy?.presentation.width ?? 63);
-  const height = Number(definition?.resourceCopy?.presentation.height ?? 88);
   return (
     <CardPreviewDialog
-      width={width}
-      height={height}
+      designWidth={canonicalCardDesignSize.width}
+      designHeight={canonicalCardDesignSize.height}
       fixedRatio={definition?.resourceCopy?.presentation.fixedRatio ?? true}
       label={`${name}详情`}
       onClose={onClose}
