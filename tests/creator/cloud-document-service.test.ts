@@ -129,13 +129,13 @@ describe("Creator and GM cloud recovery", () => {
       resource: {
         source: { packageId: workspace.key, resourceId: packageDocument.resources[0]!.id },
         template: structuredClone(packageDocument.resources[0]!.template),
-        presentation: structuredClone(packageDocument.resources[0]!.presentation),
+        presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(packageDocument.resources[0]!.presentation) },
         data: structuredClone(packageDocument.resources[0]!.data) as Record<string, unknown>,
         labels: [],
         replacements: [],
         media: structuredClone(packageDocument.resources[0]!.media),
       },
-      state: { currentHp: "4", currentStress: "2" },
+      state: { currentHp: "4", currentStress: "2", focused: "false", notes: "" },
       position: { x: 128, y: 256 },
     }, { capabilities }).document;
     tabletop.assets = structuredClone(packageDocument.assets);
@@ -188,7 +188,7 @@ describe("Creator and GM cloud recovery", () => {
     expect(recovered.tabletops[0]?.sync.baseRevision).toBe("8");
     expect(recovered.tabletops[0]?.sync.accountId).toBe("account-1");
     expect(recovered.tabletops[0]?.model.instances[0]).toMatchObject({
-      state: { currentHp: "4", currentStress: "2" },
+      state: { currentHp: "4", currentStress: "2", focused: "false", notes: "" },
       position: { x: 128, y: 256 },
     });
     expect(recovered.tabletops[0]?.media.get(asset.id)).toEqual(bytes);

@@ -19,46 +19,11 @@ function readJson(relativePath: string): unknown {
 }
 
 const catalog = readJson("contracts/catalog.json") as ContractCatalog;
-const resourcePackageSchemaPath = "resource-package/0.0.0-dev.1/schema.json";
-const resourcePackageAlphaSchemaPath = "resource-package/1.0.0-alpha.1/schema.json";
-const resourcePackageSchemaPathV1 = "resource-package/1.0.0/schema.json";
-const systemPackageAlphaSchemaPath = "system-package/1.0.0-alpha.1/schema.json";
-const systemPackageAlpha2SchemaPath = "system-package/1.0.0-alpha.2/schema.json";
-const systemPackageSchemaPathV1 = "system-package/1.0.0/schema.json";
-const characterSaveAlphaSchemaPath = "character-save/1.0.0-alpha.1/schema.json";
-const characterSaveSchemaPathV1 = "character-save/1.0.0/schema.json";
-const tabletopDocumentAlphaSchemaPath = "tabletop-document/1.0.0-alpha.1/schema.json";
-const tabletopDocumentSchemaPathV1 = "tabletop-document/1.0.0/schema.json";
-const schemas = {
-  [resourcePackageSchemaPath]: readJson(`contracts/${resourcePackageSchemaPath}`) as AnySchema,
-  [resourcePackageAlphaSchemaPath]: readJson(
-    `contracts/${resourcePackageAlphaSchemaPath}`,
-  ) as AnySchema,
-  [resourcePackageSchemaPathV1]: readJson(
-    `contracts/${resourcePackageSchemaPathV1}`,
-  ) as AnySchema,
-  [systemPackageAlphaSchemaPath]: readJson(
-    `contracts/${systemPackageAlphaSchemaPath}`,
-  ) as AnySchema,
-  [systemPackageAlpha2SchemaPath]: readJson(
-    `contracts/${systemPackageAlpha2SchemaPath}`,
-  ) as AnySchema,
-  [systemPackageSchemaPathV1]: readJson(
-    `contracts/${systemPackageSchemaPathV1}`,
-  ) as AnySchema,
-  [characterSaveAlphaSchemaPath]: readJson(
-    `contracts/${characterSaveAlphaSchemaPath}`,
-  ) as AnySchema,
-  [characterSaveSchemaPathV1]: readJson(
-    `contracts/${characterSaveSchemaPathV1}`,
-  ) as AnySchema,
-  [tabletopDocumentAlphaSchemaPath]: readJson(
-    `contracts/${tabletopDocumentAlphaSchemaPath}`,
-  ) as AnySchema,
-  [tabletopDocumentSchemaPathV1]: readJson(
-    `contracts/${tabletopDocumentSchemaPathV1}`,
-  ) as AnySchema,
-};
+const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
+  family.versions.map((version) => [
+    version.schema,
+    readJson(`contracts/${version.schema}`) as AnySchema,
+  ])));
 
 type ConformanceCase = {
   name: string;
@@ -86,14 +51,42 @@ describe("Contract Catalog", () => {
       structuredClone(duplicateCatalog.families[0].versions[0]!),
     );
     expect(() => new ContractRuntime(duplicateCatalog, schemas)).toThrow(
-      "Duplicate Contract version: resource-package@0.0.0-dev.1",
+      "Duplicate Contract version: resource-package@1.0.0",
     );
   });
 
   test("queries exact version state", () => {
     const runtime = new ContractRuntime(catalog, schemas);
-    expect(runtime.getVersionState("resource-package", "0.0.0-dev.1")).toBe("development");
-    expect(runtime.getVersionState("resource-package", "1.0.0")).toBe("development");
+    expect(runtime.getVersionState("resource-package", "0.9.0")).toBeUndefined();
+    expect(runtime.getVersionState("resource-package", "1.0.0")).toBe("published");
+  });
+
+  test("accepts the reviewed Resource Package in production mode", () => {
+    const runtime = new ContractRuntime(catalog, schemas);
+    expect(runtime.validate({
+      family: "resource-package",
+      version: "1.0.0",
+      mode: "production",
+      candidate: readJson("contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json"),
+    })).toEqual([]);
+  });
+
+  test("tracks Backend API lifecycle without treating OpenAPI as JSON Schema", () => {
+    const runtime = new ContractRuntime(catalog, schemas);
+    expect(runtime.getVersionState("backend-api", "1.0.0")).toBe("published");
+    expect(runtime.validate({
+      family: "backend-api",
+      version: "1.0.0",
+      mode: "production",
+      candidate: {},
+    })).toEqual([{
+      code: "contract.validation.not-applicable",
+      severity: "error",
+      family: "backend-api",
+      version: "1.0.0",
+      location: "",
+      params: {},
+    }]);
   });
 });
 

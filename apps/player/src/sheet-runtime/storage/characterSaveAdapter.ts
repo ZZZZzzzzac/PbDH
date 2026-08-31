@@ -2,8 +2,8 @@ import {
   CHARACTER_SAVE_VERSION,
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
+  type CharacterTabletopInstance,
   type TabletopAsset,
-  type TabletopDocument,
   type TabletopResourceCopy,
 } from "@pbdh/contract-runtime";
 import { templateRegistry } from "@pbdh/templates/core";
@@ -72,7 +72,7 @@ export async function sheetCharacterToSave(input: {
     const snapshot = existingInstance
       ? { resourceCopy: structuredClone(existingInstance.resourceCopy) }
       : snapshotCard(card, input);
-    const instance: TabletopDocument["instances"][number] = {
+    const instance: CharacterTabletopInstance = {
       instanceId: card.instanceId,
       resourceCopy: snapshot.resourceCopy,
       state: {
@@ -242,7 +242,7 @@ function snapshotCard(
       resourceCopy: {
         source: { packageId: parsed.packageId, resourceId: parsed.resourceId },
         template: structuredClone(resource.template),
-        presentation: structuredClone(resource.presentation),
+        presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(resource.presentation) },
         data: structuredClone(resource.data),
         labels: [],
         media: structuredClone(resource.media),
@@ -270,7 +270,7 @@ function snapshotCard(
   const resourceCopy: TabletopResourceCopy = {
     source: null,
     template: { id: compatibility.templateId, version: compatibility.versionRange.minimumInclusive },
-    presentation: template.defaultPresentation,
+    presentation: { width: "63", height: "88", unit: "mm", ...template.defaultPresentation },
     data: compositeData(compatibility.templateId, composite.fields),
     labels: [],
     media: compositeMedia(composite.fields),
@@ -338,14 +338,14 @@ function imageAssetId(value: unknown): string | undefined {
   return isRecord(value) && typeof value.assetId === "string" ? value.assetId : undefined;
 }
 
-function isCardTableState(value: unknown): value is { instances: TabletopDocument["instances"] } {
+function isCardTableState(value: unknown): value is { instances: CharacterTabletopInstance[] } {
   return isRecord(value) && Array.isArray(value.instances);
 }
 
 function findSavedCardInstance(
   document: CharacterSaveDocument | undefined,
   instanceId: string,
-): TabletopDocument["instances"][number] | undefined {
+): CharacterTabletopInstance | undefined {
   if (!document) return undefined;
   for (const value of Object.values(document.characterData)) {
     if (!isCardTableState(value)) continue;
@@ -525,7 +525,7 @@ export function completeCharacterDataForSystemPackage(
     : document;
 }
 
-function isTabletopInstance(value: unknown): value is TabletopDocument["instances"][number] {
+function isTabletopInstance(value: unknown): value is CharacterTabletopInstance {
   if (!isRecord(value) || typeof value.instanceId !== "string" || !isRecord(value.resourceCopy)
     || !isRecord(value.state) || Object.values(value.state).some((item) => typeof item !== "string")
     || !isRecord(value.geometry)) return false;

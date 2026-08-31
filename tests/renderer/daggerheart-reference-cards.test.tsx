@@ -42,7 +42,7 @@ describe("Daggerheart Core 稳定参考卡面", () => {
   });
 
   test("拒绝旧版和未知模板", () => {
-    expect(stableReferenceRendererFor("种族", "0.0.0-dev.1")).toBeUndefined();
+    expect(stableReferenceRendererFor("种族", "0.9.0")).toBeUndefined();
     expect(stableReferenceRendererFor("环境", "1.0.0")).toBeUndefined();
   });
 });

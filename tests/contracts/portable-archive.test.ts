@@ -22,7 +22,6 @@ import {
 
 const root = process.cwd();
 const fixtureRoot = "contracts/conformance/resource-package/1.0.0";
-const legacyFixtureRoot = "contracts/conformance/resource-package/1.0.0-alpha.1";
 const assetId = "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034";
 const assetPath = "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp";
 
@@ -46,11 +45,11 @@ const schemas = Object.fromEntries(
   ),
 );
 const runtime = new ContractRuntime(catalog, schemas);
-function validatorFor(version: string): ResourcePackageCandidateValidator {
+function validatorFor(): ResourcePackageCandidateValidator {
   return async (candidate, candidateMedia) => {
     const schemaDiagnostics = runtime.validate({
       family: "resource-package",
-      version,
+      version: candidate.contractVersion,
       mode: "development",
       candidate,
     });
@@ -60,8 +59,7 @@ function validatorFor(version: string): ResourcePackageCandidateValidator {
   };
 }
 
-const validate = validatorFor("1.0.0");
-const validateLegacy = validatorFor("1.0.0-alpha.1");
+const validate = validatorFor();
 
 type ArchiveCase = {
   name: string;
@@ -152,17 +150,6 @@ describe("Resource Package Directory Profile", () => {
 });
 
 describe("Resource Package .pbres ZIP Profile", () => {
-  test("keeps the legacy alpha archive readable", async () => {
-    const archive = new Uint8Array(readFileSync(path.join(
-      root,
-      legacyFixtureRoot,
-      "valid/minotaur-wrecker.pbres",
-    )));
-    const result = await loadPbres(archive, validateLegacy);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.candidate?.document.contractVersion).toBe("1.0.0-alpha.1");
-  });
-
   test("mechanical ZIP differences preserve the logical Snapshot Digest", async () => {
     const stored = writePbres(document, media, {
       compressionLevel: 0,

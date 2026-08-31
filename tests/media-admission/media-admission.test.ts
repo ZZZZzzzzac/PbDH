@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   centerCrop,
+  maxAdmittedImageBytes,
   outputDimensions,
   playerAvatarPolicy,
   publicationCoverPolicy,
@@ -30,6 +31,8 @@ describe("shared image admission contract", () => {
   });
 
   test("keeps an adjustable crop ratio when sizing the WebP output", () => {
+    expect(resourceImagePolicy.outputWidth).toBe(630);
+    expect(maxAdmittedImageBytes).toBe(2 * 1024 * 1024);
     expect(outputDimensions({ width: 1200, height: 600 }, 600)).toEqual({ width: 600, height: 300 });
   });
 });

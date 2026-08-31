@@ -21,7 +21,7 @@ function readJson<T>(relativePath: string): T {
 }
 
 const currentSystem = readJson<SystemPackageDocument>(
-  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
+  "apps/player/public/system-packages/daggerheart-core/system.json",
 );
 const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
   dependencies: [{
@@ -42,7 +42,7 @@ const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSyst
   }],
 };
 const resourcePackage = readJson<ResourcePackageLogicalDocument>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 );
 const broadsword = resourcePackage.resources[0]!;
 

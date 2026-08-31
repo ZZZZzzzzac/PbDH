@@ -113,5 +113,190 @@
         "params": { "property": "version" }
       }
     ]
+  },
+  {
+    "name": "complete package accepts every optional Runtime declaration",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "2.0.0",
+          "name": "Complete",
+          "description": "All optional declarations"
+        },
+        "runtime": {
+          "characterDataVersion": "2.0.0",
+          "characterDataMigrations": [
+            { "fromVersion": "1.0.0", "toVersion": "2.0.0", "script": "migrations/1-to-2.js" }
+          ],
+          "loadingPresentation": { "tagline": "Loading", "accentColor": "#123ABC" },
+          "pages": "pages.json",
+          "shell": { "html": "layouts/shell.html", "css": "layouts/shell.css" },
+          "skins": [
+            {
+              "id": "paper",
+              "name": "Paper",
+              "css": "skins/paper.css",
+              "frameworkColorScheme": "light",
+              "layoutOverrides": {
+                "shell": { "html": "skins/paper-shell.html" },
+                "pages": [{ "id": "main", "html": "skins/paper-main.html" }]
+              }
+            }
+          ],
+          "defaultSkin": "paper",
+          "modules": "modules.json",
+          "dependencies": "dependencies.json",
+          "characterCreationGuide": "guides/creation.json",
+          "questionnaireCharacterCreation": {
+            "id": "creation",
+            "name": "Creation",
+            "html": "questionnaires/creation.html"
+          },
+          "characterFormatAdapters": "adapters/character.json",
+          "characterTextExports": "exports/character-text.json",
+          "validationChecks": [{ "id": "consistency", "script": "checks/consistency.js" }]
+        },
+        "resourceCompatibility": [
+          {
+            "templateId": "自由",
+            "versionRange": { "minimumInclusive": "1.0.0", "maximumExclusive": "2.0.0" },
+            "nativeEntry": { "id": "free", "label": "Free" }
+          }
+        ],
+        "embeddedResources": [{ "path": "resources/core.pbres" }]
+      }
+    },
+    "expected": []
+  },
+  {
+    "name": "runtime requires a Modules document",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Missing Modules",
+          "description": "Invalid"
+        },
+        "runtime": { "characterDataVersion": "1.0.0", "pages": "pages.json" }
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/runtime/modules",
+        "params": { "property": "modules" }
+      }
+    ]
+  },
+  {
+    "name": "runtime rejects undeclared fields",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Unknown Runtime Field",
+          "description": "Invalid"
+        },
+        "runtime": {
+          "characterDataVersion": "1.0.0",
+          "pages": "pages.json",
+          "modules": "modules.json",
+          "plugin": "plugin.js"
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/runtime/plugin",
+        "params": { "property": "plugin" }
+      }
+    ]
+  },
+  {
+    "name": "runtime rejects a parent-directory file reference",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Unsafe Path",
+          "description": "Invalid"
+        },
+        "runtime": {
+          "characterDataVersion": "1.0.0",
+          "pages": "../pages.json",
+          "modules": "modules.json"
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.invalid",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/runtime/pages",
+        "params": { "keyword": "pattern" }
+      }
+    ]
+  },
+  {
+    "name": "skins must not be an empty declaration",
+    "request": {
+      "family": "system-package",
+      "version": "1.0.0",
+      "mode": "development",
+      "candidate": {
+        "contractVersion": "1.0.0",
+        "package": {
+          "id": "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+          "version": "1.0.0",
+          "name": "Empty Skins",
+          "description": "Invalid"
+        },
+        "runtime": {
+          "characterDataVersion": "1.0.0",
+          "pages": "pages.json",
+          "modules": "modules.json",
+          "skins": []
+        }
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.invalid",
+        "severity": "error",
+        "family": "system-package",
+        "version": "1.0.0",
+        "location": "/runtime/skins",
+        "params": { "keyword": "minItems" }
+      }
+    ]
   }
 ]

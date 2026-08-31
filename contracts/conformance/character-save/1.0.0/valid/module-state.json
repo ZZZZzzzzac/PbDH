@@ -27,9 +27,6 @@
               "version": "1.0.0"
             },
             "presentation": {
-              "width": "88",
-              "height": "126",
-              "unit": "mm",
               "mode": "split",
               "fixedRatio": true
             },

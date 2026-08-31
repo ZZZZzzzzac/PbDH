@@ -35,7 +35,7 @@ describe("环境 Template 1.0.0", () => {
 
   test("registers complete stable data from the fixed PbDH_Cards fixture", () => {
     expect(templateRegistry.resolve("环境", "1.0.0")).toBe(environmentTemplate);
-    expect(templateRegistry.resolve("环境", "0.0.0-dev.1")).toBeUndefined();
+    expect(templateRegistry.resolve("环境", "0.9.0")).toBeUndefined();
     expect(validateStable(abandonedGrove), JSON.stringify(validateStable.errors)).toBe(true);
     expect(validateStable(environmentTemplate.defaultData), JSON.stringify(validateStable.errors)).toBe(true);
     expect(environmentTemplate.project(abandonedGrove).searchText).toContain("Overgrown Battlefield");

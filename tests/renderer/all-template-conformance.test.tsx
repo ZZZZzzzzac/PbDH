@@ -39,12 +39,10 @@ const firstVersionTemplates: readonly TemplateCoreCapability<any>[] = [
 ];
 
 describe("首版可信 Template 的 Canonical Surface conformance", () => {
-  test("所有仍可解析的模板都不会再产出 90×142 卡面", () => {
+  test("所有模板只声明卡面形式和是否固定比例", () => {
     for (const template of templateRegistry.list()) {
-      expect(template.defaultPresentation.width, `${template.id}@${template.version}`).toBe("63");
-      if (template.defaultPresentation.fixedRatio) {
-        expect(template.defaultPresentation.height, `${template.id}@${template.version}`).toBe("88");
-      }
+      expect(Object.keys(template.defaultPresentation).sort(), `${template.id}@${template.version}`)
+        .toEqual(["fixedRatio", "mode"]);
     }
   });
 
@@ -69,8 +67,9 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error(JSON.stringify(result.diagnostics));
     expect(result.renderer.revision).toBe(template.rendererRevision);
-    expect(result.widthMm).toBe(Number(template.defaultPresentation.width));
-    expect(result.heightMm).toBe(Number(template.defaultPresentation.height));
+    expect(result.designRatio).toEqual(template.defaultPresentation.fixedRatio
+      ? { width: 63, height: 88 }
+      : null);
 
     const hostOutputs = rendererLabHosts.map(() => renderToStaticMarkup(
       result.renderer.render(result.renderInput),
@@ -86,9 +85,9 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
   });
 
   test("只有当前 Renderer 可以按精确 Template 版本按需加载", async () => {
-    expect(listLazyRendererBindings()).not.toContain("敌人@1.0.0-alpha.1");
+    expect(listLazyRendererBindings()).not.toContain("敌人@0.9.0");
     expect(listLazyRendererBindings()).toContain("敌人@1.0.0");
-    await expect(loadTrustedRenderer("敌人", "1.0.0-alpha.1"))
+    await expect(loadTrustedRenderer("敌人", "0.9.0"))
       .resolves.toBeUndefined();
     await expect(loadTrustedRenderer("敌人", "2.0.0")).resolves.toBeUndefined();
   });

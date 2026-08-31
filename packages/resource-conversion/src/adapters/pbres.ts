@@ -43,7 +43,7 @@ export const validatePbresConversionCandidate: ResourcePackageCandidateValidator
   const schemaDiagnostics = contractRuntime.validate({
     family: "resource-package",
     version: document.contractVersion,
-    mode: "development",
+    mode: "production",
     candidate: document,
   });
   if (schemaDiagnostics.length > 0) return schemaDiagnostics;

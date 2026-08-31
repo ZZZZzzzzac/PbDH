@@ -26,6 +26,7 @@
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",
+    "check:contract-releases": "node scripts/check-contract-releases.mjs && node scripts/python.mjs scripts/generate_backend_openapi.py --check",
     "sync:platform-app-bar": "node scripts/sync-platform-app-bar-design.mjs",
     "generate:design": "node scripts/generate-adversary-card-design.mjs && node scripts/generate-weapon-card-design.mjs && node scripts/generate-player-design.mjs && node scripts/generate-market-design.mjs",
     "check:design": "node scripts/generate-adversary-card-design.mjs --check && node scripts/generate-weapon-card-design.mjs --check && node scripts/generate-player-design.mjs --check && node scripts/generate-market-design.mjs --check",
@@ -38,7 +39,7 @@
     "dev:platform": "npm run dev -w @pbdh/platform",
     "build:platform": "npm run build -w @pbdh/platform",
     "dev:backend": "node --env-file-if-exists=.env.local scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload --port 8001",
-    "verify": "npm run check:boundaries && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run measure:renderer && npm run build:platform"
+    "verify": "npm run check:boundaries && npm run check:contract-releases && npm run check:design && npm run test:ts && npm run test:python && npm run typecheck && npm run measure:renderer && npm run build:platform"
   },
   "dependencies": {
     "dexie": "4.4.4",

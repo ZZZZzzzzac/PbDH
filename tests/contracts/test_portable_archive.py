@@ -21,7 +21,6 @@ from pbdh_backend.contracts import (
 
 ROOT = Path(__file__).parents[2]
 FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0"
-LEGACY_FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
 ASSET_ID = "sha256:0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034"
 ASSET_PATH = FIXTURE_ROOT / "media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp"
 
@@ -43,7 +42,7 @@ RUNTIME = ContractRuntime(CATALOG, SCHEMAS)
 
 
 def validate(document: dict[str, Any], media: dict[str, bytes]) -> list[dict[str, Any]]:
-    version = document.get("contractVersion", "1.0.0-alpha.1")
+    version = document.get("contractVersion", "1.0.0")
     diagnostics = RUNTIME.validate({
         "family": "resource-package",
         "version": version,
@@ -93,15 +92,6 @@ def test_directory_profile_round_trip() -> None:
     assert result["diagnostics"] == []
     assert result["candidate"]["document"] == DOCUMENT
     assert result["candidate"]["media"][ASSET_ID] == MEDIA[ASSET_ID]
-
-
-def test_legacy_alpha_pbres_remains_readable() -> None:
-    result = load_pbres(
-        (LEGACY_FIXTURE_ROOT / "valid/minotaur-wrecker.pbres").read_bytes(),
-        validate,
-    )
-    assert result["diagnostics"] == []
-    assert result["candidate"]["document"]["contractVersion"] == "1.0.0-alpha.1"
 
 
 def test_directory_profile_round_trips_empty_directories() -> None:

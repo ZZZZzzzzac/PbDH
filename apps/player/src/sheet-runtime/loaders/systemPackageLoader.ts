@@ -1,7 +1,7 @@
 import {
   normalizeSystemPackageDocument,
-  type AnySystemPackageDocument,
   type SystemPackageDocument,
+  type SystemPackageSourceDocument,
 } from "@pbdh/contract-runtime";
 import type { ResourceLibraryReference } from "../domain/resourceLibrary";
 import type { PackageSourceMap, PackageValidationResult } from "../domain/systemPackage";
@@ -59,7 +59,7 @@ export async function loadSystemPackageFromVfs(
     return { ok: false, issues: [systemJson.issue] };
   }
 
-  const sourceDocument = systemJson.value as AnySystemPackageDocument;
+  const sourceDocument = systemJson.value as SystemPackageSourceDocument;
   const documentDiagnostics = validateSystemPackageDocument(sourceDocument);
   if (documentDiagnostics.length > 0) {
     return {

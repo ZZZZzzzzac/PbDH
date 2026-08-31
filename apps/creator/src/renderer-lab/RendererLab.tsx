@@ -16,9 +16,6 @@ const assetId = minotaurPackage.assets[0].id;
 const baseResource = minotaurPackage.resources[0] as {
   template: { id: string; version: string };
   presentation: {
-    width: string;
-    height: string;
-    unit: "mm";
     mode: "text" | "split" | "image";
     fixedRatio: boolean;
   };
@@ -52,11 +49,11 @@ function scenarioInput(scenario: RendererLabScenario) {
 function ScaledSurface({ scenario, scale }: { scenario: RendererLabScenario; scale: number }) {
   const input = useMemo(() => scenarioInput(scenario), [scenario]);
   const mmToPx = 96 / 25.4;
-  const width = Number(input.resource.presentation.width) * mmToPx * scale;
-  const height = Number(input.resource.presentation.height) * mmToPx * scale;
+  const width = 63 * mmToPx * scale;
+  const height = 88 * mmToPx * scale;
   return (
     <div className="surface-viewport" style={{ width, height }}>
-      <div className="surface-scale" style={{ transform: `scale(${scale})` }}>
+      <div className="surface-scale" style={{ width: "63mm", height: "88mm", transform: `scale(${scale})` }}>
         <CanonicalCardSurface
           resource={input.resource}
           expectedRendererRevision="enemy-card-r1"

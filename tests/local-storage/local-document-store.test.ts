@@ -22,7 +22,7 @@ function envelope(
     documentId,
     documentKind,
     contractFamily: documentKind === "gm-tabletop-document" ? "tabletop-document" : "test",
-    contractVersion: "1.0.0-alpha.1",
+    contractVersion: "1.0.0",
     createdAt: "2026-08-20T10:00:00.000Z",
     updatedAt: "2026-08-20T10:00:00.000Z",
     assetIds,

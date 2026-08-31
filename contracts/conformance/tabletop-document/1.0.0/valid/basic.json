@@ -15,9 +15,6 @@
         },
         "template": { "id": "敌人", "version": "1.0.0" },
         "presentation": {
-          "width": "63",
-          "height": "88",
-          "unit": "mm",
           "mode": "split",
           "fixedRatio": true
         },
@@ -28,14 +25,14 @@
         ],
         "media": {}
       },
-      "state": { "currentHp": "7", "currentStress": "0" },
+      "state": { "currentHp": "7", "currentStress": "0", "focused": "false", "notes": "" },
       "geometry": {
         "x": 48,
         "y": 88,
         "layer": 0,
         "rotation": 0,
         "flipped": false,
-        "scale": 1
+        "width": 250
       }
     }
   ],

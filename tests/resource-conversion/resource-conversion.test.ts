@@ -297,7 +297,7 @@ describe("third-party resource source engines", () => {
     }));
   });
 
-  test("dhsheet JSON and dhcb outputs preserve grouped native records", async () => {
+  test("dhsheet JSON and dhcb outputs preserve grouped native records and dhcb can be re-imported", async () => {
     const imported = await resourceConversionRegistry.import("dhsheet", input(dhsheetPack));
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
@@ -307,6 +307,14 @@ describe("third-party resource source engines", () => {
     if (!json.ok || !dhcb.ok) throw new Error("export failed");
     expect(dhsheetEngineRead(json.artifact.bytes, false).variant).toEqual(dhsheetPack.variant);
     expect(dhsheetEngineRead(dhcb.artifact.bytes, true).variant).toEqual(dhsheetPack.variant);
+    const reimported = await resourceConversionRegistry.import("dhsheet", {
+      bytes: dhcb.artifact.bytes,
+      fileName: dhcb.artifact.fileName,
+      container: "dhcb",
+    });
+    expect(reimported.ok).toBe(true);
+    if (!reimported.ok) throw new Error("dhcb re-import failed");
+    expect(reimported.batch.resources).toEqual(imported.batch.resources);
   });
 
   test("dhsheet imports its explicit equipment-pack variant", async () => {

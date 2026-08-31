@@ -39,7 +39,7 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
     return { title, summary, searchText };
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
-  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "split", fixedRatio: true },
+  defaultPresentation: { mode: "split", fixedRatio: true },
   rendererRevision: "enemy-card-r1",
   tabletop: {
     stateSchema: {

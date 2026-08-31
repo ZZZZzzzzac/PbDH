@@ -81,7 +81,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
         resource: {
           source: { packageId: document.package.id, resourceId: source.id },
           template: structuredClone(source.template),
-          presentation: { ...source.presentation, width: "63", height: "88", mode: "text" },
+          presentation: { width: "63", height: "88", unit: "mm", ...source.presentation, mode: "text" },
           data: structuredClone(source.data) as Record<string, unknown>,
           labels: [],
           replacements: [],
@@ -111,7 +111,12 @@ describe("Market enemy handoff to local GM tabletop", () => {
     const resourceId = workspace.document.resources[0]!.id;
     const snapshot = snapshotWorkspaceResourceForTabletop(workspace, resourceId);
 
-    expect(snapshot.resource.presentation).toEqual(workspace.document.resources[0]!.presentation);
+    expect(snapshot.resource.presentation).toEqual({
+      width: "63",
+      height: "88",
+      unit: "mm",
+      ...workspace.document.resources[0]!.presentation,
+    });
 
     let tabletop = createTabletopDocument("01989f4e-7b2c-7000-8000-000000000010", "荒野伏击");
     tabletop = executeTabletopCommand(tabletop, {

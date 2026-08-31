@@ -130,6 +130,8 @@ class ContractRuntime:
                 if schema_path not in schemas:
                     raise ValueError(f"Missing Contract schema: {schema_path}")
                 self._versions[key] = version
+                if family["id"] == "backend-api":
+                    continue
                 self._validators[key] = Draft202012Validator(schemas[schema_path])
 
     def get_version_state(self, family: str, version: str) -> str | None:
@@ -153,7 +155,10 @@ class ContractRuntime:
                 "contract.version.development-not-allowed",
             )]
 
+        validator = self._validators.get(key)
+        if validator is None:
+            return [diagnostic(request, "contract.validation.not-applicable")]
         diagnostics = []
-        for error in self._validators[key].iter_errors(request["candidate"]):
+        for error in validator.iter_errors(request["candidate"]):
             diagnostics.extend(map_schema_error(request, error))
         return sort_diagnostics(diagnostics)

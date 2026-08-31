@@ -14,7 +14,7 @@
 | 基德 | `jeffdyuyi/DHcard-tool@13385f4b633d35eddf6681f11d0d5c5d46ce5733` | `types.ts`、`App.tsx`、`utils.ts`、`ccExporter.ts` |
 | ZZZ | `ZZZZzzzzac/DaggerHeart_Character@64e6a4484dd1daf9b93779dcf7aaea6e512efde4` | `js/action.js`、`js/custom.js`、`js/card.js`、`js/rrr_converter.js` |
 | dhsheet | `RidRisR/DaggerHeart-CharacterSheet@fdc1f9e1423a5e044fc547b84f4dbe02af6a5b38` | `card/card-types.ts`、`app/card-editor/utils/import-export.ts`、`zip-import.ts`、`zip-export.ts`、`lib/sheet-data.ts`、`hooks/use-character-management.ts`、`lib/html-importer.ts`、`lib/html-exporter.ts` |
-| PbDH 资源 | 本仓库 `resource-package@1.0.0-alpha.1` | `packages/contract-runtime` 的 `loadPbres` / `writePbres` |
+| PbDH 资源 | 本仓库 `resource-package@1.0.0` | `packages/contract-runtime` 的 `loadPbres` / `writePbres` |
 
 测试目录中的 `upstream-engines.ts` 只抽取上表入口真正决定“目标工具能否读取”的最小
 行为，不加载 PbDH Adapter。测试因此能发现“PbDH 自己写出、PbDH 自己读回”无法发现的
@@ -32,27 +32,16 @@
 - 转换会话内的来源 DTO，用于尚未经过逐 Template 损失裁定的往返证明。
 
 来源 DTO 和完整报告不得持久化到 Resource Package、Workspace、Market 或云数据。当前敌人、
-武器、护甲、物品、职业、子职业、种族、社群、领域卡和环境已注册专用 Template 映射；除仍无正式纵切的环境外，生产转换均输出稳定 `1.0.0` Template，环境仍使用开发期临时 Template。基德独有且暂不兼容的
+武器、护甲、物品、职业、子职业、种族、社群、领域卡和环境已注册专用 Template 映射；生产转换均输出稳定 `1.0.0` Template。基德独有且暂不兼容的
 16 类使用显式自由 Template 映射；其他未知类型继续停留在转换信封中，不能仅因字段相近而伪装成
 合法资源。
 
 ## 人物卡转换边界
 
-人物卡格式固定为 `.pbcha`、dhsheet 与 ZZZ。dhsheet/ZZZ Adapter 位于 Player 组合根，
-不进入平台 Resource Adapter Registry。
-
-仓库尚无 Character Save Schema。为先验证三套读写链，当前 `.pbcha` 使用
-`0.0.0-dev.1` 测试 Profile：
-
-```text
-character.pbcha
-├── manifest.json  # family=character-save, status=development-only
-└── character.json # 临时规范值、卡牌与来源扩展
-```
-
-该 Profile 只用于测试引擎，不能写入正式本地/云文档、Market、生产 API 或正式文件导出。
-Character Save Contract 发布后必须由权威 Reader/Writer 取代；第三方语义映射仍由 Daggerheart
-System Package 的 Character Format Adapter 拥有。
+人物卡第三方转换格式目前为 dhsheet 与 ZZZ。两者的 Adapter 位于 Player 组合根，不进入平台
+Resource Adapter Registry。正式 `.pbcha` 只由 Character Save `1.0.0` 的权威 Reader/Writer
+处理，不再经过临时转换 Profile；第三方语义映射仍由 Daggerheart System Package 的
+Character Format Adapter 拥有。
 
 ## 损失裁定
 

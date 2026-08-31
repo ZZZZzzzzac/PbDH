@@ -17,47 +17,10 @@ def read_json(relative_path: str) -> object:
 
 
 CATALOG = read_json("contracts/catalog.json")
-RESOURCE_PACKAGE_SCHEMA_PATH = "resource-package/0.0.0-dev.1/schema.json"
-RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH = "resource-package/1.0.0-alpha.1/schema.json"
-RESOURCE_PACKAGE_STABLE_SCHEMA_PATH = "resource-package/1.0.0/schema.json"
-SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH = "system-package/1.0.0-alpha.1/schema.json"
-SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH = "system-package/1.0.0-alpha.2/schema.json"
-SYSTEM_PACKAGE_STABLE_SCHEMA_PATH = "system-package/1.0.0/schema.json"
-CHARACTER_SAVE_ALPHA_SCHEMA_PATH = "character-save/1.0.0-alpha.1/schema.json"
-CHARACTER_SAVE_STABLE_SCHEMA_PATH = "character-save/1.0.0/schema.json"
-TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH = "tabletop-document/1.0.0-alpha.1/schema.json"
-TABLETOP_DOCUMENT_STABLE_SCHEMA_PATH = "tabletop-document/1.0.0/schema.json"
 SCHEMAS = {
-    RESOURCE_PACKAGE_SCHEMA_PATH: read_json(
-        f"contracts/{RESOURCE_PACKAGE_SCHEMA_PATH}"
-    ),
-    RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH: read_json(
-        f"contracts/{RESOURCE_PACKAGE_ALPHA_SCHEMA_PATH}"
-    ),
-    RESOURCE_PACKAGE_STABLE_SCHEMA_PATH: read_json(
-        f"contracts/{RESOURCE_PACKAGE_STABLE_SCHEMA_PATH}"
-    ),
-    SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH: read_json(
-        f"contracts/{SYSTEM_PACKAGE_ALPHA_SCHEMA_PATH}"
-    ),
-    SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH: read_json(
-        f"contracts/{SYSTEM_PACKAGE_ALPHA2_SCHEMA_PATH}"
-    ),
-    SYSTEM_PACKAGE_STABLE_SCHEMA_PATH: read_json(
-        f"contracts/{SYSTEM_PACKAGE_STABLE_SCHEMA_PATH}"
-    ),
-    CHARACTER_SAVE_ALPHA_SCHEMA_PATH: read_json(
-        f"contracts/{CHARACTER_SAVE_ALPHA_SCHEMA_PATH}"
-    ),
-    CHARACTER_SAVE_STABLE_SCHEMA_PATH: read_json(
-        f"contracts/{CHARACTER_SAVE_STABLE_SCHEMA_PATH}"
-    ),
-    TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH: read_json(
-        f"contracts/{TABLETOP_DOCUMENT_ALPHA_SCHEMA_PATH}"
-    ),
-    TABLETOP_DOCUMENT_STABLE_SCHEMA_PATH: read_json(
-        f"contracts/{TABLETOP_DOCUMENT_STABLE_SCHEMA_PATH}"
-    ),
+    version["schema"]: read_json(f"contracts/{version['schema']}")
+    for family in CATALOG["families"]
+    for version in family["versions"]
 }
 
 
@@ -80,15 +43,45 @@ def test_catalog_rejects_duplicate_exact_versions() -> None:
     )
     with pytest.raises(
         ValueError,
-        match="Duplicate Contract version: resource-package@0.0.0-dev.1",
+        match="Duplicate Contract version: resource-package@1.0.0",
     ):
         ContractRuntime(duplicate_catalog, SCHEMAS)
 
 
 def test_catalog_queries_exact_version_state() -> None:
     runtime = ContractRuntime(CATALOG, SCHEMAS)
-    assert runtime.get_version_state("resource-package", "0.0.0-dev.1") == "development"
-    assert runtime.get_version_state("resource-package", "1.0.0") == "development"
+    assert runtime.get_version_state("resource-package", "0.9.0") is None
+    assert runtime.get_version_state("resource-package", "1.0.0") == "published"
+
+
+def test_accepts_reviewed_resource_package_in_production_mode() -> None:
+    runtime = ContractRuntime(CATALOG, SCHEMAS)
+    assert runtime.validate({
+        "family": "resource-package",
+        "version": "1.0.0",
+        "mode": "production",
+        "candidate": read_json(
+            "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json"
+        ),
+    }) == []
+
+
+def test_tracks_backend_api_without_treating_openapi_as_json_schema() -> None:
+    runtime = ContractRuntime(CATALOG, SCHEMAS)
+    assert runtime.get_version_state("backend-api", "1.0.0") == "published"
+    assert runtime.validate({
+        "family": "backend-api",
+        "version": "1.0.0",
+        "mode": "production",
+        "candidate": {},
+    }) == [{
+        "code": "contract.validation.not-applicable",
+        "severity": "error",
+        "family": "backend-api",
+        "version": "1.0.0",
+        "location": "",
+        "params": {},
+    }]
 
 
 @pytest.mark.parametrize(

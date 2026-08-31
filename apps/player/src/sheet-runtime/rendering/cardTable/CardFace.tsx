@@ -63,8 +63,8 @@ export function CardFace({
 
   if (canonicalResource && canonicalRenderer) {
     return <CardDisplay
-      width={Number(canonicalResource.presentation.width)}
-      height={Number(canonicalResource.presentation.height)}
+      width={63}
+      height={88}
       fixedRatio={canonicalResource.presentation.fixedRatio}
       displayAspectRatio={63 / 88}
     ><CanonicalCardSurface

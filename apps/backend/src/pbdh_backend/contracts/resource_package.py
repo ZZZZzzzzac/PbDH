@@ -7,7 +7,7 @@ from typing import Any
 
 
 FAMILY = "resource-package"
-LEGACY_VERSION = "1.0.0-alpha.1"
+VERSION = "1.0.0"
 DIGEST_DOMAIN = "pbdh-resource-package-digest-v1"
 
 
@@ -105,7 +105,7 @@ def validate_resource_package_semantics(
     media: Mapping[str, bytes],
 ) -> list[dict[str, Any]]:
     diagnostics: list[dict[str, Any]] = []
-    version = str(document.get("contractVersion", LEGACY_VERSION))
+    version = str(document.get("contractVersion", VERSION))
     resource_ids: set[str] = set()
     targets: set[tuple[str, str]] = set()
     asset_ids: set[str] = set()

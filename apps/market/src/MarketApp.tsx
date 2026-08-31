@@ -302,8 +302,8 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
   }, [enlarged]);
 
   const card = source && renderer ? <CardDisplay
-    width={Number(source.presentation.width)}
-    height={Number(source.presentation.height)}
+    width={63}
+    height={88}
     fixedRatio={source.presentation.fixedRatio}
     displayAspectRatio={63 / 88}
     fit="contain"

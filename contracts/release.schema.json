@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/release.schema.json",
+  "title": "PbDH Contract release evidence",
+  "type": "object",
+  "required": [
+    "family",
+    "version",
+    "schema",
+    "schemaSha256",
+    "reviewedAt",
+    "conformance",
+    "producerTests",
+    "consumerTests",
+    "implementations"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "family": { "type": "string", "minLength": 1 },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "schema": { "type": "string", "minLength": 1 },
+    "schemaSha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "reviewedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "conformance": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "producerTests": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "consumerTests": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "implementations": {
+      "type": "array",
+      "contains": { "const": "typescript" },
+      "minContains": 1,
+      "allOf": [
+        { "contains": { "const": "python" }, "minContains": 1 }
+      ],
+      "items": { "enum": ["typescript", "python"] },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

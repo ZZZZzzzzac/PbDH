@@ -23,11 +23,11 @@ const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 function fixture(): ResourcePackageCandidate {
   const document = JSON.parse(readFileSync(path.join(
     root,
-    "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
+    "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json",
   ), "utf8")) as ResourcePackageLogicalDocument;
   const bytes = new Uint8Array(readFileSync(path.join(
     root,
-    "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+    "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
   )));
   return { document, media: new Map([[document.assets[0]!.id, bytes]]) };
 }
@@ -143,7 +143,7 @@ describe("Dexie Resource Package Repository", () => {
       documentId: "tabletop-sharing-package-media",
       documentKind: "gm-tabletop-document",
       contractFamily: "tabletop-document",
-      contractVersion: "1.0.0-alpha.1",
+      contractVersion: "1.0.0",
       createdAt: "2026-07-01T00:00:00.000Z",
       updatedAt: "2026-07-01T00:00:00.000Z",
       assetIds: [assetId],

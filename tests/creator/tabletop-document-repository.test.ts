@@ -2,6 +2,7 @@ import "fake-indexeddb/auto";
 
 import { afterEach, describe, expect, test } from "vitest";
 
+import type { TabletopDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 import {
   createTabletopDocument,
@@ -13,6 +14,8 @@ import {
   TabletopDocumentRepository,
   duplicateTabletopModel,
 } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
+import { validateTabletopDocumentCandidate } from "../../apps/creator/src/workspace-prototype/tabletop-document-validator.ts";
+import stableFixture from "../../contracts/conformance/tabletop-document/1.0.0/valid/basic.json";
 
 const databases: PbDHLocalDatabase[] = [];
 const capabilities = new Set<TabletopCapability>(["place"]);
@@ -31,6 +34,38 @@ afterEach(async () => {
 });
 
 describe("GM Tabletop Document Repository", () => {
+  test("正式入口拒绝不受支持的旧 Contract", async () => {
+    const diagnostics = await validateTabletopDocumentCandidate(
+      { contractVersion: "0.9.0" } as unknown as TabletopDocument,
+      new Map(),
+    );
+
+    expect(diagnostics.map((item) => item.code)).toEqual([
+      "contract.version.unsupported",
+    ]);
+  });
+
+  test("validates runtime state against the exact resource template", async () => {
+    const document = structuredClone(stableFixture) as TabletopDocument;
+    document.instances[0]!.state = { currentHp: 7 };
+
+    const diagnostics = await validateTabletopDocumentCandidate(document, new Map());
+
+    expect(diagnostics.map((item) => item.code)).toContain("tabletop-document.state.invalid-for-template");
+  });
+
+  test("rejects replacement IDs that the exact resource template did not declare", async () => {
+    const document = structuredClone(stableFixture) as TabletopDocument;
+    document.instances[0]!.resourceCopy.replacements = [{
+      replacementId: "unknown-action",
+      targetResourceId: "minotaur-rage",
+    }];
+
+    const diagnostics = await validateTabletopDocumentCandidate(document, new Map());
+
+    expect(diagnostics.map((item) => item.code)).toContain("tabletop-document.replacement-id.not-declared");
+  });
+
   test("reopens a saved tabletop from the shared local document store", async () => {
     const value = database();
     const repository = new TabletopDocumentRepository(
@@ -46,7 +81,7 @@ describe("GM Tabletop Document Repository", () => {
           packageId: "0195f4d4-8b6b-7000-8000-000000000001",
           resourceId: "minotaur-wrecker",
         },
-        template: { id: "pbdh.adversary", version: "1.0.0-alpha.1" },
+        template: { id: "敌人", version: "1.0.0" },
         presentation: {
           width: "63",
           height: "88",
@@ -59,7 +94,7 @@ describe("GM Tabletop Document Repository", () => {
         replacements: [],
         media: {},
       },
-      state: { currentHp: "7" },
+      state: { currentHp: "7", currentStress: "0", focused: "false", notes: "" },
       position: { x: 48, y: 88 },
     }, { capabilities }).document;
 
@@ -89,7 +124,7 @@ describe("GM Tabletop Document Repository", () => {
     const value = database();
     const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(value));
     const invalid = {
-      contractVersion: "1.0.0-alpha.1",
+      contractVersion: "0.9.0",
       documentId: "invalid",
     } as never;
 
@@ -121,7 +156,7 @@ describe("GM Tabletop Document Repository", () => {
     expect((await repository.list())[0]?.model).toEqual(model);
   });
 
-  test("preserves a card's intrinsic size when saving and reopening", async () => {
+  test("persists the card's actual tabletop width without presentation dimensions", async () => {
     const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
     const model = executeTabletopCommand(
       createTabletopDocument("01989f4e-7b2c-7000-8000-000000000008", "旧尺寸桌面"),
@@ -137,15 +172,21 @@ describe("GM Tabletop Document Repository", () => {
           replacements: [],
           media: {},
         },
-        state: {},
+        state: { currentHp: "3", currentStress: "0", focused: "false", notes: "" },
         position: { x: 0, y: 0 },
       },
       { capabilities },
     ).document;
+    model.instances[0]!.scale = 1.5;
 
     await repository.save(model, new Map());
     const [stored] = await repository.list();
 
+    expect(stored?.document.instances[0]?.resourceCopy.presentation).toEqual({
+      mode: "split",
+      fixedRatio: true,
+    });
+    expect(stored?.document.instances[0]?.geometry.width).toBe(375);
     expect(stored?.model.instances[0]?.resource.presentation).toEqual({
       width: "63",
       height: "88",
@@ -153,6 +194,7 @@ describe("GM Tabletop Document Repository", () => {
       mode: "split",
       fixedRatio: true,
     });
+    expect(stored?.model.instances[0]?.scale).toBe(1.5);
   });
 
   test("duplicates a tabletop with new document and instance IDs", async () => {

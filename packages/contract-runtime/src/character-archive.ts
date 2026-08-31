@@ -3,10 +3,7 @@ import { strFromU8, strToU8, unzipSync, zipSync, type Zippable, type ZipOptions 
 import type { ContractDiagnostic } from "./index.ts";
 import {
   CHARACTER_SAVE_VERSION,
-  CHARACTER_SAVE_ALPHA1_VERSION,
-  migrateCharacterSaveAlpha1,
   selectCharacterSavePlayerMedia,
-  type AnyCharacterSaveDocument,
   type CharacterSaveCandidate,
   type CharacterSaveCandidateValidator,
   type CharacterSaveDocument,
@@ -107,11 +104,11 @@ export async function loadPbcha(
     return { candidate: null, diagnostics: [diagnostic("character-save.archive.root.missing", `/${ROOT_PATH}`)] };
   }
 
-  let sourceDocument: AnyCharacterSaveDocument;
+  let sourceDocument: CharacterSaveDocument;
   try {
     const parsed = JSON.parse(strFromU8(root)) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
-    sourceDocument = parsed as AnyCharacterSaveDocument;
+    sourceDocument = parsed as CharacterSaveDocument;
   } catch {
     return { candidate: null, diagnostics: [diagnostic("character-save.archive.root.invalid-json", `/${ROOT_PATH}`)] };
   }
@@ -142,16 +139,5 @@ export async function loadPbcha(
   if (sourceDiagnostics.some((item) => item.severity === "error")) {
     return { candidate: null, diagnostics: sourceDiagnostics };
   }
-  const migrated = sourceDocument.contractVersion === CHARACTER_SAVE_ALPHA1_VERSION
-    ? migrateCharacterSaveAlpha1(sourceDocument)
-    : { document: sourceDocument as CharacterSaveDocument, diagnostics: [] };
-  if (!migrated.document) return { candidate: null, diagnostics: migrated.diagnostics };
-  const migratedMedia = sourceDocument.contractVersion === CHARACTER_SAVE_VERSION
-    ? media
-    : selectCharacterSavePlayerMedia(migrated.document, media);
-  const diagnostics = sourceDocument.contractVersion === CHARACTER_SAVE_VERSION
-    ? sourceDiagnostics
-    : await validate(migrated.document, migratedMedia);
-  if (diagnostics.some((item) => item.severity === "error")) return { candidate: null, diagnostics };
-  return { candidate: { document: migrated.document, media: migratedMedia }, diagnostics };
+  return { candidate: { document: sourceDocument, media }, diagnostics: sourceDiagnostics };
 }

@@ -99,7 +99,7 @@ describe("GM Tabletop L1 regressions", () => {
         instanceId: `00000000-0000-7000-8000-${String(index + 2).padStart(12, "0")}`,
         resource: {
           source: null,
-          template: { id: "pbdh.item", version: "1.0.0" },
+          template: { id: "物品", version: "1.0.0" },
           presentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
           data: { 名称: `卡牌 ${index}` }, labels: [], replacements: [], media: {},
         },

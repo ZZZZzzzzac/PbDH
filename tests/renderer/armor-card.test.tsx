@@ -64,7 +64,7 @@ describe("armor-card-r1 Canonical Surface", () => {
 
   test("resolves only the exact immutable Renderer version", () => {
     expect(armorRendererFor("1.0.0")).toBe(armorRendererRevision);
-    expect(() => armorRendererFor("0.0.0-dev.1")).toThrow("Unsupported armor Renderer version");
+    expect(() => armorRendererFor("0.9.0")).toThrow("Unsupported armor Renderer version");
     expect(armorRendererRevision.validateState({})).toBe(true);
     expect(armorRendererRevision.validateState({ marked: "1" })).toBe(false);
     expect(armorRendererStyles).toContain(".armor-card");

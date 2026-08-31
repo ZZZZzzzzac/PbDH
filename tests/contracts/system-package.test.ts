@@ -10,12 +10,12 @@ import {
   loadSystemPackageDirectory,
   normalizeSystemPackageDocument,
   planEmbeddedResourceAdmission,
-  type AnySystemPackageDocument,
   type ContractCatalog,
   type ContractDiagnostic,
   type PortableDirectoryEntry,
   type ResourcePackageLogicalDocument,
   type SystemPackageDocument,
+  type SystemPackageSourceDocument,
   validateResourcePackageSemantics,
   validateSystemPackageSemantics,
   writePbsys,
@@ -23,7 +23,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureRoot = "contracts/conformance/system-package/1.0.0-alpha.2";
+const resourceFixtureRoot = "contracts/conformance/resource-package/1.0.0";
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;
@@ -37,16 +37,32 @@ const schemas = Object.fromEntries(
   ])),
 );
 const runtime = new ContractRuntime(catalog, schemas);
-const alpha2Document = readJson<AnySystemPackageDocument>(`${fixtureRoot}/valid/daggerheart/system.json`);
-const document = normalizeSystemPackageDocument(alpha2Document);
-if (alpha2Document.contractVersion !== "1.0.0-alpha.2") throw new Error("Expected alpha.2 fixture");
-const legacyEmbedded = alpha2Document.embeddedResources[0]!;
+const sourceDocument: SystemPackageSourceDocument = {
+  contractVersion: "1.0.0",
+  package: {
+    id: "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
+    version: "1.0.0",
+    name: "Daggerheart Test",
+    description: "System Package archive fixture",
+  },
+  runtime: { pages: "pages.json", modules: "modules.json", characterDataVersion: "1.0.0" },
+  resourceCompatibility: [{
+    templateId: "武器",
+    versionRange: { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" },
+    nativeEntry: { id: "weapons", label: "武器" },
+  }],
+  embeddedResources: [{ path: "resources/daggerheart-core-primary-weapon.pbres" }],
+};
+const document = normalizeSystemPackageDocument(sourceDocument);
+const embeddedDocument = readJson<ResourcePackageLogicalDocument>(
+  `${resourceFixtureRoot}/valid/daggerheart-core-primary-weapon.json`,
+);
 const embeddedPath = document.embeddedResources[0]!.path;
 const embeddedBytes = new Uint8Array(readFileSync(
-  path.join(root, fixtureRoot, "valid/daggerheart", embeddedPath),
+  path.join(root, resourceFixtureRoot, "valid/daggerheart-core-primary-weapon.pbres"),
 ));
 
-function validateSystem(candidate: AnySystemPackageDocument): ContractDiagnostic[] {
+function validateSystem(candidate: SystemPackageSourceDocument): ContractDiagnostic[] {
   const schemaDiagnostics = runtime.validate({
     family: "system-package",
     version: candidate.contractVersion,
@@ -64,7 +80,7 @@ async function validateResource(
 ): Promise<ContractDiagnostic[]> {
   const schemaDiagnostics = runtime.validate({
     family: "resource-package",
-    version: "1.0.0-alpha.1",
+    version: "1.0.0",
     mode: "development",
     candidate,
   });
@@ -85,9 +101,7 @@ function fixtureDirectoryEntries(): PortableDirectoryEntry[] {
     ...["pages.json", "modules.json"].map((relativePath): PortableDirectoryEntry => ({
       path: relativePath,
       kind: "file",
-      bytes: new Uint8Array(readFileSync(
-        path.join(root, fixtureRoot, "valid/daggerheart", relativePath),
-      )),
+      bytes: new TextEncoder().encode("[]"),
     })),
     { path: embeddedPath, kind: "file", bytes: embeddedBytes.slice() },
   ];
@@ -95,7 +109,7 @@ function fixtureDirectoryEntries(): PortableDirectoryEntry[] {
 
 describe("System Package directory and .pbsys", () => {
   test("normalizes omitted resource collections to empty arrays", async () => {
-    const minimal: AnySystemPackageDocument = {
+    const minimal: SystemPackageSourceDocument = {
       contractVersion: "1.0.0",
       package: {
         id: "0198e155-04d2-7ccd-98f1-8a09a177dc2a",
@@ -120,10 +134,7 @@ describe("System Package directory and .pbsys", () => {
 
   test("produce the same normalized offline candidate", async () => {
     const directory = await loadSystemPackageDirectory(fixtureDirectoryEntries(), options);
-    const archive = await loadPbsys(
-      new Uint8Array(readFileSync(path.join(root, fixtureRoot, "daggerheart.pbsys"))),
-      options,
-    );
+    const archive = await loadPbsys(writePbsys(fixtureDirectoryEntries()), options);
     expect(directory.diagnostics).toEqual([]);
     expect(archive.diagnostics).toEqual([]);
     expect(directory.candidate?.document).toEqual(document);
@@ -131,9 +142,9 @@ describe("System Package directory and .pbsys", () => {
     const directoryEmbedded = directory.candidate?.embeddedResources.get(embeddedPath)?.document;
     const archiveEmbedded = archive.candidate?.embeddedResources.get(embeddedPath)?.document;
     expect(directoryEmbedded).toEqual(archiveEmbedded);
-    expect(directoryEmbedded?.package.id).toBe(legacyEmbedded.packageId);
-    expect(directoryEmbedded?.package.version).toBe(legacyEmbedded.version);
-    expect(directoryEmbedded?.snapshotDigest).toBe(legacyEmbedded.snapshotDigest);
+    expect(directoryEmbedded?.package.id).toBe(embeddedDocument.package.id);
+    expect(directoryEmbedded?.package.version).toBe(embeddedDocument.package.version);
+    expect(directoryEmbedded?.snapshotDigest).toBe(embeddedDocument.snapshotDigest);
   });
 
   test("writer round-trips across ZIP mechanics", async () => {
@@ -151,30 +162,12 @@ describe("System Package directory and .pbsys", () => {
     }
   });
 
-  test("nested corruption or declared identity mismatch yields zero candidate", async () => {
+  test("nested corruption yields zero candidate", async () => {
     const corrupt = fixtureDirectoryEntries();
     corrupt[3]!.bytes = new Uint8Array([0x50, 0x4b]);
     const corruptResult = await loadSystemPackageDirectory(corrupt, options);
     expect(corruptResult.candidate).toBeNull();
     expect(corruptResult.diagnostics.some((item) => item.code === "resource-package.archive.zip.invalid")).toBe(true);
-
-    const mismatch = structuredClone(alpha2Document);
-    mismatch.embeddedResources[0]!.snapshotDigest = `sha256:${"0".repeat(64)}`;
-    const mismatchEntries = fixtureDirectoryEntries();
-    mismatchEntries[0]!.bytes = new TextEncoder().encode(`${JSON.stringify(mismatch, null, 2)}\n`);
-    const mismatchResult = await loadSystemPackageDirectory(mismatchEntries, options);
-    expect(mismatchResult.candidate).toBeNull();
-    expect(mismatchResult.diagnostics).toContainEqual({
-      code: "system-package.embedded-resource.identity-mismatch",
-      severity: "error",
-      family: "system-package",
-      version: "1.0.0",
-      location: "/embeddedResources/0/snapshotDigest",
-      params: {
-        actual: legacyEmbedded.snapshotDigest,
-        expected: mismatch.embeddedResources[0]!.snapshotDigest,
-      },
-    });
   });
 
   test("distinguishes unknown files from invalid portable paths", async () => {
@@ -205,6 +198,30 @@ describe("System Package directory and .pbsys", () => {
       "system-package.resource-compatibility.duplicate",
       "system-package.native-entry.duplicate",
     ]);
+  });
+
+  test("rejects empty or reversed Resource Compatibility ranges", () => {
+    const empty = structuredClone(document);
+    empty.resourceCompatibility[0]!.versionRange = {
+      minimumInclusive: "1.0.0",
+      maximumExclusive: "1.0.0",
+    };
+    expect(validateSystemPackageSemantics(empty)).toContainEqual({
+      code: "system-package.resource-compatibility.range-empty",
+      severity: "error",
+      family: "system-package",
+      version: "1.0.0",
+      location: "/resourceCompatibility/0/versionRange",
+      params: {},
+    });
+
+    const reversed = structuredClone(document);
+    reversed.resourceCompatibility[0]!.versionRange = {
+      minimumInclusive: "2.0.0",
+      maximumExclusive: "1.0.0",
+    };
+    expect(validateSystemPackageSemantics(reversed).map((item) => item.code))
+      .toContain("system-package.resource-compatibility.range-empty");
   });
 
   test("rejects invalid Runtime skin and validation declarations", () => {
@@ -249,8 +266,8 @@ describe("System Package directory and .pbsys", () => {
 
 describe("embedded official Resource admission", () => {
   const embedded = {
-    package: { version: legacyEmbedded.version },
-    snapshotDigest: legacyEmbedded.snapshotDigest,
+    package: { version: embeddedDocument.package.version },
+    snapshotDigest: embeddedDocument.snapshotDigest,
   };
 
   test("installs, no-ops, preserves newer local, prompts, and enforces baseline", () => {

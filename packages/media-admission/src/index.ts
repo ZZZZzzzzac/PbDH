@@ -42,7 +42,8 @@ export interface ImageAdmissionWorkflow {
 
 const defaultMaxInputBytes = 10 * 1024 * 1024;
 const defaultMaxDecodedPixels = 40_000_000;
-const defaultMaxOutputBytes = 5 * 1024 * 1024;
+export const maxAdmittedImageBytes = 2 * 1024 * 1024;
+const defaultMaxOutputBytes = maxAdmittedImageBytes;
 const maxWebpDimension = 16_383;
 
 export const resourceImagePolicy: ImageAdmissionPolicy = {
@@ -330,7 +331,7 @@ async function encodeWebp(canvas: HTMLCanvasElement, maxOutputBytes: number): Pr
     if (!blob || blob.type !== "image/webp") throw new Error("当前浏览器不支持 WebP 图片处理。");
     if (blob.size <= maxOutputBytes) return blob;
   }
-  throw new Error("图片无法在可接受画质下压缩到 5 MB，请降低尺寸或复杂度。");
+  throw new Error("图片无法在可接受画质下压缩到 2 MB，请调整裁剪区域或更换图片。");
 }
 
 async function digestHex(bytes: Uint8Array): Promise<string> {

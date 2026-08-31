@@ -7,6 +7,7 @@ import {
 } from "@pbdh/tabletop/core";
 import { templateRegistry } from "@pbdh/templates/core";
 
+import { gmTabletopBaseCardWidth } from "./tabletop-document-repository.ts";
 import type { CreatorWorkspace, WorkspaceResource } from "./workspace-model.ts";
 
 export type TabletopPlacementSnapshot = {
@@ -21,7 +22,7 @@ export type PreparedTabletopReplacement = {
 };
 
 const daggerheartOfficialResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
-export const gmCardPixelsPerDesignUnit = 250 / 63;
+export const gmCardPixelsPerDesignUnit = gmTabletopBaseCardWidth / 63;
 
 export function containGmTabletopInstances(document: TabletopDocumentModel): TabletopDocumentModel {
   let changed = false;
@@ -134,7 +135,7 @@ function tabletopResourceCopy(
   return {
     source: { packageId: workspace.document.package.id, resourceId: resource.id },
     template: structuredClone(resource.template),
-    presentation: structuredClone(resource.presentation),
+    presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(resource.presentation) },
     data: structuredClone(resource.data) as Record<string, unknown>,
     labels: [],
     replacements: structuredClone(resource.replacements ?? []),

@@ -16,7 +16,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureProfiles = ["1.0.0-alpha.1", "1.0.0"];
+const fixtureProfiles = ["1.0.0"];
 
 function readJson<T>(relativePath: string): T {
   return JSON.parse(readFileSync(path.join(root, relativePath), "utf8")) as T;

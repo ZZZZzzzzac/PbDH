@@ -66,7 +66,7 @@ describe("environment-card-r1 Canonical Surface", () => {
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     expect(renderToStaticMarkup(result.renderer.render(result.renderInput))).toContain("blob:environment-portrait");
     expect(environmentRendererFor("1.0.0")).toBe(environmentRendererRevision);
-    expect(() => environmentRendererFor("0.0.0-dev.1")).toThrow("Unsupported environment Renderer version");
+    expect(() => environmentRendererFor("0.9.0")).toThrow("Unsupported environment Renderer version");
     expect(environmentRendererStyles).toContain(".environment-card");
   });
 });

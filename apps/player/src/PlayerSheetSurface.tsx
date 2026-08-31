@@ -339,14 +339,6 @@ export function PlayerSheetSurface({
         if (credentials) await cloudDocumentService.recover(credentials);
         else await cloudDocumentService.localSnapshot();
         recoveredAccountRef.current = credentials?.accountId ?? "local";
-        for (const entry of playerSystemPackageCatalog) {
-          await installMissingEmbeddedResourcePackages({
-            systemPackage: entry.system,
-            embeddedResourceIndex: entry.preset.embeddedResourceIndex,
-            systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
-            repository: resourceRepository,
-          });
-        }
         const restored = await restorePlayerResourceLibrary(
           resourceRepository,
           defaultPlayerSystemPackage.system,
@@ -380,6 +372,12 @@ export function PlayerSheetSurface({
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
+            await installMissingEmbeddedResourcePackages({
+              systemPackage: entry.system,
+              embeddedResourceIndex: entry.preset.embeddedResourceIndex,
+              systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+              repository: resourceRepository,
+            });
             const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
             libraryRef.current = routed;
             setLibrary(routed);

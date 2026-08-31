@@ -7,7 +7,7 @@ import {
 } from "@pbdh/contract-runtime";
 import { describe, expect, test } from "vitest";
 
-import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json";
+import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
   preparePublicationCandidate,
 } from "../../apps/creator/src/workspace-prototype/publication-candidate.ts";
@@ -21,7 +21,7 @@ const document = minotaurPackage as ResourcePackageLogicalDocument;
 const asset = document.assets[0]!;
 const bytes = new Uint8Array(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+  "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
 )));
 const metadata = {
   title: "荒野遭遇集",

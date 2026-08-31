@@ -177,7 +177,7 @@ const generated = `// 此文件由 scripts/generate-market-design.mjs 从 docs/d
 }, null, 2)} as const;\n`;
 
 if (process.argv.includes("--check")) {
-  if (readFileSync(outputPath, "utf8") !== generated) {
+  if (readFileSync(outputPath, "utf8").replaceAll("\r\n", "\n") !== generated) {
     throw new Error("Generated Market design mapping is stale. Run npm run generate:design");
   }
 } else {

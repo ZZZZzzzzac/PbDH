@@ -51,8 +51,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.widthMm).toBe(63);
-    expect(result.heightMm).toBe(88);
+    expect(result.designRatio).toEqual({ width: 63, height: 88 });
     expect(result.renderInput.state).toEqual({});
     expect(result.renderer).toBe(weaponRendererRevision);
     expect(weaponRendererRevision.requiredMediaSlots).toEqual([]);
@@ -123,8 +122,9 @@ describe("weapon-card-r2 Canonical Surface", () => {
       />,
     );
     expect(markup).toContain("data-pbdh-canonical-surface");
-    expect(markup).toContain("width:63mm");
-    expect(markup).toContain("height:88mm");
+    expect(markup).toContain("width:100%");
+    expect(markup).toContain("height:auto");
+    expect(markup).toContain("aspect-ratio:63 / 88");
     expect(markup).not.toContain("weapon-card");
   });
 

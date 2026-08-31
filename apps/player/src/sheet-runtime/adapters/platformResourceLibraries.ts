@@ -137,7 +137,7 @@ function toSheetResourceEntry(
     __pbdhResourceCopy: {
       source: { packageId, resourceId: resource.id },
       template: structuredClone(resource.template),
-      presentation: structuredClone(resource.presentation),
+      presentation: { width: "63", height: "88", unit: "mm", ...structuredClone(resource.presentation) },
       data: structuredClone(data),
       labels: [],
       media: structuredClone(resource.media),

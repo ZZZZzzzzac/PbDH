@@ -261,8 +261,8 @@ export async function buildCanonicalCardCoverSvg<TData, TState>(
   if (prepared.status !== "ready") {
     throw new Error(prepared.diagnostics.map((item) => item.code).join(", ") || "renderer.cover.unavailable");
   }
-  const cssWidth = prepared.widthMm * cssPixelsPerMillimetre;
-  const cssHeight = prepared.heightMm * cssPixelsPerMillimetre;
+  const cssWidth = 63 * cssPixelsPerMillimetre;
+  const cssHeight = 88 * cssPixelsPerMillimetre;
   const { renderToStaticMarkup } = await import("react-dom/server");
   const markup = renderToStaticMarkup(<>
     <style>{boundaryStyles}</style>
@@ -348,8 +348,6 @@ export function CanonicalCardSurface<TData, TState>(
     setShadowRoot(hostRef.current.shadowRoot ?? hostRef.current.attachShadow({ mode: "open" }));
   }, []);
 
-  const width = prepared.widthMm ?? 63;
-  const height = prepared.heightMm ?? 88;
   const fixedRatio = props.resource.presentation.fixedRatio;
   const rendererResetKey = JSON.stringify([
     props.expectedRendererRevision,
@@ -370,7 +368,7 @@ export function CanonicalCardSurface<TData, TState>(
       ref={hostRef}
       data-pbdh-canonical-surface=""
       aria-label={props.label ?? "Canonical Card Surface"}
-      style={{ display: "block", width: `${width}mm`, height: fixedRatio ? `${height}mm` : "auto" }}
+      style={{ display: "block", width: "100%", height: "auto", aspectRatio: fixedRatio ? "63 / 88" : undefined }}
     >
       {shadowRoot && createPortal(
         <>

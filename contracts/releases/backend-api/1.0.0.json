@@ -1,0 +1,23 @@
+{
+  "$schema": "../../release.schema.json",
+  "family": "backend-api",
+  "version": "1.0.0",
+  "schema": "backend-api/1.0.0/openapi.json",
+  "schemaSha256": "sha256:6d5320db95015120118e7a31d8340e621eb6a585c39c8083ec7461f46dadeb43",
+  "reviewedAt": "2026-08-31",
+  "conformance": [
+    "conformance/backend-api/1.0.0/cases.json"
+  ],
+  "producerTests": [
+    "tests/contracts/test_backend_api.py",
+    "tests/backend/test_cloud_documents.py",
+    "tests/backend/test_identity.py",
+    "tests/backend/test_publications.py"
+  ],
+  "consumerTests": [
+    "tests/contracts/backend-api.test.ts",
+    "tests/creator/publication-api.test.ts",
+    "tests/market/market-api.test.ts"
+  ],
+  "implementations": ["typescript", "python"]
+}

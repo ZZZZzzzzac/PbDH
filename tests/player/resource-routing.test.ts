@@ -16,10 +16,10 @@ function readJson<T>(relativePath: string): T {
 }
 
 const system = readJson<SystemPackageDocument>(
-  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
+  "apps/player/public/system-packages/daggerheart-core/system.json",
 );
 const resourcePackage = readJson<ResourcePackageLogicalDocument>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 );
 
 function routeWithTargets(targets: ResourcePackageLogicalDocument["targets"]) {
@@ -66,7 +66,8 @@ describe("Player Resource Compatibility routing", () => {
 
   test("falls back when target matches but Template compatibility does not", () => {
     const incompatible = structuredClone(system);
-    incompatible.resourceCompatibility[0]!.versionRange = {
+    const weaponCompatibility = incompatible.resourceCompatibility.find((item) => item.templateId === "武器")!;
+    weaponCompatibility.versionRange = {
       minimumInclusive: "2.0.0",
       maximumExclusive: "3.0.0",
     };

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from pbdh_backend.database import Database
+from pbdh_backend.media import InvalidWebP, validate_normalized_webp
 
 
 class CloudDocumentNotFound(Exception):
@@ -40,6 +41,10 @@ class CloudDocumentRepository:
 
     def prepare_media(self, asset_id: str, media_type: str, content: bytes) -> dict[str, object]:
         expected = f"sha256:{hashlib.sha256(content).hexdigest()}"
+        try:
+            validate_normalized_webp(content)
+        except InvalidWebP:
+            raise CloudMediaInvalid(asset_id) from None
         if asset_id != expected or media_type != "image/webp":
             raise CloudMediaInvalid(asset_id)
         connection = self._database.connect()

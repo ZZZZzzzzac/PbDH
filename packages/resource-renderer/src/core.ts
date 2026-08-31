@@ -11,9 +11,6 @@ export type ManagedAsset =
   | { status: "error"; reason: string };
 
 export type SurfacePresentation = {
-  width: string;
-  height: string;
-  unit: "mm";
   mode: "text" | "split" | "image";
   fixedRatio: boolean;
 };
@@ -46,8 +43,7 @@ export type RendererRevisionCapability<TData, TState, TOutput> = {
 export type SurfaceReady<TData, TState, TOutput> = {
   status: "ready";
   diagnostics: [];
-  widthMm: number;
-  heightMm: number;
+  designRatio: { width: 63; height: 88 } | null;
   renderer: RendererRevisionCapability<TData, TState, TOutput>;
   renderInput: {
     data: TData;
@@ -61,8 +57,7 @@ export type SurfaceReady<TData, TState, TOutput> = {
 export type SurfaceUnavailable = {
   status: "loading" | "error";
   diagnostics: RendererDiagnostic[];
-  widthMm: number | null;
-  heightMm: number | null;
+  designRatio: { width: 63; height: 88 } | null;
 };
 
 export type SurfacePreparation<TData, TState, TOutput> =
@@ -107,31 +102,20 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
   state?: unknown;
   onStateCommand?: (commandId: string, value: string) => void;
 }): SurfacePreparation<TData, TState, TOutput> {
-  const sourceWidth = Number(input.resource.presentation.width);
-  const sourceHeight = Number(input.resource.presentation.height);
-  const validWidth = Number.isFinite(sourceWidth) && sourceWidth > 0;
-  const validHeight = Number.isFinite(sourceHeight) && sourceHeight > 0;
   const diagnostics: RendererDiagnostic[] = [];
   const presentation = input.resource.presentation;
-  const widthMm = validWidth ? sourceWidth : null;
-  const heightMm = validHeight ? sourceHeight : null;
+  const designRatio = presentation.fixedRatio ? { width: 63, height: 88 } as const : null;
   const validMode = presentation.mode === "text"
     || presentation.mode === "split"
     || presentation.mode === "image";
-  const validCanonicalSize = presentation.width === "63"
-    && (!presentation.fixedRatio || presentation.height === "88");
-  if (presentation.unit !== "mm" || !validWidth || !validHeight
-    || !validMode || typeof presentation.fixedRatio !== "boolean" || !validCanonicalSize) {
+  if (!validMode || typeof presentation.fixedRatio !== "boolean") {
     diagnostics.push(diagnostic(
       "renderer.presentation.invalid",
       "error",
       "/presentation",
       {
         fixedRatio: presentation.fixedRatio,
-        height: presentation.height,
         mode: presentation.mode,
-        unit: presentation.unit,
-        width: presentation.width,
       },
     ));
   }
@@ -142,7 +126,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
       "/template",
       { revision: input.expectedRendererRevision },
     ));
-    return { status: "error", diagnostics, widthMm, heightMm };
+    return { status: "error", diagnostics, designRatio };
   }
   if (
     input.renderer.revision !== input.expectedRendererRevision
@@ -219,14 +203,13 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
     ));
   }
   if (diagnostics.some((item) => item.severity === "error")) {
-    return { status: "error", diagnostics, widthMm, heightMm };
+    return { status: "error", diagnostics, designRatio };
   }
-  if (loading) return { status: "loading", diagnostics, widthMm, heightMm };
+  if (loading) return { status: "loading", diagnostics, designRatio };
   return {
     status: "ready",
     diagnostics: [],
-    widthMm: widthMm!,
-    heightMm: heightMm!,
+    designRatio,
     renderer: input.renderer,
     renderInput: {
       data: input.resource.data,

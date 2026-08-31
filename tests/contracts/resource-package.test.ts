@@ -15,7 +15,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureProfiles = ["1.0.0-alpha.1", "1.0.0"].map((version) => ({
+const fixtureProfiles = ["1.0.0"].map((version) => ({
   version,
   fixtureRoot: `contracts/conformance/resource-package/${version}`,
 }));
@@ -30,7 +30,7 @@ type Mutation =
   | { kind: "duplicate-resource"; sourceIndex: number }
   | { kind: "add-root-property"; property: string; value: string }
   | { kind: "set-target-version"; targetIndex: number; value: string }
-  | { kind: "set-presentation-size"; resourceIndex: number; width?: string; height?: string; fixedRatio?: boolean }
+  | { kind: "set-presentation-property"; resourceIndex: number; property: string; value: unknown }
   | { kind: "set-replacements"; resourceIndex: number; value: Array<{ replacementId: string; targetResourceId: string }> };
 type ConformanceCase = {
   name: string;
@@ -84,11 +84,9 @@ function applyMutation(
     case "set-target-version":
       candidate.targets[mutation.targetIndex]!.version = mutation.value;
       break;
-    case "set-presentation-size": {
-      const presentation = candidate.resources[mutation.resourceIndex]!.presentation;
-      if (mutation.width !== undefined) presentation.width = mutation.width;
-      if (mutation.height !== undefined) presentation.height = mutation.height;
-      if (mutation.fixedRatio !== undefined) presentation.fixedRatio = mutation.fixedRatio;
+    case "set-presentation-property": {
+      const presentation = candidate.resources[mutation.resourceIndex]!.presentation as unknown as Record<string, unknown>;
+      presentation[mutation.property] = mutation.value;
       break;
     }
     case "set-replacements":

@@ -13,6 +13,21 @@ from pbdh_backend.settings import Settings
 ROOT = Path(__file__).parents[2]
 
 
+def webp(marker: int = 0) -> bytes:
+    names = [
+        "a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+        "0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
+    ]
+    return (ROOT / "contracts/conformance/resource-package/1.0.0/media" / names[marker]).read_bytes()
+
+
+def minimal_webp(width: int, height: int) -> bytes:
+    bits = (width - 1) | ((height - 1) << 14)
+    chunk = b"\x2f" + bits.to_bytes(4, "little")
+    payload = b"WEBP" + b"VP8L" + len(chunk).to_bytes(4, "little") + chunk + b"\x00"
+    return b"RIFF" + len(payload).to_bytes(4, "little") + payload
+
+
 class FakeTokenVerifier:
     def verify(self, token: str) -> VerifiedIdentity:
         if not token.startswith("token:"):
@@ -68,7 +83,7 @@ def test_cloud_document_requires_media_before_atomic_revision_commit(tmp_path: P
     owner = claim(api, "author-one")
     outsider = claim(api, "author-two")
     document_id = "workspace-1"
-    media = b"normalized-webp"
+    media = webp()
     asset_id = f"sha256:{hashlib.sha256(media).hexdigest()}"
     write = document_write("mutation-1", "creator-workspace", {"name": "荒野遭遇集"}, [asset_id], None)
 
@@ -103,6 +118,41 @@ def test_cloud_document_requires_media_before_atomic_revision_commit(tmp_path: P
         f"/api/cloud/documents/{document_id}/media/{asset_id}",
         headers=outsider,
     ).status_code == 404
+
+
+def test_cloud_media_rejects_invalid_or_oversized_webp_before_storage(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "media-author")
+    invalid = b"not-webp"
+    invalid_id = f"sha256:{hashlib.sha256(invalid).hexdigest()}"
+
+    malformed = api.put(
+        f"/api/cloud/media/{invalid_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=invalid,
+    )
+    assert malformed.status_code == 422
+    assert malformed.json()["error"]["code"] == "CLOUD_MEDIA_INVALID"
+
+    oversized = webp() + bytes(2 * 1024 * 1024)
+    oversized_id = f"sha256:{hashlib.sha256(oversized).hexdigest()}"
+    too_large = api.put(
+        f"/api/cloud/media/{oversized_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=oversized,
+    )
+    assert too_large.status_code == 413
+    assert too_large.json()["error"]["code"] == "CLOUD_MEDIA_TOO_LARGE"
+
+    wrong_width = minimal_webp(629, 880)
+    wrong_width_id = f"sha256:{hashlib.sha256(wrong_width).hexdigest()}"
+    wrong_dimensions = api.put(
+        f"/api/cloud/media/{wrong_width_id}",
+        headers={**owner, "Content-Type": "image/webp"},
+        content=wrong_width,
+    )
+    assert wrong_dimensions.status_code == 422
+    assert wrong_dimensions.json()["error"]["code"] == "CLOUD_MEDIA_INVALID"
 
 
 def test_cloud_document_mutations_are_idempotent_and_conflicts_are_explicit(tmp_path: Path) -> None:
@@ -188,7 +238,7 @@ def test_cloud_documents_keep_kinds_revisions_and_recycle_bin_independent(tmp_pa
 def test_cloud_document_permanent_delete_requires_trash_and_releases_media_reference(tmp_path: Path) -> None:
     api = client(tmp_path)
     owner = claim(api, "author-one")
-    media = b"tabletop-webp"
+    media = webp()
     asset_id = f"sha256:{hashlib.sha256(media).hexdigest()}"
     assert api.put(
         f"/api/cloud/media/{asset_id}",

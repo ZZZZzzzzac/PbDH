@@ -31,6 +31,7 @@ from pbdh_backend.publications.service import (
     PublicationService,
     PublicationValidationError,
 )
+from pbdh_backend.media import InvalidWebP, MAX_WEBP_BYTES, webp_dimensions
 from pbdh_backend.settings import Settings
 
 
@@ -210,14 +211,17 @@ async def update_publication_information_with_cover(
         parsed = PublicationInformation.model_validate(json.loads(information))
     except (json.JSONDecodeError, ValidationError) as error:
         raise ApiError(422, "PUBLICATION_INFORMATION_INVALID", "资源包信息不完整或格式错误。") from error
-    cover_bytes = await cover.read()
+    cover_bytes = await cover.read(MAX_WEBP_BYTES + 1)
+    try:
+        cover_dimensions = webp_dimensions(cover_bytes)
+    except InvalidWebP:
+        cover_dimensions = None
     if (
         cover.content_type != "image/webp"
-        or not cover_bytes.startswith(b"RIFF")
-        or cover_bytes[8:12] != b"WEBP"
-        or len(cover_bytes) > 5 * 1024 * 1024
+        or len(cover_bytes) > MAX_WEBP_BYTES
+        or cover_dimensions != (630, 880)
     ):
-        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面必须是有效且不超过 5 MB 的 WebP 图片。")
+        raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面必须是 630×880 且不超过 2 MB 的 WebP 图片。")
     cover_asset_id = f"sha256:{hashlib.sha256(cover_bytes).hexdigest()}"
     if parsed.cover_asset_id != cover_asset_id:
         raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面内容与图片编号不一致。")

@@ -172,8 +172,8 @@ function PlayerResourcePreviewContent({
   const name = resourceName(resource);
   const renderer = trustedRendererFor(resource.template.id, resource.template.version);
   return <CardPreviewDialog
-    width={Number(resource.presentation.width)}
-    height={Number(resource.presentation.height)}
+    width={63}
+    height={88}
     fixedRatio={resource.presentation.fixedRatio}
     label={`${name}资源详情`}
     onClose={onClose}

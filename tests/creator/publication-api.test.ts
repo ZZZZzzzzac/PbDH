@@ -7,9 +7,57 @@ import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
   publishCandidate,
+  suggestPublishVersion,
 } from "../../apps/creator/src/workspace-prototype/publication-api.ts";
 
 describe("Creator publication API", () => {
+  const credentials: PlatformCredentials = {
+    accountId: "account",
+    accessToken: "token",
+    siteSessionId: "session",
+    canWrite: true,
+  };
+
+  test("defaults a new Resource Package to 1.0.0", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      publications: [],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+
+    await expect(suggestPublishVersion(
+      minotaurPackage as unknown as ResourcePackageLogicalDocument,
+      credentials,
+      fetcher,
+    )).resolves.toBe("1.0.0");
+    expect(fetcher).toHaveBeenCalledWith("/api/publications/manageable", {
+      headers: {
+        Authorization: "Bearer token",
+        "X-PbDH-Session": "session",
+      },
+    });
+  });
+
+  test("fills the computed minimum version from the current Market snapshot", async () => {
+    const previous = structuredClone(minotaurPackage) as unknown as ResourcePackageLogicalDocument;
+    const current = structuredClone(previous);
+    current.package.version = "9.9.9";
+    current.package.description = "修改后的说明";
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        publications: [{ publicationId: "publication-1", packageId: previous.package.id }],
+      }), { status: 200, headers: { "content-type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        publication: { document: previous },
+      }), { status: 200, headers: { "content-type": "application/json" } }));
+
+    await expect(suggestPublishVersion(current, credentials, fetcher)).resolves.toBe("1.0.1");
+    expect(fetcher).toHaveBeenLastCalledWith("/api/publications/publication-1/manage", {
+      headers: {
+        Authorization: "Bearer token",
+        "X-PbDH-Session": "session",
+      },
+    });
+  });
+
   test("preserves backend field errors instead of hiding validation details", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
       schemaVersion: "1.0.0",
@@ -32,13 +80,6 @@ describe("Creator publication API", () => {
         import.meta.url,
       ))),
     ]));
-    const credentials: PlatformCredentials = {
-      accountId: "account",
-      accessToken: "token",
-      siteSessionId: "session",
-      canWrite: true,
-    };
-
     await expect(publishCandidate({
       document,
       media,

@@ -27,7 +27,7 @@ export const subclassTemplate = deepFreeze<TemplateCoreCapability<SubclassData>>
     return { title, summary, searchText };
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
-  defaultPresentation: { width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true },
+  defaultPresentation: { mode: "text", fixedRatio: true },
   rendererRevision: "subclass-card-r1",
   tabletop: {
     stateSchema: { type: "object", properties: {}, additionalProperties: false },

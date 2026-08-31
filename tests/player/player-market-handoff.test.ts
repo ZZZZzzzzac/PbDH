@@ -24,11 +24,11 @@ import { commitResourcePackageInstall } from "../../apps/player/src/resources/re
 const root = process.cwd();
 const document = JSON.parse(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 ), "utf8")) as ResourcePackageLogicalDocument;
 const system = JSON.parse(readFileSync(path.join(
   root,
-  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
+  "apps/player/public/system-packages/daggerheart-core/system.json",
 ), "utf8")) as SystemPackageDocument;
 const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
   dependencies: [{
@@ -51,16 +51,16 @@ const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSyst
 const asset = document.assets[0]!;
 const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+  "contracts/conformance/resource-package/1.0.0/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
 )))]]);
 const bytes = writePbres(document, media);
 const adversaryDocument = JSON.parse(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
+  "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json",
 ), "utf8")) as ResourcePackageLogicalDocument;
 const adversaryBytes = new Uint8Array(readFileSync(path.join(
   root,
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.pbres",
+  "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
 )));
 const handoff: PlayerMarketHandoff = {
   target: "player",

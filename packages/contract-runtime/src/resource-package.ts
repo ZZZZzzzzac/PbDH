@@ -2,7 +2,6 @@ import type { ContractDiagnostic } from "./index.ts";
 
 const FAMILY = "resource-package";
 export const RESOURCE_PACKAGE_VERSION = "1.0.0";
-export const LEGACY_RESOURCE_PACKAGE_VERSION = "1.0.0-alpha.1";
 const DIGEST_DOMAIN = "pbdh-resource-package-digest-v1";
 const VERSION_CONTENT_DOMAIN = "pbdh-resource-package-version-content-v1";
 
@@ -14,7 +13,7 @@ export type ResourceReplacement = {
 };
 
 export type ResourcePackageLogicalDocument = {
-  contractVersion: typeof RESOURCE_PACKAGE_VERSION | typeof LEGACY_RESOURCE_PACKAGE_VERSION;
+  contractVersion: typeof RESOURCE_PACKAGE_VERSION;
   package: {
     id: string;
     version: string;
@@ -50,9 +49,6 @@ export type ResourcePackageLogicalDocument = {
 };
 
 export type ResourcePresentation = {
-  width: string;
-  height: string;
-  unit: "mm";
   mode: "text" | "split" | "image";
   fixedRatio: boolean;
 };

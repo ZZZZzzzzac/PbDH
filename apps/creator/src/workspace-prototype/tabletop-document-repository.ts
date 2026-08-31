@@ -1,5 +1,4 @@
 import {
-  LEGACY_TABLETOP_DOCUMENT_VERSION,
   TABLETOP_DOCUMENT_VERSION,
   type TabletopDocument,
   type TabletopDocumentCandidate,
@@ -18,6 +17,8 @@ import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
 
+export const gmTabletopBaseCardWidth = 250;
+
 function toContract(
   model: TabletopDocumentModel,
   createdAt: string,
@@ -32,7 +33,18 @@ function toContract(
     canvas: structuredClone(model.canvas),
     instances: model.instances.map((instance) => ({
       instanceId: instance.id,
-      resourceCopy: structuredClone(instance.resource),
+      resourceCopy: {
+        source: structuredClone(instance.resource.source),
+        template: structuredClone(instance.resource.template),
+        presentation: {
+          mode: instance.resource.presentation.mode,
+          fixedRatio: instance.resource.presentation.fixedRatio,
+        },
+        data: structuredClone(instance.resource.data),
+        labels: structuredClone(instance.resource.labels),
+        replacements: structuredClone(instance.resource.replacements),
+        media: structuredClone(instance.resource.media),
+      },
       state: structuredClone(instance.state),
       geometry: {
         x: instance.position.x,
@@ -40,7 +52,7 @@ function toContract(
         layer: instance.layer,
         rotation: instance.rotation,
         flipped: instance.flipped,
-        scale: instance.scale,
+        width: gmTabletopBaseCardWidth * instance.scale,
       },
     })),
     assets: structuredClone(model.assets),
@@ -56,14 +68,21 @@ function toModel(document: TabletopDocument): TabletopDocumentModel {
       id: instance.instanceId,
       resource: {
         ...structuredClone(instance.resourceCopy),
+        presentation: {
+          width: instance.resourceCopy.presentation.width ?? "63",
+          height: instance.resourceCopy.presentation.height ?? "88",
+          unit: instance.resourceCopy.presentation.unit ?? "mm",
+          mode: instance.resourceCopy.presentation.mode,
+          fixedRatio: instance.resourceCopy.presentation.fixedRatio,
+        },
         replacements: structuredClone(instance.resourceCopy.replacements ?? []),
       },
-      state: structuredClone(instance.state),
+      state: structuredClone(instance.state) as Record<string, string>,
       position: { x: instance.geometry.x, y: instance.geometry.y },
       layer: instance.geometry.layer,
       rotation: instance.geometry.rotation,
       flipped: instance.geometry.flipped,
-      scale: instance.geometry.scale,
+      scale: instance.geometry.width / gmTabletopBaseCardWidth,
     })),
     assets: structuredClone(document.assets),
   };
@@ -272,8 +291,7 @@ export class TabletopDocumentRepository {
   ): Promise<StoredTabletopDocument> {
     if (remote.documentKind !== "gm-tabletop-document"
       || remote.contractFamily !== "tabletop-document"
-      || (remote.contractVersion !== TABLETOP_DOCUMENT_VERSION
-        && remote.contractVersion !== LEGACY_TABLETOP_DOCUMENT_VERSION)
+      || remote.contractVersion !== TABLETOP_DOCUMENT_VERSION
       || remote.deletedAt !== null) {
       throw new Error("云端 GM 桌面格式无效。");
     }

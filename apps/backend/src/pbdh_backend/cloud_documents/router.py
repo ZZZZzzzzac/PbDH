@@ -15,6 +15,7 @@ from pbdh_backend.cloud_documents.repository import (
     CloudMediaInvalid,
     CloudMediaNotReady,
 )
+from pbdh_backend.media import MAX_WEBP_BYTES
 from pbdh_backend.identity.router import AuthenticatedAccount, active_account
 
 
@@ -58,11 +59,16 @@ async def prepare_media(
     cloud_repository: CloudDocumentRepository = Depends(repository),
 ) -> dict[str, object]:
     media_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-    content = await request.body()
+    chunks = bytearray()
+    async for chunk in request.stream():
+        if len(chunks) + len(chunk) > MAX_WEBP_BYTES:
+            raise ApiError(413, "CLOUD_MEDIA_TOO_LARGE", "媒体不得超过 2 MB。")
+        chunks.extend(chunk)
+    content = bytes(chunks)
     try:
         return cloud_repository.prepare_media(asset_id, media_type, content)
     except CloudMediaInvalid as error:
-        raise ApiError(422, "CLOUD_MEDIA_INVALID", "媒体必须是与 Asset ID 匹配的 WebP。") from error
+        raise ApiError(422, "CLOUD_MEDIA_INVALID", "媒体必须是宽 630px、内容与 Asset ID 匹配的 WebP。") from error
 
 
 @router.get("/documents")

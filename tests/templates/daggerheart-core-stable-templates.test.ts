@@ -69,7 +69,7 @@ describe("Daggerheart Core 剩余稳定 Templates", () => {
 
   test.each(cases)("%s@1.0.0 是唯一版本并提供完整作者与渲染能力", (template, layout, rendererFor) => {
     expect(templateRegistry.resolve(template.id, "1.0.0")).toBe(template);
-    expect(templateRegistry.resolve(template.id, "0.0.0-dev.1")).toBeUndefined();
+    expect(templateRegistry.resolve(template.id, "0.9.0")).toBeUndefined();
     expect(layout.templateId).toBe(template.id);
     expect(layout.templateVersion).toBe(template.version);
 
@@ -81,7 +81,7 @@ describe("Daggerheart Core 剩余稳定 Templates", () => {
     expect(authoringFields).toEqual(schemaFields);
 
     expect(rendererFor("1.0.0").revision).toBe(template.rendererRevision);
-    expect(() => rendererFor("0.0.0-dev.1")).toThrow();
+    expect(() => rendererFor("0.9.0")).toThrow();
   });
 
   test("共享 conformance fixture 覆盖六类稳定 Schema", () => {

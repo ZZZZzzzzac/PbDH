@@ -6,11 +6,12 @@ import type { CharacterSaveDocument, ResourcePackageLogicalDocument } from "@pbd
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 
 import fixtureJson from "../../contracts/conformance/character-save/1.0.0/valid/module-state.json";
-import weaponPackageJson from "../../contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json";
+import weaponPackageJson from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json";
 import {
   CharacterSaveRepository,
   createCharacterSave,
 } from "../../apps/player/src/character-saves/character-save-repository.ts";
+import { validateCharacterSaveCandidate } from "../../apps/player/src/character-saves/character-save-validator.ts";
 import { DexieResourcePackageRepository } from "../../apps/player/src/resources/resource-package-repository.ts";
 
 const databases: PbDHLocalDatabase[] = [];
@@ -29,6 +30,11 @@ afterEach(async () => {
 });
 
 describe("CharacterSaveRepository", () => {
+  test("正式入口拒绝不受支持的旧 Character Save Contract", async () => {
+    const diagnostics = await validateCharacterSaveCandidate({ contractVersion: "0.9.0" } as never, new Map());
+    expect(diagnostics[0]?.code).toBe("contract.version.unsupported");
+  });
+
   test("restores final weapon fields and a self-contained tabletop after a local restart", async () => {
     const store = new DexieLocalDocumentStore(database());
     const source = new CharacterSaveRepository(store, () => "2026-08-26T08:06:00.000Z");
@@ -73,7 +79,7 @@ describe("CharacterSaveRepository", () => {
       name: "新人物",
       systemPackage: {
         id: "01a0132c-4eef-7703-94ac-ec8d1a660001",
-        version: "1.0.0-alpha.1",
+        version: "1.0.0",
       },
       characterDataVersion: "1.0.0",
       documentId: "01989f4e-7b2c-7000-8000-000000000046",
@@ -118,7 +124,7 @@ describe("CharacterSaveRepository", () => {
   test("moves a local Character Save through the shared recoverable trash lifecycle", async () => {
     const repository = new CharacterSaveRepository(
       new DexieLocalDocumentStore(database()),
-      () => "2026-08-20T10:00:00.000Z",
+      () => "2026-08-27T10:00:00.000Z",
     );
     const document = structuredClone(fixtureJson) as CharacterSaveDocument;
     await repository.save(document, new Map());
@@ -127,8 +133,8 @@ describe("CharacterSaveRepository", () => {
     expect(await repository.list()).toEqual([]);
     expect(await repository.listTrash()).toMatchObject([{
       document: { documentId: document.documentId },
-      deletedAt: "2026-08-20T10:00:00.000Z",
-      purgeAfter: "2026-09-19T10:00:00.000Z",
+      deletedAt: "2026-08-27T10:00:00.000Z",
+      purgeAfter: "2026-09-26T10:00:00.000Z",
     }]);
 
     const restored = await repository.restore(document.documentId);

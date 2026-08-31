@@ -1,9 +1,6 @@
 import {
   CHARACTER_SAVE_VERSION,
-  CHARACTER_SAVE_ALPHA1_VERSION,
-  migrateCharacterSaveAlpha1,
   selectCharacterSavePlayerMedia,
-  type AnyCharacterSaveDocument,
   type CharacterData,
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
@@ -86,7 +83,7 @@ export class CharacterSaveRepository {
     for (const envelope of envelopes) {
       const media = await this.#store.getMedia(envelope.assetIds);
       const candidate = await normalizeValid(
-        envelope.payload as unknown as AnyCharacterSaveDocument,
+        envelope.payload,
         media,
         "Invalid stored Character Save",
       );
@@ -165,13 +162,12 @@ export class CharacterSaveRepository {
   ): Promise<StoredCharacterSave> {
     if (remote.documentKind !== "character-save"
       || remote.contractFamily !== "character-save"
-      || (remote.contractVersion !== CHARACTER_SAVE_VERSION
-        && remote.contractVersion !== CHARACTER_SAVE_ALPHA1_VERSION)
+      || remote.contractVersion !== CHARACTER_SAVE_VERSION
       || remote.deletedAt !== null) {
       throw new Error("云端人物存档格式无效。");
     }
     const candidate = await normalizeValid(
-      remote.payload as AnyCharacterSaveDocument,
+      remote.payload as CharacterSaveDocument,
       media,
       "云端人物存档无效",
     );
@@ -207,7 +203,7 @@ export class CharacterSaveRepository {
     for (const envelope of envelopes) {
       const media = await this.#store.getMedia(envelope.assetIds);
       const candidate = await normalizeValid(
-        envelope.payload as AnyCharacterSaveDocument,
+        envelope.payload,
         media,
         "Invalid trashed Character Save",
       );
@@ -264,7 +260,7 @@ async function assertValid(
 }
 
 async function normalizeValid(
-  source: AnyCharacterSaveDocument,
+  source: CharacterSaveDocument,
   media: ReadonlyMap<string, Uint8Array>,
   prefix: string,
 ): Promise<CharacterSaveCandidate> {
@@ -272,16 +268,7 @@ async function normalizeValid(
   if (diagnostics.some((item) => item.severity === "error")) {
     throw new Error(`${prefix}: ${diagnostics[0]!.code}`);
   }
-  if (source.contractVersion === CHARACTER_SAVE_VERSION) {
-    return { document: structuredClone(source), media: new Map(media) };
-  }
-  const migrated = migrateCharacterSaveAlpha1(source);
-  if (!migrated.document) {
-    throw new Error(`${prefix}: ${migrated.diagnostics[0]?.code ?? "character-save.migration.failed"}`);
-  }
-  const playerMedia = selectCharacterSavePlayerMedia(migrated.document, media);
-  await assertValid(migrated.document, playerMedia, prefix);
-  return { document: migrated.document, media: playerMedia };
+  return { document: structuredClone(source), media: new Map(media) };
 }
 
 function sameCharacterSaveContent(

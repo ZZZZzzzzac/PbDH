@@ -17,7 +17,7 @@ const validate = ajv.compile(armorTemplate.schema as AnySchema);
 describe("护甲 Template 1.0.0", () => {
   test("registers the sole supported development capability", () => {
     expect(templateRegistry.resolve("护甲", "1.0.0")).toBe(armorTemplate);
-    expect(templateRegistry.resolve("护甲", "0.0.0-dev.1")).toBeUndefined();
+    expect(templateRegistry.resolve("护甲", "0.9.0")).toBeUndefined();
     expect(armorTemplate.state).toBe("development");
     expect(armorTemplate.rendererRevision).toBe("armor-card-r1");
   });

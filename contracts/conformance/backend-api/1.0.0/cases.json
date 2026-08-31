@@ -1,0 +1,40 @@
+{
+  "contractVersion": "1.0.0",
+  "operations": [
+    ["GET", "/api/auth/config", "auth_config"],
+    ["GET", "/api/auth/me", "me"],
+    ["PUT", "/api/auth/profile/username", "set_username"],
+    ["DELETE", "/api/auth/session", "release_session"],
+    ["POST", "/api/auth/session/claim", "claim_session"],
+    ["GET", "/api/auth/session/status", "session_status"],
+    ["GET", "/api/cloud/documents", "list_documents"],
+    ["DELETE", "/api/cloud/documents/{document_id}", "delete_document"],
+    ["GET", "/api/cloud/documents/{document_id}", "get_document"],
+    ["PUT", "/api/cloud/documents/{document_id}", "put_document"],
+    ["GET", "/api/cloud/documents/{document_id}/media/{asset_id}", "get_document_media"],
+    ["POST", "/api/cloud/documents/{document_id}/restore", "restore_document"],
+    ["POST", "/api/cloud/documents/{document_id}/trash", "trash_document"],
+    ["PUT", "/api/cloud/media/{asset_id}", "prepare_media"],
+    ["GET", "/api/health", "health"],
+    ["GET", "/api/publications", "list_publications"],
+    ["POST", "/api/publications", "publish"],
+    ["GET", "/api/publications/manageable", "list_manageable_publications"],
+    ["DELETE", "/api/publications/{publication_id}", "delete_publication"],
+    ["GET", "/api/publications/{publication_id}", "get_publication"],
+    ["GET", "/api/publications/{publication_id}/download", "download_publication"],
+    ["PATCH", "/api/publications/{publication_id}/information", "update_publication_information"],
+    ["PATCH", "/api/publications/{publication_id}/information-with-cover", "update_publication_information_with_cover"],
+    ["GET", "/api/publications/{publication_id}/manage", "get_manageable_publication"],
+    ["GET", "/api/publications/{publication_id}/media/{asset_id}", "get_publication_media"],
+    ["POST", "/api/publications/{publication_id}/republish", "republish_publication"],
+    ["POST", "/api/publications/{publication_id}/unpublish", "unpublish_publication"]
+  ],
+  "anonymous": [
+    "auth_config",
+    "health",
+    "list_publications",
+    "get_publication"
+  ],
+  "bearerOnly": ["claim_session", "session_status"],
+  "optionalSession": ["download_publication", "get_publication_media"]
+}

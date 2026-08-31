@@ -7,6 +7,7 @@ import { describe, expect, test } from "vitest";
 
 import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
+import { storedColumnShare } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
@@ -731,6 +732,33 @@ describe("Creator Workspace prototype state model", () => {
     expect(styles).toContain("margin-block: calc(-1 * var(--creator-body-padding))");
     expect(styles).toContain("inset-block: 0");
     expect(styles).toContain("touch-action: none");
+  });
+
+  test("uses the default workspace width only when no valid preference exists", () => {
+    const key = "pbdh.creator.columns.workspace.test";
+    const previousWindow = globalThis.window;
+    const values = new Map<string, string>();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (candidate: string) => values.get(candidate) ?? null,
+        },
+      },
+    });
+
+    try {
+      expect(storedColumnShare(key, 30, 0, 45)).toBe(30);
+      values.set(key, "0");
+      expect(storedColumnShare(key, 30, 0, 45)).toBe(0);
+      values.set(key, "invalid");
+      expect(storedColumnShare(key, 30, 0, 45)).toBe(30);
+    } finally {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: previousWindow,
+      });
+    }
   });
 
   test("uses the same searchable and filterable workspace explorer in Creator and GM", () => {

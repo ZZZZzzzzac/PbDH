@@ -1,0 +1,19 @@
+{
+  "$schema": "../../release.schema.json",
+  "family": "character-save",
+  "version": "1.0.0",
+  "schema": "character-save/1.0.0/schema.json",
+  "schemaSha256": "sha256:b2c393f9dda2d61e8c0590a5a9fa10ac4b0d5c9073ac9c768a28b2a542dca9b2",
+  "reviewedAt": "2026-08-31",
+  "conformance": [
+    "conformance/character-save/1.0.0/cases.json"
+  ],
+  "producerTests": [
+    "tests/player/character-save-repository.test.ts"
+  ],
+  "consumerTests": [
+    "tests/contracts/character-save.test.ts",
+    "tests/contracts/test_character_save.py"
+  ],
+  "implementations": ["typescript", "python"]
+}

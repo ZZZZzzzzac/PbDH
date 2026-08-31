@@ -45,10 +45,13 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
 
   it("固定卡面使用 63:88 设计比例，宿主只决定实际显示大小", async () => {
     for (const template of [adversaryTemplate, weaponTemplate, armorTemplate]) {
-      expect(template.defaultPresentation.width).toBe("63");
-      expect(template.defaultPresentation.height).toBe("88");
+      expect(template.defaultPresentation).toMatchObject({ fixedRatio: true });
+      expect(template.defaultPresentation).not.toHaveProperty("width");
+      expect(template.defaultPresentation).not.toHaveProperty("height");
     }
     const shared = await readFile("packages/resource-renderer/src/react.tsx", "utf8");
+    expect(shared).toContain('width: "100%"');
+    expect(shared).toContain('aspectRatio: fixedRatio ? "63 / 88" : undefined');
     expect(shared).toContain("const displayWidth = 480");
     expect(shared).toContain('"--pbdh-preview-width": `${displayWidth}px`');
     expect(shared).toContain("displayAspectRatio={displayAspectRatio}");

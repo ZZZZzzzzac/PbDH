@@ -3,7 +3,6 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 export {
   computeResourcePackageSnapshotDigest,
-  LEGACY_RESOURCE_PACKAGE_VERSION,
   RESOURCE_PACKAGE_VERSION,
   validateResourcePackageSemantics,
 } from "./resource-package.ts";
@@ -31,11 +30,11 @@ export {
   writeResourcePackageDirectory,
 } from "./portable-archive.ts";
 export {
-  LEGACY_TABLETOP_DOCUMENT_VERSION,
   TABLETOP_DOCUMENT_VERSION,
   validateTabletopDocumentSemantics,
 } from "./tabletop-document.ts";
 export type {
+  CharacterTabletopInstance,
   TabletopAsset,
   TabletopDocument,
   TabletopMedia,
@@ -48,18 +47,14 @@ export type {
   TabletopDocumentCandidateValidator,
 } from "./tabletop-archive.ts";
 export {
-  CHARACTER_SAVE_ALPHA1_VERSION,
   CHARACTER_SAVE_VERSION,
-  migrateCharacterSaveAlpha1,
   selectCharacterSavePlayerMedia,
   validateCharacterSaveSemantics,
 } from "./character-save.ts";
 export { loadPbcha, writePbcha } from "./character-archive.ts";
 export type { PbchaLoadResult } from "./character-archive.ts";
 export type {
-  AnyCharacterSaveDocument,
   CharacterData,
-  CharacterSaveAlpha1Document,
   CharacterSaveCandidate,
   CharacterSaveCandidateValidator,
   CharacterSaveDocument,
@@ -80,11 +75,9 @@ export {
   writeSystemPackageDirectory,
 } from "./system-package.ts";
 export type {
-  AnySystemPackageDocument,
   EmbeddedResourceIdentity,
   EmbeddedResourceAdmission,
   NormalizedSystemPackage,
-  SystemPackageAlpha2Document,
   SystemPackageDocument,
   SystemPackageLoadResult,
   SystemPackageSourceDocument,
@@ -256,6 +249,7 @@ export class ContractRuntime {
         const schema = schemas[version.schema];
         if (!schema) throw new Error(`Missing Contract schema: ${version.schema}`);
         this.#versions.set(key, version);
+        if (family.id === "backend-api") continue;
         this.#validators.set(key, ajv.compile(schema));
       }
     }
@@ -278,7 +272,7 @@ export class ContractRuntime {
     }
 
     const validator = this.#validators.get(key);
-    if (!validator) throw new Error(`Missing compiled Contract validator: ${key}`);
+    if (!validator) return [diagnostic(request, "contract.validation.not-applicable")];
     if (validator(request.candidate)) return [];
     return sortDiagnostics(
       (validator.errors ?? [])

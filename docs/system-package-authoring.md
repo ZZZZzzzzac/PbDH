@@ -48,11 +48,13 @@ module.exports = ({ fromVersion, toVersion, characterData }) => ({
 
 ## 脚本确认
 
-内置预置系统包由应用版本信任。上传或 Author Preview 的系统包若包含 Validation Check、Character Data Migration、Resource Format Adapter 或 Character Format Adapter 脚本，Player 会在打开人物或运行任何脚本前列出脚本并要求确认。
+内置预置系统包由管理员登记，并随应用版本作为可信包运行。上传或 Author Preview 的系统包若包含 Validation Check、Character Data Migration、Resource Format Adapter 或 Character Format Adapter 脚本，Player 会在打开人物或运行任何脚本前列出脚本并要求确认。
 
 确认只绑定系统包 ID、系统包版本、脚本路径、用途和 SHA-256 内容摘要。同一版本的任一脚本内容变化后会再次询问；取消不会运行脚本，也不会打开、新建或改写人物存档。
 
 脚本无法访问网络、IndexedDB、缓存、跨窗口通道或导入其他脚本，默认最长运行三秒。不要在脚本中保存密钥，也不要依赖浏览器或页面全局状态。
+
+该确认与隔离用于限制第三方脚本的能力和影响范围，不承诺抵御所有浏览器、Worker 或运行时漏洞；第三方 System Package 始终按不可信输入处理。
 
 ## 交付前检查
 

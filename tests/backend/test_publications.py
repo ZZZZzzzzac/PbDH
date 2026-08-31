@@ -414,7 +414,7 @@ def test_legacy_reference_templates_are_not_publishable(tmp_path: Path) -> None:
         document, media = candidate()
         document["resources"][0]["template"] = {
             "id": resource["template"]["id"],
-            "version": "0.0.0-dev.1",
+            "version": "0.9.0",
         }
         document["resources"][0]["data"] = copy.deepcopy(resource["data"])
         document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
@@ -445,15 +445,20 @@ def test_invalid_archive_and_unpublishable_template_leave_zero_rows(tmp_path: Pa
     assert invalid.status_code == 422
     assert invalid.json()["error"]["code"] == "PUBLICATION_CANDIDATE_INVALID"
 
-    alpha_root = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
-    alpha_document = read_json(alpha_root / "valid/minotaur-wrecker.json")
-    alpha_media = {
+    unsupported_root = ROOT / "contracts/conformance/resource-package/1.0.0"
+    unsupported_document = read_json(unsupported_root / "valid/minotaur-wrecker.json")
+    unsupported_document["resources"][0]["template"]["version"] = "0.9.0"
+    unsupported_document["snapshotDigest"] = compute_resource_package_snapshot_digest(
+        unsupported_document,
+        media,
+    )
+    unsupported_media = {
         asset["id"]: (
-            alpha_root / f"media/{asset['id'].removeprefix('sha256:')}.webp"
+            unsupported_root / f"media/{asset['id'].removeprefix('sha256:')}.webp"
         ).read_bytes()
-        for asset in alpha_document["assets"]
+        for asset in unsupported_document["assets"]
     }
-    unpublishable = publish(api, headers, alpha_document, alpha_media)
+    unpublishable = publish(api, headers, unsupported_document, unsupported_media)
     assert unpublishable.status_code == 422
     assert api.get("/api/publications").json()["publications"] == []
 
@@ -694,7 +699,11 @@ def test_author_can_replace_the_self_contained_market_cover(tmp_path: Path) -> N
     publication_id = created["publicationId"]
     original_archive = api.get(f"/api/publications/{publication_id}/download").content
     original_cover = next(iter(media.values()))
-    replacement_cover = original_cover[:12] + b"market-display-cover"
+    replacement_cover_buffer = bytearray((
+        FIXTURE_ROOT / "media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp"
+    ).read_bytes())
+    replacement_cover_buffer[-1] ^= 1
+    replacement_cover = bytes(replacement_cover_buffer)
     replacement_cover_id = f"sha256:{hashlib.sha256(replacement_cover).hexdigest()}"
     information = {
         "package": {
@@ -873,11 +882,12 @@ def test_invalid_update_preserves_current_snapshot(tmp_path: Path) -> None:
     assert unchanged["packageVersion"] == "1.0.0"
 
 
-def test_production_mode_rejects_development_contract(tmp_path: Path) -> None:
+def test_production_mode_rejects_unsupported_old_contract(tmp_path: Path) -> None:
     api = client(tmp_path, "production")
     document, media = candidate()
+    document["contractVersion"] = "0.9.0"
     response = publish(api, claim(api, "author-one"), document, media)
     assert response.status_code == 422
     field_errors = response.json()["error"]["fieldErrors"]
-    assert field_errors[0]["code"] == "contract.version.development-not-allowed"
+    assert field_errors[0]["code"] == "contract.version.unsupported"
     assert api.get("/api/publications").json()["publications"] == []

@@ -49,21 +49,11 @@
     },
     "presentation": {
       "type": "object",
-      "required": ["width", "height", "unit", "mode", "fixedRatio"],
+      "required": ["mode", "fixedRatio"],
       "properties": {
-        "width": { "type": "string", "pattern": "^[1-9][0-9]*$" },
-        "height": { "type": "string", "pattern": "^[1-9][0-9]*$" },
-        "unit": { "const": "mm" },
         "mode": { "enum": ["text", "split", "image"] },
         "fixedRatio": { "type": "boolean" }
       },
-      "allOf": [
-        { "properties": { "width": { "const": "63" } } },
-        {
-          "if": { "properties": { "fixedRatio": { "const": true } }, "required": ["fixedRatio"] },
-          "then": { "properties": { "height": { "const": "88" } } }
-        }
-      ],
       "additionalProperties": false
     },
     "stringJsonValue": {
@@ -116,14 +106,14 @@
     },
     "geometry": {
       "type": "object",
-      "required": ["x", "y", "layer", "rotation", "flipped", "scale"],
+      "required": ["x", "y", "layer", "rotation", "flipped", "width"],
       "properties": {
         "x": { "type": "number" },
         "y": { "type": "number" },
         "layer": { "type": "integer", "minimum": 0 },
         "rotation": { "type": "number" },
         "flipped": { "type": "boolean" },
-        "scale": { "type": "number", "exclusiveMinimum": 0 }
+        "width": { "type": "number", "exclusiveMinimum": 0 }
       },
       "additionalProperties": false
     },
@@ -133,7 +123,7 @@
       "properties": {
         "instanceId": { "$ref": "#/$defs/uuid" },
         "resourceCopy": { "$ref": "#/$defs/resourceCopy" },
-        "state": { "type": "object", "propertyNames": { "minLength": 1 }, "additionalProperties": { "type": "string" } },
+        "state": { "type": "object", "propertyNames": { "minLength": 1 } },
         "geometry": { "$ref": "#/$defs/geometry" }
       },
       "additionalProperties": false

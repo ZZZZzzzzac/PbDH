@@ -27,10 +27,10 @@ import type { ResourceLibrary } from "../../apps/player/src/resources/resource-l
 const packageRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
 const currentSystem = systemJson as SystemPackageDocument;
 const marketWeaponFixture = JSON.parse(await readFile(path.resolve(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 ), "utf8")) as ResourcePackageLogicalDocument;
 const marketWeaponMedia = new Uint8Array(await readFile(path.resolve(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+  "contracts/conformance/resource-package/1.0.0/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
 )));
 
 describe("Daggerheart Core Sheet Runtime 加载", () => {

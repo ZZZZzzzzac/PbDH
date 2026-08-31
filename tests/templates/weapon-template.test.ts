@@ -38,8 +38,7 @@ describe("武器 Template Core", () => {
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       weaponTemplate,
     );
-    expect(templateRegistry.resolve("武器", "1.0.0-alpha.2")).toBeUndefined();
-    expect(templateRegistry.resolve("武器", "1.0.0-alpha.1")).toBeUndefined();
+    expect(templateRegistry.resolve("武器", "0.9.0")).toBeUndefined();
   });
 
   test("validates the shared fixture and complete defaults", () => {
@@ -72,9 +71,6 @@ describe("武器 Template Core", () => {
     ]);
     expect(resource.media).toEqual({});
     expect(weaponTemplate.defaultPresentation).toEqual({
-      width: "63",
-      height: "88",
-      unit: "mm",
       mode: "text",
       fixedRatio: true,
     });

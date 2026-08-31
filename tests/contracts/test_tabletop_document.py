@@ -9,7 +9,9 @@ from pbdh_backend.contracts import ContractRuntime
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE_ROOT = ROOT / "contracts/conformance/tabletop-document/1.0.0-alpha.1"
+FIXTURE_ROOTS = [
+    ROOT / "contracts/conformance/tabletop-document/1.0.0",
+]
 
 
 def read_json(path: Path) -> Any:
@@ -23,7 +25,6 @@ SCHEMAS = {
     for family in CATALOG["families"]
     for version in family["versions"]
 }
-DOCUMENT = read_json(FIXTURE_ROOT / "valid/basic.json")
 
 
 def apply_mutation(document: dict[str, Any], mutation: dict[str, Any] | None) -> None:
@@ -40,17 +41,24 @@ def apply_mutation(document: dict[str, Any], mutation: dict[str, Any] | None) ->
 
 
 @pytest.mark.parametrize(
-    "conformance_case",
-    read_json(FIXTURE_ROOT / "cases.json"),
-    ids=lambda item: item["name"],
+    ("fixture_root", "conformance_case"),
+    [
+        (fixture_root, conformance_case)
+        for fixture_root in FIXTURE_ROOTS
+        for conformance_case in read_json(fixture_root / "cases.json")
+    ],
+    ids=lambda item: item.name if isinstance(item, Path) else item["name"],
 )
-def test_tabletop_document_schema_conformance(conformance_case: dict[str, Any]) -> None:
-    document = copy.deepcopy(DOCUMENT)
+def test_tabletop_document_schema_conformance(
+    fixture_root: Path,
+    conformance_case: dict[str, Any],
+) -> None:
+    document = copy.deepcopy(read_json(fixture_root / "valid/basic.json"))
     apply_mutation(document, conformance_case["mutation"])
     runtime = ContractRuntime(CATALOG, SCHEMAS)
     assert runtime.validate({
         "family": "tabletop-document",
-        "version": "1.0.0-alpha.1",
+        "version": document["contractVersion"],
         "mode": "development",
         "candidate": document,
     }) == conformance_case["expected"]

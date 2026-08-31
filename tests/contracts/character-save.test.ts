@@ -9,8 +9,6 @@ import {
   loadPbcha,
   validateCharacterSaveSemantics,
   writePbcha,
-  type AnyCharacterSaveDocument,
-  type CharacterSaveAlpha1Document,
   type CharacterSaveDocument,
   type CharacterSaveMedia,
   type ContractCatalog,
@@ -51,7 +49,7 @@ function mutate(source: CharacterSaveDocument, mutation: Mutation): CharacterSav
   return result as unknown as CharacterSaveDocument;
 }
 
-async function validate(document: AnyCharacterSaveDocument, media: CharacterSaveMedia = new Map()) {
+async function validate(document: CharacterSaveDocument, media: CharacterSaveMedia = new Map()) {
   const diagnostics = runtime.validate({
     family: "character-save",
     version: document.contractVersion,
@@ -111,29 +109,37 @@ describe("Character Save 1.0.0 conformance", () => {
     expect(result.diagnostics[0]?.code).toBe("character-save.archive.zip.invalid");
   });
 
-  test("reads and deterministically converts the development alpha shape", async () => {
-    const alpha = readJson<CharacterSaveAlpha1Document>(
-      "contracts/conformance/character-save/1.0.0-alpha.1/valid/weapon-and-tabletop.json",
-    );
-    alpha.characterData.tabletop.instances[0]!.state = {
-      ...alpha.characterData.tabletop.instances[0]!.state,
-      tableModuleId: "character-card-table",
-      sheetState: "配置",
-      indicators: "[]",
+  test("rejects impossible timestamps and updates before creation", async () => {
+    const impossible = structuredClone(fixture);
+    impossible.updatedAt = "2026-02-31T08:05:00.000Z";
+    await expect(validate(impossible)).resolves.toContainEqual({
+      code: "character-save.updated-at.invalid",
+      severity: "error",
+      family: "character-save",
+      version: "1.0.0",
+      location: "/updatedAt",
+      params: { value: impossible.updatedAt },
+    });
+
+    const reversed = structuredClone(fixture);
+    reversed.updatedAt = "2026-08-26T07:59:59.999Z";
+    await expect(validate(reversed)).resolves.toContainEqual({
+      code: "character-save.timestamps.out-of-order",
+      severity: "error",
+      family: "character-save",
+      version: "1.0.0",
+      location: "/updatedAt",
+      params: { createdAt: reversed.createdAt, updatedAt: reversed.updatedAt },
+    });
+  });
+
+  test("cardTable example does not duplicate card display dimensions", () => {
+    const cardTable = fixture.characterData["character-card-table"] as {
+      instances: Array<{ resourceCopy: { presentation: Record<string, unknown> } }>;
     };
-    const bytes = writePbcha(alpha as unknown as CharacterSaveDocument, new Map());
-    const result = await loadPbcha(bytes, validate);
-    expect(result.diagnostics).toEqual([]);
-    expect(result.candidate?.document).toMatchObject({
-      contractVersion: "1.0.0",
-      characterDataVersion: "1.0.0",
-      characterData: {
-        "primary-weapon-name": "**长弓**｜敏捷｜远距离｜d8+2 物理｜双手",
-        "character-card-table": { instances: [expect.objectContaining({
-          instanceId: "01989f4e-7b2c-7000-8000-000000000045",
-          state: expect.objectContaining({ value: "配置", indicators: "[]" }),
-        })] },
-      },
+    expect(cardTable.instances[0]!.resourceCopy.presentation).toEqual({
+      mode: "split",
+      fixedRatio: true,
     });
   });
 });

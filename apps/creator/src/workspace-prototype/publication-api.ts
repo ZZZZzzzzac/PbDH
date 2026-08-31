@@ -1,4 +1,9 @@
-import { writePbres } from "@pbdh/contract-runtime";
+import {
+  classifyResourcePackageVersionChange,
+  createResourcePackageVersionBaseline,
+  writePbres,
+  type ResourcePackageLogicalDocument,
+} from "@pbdh/contract-runtime";
 import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
 
 import type { PublicationCandidate } from "./publication-candidate.ts";
@@ -20,6 +25,47 @@ export type PublishedPublication = {
   created: boolean;
   idempotent: boolean;
 };
+
+type ManageablePublication = {
+  publicationId: string;
+  packageId: string;
+};
+
+export async function suggestPublishVersion(
+  document: ResourcePackageLogicalDocument,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<string> {
+  if (!credentials.canWrite) {
+    throw new PublicationApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
+  }
+  const headers = {
+    Authorization: `Bearer ${credentials.accessToken}`,
+    "X-PbDH-Session": credentials.siteSessionId,
+  };
+  const listResponse = await fetcher("/api/publications/manageable", { headers });
+  const listPayload = await readJson(listResponse);
+  if (!listResponse.ok) throw publicationResponseError(listResponse, listPayload);
+  const publications = Array.isArray(listPayload.publications)
+    ? listPayload.publications as ManageablePublication[]
+    : [];
+  const current = publications.find((publication) => publication.packageId === document.package.id);
+  if (!current) return "1.0.0";
+
+  const detailResponse = await fetcher(
+    `/api/publications/${encodeURIComponent(current.publicationId)}/manage`,
+    { headers },
+  );
+  const detailPayload = await readJson(detailResponse);
+  if (!detailResponse.ok || !isLogicalDocument(detailPayload.publication?.document)) {
+    throw publicationResponseError(detailResponse, detailPayload);
+  }
+  const classification = await classifyResourcePackageVersionChange(
+    await createResourcePackageVersionBaseline(detailPayload.publication.document),
+    document,
+  );
+  return classification.minimumVersion;
+}
 
 export async function publishCandidate(
   candidate: PublicationCandidate,
@@ -70,4 +116,43 @@ export async function publishCandidate(
     );
   }
   return { publication: payload.publication };
+}
+
+type PublicationResponsePayload = {
+  publications?: unknown;
+  publication?: { document?: unknown };
+  error?: {
+    code?: string;
+    message?: string;
+    fieldErrors?: Array<{ path?: string; code?: string; message?: string }>;
+  };
+};
+
+async function readJson(response: Response): Promise<PublicationResponsePayload> {
+  return await response.json() as PublicationResponsePayload;
+}
+
+function publicationResponseError(
+  response: Response,
+  payload: PublicationResponsePayload,
+): PublicationApiError {
+  return new PublicationApiError(
+    payload.error?.message ?? "无法读取资源包的已发布版本。",
+    payload.error?.code ?? "PUBLICATION_BASELINE_REQUEST_FAILED",
+    response.status,
+    (payload.error?.fieldErrors ?? []).map((item) => ({
+      path: item.path ?? "/publication",
+      code: item.code ?? "PUBLICATION_BASELINE_REQUEST_FAILED",
+      message: item.message ?? item.code ?? "无法读取已发布版本",
+    })),
+  );
+}
+
+function isLogicalDocument(value: unknown): value is ResourcePackageLogicalDocument {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ResourcePackageLogicalDocument>;
+  return candidate.contractVersion === "1.0.0"
+    && Boolean(candidate.package && typeof candidate.package.id === "string")
+    && Array.isArray(candidate.resources)
+    && Array.isArray(candidate.targets);
 }

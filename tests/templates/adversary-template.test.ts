@@ -38,7 +38,7 @@ describe("敌人 Template Core", () => {
     expect(templateRegistry.resolve(resource.template.id, resource.template.version)).toBe(
       adversaryTemplate,
     );
-    expect(templateRegistry.resolve("敌人", "1.0.0-alpha.1")).toBeUndefined();
+    expect(templateRegistry.resolve("敌人", "0.9.0")).toBeUndefined();
     expect(templateRegistry.resolve("敌人", "2.0.0")).toBeUndefined();
   });
 
@@ -86,9 +86,6 @@ describe("敌人 Template Core", () => {
     ]);
     expect(Object.keys(resource.media)).toEqual(["portrait"]);
     expect(adversaryTemplate.defaultPresentation).toEqual({
-      width: "63",
-      height: "88",
-      unit: "mm",
       mode: "split",
       fixedRatio: true,
     });

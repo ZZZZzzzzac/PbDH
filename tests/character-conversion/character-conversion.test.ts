@@ -2,10 +2,9 @@ import { describe, expect, test } from "vitest";
 
 import { characterConversionRegistry } from "../../apps/player/src/character-conversion/index.ts";
 import type { CharacterJsonValue } from "../../apps/player/src/character-conversion/types.ts";
-import { dhsheetCharacterEngineRead, temporaryPbchaEngineRead, zzzCharacterEngineRead } from "./upstream-engines.ts";
+import { dhsheetCharacterEngineRead, zzzCharacterEngineRead } from "./upstream-engines.ts";
 
 const encoder = new TextEncoder();
-const decoder = new TextDecoder();
 
 function jsonInput(value: CharacterJsonValue, fileName: string) {
   return { bytes: encoder.encode(JSON.stringify(value)), fileName };
@@ -48,40 +47,22 @@ const dhsheetCharacter = {
   checkedUpgrades: { tier1: {}, tier2: {}, tier3: {} },
 } satisfies CharacterJsonValue;
 
-function parsed(bytes: Uint8Array): unknown {
-  return JSON.parse(decoder.decode(bytes));
-}
-
 describe("character format engines", () => {
-  test("ZZZ -> temporary pbcha -> ZZZ preserves fields, cards, layout, and images", () => {
+  test("ZZZ import and export preserve fields, cards, layout, and images", () => {
     const imported = characterConversionRegistry.import("zzz", jsonInput(zzzCharacter, "啄页_匕首之心人物卡_zzz.json"));
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("ZZZ import failed");
-    const pbcha = characterConversionRegistry.export("pbcha", imported.character);
-    expect(pbcha.ok).toBe(true);
-    if (!pbcha.ok) throw new Error("pbcha export failed");
-    expect(temporaryPbchaEngineRead(pbcha.artifact.bytes).manifest.status).toBe("development-only");
-
-    const reopened = characterConversionRegistry.import("pbcha", { bytes: pbcha.artifact.bytes, fileName: pbcha.artifact.fileName });
-    expect(reopened.ok).toBe(true);
-    if (!reopened.ok) throw new Error("pbcha import failed");
-    const exported = characterConversionRegistry.export("zzz", reopened.character);
+    const exported = characterConversionRegistry.export("zzz", imported.character);
     expect(exported.ok).toBe(true);
     if (!exported.ok) throw new Error("ZZZ export failed");
     expect(zzzCharacterEngineRead(exported.artifact.bytes)).toEqual(zzzCharacter);
   });
 
-  test("dhsheet -> temporary pbcha -> dhsheet preserves unknown future data", () => {
+  test("dhsheet import and export preserve unknown future data", () => {
     const imported = characterConversionRegistry.import("dhsheet", jsonInput(dhsheetCharacter, "布罗克.json"));
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("dhsheet import failed");
-    const pbcha = characterConversionRegistry.export("pbcha", imported.character);
-    expect(pbcha.ok).toBe(true);
-    if (!pbcha.ok) throw new Error("pbcha export failed");
-    const reopened = characterConversionRegistry.import("pbcha", { bytes: pbcha.artifact.bytes, fileName: pbcha.artifact.fileName });
-    expect(reopened.ok).toBe(true);
-    if (!reopened.ok) throw new Error("pbcha import failed");
-    const exported = characterConversionRegistry.export("dhsheet", reopened.character);
+    const exported = characterConversionRegistry.export("dhsheet", imported.character);
     expect(exported.ok).toBe(true);
     if (!exported.ok) throw new Error("dhsheet export failed");
     expect(dhsheetCharacterEngineRead(exported.artifact.bytes)).toEqual(dhsheetCharacter);
@@ -112,19 +93,5 @@ describe("character format engines", () => {
     const result = characterConversionRegistry.import("zzz", jsonInput(dhsheetCharacter, "wrong.json"));
     expect(result.ok).toBe(false);
     expect(result.report.diagnostics[0]?.code).toBe("zzz.character.mismatch");
-  });
-
-  test("temporary pbcha never claims to be a published Character Save Contract", () => {
-    const imported = characterConversionRegistry.import("zzz", jsonInput({ ...zzzCharacter, cards: [] }, "source.json"));
-    if (!imported.ok) throw new Error("ZZZ import failed");
-    const pbcha = characterConversionRegistry.export("pbcha", imported.character);
-    if (!pbcha.ok) throw new Error("pbcha export failed");
-    const engine = temporaryPbchaEngineRead(pbcha.artifact.bytes);
-    expect(engine.manifest).toEqual({
-      family: "character-save",
-      profileVersion: "0.0.0-dev.1",
-      status: "development-only",
-    });
-    expect(() => parsed(pbcha.artifact.bytes)).toThrow();
   });
 });

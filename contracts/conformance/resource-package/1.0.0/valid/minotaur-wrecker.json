@@ -9,7 +9,7 @@
   "targets": [
     {
       "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001",
-      "version": "1.0.0-alpha.1"
+      "version": "1.0.0"
     }
   ],
   "license": {
@@ -35,9 +35,6 @@
         "version": "1.0.0"
       },
       "presentation": {
-        "width": "63",
-        "height": "88",
-        "unit": "mm",
         "mode": "split",
         "fixedRatio": true
       },
@@ -87,5 +84,5 @@
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:ef05cb7aa1ac235bd07cd29b127a95c72511b56d136cc9c5d142b163226a8f59"
+  "snapshotDigest": "sha256:2f6012cc728fd194138feafbf09ae1d40833fe94dcda73d2e301999d1f712f46"
 }

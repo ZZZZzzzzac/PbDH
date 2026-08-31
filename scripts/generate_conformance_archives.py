@@ -2,7 +2,6 @@
 
 import json
 import sys
-import zipfile
 from datetime import datetime
 from pathlib import Path
 
@@ -36,30 +35,9 @@ def write_resource_archive(resource_root: Path, name: str) -> bytes:
 
 
 def main() -> None:
-    resource_root = ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1"
-    current_resource_root = ROOT / "contracts/conformance/resource-package/1.0.0"
-    system_root = ROOT / "contracts/conformance/system-package/1.0.0-alpha.1"
-    system_directory = system_root / "valid/daggerheart"
-    embedded_path = system_directory / "resources/daggerheart-core-primary-weapon.pbres"
-    embedded_path.parent.mkdir(parents=True, exist_ok=True)
-
-    archive = write_resource_archive(resource_root, "daggerheart-core-primary-weapon")
+    resource_root = ROOT / "contracts/conformance/resource-package/1.0.0"
+    write_resource_archive(resource_root, "daggerheart-core-primary-weapon")
     write_resource_archive(resource_root, "minotaur-wrecker")
-    write_resource_archive(current_resource_root, "daggerheart-core-primary-weapon")
-    write_resource_archive(current_resource_root, "minotaur-wrecker")
-    embedded_path.write_bytes(archive)
-
-    pbsys_path = system_root / "daggerheart.pbsys"
-    with zipfile.ZipFile(pbsys_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as output:
-        for source, archive_path in [
-            (embedded_path, "resources/daggerheart-core-primary-weapon.pbres"),
-            (system_directory / "system.json", "system.json"),
-        ]:
-            info = zipfile.ZipInfo(archive_path, (2000, 1, 1, 0, 0, 0))
-            info.create_system = 3
-            info.external_attr = 0o100644 << 16
-            info.compress_type = zipfile.ZIP_DEFLATED
-            output.writestr(info, source.read_bytes())
 
 
 if __name__ == "__main__":

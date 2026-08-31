@@ -19,46 +19,37 @@
     ]
   },
   {
-    "name": "rejects non-positive instance scale",
-    "mutation": { "op": "set", "path": ["instances", 0, "geometry", "scale"], "value": 0 },
+    "name": "rejects non-positive instance width",
+    "mutation": { "op": "set", "path": ["instances", 0, "geometry", "width"], "value": 0 },
     "expected": [
       {
         "code": "contract.schema.invalid",
         "severity": "error",
         "family": "tabletop-document",
         "version": "1.0.0",
-        "location": "/instances/0/geometry/scale",
+        "location": "/instances/0/geometry/width",
         "params": { "keyword": "exclusiveMinimum" }
       }
     ]
   },
   {
-    "name": "rejects a fixed card outside the 63:88 design ratio",
-    "mutation": { "op": "set", "path": ["instances", 0, "resourceCopy", "presentation", "width"], "value": "90" },
+    "name": "rejects presentation-owned card dimensions",
+    "mutation": { "op": "set", "path": ["instances", 0, "resourceCopy", "presentation", "width"], "value": "63" },
     "expected": [
       {
-        "code": "contract.schema.const",
+        "code": "contract.schema.additional-property",
         "severity": "error",
         "family": "tabletop-document",
         "version": "1.0.0",
         "location": "/instances/0/resourceCopy/presentation/width",
-        "params": { "expected": "63" }
+        "params": { "property": "width" }
       }
     ]
   },
   {
-    "name": "rejects a fixed card with a non-88 design height",
-    "mutation": { "op": "set", "path": ["instances", 0, "resourceCopy", "presentation", "height"], "value": "142" },
-    "expected": [
-      {
-        "code": "contract.schema.const",
-        "severity": "error",
-        "family": "tabletop-document",
-        "version": "1.0.0",
-        "location": "/instances/0/resourceCopy/presentation/height",
-        "params": { "expected": "88" }
-      }
-    ]
+    "name": "accepts template-defined non-string state values",
+    "mutation": { "op": "set", "path": ["instances", 0, "state"], "value": { "counter": 2, "active": true, "details": { "note": "ready" } } },
+    "expected": []
   },
   {
     "name": "rejects hidden replacement forms",

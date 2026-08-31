@@ -1,7 +1,6 @@
 import type { ContractDiagnostic } from "./index.ts";
 
 export const TABLETOP_DOCUMENT_VERSION = "1.0.0";
-export const LEGACY_TABLETOP_DOCUMENT_VERSION = "1.0.0-alpha.1";
 
 export type TabletopAsset = {
   id: string;
@@ -15,9 +14,9 @@ export type TabletopResourceCopy = {
   source: { packageId: string; resourceId: string } | null;
   template: { id: string; version: string };
   presentation: {
-    width: string;
-    height: string;
-    unit: "mm";
+    width?: string;
+    height?: string;
+    unit?: "mm";
     mode: "text" | "split" | "image";
     fixedRatio: boolean;
   };
@@ -27,8 +26,22 @@ export type TabletopResourceCopy = {
   media: Record<string, string>;
 };
 
+export type CharacterTabletopInstance = {
+  instanceId: string;
+  resourceCopy: TabletopResourceCopy;
+  state: Record<string, string>;
+  geometry: {
+    x: number;
+    y: number;
+    layer: number;
+    rotation: number;
+    flipped: boolean;
+    scale: number;
+  };
+};
+
 export type TabletopDocument = {
-  contractVersion: typeof TABLETOP_DOCUMENT_VERSION | typeof LEGACY_TABLETOP_DOCUMENT_VERSION;
+  contractVersion: typeof TABLETOP_DOCUMENT_VERSION;
   documentId: string;
   name: string;
   createdAt: string;
@@ -37,14 +50,14 @@ export type TabletopDocument = {
   instances: Array<{
     instanceId: string;
     resourceCopy: TabletopResourceCopy;
-    state: Record<string, string>;
+    state: Record<string, unknown>;
     geometry: {
       x: number;
       y: number;
       layer: number;
       rotation: number;
       flipped: boolean;
-      scale: number;
+      width: number;
     };
   }>;
   assets: TabletopAsset[];

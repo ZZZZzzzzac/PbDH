@@ -35,9 +35,6 @@ export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
   project: (data: TData) => TemplateProjection;
   mediaSlots: readonly MediaSlot[];
   defaultPresentation: {
-    width: string;
-    height: string;
-    unit: "mm";
     mode: "text" | "split" | "image";
     fixedRatio: boolean;
   };

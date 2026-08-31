@@ -72,22 +72,6 @@ export type SystemPackageSourceDocument = {
   embeddedResources?: Array<{ path: string }>;
 };
 
-export type SystemPackageAlpha2Document = {
-  contractVersion: "1.0.0-alpha.2";
-  package: SystemPackageIdentity;
-  runtime: SystemPackageRuntime;
-  resourceCompatibility: SystemPackageResourceCompatibility[];
-  embeddedResources: Array<{
-    path: string;
-    packageId: string;
-    version: string;
-    minimumVersion: string;
-    snapshotDigest: string;
-  }>;
-};
-
-export type AnySystemPackageDocument = SystemPackageSourceDocument | SystemPackageAlpha2Document;
-
 export type SystemPackageDocument = {
   contractVersion: typeof VERSION;
   package: {
@@ -112,7 +96,7 @@ export type SystemPackageLoadResult = {
 };
 
 export type SystemPackageDocumentValidator = (
-  document: AnySystemPackageDocument,
+  document: SystemPackageSourceDocument,
 ) => ContractDiagnostic[];
 
 export type EmbeddedResourceAdmission =
@@ -128,7 +112,7 @@ export type EmbeddedResourceIdentity = {
 };
 
 export function normalizeSystemPackageDocument(
-  document: AnySystemPackageDocument,
+  document: SystemPackageSourceDocument,
 ): SystemPackageDocument {
   return {
     contractVersion: VERSION,
@@ -315,9 +299,9 @@ export async function loadSystemPackageDirectory(
   if (!root?.bytes) {
     return { candidate: null, diagnostics: [diagnostic("system-package.archive.root.missing", `/${ROOT_PATH}`)] };
   }
-  let sourceDocument: AnySystemPackageDocument;
+  let sourceDocument: SystemPackageSourceDocument;
   try {
-    sourceDocument = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(root.bytes)) as AnySystemPackageDocument;
+    sourceDocument = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(root.bytes)) as SystemPackageSourceDocument;
   } catch {
     return { candidate: null, diagnostics: [diagnostic("system-package.archive.root.invalid-json", `/${ROOT_PATH}`)] };
   }
@@ -355,24 +339,6 @@ export async function loadSystemPackageDirectory(
       });
     }
     if (!result.candidate) continue;
-    if (sourceDocument.contractVersion === "1.0.0-alpha.2") {
-      const declared = sourceDocument.embeddedResources[index];
-      const actual = result.candidate.document;
-      const mismatches = [
-        ["packageId", declared?.packageId, actual.package.id],
-        ["version", declared?.version, actual.package.version],
-        ["snapshotDigest", declared?.snapshotDigest, actual.snapshotDigest],
-      ] as const;
-      for (const [field, expected, actualValue] of mismatches) {
-        if (expected !== actualValue) {
-          diagnostics.push(diagnostic(
-            "system-package.embedded-resource.identity-mismatch",
-            `/embeddedResources/${index}/${field}`,
-            { actual: actualValue, expected },
-          ));
-        }
-      }
-    }
     embeddedResources.set(embedded.path, result.candidate);
   }
   if (diagnostics.some((item) => item.severity === "error")) {

@@ -1,75 +1,5 @@
 [
   {
-    "name": "development boundary accepts prerelease",
-    "request": {
-      "family": "resource-package",
-      "version": "0.0.0-dev.1",
-      "mode": "development",
-      "candidate": {
-        "contractVersion": "0.0.0-dev.1",
-        "payload": "candidate"
-      }
-    },
-    "expected": []
-  },
-  {
-    "name": "production boundary rejects prerelease",
-    "request": {
-      "family": "resource-package",
-      "version": "0.0.0-dev.1",
-      "mode": "production",
-      "candidate": {
-        "contractVersion": "0.0.0-dev.1",
-        "payload": "candidate"
-      }
-    },
-    "expected": [
-      {
-        "code": "contract.version.development-not-allowed",
-        "severity": "error",
-        "family": "resource-package",
-        "version": "0.0.0-dev.1",
-        "location": "",
-        "params": {}
-      }
-    ]
-  },
-  {
-    "name": "schema failures use stable diagnostics",
-    "request": {
-      "family": "resource-package",
-      "version": "0.0.0-dev.1",
-      "mode": "development",
-      "candidate": {
-        "contractVersion": "0.0.0-dev.1",
-        "payload": 42,
-        "unexpected": true
-      }
-    },
-    "expected": [
-      {
-        "code": "contract.schema.type",
-        "severity": "error",
-        "family": "resource-package",
-        "version": "0.0.0-dev.1",
-        "location": "/payload",
-        "params": {
-          "expected": "string"
-        }
-      },
-      {
-        "code": "contract.schema.additional-property",
-        "severity": "error",
-        "family": "resource-package",
-        "version": "0.0.0-dev.1",
-        "location": "/unexpected",
-        "params": {
-          "property": "unexpected"
-        }
-      }
-    ]
-  },
-  {
     "name": "unknown exact version fails",
     "request": {
       "family": "resource-package",
@@ -85,42 +15,6 @@
         "version": "2.0.0",
         "location": "",
         "params": {}
-      }
-    ]
-  },
-  {
-    "name": "diagnostic order uses Unicode code points",
-    "request": {
-      "family": "resource-package",
-      "version": "0.0.0-dev.1",
-      "mode": "development",
-      "candidate": {
-        "contractVersion": "0.0.0-dev.1",
-        "payload": "candidate",
-        "😀": true,
-        "": true
-      }
-    },
-    "expected": [
-      {
-        "code": "contract.schema.additional-property",
-        "severity": "error",
-        "family": "resource-package",
-        "version": "0.0.0-dev.1",
-        "location": "/",
-        "params": {
-          "property": ""
-        }
-      },
-      {
-        "code": "contract.schema.additional-property",
-        "severity": "error",
-        "family": "resource-package",
-        "version": "0.0.0-dev.1",
-        "location": "/😀",
-        "params": {
-          "property": "😀"
-        }
       }
     ]
   },

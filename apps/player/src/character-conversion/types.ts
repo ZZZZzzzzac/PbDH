@@ -1,6 +1,6 @@
 export type CharacterJsonValue = null | boolean | number | string | CharacterJsonValue[] | CharacterJsonObject;
 export type CharacterJsonObject = { [key: string]: CharacterJsonValue };
-export type CharacterFormatId = "pbcha" | "dhsheet" | "zzz";
+export type CharacterFormatId = "dhsheet" | "zzz";
 
 export type CharacterDiagnostic = {
   code: string;

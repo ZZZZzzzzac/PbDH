@@ -1,5 +1,4 @@
 import { dhsheetCharacterAdapter } from "./dhsheet-adapter.ts";
-import { pbchaCharacterAdapter } from "./pbcha-adapter.ts";
 import type {
   CharacterExportResult,
   CharacterFormatAdapter,
@@ -11,7 +10,6 @@ import type {
 import { zzzCharacterAdapter } from "./zzz-adapter.ts";
 
 export { dhsheetCharacterAdapter } from "./dhsheet-adapter.ts";
-export { pbchaCharacterAdapter, temporaryPbchaProfileVersion } from "./pbcha-adapter.ts";
 export type * from "./types.ts";
 export { zzzCharacterAdapter } from "./zzz-adapter.ts";
 
@@ -39,7 +37,6 @@ export class CharacterConversionRegistry {
 }
 
 export const characterConversionRegistry = new CharacterConversionRegistry([
-  pbchaCharacterAdapter,
   dhsheetCharacterAdapter,
   zzzCharacterAdapter,
 ]);

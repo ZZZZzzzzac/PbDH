@@ -40,7 +40,7 @@ describe("Player 六类稳定资源预览", () => {
         resourceCopy: {
           source: { packageId: "test-package", resourceId: "ancestry" },
           template: { id: ancestryTemplate.id, version: ancestryTemplate.version },
-          presentation: { ...ancestryTemplate.defaultPresentation, mode: "image" },
+          presentation: { width: "63", height: "88", unit: "mm", ...ancestryTemplate.defaultPresentation, mode: "image" },
           data: { ...ancestryTemplate.defaultData, 名称: "械灵" },
           labels: [],
           media: { portrait: portraitId },
@@ -63,7 +63,7 @@ describe("Player 六类稳定资源预览", () => {
     const resourceCopy = {
       source: { packageId, resourceId: "ancestry" },
       template: { id: ancestryTemplate.id, version: ancestryTemplate.version },
-      presentation: ancestryTemplate.defaultPresentation,
+      presentation: { width: "63", height: "88", unit: "mm" as const, ...ancestryTemplate.defaultPresentation },
       data: { ...ancestryTemplate.defaultData, 名称: "械灵" },
       labels: [],
       media: { portrait: portraitId },

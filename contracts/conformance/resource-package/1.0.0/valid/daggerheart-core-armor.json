@@ -27,9 +27,6 @@
         "version": "1.0.0"
       },
       "presentation": {
-        "width": "63",
-        "height": "88",
-        "unit": "mm",
         "mode": "text",
         "fixedRatio": true
       },
@@ -47,5 +44,5 @@
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:d66ac8c4bacef522eabc65cb0f8dce4bdfa915c768074020a4fc6505bba231fe"
+  "snapshotDigest": "sha256:0c6da7b047d9a6a1e0ed4ddf353948f917da66772fa084b3851f193fe42d2537"
 }

@@ -5,9 +5,8 @@
 ## 当前状态
 
 - 当前分支：`main`。
-- L1 已关闭：#3 System Authoring Workflow、#4 Player App、#6 GM Tabletop、#7 Market。
-- L1 仍开放：#5 Creator App、#2 Contracts & Template Platform。
-- #8“平台合约生命周期治理”开放；正式发布门槛未满足前，不得擅自把 Contract 状态改为 published。
+- L0 #1 与六个 L1 #2—#7 均已完成验收并关闭。
+- #8“平台合约生命周期治理”已关闭；Resource Package、System Package、Character Save、Tabletop Document 与 Backend API `1.0.0` 均已人工审阅、冻结并转为 `published`。
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 主体完成后。
 - #52“高保真人物存档格式转换”仍为 `needs-triage`，应先设计损失模型，不直接实现。
 - 用户已授权：确认功能完成且测试通过的 Issue 可以直接关闭，无须逐项申请。
@@ -46,14 +45,35 @@
 ### Contracts / Templates / Renderer
 
 - JSON Schema 2020-12 是文件与持久化 Contract 的唯一权威；TypeScript 和 Python 消费同一组版本化样例。
+- Resource Package `1.0.0` 已正式发布；`presentation` 只保存卡牌形式与是否固定比例，实际显示尺寸由各 App 决定。
+- System Package `1.0.0` 已正式发布；网站预制包由管理员登记并信任，第三方脚本在用户确认后受限运行，正式 Player 入口拒绝 development Contract。
+- Character Save `1.0.0` 已正式发布；System Package 引用与独立 Character Data 版本保留，真实 UTC 时间和修改时间顺序受到检查，正式 Player 入口拒绝 development Contract。
+- 已发布 Contract 必须在 `contracts/releases/` 保存人工审阅日期、冻结 Schema SHA-256、conformance 及真实生产者/消费者证据；`npm run verify` 会拒绝缺证据或原地修改 Schema 的版本。
 - 当前可信资源模板统一为稳定 `1.0.0`；未发布的 alpha/dev 模板和兼容代码已移除。
 - 平台与模板不得用正则理解游戏字段语义；例如“等级”和“姓名”对平台都是普通作者数据。
 - `additionalProperties: false` 仍用于封闭平台结构；不得借此预设自由模板的“简介”“类型”等游戏字段。
+- Tabletop Document `1.0.0` 已正式发布：实例保存桌面实际宽度，状态与替换动作按精确版本模板校验，`presentation` 不再保存尺寸，正式 Creator 入口拒绝 development Contract。
+- 四类正式 Contract 均以 `1.0.0` 为最低基线；所有 prerelease Schema、fixtures、catalog 项、兼容类型、迁移分支和临时 `.pbcha` Profile 已移除，旧开发文件明确不再支持导入。
+- 浏览器图片统一先规范化为 WebP；资源图片宽 `630px`，所有规范化图片上限 `2 MiB`，原图不进入 Workspace、归档或服务器。服务端流式截断超限上传并校验 WebP 结构。
+- Backend API `1.0.0` 已完成人工确认并正式发布：27 个操作以确定性生成的 OpenAPI 为权威，稳定 operation ID、认证矩阵、统一错误和二进制媒体边界由跨语言 conformance 与生成一致性检查守住。五个 Contract Family 现均有正式 `1.0.0`。
 - 受限 Markdown 支持 `_斜体_`、`__粗体__` 和 `:red[染色]`，并由共享渲染链消费。
 - Workspace 文件图标采用 Lucide，不再使用自绘图标。
 
 ## 本轮最后完成
 
+- Tabletop Document `1.0.0` 按人工审阅意见完成候选修改：`geometry.scale` 改为实际 `width`，桌面资源副本移除 `width/height/unit`，`state` 的具体结构交给模板 Schema，`replacementId` 必须匹配模板声明。
+- GM 保存层会在内部缩放值与 Contract 实际宽度之间换算；Tabletop Document `1.0.0` 经人工确认后冻结并正式发布。
+- Resource Package、System Package、Character Save 与 Tabletop Document 的 alpha/dev 目录及兼容代码已完整清理；正式 conformance 和应用测试全部改用 `1.0.0`。
+- 统一图片流程保持资源图宽 `630px`，输出上限从 `5 MiB` 收紧为 `2 MiB`；云媒体与市场封面入口补充流式大小限制及 WebP 结构/尺寸检查。
+- Character Save `1.0.0` 经人工确认后冻结并正式发布；示例移除卡牌显示尺寸，Schema conformance 扩展到 8 项，并补充真实日期、时间顺序和正式入口测试。
+- System Package `1.0.0` 经人工确认后冻结并正式发布；发布证据包含共享 conformance、System Package CLI 生产者和 Player/Python 消费者测试。
+- System Package 已锁定预制包可信、第三方脚本受限运行的边界；缺失运行文件、无效默认 Skin、无效 Page override 和空/反向资源版本范围都会返回错误并拒绝导入。
+- System Package `1.0.0` 的共享 Schema conformance 从 3 项补充到 8 项，TypeScript 与 Python 使用同一组样例；另有 Player 导入测试覆盖文件和交叉引用错误不会造成未捕获异常。
+- Resource Package `1.0.0` 经人工审阅后正式发布；Creator、Player、Market 与 Backend 的正式入口拒绝开发期 prerelease。
+- Resource Package 和共享 Renderer 不再保存或读取卡牌宽度、高度与毫米单位；固定卡只声明 `63:88` 设计比例，实际显示尺寸由宿主 App 选择。
+- Daggerheart、寻望之心及三个迁移系统包的正式 `.pbres` 已按定版 Contract 重新生成。
+- #5 Creator App 已完成 L1 总验收并关闭；OpenPencil 一比一视觉还原按用户决定继续暂缓，不作为本轮关闭门槛。
+- 修复 Windows CRLF 检出导致四个设计生成器把未变化的生成物误报为过期的问题；比较前统一换行，不修改设计内容或生成物。
 - Creator/GM Workspace 排序入口移到“多选”右侧，名称升序/降序实际生效。
 - 模板筛选改为可同时勾选多个类型，搜索、筛选、排序可以组合使用。
 - Workspace 宽度下限移除，Creator 和 GM 均可继续缩窄或拉宽。
@@ -63,15 +83,15 @@
 
 ## 验证基线
 
-- 最新完整 `npm run verify` 通过：87 个 TypeScript 测试文件、654 项测试；134 项 Python 测试；类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。
-- Python 输出仍有 30 条既有 Pydantic 弃用警告，不影响验证结果。
+- 最新完整 `npm run verify` 通过：88 个 TypeScript 测试文件、660 项测试；136 项 Python 测试；5 个正式 Contract 的发布冻结检查、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。
+- `node scripts/restart-dev.mjs` 通过：Backend `8001` 与 Platform `5173` 均为 `OK`。
+- Python 输出仍有既有 FastAPI/Pydantic 弃用警告，不影响验证结果。
 - 若修改 Backend 或 Platform 运行代码，交付前运行 `node scripts/restart-dev.mjs`，以五个模块级健康入口均通过为准。
 
 ## 下一步
 
-1. 继续核对 #5 Creator App 的剩余验收条目；OpenPencil 视觉还原不计入当前收尾，等待用户换到完整设计环境。
-2. 然后推进 #2 Contracts & Template Platform 与 #8，先检查正式发布门槛和当前 Contract 清单。
-3. #34 保持延后；#52 先补产品与损失模型设计。
+1. 进入 UI 与美术细调前，先完成一次全库架构审查，只处理仍有明确收益的结构问题。
+2. OpenPencil 视觉还原等待用户换到完整设计环境；#34 保持延后；#52 先补产品与损失模型设计。
 
 ## 环境与操作提醒
 

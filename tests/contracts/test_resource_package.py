@@ -14,7 +14,6 @@ from pbdh_backend.contracts import (
 
 ROOT = Path(__file__).parents[2]
 FIXTURE_ROOTS = [
-    ROOT / "contracts/conformance/resource-package/1.0.0-alpha.1",
     ROOT / "contracts/conformance/resource-package/1.0.0",
 ]
 
@@ -60,12 +59,9 @@ def apply_mutation(document: dict[str, Any], mutation: dict[str, Any]) -> None:
             mutation["value"]
         )
         return
-    if kind == "set-presentation-size":
+    if kind == "set-presentation-property":
         presentation = document["resources"][mutation["resourceIndex"]]["presentation"]
-        presentation["width"] = mutation["width"]
-        presentation["height"] = mutation["height"]
-        if "fixedRatio" in mutation:
-            presentation["fixedRatio"] = mutation["fixedRatio"]
+        presentation[mutation["property"]] = mutation["value"]
         return
     raise AssertionError(f"Unknown fixture mutation: {kind}")
 

@@ -6,18 +6,8 @@
       "id": "resource-package",
       "versions": [
         {
-          "version": "0.0.0-dev.1",
-          "state": "development",
-          "schema": "resource-package/0.0.0-dev.1/schema.json"
-        },
-        {
-          "version": "1.0.0-alpha.1",
-          "state": "development",
-          "schema": "resource-package/1.0.0-alpha.1/schema.json"
-        },
-        {
           "version": "1.0.0",
-          "state": "development",
+          "state": "published",
           "schema": "resource-package/1.0.0/schema.json"
         }
       ]
@@ -26,18 +16,8 @@
       "id": "system-package",
       "versions": [
         {
-          "version": "1.0.0-alpha.1",
-          "state": "development",
-          "schema": "system-package/1.0.0-alpha.1/schema.json"
-        },
-        {
-          "version": "1.0.0-alpha.2",
-          "state": "development",
-          "schema": "system-package/1.0.0-alpha.2/schema.json"
-        },
-        {
           "version": "1.0.0",
-          "state": "development",
+          "state": "published",
           "schema": "system-package/1.0.0/schema.json"
         }
       ]
@@ -46,13 +26,8 @@
       "id": "character-save",
       "versions": [
         {
-          "version": "1.0.0-alpha.1",
-          "state": "development",
-          "schema": "character-save/1.0.0-alpha.1/schema.json"
-        },
-        {
           "version": "1.0.0",
-          "state": "development",
+          "state": "published",
           "schema": "character-save/1.0.0/schema.json"
         }
       ]
@@ -61,20 +36,21 @@
       "id": "tabletop-document",
       "versions": [
         {
-          "version": "1.0.0-alpha.1",
-          "state": "development",
-          "schema": "tabletop-document/1.0.0-alpha.1/schema.json"
-        },
-        {
           "version": "1.0.0",
-          "state": "development",
+          "state": "published",
           "schema": "tabletop-document/1.0.0/schema.json"
         }
       ]
     },
     {
       "id": "backend-api",
-      "versions": []
+      "versions": [
+        {
+          "version": "1.0.0",
+          "state": "published",
+          "schema": "backend-api/1.0.0/openapi.json"
+        }
+      ]
     }
   ]
 }

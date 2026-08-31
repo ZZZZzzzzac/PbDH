@@ -14,6 +14,11 @@ from pbdh_backend.database import Database
 from pbdh_backend.identity.repository import IdentityRepository
 from pbdh_backend.identity.router import router as identity_router
 from pbdh_backend.identity.tokens import SupabaseJwtVerifier, TokenVerifier
+from pbdh_backend.openapi_contract import (
+    BACKEND_API_VERSION,
+    install_openapi_contract,
+    stable_operation_id,
+)
 from pbdh_backend.publications.repository import PublicationRepository
 from pbdh_backend.publications.router import router as publications_router
 from pbdh_backend.publications.service import PublicationService
@@ -31,9 +36,10 @@ def create_app(
     resolved = settings or Settings.from_environment()
     application = FastAPI(
         title="PbDH Platform API",
-        version="0.0.0",
+        version=BACKEND_API_VERSION,
         docs_url=None,
         redoc_url=None,
+        generate_unique_id_function=stable_operation_id,
     )
     database = Database(resolved.database_path, resolved.migrations_path)
     publication_repository = PublicationRepository(database)
@@ -65,6 +71,8 @@ def create_app(
     @application.get("/api/health", tags=["system"])
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "pbdh-platform-api"}
+
+    install_openapi_contract(application)
 
     return application
 

@@ -146,7 +146,7 @@ const generated = `// 此文件由 scripts/generate-weapon-card-design.mjs 从 d
 }, null, 2)} as const;\n\nexport const weaponRendererStyles = ${JSON.stringify(css.trim())};\n`;
 
 if (process.argv.includes("--check")) {
-  const current = readFileSync(outputPath, "utf8");
+  const current = readFileSync(outputPath, "utf8").replaceAll("\r\n", "\n");
   if (current !== generated) {
     throw new Error("Generated weapon card design is stale. Run npm run generate:design");
   }

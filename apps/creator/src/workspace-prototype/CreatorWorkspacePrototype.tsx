@@ -116,7 +116,7 @@ import {
   preparePublicationCandidate,
 } from "./publication-candidate.ts";
 import { materializeCreatorResourceConversion } from "./materialize-resource-conversion.ts";
-import { PublicationApiError, publishCandidate } from "./publication-api.ts";
+import { PublicationApiError, publishCandidate, suggestPublishVersion } from "./publication-api.ts";
 import {
   collapsePublicationFieldErrors,
   publicationErrorMessage,
@@ -909,9 +909,11 @@ const creatorColumnPreferences = {
   editor: { key: "pbdh.creator.columns.editor", initial: 3 / 7 * 100, min: 30, max: 65 },
 } as const;
 
-function storedColumnShare(key: string, fallback: number, min: number, max: number): number {
+export function storedColumnShare(key: string, fallback: number, min: number, max: number): number {
   if (typeof window === "undefined") return fallback;
-  const value = Number(window.localStorage.getItem(key));
+  const storedValue = window.localStorage.getItem(key);
+  if (storedValue === null) return fallback;
+  const value = Number(storedValue);
   return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
 
@@ -2578,9 +2580,23 @@ export function CreatorWorkspacePrototype({
 
   async function openPublicationDialog() {
     if (!active || creatorOperation) return;
+    if (!auth.credentials) {
+      setDialog({
+        kind: "diagnostics",
+        title: "需要登录",
+        diagnostics: [{
+          code: "AUTH_REQUIRED",
+          severity: "error",
+          family: "creator-prototype",
+          version: "1",
+          location: "/publication",
+          params: {},
+        }],
+      });
+      return;
+    }
     setCreatorOperation("publication-cover");
     setPackageNameDraft(active.document.package.name);
-    setPackageVersionDraft(active.document.package.version);
     setPackageDescriptionDraft(active.document.package.description);
     setPackageTargetsDraft(structuredClone(active.document.targets));
     setPublicationTitle(active.document.package.name);
@@ -2589,17 +2605,21 @@ export function CreatorWorkspacePrototype({
     setPublicationTags([]);
     setPublicationLicense(publicationLicenseId(active.document.license.label));
     try {
+      const suggestedVersion = await suggestPublishVersion(active.document, auth.credentials);
       const cover = await generatedPublicationCover(active);
+      setPackageVersionDraft(suggestedVersion);
       setPublicationCover(cover);
       setDialog({ kind: "publish" });
     } catch (error) {
       setDialog({
         kind: "diagnostics",
-        title: "无法生成发布封面",
+        title: error instanceof PublicationApiError ? "无法确定发布版本" : "无法生成发布封面",
         diagnostics: [{
-          code: error instanceof Error && error.message === "creator.publication-cover.resource-missing"
-            ? "creator.publication-cover.resource-missing"
-            : "creator.publication-cover.render-failed",
+          code: error instanceof PublicationApiError
+            ? error.code
+            : error instanceof Error && error.message === "creator.publication-cover.resource-missing"
+              ? "creator.publication-cover.resource-missing"
+              : "creator.publication-cover.render-failed",
           severity: "error",
           family: "creator-prototype",
           version: "1",

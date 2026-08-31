@@ -458,11 +458,11 @@ const workspaceGenerated = `// 此文件由 scripts/generate-adversary-card-desi
 }, null, 2)} as const;\n`;
 
 if (process.argv.includes("--check")) {
-  const current = readFileSync(outputPath, "utf8");
+  const current = readFileSync(outputPath, "utf8").replaceAll("\r\n", "\n");
   if (current !== generated) {
     throw new Error("Generated adversary card design is stale. Run npm run generate:design");
   }
-  const currentWorkspace = readFileSync(workspaceOutputPath, "utf8");
+  const currentWorkspace = readFileSync(workspaceOutputPath, "utf8").replaceAll("\r\n", "\n");
   if (currentWorkspace !== workspaceGenerated) {
     throw new Error("Generated Creator Workspace design is stale. Run npm run generate:design");
   }

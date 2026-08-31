@@ -173,6 +173,19 @@ describe("Player layout regressions", () => {
     expect(startup).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
   });
 
+  it("只在激活预置系统包时安装它自己的内嵌资源", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const presetLoader = source.slice(
+      source.indexOf("loadPresetSystemPackage: async"),
+      source.indexOf("const cachedMetadata = await runtimeStorage.loadCurrentSystemPackageCacheMetadata()"),
+    );
+
+    expect(source).not.toContain("for (const entry of playerSystemPackageCatalog)");
+    expect(presetLoader).toContain("await installMissingEmbeddedResourcePackages({");
+    expect(presetLoader.indexOf("await installMissingEmbeddedResourcePackages({"))
+      .toBeLessThan(presetLoader.indexOf("await restorePlayerResourceLibrary("));
+  });
+
   it("Player 卡牌桌面使用与 Creator、Market、GM 相同的规范卡面渲染器", async () => {
     const source = await Promise.all([
       readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),

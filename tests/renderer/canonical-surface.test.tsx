@@ -69,8 +69,7 @@ describe("Canonical Surface Renderer Port", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.widthMm).toBe(63);
-    expect(result.heightMm).toBe(88);
+    expect(result.designRatio).toEqual({ width: 63, height: 88 });
     expect(result.renderInput.state).toEqual({
       currentHp: "7",
       currentStress: "0",
@@ -99,7 +98,7 @@ describe("Canonical Surface Renderer Port", () => {
     expect(result.renderer.revision).toBe("enemy-card-r1");
   });
 
-  test("returns stable unsupported, invalid-state, and invalid-size diagnostics", () => {
+  test("returns stable unsupported, invalid-state, and invalid-presentation diagnostics", () => {
     const unsupported = prepareCanonicalSurface({
       resource,
       expectedRendererRevision: "enemy-card-r2",
@@ -117,9 +116,9 @@ describe("Canonical Surface Renderer Port", () => {
       "renderer.state.invalid",
     ]);
 
-    const invalidSize = structuredClone(resource);
-    invalidSize.presentation.width = "0";
-    const invalidPresentation = prepare({ candidate: invalidSize });
+    const invalidMode = structuredClone(resource);
+    invalidMode.presentation.mode = "unknown" as "text";
+    const invalidPresentation = prepare({ candidate: invalidMode });
     expect(invalidPresentation.status).toBe("error");
     expect(invalidPresentation.diagnostics.map((item) => item.code)).toEqual([
       "renderer.presentation.invalid",
@@ -183,31 +182,13 @@ describe("Canonical Surface Renderer Port", () => {
     expect(result.renderInput.presentation.fixedRatio).toBe(false);
   });
 
-  test("rejects a wrong card ratio and lets only valid fluid height vary", () => {
-    const wrongFixedSize = structuredClone(resource);
-    wrongFixedSize.presentation = {
-      ...wrongFixedSize.presentation,
-      width: "90",
-      height: "142",
-      fixedRatio: true,
-    };
-    const fixed = prepare({ candidate: wrongFixedSize });
-    expect(fixed).toMatchObject({
-      status: "error",
-      diagnostics: [{ code: "renderer.presentation.invalid", location: "/presentation" }],
-    });
-
-    const fluidHeight = structuredClone(resource);
-    fluidHeight.presentation = {
-      ...fluidHeight.presentation,
-      width: "63",
-      height: "121",
-      fixedRatio: false,
-    };
-    const fluid = prepare({ candidate: fluidHeight });
+  test("uses the canonical ratio only for fixed cards", () => {
+    const fluidResource = structuredClone(resource);
+    fluidResource.presentation.fixedRatio = false;
+    const fluid = prepare({ candidate: fluidResource });
     if (fluid.status !== "ready") throw new Error("Expected ready Surface");
-    expect(fluid).toMatchObject({ widthMm: 63, heightMm: 121 });
-    expect(fluid.renderInput.presentation).toMatchObject({ width: "63", height: "121" });
+    expect(fluid.designRatio).toBeNull();
+    expect(fluid.renderInput.presentation).toEqual({ mode: "split", fixedRatio: false });
   });
 
   test("builds publication cover SVG through the same renderer with fixed ratio", async () => {
@@ -254,7 +235,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     });
   });
 
-  test("keeps the Surface behind a Shadow DOM host with exact millimetre size", () => {
+  test("keeps the Surface behind a Shadow DOM host sized by its App", () => {
     const markup = renderToStaticMarkup(
       <CanonicalCardSurface
         resource={resource}
@@ -264,8 +245,9 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       />,
     );
     expect(markup).toContain("data-pbdh-canonical-surface");
-    expect(markup).toContain("width:63mm");
-    expect(markup).toContain("height:88mm");
+    expect(markup).toContain("width:100%");
+    expect(markup).toContain("height:auto");
+    expect(markup).toContain("aspect-ratio:63 / 88");
     expect(markup).not.toContain("enemy-card");
 
     const fluidResource = structuredClone(resource);

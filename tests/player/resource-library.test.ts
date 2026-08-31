@@ -24,13 +24,13 @@ function readJson<T>(relativePath: string): T {
 }
 
 const system = readJson<SystemPackageDocument>(
-  "contracts/conformance/system-package/1.0.0-alpha.2/valid/daggerheart/system.json",
+  "apps/player/public/system-packages/daggerheart-core/system.json",
 );
 const baseDocument = readJson<ResourcePackageLogicalDocument>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/daggerheart-core-primary-weapon.json",
+  "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 );
 const adversaryDocument = readJson<ResourcePackageLogicalDocument>(
-  "contracts/conformance/resource-package/1.0.0-alpha.1/valid/minotaur-wrecker.json",
+  "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json",
 );
 
 function candidate(document = structuredClone(baseDocument)): ResourcePackageCandidate {

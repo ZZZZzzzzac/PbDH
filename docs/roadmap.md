@@ -74,7 +74,7 @@ L0、L1 和 L2 PRD 都是开放父 Issue：实现 Issue 完成后才关闭所属
 
 定义游戏资源创作、Creator Workspace、规范卡面预览、资源转换、资源包组装、文件导入导出、云同步和市场发布动作。Creator App 同时是 GM Tabletop 的前端宿主，但不接管其 L1 产品验收所有权。
 
-状态：已完成 PRD 审阅（开放父 Issue #5）；待其 L2 与实现子项全部完成后关闭。
+状态：已完成 L1 验收并关闭父 Issue #5；OpenPencil 一比一视觉还原按用户决定暂缓，不作为本轮关闭门槛。
 
 ### 4. Player App
 

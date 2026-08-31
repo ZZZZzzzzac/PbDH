@@ -39,7 +39,7 @@ export const freeTemplate = deepFreeze<TemplateCoreCapability<FreeData>>({
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
   defaultPresentation: {
-    width: "63", height: "88", unit: "mm", mode: "text", fixedRatio: true,
+    mode: "text", fixedRatio: true,
   },
   rendererRevision: "free-card-r1",
   tabletop: {

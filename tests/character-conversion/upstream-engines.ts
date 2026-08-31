@@ -1,5 +1,3 @@
-import { unzipSync } from "fflate";
-
 const decoder = new TextDecoder("utf-8", { fatal: true });
 
 export function zzzCharacterEngineRead(bytes: Uint8Array): Record<string, unknown> {
@@ -15,15 +13,4 @@ export function dhsheetCharacterEngineRead(bytes: Uint8Array): Record<string, un
     if (!Array.isArray(value[key]) || value[key].length !== length) throw new Error(`invalid ${key}`);
   }
   return value;
-}
-
-export function temporaryPbchaEngineRead(bytes: Uint8Array): {
-  manifest: Record<string, unknown>;
-  character: Record<string, unknown>;
-} {
-  const files = unzipSync(bytes);
-  const manifest = JSON.parse(decoder.decode(files["manifest.json"]!)) as Record<string, unknown>;
-  const character = JSON.parse(decoder.decode(files["character.json"]!)) as Record<string, unknown>;
-  if (manifest.family !== "character-save" || manifest.profileVersion !== "0.0.0-dev.1") throw new Error("invalid pbcha profile");
-  return { manifest, character };
 }
