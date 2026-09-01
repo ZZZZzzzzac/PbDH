@@ -43,6 +43,15 @@ describe("环境 Template 1.0.0", () => {
     expect(environmentTemplate.rendererRevision).toBe("environment-card-r1");
   });
 
+  test("treats environment and feature English titles as optional fields", () => {
+    const { 原文: _originalTitle, ...withoutEnvironmentEnglish } = abandonedGrove;
+    const withoutEnglish = {
+      ...withoutEnvironmentEnglish,
+      特性: abandonedGrove.特性.map(({ 原名: _originalName, ...feature }) => feature),
+    };
+    expect(validateStable(withoutEnglish), JSON.stringify(validateStable.errors)).toBe(true);
+  });
+
   test("covers every schema field and enters full-support manifest only with its Renderer", () => {
     const schema = environmentTemplate.schema as {
       properties: Record<string, { items?: { properties: Record<string, unknown> } }>;

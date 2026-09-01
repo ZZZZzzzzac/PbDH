@@ -2,9 +2,9 @@ import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
-export type AdversaryFeature = { 名称: string; 原名: string; 类型: string; 特性描述: string };
+export type AdversaryFeature = { 名称: string; 原名?: string; 类型: string; 特性描述: string };
 export type AdversaryData = {
-  名称: string; 原文: string; 位阶: string; 种类: string; 特性: AdversaryFeature[]; 类型: string;
+  名称: string; 原文?: string; 位阶: string; 种类: string; 特性: AdversaryFeature[]; 类型: string;
   简介: string; 动机与战术: string; 难度: string; 重度伤害阈值: string; 严重伤害阈值: string;
   生命点: string; 压力点: string; 攻击命中: string; 攻击武器: string; 攻击范围: string;
   攻击伤害: string; 攻击属性: string; 经历: string;

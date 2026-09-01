@@ -11,9 +11,8 @@ function isFreeState(value: unknown): value is FreeRuntimeState {
 }
 
 export const freeRendererStyles = `
-.free-card{box-sizing:border-box;width:100%;height:100%;overflow:hidden;padding:7%;display:flex;flex-direction:column;gap:4%;background:#f5f1e8;color:#26231d;border:1px solid #b8ad99;font-family:Georgia,"Noto Serif SC",serif}
-.free-card *{box-sizing:border-box}.free-header{border-bottom:1px solid #8f826d;padding-bottom:4%}.free-type{margin:0 0 2%;font:700 clamp(9px,3cqw,13px)/1.2 system-ui,sans-serif;color:#766853}.free-title{margin:0;font-size:clamp(20px,8cqw,36px);line-height:1.05}.free-content{display:flex;flex-direction:column;gap:4%;overflow:auto}.free-block h2{margin:0 0 1%;font:700 clamp(10px,3.3cqw,14px)/1.2 system-ui,sans-serif;color:#766853}.free-block p{margin:0;white-space:pre-wrap;font-size:clamp(10px,3.4cqw,15px);line-height:1.45}.free-art{min-height:36%;border:1px solid #c9bfad;background:#e7dfd0;overflow:hidden}.free-art img{width:100%;height:100%;object-fit:cover}.free-image-missing{height:100%;display:grid;place-items:center;color:#766853}.free-card.is-image .free-header,.free-card.is-image .free-content{display:none}.free-card.is-image .free-art{height:100%}.free-card.is-text .free-art{display:none}
-.free-block [data-restricted-markdown]{font-size:clamp(10px,3.4cqw,15px);line-height:1.45}
+.free-card{--ink:#1d1713;--bone:#eee4d0;--oxblood:#641f1d;box-sizing:border-box;width:100%;height:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--bone);color:var(--ink);border:1px solid #21150f;font-family:"Noto Sans SC",sans-serif}.free-card *{box-sizing:border-box}.free-card.is-fluid{height:auto;min-height:100%;overflow:visible}.free-header{padding:7% 8% 6%;background:#251a14;color:#fff4df;border-bottom:3px solid #b88a57}.free-type{margin:0 0 2%;color:#f4dfbc;font:650 clamp(9px,3cqw,13px)/1.2 "Noto Sans SC",sans-serif;letter-spacing:.1em}.free-title{margin:0;overflow:hidden;font:800 clamp(20px,8cqw,36px)/1 "Noto Sans SC",sans-serif;text-overflow:ellipsis;white-space:nowrap}.free-content{padding:6% 7%;display:flex;min-height:0;flex:1;flex-direction:column;gap:4%;overflow:auto}.free-block{padding:4%;background:#f7ebd6;border:1px solid #d4b78d;border-radius:4px}.free-block h2{display:flex;align-items:center;gap:8px;margin:0 0 2%;color:var(--oxblood);font:800 clamp(11px,3.6cqw,16px)/1.2 "Noto Sans SC",sans-serif}.free-block h2::after{content:"";flex:1;height:1px;background:#b88a57}.free-block p{margin:0;white-space:pre-wrap;font:450 clamp(10px,3.4cqw,15px)/1.42 "Noto Sans SC",sans-serif}.free-art{height:34%;flex:none;background:#251a14;overflow:hidden}.free-art img{width:100%;height:100%;display:block;object-fit:cover}.free-image-missing{height:100%;display:grid;place-items:center;color:#f4dfbc;font:650 11px/1.3 "Noto Sans SC",sans-serif}.free-card.is-image .free-header,.free-card.is-image .free-content{display:none}.free-card.is-image .free-art{height:100%}.free-card.is-image.is-fluid .free-art,.free-card.is-image.is-fluid .free-art img{height:auto}.free-card.is-text .free-art{display:none}
+.free-block [data-restricted-markdown]{font:450 clamp(10px,3.4cqw,15px)/1.42 "Noto Sans SC",sans-serif}
 `;
 
 export const freeRendererRevision: RendererRevisionCapability<FreeData, FreeRuntimeState, ReactNode> = {
@@ -29,7 +28,7 @@ export const freeRendererRevision: RendererRevisionCapability<FreeData, FreeRunt
   styles: freeRendererStyles,
   render({ data, presentation, assets }) {
     const portrait = assets.portrait;
-    return <article className={`free-card is-${presentation.mode}`} data-renderer-revision="free-card-r1">
+    return <article className={["free-card", `is-${presentation.mode}`, presentation.fixedRatio ? "" : "is-fluid"].filter(Boolean).join(" ")} data-renderer-revision="free-card-r1">
       <header className="free-header">
         <p className="free-type">{data.类型 || "自由"}</p>
         <h1 className="free-title">{data.名称 || "未命名自由资源"}</h1>

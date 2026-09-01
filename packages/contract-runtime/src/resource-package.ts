@@ -1,7 +1,8 @@
 import type { ContractDiagnostic } from "./index.ts";
 
 const FAMILY = "resource-package";
-export const RESOURCE_PACKAGE_VERSION = "1.0.0";
+export const RESOURCE_PACKAGE_VERSION = "1.1.0";
+export const LEGACY_RESOURCE_PACKAGE_VERSION = "1.0.0";
 const DIGEST_DOMAIN = "pbdh-resource-package-digest-v1";
 const VERSION_CONTENT_DOMAIN = "pbdh-resource-package-version-content-v1";
 
@@ -12,8 +13,13 @@ export type ResourceReplacement = {
   targetResourceId: string;
 };
 
+export type ResourceAttribution = {
+  artworkCredit: string;
+  sourceLabel: string;
+};
+
 export type ResourcePackageLogicalDocument = {
-  contractVersion: typeof RESOURCE_PACKAGE_VERSION;
+  contractVersion: typeof RESOURCE_PACKAGE_VERSION | typeof LEGACY_RESOURCE_PACKAGE_VERSION;
   package: {
     id: string;
     version: string;
@@ -40,6 +46,7 @@ export type ResourcePackageLogicalDocument = {
     path: string;
     template: { id: string; version: string };
     presentation: ResourcePresentation;
+    attribution?: ResourceAttribution;
     data: JsonValue;
     replacements?: ResourceReplacement[];
     media: Record<string, string>;

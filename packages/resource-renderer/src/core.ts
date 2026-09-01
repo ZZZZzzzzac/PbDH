@@ -15,12 +15,18 @@ export type SurfacePresentation = {
   fixedRatio: boolean;
 };
 
+export type SurfaceAttribution = {
+  artworkCredit: string;
+  sourceLabel: string;
+};
+
 export const canonicalCardDesignSize = { width: 63, height: 88 } as const;
 export type CardDesignSize = { width: number; height: number };
 
 export type SurfaceResource<TData> = {
   template: { id: string; version: string };
   presentation: SurfacePresentation;
+  attribution?: SurfaceAttribution;
   data: TData;
   media: Record<string, string>;
 };
@@ -39,6 +45,7 @@ export type RendererRevisionCapability<TData, TState, TOutput> = {
     state: TState;
     assets: Readonly<Partial<Record<string, string>>>;
     presentation: SurfacePresentation;
+    attribution?: SurfaceAttribution;
     onStateCommand?: (commandId: string, value: string) => void;
   }) => TOutput;
 };
@@ -53,6 +60,7 @@ export type SurfaceReady<TData, TState, TOutput> = {
     state: TState;
     assets: Readonly<Partial<Record<string, string>>>;
     presentation: SurfacePresentation;
+    attribution: SurfaceAttribution;
     onStateCommand?: (commandId: string, value: string) => void;
   };
 };
@@ -107,6 +115,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
 }): SurfacePreparation<TData, TState, TOutput> {
   const diagnostics: RendererDiagnostic[] = [];
   const presentation = input.resource.presentation;
+  const attribution = input.resource.attribution ?? { artworkCredit: "", sourceLabel: "" };
   const designRatio = presentation.fixedRatio ? canonicalCardDesignSize : null;
   const validMode = presentation.mode === "text"
     || presentation.mode === "split"
@@ -219,6 +228,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
       state: state as TState,
       assets: assetUrls,
       presentation,
+      attribution,
       ...(input.onStateCommand ? { onStateCommand: input.onStateCommand } : {}),
     },
   };

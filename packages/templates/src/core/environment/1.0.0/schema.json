@@ -3,7 +3,7 @@
   "$id": "https://pbdh.dev/templates/%E7%8E%AF%E5%A2%83/1.0.0/schema.json",
   "title": "环境 Template Data",
   "type": "object",
-  "required": ["名称", "类型", "原文", "位阶", "种类", "简介", "趋向", "难度", "潜在敌人", "特性"],
+  "required": ["名称", "类型", "位阶", "种类", "简介", "趋向", "难度", "潜在敌人", "特性"],
   "properties": {
     "名称": { "type": "string" },
     "类型": { "type": "string" },
@@ -18,7 +18,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["名称", "原名", "类型", "描述", "引导问题"],
+        "required": ["名称", "类型", "描述", "引导问题"],
         "properties": {
           "名称": { "type": "string" },
           "原名": { "type": "string" },

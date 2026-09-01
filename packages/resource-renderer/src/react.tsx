@@ -7,6 +7,7 @@ import {
   type ManagedAsset,
   type RendererRevisionCapability,
   type SurfaceResource,
+  type SurfaceAttribution,
 } from "./core.ts";
 
 export {
@@ -14,6 +15,14 @@ export {
   RestrictedMarkdownRenderer,
   type RestrictedMarkdownProps,
 } from "./RestrictedMarkdown.tsx";
+export {
+  findLargestFittingFontSize,
+  fitContainerText,
+  resetContainerTextFit,
+  useContainerTextFit,
+  type ContainerTextFitOptions,
+  type FontSizeFitResult,
+} from "./text-fit.ts";
 
 const boundaryStyles = `
 :host {
@@ -64,10 +73,25 @@ const boundaryStyles = `
 .restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
 .restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
 .restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }
+.pbdh-card-footer { box-sizing: border-box; width: 100%; min-width: 0; min-height: 20px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 12px; padding: 3px 12px; font: italic 550 8.5px/1.15 "Noto Sans SC", sans-serif; letter-spacing: .01em; }
+.pbdh-card-footer span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbdh-card-footer span:last-child { text-align: right; }
 @media print {
   :host { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }
 `;
+
+export function CardFooter({ attribution, overlay = false }: {
+  attribution: SurfaceAttribution;
+  overlay?: boolean;
+}) {
+  const artworkCredit = attribution.artworkCredit.trim();
+  const sourceLabel = attribution.sourceLabel.trim();
+  if (!artworkCredit && !sourceLabel) return null;
+  return <footer className={`pbdh-card-footer${overlay ? " is-overlay" : ""}`} data-card-footer="true">
+    <span>{artworkCredit}</span><span>{sourceLabel}</span>
+  </footer>;
+}
 
 export type CanonicalCardSurfaceProps<TData, TState> = {
   resource: SurfaceResource<TData>;

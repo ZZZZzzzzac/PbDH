@@ -76,6 +76,17 @@ describe("敌人 Template Core", () => {
     })).toBe(true);
   });
 
+  test("treats English titles as optional fields", () => {
+    const withoutEnglish = structuredClone(resource.data);
+    delete withoutEnglish.原文;
+    withoutEnglish.特性 = withoutEnglish.特性.map((feature) => {
+      const result = { ...feature };
+      delete result.原名;
+      return result;
+    });
+    expect(validateData(withoutEnglish), JSON.stringify(validateData.errors)).toBe(true);
+  });
+
   test("produces deterministic ID, title, summary, search, and media projections", () => {
     expect(adversaryTemplate.proposeResourceId(resource.data)).toBe("牛头人破坏者");
     const projection = adversaryTemplate.project(resource.data);

@@ -259,10 +259,11 @@ function fieldsFor(raw: JsonObject): JsonObject {
   if (type === "ancestry") {
     return {
       名称: text(raw.name),
+      原文: "",
       简介: text(raw.description),
       特性: [
-        { 名称: text(raw.feature1Name), 描述: text(raw.feature1Desc) },
-        { 名称: text(raw.feature2Name), 描述: text(raw.feature2Desc) },
+        { 名称: text(raw.feature1Name), 原名: "", 描述: text(raw.feature1Desc) },
+        { 名称: text(raw.feature2Name), 原名: "", 描述: text(raw.feature2Desc) },
       ].filter((feature) => feature.名称 || feature.描述),
     };
   }

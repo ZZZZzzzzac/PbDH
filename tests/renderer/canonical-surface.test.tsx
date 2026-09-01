@@ -322,6 +322,21 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("95049042aaf05e52c8a24c1d9b2f3ce376b19e07d078c3b761afe209659c4f69");
+    expect(signature).toBe("d0bd239bd72a85f3c7f019896609305b20343ee889272c593906e34bee138cbb");
+  });
+
+  test("removes empty English titles instead of reserving their layout space", () => {
+    const candidate = structuredClone(resource);
+    candidate.data.原文 = "   ";
+    candidate.data.特性 = candidate.data.特性.map((feature) => ({ ...feature, 原名: "   " }));
+    const result = prepare({ candidate });
+    if (result.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
+
+    expect(markup).toContain('<header class="enemy-heading">');
+    expect(markup).not.toContain("enemy-original-title");
+    expect(markup).not.toContain("<small>");
+    expect(adversaryRendererStyles).toContain(".enemy-summary { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 42px)");
+    expect(adversaryRendererStyles).toContain(".enemy-heading.has-original-title .enemy-summary { top: calc(var(--enemy-media-height) + 57px); }");
   });
 });

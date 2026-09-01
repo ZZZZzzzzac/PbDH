@@ -8,6 +8,7 @@ import { templateRegistry, type TemplateCoreCapability } from "@pbdh/templates/c
 
 import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { WorkspaceResource } from "./workspace-model.ts";
+import { resolveResourceAttribution } from "./workspace-model.ts";
 
 type TemplateBoundResource = { template: { id: string; version: string } };
 
@@ -48,11 +49,13 @@ export function AutoFitPreview({ children }: { children: ReactNode }) {
 
 export function TemplateRuntimePreview({
   resource,
+  packageName,
   assets,
   frontend,
   template,
 }: {
   resource: WorkspaceResource;
+  packageName: string;
   assets: ReadonlyMap<string, ManagedAsset>;
   frontend: TemplateFrontendCapability;
   template: TemplateCoreCapability<Record<string, unknown>>;
@@ -76,7 +79,7 @@ export function TemplateRuntimePreview({
   return <div className="preview-runtime-surface">
     <AutoFitPreview>
       <CanonicalCardSurface
-        resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
+        resource={{ ...resource, attribution: resolveResourceAttribution(resource, packageName) } as unknown as SurfaceResource<Record<string, unknown>>}
         expectedRendererRevision={renderer.revision}
         renderer={renderer}
         assets={assets}

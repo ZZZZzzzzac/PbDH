@@ -36,9 +36,9 @@ function ancestryFeatures(value: unknown): JsonValue[] {
   const lines = description.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
   if (lines.length <= 2) {
     const parsed = lines.map((line) => /^(.+?)[：:]\s*(.+)$/u.exec(line));
-    if (parsed.every(Boolean)) return parsed.map((match) => ({ 名称: match![1]!.trim(), 描述: match![2]!.trim() }));
+    if (parsed.every(Boolean)) return parsed.map((match) => ({ 名称: match![1]!.trim(), 原名: "", 描述: match![2]!.trim() }));
   }
-  return [{ 名称: "", 描述: description }];
+  return [{ 名称: "", 原名: "", 描述: description }];
 }
 
 function ancestryDescription(value: unknown): string {
@@ -117,6 +117,7 @@ function normalizedFields(raw: JsonObject): JsonObject {
   };
   if (kindFor(type) === "ancestry") return {
     名称: text(raw.名称),
+    原文: "",
     类型: text(raw.资源类型 || type || "种族"),
     简介: text(raw.简介),
     特性: ancestryFeatures(raw.描述),

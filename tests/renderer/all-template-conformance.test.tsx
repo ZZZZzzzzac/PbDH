@@ -18,7 +18,20 @@ import {
   weaponTemplate,
   type TemplateCoreCapability,
 } from "../../packages/templates/src/core/index.ts";
-import { trustedRendererFor } from "../../packages/templates/src/frontend/index.ts";
+import {
+  adversaryRendererStyles,
+  ancestryRendererStyles,
+  armorRendererStyles,
+  communityRendererStyles,
+  domainRendererStyles,
+  environmentRendererStyles,
+  freeRendererStyles,
+  itemRendererStyles,
+  professionRendererStyles,
+  subclassRendererStyles,
+  trustedRendererFor,
+  weaponRendererStyles,
+} from "../../packages/templates/src/frontend/index.ts";
 import {
   listLazyRendererBindings,
   loadTrustedRenderer,
@@ -39,6 +52,28 @@ const firstVersionTemplates: readonly TemplateCoreCapability<any>[] = [
 ];
 
 describe("首版可信 Template 的 Canonical Surface conformance", () => {
+  test("所有第一方卡面共享敌人模板确立的暖色视觉语言", () => {
+    const styles = [
+      adversaryRendererStyles,
+      ancestryRendererStyles,
+      armorRendererStyles,
+      communityRendererStyles,
+      domainRendererStyles,
+      environmentRendererStyles,
+      freeRendererStyles,
+      itemRendererStyles,
+      professionRendererStyles,
+      subclassRendererStyles,
+      weaponRendererStyles,
+    ];
+
+    for (const style of styles) {
+      expect(style).toContain("#eee4d0");
+      expect(style).toContain("#641f1d");
+      expect(style).toContain("Noto Sans SC");
+    }
+  });
+
   test("所有模板只声明卡面形式和是否固定比例", () => {
     for (const template of templateRegistry.list()) {
       expect(Object.keys(template.defaultPresentation).sort(), `${template.id}@${template.version}`)

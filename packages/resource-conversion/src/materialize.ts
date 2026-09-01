@@ -43,12 +43,13 @@ export async function materializeResourceConversion(input: {
     return { candidate: null, diagnostics, converted: mapped.candidates.length, skipped: mapped.unmapped.length };
   }
 
+  const packageName = input.batch.name.trim() || "导入的资源包";
   const document: ResourcePackageLogicalDocument = {
     contractVersion: RESOURCE_PACKAGE_VERSION,
     package: {
       id: uuidV7(),
       version: semverOrDefault(input.batch.version),
-      name: input.batch.name.trim() || "导入的资源包",
+      name: packageName,
       description: `由 ${input.batch.sourceDocument.formatId} 第三方资源显式转换生成。`,
     },
     targets: structuredClone(input.targets),
@@ -67,6 +68,10 @@ export async function materializeResourceConversion(input: {
         path: `${safePathSegment(item.template.id)}/${String(index + 1).padStart(4, "0")}-${safePathSegment(resourceName(item.data))}.json`,
         template: item.template,
         presentation: structuredClone(template.defaultPresentation),
+        attribution: {
+          artworkCredit: "",
+          sourceLabel: packageName,
+        },
         data: structuredClone(item.data) as ResourcePackageLogicalDocument["resources"][number]["data"],
         media: {},
       };

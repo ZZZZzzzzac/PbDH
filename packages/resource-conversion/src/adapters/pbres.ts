@@ -14,18 +14,25 @@ import { validateTemplateData } from "../template-validation.ts";
 import type { JsonObject, JsonValue, ResourceFormatAdapter, ResourceKind, TemporaryResource } from "../types.ts";
 
 import catalogJson from "../../../../contracts/catalog.json";
-import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0/schema.json";
+import resourcePackageSchema100 from "../../../../contracts/resource-package/1.0.0/schema.json";
+import resourcePackageSchema110 from "../../../../contracts/resource-package/1.1.0/schema.json";
 
-const upstreamRevision = "pbdh.resource-package@1.0.0";
+const upstreamRevision = "pbdh.resource-package@1.1.0";
 const resourceFamily = (catalogJson as ContractCatalog).families.find((family) => family.id === "resource-package");
-const contractVersion = resourceFamily?.versions.find((version) => version.version === "1.0.0");
-if (!contractVersion) throw new Error("Missing Resource Package Contract 1.0.0");
+const contractVersions = resourceFamily?.versions.filter(
+  (version) => version.version === "1.0.0" || version.version === "1.1.0",
+) ?? [];
+if (contractVersions.length !== 2) throw new Error("Missing Resource Package Contract");
 const contractRuntime = new ContractRuntime({
   catalogVersion: 1,
-  families: [{ id: "resource-package", versions: [contractVersion] }],
-}, { [contractVersion.schema]: resourcePackageSchema });
+  families: [{ id: "resource-package", versions: contractVersions }],
+}, {
+  "resource-package/1.0.0/schema.json": resourcePackageSchema100,
+  "resource-package/1.1.0/schema.json": resourcePackageSchema110,
+});
 
 function templateContractDiagnostic(
+  version: ResourcePackageLogicalDocument["contractVersion"],
   resourceIndex: number,
   diagnostic: ReturnType<typeof validateTemplateData>[number],
 ): ContractDiagnostic {
@@ -33,7 +40,7 @@ function templateContractDiagnostic(
     code: diagnostic.code,
     severity: diagnostic.severity,
     family: "resource-package",
-    version: "1.0.0",
+    version,
     location: `/resources/${resourceIndex}/data${diagnostic.path ?? ""}`,
     params: diagnostic.details ?? {},
   };
@@ -43,7 +50,7 @@ export const validatePbresConversionCandidate: ResourcePackageCandidateValidator
   const schemaDiagnostics = contractRuntime.validate({
     family: "resource-package",
     version: document.contractVersion,
-    mode: "production",
+    mode: "development",
     candidate: document,
   });
   if (schemaDiagnostics.length > 0) return schemaDiagnostics;
@@ -51,13 +58,13 @@ export const validatePbresConversionCandidate: ResourcePackageCandidateValidator
   if (semanticDiagnostics.length > 0) return semanticDiagnostics;
   return document.resources.flatMap((resource, index) => {
     const data = asJsonObject(resource.data);
-    if (!data) return [templateContractDiagnostic(index, {
+    if (!data) return [templateContractDiagnostic(document.contractVersion, index, {
       code: "conversion.template-data.invalid",
       severity: "error",
       message: "Template data 必须是对象。",
     })];
     return validateTemplateData(resource.template.id, resource.template.version, data)
-      .map((diagnostic) => templateContractDiagnostic(index, diagnostic));
+      .map((diagnostic) => templateContractDiagnostic(document.contractVersion, index, diagnostic));
   });
 };
 
@@ -94,6 +101,7 @@ export const pbresAdapter: ResourceFormatAdapter = {
       };
     }
     const document = loaded.candidate.document;
+    const documentUpstreamRevision = `pbdh.resource-package@${document.contractVersion}`;
     const resources: TemporaryResource[] = document.resources.map((resource, index) => ({
       sourceId: resource.id,
       kind: kindFor(resource.template.id),
@@ -101,7 +109,7 @@ export const pbresAdapter: ResourceFormatAdapter = {
       fields: asJsonObject(resource.data) ?? { value: resource.data },
       source: {
         formatId: "pbres",
-        upstreamRevision,
+        upstreamRevision: documentUpstreamRevision,
         path: `/resources/${index}`,
         raw: structuredClone(resource) as JsonValue,
       },
@@ -112,7 +120,7 @@ export const pbresAdapter: ResourceFormatAdapter = {
         name: document.package.name,
         version: document.package.version,
         resources,
-        sourceDocument: { formatId: "pbres", upstreamRevision, container: "pbres" },
+        sourceDocument: { formatId: "pbres", upstreamRevision: documentUpstreamRevision, container: "pbres" },
         nativePackage: document,
         media: loaded.candidate.media,
       },

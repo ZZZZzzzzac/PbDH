@@ -94,11 +94,12 @@ function templateData(resource: TemporaryResource): {
   if (resource.kind === "ancestry") {
     const data = structuredClone(ancestryTemplate.defaultData) as unknown as JsonObject;
     data.名称 = resource.name;
+    data.原文 = text(resource.fields.原文);
     data.类型 = text(resource.fields.类型 || data.类型);
     data.简介 = text(resource.fields.简介);
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
-      return { 名称: text(feature.名称), 描述: text(feature.描述) };
+      return { 名称: text(feature.名称), 原名: text(feature.原名), 描述: text(feature.描述) };
     }) : [];
     return { template: ancestryTemplate, data };
   }

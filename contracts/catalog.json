@@ -9,6 +9,11 @@
           "version": "1.0.0",
           "state": "published",
           "schema": "resource-package/1.0.0/schema.json"
+        },
+        {
+          "version": "1.1.0",
+          "state": "development",
+          "schema": "resource-package/1.1.0/schema.json"
         }
       ]
     },

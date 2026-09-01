@@ -80,6 +80,10 @@ export async function prepareWorkspaceExport(
   workspace: CreatorWorkspace,
 ): Promise<CreatorWorkspace> {
   const next = createWorkspace(workspace, false);
+  next.document.contractVersion = RESOURCE_PACKAGE_VERSION;
+  next.document.resources.forEach((resource) => {
+    resource.attribution ??= { artworkCredit: "", sourceLabel: next.document.package.name };
+  });
   next.document.snapshotDigest = await computeResourcePackageSnapshotDigest(next.document, next.media);
   next.dirtyResourceIds = [];
   return next;

@@ -1,5 +1,6 @@
 import {
   RESOURCE_PACKAGE_VERSION,
+  type ResourceAttribution,
   type ResourcePresentation,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
@@ -45,6 +46,35 @@ export function updateResourcePresentation(
   return next;
 }
 
+export function resolveResourceAttribution(
+  resource: WorkspaceResource,
+  packageName: string,
+): ResourceAttribution {
+  return resource.attribution
+    ? structuredClone(resource.attribution)
+    : { artworkCredit: "", sourceLabel: packageName };
+}
+
+export function updateResourceAttribution(
+  workspace: CreatorWorkspace,
+  update: (attribution: ResourceAttribution) => void,
+  resourceId?: string,
+): CreatorWorkspace {
+  const next = createWorkspace(workspace, true);
+  if (next.document.contractVersion !== RESOURCE_PACKAGE_VERSION) {
+    next.document.contractVersion = RESOURCE_PACKAGE_VERSION;
+    next.document.resources.forEach((candidate) => {
+      candidate.attribution ??= { artworkCredit: "", sourceLabel: next.document.package.name };
+      markResourceDirty(next, candidate.id);
+    });
+  }
+  const resource = workspaceResource(next, resourceId);
+  resource.attribution ??= { artworkCredit: "", sourceLabel: next.document.package.name };
+  update(resource.attribution);
+  markResourceDirty(next, resource.id);
+  return next;
+}
+
 export function updateWorkspacePackageMetadata(
   workspace: CreatorWorkspace,
   metadata: { name: string; description: string; version: string; targets?: ResourcePackageLogicalDocument["targets"] },
@@ -83,6 +113,13 @@ export function addTemplateResource(
   const template = templateRegistry.resolve(templateId, templateVersion);
   if (!template) throw new Error(`Unsupported Template: ${templateId}@${templateVersion}`);
   const next = createWorkspace(workspace, true);
+  if (next.document.contractVersion !== RESOURCE_PACKAGE_VERSION) {
+    next.document.contractVersion = RESOURCE_PACKAGE_VERSION;
+    next.document.resources.forEach((resource) => {
+      resource.attribution ??= { artworkCredit: "", sourceLabel: next.document.package.name };
+      markResourceDirty(next, resource.id);
+    });
+  }
   let sequence = next.document.resources.length + 1;
   let resourceId = `resource-${sequence}`;
   while (next.document.resources.some((resource) => resource.id === resourceId)) {
@@ -96,8 +133,9 @@ export function addTemplateResource(
     path,
     template: { id: template.id, version: template.version },
     presentation: structuredClone(template.defaultPresentation),
+    attribution: { artworkCredit: "", sourceLabel: next.document.package.name },
     data: structuredClone(template.defaultData),
-    ...(next.document.contractVersion === RESOURCE_PACKAGE_VERSION ? { replacements: [] } : {}),
+    replacements: [],
     media: {},
   });
   next.resourceLocations.push({

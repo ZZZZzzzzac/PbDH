@@ -4,7 +4,7 @@ import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type EnvironmentFeature = {
   名称: string;
-  原名: string;
+  原名?: string;
   类型: string;
   描述: string;
   引导问题: string;
@@ -13,7 +13,7 @@ export type EnvironmentFeature = {
 export type EnvironmentData = {
   名称: string;
   类型: string;
-  原文: string;
+  原文?: string;
   位阶: string;
   种类: string;
   简介: string;

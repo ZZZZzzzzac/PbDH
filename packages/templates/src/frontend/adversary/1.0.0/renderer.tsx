@@ -62,7 +62,8 @@ export const adversaryRendererStyles = `
 .enemy-heading { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
 .enemy-heading h1 { position: absolute; left: 14px; right: 14px; top: calc(var(--enemy-media-height) + 12px); margin: 0; color: #fff4df; font: 800 28px/1 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .enemy-original-title { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 42px); margin: 0; color: #d8ba91; font: 650 10px/1.25 "Noto Sans SC", sans-serif; }
-.enemy-summary { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 57px); width: 326px; margin: 0; color: #dcb299; font: italic 500 9.5px/1.25 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.enemy-summary { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 42px); width: 326px; margin: 0; color: #dcb299; font: italic 500 9.5px/1.25 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.enemy-heading.has-original-title .enemy-summary { top: calc(var(--enemy-media-height) + 57px); }
 .enemy-body { min-height: 0; height: 398px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
 .enemy-brief { height: 58px; flex: none; display: flex; align-items: center; gap: 6px; }
 .enemy-motives { width: 210px; height: 58px; flex: none; padding: 6px 7px; display: flex; flex-direction: column; justify-content: center; gap: 1px; overflow: hidden; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; font: 650 11.2px/1.3 "Noto Sans SC", sans-serif; }
@@ -176,6 +177,7 @@ export const adversaryRendererRevision: RendererRevisionCapability<
   render({ data, state, assets, presentation, onStateCommand }) {
     const portrait = assets.portrait;
     const mode = presentation.mode;
+    const hasOriginalTitle = Boolean(data.原文?.trim());
     const cardClass = [
       "enemy-card", `is-${mode}`, presentation.fixedRatio ? "" : "is-fluid",
       state.focused === "true" ? "is-focused" : "",
@@ -191,9 +193,9 @@ export const adversaryRendererRevision: RendererRevisionCapability<
       <div className="enemy-art">
         {mode === "split" && portrait ? <img src={portrait} alt="" /> : null}
         <div className="enemy-kicker">位阶{data.位阶} {data.种类}</div>
-        <header className="enemy-heading">
+        <header className={`enemy-heading${hasOriginalTitle ? " has-original-title" : ""}`}>
           <h1>{data.名称}</h1>
-          <p className="enemy-original-title">{data.原文}</p>
+          {hasOriginalTitle ? <p className="enemy-original-title">{data.原文}</p> : null}
           <p className="enemy-summary"><RestrictedMarkdown inline value={data.简介} /></p>
         </header>
       </div>
@@ -231,7 +233,7 @@ export const adversaryRendererRevision: RendererRevisionCapability<
         </section>
         <div className="enemy-feature-heading">特性</div>
         <section className="enemy-features" aria-label="敌人特性">{data.特性.map((feature, index) => <article className="enemy-feature" key={`${feature.名称}:${index}`}>
-          <h2><span className="enemy-feature-primary"><span className="enemy-feature-name">{feature.名称}</span><span className="enemy-feature-type">{feature.类型}</span></span><small>{feature.原名}</small></h2>
+          <h2><span className="enemy-feature-primary"><span className="enemy-feature-name">{feature.名称}</span><span className="enemy-feature-type">{feature.类型}</span></span>{feature.原名?.trim() ? <small>{feature.原名}</small> : null}</h2>
           <RestrictedMarkdown value={feature.特性描述} />
         </article>)}</section>
       </div>

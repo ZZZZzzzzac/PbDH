@@ -70,4 +70,24 @@ describe("environment-card-r1 Canonical Surface", () => {
     expect(() => environmentRendererFor("0.9.0")).toThrow("Unsupported environment Renderer version");
     expect(environmentRendererStyles).toContain(".environment-card");
   });
+
+  test("does not render empty English title nodes", () => {
+    const emptyEnglishResource = resource();
+    emptyEnglishResource.data = {
+      ...data,
+      原文: "   ",
+      特性: data.特性.map((feature) => ({ ...feature, 原名: "   " })),
+    };
+    const result = prepareCanonicalSurface({
+      resource: emptyEnglishResource,
+      expectedRendererRevision: environmentTemplate.rendererRevision,
+      renderer: environmentRendererRevision,
+      assets: new Map(),
+    });
+    if (result.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
+
+    expect(markup).not.toContain("environment-original");
+    expect(markup).not.toContain("<small>");
+  });
 });

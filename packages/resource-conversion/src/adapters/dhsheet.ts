@@ -187,9 +187,10 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   };
   if (group === "ancestry") return {
     名称: text(raw.种族),
+    原文: "",
     类型: "种族",
     简介: text(raw.简介),
-    特性: [{ 名称: text(raw.名称), 描述: text(raw.效果) }],
+    特性: [{ 名称: text(raw.名称), 原名: "", 描述: text(raw.效果) }],
   };
   if (group === "community") return {
     名称: text(raw.名称),
@@ -385,8 +386,9 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
             name,
             fields: {
               名称: name,
+              原文: "",
               简介: text(first.raw.简介),
-              特性: entries.map(({ raw }) => ({ 名称: text(raw.名称), 描述: text(raw.效果) })),
+              特性: entries.map(({ raw }) => ({ 名称: text(raw.名称), 原名: "", 描述: text(raw.效果) })),
             },
             source: {
               formatId: "dhsheet", upstreamRevision, path: `/ancestry/${first.index}`,

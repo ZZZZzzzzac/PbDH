@@ -127,6 +127,7 @@ import {
   selectWorkspaceFolder,
   toggleWorkspaceFolder,
   updateResourcePresentation,
+  updateResourceAttribution,
   updateResourceReplacement,
   updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
@@ -1523,6 +1524,9 @@ export function CreatorWorkspacePrototype({
       case "choose-portrait": portraitRef.current?.click(); return;
       case "set-editor-share": setEditorColumnShare(command.value); return;
       case "authoring-value": updateReferenceValue(command.path, command.value); return;
+      case "attribution-value":
+        if (active) replaceActive(updateResourceAttribution(active, (attribution) => { attribution[command.field] = command.value; }, resource?.id));
+        return;
       case "replacement":
         if (active) replaceActive(updateResourceReplacement(active, command.resourceId, command.replacementId, command.targetResourceId));
         return;

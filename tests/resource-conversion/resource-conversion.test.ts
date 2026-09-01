@@ -196,11 +196,12 @@ const ancestryBatch: TemporaryResourceBatch = {
     name: "龙人",
     fields: {
       名称: "龙人",
+      原文: "",
       类型: "种族",
       简介: "龙人的外观类似无翼的龙类。",
       特性: [
-        { 名称: "鳞片保护", 描述: "受到严重伤害时可以减少生命损失。" },
-        { 名称: "元素吐息", 描述: "喷吐元素能量并造成魔法伤害。" },
+        { 名称: "鳞片保护", 原名: "", 描述: "受到严重伤害时可以减少生命损失。" },
+        { 名称: "元素吐息", 原名: "", 描述: "喷吐元素能量并造成魔法伤害。" },
       ],
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -918,7 +919,7 @@ describe("registered Template mapping and native pbres", () => {
         ...ancestryBatch.resources[0]!,
         fields: {
           ...ancestryBatch.resources[0]!.fields,
-          特性: [{ 名称: "鳞片保护", 描述: "受到严重伤害时可以减少生命损失。" }],
+          特性: [{ 名称: "鳞片保护", 原名: "", 描述: "受到严重伤害时可以减少生命损失。" }],
         },
       }],
     }, { creator: "测试", owner: "测试" });

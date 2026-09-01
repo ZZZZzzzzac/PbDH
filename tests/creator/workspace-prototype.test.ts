@@ -28,12 +28,14 @@ import {
   prepareWorkspaceExport,
   previewWorkspaceResource,
   removePortrait,
+  resolveResourceAttribution,
   renameWorkspaceFolder,
   moveWorkspaceNode,
   selectWorkspaceFolder,
   toggleWorkspaceFolder,
   treeItemsInFolder,
   updateResourcePresentation,
+  updateResourceAttribution,
   updateResourceReplacement,
   updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
@@ -261,6 +263,44 @@ describe("Creator Workspace prototype state model", () => {
     expect(created.workspace.folders.some((folder) => folder.name === "武器")).toBe(false);
   });
 
+  test("defaults per-card attribution from the current package and keeps cards independent", async () => {
+    const legacy = createWorkspace({ document: structuredClone(document), media });
+    expect(resolveResourceAttribution(legacy.document.resources[0]!, legacy.document.package.name)).toEqual({
+      artworkCredit: "",
+      sourceLabel: legacy.document.package.name,
+    });
+
+    const ancestry = addTemplateResource(legacy, ancestryTemplate.id, ancestryTemplate.version);
+    const ancestryResource = ancestry.workspace.document.resources.find((resource) => resource.id === ancestry.resourceId)!;
+    expect(ancestry.workspace.document.contractVersion).toBe("1.1.0");
+    expect(ancestryResource.attribution).toEqual({ artworkCredit: "", sourceLabel: document.package.name });
+    expect(ancestry.workspace.document.resources[0]?.attribution).toEqual({
+      artworkCredit: "",
+      sourceLabel: document.package.name,
+    });
+
+    const credited = updateResourceAttribution(ancestry.workspace, (attribution) => {
+      attribution.artworkCredit = "Anthony Jones";
+      attribution.sourceLabel = "DH Core 061/270";
+    }, ancestry.resourceId);
+    expect(credited.document.resources.find((resource) => resource.id === ancestry.resourceId)?.attribution).toEqual({
+      artworkCredit: "Anthony Jones",
+      sourceLabel: "DH Core 061/270",
+    });
+    expect(credited.document.resources[0]?.attribution).toEqual({
+      artworkCredit: "",
+      sourceLabel: document.package.name,
+    });
+
+    const exported = await prepareWorkspaceExport(credited);
+    const loaded = await loadPbres(writePbres(exported.document, exported.media), validateResourcePackageCandidate);
+    expect(loaded.diagnostics).toEqual([]);
+    expect(loaded.candidate?.document.resources.find((resource) => resource.id === ancestry.resourceId)?.attribution).toEqual({
+      artworkCredit: "Anthony Jones",
+      sourceLabel: "DH Core 061/270",
+    });
+  });
+
   test("moves resources across folders while keeping a deterministic folder-first order", () => {
     const rootDocument = structuredClone(document);
     rootDocument.resources[0]!.path = "牛头人破坏者.json";
@@ -358,6 +398,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(copy.id).not.toBe(source.id);
     expect(copy.path).not.toBe(source.path);
     expect(copy.data).toEqual(source.data);
+    expect(copy.attribution).toEqual(source.attribution);
     expect(duplicated.workspace.dirtyResourceIds).toContain(copy.id);
     expect(duplicated.workspace.openResourceIds).toContain(copy.id);
   });
@@ -408,6 +449,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(copied.workspace.document.assets).toEqual(source.document.assets);
     expect(copied.workspace.media.get(asset.id)).toEqual(source.media.get(asset.id));
     expect(copied.workspace.media.get(asset.id)).not.toBe(source.media.get(asset.id));
+    expect(copiedSource.attribution).toEqual(source.document.resources[0]?.attribution);
     expect(copied.workspace.openResourceIds).toContain(copied.resourceId);
   });
 

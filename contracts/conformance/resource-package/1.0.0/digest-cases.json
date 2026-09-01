@@ -4,7 +4,7 @@
     "document": "valid/daggerheart-core-reference-types.json",
     "media": [],
     "targets": null,
-    "expected": "sha256:05540a6bdd9cdb8bbc0a6ecd7dd9e1db0ce9639560716134a4dd8adf4f0be47c"
+    "expected": "sha256:3d544a212ed12f578632177e8f1467afa4754ecdd91b0374da87a1c69ac16731"
   },
   {
     "name": "minotaur-wrecker-known-answer",

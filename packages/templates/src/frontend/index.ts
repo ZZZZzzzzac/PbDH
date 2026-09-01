@@ -22,7 +22,7 @@ export {
   armorRendererStyles,
   type ArmorRuntimeState,
 } from "./armor/1.0.0/renderer.tsx";
-export { ancestryRendererRevision, ancestryRendererStyles } from "./ancestry/1.0.0/renderer.tsx";
+export { ancestryFrameHeight, ancestryRendererRevision, ancestryRendererStyles } from "./ancestry/1.0.0/renderer.tsx";
 export { communityRendererRevision, communityRendererStyles } from "./community/1.0.0/renderer.tsx";
 export { domainRendererRevision, domainRendererStyles } from "./domain/1.0.0/renderer.tsx";
 export {
