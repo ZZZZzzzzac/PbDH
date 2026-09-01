@@ -16,7 +16,7 @@ import {
 import { canonicalCardDesignSize, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 
-import { marketDesignSource } from "../design.generated.ts";
+import { marketDesign } from "../design.ts";
 import { catalogOptions } from "./catalog-options.ts";
 import { Icon } from "./Icons.tsx";
 import {
@@ -871,7 +871,7 @@ export function MarketApp({
     };
   }, [auth.status, catalogRevision, filters, locationRoute, manageableCatalog, page, query, sort]);
 
-  return <main className="market-app" style={{ "--market-appbar-height": `${marketDesignSource.appBar.height}px` } as React.CSSProperties} data-design-source={marketDesignSource.document}>
+  return <main className="market-app" style={{ "--market-appbar-height": `${marketDesign.appBar.height}px` } as React.CSSProperties}>
     {view.page === "missing"
       ? <section className="missing-publication"><Icon name="package" /><h1>{view.resourceId ? "这张资源已经无法公开查看" : "这个资源包已经无法公开查看"}</h1><p>资源包可能已由作者取消公开，或者链接中的编号不存在。</p><button type="button" onClick={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin))}>返回资源市场</button></section>
       : publication

@@ -1,4 +1,4 @@
-import type { AuthoringLayout } from "../types.ts";
+import type { TemplateAuthoringCapability } from "../types.ts";
 import { resolveTemplateFrontend, supportedTemplateFrontends } from "../template-frontend-registry.ts";
 
 export const stableReferenceTemplateIds = supportedTemplateFrontends
@@ -10,9 +10,9 @@ export function isStableReferenceTemplateId(id: string): id is StableReferenceTe
   return stableReferenceTemplateIds.includes(id as StableReferenceTemplateId);
 }
 
-export function stableReferenceAuthoringLayoutFor(id: string, version: string): AuthoringLayout | undefined {
+export function stableReferenceAuthoringFor(id: string, version: string): TemplateAuthoringCapability | undefined {
   const frontend = resolveTemplateFrontend(id, version);
-  return frontend?.stableReferenceCard ? frontend.authoring.layout : undefined;
+  return frontend?.stableReferenceCard ? frontend.authoring : undefined;
 }
 
 export function stableReferenceRendererFor(id: string, version: string) {

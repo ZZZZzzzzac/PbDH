@@ -1,20 +1,22 @@
-export { adversaryAuthoringLayout } from "./adversary/1.0.0/authoring-layout.ts";
+export { adversaryAuthoring, AdversaryAuthoringEditor } from "./adversary/1.0.0/authoring-editor.tsx";
+export { ancestryAuthoring, AncestryAuthoringEditor } from "./ancestry/1.0.0/authoring-editor.tsx";
+export { armorAuthoring, ArmorAuthoringEditor } from "./armor/1.0.0/authoring-editor.tsx";
+export { communityAuthoring, CommunityAuthoringEditor } from "./community/1.0.0/authoring-editor.tsx";
+export { domainAuthoring, DomainAuthoringEditor } from "./domain/1.0.0/authoring-editor.tsx";
+export { environmentAuthoring, EnvironmentAuthoringEditor } from "./environment/1.0.0/authoring-editor.tsx";
+export { freeAuthoring, FreeAuthoringEditor } from "./free/1.0.0/authoring-editor.tsx";
+export { itemAuthoring, ItemAuthoringEditor } from "./item/1.0.0/authoring-editor.tsx";
+export { professionAuthoring, ProfessionAuthoringEditor } from "./profession/1.0.0/authoring-editor.tsx";
+export { subclassAuthoring, SubclassAuthoringEditor } from "./subclass/1.0.0/authoring-editor.tsx";
+export { weaponAuthoring, WeaponAuthoringEditor } from "./weapon/1.0.0/authoring-editor.tsx";
 export { TemplateAuthoringSurface } from "./authoring-surface.tsx";
-export { supportedAuthoringLayouts, trustedAuthoringLayoutFor } from "./authoring-registry.ts";
+export { supportedAuthoringCapabilities, trustedAuthoringFor } from "./authoring-registry.ts";
 export {
   resolveTemplateFrontend,
   supportedTemplateFrontends,
   type TemplateFrontendCapability,
   type TrustedTemplateRenderer,
 } from "./template-frontend-registry.ts";
-export { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
-export { ancestryAuthoringLayout } from "./ancestry/1.0.0/authoring-layout.ts";
-export { communityAuthoringLayout } from "./community/1.0.0/authoring-layout.ts";
-export { domainAuthoringLayout } from "./domain/1.0.0/authoring-layout.ts";
-export { environmentAuthoringLayout } from "./environment/1.0.0/authoring-layout.ts";
-export { itemAuthoringLayout } from "./item/1.0.0/authoring-layout.ts";
-export { professionAuthoringLayout } from "./profession/1.0.0/authoring-layout.ts";
-export { subclassAuthoringLayout } from "./subclass/1.0.0/authoring-layout.ts";
 export {
   armorRendererRevision,
   armorRendererStyles,
@@ -33,13 +35,13 @@ export { professionRendererRevision, professionRendererStyles } from "./professi
 export { subclassRendererRevision, subclassRendererStyles } from "./subclass/1.0.0/renderer.tsx";
 export {
   isStableReferenceTemplateId,
-  stableReferenceAuthoringLayoutFor,
+  stableReferenceAuthoringFor,
   stableReferenceRendererFor,
   stableReferenceTemplateIds,
   type StableReferenceTemplateId,
 } from "./reference-card/registry.ts";
 export {
-  adversaryCardDesignSource,
+  adversaryCardRenderSource,
   adversaryRendererRevision,
   adversaryRendererStyles,
   type AdversaryRuntimeState,
@@ -62,25 +64,15 @@ export {
   trustedRendererFor,
   weaponRendererFor,
 } from "./renderer-registry.ts";
-export { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";
 export {
   freeRendererRevision,
   freeRendererStyles,
   type FreeRuntimeState,
 } from "./free/1.0.0/renderer.tsx";
-export { weaponAuthoringLayout } from "./weapon/1.0.0/authoring-layout.ts";
 export {
-  weaponCardDesignSource,
+  weaponCardRenderSource,
   weaponRendererRevision,
   weaponRendererStyles,
   type WeaponRuntimeState,
 } from "./weapon/1.0.0/renderer.tsx";
-export type {
-  AuthoringControl,
-  AuthoringField,
-  AuthoringLayout,
-  AuthoringPreviewControl,
-  AuthoringRepeat,
-  AuthoringSection,
-  TemplateAuthoringCapability,
-} from "./types.ts";
+export type { TemplateAuthoringCapability, TemplateAuthoringEditorProps } from "./types.ts";

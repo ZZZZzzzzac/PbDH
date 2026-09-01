@@ -19,7 +19,7 @@ function normalize(value: unknown): string {
 export const weaponTemplate = deepFreeze<TemplateCoreCapability<WeaponData>>({
   id: "武器",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {

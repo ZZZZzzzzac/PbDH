@@ -1,9 +1,11 @@
 import type { AnySchema } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import {
-  subclassAuthoringLayout,
+  subclassAuthoring,
 } from "../../packages/templates/src/frontend/index.ts";
 import {
   subclassTemplate,
@@ -33,7 +35,7 @@ describe("子职业 Template 1.0.0", () => {
     expect(validate({ ...subclassTemplate.defaultData, 等级: "基石" })).toBe(true);
     expect(validate({ ...subclassTemplate.defaultData, 等级: "任意阶段" })).toBe(true);
     expect(subclassTemplate.defaultData.等级).toBe("");
-    expect(subclassAuthoringLayout.sections.flatMap((section) => section.fields)
-      .find((field) => field.path === "等级")?.enum).toEqual(["基础", "进阶", "精通"]);
+    expect(renderToStaticMarkup(createElement(subclassAuthoring.Editor, { data: subclassTemplate.defaultData, onValue: () => undefined })))
+      .toContain("展开等级选项");
   });
 });

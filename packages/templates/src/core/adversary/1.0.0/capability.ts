@@ -23,7 +23,7 @@ function normalize(value: unknown): string {
 export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData>>({
   id: "敌人",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {
@@ -41,7 +41,7 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
     return { title, summary, searchText };
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
-  defaultPresentation: { mode: "split", fixedRatio: true },
+  defaultPresentation: { mode: "split", fixedRatio: false },
   rendererRevision: "enemy-card-r1",
   tabletop: {
     stateSchema: {
@@ -53,7 +53,7 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
       },
       additionalProperties: false,
     },
-    defaultState(data) { return { currentHp: data.生命点, currentStress: "0", focused: "false", notes: "" }; },
+    defaultState() { return { currentHp: "0", currentStress: "0", focused: "false", notes: "" }; },
     commands: [
       { id: "adjust-hp", capability: "adjust-decimal-string", field: "currentHp" },
       { id: "adjust-stress", capability: "adjust-decimal-string", field: "currentStress" },

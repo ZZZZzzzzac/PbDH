@@ -8,7 +8,7 @@ import {
 } from "../../packages/templates/src/core/index.ts";
 import {
   buildTemplateSupportManifest,
-  environmentAuthoringLayout,
+  environmentAuthoring,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
@@ -47,20 +47,10 @@ describe("环境 Template 1.0.0", () => {
     const schema = environmentTemplate.schema as {
       properties: Record<string, { items?: { properties: Record<string, unknown> } }>;
     };
-    const topLevel = new Set<string>();
-    const featureFields = new Set<string>();
-    for (const section of environmentAuthoringLayout.sections) {
-      for (const field of section.fields) topLevel.add(field.path);
-      for (const repeat of section.repeats ?? []) {
-        topLevel.add(repeat.path);
-        for (const field of repeat.itemFields) featureFields.add(field.path);
-      }
-    }
-    expect(topLevel).toEqual(new Set(Object.keys(schema.properties)));
-    expect(featureFields).toEqual(new Set(Object.keys(schema.properties.特性!.items!.properties)));
+    expect(environmentAuthoring.Editor).toBeTypeOf("function");
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
-      authoringLayouts: [environmentAuthoringLayout],
+      authoringCapabilities: [environmentAuthoring],
       rendererRevisions: new Set(["environment-card-r1"]),
     }).templates).toEqual([{ id: "环境", version: "1.0.0", rendererRevision: "environment-card-r1" }]);
   });

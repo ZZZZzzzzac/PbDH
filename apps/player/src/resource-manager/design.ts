@@ -1,9 +1,4 @@
-// 此文件由 scripts/generate-player-design.mjs 从 docs/design/player-app.op 生成，禁止手改。
-
 export const playerResourceManagerDesign = {
-  "document": "docs/design/player-app.op",
-  "page": "10 Resource Manager",
-  "frame": "Player / Resource Manager / Creator 风格 / 大型多类型资源包",
   "canvas": {
     "background": "#F3EFE7"
   },
@@ -50,9 +45,6 @@ export const playerResourceManagerDesign = {
 } as const;
 
 export const playerCharacterSaveDesign = {
-  "document": "docs/design/player-app.op",
-  "page": "21 Character Saves",
-  "frame": "#44-US1 / Player / Character Saves / 存档列表与状态",
   "canvas": {
     "background": "#EEEAE4"
   },

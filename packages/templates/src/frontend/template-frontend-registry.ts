@@ -2,28 +2,28 @@ import type { ReactNode } from "react";
 
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 
-import { adversaryAuthoring } from "./adversary/1.0.0/authoring-layout.ts";
+import { adversaryAuthoring } from "./adversary/1.0.0/authoring-editor.tsx";
 import { adversaryRendererRevision } from "./adversary/1.0.0/renderer.tsx";
-import { ancestryAuthoringLayout } from "./ancestry/1.0.0/authoring-layout.ts";
+import { ancestryAuthoring } from "./ancestry/1.0.0/authoring-editor.tsx";
 import { ancestryRendererRevision } from "./ancestry/1.0.0/renderer.tsx";
-import { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
+import { armorAuthoring } from "./armor/1.0.0/authoring-editor.tsx";
 import { armorRendererRevision } from "./armor/1.0.0/renderer.tsx";
-import { communityAuthoringLayout } from "./community/1.0.0/authoring-layout.ts";
+import { communityAuthoring } from "./community/1.0.0/authoring-editor.tsx";
 import { communityRendererRevision } from "./community/1.0.0/renderer.tsx";
-import { domainAuthoringLayout } from "./domain/1.0.0/authoring-layout.ts";
+import { domainAuthoring } from "./domain/1.0.0/authoring-editor.tsx";
 import { domainRendererRevision } from "./domain/1.0.0/renderer.tsx";
-import { environmentAuthoringLayout } from "./environment/1.0.0/authoring-layout.ts";
+import { environmentAuthoring } from "./environment/1.0.0/authoring-editor.tsx";
 import { environmentRendererRevision } from "./environment/1.0.0/renderer.tsx";
-import { freeAuthoringLayout } from "./free/1.0.0/authoring-layout.ts";
+import { freeAuthoring } from "./free/1.0.0/authoring-editor.tsx";
 import { freeRendererRevision } from "./free/1.0.0/renderer.tsx";
-import { itemAuthoringLayout } from "./item/1.0.0/authoring-layout.ts";
+import { itemAuthoring } from "./item/1.0.0/authoring-editor.tsx";
 import { itemRendererRevision } from "./item/1.0.0/renderer.tsx";
-import { professionAuthoringLayout } from "./profession/1.0.0/authoring-layout.ts";
+import { professionAuthoring } from "./profession/1.0.0/authoring-editor.tsx";
 import { professionRendererRevision } from "./profession/1.0.0/renderer.tsx";
-import { subclassAuthoringLayout } from "./subclass/1.0.0/authoring-layout.ts";
+import { subclassAuthoring } from "./subclass/1.0.0/authoring-editor.tsx";
 import { subclassRendererRevision } from "./subclass/1.0.0/renderer.tsx";
-import type { AuthoringLayout, TemplateAuthoringCapability } from "./types.ts";
-import { weaponAuthoringLayout } from "./weapon/1.0.0/authoring-layout.ts";
+import type { TemplateAuthoringCapability } from "./types.ts";
+import { weaponAuthoring } from "./weapon/1.0.0/authoring-editor.tsx";
 import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
 import { manifestEntryFor } from "./template-frontend-manifest.ts";
 
@@ -40,16 +40,16 @@ export type TemplateFrontendCapability = {
 
 export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] = [
   binding(adversaryAuthoring, adversaryRendererRevision),
-  binding(ancestryAuthoringLayout, ancestryRendererRevision),
-  binding(armorAuthoringLayout, armorRendererRevision),
-  binding(communityAuthoringLayout, communityRendererRevision),
-  binding(domainAuthoringLayout, domainRendererRevision),
-  binding(environmentAuthoringLayout, environmentRendererRevision),
-  binding(freeAuthoringLayout, freeRendererRevision),
-  binding(itemAuthoringLayout, itemRendererRevision),
-  binding(professionAuthoringLayout, professionRendererRevision),
-  binding(subclassAuthoringLayout, subclassRendererRevision),
-  binding(weaponAuthoringLayout, weaponRendererRevision),
+  binding(ancestryAuthoring, ancestryRendererRevision),
+  binding(armorAuthoring, armorRendererRevision),
+  binding(communityAuthoring, communityRendererRevision),
+  binding(domainAuthoring, domainRendererRevision),
+  binding(environmentAuthoring, environmentRendererRevision),
+  binding(freeAuthoring, freeRendererRevision),
+  binding(itemAuthoring, itemRendererRevision),
+  binding(professionAuthoring, professionRendererRevision),
+  binding(subclassAuthoring, subclassRendererRevision),
+  binding(weaponAuthoring, weaponRendererRevision),
 ];
 
 const frontendsByKey = new Map(supportedTemplateFrontends.map((frontend) => [
@@ -65,23 +65,19 @@ export function resolveTemplateFrontend(
 }
 
 function binding(
-  authoring: AuthoringLayout | TemplateAuthoringCapability,
+  authoring: TemplateAuthoringCapability,
   rendererRevision: TrustedTemplateRenderer,
 ): TemplateFrontendCapability {
-  const capability: TemplateAuthoringCapability = "layout" in authoring
-    ? authoring
-    : { layout: authoring, previewControls: [] };
-  const authoringLayout = capability.layout;
-  if (authoringLayout.templateId !== rendererRevision.templateId
-    || authoringLayout.templateVersion !== rendererRevision.templateVersion) {
-    throw new Error(`Template frontend binding mismatch: ${authoringLayout.templateId}@${authoringLayout.templateVersion}`);
+  if (authoring.templateId !== rendererRevision.templateId
+    || authoring.templateVersion !== rendererRevision.templateVersion) {
+    throw new Error(`Template frontend binding mismatch: ${authoring.templateId}@${authoring.templateVersion}`);
   }
-  const manifest = manifestEntryFor(authoringLayout.templateId, authoringLayout.templateVersion);
-  if (!manifest) throw new Error(`Template frontend manifest missing: ${authoringLayout.templateId}@${authoringLayout.templateVersion}`);
+  const manifest = manifestEntryFor(authoring.templateId, authoring.templateVersion);
+  if (!manifest) throw new Error(`Template frontend manifest missing: ${authoring.templateId}@${authoring.templateVersion}`);
   return {
-    templateId: authoringLayout.templateId,
-    templateVersion: authoringLayout.templateVersion,
-    authoring: capability,
+    templateId: authoring.templateId,
+    templateVersion: authoring.templateVersion,
+    authoring,
     rendererRevision,
     loadRenderer: manifest.loadRenderer,
     stableReferenceCard: manifest.stableReferenceCard,

@@ -12,7 +12,7 @@ import {
 import { CanonicalCardSurface } from "../../packages/resource-renderer/src/react.tsx";
 import { weaponTemplate, type WeaponData } from "../../packages/templates/src/core/index.ts";
 import {
-  weaponCardDesignSource,
+  weaponCardRenderSource,
   weaponRendererRevision,
   weaponRendererStyles,
 } from "../../packages/templates/src/frontend/index.ts";
@@ -125,13 +125,11 @@ describe("weapon-card-r2 Canonical Surface", () => {
     expect(markup).not.toContain("weapon-card");
   });
 
-  test("is generated from the single reviewed OpenPencil component", () => {
-    expect(weaponCardDesignSource).toEqual({
-      document: "docs/design/creator-app.op",
-      page: "30 Components",
-      surface: "#28 / Canonical Card Surface",
-      component: "weapon-card-r2 / Canonical",
-      presentation: { ratio: "63:88", variableHeight: false },
+  test("uses the Template HTML/CSS implementation as its only visual source", () => {
+    expect(weaponCardRenderSource).toEqual({
+      source: "template-html-css",
+      implementation: "packages/templates/src/frontend/weapon/1.0.0/renderer.tsx",
+      fixedRatio: { width: 63, height: 88 },
       statNames: ["核心数据 / 属性", "核心数据 / 距离", "核心数据 / 伤害"],
       detailNames: ["规则 / 伤害类型", "规则 / 负荷"],
     });

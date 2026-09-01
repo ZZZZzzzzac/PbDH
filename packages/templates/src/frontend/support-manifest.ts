@@ -1,6 +1,6 @@
 import type { TemplateCoreCapability } from "../core/index.ts";
 
-import type { AuthoringLayout } from "./types.ts";
+import type { TemplateAuthoringCapability } from "./types.ts";
 
 type AnyTemplate = TemplateCoreCapability<any>;
 
@@ -32,17 +32,17 @@ function hasCompleteCore(template: AnyTemplate): boolean {
 
 export function buildTemplateSupportManifest(input: {
   templates: readonly AnyTemplate[];
-  authoringLayouts: readonly AuthoringLayout[];
+  authoringCapabilities: readonly TemplateAuthoringCapability[];
   rendererRevisions: ReadonlySet<string>;
 }): TemplateSupportManifest {
-  const layouts = new Set(
-    input.authoringLayouts.map((layout) => `${layout.templateId}@${layout.templateVersion}`),
+  const authoring = new Set(
+    input.authoringCapabilities.map((capability) => `${capability.templateId}@${capability.templateVersion}`),
   );
   return {
     templates: input.templates
       .filter((template) =>
         hasCompleteCore(template)
-        && layouts.has(`${template.id}@${template.version}`)
+        && authoring.has(`${template.id}@${template.version}`)
         && input.rendererRevisions.has(template.rendererRevision))
       .map((template) => ({
         id: template.id,

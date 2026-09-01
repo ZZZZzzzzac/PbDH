@@ -14,7 +14,7 @@ function normalize(value: unknown): string {
 export const ancestryTemplate = deepFreeze<TemplateCoreCapability<AncestryData>>({
   id: "种族",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {

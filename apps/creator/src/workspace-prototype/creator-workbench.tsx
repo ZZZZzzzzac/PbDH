@@ -62,7 +62,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
           data={resource.data as Record<string, unknown>}
           onValue={(path, value) => execute({ type: "authoring-value", path, value })}
         />}
-        {templateFrontend?.authoring.layout.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
+        {templateFrontend?.authoring.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
           key={replacement.id}
           label={replacement.label}
           value={resource.replacements?.find((candidate) => candidate.replacementId === replacement.id)?.targetResourceId ?? ""}
@@ -75,7 +75,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
 
       <aside className="preview-panel">
         <header><h1>实时预览</h1><div>
-          <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "半图半文字", image: "纯图片" }[mode]}</button>)}</div>
+          <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "图+文", image: "纯图片" }[mode]}</button>)}</div>
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
         {templateFrontend && template ? <TemplateRuntimePreview resource={resource} assets={previewAssets} frontend={templateFrontend} template={template} /> : null}

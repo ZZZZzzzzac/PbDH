@@ -167,7 +167,6 @@
 .preview-panel > header button, .preview-media button { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid #c9c1b6; border-radius: 6px; color: #3c332d; background: #fffdf8; font-size: 12px; font-weight: 750; }
 .card-mode { height: 32px; display: flex; overflow: hidden; border: 1px solid var(--creator-preview-control-border); border-radius: 6px; background: var(--creator-preview-control); }
 .preview-panel > header .card-mode button { height: 30px; padding: 0 8px; border: 0; border-radius: 0; color: #725443; background: transparent; font-size: 11px; }
-.preview-panel > header .card-mode button:nth-child(2) { width: 82px; }
 .preview-panel > header .card-mode button[aria-pressed="true"] { color: #fffdf8; background: var(--creator-preview-control-active); font-weight: 750; }
 .preview-panel > header button.fixed-ratio { gap: 6px; padding: 0 8px; background: var(--creator-preview-control); font-size: 11px; }
 .fixed-ratio i { position: relative; width: 26px; height: 16px; border-radius: 8px; background: #6b625a; }

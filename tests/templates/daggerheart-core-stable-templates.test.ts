@@ -14,27 +14,27 @@ import {
   templateRegistry,
 } from "../../packages/templates/src/core/index.ts";
 import {
-  ancestryAuthoringLayout,
+  ancestryAuthoring,
   ancestryRendererFor,
-  communityAuthoringLayout,
+  communityAuthoring,
   communityRendererFor,
-  domainAuthoringLayout,
+  domainAuthoring,
   domainRendererFor,
-  itemAuthoringLayout,
+  itemAuthoring,
   itemRendererFor,
-  professionAuthoringLayout,
+  professionAuthoring,
   professionRendererFor,
-  subclassAuthoringLayout,
+  subclassAuthoring,
   subclassRendererFor,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const cases = [
-  [ancestryTemplate, ancestryAuthoringLayout, ancestryRendererFor],
-  [communityTemplate, communityAuthoringLayout, communityRendererFor],
-  [professionTemplate, professionAuthoringLayout, professionRendererFor],
-  [subclassTemplate, subclassAuthoringLayout, subclassRendererFor],
-  [itemTemplate, itemAuthoringLayout, itemRendererFor],
-  [domainTemplate, domainAuthoringLayout, domainRendererFor],
+  [ancestryTemplate, ancestryAuthoring, ancestryRendererFor],
+  [communityTemplate, communityAuthoring, communityRendererFor],
+  [professionTemplate, professionAuthoring, professionRendererFor],
+  [subclassTemplate, subclassAuthoring, subclassRendererFor],
+  [itemTemplate, itemAuthoring, itemRendererFor],
+  [domainTemplate, domainAuthoring, domainRendererFor],
 ] as const;
 
 const gameValueConstraintKeywords = new Set([
@@ -67,18 +67,12 @@ describe("Daggerheart Core 剩余稳定 Templates", () => {
     }
   });
 
-  test.each(cases)("%s@1.0.0 是唯一版本并提供完整作者与渲染能力", (template, layout, rendererFor) => {
+  test.each(cases)("%s@1.0.0 是唯一版本并提供完整作者与渲染能力", (template, authoring, rendererFor) => {
     expect(templateRegistry.resolve(template.id, "1.0.0")).toBe(template);
     expect(templateRegistry.resolve(template.id, "0.9.0")).toBeUndefined();
-    expect(layout.templateId).toBe(template.id);
-    expect(layout.templateVersion).toBe(template.version);
-
-    const schemaFields = Object.keys((template.schema as { properties: Record<string, unknown> }).properties).sort();
-    const authoringFields = [...new Set(layout.sections.flatMap((section) => [
-      ...section.fields.map((field) => field.path),
-      ...(section.repeats ?? []).map((repeat) => repeat.path),
-    ]).map((path) => path.split(".")[0]!))].sort();
-    expect(authoringFields).toEqual(schemaFields);
+    expect(authoring.templateId).toBe(template.id);
+    expect(authoring.templateVersion).toBe(template.version);
+    expect(authoring.Editor).toBeTypeOf("function");
 
     expect(rendererFor("1.0.0").revision).toBe(template.rendererRevision);
     expect(() => rendererFor("0.9.0")).toThrow();

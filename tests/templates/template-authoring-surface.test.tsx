@@ -19,11 +19,9 @@ describe("Template-owned authoring surfaces", () => {
     for (const frontend of supportedTemplateFrontends) {
       const template = templateRegistry.resolve(frontend.templateId, frontend.templateVersion);
       expect(template).toBeDefined();
-      expect(frontend.authoring.layout.templateId).toBe(frontend.templateId);
-      expect(frontend.authoring.layout.templateVersion).toBe(frontend.templateVersion);
-      for (const control of frontend.authoring.previewControls) {
-        expect(template!.tabletop.commands.some((command) => command.id === control.commandId), `${frontend.templateId}/${control.commandId}`).toBe(true);
-      }
+      expect(frontend.authoring.templateId).toBe(frontend.templateId);
+      expect(frontend.authoring.templateVersion).toBe(frontend.templateVersion);
+      expect(frontend.authoring.Editor).toBeTypeOf("function");
 
       const markup = renderToStaticMarkup(<TemplateAuthoringSurface
         authoring={frontend.authoring}
@@ -32,14 +30,7 @@ describe("Template-owned authoring surfaces", () => {
       />);
 
       expect(markup).toContain(`data-template-authoring="${frontend.templateId}@${frontend.templateVersion}"`);
-      for (const section of frontend.authoring.layout.sections) {
-        expect(section.columns, `${frontend.templateId}/${section.id}`).toBeGreaterThan(0);
-        expect(markup).toContain(`data-authoring-section="${section.id}"`);
-        for (const repeat of section.repeats ?? []) {
-          expect(repeat.columns, `${frontend.templateId}/${repeat.path}`).toBeGreaterThan(0);
-          expect(Object.keys(repeat.itemDefaults).sort()).toEqual(repeat.itemFields.map((field) => field.path).sort());
-        }
-      }
+      expect(markup).toContain("<input");
     }
   });
 

@@ -4,14 +4,14 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
-import { freeAuthoringLayout, trustedRendererFor } from "@pbdh/templates/frontend";
+import { freeAuthoring, trustedRendererFor } from "@pbdh/templates/frontend";
 import { describe, expect, test } from "vitest";
 
 import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { storedColumnShare } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import { CreatorResourceExplorer } from "../../apps/creator/src/workspace-prototype/creator-resource-explorer.tsx";
-import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.generated.ts";
+import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
   addTemplateResource,
@@ -382,7 +382,7 @@ describe("Creator Workspace prototype state model", () => {
         { 标题: "简介", 正文: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。" },
       ],
     });
-    expect(freeAuthoringLayout.templateId).toBe("自由");
+    expect(freeAuthoring.templateId).toBe("自由");
     expect(trustedRendererFor("自由", "1.0.0")?.revision).toBe("free-card-r1");
 
   });
@@ -577,25 +577,17 @@ describe("Creator Workspace prototype state model", () => {
     });
   });
 
-  test("binds the App shell to the reviewed OpenPencil source", () => {
+  test("keeps reviewed App visual constants in ordinary frontend source", () => {
     expect(creatorWorkspaceDesign).toMatchObject({
-      document: "docs/design/creator-app.op",
-      page: "10 Creator Workspace Rough",
-      frame: "#30 / Creator Workspace / 敌人编辑",
-      canonicalSurface: "enemy-card-r1 / Canonical",
       appBar: { height: 56, background: "#1B1714" },
       tabs: { height: 36 },
       columns: { resourceNavigationWidth: 250, bodyGap: 12, bodyPadding: 12 },
       field: { height: 32, fontSize: 12 },
       weapon: {
-        page: "12 Creator Weapon Editing",
-        frame: "#37 / Creator Workspace / 主武器编辑",
-        canonicalSurface: "weapon-card-r1 / Canonical",
+        nameInputWidth: "fill_container",
+        descriptionInputHeight: 174,
       },
       gmTabletop: {
-        page: "13 GM Tabletop",
-        frame: "#32 / GM Tabletop / 敌人桌面",
-        instanceEditorFrame: "#32 / GM Tabletop / 敌人实例编辑",
         resourceNavigationWidth: 250,
         tabs: { height: 36 },
         zoomStatus: { width: 72, height: 28 },
@@ -604,6 +596,14 @@ describe("Creator Workspace prototype state model", () => {
         instanceEditor: { editorWidth: 560, previewBackground: "#D8D1C7" },
       },
     });
+  });
+
+  test("uses the concise mixed-media preview label", () => {
+    const source = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-workbench.tsx"), "utf8");
+    const styles = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/workspace.css"), "utf8");
+    expect(source).toContain('split: "图+文"');
+    expect(source).not.toContain("半图半文字");
+    expect(styles).not.toContain(".card-mode button:nth-child(2)");
   });
 
   test("prints GM cards without application chrome or selection controls", () => {
@@ -628,11 +628,17 @@ describe("Creator Workspace prototype state model", () => {
       root,
       "packages/templates/src/frontend/authoring-surface.tsx",
     ), "utf8");
+    const editorStyles = readFileSync(path.join(
+      root,
+      "packages/templates/src/frontend/standard-editor-styles.ts",
+    ), "utf8");
 
     expect(workbenchSource).toContain("<TemplateAuthoringSurface");
     expect(workbenchSource).not.toContain("armor-workbench-body");
-    expect(authoringSource).toContain("@media(max-width:760px)");
-    expect(authoringSource).toContain("grid-template-columns:minmax(0,1fr)!important");
+    expect(authoringSource).toContain("<Editor data={data} onValue={onValue}");
+    expect(authoringSource).not.toContain("<input");
+    expect(editorStyles).toContain("@media(max-width:760px)");
+    expect(editorStyles).toContain("grid-template-columns:minmax(0,1fr)!important");
   });
 
   test("binds GM whiteboard gestures and context menus without tool modes", () => {

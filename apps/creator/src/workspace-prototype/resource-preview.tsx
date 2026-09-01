@@ -58,7 +58,6 @@ export function TemplateRuntimePreview({
   template: TemplateCoreCapability<Record<string, unknown>>;
 }) {
   const renderer = frontend.rendererRevision;
-  const controls = frontend.authoring.previewControls;
   const defaultState = () => template.tabletop.defaultState(resource.data as Record<string, unknown>);
   const [state, setState] = useState<Record<string, string>>(defaultState);
 
@@ -74,20 +73,7 @@ export function TemplateRuntimePreview({
     ).state);
   }
 
-  return <div className={`preview-runtime-surface${controls.length ? " has-controls" : ""}`}>
-    {controls.length ? <div className="preview-runtime-controls" aria-label="桌面状态模拟">
-      {controls.map((control) => {
-        const value = state[control.statePath] ?? "";
-        if (control.kind === "counter") return <span className="preview-runtime-control" key={control.statePath}>
-          <span>{control.label} <b>{value}</b></span>
-          <button type="button" aria-label={`${control.label}减少`} onClick={() => runCommand(control.commandId, "-1")}>−</button>
-          <button type="button" aria-label={`${control.label}增加`} onClick={() => runCommand(control.commandId, "1")}>＋</button>
-        </span>;
-        if (control.kind === "toggle") return <button type="button" key={control.statePath} aria-pressed={value === control.activeValue} onClick={() => runCommand(control.commandId, value === control.activeValue ? control.inactiveValue : control.activeValue)}>{control.label}</button>;
-        return <input key={control.statePath} aria-label={control.label} placeholder={control.placeholder} value={value} onChange={(event) => runCommand(control.commandId, event.target.value)} />;
-      })}
-      <button type="button" onClick={() => setState(defaultState())}>重置</button>
-    </div> : null}
+  return <div className="preview-runtime-surface">
     <AutoFitPreview>
       <CanonicalCardSurface
         resource={resource as unknown as SurfaceResource<Record<string, unknown>>}

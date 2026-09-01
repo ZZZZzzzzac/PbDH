@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 import type { CreatorAppMode } from "./creator-layout.tsx";
-import { creatorWorkspaceDesign } from "./design.generated.ts";
+import { creatorWorkspaceDesign } from "./design.ts";
 
 export function creatorWorkspaceStyle(
   appMode: CreatorAppMode,

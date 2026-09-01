@@ -27,7 +27,7 @@ import type { ResourcePackageSource } from "../resources/resource-package-reposi
 import type { PlayerMarketHandoff } from "../resources/market-handoff.ts";
 import { prepareResourcePackageInstall } from "../resources/prepare-resource-package-install.ts";
 import { materializePlayerResourceConversion } from "../resources/materialize-resource-conversion.ts";
-import { playerResourceManagerDesign } from "./design.generated.ts";
+import { playerResourceManagerDesign } from "./design.ts";
 
 export type ResourcePackageIngress =
   | {
@@ -512,7 +512,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
     </div>;
   }
 
-  return <div className="resource-manager-layer" style={style} data-design-source={playerResourceManagerDesign.document}>
+  return <div className="resource-manager-layer" style={style}>
     <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
       <header className="manager-bar"><h1>资源管理器</h1><span>{operation === "checking" ? <OperationStatus label="正在检查资源包…" /> : operation === "converting" ? <OperationStatus label="正在转换资源…" /> : currentSystem.package.name}</span><div className="manager-import-actions">{thirdPartyFormats.map((format) => <button key={format.id} type="button" disabled={Boolean(operation)} onClick={() => { conversionFormatRef.current = format.id; conversionInputRef.current?.click(); }}>{format.label}</button>)}<button className="install" disabled={Boolean(operation)} onClick={() => inputRef.current?.click()}>导入pbres格式</button></div><button className="close" aria-label="关闭资源管理器" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
       <div className="manager-body">

@@ -40,7 +40,7 @@ import {
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { templateRegistry } from "@pbdh/templates/core";
 
-import { creatorWorkspaceDesign } from "./design.generated.ts";
+import { creatorWorkspaceDesign } from "./design.ts";
 import {
   imageAsset,
   type PublicationCoverDraft,
@@ -370,8 +370,8 @@ export function CreatorWorkspacePrototype({
   const selectedInstanceTemplate = selectedInstance
     ? templateRegistry.resolve(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
-  const selectedInstanceLayout = selectedInstance
-    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)?.authoring.layout
+  const selectedInstanceAuthoring = selectedInstance
+    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)?.authoring
     : undefined;
   const resourceTemplateOptions = useMemo(() => [...new Set(workspaces.flatMap((workspace) =>
     workspace.document.resources.map((item) => item.template.id)))].sort(), [workspaces]);
@@ -1625,7 +1625,7 @@ export function CreatorWorkspacePrototype({
   }
 
   return (
-    <main className={`creator-prototype${appMode === "gm" ? " is-gm-mode" : ""}${appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open" : ""}`} style={designStyle} data-design-source={creatorWorkspaceDesign.document}>
+    <main className={`creator-prototype${appMode === "gm" ? " is-gm-mode" : ""}${appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open" : ""}`} style={designStyle}>
       <div className="creator-workspace">
         <CreatorResourceExplorer
           snapshot={{
@@ -1682,7 +1682,6 @@ export function CreatorWorkspacePrototype({
             zoom: canvasZoom,
             pan: canvasPan,
             assetUrls,
-            designFrame: creatorWorkspaceDesign.gmTabletop.frame,
           }}
           viewportRef={tabletopViewportRef}
           surfaceRef={tabletopSurfaceRef}
@@ -1702,7 +1701,7 @@ export function CreatorWorkspacePrototype({
           resourceMultiSelect,
           selectedWorkspaceResources,
           selectedInstance,
-          selectedInstanceEditable: Boolean(selectedInstanceLayout),
+          selectedInstanceEditable: Boolean(selectedInstanceAuthoring),
           selectedInstanceCount: selectedInstanceIds.length,
         }}
         execute={executeContextMenuCommand}

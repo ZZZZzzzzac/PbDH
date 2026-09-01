@@ -1,9 +1,8 @@
-import type { AuthoringLayout } from "./types.ts";
+import type { TemplateAuthoringCapability } from "./types.ts";
 import { resolveTemplateFrontend, supportedTemplateFrontends } from "./template-frontend-registry.ts";
 
-export const supportedAuthoringLayouts: readonly AuthoringLayout[] = supportedTemplateFrontends
-  .map((frontend) => frontend.authoring.layout);
+export const supportedAuthoringCapabilities: readonly TemplateAuthoringCapability[] = supportedTemplateFrontends.map((frontend) => frontend.authoring);
 
-export function trustedAuthoringLayoutFor(templateId: string, version: string): AuthoringLayout | undefined {
-  return resolveTemplateFrontend(templateId, version)?.authoring.layout;
+export function trustedAuthoringFor(templateId: string, version: string): TemplateAuthoringCapability | undefined {
+  return resolveTemplateFrontend(templateId, version)?.authoring;
 }

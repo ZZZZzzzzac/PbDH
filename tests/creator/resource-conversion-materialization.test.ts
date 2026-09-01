@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { loadPbres, writePbres } from "@pbdh/contract-runtime";
 import { resourceConversionRegistry } from "@pbdh/resource-conversion";
-import { trustedAuthoringLayoutFor, trustedRendererFor } from "@pbdh/templates/frontend";
+import { trustedAuthoringFor, trustedRendererFor } from "@pbdh/templates/frontend";
 
 import { materializeCreatorResourceConversion } from "../../apps/creator/src/workspace-prototype/materialize-resource-conversion.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
@@ -93,7 +93,7 @@ describe("Creator third-party resource conversion", () => {
     const weapon = converted.candidate?.document.resources[0];
 
     expect(weapon?.template).toEqual({ id: "武器", version: "1.0.0" });
-    expect(trustedAuthoringLayoutFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
+    expect(trustedAuthoringFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
     expect(trustedRendererFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
   });
 });

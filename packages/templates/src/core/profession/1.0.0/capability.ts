@@ -27,7 +27,7 @@ function searchableValues(value: unknown): string[] {
 export const professionTemplate = deepFreeze<TemplateCoreCapability<ProfessionData>>({
   id: "职业",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {

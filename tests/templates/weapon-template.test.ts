@@ -11,9 +11,9 @@ import {
   type WeaponData,
 } from "../../packages/templates/src/core/index.ts";
 import {
-  adversaryAuthoringLayout,
+  adversaryAuthoring,
   buildTemplateSupportManifest,
-  weaponAuthoringLayout,
+  weaponAuthoring,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const root = process.cwd();
@@ -82,20 +82,14 @@ describe("武器 Template Core", () => {
 });
 
 describe("武器 Template Authoring 与支持清单", () => {
-  test("Authoring Layout covers every editable Schema field", () => {
-    const fields = new Set(
-      weaponAuthoringLayout.sections.flatMap((section) =>
-        section.fields.map((field) => field.path)),
-    );
-    const schema = weaponTemplate.schema as { properties: Record<string, unknown> };
-    expect(fields).toEqual(new Set(Object.keys(schema.properties)));
-    expect(JSON.parse(JSON.stringify(weaponAuthoringLayout))).toEqual(weaponAuthoringLayout);
+  test("ships its own authoring editor", () => {
+    expect(weaponAuthoring.Editor).toBeTypeOf("function");
   });
 
   test("stays out of complete frontend support until weapon-card-r2 exists", () => {
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
-      authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout],
+      authoringCapabilities: [adversaryAuthoring, weaponAuthoring],
       rendererRevisions: new Set(["enemy-card-r1"]),
     })).toEqual({
       templates: [
@@ -104,7 +98,7 @@ describe("武器 Template Authoring 与支持清单", () => {
     });
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
-      authoringLayouts: [adversaryAuthoringLayout, weaponAuthoringLayout],
+      authoringCapabilities: [adversaryAuthoring, weaponAuthoring],
       rendererRevisions: new Set(["enemy-card-r1", "weapon-card-r2"]),
     })).toEqual({
       templates: [

@@ -7,7 +7,7 @@ import {
   templateRegistry,
 } from "../../packages/templates/src/core/index.ts";
 import {
-  armorAuthoringLayout,
+  armorAuthoring,
   buildTemplateSupportManifest,
 } from "../../packages/templates/src/frontend/index.ts";
 
@@ -18,21 +18,19 @@ describe("护甲 Template 1.0.0", () => {
   test("registers the sole supported development capability", () => {
     expect(templateRegistry.resolve("护甲", "1.0.0")).toBe(armorTemplate);
     expect(templateRegistry.resolve("护甲", "0.9.0")).toBeUndefined();
-    expect(armorTemplate.state).toBe("published");
+    expect(armorTemplate.state).toBe("development");
     expect(armorTemplate.rendererRevision).toBe("armor-card-r1");
   });
 
-  test("covers every schema field in the authoring layout", () => {
-    const schemaFields = Object.keys((armorTemplate.schema as { properties: Record<string, unknown> }).properties).sort();
-    const authoringFields = armorAuthoringLayout.sections.flatMap((section) => section.fields.map((field) => field.path)).sort();
-    expect(authoringFields).toEqual(schemaFields);
+  test("ships a Template-owned authoring editor for valid default data", () => {
+    expect(armorAuthoring.Editor).toBeTypeOf("function");
     expect(validate(armorTemplate.defaultData), JSON.stringify(validate.errors)).toBe(true);
   });
 
   test("enters the exact full-support manifest only with authoring and Renderer support", () => {
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
-      authoringLayouts: [armorAuthoringLayout],
+      authoringCapabilities: [armorAuthoring],
       rendererRevisions: new Set(["armor-card-r1"]),
     }).templates).toEqual([{ id: "护甲", version: "1.0.0", rendererRevision: "armor-card-r1" }]);
   });

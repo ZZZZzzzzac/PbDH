@@ -1,10 +1,4 @@
-// 此文件由 scripts/generate-adversary-card-design.mjs 从 docs/design/creator-app.op 生成，禁止手改.
-
 export const creatorWorkspaceDesign = {
-  "document": "docs/design/creator-app.op",
-  "page": "10 Creator Workspace Rough",
-  "frame": "#30 / Creator Workspace / 敌人编辑",
-  "canonicalSurface": "enemy-card-r1 / Canonical",
   "canvas": {
     "width": 1440,
     "height": 1024,
@@ -70,16 +64,10 @@ export const creatorWorkspaceDesign = {
   },
   "accent": "#D65458",
   "weapon": {
-    "page": "12 Creator Weapon Editing",
-    "frame": "#37 / Creator Workspace / 主武器编辑",
-    "canonicalSurface": "weapon-card-r1 / Canonical",
     "nameInputWidth": "fill_container",
     "descriptionInputHeight": 174
   },
   "gmTabletop": {
-    "page": "13 GM Tabletop",
-    "frame": "#32 / GM Tabletop / 敌人桌面",
-    "instanceEditorFrame": "#32 / GM Tabletop / 敌人实例编辑",
     "resourceNavigationWidth": 250,
     "tabs": {
       "height": 36,
@@ -110,9 +98,6 @@ export const creatorWorkspaceDesign = {
     }
   },
   "cloudDocuments": {
-    "page": "21 Cloud Documents",
-    "statesFrame": "#43 / Creator 与 GM 云同步状态",
-    "dialogsFrame": "#43 / 云同步对话框与回收站",
     "status": {
       "localBackground": "#E9E4DC",
       "localForeground": "#62574E",

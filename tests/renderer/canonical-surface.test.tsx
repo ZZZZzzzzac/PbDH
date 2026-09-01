@@ -17,7 +17,7 @@ import {
 } from "../../packages/resource-renderer/src/react.tsx";
 import type { AdversaryData } from "../../packages/templates/src/core/index.ts";
 import {
-  adversaryCardDesignSource,
+  adversaryCardRenderSource,
   adversaryRendererRevision,
   adversaryRendererStyles,
   type AdversaryRuntimeState,
@@ -68,7 +68,7 @@ describe("Canonical Surface Renderer Port", () => {
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     expect(result.designRatio).toEqual({ width: 63, height: 88 });
     expect(result.renderInput.state).toEqual({
-      currentHp: "7",
+      currentHp: "0",
       currentStress: "0",
       focused: "false",
       notes: "",
@@ -89,10 +89,27 @@ describe("Canonical Surface Renderer Port", () => {
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
     expect(markup).toContain("伤痕牛头人");
-    expect(markup).toContain("HP 3/7");
-    expect(markup).toContain("压力 4/5");
+    expect(markup).toContain("生命点");
+    expect(markup).toContain("压力点");
     expect(markup).toContain("is-focused");
     expect(result.renderer.revision).toBe("enemy-card-r1");
+  });
+
+  test("renders empty and filled card markers as the Template-owned GM controls", () => {
+    const result = prepare({
+      state: { currentHp: "3", currentStress: "2", focused: "false", notes: "" },
+    });
+    if (result.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(result.renderer.render({
+      ...result.renderInput,
+      onStateCommand: () => undefined,
+    }));
+
+    expect(markup.match(/aria-pressed="true"/gu)).toHaveLength(5);
+    expect(markup.match(/aria-pressed="false"/gu)).toHaveLength(7);
+    expect(markup.match(/class="marker-shape"/gu)).toHaveLength(12);
+    expect(markup.match(/class="marker-bolt"/gu)).toHaveLength(5);
+    expect(markup).not.toContain("disabled=\"\"");
   });
 
   test("returns stable unsupported, invalid-state, and invalid-presentation diagnostics", () => {
@@ -144,14 +161,19 @@ describe("Canonical Surface Renderer Port", () => {
   test("renders explicit text, split and image presentation modes", () => {
     const textOnlyResource = structuredClone(resource);
     textOnlyResource.presentation.mode = "text";
+    textOnlyResource.presentation.fixedRatio = false;
     textOnlyResource.media = {};
     const result = prepare({ candidate: textOnlyResource, assets: new Map() });
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
-    expect(markup).toContain("enemy-art is-text-only");
+    expect(markup).toContain("class=\"enemy-art\"");
     expect(markup).not.toContain("<img");
     expect(markup).toContain("牛头人破坏者");
+    expect(markup).toContain("enemy-card is-text is-fluid");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-text { --enemy-media-height: 0px; }");
+    expect(adversaryRendererStyles).toContain("height: calc(var(--enemy-media-height) + 74px)");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-split.is-fluid { min-height: 568px; }");
 
     const split = prepare();
     if (split.status !== "ready") throw new Error("Expected ready Surface");
@@ -161,12 +183,16 @@ describe("Canonical Surface Renderer Port", () => {
 
     const imageResource = structuredClone(resource);
     imageResource.presentation.mode = "image";
+    imageResource.presentation.fixedRatio = false;
     const image = prepare({ candidate: imageResource });
     if (image.status !== "ready") throw new Error("Expected ready Surface");
     const imageMarkup = renderToStaticMarkup(image.renderer.render(image.renderInput));
     expect(imageMarkup).toContain("is-image");
+    expect(imageMarkup).toContain("is-fluid");
     expect(imageMarkup).toContain("<img");
     expect(imageMarkup).not.toContain("enemy-body");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-image.is-fluid .enemy-art { height: auto; }");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-image.is-fluid .enemy-art img { height: auto; }");
   });
 
   test("passes the fixed-ratio policy into the canonical renderer", () => {
@@ -221,13 +247,12 @@ describe("Canonical Surface Renderer Port", () => {
 });
 
 describe("enemy-card-r1 structure and visual baseline", () => {
-  test("is generated from the tracked OpenPencil design source", () => {
-    expect(adversaryCardDesignSource).toEqual({
-      document: "docs/design/creator-app.op",
-      page: "30 Components",
-      surface: "#28 / Canonical Card Surface",
-      component: "enemy-card-r1 / Canonical",
-      presentation: { ratio: "63:88", variableHeight: false },
+  test("uses the Template HTML/CSS implementation as its render source", () => {
+    expect(adversaryCardRenderSource).toEqual({
+      source: "template-html-css",
+      implementation: "packages/templates/src/frontend/adversary/1.0.0/renderer.tsx",
+      nativeCanvas: { width: 360, minimumHeight: 568 },
+      fixedRatio: { width: 63, height: 88 },
       featureNames: ["特性 / 蓄力", "特性 / 蛮牛冲撞", "特性 / 角撞"],
     });
   });
@@ -279,18 +304,24 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(markup).toContain("<strong>花费 1 恐惧点</strong>");
     expect(markup).toContain("<div class=\"enemy-brief\">");
     expect(markup).toContain("<div class=\"enemy-feature-heading\">特性</div>");
-    expect(markup).toContain("<small><span>Charging Bull</span><span>动作</span></small>");
-    expect(markup).not.toContain("<span>生命</span>");
-    expect(markup).not.toContain("<span>压力</span>");
+    expect(markup).toContain("<span class=\"enemy-feature-primary\"><span class=\"enemy-feature-name\">蛮牛冲撞</span><span class=\"enemy-feature-type\">动作</span></span><small>Charging Bull</small>");
+    expect(adversaryRendererStyles).toContain(".enemy-feature-primary");
+    expect(adversaryRendererStyles).toContain("width: 360px");
+    expect(adversaryRendererStyles).toContain("transform: scale(.175)");
+    expect(adversaryRendererStyles).not.toContain("zoom:");
+    expect(adversaryRendererStyles).toContain(".enemy-feature-type { color: #87504b; font: 650 12px/1.2");
+    expect(adversaryRendererStyles).toContain(".enemy-feature p { min-width: 0; margin: 0; overflow: visible");
+    expect(markup).toContain('<span class="enemy-state-label">生命点</span>');
+    expect(markup).toContain('<span class="enemy-state-label">压力点</span>');
     expect(markup).toContain("aria-label=\"将生命设为 6\"");
     expect(markup).toContain("disabled=\"\"");
     expect(adversaryRendererStyles).toContain(".enemy-card.is-fluid");
-    expect(adversaryRendererStyles).toContain(".enemy-card.is-image .enemy-art{height:100%}");
+    expect(adversaryRendererStyles).toContain(".enemy-card.is-image .enemy-art { height: 100%; }");
     const signature = createHash("sha256")
       .update(adversaryRendererStyles)
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("1c73978277e3cff1e56cf586310b0d57c65ab95df37665323fc637d64250ce59");
+    expect(signature).toBe("95049042aaf05e52c8a24c1d9b2f3ce376b19e07d078c3b761afe209659c4f69");
   });
 });

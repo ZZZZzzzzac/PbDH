@@ -43,7 +43,7 @@ const defaultData: EnvironmentData = {
 export const environmentTemplate = deepFreeze<TemplateCoreCapability<EnvironmentData>>({
   id: "环境",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {

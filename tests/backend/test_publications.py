@@ -108,8 +108,8 @@ def publish(
     )
 
 
-def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_path: Path) -> None:
-    api = client(tmp_path, "production")
+def test_authenticated_development_publish_is_anonymously_discoverable_and_downloadable(tmp_path: Path) -> None:
+    api = client(tmp_path, "development")
     document, media = candidate()
     response = publish(api, claim(api, "author-one"), document, media)
 
@@ -261,7 +261,7 @@ def self_contained_document(
     return embedded
 
 
-def test_current_converted_weapon_template_can_be_published(tmp_path: Path) -> None:
+def test_current_converted_weapon_template_can_be_published_in_development(tmp_path: Path) -> None:
     document, media = candidate()
     document["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000091"
     document["package"]["name"] = "第三方武器包"
@@ -283,7 +283,7 @@ def test_current_converted_weapon_template_can_be_published(tmp_path: Path) -> N
     }
     document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
 
-    api = client(tmp_path, "production")
+    api = client(tmp_path, "development")
     response = publish(api, claim(api, "weapon-author"), document, media, {
         **metadata(document),
         "title": "第三方武器包",
@@ -423,8 +423,8 @@ def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: P
     ("领域卡", {"名称": "旋风斩", "类型": "领域卡", "领域": "利刃", "等级": "1", "属性": "能力", "回想": "1", "描述": "攻击附近敌人。", "风味描述": "剑锋卷起狂风。"}),
     ("自由", {"名称": "复仇誓言", "类型": "专属", "内容": [{"标题": "效果", "正文": "造成伤害时，伤害+2。"}]}),
 ])
-def test_stable_templates_are_publishable(tmp_path: Path, template_id: str, data: dict[str, Any]) -> None:
-    api = client(tmp_path, "production")
+def test_development_templates_are_publishable_in_development(tmp_path: Path, template_id: str, data: dict[str, Any]) -> None:
+    api = client(tmp_path, "development")
     document, media = candidate()
     document["resources"][0]["template"] = {"id": template_id, "version": "1.0.0"}
     document["resources"][0]["data"] = data
@@ -437,6 +437,20 @@ def test_stable_templates_are_publishable(tmp_path: Path, template_id: str, data
         "id": template_id,
         "version": "1.0.0",
     }
+
+
+def test_production_mode_rejects_development_template(tmp_path: Path) -> None:
+    api = client(tmp_path, "production")
+    document, media = candidate()
+
+    response = publish(api, claim(api, "author-one"), document, media)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["fieldErrors"] == [{
+        "path": "/resources/0",
+        "code": "template.publication.not-allowed",
+        "message": "template.publication.not-allowed",
+    }]
 
 
 def test_publication_accepts_declared_replacement_and_rejects_unknown_button(tmp_path: Path) -> None:

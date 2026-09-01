@@ -15,7 +15,7 @@ function normalize(value: unknown): string {
 export const itemTemplate = deepFreeze<TemplateCoreCapability<ItemData>>({
   id: "物品",
   version: "1.0.0",
-  state: "published",
+  state: "development",
   schema,
   defaultData,
   proposeResourceId(data) {

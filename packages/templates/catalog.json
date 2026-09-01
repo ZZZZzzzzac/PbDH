@@ -4,80 +4,80 @@
     {
       "id": "敌人",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/adversary/1.0.0/schema.json",
       "tabletopReplacements": [{ "id": "alternate-form", "label": "切换形态" }],
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "武器",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/weapon/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "自由",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/free/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "护甲",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/armor/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "种族",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/ancestry/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "社群",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/community/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "职业",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/profession/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "子职业",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/subclass/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "环境",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/environment/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "物品",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/item/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     },
     {
       "id": "领域卡",
       "version": "1.0.0",
-      "state": "published",
+      "state": "development",
       "schema": "src/core/domain/1.0.0/schema.json",
-      "publication": { "development": true, "production": true }
+      "publication": { "development": true, "production": false }
     }
   ]
 }

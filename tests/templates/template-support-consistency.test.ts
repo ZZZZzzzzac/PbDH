@@ -37,7 +37,7 @@ describe("Resource Template support matrix", () => {
       expect(core, `${key(entry)} 缺少核心模板`).toBeDefined();
       expect(frontend, `${key(entry)} 缺少前端 capability`).toBeDefined();
       expect(frontend && key({ id: frontend.templateId, version: frontend.templateVersion })).toBe(key(entry));
-      expect(frontend?.authoring.layout.templateId).toBe(entry.id);
+      expect(frontend?.authoring.templateId).toBe(entry.id);
       expect(frontend?.rendererRevision.revision, `${key(entry)} 渲染器版本不一致`).toBe(core?.rendererRevision);
       await expect(frontend?.loadRenderer()).resolves.toBe(frontend?.rendererRevision);
     }
@@ -45,14 +45,14 @@ describe("Resource Template support matrix", () => {
 
   test("every production-publishable version is published consistently", () => {
     const productionEntries = catalog.templates.filter((item) => item.publication.production);
-    expect(productionEntries).toHaveLength(11);
+    expect(productionEntries).toHaveLength(0);
     for (const entry of productionEntries) {
       expect(entry.state, key(entry)).toBe("published");
       expect(templateRegistry.resolve(entry.id, entry.version)?.state, key(entry)).toBe("published");
     }
   });
 
-  test("published projections do not crash while displaying an older local draft without 类型", () => {
+  test("development projections do not crash while displaying an older local draft without 类型", () => {
     for (const template of currentTemplates) {
       const legacyDraft = structuredClone(template.defaultData) as Record<string, unknown>;
       delete legacyDraft.类型;

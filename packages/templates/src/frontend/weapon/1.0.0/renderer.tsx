@@ -10,12 +10,10 @@ import { splitMarkdownLabel } from "../../markdown.ts";
 import { weaponMarkdownStyles } from "../markdown.ts";
 
 export type WeaponRuntimeState = Record<string, never>;
-export const weaponCardDesignSource = {
-  document: "docs/design/creator-app.op",
-  page: "30 Components",
-  surface: "#28 / Canonical Card Surface",
-  component: "weapon-card-r2 / Canonical",
-  presentation: { ratio: "63:88", variableHeight: false },
+export const weaponCardRenderSource = {
+  source: "template-html-css",
+  implementation: "packages/templates/src/frontend/weapon/1.0.0/renderer.tsx",
+  fixedRatio: { width: 63, height: 88 },
   statNames: ["核心数据 / 属性", "核心数据 / 距离", "核心数据 / 伤害"],
   detailNames: ["规则 / 伤害类型", "规则 / 负荷"],
 };

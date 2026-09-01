@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { templateRegistry } from "@pbdh/templates/core";
-import { trustedAuthoringLayoutFor, trustedRendererFor } from "@pbdh/templates/frontend";
+import { trustedAuthoringFor, trustedRendererFor } from "@pbdh/templates/frontend";
 
 type CatalogEntry = {
   id: string;
@@ -15,7 +15,7 @@ const catalog = JSON.parse(readFileSync("packages/templates/catalog.json", "utf8
 };
 
 console.table(catalog.templates.map((entry) => {
-  const hasAuthoring = Boolean(trustedAuthoringLayoutFor(entry.id, entry.version));
+  const hasAuthoring = Boolean(trustedAuthoringFor(entry.id, entry.version));
   const hasRenderer = Boolean(trustedRendererFor(entry.id, entry.version));
   return {
     模板: entry.id,

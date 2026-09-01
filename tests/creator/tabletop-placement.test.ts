@@ -105,7 +105,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
       type: "template-state",
       instanceId: "01989f4e-7b2c-7000-8000-000000000011",
       commandId: "adjust-hp",
-      value: "-2",
+      value: "5",
     }, {
       capabilities,
       templateCommands: () => adversaryTemplate.tabletop.commands,

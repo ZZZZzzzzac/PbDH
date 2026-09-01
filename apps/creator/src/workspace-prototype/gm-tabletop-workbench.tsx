@@ -27,7 +27,6 @@ export type GmTabletopWorkbenchSnapshot = {
   zoom: number;
   pan: { x: number; y: number };
   assetUrls: ReadonlyMap<string, string>;
-  designFrame: string;
 };
 
 export type GmTabletopWorkbenchCommand =
@@ -71,7 +70,7 @@ export function GmTabletopWorkbench({
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
 
-  return <section className="gm-workbench" data-design-frame={snapshot.designFrame}>
+  return <section className="gm-workbench">
     <nav className="tabletop-tabs" aria-label="打开的桌面">
       {snapshot.tabletops.map((tabletop) => <div className={`tabletop-tab ${tabletop.id === snapshot.activeTabletop?.id ? "is-current" : ""}`} key={tabletop.id} onContextMenu={(event) => {
         event.preventDefault();

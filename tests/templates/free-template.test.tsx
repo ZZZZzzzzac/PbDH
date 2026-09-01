@@ -6,7 +6,7 @@ import { describe, expect, test } from "vitest";
 import { freeTemplate, templateRegistry } from "../../packages/templates/src/core/index.ts";
 import {
   buildTemplateSupportManifest,
-  freeAuthoringLayout,
+  freeAuthoring,
   freeRendererRevision,
 } from "../../packages/templates/src/frontend/index.ts";
 
@@ -34,13 +34,10 @@ describe("自由 Template 1.0.0", () => {
   });
 
   test("has complete authoring and renderer support", () => {
-    expect(freeAuthoringLayout.sections.flatMap((section) => section.fields).map((field) => field.path))
-      .toEqual(["名称", "类型"]);
-    expect(freeAuthoringLayout.sections.flatMap((section) => section.repeats ?? []).map((repeat) => repeat.path))
-      .toEqual(["内容"]);
+    expect(freeAuthoring.Editor).toBeTypeOf("function");
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
-      authoringLayouts: [freeAuthoringLayout],
+      authoringCapabilities: [freeAuthoring],
       rendererRevisions: new Set(["free-card-r1"]),
     }).templates).toEqual([{ id: "自由", version: "1.0.0", rendererRevision: "free-card-r1" }]);
     expect(renderToStaticMarkup(freeRendererRevision.render({

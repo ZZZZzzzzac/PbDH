@@ -45,9 +45,12 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     expect(styles).toMatch(/\.workspace-package-list\s*\{[^}]*flex:\s*1/s);
   });
 
-  it("固定卡面使用 63:88 设计比例，宿主只决定实际显示大小", async () => {
-    for (const template of [adversaryTemplate, weaponTemplate, armorTemplate]) {
+  it("只有固定卡面使用 63:88，流式敌人卡由内容决定高度", async () => {
+    expect(adversaryTemplate.defaultPresentation).toMatchObject({ fixedRatio: false });
+    for (const template of [weaponTemplate, armorTemplate]) {
       expect(template.defaultPresentation).toMatchObject({ fixedRatio: true });
+    }
+    for (const template of [adversaryTemplate, weaponTemplate, armorTemplate]) {
       expect(template.defaultPresentation).not.toHaveProperty("width");
       expect(template.defaultPresentation).not.toHaveProperty("height");
     }
