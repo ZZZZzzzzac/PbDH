@@ -11,6 +11,8 @@ export { pbresAdapter, validatePbresConversionCandidate } from "./adapters/pbres
 export { rinkcxAdapter } from "./adapters/rinkcx.ts";
 export { zzzAdapter } from "./adapters/zzz.ts";
 export { ResourceConversionRegistry } from "./registry.ts";
+export { materializeResourceConversion } from "./materialize.ts";
+export type { ResourceConversionMaterialization } from "./materialize.ts";
 export { mapBatchToRegisteredCandidates, mapTemporaryResourceToCandidate } from "./template-mapping.ts";
 export type * from "./types.ts";
 

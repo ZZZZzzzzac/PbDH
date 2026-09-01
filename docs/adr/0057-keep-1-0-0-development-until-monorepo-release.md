@@ -1,6 +1,6 @@
 # Keep 1.0.0 Development Until Monorepo Release
 
-Status: accepted
+Status: partially superseded for Resource Templates by ADR-0065
 
 PbDH uses `1.0.0` as the target first-release version for Resource Package Contract, System Package Contract and the first-party Resource Templates while the monorepo is still under development. Their Contract Catalog and Template Registry lifecycle state remains `development` until the whole ecosystem passes its release gate. The version string does not by itself mean that a Contract, Template, Market Publication or application has been released.
 

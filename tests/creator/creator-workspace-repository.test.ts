@@ -11,11 +11,10 @@ import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage"
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
 import {
-  adversaryData,
   createBlankWorkspace,
   createWorkspace,
   createWorkspaceFolder,
-  updateAdversaryData,
+  updateWorkspaceResourceData,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 
 const databases: PbDHLocalDatabase[] = [];
@@ -42,7 +41,7 @@ describe("Creator Workspace local repository", () => {
       "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
     )))]]);
     let workspace = createWorkspace({ document, media });
-    workspace = updateAdversaryData(workspace, (data) => { data.名称 = "刷新后仍存在"; });
+    workspace = updateWorkspaceResourceData(workspace, (data) => { data.名称 = "刷新后仍存在"; });
     workspace = createWorkspaceFolder(workspace, null, "遭遇");
 
     const firstDatabase = database();
@@ -54,7 +53,7 @@ describe("Creator Workspace local repository", () => {
     const restored = await new CreatorWorkspaceRepository(new DexieLocalDocumentStore(reopenedDatabase)).list();
 
     expect(restored).toHaveLength(1);
-    expect(adversaryData(restored[0]!)).toMatchObject({ 名称: "刷新后仍存在" });
+    expect(restored[0]!.document.resources[0]!.data).toMatchObject({ 名称: "刷新后仍存在" });
     expect(restored[0]!.folders.map((folder) => folder.name)).toContain("遭遇");
     expect(restored[0]!.openResourceIds).toEqual(workspace.openResourceIds);
     expect(restored[0]!.dirtyResourceIds).toEqual(workspace.dirtyResourceIds);

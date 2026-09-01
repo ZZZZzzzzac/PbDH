@@ -12,6 +12,7 @@ export type EnvironmentFeature = {
 
 export type EnvironmentData = {
   名称: string;
+  类型: string;
   原文: string;
   位阶: string;
   种类: string;
@@ -22,12 +23,13 @@ export type EnvironmentData = {
   特性: EnvironmentFeature[];
 };
 
-function normalize(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
 const defaultData: EnvironmentData = {
   名称: "",
+  类型: "环境",
   原文: "",
   位阶: "1",
   种类: "探索",
@@ -41,7 +43,7 @@ const defaultData: EnvironmentData = {
 export const environmentTemplate = deepFreeze<TemplateCoreCapability<EnvironmentData>>({
   id: "环境",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {
@@ -52,7 +54,7 @@ export const environmentTemplate = deepFreeze<TemplateCoreCapability<Environment
     const summary = [data.位阶 ? `位阶 ${data.位阶}` : "", data.种类, data.难度 ? `难度 ${data.难度}` : ""]
       .map(normalize).filter(Boolean).join(" · ");
     const searchText = [
-      data.名称, data.原文, data.位阶, data.种类, data.简介, data.趋向, data.难度, data.潜在敌人,
+      data.名称, data.类型, data.原文, data.位阶, data.种类, data.简介, data.趋向, data.难度, data.潜在敌人,
       ...data.特性.flatMap((feature) => [feature.名称, feature.原名, feature.类型, feature.描述, feature.引导问题]),
     ].map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };

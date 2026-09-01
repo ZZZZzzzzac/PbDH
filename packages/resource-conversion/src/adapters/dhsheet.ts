@@ -142,7 +142,7 @@ function freeFieldBody(value: JsonValue): string {
 }
 
 function freeVariantFields(raw: JsonObject): JsonObject {
-  const omitted = new Set(["id", "名称", "内容", "imageUrl"]);
+  const omitted = new Set(["id", "名称", "类型", "内容", "imageUrl"]);
   const looseBlocks = Object.entries(raw)
     .filter(([key, value]) => !omitted.has(key)
       && !(key === "类型" && Array.isArray(raw.内容) && text(value) === "自由"))
@@ -151,6 +151,7 @@ function freeVariantFields(raw: JsonObject): JsonObject {
   if (Array.isArray(raw.内容)) {
     return {
       名称: text(raw.名称),
+      类型: text(raw.类型 || "自由"),
       内容: [...looseBlocks, ...raw.内容.map((value) => {
         const block = asJsonObject(value) ?? {};
         return { 标题: text(block.标题), 正文: freeFieldBody(block.正文) };
@@ -159,6 +160,7 @@ function freeVariantFields(raw: JsonObject): JsonObject {
   }
   return {
     名称: text(raw.名称),
+    类型: text(raw.类型 || "自由"),
     内容: looseBlocks,
   };
 }
@@ -166,6 +168,7 @@ function freeVariantFields(raw: JsonObject): JsonObject {
 function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   if (group === "profession") return {
     名称: text(raw.名称),
+    类型: text(raw.类型 || "职业"),
     描述: text(raw.描述 || raw.简介),
     领域: splitJoined(raw.领域).length > 0
       ? splitJoined(raw.领域)
@@ -176,7 +179,7 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     希望特性: text(raw.希望特性),
     职业特性: text(raw.职业特性),
     推荐初始属性: recommendedAttributes(raw.推荐初始属性),
-    推荐初始武器: text(raw.推荐初始武器),
+    推荐初始武器: splitJoined(raw.推荐初始武器),
     推荐初始护甲: text(raw.推荐初始护甲),
     背景问题: numberedTextList(raw, "背景问题", "背景问题"),
     关系问题: numberedTextList(raw, "关系问题", "关系问题"),
@@ -184,17 +187,20 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   };
   if (group === "ancestry") return {
     名称: text(raw.种族),
+    类型: "种族",
     简介: text(raw.简介),
     特性: [{ 名称: text(raw.名称), 描述: text(raw.效果) }],
   };
   if (group === "community") return {
     名称: text(raw.名称),
+    类型: "社群",
     简介: text(raw.简介),
     性格: text(raw.特性),
     特性: namedFeature(raw.描述),
   };
   if (group === "subclass") return {
     名称: subclassName(raw.子职业 || raw.名称),
+    类型: "子职业",
     主职: text(raw.主职),
     等级: canonicalSubclassLevel(raw.等级),
     施法属性: text(raw.施法属性 || raw.施法),
@@ -203,6 +209,7 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   };
   if (group === "domain") return {
     名称: text(raw.名称),
+    类型: "领域卡",
     领域: text(raw.领域),
     等级: semanticCount(raw.等级),
     属性: text(raw.属性),
@@ -291,7 +298,7 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
   if (resource.kind === "free") return {
     id,
     名称: resource.name,
-    类型: "自由",
+    类型: text(fields.类型 || "自由"),
     内容: Array.isArray(fields.内容) ? fields.内容 : [],
   };
   return {
@@ -452,7 +459,7 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
       if (group === "variant") {
         const definitions = output.customFieldDefinitions as JsonObject;
         const variants = definitions.variants as JsonValue[];
-        const type = resource.kind === "free" ? "自由"
+        const type = resource.kind === "free" ? text(resource.fields.类型 || "自由")
           : resource.kind === "adversary" ? "敌人"
           : resource.kind === "environment" ? "环境"
             : text(resource.fields.类型 || resource.kind);

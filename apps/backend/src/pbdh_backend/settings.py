@@ -46,7 +46,7 @@ class Settings:
     supabase_jwt_secret: str | None = None
     supabase_audience: str = "authenticated"
     admin_auth_subject: str | None = None
-    publication_mode: str = "development"
+    publication_mode: str = "production"
     account_media_quota_bytes: int | None = None
 
     @property
@@ -73,7 +73,7 @@ class Settings:
             supabase_jwt_secret=clean_optional(value("SUPABASE_JWT_SECRET")),
             supabase_audience=value("SUPABASE_AUDIENCE", "authenticated") or "authenticated",
             admin_auth_subject=clean_optional(value("PBDH_ADMIN_AUTH_SUBJECT")),
-            publication_mode=value("PBDH_PUBLICATION_MODE", "development") or "development",
+            publication_mode=value("PBDH_PUBLICATION_MODE", "production") or "production",
             account_media_quota_bytes=positive_int_or_none(value("PBDH_ACCOUNT_MEDIA_QUOTA_BYTES")),
         )
 

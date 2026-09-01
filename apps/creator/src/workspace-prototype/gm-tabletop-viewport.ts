@@ -1,7 +1,7 @@
 import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
-import { gmCardPixelsPerDesignUnit } from "./tabletop-placement.ts";
+import { gmCardPixelsPerDesignUnit } from "./gm-tabletop-geometry.ts";
 
 export type GmTabletopViewport = {
   zoom: number;

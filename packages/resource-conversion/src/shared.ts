@@ -45,14 +45,17 @@ export function semanticCount(value: unknown): string {
   return text(value).replace(/[级⚡]/gu, "").trim();
 }
 
-export function recommendedAttributes(value: unknown): JsonObject {
+export function recommendedAttributes(value: unknown): JsonObject[] {
+  if (Array.isArray(value)) return value.flatMap((item) => isObject(item)
+    ? Object.entries(item).map(([key, entry]) => ({ [key]: text(entry) }))
+    : []);
   if (isObject(value)) {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, text(item)]));
+    return Object.entries(value).map(([key, item]) => ({ [key]: text(item) }));
   }
-  const result: JsonObject = {};
+  const result: JsonObject[] = [];
   const source = text(value);
   for (const match of source.matchAll(/(敏捷|力量|灵巧|本能|风度|知识)[^+\-−\d]*([+\-−]?\d+)/gu)) {
-    result[match[1]!] = match[2]!.replace("−", "-");
+    result.push({ [match[1]!]: match[2]!.replace("−", "-") });
   }
   return result;
 }

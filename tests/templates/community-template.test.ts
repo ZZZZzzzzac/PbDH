@@ -11,7 +11,7 @@ describe("社群 Template 1.0.0", () => {
   test("registers a named gameplay feature separately from flavor fields", () => {
     expect(templateRegistry.resolve("社群", "1.0.0")).toBe(communityTemplate);
     const data = {
-      名称: "高城之民", 简介: "来自上流社会。", 性格: "亲切、坦率、沉着。",
+      名称: "高城之民", 类型: "社群", 简介: "来自上流社会。", 性格: "亲切、坦率、沉着。",
       特性: { 名称: "高人一等", 描述: "与贵族交际时具有优势。" },
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);

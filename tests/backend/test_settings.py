@@ -12,6 +12,7 @@ def test_settings_load_local_environment_file(
         "SUPABASE_ANON_KEY",
         "PBDH_ADMIN_AUTH_SUBJECT",
         "PBDH_DATABASE_PATH",
+        "PBDH_PUBLICATION_MODE",
     ):
         monkeypatch.delenv(name, raising=False)
     environment_file = tmp_path / ".env.local"
@@ -28,6 +29,7 @@ def test_settings_load_local_environment_file(
     assert settings.auth_configured is True
     assert settings.admin_auth_subject == "admin-subject"
     assert settings.database_path == tmp_path / "local.sqlite3"
+    assert settings.publication_mode == "production"
 
 
 def test_process_environment_overrides_local_file(tmp_path: Path, monkeypatch) -> None:
@@ -36,3 +38,12 @@ def test_process_environment_overrides_local_file(tmp_path: Path, monkeypatch) -
     monkeypatch.setenv("PBDH_PUBLICATION_MODE", "development")
 
     assert Settings.from_environment(environment_file).publication_mode == "development"
+
+
+def test_missing_publication_mode_fails_closed_to_production(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("PBDH_PUBLICATION_MODE", raising=False)
+
+    assert Settings.from_environment(tmp_path / "missing.env").publication_mode == "production"

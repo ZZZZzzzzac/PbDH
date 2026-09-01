@@ -9,7 +9,7 @@ import {
   itemTemplate,
   professionTemplate,
   subclassTemplate,
-  templateRegistry,
+  type TemplateCoreCapability,
   weaponTemplate,
 } from "@pbdh/templates/core";
 
@@ -27,7 +27,10 @@ function adversaryFeature(value: JsonValue): JsonObject {
   };
 }
 
-function templateData(resource: TemporaryResource): { id: string; version: string; data: JsonObject } | undefined {
+function templateData(resource: TemporaryResource): {
+  template: TemplateCoreCapability<any>;
+  data: JsonObject;
+} | undefined {
   if (resource.kind === "adversary") {
     const data = structuredClone(adversaryTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
@@ -35,25 +38,25 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
     }
     data.名称 = resource.name;
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map(adversaryFeature) : [];
-    return { id: adversaryTemplate.id, version: adversaryTemplate.version, data };
+    return { template: adversaryTemplate, data };
   }
   if (resource.kind === "weapon") {
     const data = structuredClone(weaponTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: weaponTemplate.id, version: weaponTemplate.version, data };
+    return { template: weaponTemplate, data };
   }
   if (resource.kind === "armor") {
     const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: armorTemplate.id, version: armorTemplate.version, data };
+    return { template: armorTemplate, data };
   }
   if (resource.kind === "item") {
     const data = structuredClone(itemTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: itemTemplate.id, version: itemTemplate.version, data };
+    return { template: itemTemplate, data };
   }
   if (resource.kind === "class") {
     const data = structuredClone(professionTemplate.defaultData) as unknown as JsonObject;
@@ -66,39 +69,56 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
       else data[key] = text(value ?? data[key]);
     }
     data.名称 = resource.name;
-    return { id: professionTemplate.id, version: professionTemplate.version, data };
+    data.类型 = text(resource.fields.类型 || data.类型);
+    const recommendedAttributes = resource.fields.推荐初始属性;
+    data.推荐初始属性 = Array.isArray(recommendedAttributes)
+      ? recommendedAttributes.flatMap((value) => isObject(value)
+        ? Object.entries(value).map(([name, item]) => ({ [name]: text(item) }))
+        : [])
+      : isObject(recommendedAttributes)
+        ? Object.entries(recommendedAttributes).map(([name, item]) => ({ [name]: text(item) }))
+        : [];
+    const recommendedWeapons = resource.fields.推荐初始武器;
+    data.推荐初始武器 = Array.isArray(recommendedWeapons)
+      ? recommendedWeapons.map(text).filter(Boolean)
+      : text(recommendedWeapons).split("+").map((item) => item.trim()).filter(Boolean);
+    return { template: professionTemplate, data };
   }
   if (resource.kind === "subclass") {
     const data = structuredClone(subclassTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: subclassTemplate.id, version: subclassTemplate.version, data };
+    data.类型 = text(resource.fields.类型 || data.类型);
+    return { template: subclassTemplate, data };
   }
   if (resource.kind === "ancestry") {
     const data = structuredClone(ancestryTemplate.defaultData) as unknown as JsonObject;
     data.名称 = resource.name;
+    data.类型 = text(resource.fields.类型 || data.类型);
     data.简介 = text(resource.fields.简介);
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return { 名称: text(feature.名称), 描述: text(feature.描述) };
     }) : [];
-    return { id: ancestryTemplate.id, version: ancestryTemplate.version, data };
+    return { template: ancestryTemplate, data };
   }
   if (resource.kind === "community") {
     const feature = isObject(resource.fields.特性) ? resource.fields.特性 : {};
     const data: JsonObject = {
       名称: resource.name,
+      类型: text(resource.fields.类型 || communityTemplate.defaultData.类型),
       简介: text(resource.fields.简介),
       性格: text(resource.fields.性格),
       特性: { 名称: text(feature.名称), 描述: text(feature.描述) },
     };
-    return { id: communityTemplate.id, version: communityTemplate.version, data };
+    return { template: communityTemplate, data };
   }
   if (resource.kind === "domain") {
     const data = structuredClone(domainTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
     data.名称 = resource.name;
-    return { id: domainTemplate.id, version: domainTemplate.version, data };
+    data.类型 = text(resource.fields.类型 || data.类型);
+    return { template: domainTemplate, data };
   }
   if (resource.kind === "environment") {
     const data = structuredClone(environmentTemplate.defaultData) as unknown as JsonObject;
@@ -106,6 +126,7 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
       if (key !== "特性") data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
+    data.类型 = text(resource.fields.类型 || data.类型);
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return {
@@ -113,17 +134,18 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
         描述: text(feature.描述 || feature.特性描述), 引导问题: text(feature.引导问题 || feature.问题),
       };
     }) : [];
-    return { id: environmentTemplate.id, version: environmentTemplate.version, data };
+    return { template: environmentTemplate, data };
   }
   if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
     const data: JsonObject = {
       名称: resource.name,
+      类型: text(resource.fields.类型 || freeTemplate.defaultData.类型),
       内容: resource.fields.内容.map((value) => {
         const block = isObject(value) ? value : {};
         return { 标题: text(block.标题), 正文: text(block.正文) };
       }),
     };
-    return { id: freeTemplate.id, version: freeTemplate.version, data };
+    return { template: freeTemplate, data };
   }
   return undefined;
 }
@@ -131,9 +153,19 @@ function templateData(resource: TemporaryResource): { id: string; version: strin
 export function mapTemporaryResourceToCandidate(resource: TemporaryResource): GameResourceCandidate | undefined {
   const mapped = templateData(resource);
   if (!mapped) return undefined;
-  if (!templateRegistry.resolve(mapped.id, mapped.version)) throw new Error(`Template not registered: ${mapped.id}@${mapped.version}`);
-  const diagnostics: ConversionDiagnostic[] = validateTemplateData(mapped.id, mapped.version, mapped.data);
-  return { sourceId: resource.sourceId, template: { id: mapped.id, version: mapped.version }, data: mapped.data, diagnostics };
+  const { template } = mapped;
+  const diagnostics: ConversionDiagnostic[] = validateTemplateData(
+    template.id,
+    template.version,
+    mapped.data,
+    template,
+  );
+  return {
+    sourceId: resource.sourceId,
+    template: { id: template.id, version: template.version },
+    data: mapped.data,
+    diagnostics,
+  };
 }
 
 export function mapBatchToRegisteredCandidates(resources: readonly TemporaryResource[]): {

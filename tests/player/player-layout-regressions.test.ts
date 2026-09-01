@@ -193,7 +193,7 @@ describe("Player layout regressions", () => {
     ]).then((files) => files.join("\n"));
 
     expect(source).toContain("CanonicalCardSurface");
-    expect(source).toContain("trustedRendererFor");
+    expect(source).toContain("resolveTemplateFrontend");
     expect(source).toContain("resourceCopy");
     expect(source).toContain("assets");
   });

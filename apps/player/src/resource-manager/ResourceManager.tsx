@@ -14,7 +14,7 @@ import {
 } from "@pbdh/resource-conversion";
 import { CanonicalCardSurface, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { trustedRendererFor } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { OperationStatus } from "@pbdh/platform-ui";
 
 import {
@@ -112,7 +112,7 @@ function routeLabel(installed: InstalledResourcePackage, resourceId: string): st
 export function supportsPlayerResourcePreview(
   resource: InstalledResourcePackage["document"]["resources"][number],
 ): boolean {
-  return trustedRendererFor(resource.template.id, resource.template.version) !== undefined;
+  return resolveTemplateFrontend(resource.template.id, resource.template.version) !== undefined;
 }
 
 function countsByDestination(plan: Exclude<ResourcePackageInstallPlan, { kind: "no-op" }>) {
@@ -170,7 +170,7 @@ function PlayerResourcePreviewContent({
 }) {
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
-  const renderer = trustedRendererFor(resource.template.id, resource.template.version);
+  const renderer = resolveTemplateFrontend(resource.template.id, resource.template.version)?.rendererRevision;
   return <CardPreviewDialog
     designWidth={canonicalCardDesignSize.width}
     designHeight={canonicalCardDesignSize.height}

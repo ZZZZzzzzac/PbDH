@@ -15,16 +15,12 @@ import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototy
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
   addTemplateResource,
-  adversaryData,
-  armorData,
-  clearAdversaryFeature,
   closeWorkspaceResourceTab,
   copyWorkspaceResourceToPackage,
   createBlankWorkspace,
   createWorkspaceFolder,
   createWorkspace,
   deleteWorkspaceNode,
-  deleteAdversaryFeature,
   duplicateWorkspaceResource,
   forkCurrentWorkspace,
   planImport,
@@ -37,17 +33,17 @@ import {
   selectWorkspaceFolder,
   toggleWorkspaceFolder,
   treeItemsInFolder,
-  updateAdversaryData,
-  updateArmorData,
   updateResourcePresentation,
   updateResourceReplacement,
   updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
-  updateWeaponData,
-  weaponData,
+  type CreatorWorkspace,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import {
   adversaryTemplate, ancestryTemplate, armorTemplate, communityTemplate, domainTemplate, environmentTemplate, itemTemplate, professionTemplate, subclassTemplate, weaponTemplate,
+  type AdversaryData,
+  type ArmorData,
+  type WeaponData,
 } from "@pbdh/templates/core";
 
 const root = process.cwd();
@@ -57,6 +53,22 @@ const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
   "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp",
 )))]]);
+
+function resourceData<T extends Record<string, unknown>>(workspace: CreatorWorkspace, resourceId?: string): T {
+  const resource = resourceId
+    ? workspace.document.resources.find((candidate) => candidate.id === resourceId)
+    : workspace.document.resources[0];
+  if (!resource) throw new Error(`Missing test resource: ${resourceId ?? "first"}`);
+  return resource.data as T;
+}
+
+function updateResourceData<T extends Record<string, unknown>>(
+  workspace: CreatorWorkspace,
+  update: (data: T) => void,
+  resourceId?: string,
+): CreatorWorkspace {
+  return updateWorkspaceResourceData(workspace, (data) => update(data as T), resourceId);
+}
 
 function renderResourceExplorer() {
   const workspace = createWorkspace({ document, media });
@@ -97,10 +109,10 @@ describe("Creator Workspace prototype state model", () => {
 
   test("editing marks the Workspace dirty and preserves the canonical resource shape", () => {
     const workspace = createWorkspace({ document, media });
-    const edited = updateAdversaryData(workspace, (data) => { data.名称 = "伤痕牛头人"; });
+    const edited = updateResourceData<AdversaryData>(workspace, (data) => { data.名称 = "伤痕牛头人"; });
     expect(edited.dirty).toBe(true);
-    expect(adversaryData(edited).名称).toBe("伤痕牛头人");
-    expect(adversaryData(workspace).名称).toBe("牛头人破坏者");
+    expect(resourceData<AdversaryData>(edited).名称).toBe("伤痕牛头人");
+    expect(resourceData<AdversaryData>(workspace).名称).toBe("牛头人破坏者");
     expect(edited.dirtyResourceIds).toEqual([workspace.document.resources[0]!.id]);
   });
 
@@ -160,7 +172,7 @@ describe("Creator Workspace prototype state model", () => {
     const created = addTemplateResource(source, weaponTemplate.id, weaponTemplate.version);
     expect(created.workspace.document.resources).toHaveLength(2);
     expect(created.workspace.document.resources.map((resource) => resource.template.id)).toEqual(["敌人", "武器"]);
-    expect(weaponData(created.workspace, created.resourceId)).toEqual(weaponTemplate.defaultData);
+    expect(resourceData<WeaponData>(created.workspace, created.resourceId)).toEqual(weaponTemplate.defaultData);
 
     const values = {
       名称: "测试长刃",
@@ -174,16 +186,16 @@ describe("Creator Workspace prototype state model", () => {
       描述: "命中后将目标推开。",
       风味描述: "",
     };
-    const edited = updateWeaponData(created.workspace, (data) => Object.assign(data, values), created.resourceId);
-    expect(weaponData(edited, created.resourceId)).toEqual(values);
-    expect(adversaryData(edited).名称).toBe("牛头人破坏者");
+    const edited = updateResourceData<WeaponData>(created.workspace, (data) => Object.assign(data, values), created.resourceId);
+    expect(resourceData<WeaponData>(edited, created.resourceId)).toEqual(values);
+    expect(resourceData<AdversaryData>(edited).名称).toBe("牛头人破坏者");
     expect(edited.dirty).toBe(true);
   });
 
   test("creates and edits a complete armor resource without changing another resource", () => {
     const source = createWorkspace({ document, media });
     const created = addTemplateResource(source, armorTemplate.id, armorTemplate.version);
-    expect(armorData(created.workspace, created.resourceId)).toEqual(armorTemplate.defaultData);
+    expect(resourceData<ArmorData>(created.workspace, created.resourceId)).toEqual(armorTemplate.defaultData);
 
     const values = {
       名称: "测试护甲",
@@ -195,9 +207,9 @@ describe("Creator Workspace prototype state model", () => {
       风味描述: "由铁木编成。",
       位阶: "2",
     };
-    const edited = updateArmorData(created.workspace, (data) => Object.assign(data, values), created.resourceId);
-    expect(armorData(edited, created.resourceId)).toEqual(values);
-    expect(adversaryData(edited).名称).toBe("牛头人破坏者");
+    const edited = updateResourceData<ArmorData>(created.workspace, (data) => Object.assign(data, values), created.resourceId);
+    expect(resourceData<ArmorData>(edited, created.resourceId)).toEqual(values);
+    expect(resourceData<AdversaryData>(edited).名称).toBe("牛头人破坏者");
     expect(edited.dirtyResourceIds).toContain(created.resourceId);
   });
 
@@ -211,7 +223,7 @@ describe("Creator Workspace prototype state model", () => {
       expect(resource.template).toEqual({ id: template.id, version: "1.0.0" });
       expect(resource.data).toMatchObject({ 名称: `测试${template.id}` });
       expect(edited.dirtyResourceIds).toContain(created.resourceId);
-      expect(adversaryData(edited).名称).toBe("牛头人破坏者");
+      expect(resourceData<AdversaryData>(edited).名称).toBe("牛头人破坏者");
     },
   );
 
@@ -365,8 +377,8 @@ describe("Creator Workspace prototype state model", () => {
     const helper = workspace.document.resources.find((resource) => resource.id === "使魔类型:小帮手");
     expect(helper?.data).toMatchObject({
       名称: "小帮手",
+      类型: "使魔类型",
       内容: [
-        { 标题: "类型", 正文: "使魔类型" },
         { 标题: "简介", 正文: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。" },
       ],
     });
@@ -419,13 +431,17 @@ describe("Creator Workspace prototype state model", () => {
 
   test("clears or deletes a feature without mutating the source Workspace", () => {
     const workspace = createWorkspace({ document, media });
-    const cleared = clearAdversaryFeature(workspace, 1);
-    expect(adversaryData(cleared).特性[1]).toEqual({ 名称: "", 原名: "", 类型: "", 特性描述: "" });
-    expect(adversaryData(workspace).特性[1]?.名称).toBe("蛮牛冲撞");
+    const cleared = updateResourceData<AdversaryData>(workspace, (data) => {
+      data.特性[1] = { 名称: "", 原名: "", 类型: "", 特性描述: "" };
+    });
+    expect(resourceData<AdversaryData>(cleared).特性[1]).toEqual({ 名称: "", 原名: "", 类型: "", 特性描述: "" });
+    expect(resourceData<AdversaryData>(workspace).特性[1]?.名称).toBe("蛮牛冲撞");
 
-    const deleted = deleteAdversaryFeature(workspace, 1);
-    expect(adversaryData(deleted).特性.map((feature) => feature.名称)).toEqual(["蓄力", "角撞"]);
-    expect(adversaryData(deleted)).not.toBe(adversaryData(workspace));
+    const deleted = updateResourceData<AdversaryData>(workspace, (data) => {
+      data.特性.splice(1, 1);
+    });
+    expect(resourceData<AdversaryData>(deleted).特性.map((feature) => feature.名称)).toEqual(["蓄力", "角撞"]);
+    expect(resourceData<AdversaryData>(deleted)).not.toBe(resourceData<AdversaryData>(workspace));
   });
 
   test("stores card mode and fixed-ratio policy in the Resource presentation Contract", () => {
@@ -450,7 +466,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(textOnly.document.resources[0]?.media).toEqual({});
     expect(textOnly.document.assets).toEqual([]);
     expect(textOnly.media.has(asset.id)).toBe(false);
-    expect(adversaryData(textOnly).名称).toBe("牛头人破坏者");
+    expect(resourceData<AdversaryData>(textOnly).名称).toBe("牛头人破坏者");
   });
 
   test("plans insert, no-op, safe update and dirty conflict explicitly", () => {
@@ -467,7 +483,7 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("conflict save-as receives a new Package ID and reset version", async () => {
-    const fork = await forkCurrentWorkspace(updateAdversaryData(
+    const fork = await forkCurrentWorkspace(updateResourceData<AdversaryData>(
       createWorkspace({ document, media }),
       (data) => { data.简介 = "本地修改"; },
     ));
@@ -504,7 +520,7 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("exports and reloads an edited complete .pbres through the formal archive boundary", async () => {
-    const edited = updateAdversaryData(createWorkspace({ document, media }), (data) => {
+    const edited = updateResourceData<AdversaryData>(createWorkspace({ document, media }), (data) => {
       data.名称 = "可导出的牛头人";
     });
     const exported = await prepareWorkspaceExport(edited);
@@ -521,7 +537,7 @@ describe("Creator Workspace prototype state model", () => {
       weaponTemplate.id,
       weaponTemplate.version,
     );
-    const edited = updateWeaponData(created.workspace, (data) => {
+    const edited = updateResourceData<WeaponData>(created.workspace, (data) => {
       data.名称 = "巡林短剑";
       data.伤害 = "d8+2";
     }, created.resourceId);
@@ -542,7 +558,7 @@ describe("Creator Workspace prototype state model", () => {
       document: armorPackage as ResourcePackageLogicalDocument,
       media: new Map(),
     });
-    const edited = updateArmorData(armorWorkspace, (data) => {
+    const edited = updateResourceData<ArmorData>(armorWorkspace, (data) => {
       data.名称 = "改良填充布甲";
       data.护甲值 = "4";
       data.风味描述 = "工坊重新缝制了内衬。";
@@ -603,19 +619,20 @@ describe("Creator Workspace prototype state model", () => {
     expect(styles).toContain("transform: none !important");
   });
 
-  test("keeps the armor editor inside the mobile viewport without widening other editors", () => {
+  test("keeps every Template editor responsive without host-side Template specialization", () => {
     const workbenchSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/creator-workbench.tsx",
     ), "utf8");
-    const styles = readFileSync(path.join(
+    const authoringSource = readFileSync(path.join(
       root,
-      "apps/creator/src/workspace-prototype/workspace.css",
+      "packages/templates/src/frontend/authoring-surface.tsx",
     ), "utf8");
 
-    expect(workbenchSource).toContain('armor ? " armor-workbench-body" : ""');
-    expect(styles).toContain(".armor-workbench-body { grid-template-columns: minmax(0, 1fr); }");
-    expect(styles).toContain(".armor-workbench-body .armor-field-grid { min-width: 0; }");
+    expect(workbenchSource).toContain("<TemplateAuthoringSurface");
+    expect(workbenchSource).not.toContain("armor-workbench-body");
+    expect(authoringSource).toContain("@media(max-width:760px)");
+    expect(authoringSource).toContain("grid-template-columns:minmax(0,1fr)!important");
   });
 
   test("binds GM whiteboard gestures and context menus without tool modes", () => {

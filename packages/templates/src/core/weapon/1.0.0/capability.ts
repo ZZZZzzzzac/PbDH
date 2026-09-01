@@ -8,16 +8,18 @@ export type WeaponData = {
 };
 
 const defaultData: WeaponData = {
-  名称: "", 类型: "主武器", 属性: "", 距离: "", 伤害: "", 负荷: "", 伤害类型: "",
+  名称: "", 类型: "武器", 属性: "", 距离: "", 伤害: "", 负荷: "", 伤害类型: "",
   描述: "", 风味描述: "", 位阶: "",
 };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const weaponTemplate = deepFreeze<TemplateCoreCapability<WeaponData>>({
   id: "武器",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

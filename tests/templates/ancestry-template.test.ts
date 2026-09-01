@@ -14,7 +14,7 @@ describe("种族 Template 1.0.0", () => {
   test("registers up to two structured features", () => {
     expect(templateRegistry.resolve("种族", "1.0.0")).toBe(ancestryTemplate);
     const data = {
-      名称: "龙人", 简介: "拥有类人形态的龙类。",
+      名称: "龙人", 类型: "种族", 简介: "拥有类人形态的龙类。",
       特性: [{ 名称: "鳞片保护", 描述: "受到严重伤害时减少生命损失。" }, { 名称: "元素吐息", 描述: "喷吐元素能量。" }],
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);

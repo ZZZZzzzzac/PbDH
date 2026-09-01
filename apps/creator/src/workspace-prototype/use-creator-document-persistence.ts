@@ -7,7 +7,7 @@ import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 import { CreatorCloudDocumentService, type CreatorCloudRecovery } from "./cloud-document-service.ts";
 import { isCreatorAuthoringInputFocused } from "./creator-controls.tsx";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
-import { containGmTabletopInstances } from "./tabletop-placement.ts";
+import { containGmTabletopInstances } from "./gm-tabletop-geometry.ts";
 import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
 import type { CreatorWorkspace } from "./workspace-model.ts";
 
@@ -65,11 +65,6 @@ export function useCreatorDocumentPersistence({
   const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const workspaceSaveSequenceRef = useRef(0);
   const tabletopSaveSequenceRef = useRef(0);
-
-  const allTabletopMedia = useMemo(() => new Map([
-    ...tabletopMedia,
-    ...workspaces.flatMap((workspace) => [...workspace.media]),
-  ]), [tabletopMedia, workspaces]);
 
   const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean) => {
     const restoredWorkspaces = snapshot.workspaces.map((item) => item.workspace);
@@ -152,7 +147,7 @@ export function useCreatorDocumentPersistence({
       const sequence = ++tabletopSaveSequenceRef.current;
       setTabletopSaving(true);
       const write = tabletopWriteQueueRef.current.then(async () => {
-        await Promise.all(tabletops.map((tabletop) => tabletopRepository.save(tabletop, allTabletopMedia, credentials?.accountId ?? null)));
+        await Promise.all(tabletops.map((tabletop) => tabletopRepository.save(tabletop, tabletopMedia, credentials?.accountId ?? null)));
       });
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "桌面保存失败"));
@@ -162,7 +157,7 @@ export function useCreatorDocumentPersistence({
       );
     }, LOCAL_SAVE_DELAY_MS);
     return () => window.clearTimeout(timeout);
-  }, [allTabletopMedia, credentials?.accountId, notify, tabletopRepository, tabletopStorageReady, tabletops]);
+  }, [credentials?.accountId, notify, tabletopMedia, tabletopRepository, tabletopStorageReady, tabletops]);
 
   useEffect(() => {
     if (!workspaceStorageReady || !credentials || isCreatorAuthoringInputFocused()) return;
@@ -212,7 +207,7 @@ export function useCreatorDocumentPersistence({
     sync: { workspace: workspaceSync, tabletop: tabletopSync, setWorkspace: setWorkspaceSync, setTabletop: setTabletopSync },
     storageReady: { workspace: workspaceStorageReady, tabletop: tabletopStorageReady },
     saving: { workspace: workspaceSaving, tabletop: tabletopSaving },
-    media: { tabletop: tabletopMedia, setTabletop: setTabletopMedia, allTabletop: allTabletopMedia },
+    media: { tabletop: tabletopMedia, setTabletop: setTabletopMedia },
     writeQueues: { workspace: workspaceWriteQueueRef, tabletop: tabletopWriteQueueRef },
     requestCloudSyncAfterEditing: {
       workspace: () => setWorkspaceCloudSyncRequest((current) => current + 1),

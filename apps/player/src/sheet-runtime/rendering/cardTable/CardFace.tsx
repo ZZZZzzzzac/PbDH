@@ -1,7 +1,7 @@
 import { Ellipsis } from "lucide-react";
 import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { trustedRendererFor } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { useEffect, useRef, useState } from "react";
 import type { CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
@@ -53,7 +53,7 @@ export function CardFace({
   const displayMode = resolveCardDisplayMode(definition, module);
   const showArt = displayMode !== "text" && cardArtUrl && !imageFailed;
   const canonicalRenderer = resourceCopy
-    ? trustedRendererFor(resourceCopy.template.id, resourceCopy.template.version)
+    ? resolveTemplateFrontend(resourceCopy.template.id, resourceCopy.template.version)?.rendererRevision
     : undefined;
   const canonicalResource = resourceCopy ? canonicalCardResource(resourceCopy, definition, module, definitionRef?.type === "resourceLibrary" ? definitionRef : undefined) : undefined;
   const assets = resourceCopy

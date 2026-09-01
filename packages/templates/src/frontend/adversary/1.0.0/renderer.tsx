@@ -74,7 +74,7 @@ export const adversaryRendererRevision: RendererRevisionCapability<
     return <article className={cardClass} data-renderer-revision="enemy-card-r1" data-presentation-mode={mode}>
       <div className={`enemy-art${mode === "text" ? " is-text-only" : ""}`}>
         {mode === "split" && portrait ? <img src={portrait} alt="" /> : null}
-        <div className="enemy-kicker">位阶{data.位阶} {data.种类}</div>
+        <div className="enemy-kicker">{data.类型 || "敌人"} · 位阶{data.位阶} {data.种类}</div>
         <header className="enemy-heading">
           <h1>{data.名称}</h1>
           <p className="enemy-original-title">{data.原文}</p>

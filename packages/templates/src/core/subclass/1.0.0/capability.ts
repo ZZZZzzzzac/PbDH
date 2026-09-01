@@ -3,17 +3,19 @@ import schema from "./schema.json";
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type SubclassData = {
-  名称: string; 主职: string; 等级: string; 施法属性: string; 描述: string; 风味描述: string;
+  名称: string; 类型: string; 主职: string; 等级: string; 施法属性: string; 描述: string; 风味描述: string;
 };
 
-const defaultData: SubclassData = { 名称: "", 主职: "", 等级: "", 施法属性: "", 描述: "", 风味描述: "" };
+const defaultData: SubclassData = { 名称: "", 类型: "子职业", 主职: "", 等级: "", 施法属性: "", 描述: "", 风味描述: "" };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const subclassTemplate = deepFreeze<TemplateCoreCapability<SubclassData>>({
   id: "子职业",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

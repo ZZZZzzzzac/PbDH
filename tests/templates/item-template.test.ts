@@ -19,7 +19,7 @@ describe("物品 Template 1.0.0", () => {
     expect(validate({ ...itemTemplate.defaultData, 类型: "物品" })).toBe(true);
     expect(validate({ ...itemTemplate.defaultData, 类型: "消耗品" })).toBe(true);
     expect(validate({ ...itemTemplate.defaultData, 类型: "战利品" })).toBe(true);
-    expect(itemTemplate.defaultData.类型).toBe("");
+    expect(itemTemplate.defaultData.类型).toBe("物品");
     expect(itemAuthoringLayout.sections.flatMap((section) => section.fields)
       .find((field) => field.path === "类型")?.enum).toEqual(["物品", "消耗品"]);
   });

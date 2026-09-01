@@ -79,6 +79,22 @@ describe("migrated Daggerheart Core System Package", () => {
       new Set(["种族", "社群", "职业", "子职业", "武器", "护甲", "物品", "领域卡"]),
     );
     const resources = candidates.flatMap((candidate) => candidate.document.resources);
+    expect(resources.find((resource) => resource.id === "种族:械灵")?.data).toMatchObject({
+      类型: "种族",
+      特性: [
+        { 名称: "定制设计", 描述: expect.not.stringContaining("定制设计") },
+        { 名称: "高效休整", 描述: expect.not.stringContaining("高效休整") },
+      ],
+    });
+    expect(resources.find((resource) => resource.id === "社群:高城之民")?.data).toMatchObject({
+      类型: "社群",
+      特性: { 名称: "高人一等", 描述: expect.not.stringContaining("高人一等") },
+    });
+    expect(resources.find((resource) => resource.id === "职业:吟游诗人")?.data).toMatchObject({
+      类型: "职业",
+      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 灵巧: "+1" }, { 本能: "+0" }, { 风度: "+2" }, { 知识: "+1" }],
+      推荐初始武器: ["刺剑", "匕首"],
+    });
     expect(candidates[0]?.document.package.version).toBe("1.0.7");
     expect(resources.every((resource) => resource.presentation.fixedRatio
       && Object.keys(resource.presentation).length === 2)).toBe(true);

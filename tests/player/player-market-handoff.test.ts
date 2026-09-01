@@ -16,9 +16,11 @@ import {
   withoutPlayerMarketHandoff,
   type PlayerMarketHandoff,
 } from "../../apps/player/src/resources/market-handoff.ts";
-import { applyResourceSelection } from "../../apps/player/src/resources/apply-resource-selection.ts";
+import { buildSheetResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
+import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
+import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
+import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import { prepareResourcePackageInstall } from "../../apps/player/src/resources/prepare-resource-package-install.ts";
-import { listResourcePickerCandidates } from "../../apps/player/src/resources/resource-picker.ts";
 import { commitResourcePackageInstall } from "../../apps/player/src/resources/resource-library.ts";
 
 const root = process.cwd();
@@ -30,24 +32,40 @@ const system = JSON.parse(readFileSync(path.join(
   root,
   "apps/player/public/system-packages/daggerheart-core/system.json",
 ), "utf8")) as SystemPackageDocument;
-const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
+const runtimeSystem = {
+  manifest: { ID: "daggerheart-core", 名称: "匕首之心", 版本: "1.0.0", 角色数据版本: "1.0.0" },
+  pages: [],
+  modules: [
+    { ID: "pick-primary-weapon", 类型: "resourcePicker", 按钮文本: "选择主武器", 资源库: "weapons" },
+    { ID: "primary-weapon-name", 类型: "freeText", 标签: "主武器" },
+    { ID: "primary-weapon-description", 类型: "freeText", 标签: "主武器特性" },
+  ],
   dependencies: [{
-    trigger: { type: "resourceSelected", sourceModuleId: "pick-primary-weapon" },
-    actions: [
+    ID: "fill-primary-weapon",
+    sources: [{ 类型: "resourcePicker", 模块ID: "pick-primary-weapon" }],
+    targets: [
+      { 类型: "module", 模块ID: "primary-weapon-name" },
+      { 类型: "module", 模块ID: "primary-weapon-description" },
+    ],
+    触发: { 类型: "resourceSelected", 来源模块ID: "pick-primary-weapon" },
+    条件: { 类型: "always" },
+    动作: [
       {
-        targetModuleId: "primary-weapon-name",
-        content: {
-          type: "selectedResourceTemplate",
-          format: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
+        类型: "fillText",
+        目标模块ID: "primary-weapon-name",
+        内容: {
+          类型: "selectedResourceTemplate",
+          格式: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
         },
       },
       {
-        targetModuleId: "primary-weapon-description",
-        content: { type: "selectedResourceField", field: "描述" },
+        类型: "fillText",
+        目标模块ID: "primary-weapon-description",
+        内容: { 类型: "selectedResourceField", 字段: "描述" },
       },
     ],
   }],
-};
+} as unknown as SystemPackage;
 const asset = document.assets[0]!;
 const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(
   root,
@@ -172,26 +190,26 @@ describe("Player Market handoff ingress", () => {
       media: prepared.plan.candidate.media,
       routes: prepared.plan.routes,
     };
-    const [candidate] = listResourcePickerCandidates(
-      new Map([[installed.document.package.id, installed]]),
-      "weapons",
-    );
+    const candidate = buildSheetResourceLibraries({
+      currentSystem: system,
+      installedPackages: new Map([[installed.document.package.id, installed]]),
+    }).find((library) => library.ID === "weapons")?.entries[0];
     if (!candidate) throw new Error("expected routed weapon candidate");
 
-    const applied = applyResourceSelection({
-      characterData: { characterName: "阿斯特里德" },
-      currentSystem: selectionSystem,
-      sourceModuleId: "pick-primary-weapon",
-      selectedResource: candidate.resource,
-    });
+    const applied = applyResourceSelectionToDraft(
+      createEmptyCharacterData(runtimeSystem, "market-handoff"),
+      runtimeSystem,
+      "pick-primary-weapon",
+      "weapons",
+      [candidate],
+    );
 
-    expect(applied.diagnostics).toEqual([]);
-    expect(applied.characterData).toEqual({
-      characterName: "阿斯特里德",
+    expect(applied.interactionResult.warnings).toEqual([]);
+    expect(applied.characterData.character.values).toMatchObject({
       "primary-weapon-name": "**阔剑**｜敏捷｜近战｜d8 物理｜单手",
       "primary-weapon-description": "可靠：你的攻击掷骰+1。",
     });
-    expect(applied.characterData).not.toHaveProperty("resourceSelections");
+    expect(applied.characterData.resourceSelections).not.toHaveProperty("pick-primary-weapon");
   });
 
   test("keeps repeated installation of the same Market snapshot as a no-op", async () => {

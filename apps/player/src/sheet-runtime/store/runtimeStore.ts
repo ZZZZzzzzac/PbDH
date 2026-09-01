@@ -10,7 +10,7 @@ import { createCharacterImportSlice } from "./slices/characterImportSlice";
 import { createCharacterSlice } from "./slices/characterSlice";
 import { createPackageSlice } from "./slices/packageSlice";
 import { createQuestionnaireSlice } from "./slices/questionnaireSlice";
-import { createResourceExtensionSlice } from "./slices/resourceExtensionSlice";
+import { createResourceCatalogSlice } from "./slices/resourceCatalogSlice";
 import { createValidationSlice } from "./slices/validationSlice";
 import type { RuntimeDependencies, RuntimeState } from "./runtimeTypes";
 
@@ -22,12 +22,6 @@ export type {
   PendingCharacterDataMigration,
   PendingQuestionnaireResult,
   PendingPackageScriptConsent,
-  PendingResourceExtensionConversion,
-  PendingResourceExtensionRemoval,
-  PendingResourceExtensionReplacement,
-  PendingResourceFormatSelection,
-  ResourceExtensionDifference,
-  ResourceExtensionImportState,
 } from "./runtimeTypes";
 
 const runtimeEnvironment = createRuntimeEnvironment();
@@ -35,7 +29,7 @@ const runtimeEnvironment = createRuntimeEnvironment();
 export function createRuntimeStore(environment: RuntimeEnvironment) {
   return create<RuntimeState>()((...store) => ({
     ...createPackageSlice(environment)(...store),
-    ...createResourceExtensionSlice(environment)(...store),
+    ...createResourceCatalogSlice()(...store),
     ...createCharacterSlice(environment)(...store),
     ...createQuestionnaireSlice(environment)(...store),
     ...createCardSlice(environment)(...store),

@@ -8,7 +8,7 @@ import {
 } from "@pbdh/media-admission";
 import { renderCanonicalCardCoverToWebp } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, RendererRevisionCapability, SurfaceResource } from "@pbdh/resource-renderer/core";
-import { trustedRendererFor } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 
 import type { CreatorWorkspace, WorkspaceResource } from "./workspace-model.ts";
 
@@ -67,7 +67,7 @@ export function publicationRenderer(resource: WorkspaceResource): {
   expectedRendererRevision: string;
   renderer?: RendererRevisionCapability<any, any, ReactNode>;
 } {
-  const renderer = trustedRendererFor(resource.template.id, resource.template.version);
+  const renderer = resolveTemplateFrontend(resource.template.id, resource.template.version)?.rendererRevision;
   return { expectedRendererRevision: renderer?.revision ?? "", renderer };
 }
 

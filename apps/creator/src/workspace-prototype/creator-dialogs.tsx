@@ -8,18 +8,7 @@ import type { LocalDocumentKind, LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus } from "@pbdh/platform-ui";
 import { ResourcePackageInfoDialog, type ResourcePackageEditorValue, type SystemPackageOption } from "@pbdh/publication-ui";
 import type { ConversionDiagnostic, ResourceFormatId } from "@pbdh/resource-conversion";
-import {
-  adversaryTemplate,
-  ancestryTemplate,
-  armorTemplate,
-  communityTemplate,
-  domainTemplate,
-  environmentTemplate,
-  itemTemplate,
-  professionTemplate,
-  subclassTemplate,
-  weaponTemplate,
-} from "@pbdh/templates/core";
+import { currentTemplates } from "@pbdh/templates/core";
 
 import { Field } from "./creator-controls.tsx";
 import { isSemanticVersion } from "./creator-file-actions.ts";
@@ -52,7 +41,6 @@ export type CreatorDialogState =
   | { kind: "no-op"; name: string }
   | { kind: "update"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
   | { kind: "conflict"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
-  | { kind: "delete-feature"; index: number; name: string }
   | { kind: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef; name: string }
   | { kind: "delete-selected-resources"; selections: WorkspaceResourceSelection[] }
   | { kind: "copy-resource-to-package"; sourceWorkspaceKey: string; resourceId: string; name: string }
@@ -73,7 +61,6 @@ export type CreatorDialogCommand =
   | { type: "save-package" | "close-workspace"; workspaceKey: string }
   | { type: "export-conversion" | "accept-conversion"; review: CreatorConversionReview }
   | { type: "commit-incoming" | "save-aside"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
-  | { type: "delete-feature"; index: number }
   | { type: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef }
   | { type: "delete-selected-resources"; selections: WorkspaceResourceSelection[] }
   | { type: "copy-resource"; sourceWorkspaceKey: string; resourceId: string; targetWorkspaceKey: string }
@@ -136,10 +123,7 @@ export function CreatorDialogs({
     {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={snapshot.newName} onChange={(value) => execute({ type: "set-new-name", value })} />
       <div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" onClick={() => execute({ type: "create-workspace" })}>创建</button></div></>}
     {dialog.kind === "new-resource" && <><h2>新建资源</h2><div className="resource-type-choices">
-      <button type="button" onClick={() => execute({ type: "create-resource", template: adversaryTemplate })}><TemplateIcon templateId={adversaryTemplate.id} />敌人</button>
-      <button type="button" onClick={() => execute({ type: "create-resource", template: weaponTemplate })}><TemplateIcon templateId={weaponTemplate.id} />主武器</button>
-      <button type="button" onClick={() => execute({ type: "create-resource", template: armorTemplate })}><TemplateIcon templateId={armorTemplate.id} />护甲</button>
-      {[environmentTemplate, ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate].map((template) => <button type="button" key={template.id} onClick={() => execute({ type: "create-resource", template })}><TemplateIcon templateId={template.id} />{template.id}</button>)}
+      {currentTemplates.map((template) => <button type="button" key={`${template.id}@${template.version}`} onClick={() => execute({ type: "create-resource", template })}><TemplateIcon templateId={template.id} />{template.id}</button>)}
     </div>
       <div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button></div></>}
     {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) => <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}{typeof item.params.count === "number" && item.params.count > 1 ? `（共 ${item.params.count} 处）` : ""}</b></li>)}</ul>
@@ -150,7 +134,6 @@ export function CreatorDialogs({
     {dialog.kind === "no-op" && <><h2>NO-OP · 同版本 / 同 Digest</h2><p>{dialog.name} 已是当前完整 Snapshot，不创建副本、不覆盖。</p><div className="dialog-actions"><button type="button" className="primary" onClick={() => execute({ type: "close" })}>打开现有 Workspace</button></div></>}
     {dialog.kind === "update" && <><h2>更新现有 Workspace</h2><p>当前 Workspace 未修改；导入内容 Digest 不同。确认后才替换。</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" onClick={() => execute({ type: "commit-incoming", incoming: dialog.incoming, handoff: dialog.handoff })}>更新现有</button></div></>}
     {dialog.kind === "conflict" && <><h2>dirty 同 ID 冲突</h2><p>当前 Workspace 有本地修改，禁止自动合并。</p><div className="conflict-choices"><button type="button" onClick={() => execute({ type: "close" })}>取消（零写入）</button><button type="button" onClick={() => execute({ type: "save-aside", incoming: dialog.incoming, handoff: dialog.handoff })}>另存 · 新 Package ID / 1.0.0</button><button type="button" className="danger" onClick={() => execute({ type: "commit-incoming", incoming: dialog.incoming, handoff: dialog.handoff })}>覆盖 · 丢弃本地修改</button></div></>}
-    {dialog.kind === "delete-feature" && <><h2>删除特性</h2><p>删除“{dialog.name || "未命名特性"}”？此操作会立即从当前资源中移除该特性。</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-feature", index: dialog.index })}>删除</button></div></>}
     {dialog.kind === "delete-workspace-node" && <><h2>删除{dialog.node.kind === "folder" ? "文件夹" : "资源"}</h2><p>删除“{dialog.name}”？{dialog.node.kind === "folder" ? "文件夹内的资源也会一并删除。" : ""}</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-workspace-node", workspaceKey: dialog.workspaceKey, node: dialog.node })}>删除</button></div></>}
     {dialog.kind === "delete-selected-resources" && <><h2>批量删除资源</h2><p>删除已选的 {dialog.selections.length} 个资源？此操作会从对应资源包中移除它们。</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-selected-resources", selections: dialog.selections })}>删除</button></div></>}
     {dialog.kind === "copy-resource-to-package" && <><h2>复制“{dialog.name}”到资源包</h2><p>复制后是独立资源，修改副本不会影响原资源。有关联的切换形态时会一起复制。</p><div className="conflict-choices">{snapshot.workspaces.filter((workspace) => workspace.key !== dialog.sourceWorkspaceKey).map((workspace) => <button type="button" key={workspace.key} onClick={() => execute({ type: "copy-resource", sourceWorkspaceKey: dialog.sourceWorkspaceKey, resourceId: dialog.resourceId, targetWorkspaceKey: workspace.key })}>{workspace.document.package.name}</button>)}</div>

@@ -88,6 +88,25 @@ export function validateImport(importerPath, specifier) {
   return violations;
 }
 
+export function validateSource(importerPath, source) {
+  const importer = normalizePath(importerPath);
+  if (!importer.startsWith("packages/resource-conversion/")) return [];
+
+  const importsGlobalTemplateRegistry = /import\s*\{[^}]*\btemplateRegistry\b[^}]*\}\s*from\s*["']@pbdh\/templates\/core["']/s
+    .test(source);
+  return importsGlobalTemplateRegistry
+    ? ["resource-conversion must receive or explicitly target Template capabilities instead of resolving the global registry"]
+    : [];
+}
+
+export function workspaceDirectoriesFromManifest(manifest) {
+  if (!Array.isArray(manifest.workspaces)
+    || manifest.workspaces.some((workspace) => typeof workspace !== "string")) {
+    throw new Error("Root package.json workspaces must be a string array");
+  }
+  return manifest.workspaces;
+}
+
 export function findDependencyCycles(graph) {
   const visiting = new Set();
   const visited = new Set();

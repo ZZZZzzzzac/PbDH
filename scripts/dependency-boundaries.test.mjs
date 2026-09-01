@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   findDependencyCycles,
   validateImport,
+  validateSource,
+  workspaceDirectoriesFromManifest,
 } from "./dependency-boundaries-core.mjs";
 
 test("shared package cannot import an app", () => {
@@ -65,6 +67,34 @@ test("conversion may import templates core but not frontend", () => {
   assert.deepEqual(
     validateImport("packages/resource-conversion/src/index.ts", "@pbdh/templates/frontend"),
     ["resource-conversion may depend on templates/core only"],
+  );
+});
+
+test("conversion cannot reverse-resolve the global template registry", () => {
+  assert.deepEqual(
+    validateSource(
+      "packages/resource-conversion/src/template-validation.ts",
+      'import { templateRegistry } from "@pbdh/templates/core";',
+    ),
+    ["resource-conversion must receive or explicitly target Template capabilities instead of resolving the global registry"],
+  );
+  assert.deepEqual(
+    validateSource(
+      "packages/resource-conversion/src/template-mapping.ts",
+      'import { adversaryTemplate } from "@pbdh/templates/core";',
+    ),
+    [],
+  );
+});
+
+test("workspace scan derives every workspace from the root manifest", () => {
+  const workspaces = workspaceDirectoriesFromManifest({
+    workspaces: ["apps/platform", "packages/cloud-documents"],
+  });
+  assert.deepEqual(workspaces, ["apps/platform", "packages/cloud-documents"]);
+  assert.throws(
+    () => workspaceDirectoriesFromManifest({ workspaces: "packages/*" }),
+    /string array/,
   );
 });
 

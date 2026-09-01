@@ -4,13 +4,7 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import {
-  adversaryTemplate,
-  armorTemplate,
   templateRegistry,
-  weaponTemplate,
-  type AdversaryData,
-  type ArmorData,
-  type WeaponData,
 } from "@pbdh/templates/core";
 
 import {
@@ -23,64 +17,6 @@ import {
   type CreatorWorkspace,
   type WorkspaceResource,
 } from "./workspace-core.ts";
-
-function assertTemplate(resource: WorkspaceResource, id: string): void {
-  const template = templateRegistry.resolve(resource.template.id, resource.template.version);
-  if (!template || template.id !== id) {
-    throw new Error(`Expected registered ${id} Template, received ${resource.template.id}@${resource.template.version}`);
-  }
-}
-
-export function adversaryData(workspace: CreatorWorkspace, resourceId?: string): AdversaryData {
-  const resource = workspaceResource(workspace, resourceId);
-  assertTemplate(resource, adversaryTemplate.id);
-  return resource.data as AdversaryData;
-}
-
-export function weaponData(workspace: CreatorWorkspace, resourceId?: string): WeaponData {
-  const resource = workspaceResource(workspace, resourceId);
-  assertTemplate(resource, weaponTemplate.id);
-  return resource.data as WeaponData;
-}
-
-export function armorData(workspace: CreatorWorkspace, resourceId?: string): ArmorData {
-  const resource = workspaceResource(workspace, resourceId);
-  assertTemplate(resource, armorTemplate.id);
-  return resource.data as ArmorData;
-}
-
-export function updateAdversaryData(
-  workspace: CreatorWorkspace,
-  update: (data: AdversaryData) => void,
-  resourceId?: string,
-): CreatorWorkspace {
-  const next = createWorkspace(workspace, true);
-  update(adversaryData(next, resourceId));
-  markResourceDirty(next, workspaceResource(next, resourceId).id);
-  return next;
-}
-
-export function updateWeaponData(
-  workspace: CreatorWorkspace,
-  update: (data: WeaponData) => void,
-  resourceId?: string,
-): CreatorWorkspace {
-  const next = createWorkspace(workspace, true);
-  update(weaponData(next, resourceId));
-  markResourceDirty(next, workspaceResource(next, resourceId).id);
-  return next;
-}
-
-export function updateArmorData(
-  workspace: CreatorWorkspace,
-  update: (data: ArmorData) => void,
-  resourceId?: string,
-): CreatorWorkspace {
-  const next = createWorkspace(workspace, true);
-  update(armorData(next, resourceId));
-  markResourceDirty(next, workspaceResource(next, resourceId).id);
-  return next;
-}
 
 export function updateWorkspaceResourceData(
   workspace: CreatorWorkspace,
@@ -174,31 +110,6 @@ export function addTemplateResource(
   markResourceDirty(next, resourceId);
   syncEmptyDirectories(next);
   return { workspace: next, resourceId };
-}
-
-export function clearAdversaryFeature(
-  workspace: CreatorWorkspace,
-  index: number,
-  resourceId?: string,
-): CreatorWorkspace {
-  return updateAdversaryData(workspace, (data) => {
-    const feature = data.特性[index];
-    if (!feature) return;
-    feature.名称 = "";
-    feature.原名 = "";
-    feature.类型 = "";
-    feature.特性描述 = "";
-  }, resourceId);
-}
-
-export function deleteAdversaryFeature(
-  workspace: CreatorWorkspace,
-  index: number,
-  resourceId?: string,
-): CreatorWorkspace {
-  return updateAdversaryData(workspace, (data) => {
-    data.特性.splice(index, 1);
-  }, resourceId);
 }
 
 export function removePortrait(workspace: CreatorWorkspace, resourceId?: string): CreatorWorkspace {

@@ -5,9 +5,9 @@
 ## 当前状态
 
 - 当前分支：`main`。
-- 当前工作树未提交，`git status --short` 有约 93 条记录，包含本轮正式修改、新文件和已确认删除项；不要 reset、checkout 或覆盖，继续前先阅读 diff 并保留现有变更。
+- 当前工作树包含本轮 Template 发布、Backend fail-closed、依赖边界守卫、重生成资源包及外部架构审阅后的五组 seam 收敛；未跟踪的 `start-dev.cmd` 是本轮开始前已有的用户文件，未修改。
 - L0 #1 与六个 L1 #2—#7 均已完成验收并关闭。
-- #8“平台合约生命周期治理”已关闭；Resource Package、System Package、Character Save、Tabletop Document 与 Backend API `1.0.0` 均已人工审阅、冻结并转为 `published`。
+- #8“平台合约生命周期治理”已关闭；五个 Platform Contract 与 11 个 Resource Template 的 `1.0.0` 均已人工审阅、冻结并转为 `published`。
 - #34“快速即兴敌人卡”按用户决定延后到 PbDH 主体完成后。
 - #52“高保真人物存档格式转换”仍为 `needs-triage`，应先设计损失模型，不直接实现。
 - 用户已授权：确认功能完成且测试通过的 Issue 可以直接关闭，无须逐项申请。
@@ -50,17 +50,32 @@
 - System Package `1.0.0` 已正式发布；网站预制包由管理员登记并信任，第三方脚本在用户确认后受限运行，正式 Player 入口拒绝 development Contract。
 - Character Save `1.0.0` 已正式发布；System Package 引用与独立 Character Data 版本保留，真实 UTC 时间和修改时间顺序受到检查，正式 Player 入口拒绝 development Contract。
 - 已发布 Contract 必须在 `contracts/releases/` 保存人工审阅日期、冻结 Schema SHA-256、conformance 及真实生产者/消费者证据；`npm run verify` 会拒绝缺证据或原地修改 Schema 的版本。
-- 当前可信资源模板统一为稳定 `1.0.0`；未发布的 alpha/dev 模板和兼容代码已移除。
+- 当前 11 个可信资源模板统一为已发布且不可原地修改的 `1.0.0`；未发布的 alpha/dev 模板和兼容代码已移除。
 - 平台与模板不得用正则理解游戏字段语义；例如“等级”和“姓名”对平台都是普通作者数据。
-- `additionalProperties: false` 仍用于封闭平台结构；不得借此预设自由模板的“简介”“类型”等游戏字段。
+- `additionalProperties: false` 仍用于封闭 Template Data；除所有模板统一拥有的 `类型` 外，不得借此给自由模板预设“简介”等额外游戏字段。
 - Tabletop Document `1.0.0` 已正式发布：实例保存桌面实际宽度，状态与替换动作按精确版本模板校验，`presentation` 不再保存尺寸，正式 Creator 入口拒绝 development Contract。
 - 四类正式 Contract 均以 `1.0.0` 为最低基线；所有 prerelease Schema、fixtures、catalog 项、兼容类型、迁移分支和临时 `.pbcha` Profile 已移除，旧开发文件明确不再支持导入。
 - 浏览器图片统一先规范化为 WebP；资源图片宽 `630px`，所有规范化图片上限 `2 MiB`，原图不进入 Workspace、归档或服务器。服务端流式截断超限上传并校验 WebP 结构。
 - Backend API `1.0.0` 已完成人工确认并正式发布：27 个操作以确定性生成的 OpenAPI 为权威，稳定 operation ID、认证矩阵、统一错误和二进制媒体边界由跨语言 conformance 与生成一致性检查守住。五个 Contract Family 现均有正式 `1.0.0`。
 - 受限 Markdown 支持 `_斜体_`、`__粗体__` 和 `:red[染色]`，并由共享渲染链消费。
 - Workspace 文件图标采用 Lucide，不再使用自绘图标。
+- 11 个 Resource Template 的 `data.类型` 是可编辑的游戏语义字段：新建时默认等于 Template 名称，但可由系统规则使用“主武器”“副武器”等值；Platform 只保存并按精确 Template Schema 校验，不解释、路由或判断兼容性。
 
 ## 本轮最后完成
+
+- 11 个 Resource Template 已完成正式发布前的数据结构统一：全部要求顶层 `类型`；职业的 `推荐初始属性` 改为单键对象数组，`推荐初始武器` 改为字符串数组；Creator 提供逐行编辑并由精确 Renderer 展示。
+- Daggerheart 种族与社群特性迁移会把标题从描述中拆出，不再同时保留“名称”和带标题前缀的“描述”；真实资源“械灵”“高城之民”和职业“吟游诗人”均有生成产物回归测试。
+- Daggerheart、寻望之心和三个迁移系统包已按新 Template Data 重生成；Resource Package conformance 样例与 digest known answer 已同步。
+- Backend 缺省发布模式已从 `development` 改为 fail-closed 的 `production`；只有本地显式配置才进入开发发布语义。
+- 依赖边界扫描改为从根 workspace 清单派生，现覆盖全部 15 个 workspace；同时禁止 Resource Conversion 通过全局 Registry 反向定位 Template，改为显式注入 Template capability。
+- 11 个 Resource Template `1.0.0` 经用户人工批准后正式发布：catalog、core capability 与 production Market 门禁已统一，ADR-0065 记录冻结范围；Backend production 回归实际覆盖全部 11 类模板。
+- 修复 Backend 武器 Template 发布测试的假通过：原测试主体误落在辅助函数 `return` 之后，现已恢复实际 production 发布请求。
+- Player Resource Application 的旧 apply、picker 与不可达 Dialog 孪生已删除，相关测试全部迁到当前 Sheet Runtime 的 `buildSheetResourceLibraries`、`queryResourceLibraryEntries` 与 `applyResourceSelectionToDraft` 真实接口。
+- Player/Creator 的第三方资源转换物化已合并到 `packages/resource-conversion`；组合根显式传入目标系统、诊断命名空间和当前 Template capability，不读取全局 Template Registry。
+- GM Tabletop 保存只消费 Tabletop Repository 自有媒体，不再因任意 Workspace 媒体变化触发保存；卡牌宽度、设计坐标比例和 containment 集中到独立 GM geometry 模块。
+- Player RuntimeState 已移除不可达的旧 Resource Extension 上传、转换确认、替换和卸载状态机；兼容读取、有效资源目录、卡牌 provenance 与现行 Resource Package 能力保留。
+- Template frontend 的 authoring、eager renderer、lazy loader 和 reference-card 标记统一由 `resolveTemplateFrontend(id, version)` facade 暴露；App 不再直连模板专用 Renderer resolver，lazy 子入口仍通过无 eager 依赖的 manifest 保持真实按需加载。
+- 浏览器验收发现旧 Creator 草稿缺少新 `data.类型` 时 Template 投影会白屏；11 个 capability 的只读投影现对缺失非字符串字段降级为空文本，严格 Schema 与持久数据不变，并有旧草稿回归测试。
 
 - Tabletop Document `1.0.0` 按人工审阅意见完成候选修改：`geometry.scale` 改为实际 `width`，桌面资源副本移除 `width/height/unit`，`state` 的具体结构交给模板 Schema，`replacementId` 必须匹配模板声明。
 - GM 保存层会在内部缩放值与 Contract 实际宽度之间换算；Tabletop Document `1.0.0` 经人工确认后冻结并正式发布。
@@ -94,9 +109,9 @@
 
 ### 优先级 1：正式发布语义与自动守卫
 
-1. **Resource Template 尚未正式发布。** `packages/templates/catalog.json` 的 11 个 Template 仍为 `development` 且 `publication.production=false`；多数 capability 也仍声明 `development`。Backend 使用该 catalog，切到 `production` 后会拒绝这些 Template。应完成人工确认后统一 catalog、capability 与测试；不要只改单边。
-2. **Backend 发布模式仍 fail-open。** `apps/backend/src/pbdh_backend/settings.py` 在缺少 `PBDH_PUBLICATION_MODE` 时默认 `development`。正式部署需要显式模式或等价的启动门禁，避免漏配后保留同版本覆盖等开发语义。
-3. **依赖边界检查不完整。** 根 `package.json` 有 15 个 workspace，但 `scripts/check-dependency-boundaries.mjs` 的手写列表漏掉 `packages/cloud-documents`，所以验证只报告 14 个；同时 `packages/resource-conversion` 仍可通过 `templateRegistry` 反向定位 Template。补齐 workspace 后增加对应回归测试。
+1. **Resource Template 正式发布已完成。** 11 个 `1.0.0` 的 catalog、capability 与 production publication 状态一致为 `published`，并由一致性测试与 Backend production 发布测试守住。
+2. **Backend fail-closed 已完成。** 缺少 `PBDH_PUBLICATION_MODE` 时默认 `production`，并有 Settings 回归测试。
+3. **依赖边界守卫已完成。** 扫描覆盖根清单中的全部 15 个 workspace，并禁止 Resource Conversion 反向读取全局 Template Registry。
 
 ### 优先级 2：明确可删除或可低成本修正的遗留
 
@@ -109,12 +124,11 @@
 
 ### 优先级 3：需要先做取舍的结构工作
 
-1. **Resource Conversion 与 ADR-0027 漂移。** 当前是 Adapter → `TemporaryResource` 通用中间模型 → 中央 Template 映射，并通过全局 `templateRegistry` 校验；ADR-0027 要求每个 Adapter 直接产生 Game Resource Candidate 和精确版本报告。这是剩余项目中改动最大的一项：要么重构五个 Adapter，要么新 ADR 明确接受中央模型，不能继续让实现与权威设计相反。
-2. **Player 旧 Resource Extension 整套能力不可达。** Runtime interface、slice、loader、workflow 和 storage 方法仍存在，但正式 UI 没有入口，Platform storage 实现只返回空列表/不可用。先确认产品已由 Resource Package 完全取代，再整体删除，不要只删表层入口。
-3. **巨型 Surface 仍有两个明显候选。** `PlayerSheetSurface.tsx` 约 1244 行，优先考虑提炼人物存档/云同步/文件事务；`MarketApp.tsx` 约 847 行，可提炼 Publication 管理事务。Creator 根组件约 1725 行，当前只建议继续抽取 Market handoff 等完整事务。Backend Repository、Portable Archive、单格式 Adapter 和纯命令核心虽然超过 500 行，但职责较集中，暂不因行数拆分。
-4. **UI 测试仍大量锁定源码字符串。** `workspace-prototype.test.ts`、`gm-tabletop-l1-regressions.test.ts`、`player-layout-regressions.test.ts`、`player-toolbar.test.ts` 和 `market-detail.test.tsx` 是主要热点；三个主 Surface 尚无真实挂载后的点击、异步状态和 Effect 生命周期测试。逐步替换最高风险断言，不一次重写全部测试。
-5. Creator 仍把登录、网络与发布操作错误伪装成 `ContractDiagnostic`，使用不存在的 `creator-prototype@1` family/version。应建立独立 UI 操作诊断类型，ContractDiagnostic 只描述真实 Contract。
-6. Platform 生产构建仍提示入口 chunk 约 1.60 MiB、gzip 约 409 KiB。当前没有性能故障证据，先观察实际加载指标；不要仅为消除 warning 破坏三个 Surface 常驻挂载和切换状态。
+1. **Resource Conversion 与 ADR-0027 漂移。** 当前是 Adapter → `TemporaryResource` 通用中间模型 → 中央 Template 映射，并由组合根显式注入当前 Template capability；ADR-0027 要求每个 Adapter 直接产生 Game Resource Candidate 和精确版本报告。这是剩余项目中改动最大的一项：要么重构五个 Adapter，要么新 ADR 明确接受中央模型，不能继续让实现与权威设计相反。
+2. **巨型 Surface 仍有两个明显候选。** `PlayerSheetSurface.tsx` 约 1244 行，优先考虑提炼人物存档/云同步/文件事务；`MarketApp.tsx` 约 847 行，可提炼 Publication 管理事务。Creator 根组件约 1725 行，当前只建议继续抽取 Market handoff 等完整事务。Backend Repository、Portable Archive、单格式 Adapter 和纯命令核心虽然超过 500 行，但职责较集中，暂不因行数拆分。
+3. **UI 测试仍大量锁定源码字符串。** `workspace-prototype.test.ts`、`gm-tabletop-l1-regressions.test.ts`、`player-layout-regressions.test.ts`、`player-toolbar.test.ts` 和 `market-detail.test.tsx` 是主要热点；三个主 Surface 尚无真实挂载后的点击、异步状态和 Effect 生命周期测试。逐步替换最高风险断言，不一次重写全部测试。
+4. Creator 仍把登录、网络与发布操作错误伪装成 `ContractDiagnostic`，使用不存在的 `creator-prototype@1` family/version。应建立独立 UI 操作诊断类型，ContractDiagnostic 只描述真实 Contract。
+5. Platform 生产构建仍提示入口 chunk 约 1.54 MiB、gzip 约 393 KiB。当前没有性能故障证据，先观察实际加载指标；不要仅为消除 warning 破坏三个 Surface 常驻挂载和切换状态。
 
 ### 明确排除
 
@@ -123,17 +137,17 @@
 
 ## 验证基线
 
-- 最新完整 `npm run verify` 通过：94 个 TypeScript 测试文件、679 项测试；138 项 Python 测试；5 个正式 Contract 的发布冻结检查、类型检查、依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。
+- 最新完整 `npm run verify` 通过：94 个 TypeScript 测试文件、680 项测试；140 项 Python 测试；5 个正式 Contract 的发布冻结检查、11 个正式 Template 的状态一致性与 production 发布路径、类型检查、15-workspace 依赖边界、设计检查、Renderer 性能测量和 Platform 生产构建全部成功。
 - Python 输出仍有 30 条 Pydantic alias 警告；生产构建仍有入口 chunk 大于 500 KiB 的提示，均未使验证失败。
-- `node scripts/restart-dev.mjs` 有此前通过记录，但在最后一轮 Creator/GM 文件事务拆分后没有重新运行。若明天修改或验收运行代码，必须重新确认 Backend `8001` 与 Platform `5173` 及三个 App Surface 健康检查均为 `OK`。
+- `node scripts/restart-dev.mjs` 已重新运行，Backend `8001` 与 Platform `5173` 均为 `OK`，脚本内的 Platform、Player、Creator、Market 模块级健康检查全部通过。
+- Browser 插件已在真实本地 Player、Creator、GM 与 Market 页面完成验收，四个 Surface 均可读取真实 DOM 且控制台无错误；旧“环境 Template 验收包”缺少 `类型` 的本地草稿也能正常显示。本地浏览器已有验收数据未擅自删除。
 - 若修改 Backend 或 Platform 运行代码，交付前运行 `node scripts/restart-dev.mjs`，以五个模块级健康入口均通过为准。
 
 ## 下一步
 
-1. 先核对并完成 Template lifecycle、Backend production mode 和依赖边界守卫；这是发布语义，不与大型重构混做。
-2. 再清理 Market fixture、旧 Creator CSS、未使用代码、`.scratch` 和路线图漂移，每组保持独立可验证 diff。
-3. 然后决定 Resource Conversion 是按 ADR-0027 重构还是用新 ADR 接受现状；未作决定前不要局部搬运中央映射。
-4. 只有在上述完成后，再选择 Player lifecycle、Market publication workflow 和少量真实 UI 交互测试作为下一轮高收益结构工作。
+1. 决定 Resource Conversion 与 ADR-0027 的漂移：重构五个 Adapter 直接产出候选，或用新 ADR 明确接受当前通用中间模型与中央映射。
+2. 清理 Market fixture、旧 Creator CSS、未使用代码、`.scratch` 和路线图漂移，每组保持独立可验证 diff。
+3. 再处理 Creator 假 ContractDiagnostic、巨型 Surface 与源码字符串 UI 测试；不要仅按文件行数拆分。
 
 ## Suggested skills
 

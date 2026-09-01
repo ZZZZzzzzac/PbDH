@@ -9,11 +9,13 @@ import {
 import { templateRegistry } from "@pbdh/templates/core";
 
 import {
-  containGmTabletopInstances,
-  gmCardPixelsPerDesignUnit,
   prepareWorkspaceReplacement,
   snapshotWorkspaceResourceForTabletop,
 } from "./tabletop-placement.ts";
+import {
+  containGmTabletopInstances,
+  gmCardPixelsPerDesignUnit,
+} from "./gm-tabletop-geometry.ts";
 import type { CreatorWorkspace } from "./workspace-model.ts";
 
 export type WorkspaceResourceSelection = { workspaceKey: string; resourceId: string };

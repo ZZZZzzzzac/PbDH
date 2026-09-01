@@ -8,7 +8,7 @@ import type {
   SheetValue,
 } from "../domain/characterData";
 import type { EffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
-import type { GeneratedResourceId, ResourceExtension, ResourceExtensionIssue } from "../domain/resourceExtension";
+import type { ResourceExtension, ResourceExtensionIssue } from "../domain/resourceExtension";
 import type { ResourceComposerSelections } from "../domain/resourceComposer";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import type { PackageIssue, SystemPackage } from "../domain/systemPackage";
@@ -17,7 +17,6 @@ import type { RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { PackageLoadResult } from "../loaders/systemPackageLoader";
 import type { PresetLoadProgress, PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
-import type { NormalizedResourceExtensionArtifact, ResourceExtensionFileLoadResult } from "../loaders/resourceExtensionLoader";
 import type { CharacterDataMigrationCandidate, CharacterSaveSummary, PackageScriptConsentCandidate, RuntimeStorage, SystemPackageCacheMetadata } from "../storage/runtimeStorage";
 import type { runValidationChecks } from "../domain/validationRunner";
 
@@ -40,45 +39,6 @@ export interface RuntimeDependencies {
   savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: RuntimeStorage;
   runValidationChecks: typeof runValidationChecks;
-}
-
-export type ResourceExtensionImportState =
-  | { status: "success"; extensionId: string; contributionCount: number; entryCount: number; generatedIds: GeneratedResourceId[]; normalizedArtifact: NormalizedResourceExtensionArtifact; issues: ResourceExtensionIssue[] }
-  | { status: "error"; issues: ResourceExtensionIssue[] };
-
-export interface ResourceExtensionDifference {
-  libraryId: string;
-  added: number;
-  removed: number;
-  retained: number;
-}
-
-export interface PendingResourceExtensionReplacement {
-  extension: ResourceExtension;
-  assets: RuntimePackageAsset[];
-  generatedIds: GeneratedResourceId[];
-  normalizedArtifact: NormalizedResourceExtensionArtifact;
-  issues: ResourceExtensionIssue[];
-  differences: ResourceExtensionDifference[];
-  previousImageCount: number;
-  nextImageCount: number;
-}
-
-export interface PendingResourceExtensionRemoval {
-  extensionId: string;
-  extensionName: string;
-  libraries: Array<{ libraryId: string; entryCount: number }>;
-  imageCount: number;
-  staleReferenceCount: number;
-}
-
-export interface PendingResourceExtensionConversion {
-  loaded: Extract<ResourceExtensionFileLoadResult, { ok: true }>;
-}
-
-export interface PendingResourceFormatSelection {
-  file: Blob;
-  adapters: Array<{ ID: string; 名称: string }>;
 }
 
 export interface PendingCharacterConversion {
@@ -160,24 +120,10 @@ export interface PackageSlice {
   cancelPackageScriptConsent: () => void;
 }
 
-export interface ResourceExtensionSlice {
+export interface ResourceCatalogSlice {
   resourceCatalog: EffectiveResourceCatalog | null;
   installedResourceExtensions: ResourceExtension[];
-  resourceExtensionImport: ResourceExtensionImportState | null;
-  pendingResourceExtensionReplacement: PendingResourceExtensionReplacement | null;
-  pendingResourceExtensionConversion: PendingResourceExtensionConversion | null;
-  pendingResourceFormatSelection: PendingResourceFormatSelection | null;
-  pendingResourceExtensionRemoval: PendingResourceExtensionRemoval | null;
   resourceReferenceIssues: ResourceExtensionIssue[];
-  uploadResourceExtensionFromFile: (file: Blob) => Promise<void>;
-  selectResourceFormatAdapter: (adapterId: string) => Promise<void>;
-  confirmResourceExtensionConversion: () => Promise<void>;
-  cancelResourceExtensionConversion: () => void;
-  confirmResourceExtensionReplacement: () => Promise<void>;
-  cancelResourceExtensionReplacement: () => void;
-  requestResourceExtensionRemoval: (extensionId: string) => void;
-  confirmResourceExtensionRemoval: () => Promise<void>;
-  cancelResourceExtensionRemoval: () => void;
 }
 
 export interface CharacterSlice {
@@ -252,7 +198,7 @@ export interface CharacterImportSlice {
 }
 
 export type RuntimeState = PackageSlice
-  & ResourceExtensionSlice
+  & ResourceCatalogSlice
   & CharacterSlice
   & QuestionnaireSlice
   & CardSlice

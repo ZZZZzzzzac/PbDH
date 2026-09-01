@@ -40,7 +40,6 @@ export function creatorWorkspaceStyle(
     "--creator-preview-control-active": creatorWorkspaceDesign.previewControls.activeBackground,
     "--creator-preview-switch": creatorWorkspaceDesign.previewControls.switchBackground,
     "--creator-accent": creatorWorkspaceDesign.accent,
-    "--creator-weapon-description-height": `${creatorWorkspaceDesign.weapon.descriptionInputHeight}px`,
     "--gm-tabs-height": `${creatorWorkspaceDesign.gmTabletop.tabs.height}px`,
     "--gm-tabs-bg": creatorWorkspaceDesign.gmTabletop.tabs.background,
     "--gm-tabs-border": creatorWorkspaceDesign.gmTabletop.tabs.border,

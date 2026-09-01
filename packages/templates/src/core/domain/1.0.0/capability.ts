@@ -3,17 +3,19 @@ import schema from "./schema.json";
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type DomainData = {
-  名称: string; 领域: string; 等级: string; 属性: string; 回想: string; 描述: string; 风味描述: string;
+  名称: string; 类型: string; 领域: string; 等级: string; 属性: string; 回想: string; 描述: string; 风味描述: string;
 };
 
-const defaultData: DomainData = { 名称: "", 领域: "", 等级: "", 属性: "", 回想: "", 描述: "", 风味描述: "" };
+const defaultData: DomainData = { 名称: "", 类型: "领域卡", 领域: "", 等级: "", 属性: "", 回想: "", 描述: "", 风味描述: "" };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const domainTemplate = deepFreeze<TemplateCoreCapability<DomainData>>({
   id: "领域卡",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

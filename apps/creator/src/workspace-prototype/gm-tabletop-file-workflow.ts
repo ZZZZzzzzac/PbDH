@@ -17,7 +17,7 @@ import type {
   TabletopDocumentRepository,
   TabletopImportConflictResolution,
 } from "./tabletop-document-repository.ts";
-import { containGmTabletopInstances } from "./tabletop-placement.ts";
+import { containGmTabletopInstances } from "./gm-tabletop-geometry.ts";
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
 
 type TabletopFileRepository = Pick<

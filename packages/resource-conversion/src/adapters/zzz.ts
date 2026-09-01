@@ -91,6 +91,7 @@ function normalizedFields(raw: JsonObject): JsonObject {
   };
   if (kindFor(type) === "class") return {
     名称: text(raw.名称),
+    类型: text(raw.资源类型 || type || "职业"),
     描述: text(raw.描述),
     领域: splitJoined(raw.领域),
     生命点: text(raw.生命点 || raw.初始生命点 || raw.起始生命),
@@ -99,7 +100,7 @@ function normalizedFields(raw: JsonObject): JsonObject {
     希望特性: text(raw.希望特性),
     职业特性: text(raw.职业特性),
     推荐初始属性: recommendedAttributes(raw.推荐初始属性),
-    推荐初始武器: text(raw.推荐初始武器),
+    推荐初始武器: splitJoined(raw.推荐初始武器),
     推荐初始护甲: text(raw.推荐初始护甲),
     背景问题: numberedTextList(raw, "背景问题", "背景问题"),
     关系问题: numberedTextList(raw, "关系问题", "关系问题"),
@@ -107,6 +108,7 @@ function normalizedFields(raw: JsonObject): JsonObject {
   };
   if (kindFor(type) === "subclass") return {
     名称: subclassName(raw.名称),
+    类型: text(raw.资源类型 || type || "子职业"),
     主职: text(raw.主职),
     等级: text(raw.等级),
     施法属性: text(raw.施法属性),
@@ -115,17 +117,20 @@ function normalizedFields(raw: JsonObject): JsonObject {
   };
   if (kindFor(type) === "ancestry") return {
     名称: text(raw.名称),
+    类型: text(raw.资源类型 || type || "种族"),
     简介: text(raw.简介),
     特性: ancestryFeatures(raw.描述),
   };
   if (kindFor(type) === "community") return {
     名称: text(raw.名称),
+    类型: text(raw.资源类型 || type || "社群"),
     简介: text(raw.简介),
     性格: text(raw.性格 || raw.特性),
     特性: namedFeature(raw.描述),
   };
   if (kindFor(type) === "domain") return {
     名称: text(raw.名称),
+    类型: text(raw.资源类型 || type || "领域卡"),
     领域: text(raw.领域),
     等级: semanticCount(raw.等级),
     属性: text(raw.属性),
@@ -158,6 +163,7 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "class") return {
     名称: resource.name,
     类型: "主职",
+    资源类型: text(fields.类型 || "职业"),
     描述: text(fields.描述),
     领域: splitJoined(fields.领域).join("+"),
     初始生命点: text(fields.生命点),
@@ -165,8 +171,8 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     职业物品: text(fields.职业物品),
     希望特性: text(fields.希望特性),
     职业特性: text(fields.职业特性),
-    推荐初始属性: asJsonObject(fields.推荐初始属性) ?? {},
-    推荐初始武器: text(fields.推荐初始武器),
+    推荐初始属性: Array.isArray(fields.推荐初始属性) ? fields.推荐初始属性 : [],
+    推荐初始武器: Array.isArray(fields.推荐初始武器) ? fields.推荐初始武器 : [],
     推荐初始护甲: text(fields.推荐初始护甲),
     背景问题: Array.isArray(fields.背景问题) ? fields.背景问题 : [],
     关系问题: Array.isArray(fields.关系问题) ? fields.关系问题 : [],
@@ -175,6 +181,7 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "subclass") return {
     名称: `${resource.name}-${text(fields.等级)}`,
     类型: "子职",
+    资源类型: text(fields.类型 || "子职业"),
     主职: text(fields.主职),
     等级: text(fields.等级),
     施法属性: text(fields.施法属性),
@@ -184,12 +191,14 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "ancestry") return {
     名称: resource.name,
     类型: "种族",
+    资源类型: text(fields.类型 || "种族"),
     简介: text(fields.简介),
     描述: ancestryDescription(fields.特性),
   };
   if (resource.kind === "community") return {
     名称: resource.name,
     类型: "社群",
+    资源类型: text(fields.类型 || "社群"),
     简介: text(fields.简介),
     性格: text(fields.性格),
     描述: formatNamedFeature(fields.特性),
@@ -197,6 +206,7 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "domain") return {
     名称: resource.name,
     类型: "领域卡",
+    资源类型: text(fields.类型 || "领域卡"),
     领域: text(fields.领域),
     等级: Number(semanticCount(fields.等级)) || 0,
     属性: text(fields.属性),

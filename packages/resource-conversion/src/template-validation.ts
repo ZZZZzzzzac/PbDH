@@ -1,19 +1,26 @@
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
-import { templateRegistry } from "@pbdh/templates/core";
+import { currentTemplates, type TemplateCoreCapability } from "@pbdh/templates/core";
 
 import type { ConversionDiagnostic, JsonObject } from "./types.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validators = new Map<string, ValidateFunction>();
+const templates = new Map(
+  currentTemplates.map((template) => [`${template.id}@${template.version}`, template]),
+);
 
-function validatorFor(id: string, version: string): ValidateFunction | undefined {
+function validatorFor(
+  id: string,
+  version: string,
+  template?: TemplateCoreCapability<any>,
+): ValidateFunction | undefined {
   const key = `${id}@${version}`;
   const existing = validators.get(key);
   if (existing) return existing;
-  const template = templateRegistry.resolve(id, version);
-  if (!template) return undefined;
-  const validator = ajv.compile(template.schema);
+  const capability = template ?? templates.get(key);
+  if (!capability || capability.id !== id || capability.version !== version) return undefined;
+  const validator = ajv.compile(capability.schema);
   validators.set(key, validator);
   return validator;
 }
@@ -28,8 +35,13 @@ function errorDiagnostic(error: ErrorObject): ConversionDiagnostic {
   };
 }
 
-export function validateTemplateData(id: string, version: string, data: JsonObject): ConversionDiagnostic[] {
-  const validator = validatorFor(id, version);
+export function validateTemplateData(
+  id: string,
+  version: string,
+  data: JsonObject,
+  template?: TemplateCoreCapability<any>,
+): ConversionDiagnostic[] {
+  const validator = validatorFor(id, version, template);
   if (!validator) return [{
     code: "conversion.template.unsupported",
     severity: "error",

@@ -5,15 +5,14 @@ import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import { CardDisplay } from "@pbdh/resource-renderer/react";
 import type { TabletopCommand, TabletopDocumentModel } from "@pbdh/tabletop/core";
 import { TabletopSurface } from "@pbdh/tabletop/react";
-import { trustedAuthoringLayoutFor } from "@pbdh/templates/frontend";
-import { adversaryTemplate, templateRegistry, weaponTemplate, type AdversaryData, type WeaponData } from "@pbdh/templates/core";
+import { resolveTemplateFrontend, TemplateAuthoringSurface } from "@pbdh/templates/frontend";
+import { templateRegistry } from "@pbdh/templates/core";
 
 import { CloudSyncIndicator, Icon } from "./creator-controls.tsx";
 import { gmTabletopCapabilities } from "./gm-tabletop-session.ts";
 import { gmTabletopZoomSteps } from "./gm-tabletop-viewport.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
-import { gmCardPixelsPerDesignUnit } from "./tabletop-placement.ts";
-import { AdversaryEditor, StructuredEditor, WeaponEditor } from "./resource-authoring.tsx";
+import { gmCardPixelsPerDesignUnit } from "./gm-tabletop-geometry.ts";
 import { AutoFitPreview, ResourceIcon } from "./resource-preview.tsx";
 
 export type GmTabletopWorkbenchSnapshot = {
@@ -25,7 +24,6 @@ export type GmTabletopWorkbenchSnapshot = {
   view: "canvas" | "instance-editor";
   selectedInstanceId: string;
   selectedInstanceIds: readonly string[];
-  openFeatureMenu: number | null;
   zoom: number;
   pan: { x: number; y: number };
   assetUrls: ReadonlyMap<string, string>;
@@ -69,14 +67,8 @@ export function GmTabletopWorkbench({
   const selectedTemplate = selectedInstance
     ? templateRegistry.resolve(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
-  const selectedLayout = selectedInstance
-    ? trustedAuthoringLayoutFor(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
-    : undefined;
-  const adversary = selectedInstance?.resource.template.id === adversaryTemplate.id
-    ? selectedInstance.resource.data as AdversaryData
-    : undefined;
-  const weapon = selectedInstance?.resource.template.id === weaponTemplate.id
-    ? selectedInstance.resource.data as WeaponData
+  const selectedFrontend = selectedInstance
+    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
 
   return <section className="gm-workbench" data-design-frame={snapshot.designFrame}>
@@ -210,9 +202,7 @@ export function GmTabletopWorkbench({
     {snapshot.view === "instance-editor" && selectedInstance && <>
       <div className="instance-editor-toolbar"><button type="button" onClick={() => execute({ type: "set-view", view: "canvas" })}>← 返回桌面</button><strong><ResourceIcon resource={selectedInstance.resource} />{selectedTemplate?.project(selectedInstance.resource.data).title ?? selectedInstance.id} · 实例</strong></div>
       <div className="workbench-body instance-editor-body" onFocusCapture={() => execute({ type: "request-cloud-edit" })} onBlurCapture={() => execute({ type: "request-cloud-edit" })}>
-        {adversary && <AdversaryEditor data={adversary} openFeatureMenu={snapshot.openFeatureMenu} onField={(field, value) => execute({ type: "edit-instance-data", path: [field], value })} onFeature={(index, field, value) => execute({ type: "edit-instance-data", path: ["特性", String(index), field], value })} />}
-        {weapon && <WeaponEditor data={weapon} onField={(field, value) => execute({ type: "edit-instance-data", path: [field], value })} />}
-        {!adversary && !weapon && selectedLayout && <StructuredEditor data={selectedInstance.resource.data} layout={selectedLayout} onValue={(path, value) => execute({ type: "edit-instance-data", path: path.split("."), value })} />}
+        {selectedFrontend && <TemplateAuthoringSurface authoring={selectedFrontend.authoring} data={selectedInstance.resource.data} onValue={(path, value) => execute({ type: "edit-instance-data", path: path.split("."), value })} />}
         <aside className="preview-panel"><header><h1>实例预览</h1><span className="instance-edit-note">修改只作用于桌面上的这张卡</span></header><AutoFitPreview><GmTabletopCard instance={selectedInstance} assetUrls={snapshot.assetUrls} onCommand={(command) => execute({ type: "tabletop-command", command })} /></AutoFitPreview><footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer></aside>
       </div>
     </>}

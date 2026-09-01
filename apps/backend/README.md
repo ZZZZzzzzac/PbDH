@@ -13,7 +13,7 @@ Issue #38 已确认首个 Backend 持久化使用 SQLite、外键、WAL 和事�
 
 Issue #39 追加 Market Publication、Package ID 所有权、公开资源索引和内容寻址媒体表。Supabase 仍只负责外部身份认证；结构化出版物与媒体字节保存在 Platform Backend 自有数据库。
 
-`PBDH_PUBLICATION_MODE` 默认为 `development`，用于本地验证发布生命周期。正式部署必须显式设为 `production`；此模式只接受已进入 Release Catalog 的正式 Contract 与受支持 Template，拒绝未发布版本。
+`PBDH_PUBLICATION_MODE` 缺省为 fail-closed 的 `production`：只接受已进入 Release Catalog 的正式 Contract 与受支持 Template，并拒绝同版本覆盖。需要验证开发期发布生命周期时，必须在本机 `.env.local` 显式设为 `development`。
 
 ## 本地启动
 

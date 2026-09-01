@@ -11,6 +11,7 @@ Player App, Creator App, GM App, and Market frontend use the same `packages/reso
 - Each published exact Template version resolves permanently to one immutable Renderer Revision. Any visual or semantic renderer change requires a new Template version and Revision; versions with identical rendering may share one Revision.
 - Resource data records an exact Template version. A frontend cannot claim canonical support by applying a merely SemVer-compatible newer renderer to that resource.
 - Frontends may release independently and may bundle different sets of exact Template versions. An unsupported exact renderer follows the documented unsupported-Template path instead of silently redrawing the card.
+- Frontend hosts resolve authoring layout、eager Renderer Revision and lazy Renderer loader through one exact `Template ID@version` capability facade; App code does not bypass that seam by importing template-specific resolver functions.
 - Resource Packages remain compact because renderer code ships once with each App rather than once per card.
 - Structured data remains available for editing, accessibility, search, conversion, validation, and Template-declared interaction.
 - Runtime thumbnails or browser caches, if later introduced, are disposable performance artifacts and never contract authority or Resource Package content.

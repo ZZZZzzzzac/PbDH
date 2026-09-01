@@ -37,14 +37,8 @@ import {
   type TabletopCommand,
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
-import { trustedAuthoringLayoutFor } from "@pbdh/templates/frontend";
-import {
-  templateRegistry,
-  type AdversaryData,
-  type AdversaryFeature,
-  type ArmorData,
-  type WeaponData,
-} from "@pbdh/templates/core";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { templateRegistry } from "@pbdh/templates/core";
 
 import { creatorWorkspaceDesign } from "./design.generated.ts";
 import {
@@ -115,17 +109,13 @@ import {
   type CreatorOperation,
 } from "./creator-dialogs.tsx";
 import {
-  adversaryData,
-  armorData,
   addTemplateResource,
-  clearAdversaryFeature,
   closeWorkspaceResourceTab,
   copyWorkspaceResourceToPackage,
   createBlankWorkspace,
   createWorkspace,
   createWorkspaceFolder,
   deleteWorkspaceNode,
-  deleteAdversaryFeature,
   duplicateWorkspaceResource,
   forkCurrentWorkspace,
   moveWorkspaceNode,
@@ -136,14 +126,10 @@ import {
   replacePortrait,
   selectWorkspaceFolder,
   toggleWorkspaceFolder,
-  updateAdversaryData,
-  updateArmorData,
   updateResourcePresentation,
   updateResourceReplacement,
   updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
-  updateWeaponData,
-  weaponData,
   type CreatorWorkspace,
   type WorkspaceNodeRef,
   type WorkspaceResource,
@@ -263,7 +249,6 @@ export function CreatorWorkspacePrototype({
   const [imageCropWorking, setImageCropWorking] = useState(false);
   const [imageCropError, setImageCropError] = useState<string | null>(null);
   const [creatorOperation, setCreatorOperation] = useState<CreatorOperation | null>(null);
-  const [openFeatureMenu, setOpenFeatureMenu] = useState<number | null>(null);
   const [localAppMode, setLocalAppMode] = useState<CreatorAppMode>("creator");
   const appMode = mode ?? localAppMode;
   const changeAppMode = useCallback((nextMode: CreatorAppMode) => {
@@ -346,7 +331,6 @@ export function CreatorWorkspacePrototype({
   const tabletopSaving = persistence.saving.tabletop;
   const tabletopMedia = persistence.media.tabletop;
   const setTabletopMedia = persistence.media.setTabletop;
-  const allTabletopMedia = persistence.media.allTabletop;
   const workspaceWriteQueueRef = persistence.writeQueues.workspace;
   const tabletopWriteQueueRef = persistence.writeQueues.tabletop;
   const requestWorkspaceCloudSyncAfterEditing = persistence.requestCloudSyncAfterEditing.workspace;
@@ -387,7 +371,7 @@ export function CreatorWorkspacePrototype({
     ? templateRegistry.resolve(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
   const selectedInstanceLayout = selectedInstance
-    ? trustedAuthoringLayoutFor(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
+    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)?.authoring.layout
     : undefined;
   const resourceTemplateOptions = useMemo(() => [...new Set(workspaces.flatMap((workspace) =>
     workspace.document.resources.map((item) => item.template.id)))].sort(), [workspaces]);
@@ -553,7 +537,7 @@ export function CreatorWorkspacePrototype({
             ...structuredClone(source),
             id: crypto.randomUUID(),
             name: `${source.name} - 本地副本`,
-          }, allTabletopMedia, null);
+          }, tabletopMedia, null);
         }
       }
       const snapshot = action === "local"
@@ -735,26 +719,6 @@ export function CreatorWorkspacePrototype({
     notify(`已删除 ${selections.length} 个资源`);
   }
 
-  function updateData(update: (draft: AdversaryData) => void) {
-    if (active && resource) replaceActive(updateAdversaryData(active, update, resource.id));
-  }
-
-  function updateField(field: Exclude<keyof AdversaryData, "特性">, value: string) {
-    updateData((draft) => { draft[field] = value; });
-  }
-
-  function updateWeaponField(field: keyof WeaponData, value: string) {
-    if (active && resource) replaceActive(updateWeaponData(active, (draft) => {
-      draft[field] = value;
-    }, resource.id));
-  }
-
-  function updateArmorField(field: keyof ArmorData, value: string) {
-    if (active && resource) replaceActive(updateArmorData(active, (draft) => {
-      draft[field] = value;
-    }, resource.id));
-  }
-
   function updateReferenceValue(path: string, value: unknown) {
     if (!active || !resource) return;
     replaceActive(updateWorkspaceResourceData(active, (draft) => {
@@ -773,10 +737,6 @@ export function CreatorWorkspacePrototype({
     update: (presentation: CreatorWorkspace["document"]["resources"][number]["presentation"]) => void,
   ) {
     if (active && resource) replaceActive(updateResourcePresentation(active, update, resource.id));
-  }
-
-  function updateFeature(index: number, field: keyof AdversaryFeature, value: string) {
-    updateData((draft) => { draft.特性[index]![field] = value; });
   }
 
   function applyTabletopCommand(command: TabletopCommand) {
@@ -991,7 +951,7 @@ export function CreatorWorkspacePrototype({
       const result = await runGmTabletopFileWorkflow({
         type: "duplicate",
         tabletop: activeTabletop,
-        media: allTabletopMedia,
+        media: tabletopMedia,
         accountId: auth.credentials?.accountId ?? null,
       }, { repository: tabletopRepository, cloudDocuments: cloudDocumentService });
       if (result.type !== "duplicated") return;
@@ -1063,7 +1023,7 @@ export function CreatorWorkspacePrototype({
       const result = await runGmTabletopFileWorkflow({
         type: "export",
         tabletop: activeTabletop,
-        media: allTabletopMedia,
+        media: tabletopMedia,
         accountId: auth.credentials?.accountId ?? null,
       }, { repository: tabletopRepository, cloudDocuments: cloudDocumentService });
       if (result.type !== "tabletop-export") return;
@@ -1167,24 +1127,6 @@ export function CreatorWorkspacePrototype({
     } finally {
       setCreatorOperation(null);
     }
-  }
-
-  function clearFeature(index: number) {
-    if (active && resource) replaceActive(clearAdversaryFeature(active, index, resource.id));
-    setOpenFeatureMenu(null);
-  }
-
-  function deleteFeature(index: number) {
-    if (active && resource) {
-      replaceActive(deleteAdversaryFeature(active, index, resource.id));
-    }
-    setOpenFeatureMenu(null);
-    setDialog(null);
-  }
-
-  function requestFeatureDeletion(index: number, name: string) {
-    setOpenFeatureMenu(null);
-    setDialog({ kind: "delete-feature", index, name });
   }
 
   function finishMarketHandoff(workspace: CreatorWorkspace, handoff: CreatorMarketHandoff) {
@@ -1580,15 +1522,7 @@ export function CreatorWorkspacePrototype({
       case "request-cloud-edit": requestWorkspaceCloudSyncAfterEditing(); return;
       case "choose-portrait": portraitRef.current?.click(); return;
       case "set-editor-share": setEditorColumnShare(command.value); return;
-      case "adversary-field": updateField(command.field, command.value); return;
-      case "adversary-feature": updateFeature(command.index, command.field, command.value); return;
-      case "add-feature": updateData((draft) => { draft.特性.push({ 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" }); }); return;
-      case "toggle-feature-menu": setOpenFeatureMenu((current) => current === command.index ? null : command.index); return;
-      case "clear-feature": clearFeature(command.index); return;
-      case "delete-feature": requestFeatureDeletion(command.index, command.name ?? ""); return;
-      case "weapon-field": updateWeaponField(command.field, command.value); return;
-      case "armor-field": updateArmorField(command.field, command.value); return;
-      case "structured-value": updateReferenceValue(command.path, command.value); return;
+      case "authoring-value": updateReferenceValue(command.path, command.value); return;
       case "replacement":
         if (active) replaceActive(updateResourceReplacement(active, command.resourceId, command.replacementId, command.targetResourceId));
         return;
@@ -1676,7 +1610,6 @@ export function CreatorWorkspacePrototype({
       case "accept-conversion": acceptConvertedPackage(command.review); return;
       case "commit-incoming": commitIncoming(command.incoming, command.handoff); return;
       case "save-aside": void saveAsideThenImport(command.incoming, command.handoff); return;
-      case "delete-feature": deleteFeature(command.index); return;
       case "delete-workspace-node": confirmWorkspaceNodeDeletion(command.workspaceKey, command.node); return;
       case "delete-selected-resources": confirmSelectedResourceDeletion(command.selections); return;
       case "copy-resource": copyResourceIntoWorkspace(command.sourceWorkspaceKey, command.resourceId, command.targetWorkspaceKey); return;
@@ -1730,7 +1663,6 @@ export function CreatorWorkspacePrototype({
             activeWorkspace: active,
             activeResource: resource,
             activeResourceId,
-            openFeatureMenu,
             editorColumnShare,
             assetUrls,
           }}
@@ -1747,7 +1679,6 @@ export function CreatorWorkspacePrototype({
             view: tabletopView,
             selectedInstanceId,
             selectedInstanceIds,
-            openFeatureMenu,
             zoom: canvasZoom,
             pan: canvasPan,
             assetUrls,

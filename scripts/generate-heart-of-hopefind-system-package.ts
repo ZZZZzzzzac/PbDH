@@ -63,8 +63,8 @@ const sourceEntries = JSON.parse(await readFile(
 const resources: ResourcePackageLogicalDocument["resources"] = sourceEntries.map((entry) => {
   const data = {
     名称: entry.名称,
+    类型: "求生者风格",
     内容: [
-      { 标题: "类型", 正文: "求生者风格" },
       { 标题: "简介", 正文: entry.简介 },
       { 标题: "第一特性名称", 正文: entry.第一特性名称 },
       { 标题: "第一特性规则", 正文: entry.第一特性规则 },

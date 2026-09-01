@@ -17,6 +17,7 @@ const validateStable = ajv.compile(environmentTemplate.schema as AnySchema);
 describe("环境 Template 1.0.0", () => {
   const abandonedGrove = {
     名称: "荒废林地",
+    类型: "环境",
     原文: "ABANDONED GROVE",
     位阶: "1",
     种类: "探索",

@@ -109,7 +109,7 @@ def publish(
 
 
 def test_authenticated_publish_is_anonymously_discoverable_and_downloadable(tmp_path: Path) -> None:
-    api = client(tmp_path)
+    api = client(tmp_path, "production")
     document, media = candidate()
     response = publish(api, claim(api, "author-one"), document, media)
 
@@ -243,16 +243,6 @@ def test_heart_of_hopefind_text_resources_can_be_published(tmp_path: Path) -> No
     assert response.status_code == 200, response.text
 
 
-def test_current_converted_weapon_template_can_be_published(tmp_path: Path) -> None:
-    document, media = candidate()
-    document["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000091"
-    document["package"]["name"] = "第三方武器包"
-    document["resources"][0]["template"] = {
-        "id": "武器",
-        "version": "1.0.0",
-    }
-
-
 def self_contained_document(
     document: dict[str, Any],
     media: dict[str, bytes],
@@ -269,6 +259,16 @@ def self_contained_document(
     }
     embedded["snapshotDigest"] = compute_resource_package_snapshot_digest(embedded, media)
     return embedded
+
+
+def test_current_converted_weapon_template_can_be_published(tmp_path: Path) -> None:
+    document, media = candidate()
+    document["package"]["id"] = "01989f4e-7b2c-7000-8000-000000000091"
+    document["package"]["name"] = "第三方武器包"
+    document["resources"][0]["template"] = {
+        "id": "武器",
+        "version": "1.0.0",
+    }
     document["resources"][0]["data"] = {
         "名称": "砍刀",
         "类型": "主武器",
@@ -283,7 +283,7 @@ def self_contained_document(
     }
     document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
 
-    api = client(tmp_path)
+    api = client(tmp_path, "production")
     response = publish(api, claim(api, "weapon-author"), document, media, {
         **metadata(document),
         "title": "第三方武器包",
@@ -414,16 +414,17 @@ def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: P
 
 @pytest.mark.parametrize(("template_id", "data"), [
     ("护甲", {"名称": "填充布甲", "类型": "护甲", "护甲值": "3", "重度伤害阈值": "5", "严重伤害阈值": "11", "描述": "灵活：闪避值+1。", "风味描述": "轻柔填料缝入耐磨布层。", "位阶": "1"}),
-    ("环境", {"名称": "荒废林地", "原文": "ABANDONED GROVE", "位阶": "1", "种类": "探索", "简介": "一片曾经的德鲁伊林地。", "趋向": "吸引好奇者", "难度": "11", "潜在敌人": "野兽，林地守卫", "特性": [{"名称": "蔓生战场", "原名": "Overgrown Battlefield", "类型": "被动", "描述": "此地曾发生过一场战斗。", "引导问题": "为何发生冲突？"}]}),
-    ("种族", {"名称": "人类", "简介": "适应力强。", "特性": [{"名称": "适应", "描述": "获得优势。"}]}),
-    ("社群", {"名称": "高岭", "简介": "来自山巅。", "性格": "坚韧", "特性": {"名称": "山民", "描述": "熟悉险地。"}}),
-    ("职业", {"名称": "战士", "描述": "久经战阵。", "领域": ["利刃", "骸骨"], "生命点": "6", "闪避值": "10", "职业物品": "武器", "希望特性": "无畏", "职业特性": "猛攻", "推荐初始属性": {"说明": "力量优先"}, "推荐初始武器": "阔剑", "推荐初始护甲": "锁甲", "背景问题": ["为何战斗？"], "关系问题": ["保护谁？"], "施法属性": ""}),
-    ("子职业", {"名称": "勇者", "主职": "战士", "等级": "基础", "施法属性": "", "描述": "勇往直前。", "风味描述": "绝不退缩。"}),
+    ("环境", {"名称": "荒废林地", "类型": "环境", "原文": "ABANDONED GROVE", "位阶": "1", "种类": "探索", "简介": "一片曾经的德鲁伊林地。", "趋向": "吸引好奇者", "难度": "11", "潜在敌人": "野兽，林地守卫", "特性": [{"名称": "蔓生战场", "原名": "Overgrown Battlefield", "类型": "被动", "描述": "此地曾发生过一场战斗。", "引导问题": "为何发生冲突？"}]}),
+    ("种族", {"名称": "人类", "类型": "种族", "简介": "适应力强。", "特性": [{"名称": "适应", "描述": "获得优势。"}]}),
+    ("社群", {"名称": "高岭", "类型": "社群", "简介": "来自山巅。", "性格": "坚韧", "特性": {"名称": "山民", "描述": "熟悉险地。"}}),
+    ("职业", {"名称": "战士", "类型": "职业", "描述": "久经战阵。", "领域": ["利刃", "骸骨"], "生命点": "6", "闪避值": "10", "职业物品": "武器", "希望特性": "无畏", "职业特性": "猛攻", "推荐初始属性": [{"力量": "+1"}, {"敏捷": "-1"}], "推荐初始武器": ["阔剑"], "推荐初始护甲": "锁甲", "背景问题": ["为何战斗？"], "关系问题": ["保护谁？"], "施法属性": ""}),
+    ("子职业", {"名称": "勇者", "类型": "子职业", "主职": "战士", "等级": "基础", "施法属性": "", "描述": "勇往直前。", "风味描述": "绝不退缩。"}),
     ("物品", {"名称": "治疗药水", "类型": "消耗品", "掷骰": "d4", "描述": "恢复生命。", "风味描述": "温热的红色药剂。"}),
-    ("领域卡", {"名称": "旋风斩", "领域": "利刃", "等级": "1", "属性": "能力", "回想": "1", "描述": "攻击附近敌人。", "风味描述": "剑锋卷起狂风。"}),
+    ("领域卡", {"名称": "旋风斩", "类型": "领域卡", "领域": "利刃", "等级": "1", "属性": "能力", "回想": "1", "描述": "攻击附近敌人。", "风味描述": "剑锋卷起狂风。"}),
+    ("自由", {"名称": "复仇誓言", "类型": "专属", "内容": [{"标题": "效果", "正文": "造成伤害时，伤害+2。"}]}),
 ])
 def test_stable_templates_are_publishable(tmp_path: Path, template_id: str, data: dict[str, Any]) -> None:
-    api = client(tmp_path)
+    api = client(tmp_path, "production")
     document, media = candidate()
     document["resources"][0]["template"] = {"id": template_id, "version": "1.0.0"}
     document["resources"][0]["data"] = data

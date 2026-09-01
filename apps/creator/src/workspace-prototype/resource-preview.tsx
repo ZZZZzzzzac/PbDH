@@ -3,17 +3,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
 import { executeTemplateStateCommand } from "@pbdh/tabletop/core";
-import { adversaryRendererFor } from "@pbdh/templates/frontend";
-import { adversaryTemplate, templateRegistry, type AdversaryData } from "@pbdh/templates/core";
+import type { TemplateFrontendCapability } from "@pbdh/templates/frontend";
+import { templateRegistry, type TemplateCoreCapability } from "@pbdh/templates/core";
 
 import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { WorkspaceResource } from "./workspace-model.ts";
 
 type TemplateBoundResource = { template: { id: string; version: string } };
-
-export function isTemplate(resource: TemplateBoundResource, template: { id: string; version: string }): boolean {
-  return resource.template.id === template.id && resource.template.version === template.version;
-}
 
 export function resourceTitle(resource: WorkspaceResource): string {
   const template = templateRegistry.resolve(resource.template.id, resource.template.version);
@@ -50,20 +46,26 @@ export function AutoFitPreview({ children }: { children: ReactNode }) {
   return <div ref={stageRef} className="preview-stage"><div ref={cardRef} className="card-scale" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>{children}</div></div>;
 }
 
-export function AdversaryRuntimePreview({
+export function TemplateRuntimePreview({
   resource,
   assets,
+  frontend,
+  template,
 }: {
-  resource: SurfaceResource<AdversaryData> & { id: string };
+  resource: WorkspaceResource;
   assets: ReadonlyMap<string, ManagedAsset>;
+  frontend: TemplateFrontendCapability;
+  template: TemplateCoreCapability<Record<string, unknown>>;
 }) {
-  const defaultState = () => adversaryTemplate.tabletop.defaultState(resource.data);
+  const renderer = frontend.rendererRevision;
+  const controls = frontend.authoring.previewControls;
+  const defaultState = () => template.tabletop.defaultState(resource.data as Record<string, unknown>);
   const [state, setState] = useState<Record<string, string>>(defaultState);
 
   useEffect(() => setState(defaultState()), [resource.id, resource.template.version]);
 
   function runCommand(commandId: string, value: string) {
-    const definition = adversaryTemplate.tabletop.commands.find((command) => command.id === commandId);
+    const definition = template.tabletop.commands.find((command) => command.id === commandId);
     setState((current) => executeTemplateStateCommand(
       current,
       definition,
@@ -72,38 +74,30 @@ export function AdversaryRuntimePreview({
     ).state);
   }
 
-  return <div className="preview-runtime-surface">
-    <div className="preview-runtime-controls" aria-label="桌面状态模拟">
-      <span>生命 <b>{state.currentHp}</b></span>
-      <button type="button" aria-label="模拟生命减少" onClick={() => runCommand("adjust-hp", "-1")}>−</button>
-      <button type="button" aria-label="模拟生命增加" onClick={() => runCommand("adjust-hp", "1")}>＋</button>
-      <span>压力 <b>{state.currentStress}</b></span>
-      <button type="button" aria-label="模拟压力减少" onClick={() => runCommand("adjust-stress", "-1")}>−</button>
-      <button type="button" aria-label="模拟压力增加" onClick={() => runCommand("adjust-stress", "1")}>＋</button>
-      <button
-        type="button"
-        aria-pressed={state.focused === "true"}
-        onClick={() => runCommand("set-focused", state.focused === "true" ? "false" : "true")}
-      >聚焦</button>
-      <input
-        aria-label="模拟桌面备注"
-        placeholder="桌面备注"
-        value={state.notes}
-        onChange={(event) => runCommand("set-notes", event.target.value)}
-      />
+  return <div className={`preview-runtime-surface${controls.length ? " has-controls" : ""}`}>
+    {controls.length ? <div className="preview-runtime-controls" aria-label="桌面状态模拟">
+      {controls.map((control) => {
+        const value = state[control.statePath] ?? "";
+        if (control.kind === "counter") return <span className="preview-runtime-control" key={control.statePath}>
+          <span>{control.label} <b>{value}</b></span>
+          <button type="button" aria-label={`${control.label}减少`} onClick={() => runCommand(control.commandId, "-1")}>−</button>
+          <button type="button" aria-label={`${control.label}增加`} onClick={() => runCommand(control.commandId, "1")}>＋</button>
+        </span>;
+        if (control.kind === "toggle") return <button type="button" key={control.statePath} aria-pressed={value === control.activeValue} onClick={() => runCommand(control.commandId, value === control.activeValue ? control.inactiveValue : control.activeValue)}>{control.label}</button>;
+        return <input key={control.statePath} aria-label={control.label} placeholder={control.placeholder} value={value} onChange={(event) => runCommand(control.commandId, event.target.value)} />;
+      })}
       <button type="button" onClick={() => setState(defaultState())}>重置</button>
-    </div>
+    </div> : null}
     <AutoFitPreview>
       <CanonicalCardSurface
-        resource={resource}
-        expectedRendererRevision="enemy-card-r1"
-        renderer={adversaryRendererFor(resource.template.version)}
+        resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
+        expectedRendererRevision={renderer.revision}
+        renderer={renderer}
         assets={assets}
         state={state}
         onStateCommand={runCommand}
-        label={`${resource.data.名称 || "未命名敌人"}规范卡面`}
+        label={`${String((resource.data as Record<string, unknown>).名称 ?? "未命名资源")}规范卡面`}
       />
     </AutoFitPreview>
   </div>;
 }
-

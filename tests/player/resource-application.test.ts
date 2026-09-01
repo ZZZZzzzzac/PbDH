@@ -7,11 +7,13 @@ import type {
   ResourcePackageLogicalDocument,
   SystemPackageDocument,
 } from "../../packages/contract-runtime/src/index.ts";
-import { applyResourceSelection } from "../../apps/player/src/resources/apply-resource-selection.ts";
+import { buildSheetResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
+import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import {
-  listResourcePickerCandidates,
-  queryResourcePickerCandidates,
-} from "../../apps/player/src/resources/resource-picker.ts";
+  queryResourceLibraryEntries,
+} from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
+import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import { routeResourcePackage } from "../../apps/player/src/resources/route-resource-package.ts";
 
 const root = process.cwd();
@@ -23,116 +25,116 @@ function readJson<T>(relativePath: string): T {
 const currentSystem = readJson<SystemPackageDocument>(
   "apps/player/public/system-packages/daggerheart-core/system.json",
 );
-const selectionSystem: Parameters<typeof applyResourceSelection>[0]["currentSystem"] = {
+const runtimeSystem = {
+  manifest: { ID: "daggerheart-core", 名称: "匕首之心", 版本: "1.0.0", 角色数据版本: "1.0.0" },
+  pages: [],
+  modules: [
+    { ID: "pick-primary-weapon", 类型: "resourcePicker", 按钮文本: "选择主武器", 资源库: "weapons" },
+    { ID: "primary-weapon-name", 类型: "freeText", 标签: "主武器" },
+    { ID: "primary-weapon-description", 类型: "freeText", 标签: "主武器特性" },
+  ],
   dependencies: [{
-    trigger: { type: "resourceSelected", sourceModuleId: "pick-primary-weapon" },
-    actions: [
+    ID: "fill-primary-weapon",
+    sources: [{ 类型: "resourcePicker", 模块ID: "pick-primary-weapon" }],
+    targets: [
+      { 类型: "module", 模块ID: "primary-weapon-name" },
+      { 类型: "module", 模块ID: "primary-weapon-description" },
+    ],
+    触发: { 类型: "resourceSelected", 来源模块ID: "pick-primary-weapon" },
+    条件: { 类型: "always" },
+    动作: [
       {
-        targetModuleId: "primary-weapon-name",
-        content: {
-          type: "selectedResourceTemplate",
-          format: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
+        类型: "fillText",
+        目标模块ID: "primary-weapon-name",
+        内容: {
+          类型: "selectedResourceTemplate",
+          格式: "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}",
         },
       },
       {
-        targetModuleId: "primary-weapon-description",
-        content: { type: "selectedResourceField", field: "描述" },
+        类型: "fillText",
+        目标模块ID: "primary-weapon-description",
+        内容: { 类型: "selectedResourceField", 字段: "描述" },
       },
     ],
   }],
-};
+} as unknown as SystemPackage;
 const resourcePackage = readJson<ResourcePackageLogicalDocument>(
   "contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json",
 );
-const broadsword = resourcePackage.resources[0]!;
+const installed = {
+  document: resourcePackage,
+  media: new Map(),
+  routes: routeResourcePackage({ currentSystem, resourcePackage }),
+};
+const weaponLibrary = buildSheetResourceLibraries({
+  currentSystem,
+  installedPackages: new Map([[resourcePackage.package.id, installed]]),
+}).find((library) => library.ID === "weapons")!;
+const broadswordEntry = weaponLibrary.entries[0]!;
 
 describe("Player resource selection materialization", () => {
-  test("writes all declared final values in one result", () => {
-    const before = { characterName: "阿斯特里德" };
-    const result = applyResourceSelection({
-      characterData: before,
-      currentSystem: selectionSystem,
-      sourceModuleId: "pick-primary-weapon",
-      selectedResource: broadsword,
-    });
+  test("writes all declared final values through the Sheet Runtime", () => {
+    const before = createEmptyCharacterData(runtimeSystem, "resource-application");
+    const result = applyResourceSelectionToDraft(
+      before,
+      runtimeSystem,
+      "pick-primary-weapon",
+      "weapons",
+      [broadswordEntry],
+    );
 
-    expect(result.diagnostics).toEqual([]);
-    expect(result.patches).toEqual({
+    expect(result.interactionResult.warnings).toEqual([]);
+    expect(result.interactionResult.dataPatches).toEqual({
       "primary-weapon-name": "**阔剑**｜敏捷｜近战｜d8 物理｜单手",
       "primary-weapon-description": "可靠：你的攻击掷骰+1。",
     });
-    expect(result.characterData).toEqual({ ...before, ...result.patches });
-    expect(result.characterData).not.toHaveProperty("resourceSelections");
+    expect(result.characterData.character.values).toMatchObject(result.interactionResult.dataPatches);
+    expect(result.characterData.resourceSelections).not.toHaveProperty("pick-primary-weapon");
     expect(JSON.stringify(result.characterData)).not.toContain(resourcePackage.package.id);
-    expect(JSON.stringify(result.characterData)).not.toContain(broadsword.id);
+    expect(JSON.stringify(result.characterData)).not.toContain(broadswordEntry.ID);
   });
 
-  test("missing field rejects the entire event with zero writes", () => {
-    const selectedResource = structuredClone(broadsword);
-    delete (selectedResource.data as Record<string, unknown>)["描述"];
-    const before = { "primary-weapon-name": "旧武器", untouched: "保留" };
-    const result = applyResourceSelection({
-      characterData: before,
-      currentSystem: selectionSystem,
-      sourceModuleId: "pick-primary-weapon",
-      selectedResource,
-    });
+  test("no matching Dependency produces zero writes and no persistence", () => {
+    const before = createEmptyCharacterData(runtimeSystem, "no-dependency");
+    const result = applyResourceSelectionToDraft(
+      before,
+      runtimeSystem,
+      "unknown-picker",
+      "weapons",
+      [broadswordEntry],
+    );
 
     expect(result.characterData).toBe(before);
-    expect(result.patches).toEqual({});
-    expect(result.diagnostics.map((item) => item.code)).toEqual([
-      "player.resource-selection.field-missing",
-    ]);
-  });
-
-  test("no matching Dependency produces a diagnostic and zero writes", () => {
-    const before = { untouched: "保留" };
-    const result = applyResourceSelection({
-      characterData: before,
-      currentSystem: selectionSystem,
-      sourceModuleId: "unknown-picker",
-      selectedResource: broadsword,
-    });
-
-    expect(result.characterData).toBe(before);
-    expect(result.patches).toEqual({});
-    expect(result.diagnostics[0]?.code).toBe("player.resource-selection.dependency-missing");
+    expect(result.interactionResult.dataPatches).toEqual({});
+    expect(result.shouldPersist).toBe(false);
   });
 
   test("later package changes cannot mutate the materialized result", () => {
-    const applied = applyResourceSelection({
-      characterData: {},
-      currentSystem: selectionSystem,
-      sourceModuleId: "pick-primary-weapon",
-      selectedResource: broadsword,
-    }).characterData;
-    const updated = structuredClone(broadsword);
-    (updated.data as Record<string, unknown>)["名称"] = "已更新的阔剑";
-    (updated.data as Record<string, unknown>)["描述"] = "新描述";
+    const mutableEntry = structuredClone(broadswordEntry);
+    const applied = applyResourceSelectionToDraft(
+      createEmptyCharacterData(runtimeSystem, "immutable-result"),
+      runtimeSystem,
+      "pick-primary-weapon",
+      "weapons",
+      [mutableEntry],
+    ).characterData;
+    mutableEntry.fields.名称 = "已更新的阔剑";
+    mutableEntry.fields.描述 = "新描述";
 
-    expect(applied["primary-weapon-name"]).toBe("**阔剑**｜敏捷｜近战｜d8 物理｜单手");
-    expect(applied["primary-weapon-description"]).toBe("可靠：你的攻击掷骰+1。");
+    expect(applied.character.values["primary-weapon-name"]).toBe("**阔剑**｜敏捷｜近战｜d8 物理｜单手");
+    expect(applied.character.values["primary-weapon-description"]).toBe("可靠：你的攻击掷骰+1。");
   });
 
   test("native picker candidates keep Sheet search, filter, sort, and single-resource identity", () => {
-    const installed = {
-      document: resourcePackage,
-      media: new Map(),
-      routes: routeResourcePackage({ currentSystem, resourcePackage }),
-    };
-    const candidates = listResourcePickerCandidates(
-      new Map([[resourcePackage.package.id, installed]]),
-      "weapons",
-    );
-
-    expect(candidates).toHaveLength(1);
-    expect(queryResourcePickerCandidates(candidates, { keywords: "阔剑" })[0]?.resource.id)
-      .toBe(broadsword.id);
-    expect(queryResourcePickerCandidates(candidates, { filters: { 属性: ["知识"] } }))
+    expect(weaponLibrary.entries).toHaveLength(1);
+    expect(queryResourceLibraryEntries(weaponLibrary, { keywords: "阔剑" })[0]?.ID)
+      .toBe(broadswordEntry.ID);
+    expect(queryResourceLibraryEntries(weaponLibrary, { filters: { 属性: ["知识"] } }))
       .toEqual([]);
-    expect(queryResourcePickerCandidates(candidates, {
+    expect(queryResourceLibraryEntries(weaponLibrary, {
       filters: { 属性: ["敏捷"] },
       sort: { field: "位阶", direction: "desc" },
-    })[0]?.resource.id).toBe(broadsword.id);
+    })[0]?.ID).toBe(broadswordEntry.ID);
   });
 });

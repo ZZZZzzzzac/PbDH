@@ -11,7 +11,7 @@ describe("领域卡 Template 1.0.0", () => {
   test("registers opaque level and recall text", () => {
     expect(templateRegistry.resolve("领域卡", "1.0.0")).toBe(domainTemplate);
     const data = {
-      名称: "符文护符", 领域: "奥术", 等级: "1", 属性: "法术", 回想: "0",
+      名称: "符文护符", 类型: "领域卡", 领域: "奥术", 等级: "1", 属性: "法术", 回想: "0",
       描述: "花费希望点以减少伤害。", 风味描述: "一件意义深远的小饰品。",
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);

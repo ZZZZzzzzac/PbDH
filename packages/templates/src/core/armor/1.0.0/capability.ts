@@ -12,12 +12,14 @@ const defaultData: ArmorData = {
   描述: "", 风味描述: "", 位阶: "",
 };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const armorTemplate = deepFreeze<TemplateCoreCapability<ArmorData>>({
   id: "护甲",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

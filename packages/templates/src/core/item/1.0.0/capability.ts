@@ -6,14 +6,16 @@ export type ItemData = {
   名称: string; 类型: string; 掷骰: string; 描述: string; 风味描述: string;
 };
 
-const defaultData: ItemData = { 名称: "", 类型: "", 掷骰: "", 描述: "", 风味描述: "" };
+const defaultData: ItemData = { 名称: "", 类型: "物品", 掷骰: "", 描述: "", 风味描述: "" };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const itemTemplate = deepFreeze<TemplateCoreCapability<ItemData>>({
   id: "物品",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

@@ -128,8 +128,8 @@ function freeFieldsFor(raw: JsonObject, type: string): JsonObject {
   const description = text(raw.description);
   return {
     名称: text(raw.name),
+    类型: typeLabel || "自由",
     内容: [
-      ...(typeLabel ? [{ 标题: "类型", 正文: typeLabel }] : []),
       ...(description ? [{ 标题: "简介", 正文: description }] : []),
       ...(freeFields[type] ?? []).map(({ field, title, itemFields }) => ({
         标题: title,
@@ -248,8 +248,8 @@ function fieldsFor(raw: JsonObject): JsonObject {
       职业物品: text(raw.startingItems),
       希望特性: text(raw.hopeFeature),
       职业特性: text(raw.classFeature),
-      推荐初始属性: {},
-      推荐初始武器: "",
+      推荐初始属性: [],
+      推荐初始武器: [],
       推荐初始护甲: "",
       背景问题: [],
       关系问题: [],

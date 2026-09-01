@@ -23,10 +23,10 @@ import {
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-prototype/market-handoff.ts";
 import {
-  containGmTabletopInstances,
   prepareWorkspaceReplacement,
   snapshotWorkspaceResourceForTabletop,
 } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
+import { containGmTabletopInstances } from "../../apps/creator/src/workspace-prototype/gm-tabletop-geometry.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 
 const databases: PbDHLocalDatabase[] = [];

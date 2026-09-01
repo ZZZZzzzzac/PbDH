@@ -18,7 +18,6 @@ const iconPaths = {
   folder: ["M3 6h6l2 2h10v11H3Z"],
   folderPlus: ["M3 6h6l2 2h10v11H3Z", "M12 11v6", "M9 14h6"],
   grid: ["M4 4h6v6H4Z", "M14 4h6v6h-6Z", "M4 14h6v6H4Z", "M14 14h6v6h-6Z"],
-  grip: ["M9 5h.01", "M15 5h.01", "M9 12h.01", "M15 12h.01", "M9 19h.01", "M15 19h.01"],
   image: ["M3 5h18v14H3Z", "m3 16 5-5 4 4 3-3 3 4", "M14.5 9.5h.01"],
   package: ["m12 3 9 5-9 5-9-5Z", "m3 8 9 5 9-5", "M3 8v9l9 5 9-5V8", "M12 13v9"],
   packagePlus: ["m12 3 9 5-9 5-9-5Z", "M3 8v9l9 5 9-5V8", "M12 13v9", "M17 4v6", "M14 7h6"],
@@ -141,29 +140,10 @@ export function Field({
   );
 }
 
-export function TextareaField({
-  label,
-  value,
-  onChange,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-}) {
-  return (
-    <label className={`compact-field textarea-field ${className}`}>
-      <span>{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} />
-    </label>
-  );
-}
-
 export function isCreatorAuthoringInputFocused(): boolean {
   const element = document.activeElement;
   return element instanceof HTMLElement
-    && element.closest(".authoring-editor") !== null
+    && element.closest("[data-template-authoring]") !== null
     && (element.matches("input, textarea, select") || element.isContentEditable);
 }
 

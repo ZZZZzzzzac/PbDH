@@ -1,14 +1,10 @@
 import {
-  clampTabletopPosition,
   type TabletopCommand,
-  type TabletopDocumentModel,
   type TabletopInstance,
   type TabletopInstanceResourceCopy,
 } from "@pbdh/tabletop/core";
-import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import { templateRegistry } from "@pbdh/templates/core";
 
-import { gmTabletopBaseCardWidth } from "./tabletop-document-repository.ts";
 import type { CreatorWorkspace, WorkspaceResource } from "./workspace-model.ts";
 
 export type TabletopPlacementSnapshot = {
@@ -21,23 +17,6 @@ export type PreparedTabletopReplacement = {
   command: Extract<TabletopCommand, { type: "replace" }>;
   media: Map<string, Uint8Array>;
 };
-
-export const gmCardPixelsPerDesignUnit = gmTabletopBaseCardWidth / canonicalCardDesignSize.width;
-
-export function containGmTabletopInstances(document: TabletopDocumentModel): TabletopDocumentModel {
-  let changed = false;
-  const instances = document.instances.map((instance) => {
-    const position = clampTabletopPosition(instance, {
-      ...document.canvas,
-      containment: "full",
-      pixelsPerUnit: gmCardPixelsPerDesignUnit,
-    }, instance.position);
-    if (position.x === instance.position.x && position.y === instance.position.y) return instance;
-    changed = true;
-    return { ...instance, position };
-  });
-  return changed ? { ...document, instances } : document;
-}
 
 export function snapshotWorkspaceResourceForTabletop(
   workspace: CreatorWorkspace,

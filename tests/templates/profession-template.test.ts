@@ -13,11 +13,12 @@ const validate = ajv.compile(professionTemplate.schema as AnySchema);
 describe("职业 Template 1.0.0", () => {
   test("registers structured domains, attributes, and questions", () => {
     expect(templateRegistry.resolve("职业", "1.0.0")).toBe(professionTemplate);
-    const data = {
+    const data: typeof professionTemplate.defaultData = {
       ...professionTemplate.defaultData,
       名称: "吟游诗人",
       领域: ["优雅", "典籍"],
-      推荐初始属性: { 敏捷: "+0", 风度: "+2" },
+      推荐初始属性: [{ 敏捷: "+0" }, { 风度: "+2" }],
+      推荐初始武器: ["刺剑", "匕首"],
       背景问题: ["谁教会了你自信？"],
       关系问题: ["我们为何成为朋友？"],
     };
@@ -27,6 +28,8 @@ describe("职业 Template 1.0.0", () => {
 
   test("rejects delimiter strings in structured fields", () => {
     expect(validate({ ...professionTemplate.defaultData, 领域: "优雅+典籍" })).toBe(false);
+    expect(validate({ ...professionTemplate.defaultData, 推荐初始属性: [{ 敏捷: "+1", 力量: "-1" }] })).toBe(false);
+    expect(validate({ ...professionTemplate.defaultData, 推荐初始武器: "刺剑+匕首" })).toBe(false);
     expect(validate({ ...professionTemplate.defaultData, 背景问题: "问题一" })).toBe(false);
   });
 });

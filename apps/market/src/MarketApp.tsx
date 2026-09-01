@@ -14,7 +14,7 @@ import {
   type SystemPackageOption,
 } from "@pbdh/publication-ui";
 import { canonicalCardDesignSize, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { trustedRendererFor } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 
 import { marketDesignSource } from "../design.generated.ts";
 import { catalogOptions } from "./catalog-options.ts";
@@ -288,7 +288,9 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
   const [enlarged, setEnlarged] = useState(false);
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
   const source = isSurfaceResource(resource.source) ? resource.source : null;
-  const renderer = source ? trustedRendererFor(resource.templateId, source.template.version) : undefined;
+  const renderer = source
+    ? resolveTemplateFrontend(resource.templateId, source.template.version)?.rendererRevision
+    : undefined;
   const assets = useMemo(() => new Map(
     Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
   ), [publication.mediaUrls]);

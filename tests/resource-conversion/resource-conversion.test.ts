@@ -147,6 +147,7 @@ const professionBatch: TemporaryResourceBatch = {
     name: "吟游诗人",
     fields: {
       名称: "吟游诗人",
+      类型: "职业",
       描述: "富有魅力的表演者。",
       领域: ["优雅", "典籍"],
       生命点: "5",
@@ -154,8 +155,8 @@ const professionBatch: TemporaryResourceBatch = {
       职业物品: "一本浪漫小说",
       希望特性: "大闹一场",
       职业特性: "鼓舞人心",
-      推荐初始属性: { 敏捷: "+0", 力量: "-1", 风度: "+2" },
-      推荐初始武器: "刺剑+匕首",
+      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 风度: "+2" }],
+      推荐初始武器: ["刺剑", "匕首"],
       推荐初始护甲: "填充布甲",
       背景问题: ["谁教会了你自信？", "你曾爱过谁？"],
       关系问题: ["我们为何成为朋友？", "我做了什么让你烦恼？"],
@@ -178,7 +179,7 @@ const subclassBatch: TemporaryResourceBatch = {
     kind: "subclass" as const,
     name: "言语大师",
     fields: {
-      名称: "言语大师", 主职: "吟游诗人", 等级: level, 施法属性: "风度",
+      名称: "言语大师", 类型: "子职业", 主职: "吟游诗人", 等级: level, 施法属性: "风度",
       描述: description, 风味描述: "他们用故事改写现实。",
     },
     source: { formatId: "pbres" as const, upstreamRevision: "test", path: `/resources/${index}`, raw: {} },
@@ -195,6 +196,7 @@ const ancestryBatch: TemporaryResourceBatch = {
     name: "龙人",
     fields: {
       名称: "龙人",
+      类型: "种族",
       简介: "龙人的外观类似无翼的龙类。",
       特性: [
         { 名称: "鳞片保护", 描述: "受到严重伤害时可以减少生命损失。" },
@@ -214,7 +216,7 @@ const communityBatch: TemporaryResourceBatch = {
     kind: "community",
     name: "高城之民",
     fields: {
-      名称: "高城之民", 简介: "来自充满声望的上流社会。", 性格: "亲切、坦率、狡猾、沉着。",
+      名称: "高城之民", 类型: "社群", 简介: "来自充满声望的上流社会。", 性格: "亲切、坦率、狡猾、沉着。",
       特性: { 名称: "高人一等", 描述: "与贵族交际或利用声誉时具有优势。" },
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -230,7 +232,7 @@ const domainBatch: TemporaryResourceBatch = {
     kind: "domain",
     name: "符文护符",
     fields: {
-      名称: "符文护符", 领域: "奥术", 等级: "1", 属性: "法术", 回想: "0",
+      名称: "符文护符", 类型: "领域卡", 领域: "奥术", 等级: "1", 属性: "法术", 回想: "0",
       描述: "花费希望点以减少即将到来的伤害。", 风味描述: "一件意义深远的个人小饰品。",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -675,7 +677,7 @@ describe("registered Template mapping and native pbres", () => {
       .filter((candidate) => candidate.template.id === "自由");
     expect(freeCandidates.length).toBeGreaterThan(0);
     for (const candidate of freeCandidates) {
-      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称"]);
+      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称", "类型"]);
       expect(JSON.stringify(candidate.data)).not.toContain("[object Object]");
       expect(candidate.data.内容).toEqual(expect.any(Array));
       expect(candidate.diagnostics).toEqual([]);
@@ -730,7 +732,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.template).toEqual({ id: "职业", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
       领域: ["优雅", "典籍"], 生命点: "5", 闪避值: "10", 施法属性: "风度",
-      推荐初始属性: {}, 背景问题: [], 关系问题: [],
+      推荐初始属性: [], 推荐初始武器: [], 背景问题: [], 关系问题: [],
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -753,7 +755,8 @@ describe("registered Template mapping and native pbres", () => {
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.data).toMatchObject({
       领域: ["优雅", "典籍"],
-      推荐初始属性: { 敏捷: "+0", 力量: "-1", 风度: "+2" },
+      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 风度: "+2" }],
+      推荐初始武器: ["刺剑", "匕首"],
       背景问题: ["谁教会了你自信？", "你曾爱过谁？"],
       关系问题: ["我们为何成为朋友？"],
     });
@@ -1182,8 +1185,8 @@ describe("registered Template mapping and native pbres", () => {
     resource.template = { id: "自由", version: "1.0.0" };
     resource.data = {
       名称: "复仇誓言",
+      类型: "专属",
       内容: [
-        { 标题: "类型", 正文: "专属" },
         { 标题: "简介", 正文: "你不会忘记那一天。" },
         { 标题: "触发条件", 正文: "造成伤害时" },
         { 标题: "效果", 正文: "伤害+2" },

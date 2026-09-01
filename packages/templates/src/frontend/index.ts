@@ -1,5 +1,12 @@
 export { adversaryAuthoringLayout } from "./adversary/1.0.0/authoring-layout.ts";
+export { TemplateAuthoringSurface } from "./authoring-surface.tsx";
 export { supportedAuthoringLayouts, trustedAuthoringLayoutFor } from "./authoring-registry.ts";
+export {
+  resolveTemplateFrontend,
+  supportedTemplateFrontends,
+  type TemplateFrontendCapability,
+  type TrustedTemplateRenderer,
+} from "./template-frontend-registry.ts";
 export { armorAuthoringLayout } from "./armor/1.0.0/authoring-layout.ts";
 export { ancestryAuthoringLayout } from "./ancestry/1.0.0/authoring-layout.ts";
 export { communityAuthoringLayout } from "./community/1.0.0/authoring-layout.ts";
@@ -72,6 +79,8 @@ export type {
   AuthoringControl,
   AuthoringField,
   AuthoringLayout,
+  AuthoringPreviewControl,
   AuthoringRepeat,
   AuthoringSection,
+  TemplateAuthoringCapability,
 } from "./types.ts";

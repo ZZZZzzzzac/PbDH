@@ -16,12 +16,14 @@ const defaultData: AdversaryData = {
   攻击武器: "", 攻击范围: "", 攻击伤害: "", 攻击属性: "", 经历: "",
 };
 
-function normalize(value: string): string { return value.trim().replace(/\s+/g, " "); }
+function normalize(value: unknown): string {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
 
 export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData>>({
   id: "敌人",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

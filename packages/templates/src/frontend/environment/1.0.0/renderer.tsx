@@ -30,7 +30,7 @@ export const environmentRendererRevision: RendererRevisionCapability<Environment
     const portrait = assets.portrait;
     return <article className={`environment-card is-${presentation.mode}`} data-renderer-revision="environment-card-r1">
       <header className="environment-header">
-        <div className="environment-kicker"><span>{data.种类 || "环境"}</span><span>位阶 {data.位阶}</span></div>
+        <div className="environment-kicker"><span>{[data.类型 || "环境", data.种类].filter(Boolean).join(" · ")}</span><span>位阶 {data.位阶}</span></div>
         <h1 className="environment-title">{data.名称 || "未命名环境"}</h1>
         {data.原文 && <p className="environment-original">{data.原文}</p>}
       </header>

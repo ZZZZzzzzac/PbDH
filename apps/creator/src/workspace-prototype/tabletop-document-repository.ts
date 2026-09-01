@@ -16,8 +16,7 @@ import {
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
 import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
-
-export const gmTabletopBaseCardWidth = 250;
+import { gmTabletopBaseCardWidth } from "./gm-tabletop-geometry.ts";
 
 function toContract(
   model: TabletopDocumentModel,

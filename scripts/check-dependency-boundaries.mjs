@@ -4,26 +4,12 @@ import path from "node:path";
 import {
   findDependencyCycles,
   validateImport,
+  validateSource,
+  workspaceDirectoriesFromManifest,
 } from "./dependency-boundaries-core.mjs";
 
 const root = process.cwd();
 const sourceExtensions = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx"]);
-const workspaceDirectories = [
-  "apps/platform",
-  "apps/player",
-  "apps/creator",
-  "apps/market",
-  "packages/contract-runtime",
-  "packages/templates",
-  "packages/resource-renderer",
-  "packages/resource-conversion",
-  "packages/tabletop",
-  "packages/local-storage",
-  "packages/media-admission",
-  "packages/platform-auth",
-  "packages/platform-ui",
-  "packages/publication-ui",
-];
 
 async function collectSourceFiles(relativeDirectory) {
   const absoluteDirectory = path.join(root, relativeDirectory);
@@ -46,6 +32,8 @@ function extractImports(source) {
 }
 
 async function readWorkspaceGraph() {
+  const rootManifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+  const workspaceDirectories = workspaceDirectoriesFromManifest(rootManifest);
   const manifests = [];
   for (const directory of workspaceDirectories) {
     const manifest = JSON.parse(await readFile(path.join(root, directory, "package.json"), "utf8"));
@@ -77,6 +65,9 @@ const failures = [];
 
 for (const sourceFile of sourceFiles) {
   const source = await readFile(path.join(root, sourceFile), "utf8");
+  for (const violation of validateSource(sourceFile, source)) {
+    failures.push(`${sourceFile}: ${violation}`);
+  }
   for (const specifier of extractImports(source)) {
     for (const violation of validateImport(sourceFile, specifier)) {
       failures.push(`${sourceFile}: ${specifier}: ${violation}`);
