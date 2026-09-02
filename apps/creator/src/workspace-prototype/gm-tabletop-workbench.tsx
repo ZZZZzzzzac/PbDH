@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
@@ -14,11 +14,13 @@ import { gmTabletopZoomSteps } from "./gm-tabletop-viewport.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
 import { gmCardPixelsPerDesignUnit } from "./gm-tabletop-geometry.ts";
 import { AutoFitPreview, ResourceIcon } from "./resource-preview.tsx";
+import { orderTabsByKey, type TabDropPlacement } from "./tab-order.ts";
 
 export type GmTabletopWorkbenchSnapshot = {
   tabletops: readonly TabletopDocumentModel[];
   activeTabletop?: TabletopDocumentModel;
   activeTabletopId: string;
+  tabOrder?: readonly string[];
   sync: ReadonlyMap<string, LocalDocumentSync>;
   savingTabletopId: string | null;
   view: "canvas" | "instance-editor";
@@ -32,6 +34,7 @@ export type GmTabletopWorkbenchSnapshot = {
 export type GmTabletopWorkbenchCommand =
   | { type: "new-tabletop" | "clear-selection" | "close-context" | "fit" | "request-cloud-edit" }
   | { type: "activate-tabletop" | "request-delete-tabletop"; tabletopId: string }
+  | { type: "reorder-tabletop-tab"; sourceKey: string; targetKey: string; placement: TabDropPlacement }
   | { type: "open-tabletop-context"; tabletopId: string; x: number; y: number }
   | { type: "set-view"; view: "canvas" | "instance-editor" }
   | { type: "set-pan" | "preview-pan"; pan: { x: number; y: number } }
@@ -54,6 +57,10 @@ export function GmTabletopWorkbench({
   surfaceRef: RefObject<HTMLDivElement | null>;
   execute(command: GmTabletopWorkbenchCommand): void;
 }) {
+  const [draggedTabKey, setDraggedTabKey] = useState("");
+  const [dropTarget, setDropTarget] = useState<{ key: string; placement: TabDropPlacement } | null>(null);
+  const tabDragRef = useRef<{ pointerId: number; sourceKey: string; startX: number; moved: boolean } | null>(null);
+  const suppressTabClickRef = useRef(false);
   const panDragRef = useRef<null | {
     pointerId: number;
     button: number;
@@ -69,14 +76,83 @@ export function GmTabletopWorkbench({
   const selectedFrontend = selectedInstance
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
+  const orderedTabletops = orderTabsByKey(snapshot.tabletops, snapshot.tabOrder ?? [], (tabletop) => tabletop.id);
+
+  function dropAt(clientX: number, clientY: number) {
+    const element = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-tabletop-tab-key]");
+    const key = element?.dataset.tabletopTabKey;
+    if (!element || !key || key === tabDragRef.current?.sourceKey) return null;
+    const bounds = element.getBoundingClientRect();
+    return { key, placement: clientX < bounds.left + bounds.width / 2 ? "before" : "after" } as const;
+  }
+
+  function moveTabPointer(event: PointerEvent<HTMLDivElement>) {
+    const drag = tabDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (Math.abs(event.clientX - drag.startX) > 4) drag.moved = true;
+    if (!drag.moved) return;
+    event.preventDefault();
+    setDropTarget(dropAt(event.clientX, event.clientY));
+  }
+
+  function finishTabPointer(event: PointerEvent<HTMLDivElement>) {
+    const drag = tabDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const target = dropAt(event.clientX, event.clientY);
+    if (drag.moved) {
+      suppressTabClickRef.current = true;
+      window.setTimeout(() => { suppressTabClickRef.current = false; }, 0);
+      if (target) execute({ type: "reorder-tabletop-tab", sourceKey: drag.sourceKey, targetKey: target.key, placement: target.placement });
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    tabDragRef.current = null;
+    setDraggedTabKey("");
+    setDropTarget(null);
+  }
+
+  function reorderWithKeyboard(event: KeyboardEvent<HTMLButtonElement>, tabKey: string) {
+    if (!event.altKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+    const index = orderedTabletops.findIndex((tabletop) => tabletop.id === tabKey);
+    const target = orderedTabletops[index + (event.key === "ArrowLeft" ? -1 : 1)];
+    if (!target) return;
+    event.preventDefault();
+    execute({
+      type: "reorder-tabletop-tab",
+      sourceKey: tabKey,
+      targetKey: target.id,
+      placement: event.key === "ArrowLeft" ? "before" : "after",
+    });
+  }
 
   return <section className="gm-workbench">
     <nav className="tabletop-tabs" aria-label="打开的桌面">
-      {snapshot.tabletops.map((tabletop) => <div className={`tabletop-tab ${tabletop.id === snapshot.activeTabletop?.id ? "is-current" : ""}`} key={tabletop.id} onContextMenu={(event) => {
-        event.preventDefault();
-        execute({ type: "open-tabletop-context", tabletopId: tabletop.id, x: event.clientX, y: event.clientY });
-      }}>
-        <button type="button" className="tabletop-tab-main" onClick={() => execute({ type: "activate-tabletop", tabletopId: tabletop.id })}><span>▦</span><b>{tabletop.name}</b><CloudSyncIndicator sync={snapshot.sync.get(tabletop.id)} saving={snapshot.savingTabletopId === tabletop.id} /></button>
+      {orderedTabletops.map((tabletop) => <div
+        className={`tabletop-tab${tabletop.id === snapshot.activeTabletop?.id ? " is-current" : ""}${draggedTabKey === tabletop.id ? " is-dragging" : ""}${dropTarget?.key === tabletop.id ? ` is-drop-${dropTarget.placement}` : ""}`}
+        data-tabletop-tab-key={tabletop.id}
+        key={tabletop.id}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          execute({ type: "open-tabletop-context", tabletopId: tabletop.id, x: event.clientX, y: event.clientY });
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0 || (event.target as Element).closest(".tabletop-tab-close")) return;
+          tabDragRef.current = { pointerId: event.pointerId, sourceKey: tabletop.id, startX: event.clientX, moved: false };
+          setDraggedTabKey(tabletop.id);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={moveTabPointer}
+        onPointerUp={finishTabPointer}
+        onPointerCancel={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+          tabDragRef.current = null;
+          setDraggedTabKey("");
+          setDropTarget(null);
+        }}
+      >
+        <button type="button" className="tabletop-tab-main" title="拖动调整顺序；Alt+方向键移动" onKeyDown={(event) => reorderWithKeyboard(event, tabletop.id)} onClick={() => {
+          if (suppressTabClickRef.current) { suppressTabClickRef.current = false; return; }
+          execute({ type: "activate-tabletop", tabletopId: tabletop.id });
+        }}><span>▦</span><b>{tabletop.name}</b><CloudSyncIndicator sync={snapshot.sync.get(tabletop.id)} saving={snapshot.savingTabletopId === tabletop.id} /></button>
         <button type="button" className="tabletop-tab-close" aria-label={`删除 ${tabletop.name}`} title="删除桌面" onClick={() => execute({ type: "request-delete-tabletop", tabletopId: tabletop.id })}><Icon name="x" /></button>
       </div>)}
       <button type="button" className="tabletop-tab-action" aria-label="新建桌面" title="新建桌面" onClick={() => execute({ type: "new-tabletop" })}>＋</button>
