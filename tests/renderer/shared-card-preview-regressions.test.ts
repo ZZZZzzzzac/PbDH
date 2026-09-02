@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { adversaryTemplate, armorTemplate, weaponTemplate } from "@pbdh/templates/core";
+import { armorRendererStyles, environmentRendererStyles, freeRendererStyles } from "@pbdh/templates/frontend";
 import { describe, expect, it } from "vitest";
 
 describe("共享卡牌详情与 GM 工作区回归", () => {
@@ -66,9 +67,13 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     expect(shared).toContain("translate(-50%, -50%) scale(${scale})");
     const gmWorkbench = await readFile("apps/creator/src/workspace-prototype/gm-tabletop-workbench.tsx", "utf8");
     const preview = await readFile("apps/creator/src/workspace-prototype/resource-preview.tsx", "utf8");
-    expect(preview).toContain("const widthScale = (stage.clientWidth * 0.7) / width");
-    expect(preview).toContain("const heightScale = (stage.clientHeight * 0.7) / height");
-    expect(preview).toContain("Math.max(0, Math.min(widthScale, heightScale))");
+    expect(preview).toContain("const referenceHeight = width * (88 / 63)");
+    expect(preview).toContain("const widthScale = Math.min(");
+    expect(preview).toContain("(stage.clientWidth * 0.7) / width");
+    expect(preview).toContain("(stage.clientHeight * 0.7) / referenceHeight");
+    expect(preview).not.toContain("heightScale");
+    expect(preview).toContain("displayWidth: width * widthScale");
+    expect(preview).toContain("displayHeight: height * widthScale");
     expect(gmWorkbench).toContain('displayWidth="250px"');
     expect(gmWorkbench).not.toContain('displayWidth="63mm"');
   });
@@ -83,5 +88,33 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     expect(adversaryRenderer).not.toMatch(/scale\([^),]+,\s*[^)]+\)/);
     expect(weaponRenderer).not.toMatch(/scale\([^),]+,\s*[^)]+\)/);
     expect(creatorStyles).not.toContain(".card-scale { position: absolute; top: 50%; left: 50%; width: 90mm; height: 142mm");
+  });
+
+  it("大画布 Renderer 自己缩放到规范宽度，不让卡图或 Creator 宿主改变横向尺度", async () => {
+    const creatorStyles = await readFile("apps/creator/src/workspace-prototype/workspace.css", "utf8");
+    const screenRule = creatorStyles.match(/\.card-scale\s*\{[^}]+\}/s)?.[0] ?? "";
+    expect(screenRule).toContain("width: max-content");
+    expect(screenRule).toContain("height: max-content");
+    for (const [styles, frame, card] of [
+      [armorRendererStyles, "armor-card-frame", "armor-card"],
+      [environmentRendererStyles, "environment-card-frame", "environment-card"],
+      [freeRendererStyles, "free-card-frame", "free-card"],
+    ] as const) {
+      expect(styles).toMatch(new RegExp(`\\.${frame}\\{[^}]*width:63px;[^}]*height:88px;[^}]*overflow:hidden`));
+      expect(styles).toMatch(new RegExp(`\\.${card}\\{[^}]*position:absolute;[^}]*width:360px;[^}]*height:502\\.857px;[^}]*transform:scale\\(\\.175\\)`));
+    }
+  });
+
+  it("Creator 预览统一按宽度缩放，长卡通过舞台纵向滚动查看", async () => {
+    const [preview, creatorStyles] = await Promise.all([
+      readFile("apps/creator/src/workspace-prototype/resource-preview.tsx", "utf8"),
+      readFile("apps/creator/src/workspace-prototype/workspace.css", "utf8"),
+    ]);
+    expect(preview).toContain('className="preview-stage-content"');
+    expect(preview).toContain('className="card-scale-slot"');
+    expect(creatorStyles).toMatch(/\.preview-stage\s*\{[^}]*overflow-y:\s*auto/s);
+    expect(creatorStyles).toMatch(/\.preview-stage-content\s*\{[^}]*min-height:\s*100%/s);
+    expect(creatorStyles).toMatch(/\.card-scale-slot\s*\{[^}]*position:\s*relative/s);
+    expect(creatorStyles).toMatch(/\.card-scale\s*\{[^}]*inset:\s*0 auto auto 0/s);
   });
 });

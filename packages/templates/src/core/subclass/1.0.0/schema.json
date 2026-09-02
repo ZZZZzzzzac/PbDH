@@ -6,6 +6,7 @@
   "required": ["名称", "类型", "主职", "等级", "施法属性", "描述", "风味描述"],
   "properties": {
     "名称": { "type": "string" },
+    "原文": { "type": "string" },
     "类型": { "type": "string" },
     "主职": { "type": "string" },
     "等级": { "type": "string" },

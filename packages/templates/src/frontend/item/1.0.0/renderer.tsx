@@ -5,5 +5,5 @@ export const itemRendererStyles = referenceCardStyles;
 export const itemRendererRevision = createReferenceCardRenderer<ItemData>({
   revision: "item-card-r1", templateId: "物品", templateVersion: "1.0.0",
   defaultState: (data) => itemTemplate.tabletop.defaultState(data),
-  model: (data) => ({ title: data.名称 || "未命名物品", kicker: data.类型 || "物品", stats: data.掷骰 ? [{ label: "掷骰", value: data.掷骰 }] : [], sections: [{ title: "效果", body: data.描述 }], flavor: data.风味描述 }),
+  model: (data) => ({ title: data.名称 || "未命名物品", originalTitle: data.原文, kicker: data.类型 || "物品", stats: data.掷骰 ? [{ label: "掷骰", value: data.掷骰 }] : [], sections: [{ title: "效果", body: data.描述 }], flavor: data.风味描述 }),
 });

@@ -19,7 +19,7 @@ export type CreatorWorkbenchSnapshot = {
 
 export type CreatorWorkbenchCommand =
   | { type: "activate-resource" | "pin-resource" | "close-resource"; workspaceKey: string; resourceId: string }
-  | { type: "request-cloud-edit" | "choose-portrait" }
+  | { type: "request-cloud-edit" | "choose-portrait" | "remove-portrait" }
   | { type: "set-editor-share"; value: number }
   | { type: "authoring-value"; path: string; value: unknown }
   | { type: "attribution-value"; field: "artworkCredit" | "sourceLabel"; value: string }
@@ -63,11 +63,11 @@ export function CreatorWorkbench({ snapshot, execute }: {
           data={resource.data as Record<string, unknown>}
           onValue={(path, value) => execute({ type: "authoring-value", path, value })}
         />}
-        {resource.template.id === "种族" && <ResourceAttributionEditor
+        <ResourceAttributionEditor
           artworkCredit={resolveResourceAttribution(resource, active.document.package.name).artworkCredit}
           sourceLabel={resolveResourceAttribution(resource, active.document.package.name).sourceLabel}
           onChange={(field, value) => execute({ type: "attribution-value", field, value })}
-        />}
+        />
         {templateFrontend?.authoring.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
           key={replacement.id}
           label={replacement.label}
@@ -84,8 +84,8 @@ export function CreatorWorkbench({ snapshot, execute }: {
           <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "图+文", image: "纯图片" }[mode]}</button>)}</div>
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
-        {templateFrontend && template ? <TemplateRuntimePreview resource={resource} packageName={active.document.package.name} assets={previewAssets} frontend={templateFrontend} template={template} /> : null}
-        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button></footer>
+        {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} frontend={templateFrontend} template={template} /> : null}
+        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
       </aside>
     </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
   </section>;

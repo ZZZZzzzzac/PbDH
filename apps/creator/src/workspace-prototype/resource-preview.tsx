@@ -24,7 +24,7 @@ export function ResourceIcon({ resource }: { resource: TemplateBoundResource }) 
 export function AutoFitPreview({ children }: { children: ReactNode }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [layout, setLayout] = useState({ scale: 1, displayWidth: 0, displayHeight: 0 });
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -33,9 +33,16 @@ export function AutoFitPreview({ children }: { children: ReactNode }) {
     const fit = () => {
       const width = Math.max(card.scrollWidth, card.offsetWidth, 1);
       const height = Math.max(card.scrollHeight, card.offsetHeight, 1);
-      const widthScale = (stage.clientWidth * 0.7) / width;
-      const heightScale = (stage.clientHeight * 0.7) / height;
-      setScale(Math.max(0, Math.min(widthScale, heightScale)));
+      const referenceHeight = width * (88 / 63);
+      const widthScale = Math.min(
+        (stage.clientWidth * 0.7) / width,
+        (stage.clientHeight * 0.7) / referenceHeight,
+      );
+      setLayout({
+        scale: Math.max(0, widthScale),
+        displayWidth: width * widthScale,
+        displayHeight: height * widthScale,
+      });
     };
     const observer = new ResizeObserver(fit);
     observer.observe(stage);
@@ -44,7 +51,13 @@ export function AutoFitPreview({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, [children]);
 
-  return <div ref={stageRef} className="preview-stage"><div ref={cardRef} className="card-scale" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>{children}</div></div>;
+  return <div ref={stageRef} className="preview-stage">
+    <div className="preview-stage-content">
+      <div className="card-scale-slot" style={{ width: `${layout.displayWidth}px`, height: `${layout.displayHeight}px` }}>
+        <div ref={cardRef} className="card-scale" style={{ transform: `scale(${layout.scale})` }}>{children}</div>
+      </div>
+    </div>
+  </div>;
 }
 
 export function TemplateRuntimePreview({

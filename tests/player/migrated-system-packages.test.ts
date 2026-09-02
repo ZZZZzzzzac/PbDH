@@ -19,6 +19,13 @@ const migrated = [
   { directory: "tttri", name: "罗德岛旅记", resources: 682, assets: 271 },
 ] as const;
 
+function hasStructuredEquipmentFeature(data: unknown): boolean {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return false;
+  return !Object.hasOwn(data, "描述")
+    && Object.hasOwn(data, "特性名")
+    && Object.hasOwn(data, "特性描述");
+}
+
 describe("additional migrated System Packages", () => {
   test("registers every supported system and uses the official-resource naming rule", async () => {
     expect(playerSystemPackageCatalog.map((entry) => entry.system.package.name)).toEqual([
@@ -43,6 +50,11 @@ describe("additional migrated System Packages", () => {
       expect(loaded.candidate?.document.resources).toHaveLength(item.resources);
       expect(loaded.candidate?.document.assets).toHaveLength(item.assets);
       expect(loaded.candidate?.document.snapshotDigest).toBe(entry.preset.embeddedResourceIndex[0]!.snapshotDigest);
+      if (item.directory === "tttri") {
+        const armor = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "护甲") ?? [];
+        expect(armor).toHaveLength(34);
+        expect(armor.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
+      }
     }
 
     const daggerheart = await loadPbres(

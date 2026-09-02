@@ -66,6 +66,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
     }
     expect(markup).not.toContain("<img");
     expect(markup).not.toContain("weapon-art");
+    expect(markup).toContain('<span class="weapon-title-meta"><span>位阶 1</span><span>主武器</span></span>');
     expect(markup).toContain("data-renderer-revision=\"weapon-card-r2\"");
   });
 
@@ -93,6 +94,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
     expect(weaponRendererStyles).toContain("overflow:hidden");
     expect(weaponRendererStyles).toContain(".weapon-description");
     expect(weaponRendererStyles).toContain(".weapon-card.is-fluid");
+    expect(weaponRendererStyles).toContain(".weapon-card>.pbdh-card-footer{min-height:3.5px");
 
     const fluidResource = structuredClone(resource);
     fluidResource.presentation.fixedRatio = false;
@@ -141,7 +143,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("6952062945d8315b24c41ad370b60e72b42ba1fdb8d187f5fdafbec0f35718f1");
+    expect(signature).toBe("aa77d5e840305510e0dc3f2596b1741e460863f2c3845093885c3a82a36cd672");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {
@@ -160,7 +162,9 @@ describe("weapon-card-r2 flavor surface", () => {
       data: {
         ...weaponTemplate.defaultData,
         名称: "月刃",
-        描述: "可靠：攻击掷骰+1。",
+        特性名: "可靠",
+        特性原名: "Reliable",
+        特性描述: "攻击掷骰+1。",
         风味描述: "刀身映着冷白月光。",
       },
       media: {},

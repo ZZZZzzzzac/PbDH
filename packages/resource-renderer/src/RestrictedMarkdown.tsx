@@ -23,6 +23,7 @@ export function RestrictedMarkdownRenderer({ value, inline = false }: {
   value: string;
   inline?: boolean;
 }) {
+  const safeValue = typeof value === "string" ? value : "";
   return (
     <ReactMarkdown
       remarkPlugins={[remarkDirective, restrictedColorDirectives, stripEmphasisBoundaries, preserveLineBreaks]}
@@ -30,7 +31,7 @@ export function RestrictedMarkdownRenderer({ value, inline = false }: {
       unwrapDisallowed
       components={{ img: ({ alt }) => <span>{alt}</span> }}
     >
-      {normalizeEmphasisBoundaries(normalizeUnderscoreEmphasis(value))}
+      {normalizeEmphasisBoundaries(normalizeUnderscoreEmphasis(safeValue))}
     </ReactMarkdown>
   );
 }

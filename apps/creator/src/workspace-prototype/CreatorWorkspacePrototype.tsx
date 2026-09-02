@@ -122,6 +122,7 @@ import {
   pinWorkspaceResource,
   planImport,
   previewWorkspaceResource,
+  removePortrait,
   renameWorkspaceFolder,
   replacePortrait,
   selectWorkspaceFolder,
@@ -1522,6 +1523,7 @@ export function CreatorWorkspacePrototype({
       case "close-resource": closeWorkspaceTab(command.workspaceKey, command.resourceId); return;
       case "request-cloud-edit": requestWorkspaceCloudSyncAfterEditing(); return;
       case "choose-portrait": portraitRef.current?.click(); return;
+      case "remove-portrait": if (active && resource) replaceActive(removePortrait(active, resource.id)); return;
       case "set-editor-share": setEditorColumnShare(command.value); return;
       case "authoring-value": updateReferenceValue(command.path, command.value); return;
       case "attribution-value":

@@ -14,7 +14,7 @@
     "条件": { "类型": "always" },
     "动作": [
       { "类型": "fillText", "目标模块ID": "armor-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "{{名称}} | 阈值 {{重度阈值}}/{{严重阈值}} | 护甲值 {{护甲值}}" } },
-      { "类型": "fillText", "目标模块ID": "armor-feature", "内容": { "类型": "selectedResourceField", "字段": "描述" } },
+      { "类型": "fillText", "目标模块ID": "armor-feature", "内容": { "类型": "selectedResourceTemplate", "格式": "{{特性名}}：{{特性描述}}" } },
       { "类型": "fillCountable", "目标模块ID": "armor-slots", "最大值": { "类型": "selectedResourceField", "字段": "护甲值" } },
       { "类型": "fillText", "目标模块ID": "major-threshold", "内容": { "类型": "selectedResourceField", "字段": "重度阈值" } },
       { "类型": "fillText", "目标模块ID": "severe-threshold", "内容": { "类型": "selectedResourceField", "字段": "严重阈值" } },

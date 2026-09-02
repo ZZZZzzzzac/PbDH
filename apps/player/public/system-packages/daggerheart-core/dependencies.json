@@ -387,8 +387,8 @@
         "类型": "fillText",
         "目标模块ID": "primary-weapon-description",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{特性名}}：{{特性描述}}"
         }
       }
     ]
@@ -431,8 +431,8 @@
         "类型": "fillText",
         "目标模块ID": "secondary-weapon-description",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{特性名}}：{{特性描述}}"
         }
       }
     ]
@@ -475,8 +475,8 @@
         "类型": "fillText",
         "目标模块ID": "backup-weapon-1-description",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{特性名}}：{{特性描述}}"
         }
       }
     ]
@@ -519,8 +519,8 @@
         "类型": "fillText",
         "目标模块ID": "backup-weapon-2-description",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{特性名}}：{{特性描述}}"
         }
       }
     ]
@@ -579,8 +579,8 @@
         "类型": "fillText",
         "目标模块ID": "armor-description",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{特性名}}：{{特性描述}}"
         }
       },
       {

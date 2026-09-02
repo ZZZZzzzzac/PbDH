@@ -64,7 +64,7 @@ describe("武器 Template Core", () => {
     expect(weaponTemplate.project(resource.data)).toEqual({
       title: "阔剑",
       summary: "主武器 · 敏捷 · 近战 · d8",
-      searchText: "阔剑 主武器 敏捷 近战 d8 单手 物理 可靠：你的攻击掷骰+1。 1",
+      searchText: "阔剑 主武器 敏捷 近战 d8 单手 物理 可靠 你的攻击掷骰+1。 1",
     });
     expect(weaponTemplate.mediaSlots).toEqual([
       { id: "portrait", label: "主图", required: false, accepts: ["image/webp"] },

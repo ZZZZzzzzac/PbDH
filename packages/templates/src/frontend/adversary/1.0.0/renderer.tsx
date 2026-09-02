@@ -1,5 +1,5 @@
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
-import { RestrictedMarkdown } from "@pbdh/resource-renderer/react";
+import { CardFooter, RestrictedMarkdown, SingleLineTextFit, TextFitContainer } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { adversaryTemplate, type AdversaryData } from "../../../core/index.ts";
@@ -60,7 +60,7 @@ export const adversaryRendererStyles = `
 .enemy-image-missing { width: 100%; height: 100%; display: grid; place-items: center; color: #f8f3ea; font: 700 16px/1.3 "Noto Sans SC", sans-serif; }
 .enemy-kicker { position: absolute; z-index: 2; right: 8.7px; top: calc(var(--enemy-media-height) + 17px); width: 82px; color: #f4dfbc; font: 650 16px/1.25 "Noto Sans SC", sans-serif; text-align: center; }
 .enemy-heading { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
-.enemy-heading h1 { position: absolute; left: 14px; right: 14px; top: calc(var(--enemy-media-height) + 12px); margin: 0; color: #fff4df; font: 800 28px/1 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.enemy-heading h1 { position: absolute; left: 14px; right: 14px; top: calc(var(--enemy-media-height) + 10px); margin: 0; color: #fff4df; font: 800 var(--enemy-title-font-size, 28px)/1 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .enemy-original-title { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 42px); margin: 0; color: #d8ba91; font: 650 10px/1.25 "Noto Sans SC", sans-serif; }
 .enemy-summary { position: absolute; left: 14px; top: calc(var(--enemy-media-height) + 42px); width: 326px; margin: 0; color: #dcb299; font: italic 500 9.5px/1.25 "Noto Sans SC", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .enemy-heading.has-original-title .enemy-summary { top: calc(var(--enemy-media-height) + 57px); }
@@ -90,15 +90,17 @@ export const adversaryRendererStyles = `
 .enemy-feature-heading { height: 18px; flex: none; display: flex; align-items: center; gap: 8px; color: var(--oxblood); font: 800 13px/1 "Noto Sans SC", sans-serif; }
 .enemy-feature-heading::after { content: ""; flex: 1; height: 2px; background: #b88a57; }
 .enemy-features { min-height: 0; height: auto; flex: none; display: flex; flex-direction: column; gap: 4px; overflow: visible; }
-.enemy-feature { min-height: 60px; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 8px; overflow: visible; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
+.enemy-feature { position: relative; min-height: 60px; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 8px; overflow: visible; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
 .enemy-feature h2 { margin: 0; min-width: 0; color: var(--oxblood); }
+.enemy-feature h2::after { content: ""; position: absolute; top: 14px; right: 8px; left: 92px; height: 1px; background: #b88a57; }
 .enemy-feature-primary { display: grid; gap: 1px; }
 .enemy-feature-primary span { display: block; }
-.enemy-feature-name { font: 800 14px/1.2 "Noto Sans SC", sans-serif; }
-.enemy-feature-type { color: #87504b; font: 650 12px/1.2 "Noto Sans SC", sans-serif; }
-.enemy-feature h2 small { display: block; margin-top: 1px; color: #5e4637; font: 650 8.5px/1.2 "Noto Sans SC", sans-serif; }
-.enemy-feature p { min-width: 0; margin: 0; overflow: visible; color: var(--ink); font: 450 11px/1.28 "Noto Sans SC", sans-serif; }
+.enemy-feature-name { font: 800 calc(var(--enemy-feature-font-size, 15px) + 4px)/1.2 "Noto Sans SC", sans-serif; }
+.enemy-feature-type { color: #87504b; font: 650 var(--enemy-feature-font-size, 15px)/1.2 "Noto Sans SC", sans-serif; }
+.enemy-feature h2 small { display: block; margin-top: 1px; color: #5e4637; font: 650 max(8px, calc(var(--enemy-feature-font-size, 15px) - 3px))/1.2 "Noto Sans SC", sans-serif; }
+.enemy-feature p { min-width: 0; margin: 0; padding-top: 10px; overflow: visible; color: var(--ink); font: 450 15px/1.35 "Noto Sans SC", sans-serif; }
 .enemy-card.is-fluid .enemy-body { height: auto; }
+.enemy-feature p,.enemy-feature [data-restricted-markdown] { font-size: var(--enemy-feature-font-size, 15px); }.enemy-card > .pbdh-card-footer { color: #725747; background: var(--bone); border-top: 1px solid #d4b78d; }.enemy-art > .pbdh-card-footer.is-overlay { position: absolute; z-index: 3; inset: auto 0 0; color: #fff4df; background: linear-gradient(180deg, #1d131000, #1d1310dc); text-shadow: 0 1px 2px #0e0907; }
 `;
 
 function isAdversaryState(value: unknown): value is AdversaryRuntimeState {
@@ -174,7 +176,7 @@ export const adversaryRendererRevision: RendererRevisionCapability<
   },
   validateState: isAdversaryState,
   styles: adversaryRendererStyles,
-  render({ data, state, assets, presentation, onStateCommand }) {
+  render({ data, state, assets, presentation, attribution, onStateCommand }) {
     const portrait = assets.portrait;
     const mode = presentation.mode;
     const hasOriginalTitle = Boolean(data.原文?.trim());
@@ -194,12 +196,12 @@ export const adversaryRendererRevision: RendererRevisionCapability<
         {mode === "split" && portrait ? <img src={portrait} alt="" /> : null}
         <div className="enemy-kicker">位阶{data.位阶} {data.种类}</div>
         <header className={`enemy-heading${hasOriginalTitle ? " has-original-title" : ""}`}>
-          <h1>{data.名称}</h1>
+          <SingleLineTextFit contentKey={data.名称} minFontSizePx={8} maxFontSizePx={28} cssVariable="--enemy-title-font-size">{data.名称}</SingleLineTextFit>
           {hasOriginalTitle ? <p className="enemy-original-title">{data.原文}</p> : null}
           <p className="enemy-summary"><RestrictedMarkdown inline value={data.简介} /></p>
         </header>
       </div>
-      <div className="enemy-body">
+      <TextFitContainer className="enemy-body" contentKey={JSON.stringify(data)} enabled={presentation.fixedRatio} minFontSizePx={8} maxFontSizePx={15} cssVariable="--enemy-feature-font-size">
         <div className="enemy-brief">
           <section className="enemy-motives" aria-label="动机与经历">
             <p>动机与战术：<RestrictedMarkdown inline value={data.动机与战术} /></p>
@@ -236,7 +238,8 @@ export const adversaryRendererRevision: RendererRevisionCapability<
           <h2><span className="enemy-feature-primary"><span className="enemy-feature-name">{feature.名称}</span><span className="enemy-feature-type">{feature.类型}</span></span>{feature.原名?.trim() ? <small>{feature.原名}</small> : null}</h2>
           <RestrictedMarkdown value={feature.特性描述} />
         </article>)}</section>
-      </div>
+      </TextFitContainer>
+      <CardFooter attribution={attribution ?? { artworkCredit: "", sourceLabel: "" }} />
       </article>}</AdversaryCardFrame>;
   },
 };

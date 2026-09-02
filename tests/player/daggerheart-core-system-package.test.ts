@@ -47,6 +47,13 @@ const preset = readJson<{
   embeddedResourceIndex: Array<{ path: string; packageId: string; version: string; snapshotDigest: string }>;
 }>(path.join(root, "apps/player/src/daggerheart-core-preset.generated.json"));
 
+function hasStructuredEquipmentFeature(data: unknown): boolean {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return false;
+  return !Object.hasOwn(data, "描述")
+    && Object.hasOwn(data, "特性名")
+    && Object.hasOwn(data, "特性描述");
+}
+
 describe("migrated Daggerheart Core System Package", () => {
   test("uses one valid native Resource Package for all System Package libraries", async () => {
     const system = readJson<SystemPackageDocument>(path.join(packageRoot, "system.json"));
@@ -95,12 +102,15 @@ describe("migrated Daggerheart Core System Package", () => {
       推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 灵巧: "+1" }, { 本能: "+0" }, { 风度: "+2" }, { 知识: "+1" }],
       推荐初始武器: ["刺剑", "匕首"],
     });
-    expect(candidates[0]?.document.package.version).toBe("1.0.7");
+    expect(candidates[0]?.document.package.version).toBe("1.0.8");
     expect(resources.every((resource) => resource.presentation.fixedRatio
       && Object.keys(resource.presentation).length === 2)).toBe(true);
     const armorResources = resources.filter((resource) => resource.template.id === "护甲");
     expect(armorResources).toHaveLength(34);
     expect(armorResources.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+    const equipmentResources = resources.filter((resource) => resource.template.id === "护甲" || resource.template.id === "武器");
+    expect(equipmentResources).toHaveLength(226);
+    expect(equipmentResources.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
     const stableCounts = new Map([
       ["种族", 18], ["社群", 9], ["职业", 9], ["子职业", 54], ["物品", 120], ["领域卡", 189],
     ]);
@@ -139,15 +149,25 @@ describe("migrated Daggerheart Core System Package", () => {
 
     const primaryWeapon = pickerLibrary("pick-primary-weapon");
     const secondaryWeapon = pickerLibrary("pick-secondary-weapon");
+    const backupWeapon1 = pickerLibrary("pick-backup-weapon-1");
+    const backupWeapon2 = pickerLibrary("pick-backup-weapon-2");
     const armor = pickerLibrary("pick-armor");
 
     expect(primaryWeapon.字段模板?.map((field) => field.键)).toEqual([
-      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "描述", "类型",
+      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "特性名", "特性描述", "类型",
     ]);
     expect(secondaryWeapon.字段模板?.map((field) => field.键)).toEqual([
-      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "描述", "类型",
+      "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "特性名", "特性描述", "类型",
     ]);
-    expect(armor.字段模板?.map((field) => field.键)).toContain("位阶");
+    expect(backupWeapon1.字段模板?.map((field) => field.键)).toEqual([
+      "名称", "类型", "属性", "距离", "伤害", "负荷", "伤害类型", "特性名", "特性描述",
+    ]);
+    expect(backupWeapon2.字段模板?.map((field) => field.键)).toEqual([
+      "名称", "类型", "属性", "距离", "伤害", "负荷", "伤害类型", "特性名", "特性描述",
+    ]);
+    expect(armor.字段模板?.map((field) => field.键)).toEqual([
+      "名称", "重度阈值", "严重阈值", "护甲值", "位阶", "特性名", "特性描述",
+    ]);
     expect(primaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
     expect(secondaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
     expect(armor.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });

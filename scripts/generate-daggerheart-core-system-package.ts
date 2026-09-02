@@ -49,7 +49,7 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.7";
+const resourcePackageVersion = "1.0.8";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
 const legacyManifest = JSON.parse(await readFile(
@@ -383,17 +383,18 @@ function transformSubclass(entry: SourceEntry) {
 
 function transformWeapon(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型), 属性: string(entry.属性), 距离: string(entry.距离),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 属性: string(entry.属性), 距离: string(entry.距离),
     伤害: string(entry.伤害), 负荷: string(entry.负荷), 伤害类型: string(entry.伤害类型),
-    描述: string(entry.描述), 位阶: string(entry.位阶),
+    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述), 位阶: string(entry.位阶),
   };
 }
 
 function transformArmor(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
     重度伤害阈值: string(entry.重度阈值), 严重伤害阈值: string(entry.严重阈值),
-    描述: string(entry.描述), 风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
+    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述),
+    风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
   };
 }
 

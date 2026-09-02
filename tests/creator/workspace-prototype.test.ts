@@ -11,6 +11,7 @@ import stableMinotaurPackage from "../../contracts/conformance/resource-package/
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { storedColumnShare } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import { CreatorResourceExplorer } from "../../apps/creator/src/workspace-prototype/creator-resource-explorer.tsx";
+import { CreatorWorkbench } from "../../apps/creator/src/workspace-prototype/creator-workbench.tsx";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
@@ -91,6 +92,21 @@ function renderResourceExplorer() {
       expandedWorkspaceKeys: new Set([workspace.key]),
       sync: new Map(),
       savingWorkspaceKey: null,
+    },
+    execute: () => undefined,
+  }));
+}
+
+function renderCreatorWorkbench(workspace: CreatorWorkspace) {
+  const resource = workspace.document.resources[0]!;
+  return renderToStaticMarkup(createElement(CreatorWorkbench, {
+    snapshot: {
+      workspaces: [workspace],
+      activeWorkspace: workspace,
+      activeResource: resource,
+      activeResourceId: resource.id,
+      editorColumnShare: 0.5,
+      assetUrls: new Map(workspace.document.assets.map((candidate) => [candidate.id, `blob:${candidate.id}`])),
     },
     execute: () => undefined,
   }));
@@ -178,6 +194,7 @@ describe("Creator Workspace prototype state model", () => {
 
     const values = {
       名称: "测试长刃",
+      原文: "Test Longblade",
       类型: "主武器",
       位阶: "2",
       属性: "力量",
@@ -185,7 +202,9 @@ describe("Creator Workspace prototype state model", () => {
       伤害: "d10+3",
       伤害类型: "物理",
       负荷: "双手",
-      描述: "命中后将目标推开。",
+      特性名: "击退",
+      特性原名: "Knockback",
+      特性描述: "命中后将目标推开。",
       风味描述: "",
     };
     const edited = updateResourceData<WeaponData>(created.workspace, (data) => Object.assign(data, values), created.resourceId);
@@ -201,11 +220,14 @@ describe("Creator Workspace prototype state model", () => {
 
     const values = {
       名称: "测试护甲",
+      原文: "Test Armor",
       类型: "护甲",
       护甲值: "4",
       重度伤害阈值: "7",
       严重伤害阈值: "14",
-      描述: "坚韧：降低伤害。",
+      特性名: "坚韧",
+      特性原名: "Sturdy",
+      特性描述: "降低伤害。",
       风味描述: "由铁木编成。",
       位阶: "2",
     };
@@ -511,6 +533,12 @@ describe("Creator Workspace prototype state model", () => {
     expect(resourceData<AdversaryData>(textOnly).名称).toBe("牛头人破坏者");
   });
 
+  test("shows remove-card-art only while the active resource has a portrait", () => {
+    const workspace = createWorkspace({ document, media });
+    expect(renderCreatorWorkbench(workspace)).toContain("删除卡图");
+    expect(renderCreatorWorkbench(removePortrait(workspace))).not.toContain("删除卡图");
+  });
+
   test("plans insert, no-op, safe update and dirty conflict explicitly", () => {
     const current = createWorkspace({ document, media });
     const same = { document: structuredClone(document), media };
@@ -646,6 +674,12 @@ describe("Creator Workspace prototype state model", () => {
     expect(source).toContain('split: "图+文"');
     expect(source).not.toContain("半图半文字");
     expect(styles).not.toContain(".card-mode button:nth-child(2)");
+  });
+
+  test("shows the shared card attribution editor for every Template", () => {
+    const source = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-workbench.tsx"), "utf8");
+    expect(source).toContain("<ResourceAttributionEditor");
+    expect(source).not.toContain('resource.template.id === "种族"');
   });
 
   test("prints GM cards without application chrome or selection controls", () => {

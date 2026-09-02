@@ -9,7 +9,7 @@ export function DomainAuthoringEditor({ data, onValue }: TemplateAuthoringEditor
 
   return <div className="template-owned-editor domain-editor">
     <style>{standardEditorStyles + `.domain-editor section{grid-template-columns:repeat(3,minmax(0,1fr))}`}</style>
-    <section>{field("名称")}{field("类型")}{field("领域")}{field("等级")}{field("属性")}{field("回想")}</section>
+    <section>{field("名称")}<EditorInput label="英文" value={data.原文} onChange={(value) => onValue("原文", value)} />{field("类型")}{field("领域")}{field("等级")}{field("属性")}{field("回想")}</section>
     <section>
       <div className="template-editor-span-all"><EditorTextarea label="描述" value={data.描述} onChange={(value) => onValue("描述", value)} /></div>
       <div className="template-editor-span-all"><EditorTextarea label="风味描述" value={data.风味描述} onChange={(value) => onValue("风味描述", value)} /></div>

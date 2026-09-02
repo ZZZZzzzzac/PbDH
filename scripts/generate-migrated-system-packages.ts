@@ -342,9 +342,10 @@ function transformSubclass(entry: SourceEntry) {
 }
 function transformArmor(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
     重度伤害阈值: string(entry.重度阈值), 严重伤害阈值: string(entry.严重阈值),
-    描述: string(entry.描述), 风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
+    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述),
+    风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
   };
 }
 function transformItem(entry: SourceEntry) {

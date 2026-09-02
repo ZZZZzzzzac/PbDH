@@ -84,8 +84,8 @@ const weaponBatch: TemporaryResourceBatch = {
     kind: "weapon",
     name: "月刃",
     fields: {
-      名称: "月刃", 类型: "主武器", 属性: "敏捷", 距离: "近战", 伤害: "d8+2",
-      负荷: "单手", 伤害类型: "魔法", 描述: "可靠：攻击掷骰+1。",
+      名称: "月刃", 原文: "", 类型: "主武器", 属性: "敏捷", 距离: "近战", 伤害: "d8+2",
+      负荷: "单手", 伤害类型: "魔法", 特性名: "可靠", 特性原名: "Reliable", 特性描述: "攻击掷骰+1。",
       风味描述: "刀身映着冷白月光。", 位阶: "2",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -101,8 +101,8 @@ const armorBatch: TemporaryResourceBatch = {
     kind: "armor",
     name: "填充布甲",
     fields: {
-      名称: "填充布甲", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
-      严重伤害阈值: "11", 描述: "灵活：闪避值+1。",
+      名称: "填充布甲", 原文: "", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
+      严重伤害阈值: "11", 特性名: "灵活", 特性原名: "Flexible", 特性描述: "闪避值+1。",
       风味描述: "层叠缝制的轻便布甲。", 位阶: "1",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -358,7 +358,9 @@ describe("third-party resource source engines", () => {
         伤害: "d8+1",
         负荷: "单手",
         伤害类型: "物理",
-        描述: "六发：花费 1 弹药指示物进行攻击。",
+        特性名: "六发",
+        特性原名: "",
+        特性描述: "花费 1 弹药指示物进行攻击。",
         位阶: "1",
       },
     });
@@ -472,7 +474,7 @@ describe("registered Template mapping and native pbres", () => {
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.template).toEqual({ id: "武器", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
-      描述: "可靠：攻击掷骰+1。", 风味描述: "一把朴素的短剑。", 位阶: "",
+      特性名: "", 特性描述: "可靠：攻击掷骰+1。", 风味描述: "一把朴素的短剑。", 位阶: "",
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -503,7 +505,8 @@ describe("registered Template mapping and native pbres", () => {
       if (!imported.ok) throw new Error("re-import failed");
       const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
       expect(candidate?.diagnostics).toEqual([]);
-      expect(candidate?.data).toEqual(weaponBatch.resources[0]?.fields);
+      const { 原文: _original, ...expected } = weaponBatch.resources[0]!.fields;
+      expect(candidate?.data).toMatchObject(expected);
     }
   });
 
@@ -517,7 +520,11 @@ describe("registered Template mapping and native pbres", () => {
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.template).toEqual({ id: "护甲", version: "1.0.0" });
-    expect(candidate?.data).toEqual({ ...armorBatch.resources[0]?.fields, 位阶: "" });
+    expect(candidate?.data).toEqual({
+      名称: "填充布甲", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
+      严重伤害阈值: "11", 特性名: "", 特性描述: "灵活：闪避值+1。",
+      风味描述: "层叠缝制的轻便布甲。", 位阶: "",
+    });
     expect(candidate?.diagnostics).toEqual([]);
   });
 
@@ -547,7 +554,8 @@ describe("registered Template mapping and native pbres", () => {
       if (!imported.ok) throw new Error("re-import failed");
       const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
       expect(candidate?.diagnostics).toEqual([]);
-      expect(candidate?.data).toEqual(armorBatch.resources[0]?.fields);
+      const { 原文: _original, ...expected } = armorBatch.resources[0]!.fields;
+      expect(candidate?.data).toMatchObject(expected);
     }
   });
 

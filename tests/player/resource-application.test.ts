@@ -54,7 +54,7 @@ const runtimeSystem = {
       {
         类型: "fillText",
         目标模块ID: "primary-weapon-description",
-        内容: { 类型: "selectedResourceField", 字段: "描述" },
+        内容: { 类型: "selectedResourceTemplate", 格式: "{{特性名}}：{{特性描述}}" },
       },
     ],
   }],
@@ -120,7 +120,7 @@ describe("Player resource selection materialization", () => {
       [mutableEntry],
     ).characterData;
     mutableEntry.fields.名称 = "已更新的阔剑";
-    mutableEntry.fields.描述 = "新描述";
+    mutableEntry.fields.特性描述 = "新描述";
 
     expect(applied.character.values["primary-weapon-name"]).toBe("**阔剑**｜敏捷｜近战｜d8 物理｜单手");
     expect(applied.character.values["primary-weapon-description"]).toBe("可靠：你的攻击掷骰+1。");

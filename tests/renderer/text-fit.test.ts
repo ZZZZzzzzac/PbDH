@@ -57,9 +57,40 @@ describe("fixed-card container text fitting", () => {
       fits: (fontSizePx) => fontSizePx <= 13.25,
     })).toEqual({ fontSizePx: 13.25, fitted: true, overflowing: false });
   });
+
+  test("single-line fitting ignores glyph height overflow and measures only inline width", () => {
+    const container = createMeasuredContainer(() => 22, (fontSizePx) => fontSizePx <= 24 ? 300 : 340);
+
+    expect(fitContainerText(container, {
+      minFontSizePx: 18,
+      maxFontSizePx: 36,
+      cssVariable: "--title-font-size",
+      axis: "inline",
+    })).toEqual({ fontSizePx: 24, fitted: true, overflowing: false });
+  });
+
+  test("single-line fitting does not accept the one-pixel tolerance used by body containers", () => {
+    const title = createMeasuredContainer(() => 22, (fontSizePx) => fontSizePx < 36 ? 300 : 301);
+    expect(fitContainerText(title, {
+      minFontSizePx: 18,
+      maxFontSizePx: 36,
+      cssVariable: "--title-font-size",
+      axis: "inline",
+    })).toEqual({ fontSizePx: 35.75, fitted: true, overflowing: false });
+
+    const body = createMeasuredContainer(() => 180, () => 301);
+    expect(fitContainerText(body, {
+      minFontSizePx: 11,
+      maxFontSizePx: 15,
+      cssVariable: "--feature-font-size",
+    })).toEqual({ fontSizePx: 15, fitted: false, overflowing: false });
+  });
 });
 
-function createMeasuredContainer(scrollHeight: (fontSizePx: number) => number): HTMLElement {
+function createMeasuredContainer(
+  scrollHeight: (fontSizePx: number) => number,
+  scrollWidth: (fontSizePx: number) => number = () => 300,
+): HTMLElement {
   const properties = new Map<string, string>();
   const dataset: Record<string, string> = {};
   const style = {
@@ -74,7 +105,10 @@ function createMeasuredContainer(scrollHeight: (fontSizePx: number) => number): 
       const value = properties.get("--feature-font-size");
       return scrollHeight(value ? Number.parseFloat(value) : 15);
     },
-    scrollWidth: 300,
+    get scrollWidth() {
+      const value = properties.get("--title-font-size") ?? properties.get("--feature-font-size");
+      return scrollWidth(value ? Number.parseFloat(value) : 15);
+    },
     style,
     dataset,
   };

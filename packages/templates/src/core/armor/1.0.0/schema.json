@@ -9,17 +9,21 @@
     "护甲值",
     "重度伤害阈值",
     "严重伤害阈值",
-    "描述",
+    "特性名",
+    "特性描述",
     "风味描述",
     "位阶"
   ],
   "properties": {
     "名称": { "type": "string" },
+    "原文": { "type": "string" },
     "类型": { "type": "string" },
     "护甲值": { "type": "string" },
     "重度伤害阈值": { "type": "string" },
     "严重伤害阈值": { "type": "string" },
-    "描述": { "type": "string" },
+    "特性名": { "type": "string" },
+    "特性原名": { "type": "string" },
+    "特性描述": { "type": "string" },
     "风味描述": { "type": "string" },
     "位阶": { "type": "string" }
   },

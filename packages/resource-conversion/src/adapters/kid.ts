@@ -212,7 +212,8 @@ function fieldsFor(raw: JsonObject): JsonObject {
       伤害: text(raw.damage),
       负荷: text(raw.burden),
       伤害类型: text(raw.damageType),
-      描述: text(raw.feature),
+      特性名: "",
+      特性描述: text(raw.feature),
       风味描述: text(raw.description),
       位阶: text(raw.tier),
     };
@@ -224,7 +225,8 @@ function fieldsFor(raw: JsonObject): JsonObject {
       护甲值: text(raw.score),
       重度伤害阈值: text(raw.majorThreshold),
       严重伤害阈值: text(raw.severeThreshold),
-      描述: text(raw.feature),
+      特性名: "",
+      特性描述: text(raw.feature),
       风味描述: text(raw.description),
       位阶: text(raw.tier),
     };
@@ -351,7 +353,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     damage: text(fields.伤害),
     damageType: text(fields.伤害类型),
     burden: text(fields.负荷),
-    feature: text(fields.描述),
+    feature: formatEquipmentFeature(fields),
   };
   if (resource.kind === "armor") return {
     ...base,
@@ -359,7 +361,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     score: text(fields.护甲值),
     majorThreshold: text(fields.重度伤害阈值),
     severeThreshold: text(fields.严重伤害阈值),
-    feature: text(fields.描述),
+    feature: formatEquipmentFeature(fields),
   };
   if (resource.kind === "item") {
     const consumable = text(fields.类型) === "消耗品";
@@ -454,6 +456,12 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     message: `尚未裁定 ${resource.kind} 到基德 28 类结构的映射。`,
     resourceId: resource.sourceId,
   };
+}
+
+function formatEquipmentFeature(fields: JsonObject): string {
+  const name = text(fields.特性名).trim();
+  const description = text(fields.特性描述).trim();
+  return name && description ? `${name}：${description}` : name || description;
 }
 
 function subclassToKid(resources: TemporaryResource[], options: ExportOptions): JsonObject | ConversionDiagnostic {

@@ -56,6 +56,12 @@ describe("shared Restricted Markdown", () => {
     expect(markup).not.toContain("data-markdown-color");
   });
 
+  test("treats a missing runtime field as empty text instead of crashing the surface", () => {
+    expect(() => renderToStaticMarkup(
+      <RestrictedMarkdownRenderer value={undefined as unknown as string} />,
+    )).not.toThrow();
+  });
+
   test("is used by both reference cards and specialized cards", () => {
     const community = prepareCanonicalSurface({
       resource: {
@@ -79,7 +85,8 @@ describe("shared Restricted Markdown", () => {
         data: {
           ...armorTemplate.defaultData,
           名称: "测试护甲",
-          描述: ":red[**燃烧**]：**标记 1 压力点**。",
+          特性名: ":red[**燃烧**]",
+          特性描述: "**标记 1 压力点**。",
         },
         media: {},
       },

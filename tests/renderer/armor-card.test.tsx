@@ -15,7 +15,9 @@ const data: ArmorData = {
   护甲值: "3",
   重度伤害阈值: "5",
   严重伤害阈值: "11",
-  描述: "灵活：闪避值+1。",
+  特性名: "灵活",
+  特性原名: "Flexible",
+  特性描述: "闪避值+1。",
   风味描述: "层叠缝制的轻便布甲。",
   位阶: "1",
 };
@@ -45,6 +47,8 @@ describe("armor-card-r1 Canonical Surface", () => {
     }
     expect(markup).not.toContain("<img");
     expect(markup).toContain("data-renderer-revision=\"armor-card-r1\"");
+    expect(markup).toContain('<span class="armor-title-meta"><span>位阶 1</span><span>护甲</span></span>');
+    expect(markup).not.toContain("armor-tier");
   });
 
   test("uses the optional portrait for split and image modes", () => {
@@ -68,5 +72,22 @@ describe("armor-card-r1 Canonical Surface", () => {
     expect(armorRendererRevision.validateState({})).toBe(true);
     expect(armorRendererRevision.validateState({ marked: "1" })).toBe(false);
     expect(armorRendererStyles).toContain(".armor-card");
+    expect(armorRendererStyles).toContain(".armor-card.is-split .armor-header{position:absolute");
+    expect(armorRendererStyles).toContain(".armor-card.is-split .armor-art{order:-1}");
+  });
+
+  test("long fitted titles shrink instead of falling back to an ellipsis", () => {
+    expect(armorRendererStyles).not.toContain("text-overflow:ellipsis");
+    for (const name of ["贝拉莫伊精致护甲", "诚实蛋白石护甲"]) {
+      const result = prepareCanonicalSurface({
+        resource: { ...resource(), data: { ...data, 名称: name } },
+        expectedRendererRevision: armorTemplate.rendererRevision,
+        renderer: armorRendererRevision,
+        assets: new Map(),
+      });
+      expect(result.status).toBe("ready");
+      if (result.status !== "ready") throw new Error("Expected ready Surface");
+      expect(renderToStaticMarkup(result.renderer.render(result.renderInput))).toContain(name);
+    }
   });
 });

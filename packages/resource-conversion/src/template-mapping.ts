@@ -42,19 +42,28 @@ function templateData(resource: TemporaryResource): {
   }
   if (resource.kind === "weapon") {
     const data = structuredClone(weaponTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
+    for (const key of Object.keys(data)) {
+      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      else data[key] = text(resource.fields[key] ?? data[key]);
+    }
     data.名称 = resource.name;
     return { template: weaponTemplate, data };
   }
   if (resource.kind === "armor") {
     const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
+    for (const key of Object.keys(data)) {
+      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      else data[key] = text(resource.fields[key] ?? data[key]);
+    }
     data.名称 = resource.name;
     return { template: armorTemplate, data };
   }
   if (resource.kind === "item") {
     const data = structuredClone(itemTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
+    for (const key of Object.keys(data)) {
+      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      else data[key] = text(resource.fields[key] ?? data[key]);
+    }
     data.名称 = resource.name;
     return { template: itemTemplate, data };
   }
@@ -66,6 +75,7 @@ function templateData(resource: TemporaryResource): {
       else if (isObject(data[key])) data[key] = isObject(value)
         ? Object.fromEntries(Object.entries(value).map(([name, item]) => [name, text(item)]))
         : {};
+      else if (key === "原文" && value === undefined) delete data[key];
       else data[key] = text(value ?? data[key]);
     }
     data.名称 = resource.name;
@@ -86,7 +96,10 @@ function templateData(resource: TemporaryResource): {
   }
   if (resource.kind === "subclass") {
     const data = structuredClone(subclassTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
+    for (const key of Object.keys(data)) {
+      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      else data[key] = text(resource.fields[key] ?? data[key]);
+    }
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
     return { template: subclassTemplate, data };
@@ -107,16 +120,20 @@ function templateData(resource: TemporaryResource): {
     const feature = isObject(resource.fields.特性) ? resource.fields.特性 : {};
     const data: JsonObject = {
       名称: resource.name,
+      ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
       类型: text(resource.fields.类型 || communityTemplate.defaultData.类型),
       简介: text(resource.fields.简介),
       性格: text(resource.fields.性格),
-      特性: { 名称: text(feature.名称), 描述: text(feature.描述) },
+      特性: { 名称: text(feature.名称), ...(feature.原名 === undefined ? {} : { 原名: text(feature.原名) }), 描述: text(feature.描述) },
     };
     return { template: communityTemplate, data };
   }
   if (resource.kind === "domain") {
     const data = structuredClone(domainTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) data[key] = text(resource.fields[key] ?? data[key]);
+    for (const key of Object.keys(data)) {
+      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      else data[key] = text(resource.fields[key] ?? data[key]);
+    }
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
     return { template: domainTemplate, data };
@@ -140,10 +157,11 @@ function templateData(resource: TemporaryResource): {
   if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
     const data: JsonObject = {
       名称: resource.name,
+      ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
       类型: text(resource.fields.类型 || freeTemplate.defaultData.类型),
       内容: resource.fields.内容.map((value) => {
         const block = isObject(value) ? value : {};
-        return { 标题: text(block.标题), 正文: text(block.正文) };
+        return { 标题: text(block.标题), ...(block.原名 === undefined ? {} : { 原名: text(block.原名) }), 正文: text(block.正文) };
       }),
     };
     return { template: freeTemplate, data };

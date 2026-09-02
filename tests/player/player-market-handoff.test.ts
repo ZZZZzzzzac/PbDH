@@ -61,7 +61,7 @@ const runtimeSystem = {
       {
         类型: "fillText",
         目标模块ID: "primary-weapon-description",
-        内容: { 类型: "selectedResourceField", 字段: "描述" },
+        内容: { 类型: "selectedResourceTemplate", 格式: "{{特性名}}：{{特性描述}}" },
       },
     ],
   }],

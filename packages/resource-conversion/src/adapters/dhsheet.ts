@@ -59,12 +59,6 @@ function equipmentTier(value: unknown): string {
   return text(value).replace(/^T(?=\d+$)/iu, "");
 }
 
-function equipmentFeature(raw: JsonObject): string {
-  const name = text(raw.featureName);
-  const description = text(raw.description);
-  return name && description ? `${name}：${description}` : name || description;
-}
-
 function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
   if (text(document.format) !== "daggerheart.equipment-pack.v1") return null;
   const equipment = asJsonObject(document.equipment);
@@ -84,7 +78,9 @@ function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
       伤害: text(raw.damage),
       负荷: equipmentValue(raw.burden),
       伤害类型: equipmentValue(raw.damageType),
-      描述: equipmentFeature(raw),
+      特性名: text(raw.featureName),
+      特性原名: "",
+      特性描述: text(raw.description),
       位阶: equipmentTier(raw.tier),
     });
   });
@@ -99,7 +95,9 @@ function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
       护甲值: text(raw.baseArmorMax),
       重度伤害阈值: text(thresholds.minor),
       严重伤害阈值: text(thresholds.major),
-      描述: equipmentFeature(raw),
+      特性名: text(raw.featureName),
+      特性原名: "",
+      特性描述: text(raw.description),
       位阶: equipmentTier(raw.tier),
     });
   });
@@ -218,13 +216,31 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     描述: text(raw.描述),
     风味描述: text(raw.风味描述),
   };
+  if (["主武器", "副武器", "武器"].includes(text(raw.类型))) return {
+    名称: text(raw.名称),
+    原文: text(raw.原文),
+    类型: text(raw.类型),
+    属性: text(raw.属性),
+    距离: text(raw.距离),
+    伤害: text(raw.伤害),
+    负荷: text(raw.负荷),
+    伤害类型: text(raw.伤害类型),
+    特性名: text(raw.特性名),
+    特性原名: text(raw.特性原名),
+    特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
+    风味描述: text(raw.风味描述),
+    位阶: text(raw.位阶),
+  };
   if (text(raw.类型) === "护甲") return {
     名称: text(raw.名称),
+    原文: text(raw.原文),
     类型: "护甲",
     护甲值: text(raw.护甲值),
     重度伤害阈值: text(raw.重度伤害阈值 || raw.重度阈值 || raw.重伤阈值),
     严重伤害阈值: text(raw.严重伤害阈值 || raw.严重阈值),
-    描述: text(raw.描述 || raw.效果),
+    特性名: text(raw.特性名),
+    特性原名: text(raw.特性原名),
+    特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
     风味描述: text(raw.风味描述),
     位阶: text(raw.位阶),
   };
@@ -288,11 +304,12 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
     id,
     名称: resource.name,
     类型: "护甲",
-    效果: text(fields.描述),
+    特性名: text(fields.特性名),
+    特性原名: text(fields.特性原名),
+    特性描述: text(fields.特性描述),
     护甲值: text(fields.护甲值),
     重度阈值: text(fields.重度伤害阈值),
     严重阈值: text(fields.严重伤害阈值),
-    描述: text(fields.描述),
     风味描述: text(fields.风味描述),
     位阶: text(fields.位阶),
   };

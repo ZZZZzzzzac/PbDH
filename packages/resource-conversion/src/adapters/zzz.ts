@@ -70,7 +70,8 @@ function normalizedFields(raw: JsonObject): JsonObject {
   if (kindFor(type) === "weapon") return {
     名称: text(raw.名称), 类型: type, 属性: text(raw.属性), 距离: text(raw.距离), 伤害: text(raw.伤害),
     负荷: text(raw.双手) === "true" || raw.双手 === true ? "双手" : text(raw.负荷 || "单手"),
-    伤害类型: text(raw.伤害类型), 描述: text(raw.描述), 风味描述: text(raw.风味描述), 位阶: text(raw.位阶),
+    伤害类型: text(raw.伤害类型), 特性名: text(raw.特性名), 特性原名: text(raw.特性原名),
+    特性描述: text(raw.特性描述 || raw.描述), 风味描述: text(raw.风味描述), 位阶: text(raw.位阶),
   };
   if (kindFor(type) === "armor") return {
     名称: text(raw.名称),
@@ -78,7 +79,9 @@ function normalizedFields(raw: JsonObject): JsonObject {
     护甲值: text(raw.护甲值),
     重度伤害阈值: text(raw.重度伤害阈值 || raw.重伤阈值 || raw.重度阈值),
     严重伤害阈值: text(raw.严重伤害阈值 || raw.严重阈值),
-    描述: text(raw.描述),
+    特性名: text(raw.特性名),
+    特性原名: text(raw.特性原名),
+    特性描述: text(raw.特性描述 || raw.描述),
     风味描述: text(raw.风味描述),
     位阶: text(raw.位阶),
   };
@@ -149,7 +152,8 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "weapon") return {
     名称: resource.name, 类型: text(fields.类型 || "主武器"), 属性: text(fields.属性), 距离: text(fields.距离),
     伤害: text(fields.伤害), 双手: text(fields.负荷) === "双手", 伤害类型: text(fields.伤害类型),
-    描述: text(fields.描述), 风味描述: text(fields.风味描述), 位阶: text(fields.位阶),
+    特性名: text(fields.特性名), 特性原名: text(fields.特性原名), 特性描述: text(fields.特性描述),
+    风味描述: text(fields.风味描述), 位阶: text(fields.位阶),
   };
   if (resource.kind === "armor") return {
     名称: resource.name,
@@ -157,7 +161,9 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     护甲值: text(fields.护甲值),
     重伤阈值: text(fields.重度伤害阈值),
     严重阈值: text(fields.严重伤害阈值),
-    描述: text(fields.描述),
+    特性名: text(fields.特性名),
+    特性原名: text(fields.特性原名),
+    特性描述: text(fields.特性描述),
     风味描述: text(fields.风味描述),
     位阶: text(fields.位阶),
   };

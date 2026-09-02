@@ -128,11 +128,13 @@ describe("种族 Template 1.0.0", () => {
     expect(textMarkup).toContain('data-card-footer="true"');
     expect(textMarkup).toContain("Anthony Jones");
     expect(textMarkup).toContain("DH Core 061/270");
-    expect(textMarkup).toContain('<div class="ancestry-title-row"><h1>龙人</h1><div class="ancestry-kicker">种族</div></div>');
+    expect(textMarkup).toContain('<div class="ancestry-title-row"><h1 data-single-line-text-fit="true">龙人</h1><div class="ancestry-kicker">种族</div></div>');
     expect(textMarkup).not.toContain("reference-card");
     expect(splitMarkup).toContain("ancestry-card is-split");
     expect(splitMarkup).toContain("blob:dragonborn");
     expect(splitMarkup).toContain('data-card-footer="true"');
+    const imageMarkup = renderToStaticMarkup(ancestryRendererRevision.render({ ...base, presentation: { mode: "image", fixedRatio: true } }));
+    expect(imageMarkup).not.toContain('data-card-footer="true"');
     expect(ancestryRendererStyles).toContain("--bone: #eee4d0");
     expect(ancestryRendererStyles).toContain("--oxblood: #641f1d");
     expect(ancestryRendererStyles).toContain("border-bottom: 3px solid #b88a57");
@@ -148,7 +150,7 @@ describe("种族 Template 1.0.0", () => {
     expect(ancestryRendererStyles).toContain("align-items: flex-end");
     expect(ancestryRendererStyles).toContain(".ancestry-title-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end;");
     expect(ancestryRendererStyles).not.toContain(".ancestry-feature-heading");
-    expect(ancestryRendererStyles).toContain('font: 800 32px/1 "Noto Sans SC"');
+    expect(ancestryRendererStyles).toContain('font: 800 var(--ancestry-title-font-size, 32px)/1 "Noto Sans SC"');
     expect(ancestryRendererStyles).toContain('font: 800 19px/1.25 "Noto Sans SC"');
     expect(ancestryRendererStyles).toContain('font: 450 var(--ancestry-feature-font-size, 15px)/1.45 "Noto Sans SC"');
     expect(textMarkup).toContain('data-text-fit-scope="ancestry-features"');

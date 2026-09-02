@@ -9,6 +9,7 @@ import {
   type SurfaceResource,
   type SurfaceAttribution,
 } from "./core.ts";
+import { useContainerTextFit } from "./text-fit.ts";
 
 export {
   RestrictedMarkdown,
@@ -73,7 +74,7 @@ const boundaryStyles = `
 .restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
 .restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
 .restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }
-.pbdh-card-footer { box-sizing: border-box; width: 100%; min-width: 0; min-height: 20px; flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 12px; padding: 3px 12px; font: italic 550 8.5px/1.15 "Noto Sans SC", sans-serif; letter-spacing: .01em; }
+.pbdh-card-footer { box-sizing: border-box; width: 100%; min-width: 0; min-height: clamp(3.5px, 5.5cqw, 20px); flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: clamp(2px, 3.3cqw, 12px); padding: clamp(.5px, .85cqw, 3px) clamp(2px, 3.3cqw, 12px); font: italic 550 clamp(1.5px, 2.4cqw, 8.5px)/1.15 "Noto Sans SC", sans-serif; letter-spacing: .01em; }
 .pbdh-card-footer span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pbdh-card-footer span:last-child { text-align: right; }
 @media print {
@@ -91,6 +92,53 @@ export function CardFooter({ attribution, overlay = false }: {
   return <footer className={`pbdh-card-footer${overlay ? " is-overlay" : ""}`} data-card-footer="true">
     <span>{artworkCredit}</span><span>{sourceLabel}</span>
   </footer>;
+}
+
+export function TextFitContainer({
+  className,
+  contentKey,
+  enabled,
+  minFontSizePx = 11,
+  maxFontSizePx = 15,
+  cssVariable = "--pbdh-card-content-font-size",
+  children,
+}: {
+  className?: string;
+  contentKey: string;
+  enabled: boolean;
+  minFontSizePx?: number;
+  maxFontSizePx?: number;
+  cssVariable?: `--${string}`;
+  children: ReactNode;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useContainerTextFit(containerRef, contentKey, { enabled, minFontSizePx, maxFontSizePx, cssVariable });
+  return <div className={className} ref={containerRef}>{children}</div>;
+}
+
+export function SingleLineTextFit({
+  className,
+  contentKey,
+  minFontSizePx,
+  maxFontSizePx,
+  cssVariable,
+  children,
+}: {
+  className?: string;
+  contentKey: string;
+  minFontSizePx: number;
+  maxFontSizePx: number;
+  cssVariable: `--${string}`;
+  children: ReactNode;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useContainerTextFit(headingRef, contentKey, {
+    axis: "inline",
+    minFontSizePx,
+    maxFontSizePx,
+    cssVariable,
+  });
+  return <h1 ref={headingRef} className={className} data-single-line-text-fit="true">{children}</h1>;
 }
 
 export type CanonicalCardSurfaceProps<TData, TState> = {

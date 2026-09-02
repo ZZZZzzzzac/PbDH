@@ -3,13 +3,13 @@ import schema from "./schema.json";
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type WeaponData = {
-  名称: string; 类型: string; 属性: string; 距离: string; 伤害: string; 负荷: string;
-  伤害类型: string; 描述: string; 风味描述: string; 位阶: string;
+  名称: string; 原文?: string; 类型: string; 属性: string; 距离: string; 伤害: string; 负荷: string;
+  伤害类型: string; 特性名: string; 特性原名?: string; 特性描述: string; 风味描述: string; 位阶: string;
 };
 
 const defaultData: WeaponData = {
-  名称: "", 类型: "武器", 属性: "", 距离: "", 伤害: "", 负荷: "", 伤害类型: "",
-  描述: "", 风味描述: "", 位阶: "",
+  名称: "", 原文: "", 类型: "武器", 属性: "", 距离: "", 伤害: "", 负荷: "", 伤害类型: "",
+  特性名: "", 特性原名: "", 特性描述: "", 风味描述: "", 位阶: "",
 };
 
 function normalize(value: unknown): string {

@@ -1,5 +1,5 @@
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
-import { CardFooter, RestrictedMarkdown, useContainerTextFit } from "@pbdh/resource-renderer/react";
+import { CardFooter, RestrictedMarkdown, SingleLineTextFit, useContainerTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { ancestryTemplate, type AncestryData } from "../../../core/index.ts";
@@ -56,7 +56,7 @@ export const ancestryRendererStyles = `
 .ancestry-kicker { min-width: 72px; color: #f4dfbc; font: 650 17px/1.25 "Noto Sans SC", sans-serif; text-align: right; }
 .ancestry-heading { position: relative; z-index: 2; padding: 10px 14px; display: flex; flex-direction: column; pointer-events: none; }
 .ancestry-title-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 14px; }
-.ancestry-heading h1 { min-width: 0; min-height: 32px; margin: 0; display: flex; align-items: flex-end; overflow: hidden; color: #fff4df; font: 800 32px/1 "Noto Sans SC", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.ancestry-heading h1 { min-width: 0; min-height: 32px; margin: 0; display: flex; align-items: flex-end; overflow: hidden; color: #fff4df; font: 800 var(--ancestry-title-font-size, 32px)/1 "Noto Sans SC", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .ancestry-original-title { margin: 5px 0 0; color: #d8ba91; font: 650 11.5px/1.25 "Noto Sans SC", sans-serif; }
 .ancestry-summary { margin: 8px 0 0; color: #dcb299; font: italic 500 14px/1.4 "Noto Sans SC", sans-serif; overflow-wrap: anywhere; }
 .ancestry-body { min-height: 0; flex: 1 1 0; padding: 14px 10px; display: flex; flex-direction: column; overflow: hidden; }
@@ -65,6 +65,7 @@ export const ancestryRendererStyles = `
 .ancestry-feature h2 { margin: 0; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; color: var(--oxblood); font: 800 19px/1.25 "Noto Sans SC", sans-serif; overflow-wrap: anywhere; }
 .ancestry-feature-name { display: inline; }
 .ancestry-feature h2 small { display: inline; margin: 0; color: #725747; font: 650 12px/1.25 "Noto Sans SC", sans-serif; letter-spacing: .025em; }
+.ancestry-feature h2::after { content: ""; min-width: 20px; flex: 1; height: 1px; background: #b88a57; }
 .ancestry-feature [data-restricted-markdown] { min-width: 0; overflow: hidden; color: var(--ink); font: 450 var(--ancestry-feature-font-size, 15px)/1.45 "Noto Sans SC", sans-serif; }
 .ancestry-empty { min-height: 108px; display: grid; place-items: center; border: 1px dashed #c9ad86; color: #715d4d; font: 650 15px/1.3 "Noto Sans SC", sans-serif; }
 .ancestry-card > .pbdh-card-footer { color: #725747; background: var(--bone); border-top: 1px solid #d4b78d; }
@@ -157,7 +158,6 @@ export const ancestryRendererRevision: RendererRevisionCapability<
       return <AncestryCardFrame fixedRatio={presentation.fixedRatio} fitContentKey="">{(cardRef) => <article ref={cardRef} className={cardClass} data-renderer-revision="ancestry-card-r1" data-presentation-mode={mode}>
         <div className="ancestry-art is-image-only">
           {portrait ? <img src={portrait} alt={data.名称} /> : <div className="ancestry-image-missing" role="status">缺少主图</div>}
-          <CardFooter attribution={cardAttribution} overlay />
         </div>
       </article>}</AncestryCardFrame>;
     }
@@ -167,7 +167,7 @@ export const ancestryRendererRevision: RendererRevisionCapability<
         {mode === "split" && portrait ? <img src={portrait} alt="" /> : null}
         <header className="ancestry-heading">
           <div className="ancestry-title-row">
-            <h1>{data.名称 || "未命名种族"}</h1>
+            <SingleLineTextFit contentKey={data.名称} minFontSizePx={9} maxFontSizePx={32} cssVariable="--ancestry-title-font-size">{data.名称 || "未命名种族"}</SingleLineTextFit>
             <div className="ancestry-kicker">{data.类型 || "种族"}</div>
           </div>
           {data.原文?.trim() ? <p className="ancestry-original-title">{data.原文}</p> : null}

@@ -188,8 +188,10 @@
 .preview-runtime-controls button { min-width: 24px; height: 26px; padding: 0 7px; border: 1px solid #c9c1b6; border-radius: 5px; color: #3c332d; background: #fffdf8; font: inherit; font-weight: 750; }
 .preview-runtime-controls button[aria-pressed="true"] { color: #fffdf8; background: var(--creator-preview-control-active); }
 .preview-runtime-controls input { min-width: 70px; height: 26px; flex: 1; padding: 0 7px; border: 1px solid #c9c1b6; border-radius: 5px; background: #fffdf8; font: inherit; }
-.preview-stage { position: relative; min-height: 0; overflow: hidden; background: var(--creator-preview); }
-.card-scale { position: absolute; top: 50%; left: 50%; width: max-content; height: max-content; margin: 0; overflow: visible; transform-origin: center; }
+.preview-stage { position: relative; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; background: var(--creator-preview); }
+.preview-stage-content { min-width: 100%; min-height: 100%; padding: 24px 0; display: grid; place-items: center; box-sizing: border-box; }
+.card-scale-slot { position: relative; flex: none; }
+.card-scale { position: absolute; inset: 0 auto auto 0; width: max-content; height: max-content; margin: 0; overflow: visible; transform-origin: top left; }
 .card-scale > [data-pbdh-canonical-surface] { transform: none; }
 .preview-media { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #f7f4ef; }
 .media-icon { width: 34px; height: 34px; display: grid; flex: none; place-items: center; border-radius: 7px; color: #641f1d; background: #e9e4dc; }

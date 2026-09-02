@@ -11,6 +11,7 @@ export type ContainerTextFitOptions = {
   minFontSizePx: number;
   maxFontSizePx: number;
   cssVariable: `--${string}`;
+  axis?: "both" | "inline";
 };
 
 const fitPrecisionPx = .25;
@@ -46,14 +47,17 @@ export function fitContainerText(
   container: HTMLElement,
   options: Omit<ContainerTextFitOptions, "enabled">,
 ): FontSizeFitResult {
-  const { cssVariable, minFontSizePx, maxFontSizePx } = options;
+  const { axis = "both", cssVariable, minFontSizePx, maxFontSizePx } = options;
   const applyFontSize = (fontSizePx: number) => {
     container.style.setProperty(cssVariable, `${fontSizePx}px`);
   };
   const fits = (fontSizePx: number) => {
     applyFontSize(fontSizePx);
-    return container.scrollHeight <= container.clientHeight + overflowTolerancePx
-      && container.scrollWidth <= container.clientWidth + overflowTolerancePx;
+    const fitsInline = container.scrollWidth <= container.clientWidth
+      + (axis === "inline" ? 0 : overflowTolerancePx);
+    return axis === "inline"
+      ? fitsInline
+      : container.scrollHeight <= container.clientHeight + overflowTolerancePx && fitsInline;
   };
   const result = findLargestFittingFontSize({ minFontSizePx, maxFontSizePx, fits });
 
@@ -78,6 +82,7 @@ export function useContainerTextFit(
     minFontSizePx,
     maxFontSizePx,
     cssVariable,
+    axis = "both",
   }: ContainerTextFitOptions,
 ): void {
   useLayoutEffect(() => {
@@ -92,7 +97,7 @@ export function useContainerTextFit(
     let frame = 0;
     const fit = () => {
       frame = 0;
-      if (!disposed) fitContainerText(container, { minFontSizePx, maxFontSizePx, cssVariable });
+      if (!disposed) fitContainerText(container, { minFontSizePx, maxFontSizePx, cssVariable, axis });
     };
     const scheduleFit = () => {
       if (disposed || frame) return;
@@ -113,5 +118,5 @@ export function useContainerTextFit(
       observer?.disconnect();
       if (frame && typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(frame);
     };
-  }, [containerRef, contentKey, cssVariable, enabled, maxFontSizePx, minFontSizePx]);
+  }, [axis, containerRef, contentKey, cssVariable, enabled, maxFontSizePx, minFontSizePx]);
 }
