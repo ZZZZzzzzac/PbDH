@@ -117,7 +117,10 @@ describe("Creator Workspace prototype state model", () => {
     const workspace = await createBlankWorkspace("本地敌人包");
     expect(workspace.document.package.name).toBe("本地敌人包");
     expect(workspace.document.package.description).toBe("");
-    expect(workspace.document.license).toEqual({ label: "", declaration: "" });
+    expect(workspace.document.license).toEqual({
+      label: "保留所有权利",
+      declaration: "All rights reserved.",
+    });
     expect(workspace.document.resources).toEqual([]);
     expect(workspace.openResourceIds).toEqual([]);
     expect(await validateResourcePackageCandidate(workspace.document, workspace.media)).toContainEqual(

@@ -13,7 +13,7 @@ import {
   weaponTemplate,
 } from "@pbdh/templates/core";
 
-import { isObject, text } from "./shared.ts";
+import { isObject, namedFeatures, text } from "./shared.ts";
 import { validateTemplateData } from "./template-validation.ts";
 import type { ConversionDiagnostic, GameResourceCandidate, JsonObject, JsonValue, TemporaryResource } from "./types.ts";
 
@@ -96,12 +96,15 @@ function templateData(resource: TemporaryResource): {
   }
   if (resource.kind === "subclass") {
     const data = structuredClone(subclassTemplate.defaultData) as unknown as JsonObject;
-    for (const key of Object.keys(data)) {
-      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
-      else data[key] = text(resource.fields[key] ?? data[key]);
-    }
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
+    if (resource.fields.原文 === undefined) delete data.原文;
+    else data.原文 = text(resource.fields.原文);
+    data.主职 = text(resource.fields.主职);
+    data.等级 = text(resource.fields.等级);
+    data.施法属性 = text(resource.fields.施法属性);
+    data.特性 = namedFeatures(resource.fields.特性 ?? resource.fields.描述);
+    data.风味描述 = text(resource.fields.风味描述);
     return { template: subclassTemplate, data };
   }
   if (resource.kind === "ancestry") {

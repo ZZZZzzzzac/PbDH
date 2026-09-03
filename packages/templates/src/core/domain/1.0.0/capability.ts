@@ -23,7 +23,7 @@ export const domainTemplate = deepFreeze<TemplateCoreCapability<DomainData>>({
   },
   project(data) {
     const title = normalize(data.名称 || "未命名领域卡");
-    const summary = [data.领域, data.等级 ? `${data.等级}级` : "", data.属性, data.回想 ? `${data.回想}⚡` : ""]
+    const summary = [data.领域, data.等级 ? `${data.等级}级` : "", data.属性, data.回想?.replaceAll("⚡", "")]
       .map(normalize).filter(Boolean).join(" · ");
     const searchText = Object.values(data).map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };

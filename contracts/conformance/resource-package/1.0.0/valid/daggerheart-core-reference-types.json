@@ -42,7 +42,7 @@
       "id": "fixture-subclass", "path": "子职业/测试子职业.json",
       "template": { "id": "子职业", "version": "1.0.0" },
       "presentation": { "mode": "text", "fixedRatio": true },
-      "data": { "名称": "测试子职业", "类型": "子职业", "主职": "战士", "等级": "基础", "施法属性": "", "描述": "勇往直前。", "风味描述": "绝不退缩。" },
+      "data": { "名称": "测试子职业", "类型": "子职业", "主职": "战士", "等级": "基础", "施法属性": "", "特性": [{ "名称": "勇往直前", "特性描述": "向敌人发起冲锋。" }], "风味描述": "绝不退缩。" },
       "media": {}
     },
     {
@@ -61,5 +61,5 @@
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:3d544a212ed12f578632177e8f1467afa4754ecdd91b0374da87a1c69ac16731"
+  "snapshotDigest": "sha256:445b30ac74068170c74323a1dfba521bbe4de6c12dde38b8f1c240a691c082fd"
 }

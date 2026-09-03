@@ -12,8 +12,8 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.8",
-      "snapshotDigest": "sha256:4ce4668aabf571d37db27e42a8dcf70856e25649d1a2a7ed1821bbce36c27eb7"
+      "version": "1.0.9",
+      "snapshotDigest": "sha256:cc9048cc79a6abfc5de4a144cb6627774beb19a8bfc6539860d5dec8d237311b"
     }
   ],
   "loadingPresentation": {

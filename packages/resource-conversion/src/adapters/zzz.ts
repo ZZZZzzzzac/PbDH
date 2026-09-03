@@ -2,6 +2,7 @@ import {
   asJsonObject,
   exportFailure,
   formatNamedFeature,
+  formatNamedFeatures,
   importFailure,
   jsonArtifact,
   numberedTextList,
@@ -192,7 +193,7 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     主职: text(fields.主职),
     等级: text(fields.等级),
     施法属性: text(fields.施法属性),
-    描述: text(fields.描述),
+    描述: formatNamedFeatures(fields.特性),
     风味描述: text(fields.风味描述),
   };
   if (resource.kind === "ancestry") return {

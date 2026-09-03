@@ -12,6 +12,11 @@ import {
   type ImportPlan,
 } from "./workspace-core.ts";
 
+const DEFAULT_RESOURCE_LICENSE = {
+  label: "保留所有权利",
+  declaration: "All rights reserved.",
+} as const;
+
 export function planImport(
   current: CreatorWorkspace | undefined,
   incoming: ResourcePackageCandidate,
@@ -33,7 +38,7 @@ export async function createBlankWorkspace(name: string): Promise<CreatorWorkspa
       description: "",
     },
     targets: [],
-    license: { label: "", declaration: "" },
+    license: { ...DEFAULT_RESOURCE_LICENSE },
     forkSource: null,
     assets: [],
     resources: [],
@@ -81,6 +86,9 @@ export async function prepareWorkspaceExport(
 ): Promise<CreatorWorkspace> {
   const next = createWorkspace(workspace, false);
   next.document.contractVersion = RESOURCE_PACKAGE_VERSION;
+  if (!next.document.license.label.trim() || !next.document.license.declaration.trim()) {
+    next.document.license = { ...DEFAULT_RESOURCE_LICENSE };
+  }
   next.document.resources.forEach((resource) => {
     resource.attribution ??= { artworkCredit: "", sourceLabel: next.document.package.name };
   });

@@ -182,6 +182,11 @@ function toSheetResourceEntry(
         关系问题3: arrayItem(data.关系问题, 2),
       };
     }
+    case "子职":
+      return {
+        ...common,
+        特性: subclassFeatures(data.特性),
+      };
     case "护甲":
       return {
         ...common,
@@ -197,6 +202,15 @@ function toSheetResourceEntry(
       ? resolveMediaReference?.({ packageId, assetId }) ?? sheetRuntimeMediaPath(packageId, assetId)
       : "";
   }
+}
+
+function subclassFeatures(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  return value.filter(isRecord).map((feature) => {
+    const name = stringField(feature.名称).trim();
+    const description = stringField(feature.特性描述).trim();
+    return name && description ? `${name}：${description}` : name || description;
+  }).filter(Boolean).join("\n\n");
 }
 
 function freeTemplateSections(value: unknown): Record<string, string> {

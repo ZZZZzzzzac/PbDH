@@ -26,6 +26,11 @@ function hasStructuredEquipmentFeature(data: unknown): boolean {
     && Object.hasOwn(data, "特性描述");
 }
 
+function hasStructuredSubclassFeatures(data: unknown): boolean {
+  if (data === null || typeof data !== "object" || Array.isArray(data) || Object.hasOwn(data, "描述")) return false;
+  return Array.isArray((data as Record<string, unknown>).特性);
+}
+
 describe("additional migrated System Packages", () => {
   test("registers every supported system and uses the official-resource naming rule", async () => {
     expect(playerSystemPackageCatalog.map((entry) => entry.system.package.name)).toEqual([
@@ -54,6 +59,9 @@ describe("additional migrated System Packages", () => {
         const armor = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "护甲") ?? [];
         expect(armor).toHaveLength(34);
         expect(armor.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
+        const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
+        expect(subclasses).toHaveLength(240);
+        expect(subclasses.every((resource) => hasStructuredSubclassFeatures(resource.data))).toBe(true);
       }
     }
 

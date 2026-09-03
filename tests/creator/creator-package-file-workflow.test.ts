@@ -1,11 +1,16 @@
 import { readFileSync } from "node:fs";
 
 import { loadPbres } from "@pbdh/contract-runtime";
+import { currentTemplates } from "@pbdh/templates/core";
 import { describe, expect, test } from "vitest";
 
 import { runCreatorPackageFileWorkflow } from "../../apps/creator/src/workspace-prototype/creator-package-file-workflow.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
-import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import {
+  addTemplateResource,
+  createBlankWorkspace,
+  createWorkspace,
+} from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 
 const archive = new Uint8Array(readFileSync(new URL(
   "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
@@ -36,6 +41,40 @@ describe("Creator package file workflow", () => {
     const reopened = await loadPbres(result.bytes, validateResourcePackageCandidate);
     expect(reopened.diagnostics).toEqual([]);
     expect(reopened.candidate?.document.snapshotDigest).toBe(result.workspace.document.snapshotDigest);
+  });
+
+  test.each(currentTemplates)("exports a default $id resource created inside a new anonymous workspace", async (template) => {
+    const blank = await createBlankWorkspace("匿名资源包");
+    const created = addTemplateResource(blank, template.id, template.version);
+
+    const result = await runCreatorPackageFileWorkflow({
+      type: "export-workspace",
+      workspace: created.workspace,
+    });
+
+    expect(result.type).toBe("workspace-export");
+    if (result.type !== "workspace-export") return;
+    const reopened = await loadPbres(result.bytes, validateResourcePackageCandidate);
+    expect(reopened.diagnostics).toEqual([]);
+    expect(reopened.candidate?.document.resources).toHaveLength(1);
+  });
+
+  test("repairs an existing local workspace whose license fields were left blank", async () => {
+    const blank = await createBlankWorkspace("旧匿名资源包");
+    blank.document.license = { label: "", declaration: "" };
+    const created = addTemplateResource(blank, currentTemplates[0]!.id, currentTemplates[0]!.version);
+
+    const result = await runCreatorPackageFileWorkflow({
+      type: "export-workspace",
+      workspace: created.workspace,
+    });
+
+    expect(result.type).toBe("workspace-export");
+    if (result.type !== "workspace-export") return;
+    expect(result.workspace.document.license).toEqual({
+      label: "保留所有权利",
+      declaration: "All rights reserved.",
+    });
   });
 
   test("returns conversion diagnostics instead of leaking adapter failures", async () => {

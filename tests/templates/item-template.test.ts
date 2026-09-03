@@ -22,8 +22,11 @@ describe("物品 Template 1.0.0", () => {
     expect(validate({ ...itemTemplate.defaultData, 类型: "消耗品" })).toBe(true);
     expect(validate({ ...itemTemplate.defaultData, 类型: "战利品" })).toBe(true);
     expect(itemTemplate.defaultData.类型).toBe("物品");
-    expect(renderToStaticMarkup(createElement(itemAuthoring.Editor, { data: itemTemplate.defaultData, onValue: () => undefined })))
-      .toContain("展开类型选项");
+    const markup = renderToStaticMarkup(createElement(itemAuthoring.Editor, { data: itemTemplate.defaultData, onValue: () => undefined }));
+    expect(markup).toContain("展开类型选项");
+    expect([...markup.matchAll(/class="template-editor-field"[^>]*><span>([^<]+)<\/span>/gu)]
+      .map((match) => match[1]).slice(0, 4)).toEqual(["名称", "英文", "掷骰", "类型"]);
+    expect(markup).toContain(".item-editor section{grid-template-columns:repeat(2,minmax(0,1fr))}");
   });
 
   test("keeps gameplay and flavor descriptions separate", () => {

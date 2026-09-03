@@ -61,7 +61,7 @@ export const ancestryRendererStyles = `
 .ancestry-summary { margin: 8px 0 0; color: #dcb299; font: italic 500 14px/1.4 "Noto Sans SC", sans-serif; overflow-wrap: anywhere; }
 .ancestry-body { min-height: 0; flex: 1 1 0; padding: 14px 10px; display: flex; flex-direction: column; overflow: hidden; }
 .ancestry-features { min-height: 0; display: flex; flex: 1 1 auto; flex-direction: column; gap: 7px; overflow: hidden; }
-.ancestry-feature { flex: none; display: flex; flex-direction: column; gap: 9px; padding: 14px; overflow: hidden; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
+.ancestry-feature { flex: none; display: flex; flex-direction: column; gap: 9px; padding: 6px; overflow: hidden; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
 .ancestry-feature h2 { margin: 0; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; color: var(--oxblood); font: 800 19px/1.25 "Noto Sans SC", sans-serif; overflow-wrap: anywhere; }
 .ancestry-feature-name { display: inline; }
 .ancestry-feature h2 small { display: inline; margin: 0; color: #725747; font: 650 12px/1.25 "Noto Sans SC", sans-serif; letter-spacing: .025em; }

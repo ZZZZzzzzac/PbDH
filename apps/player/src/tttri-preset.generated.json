@@ -2,7 +2,7 @@
   "id": "01a05400-0000-7000-8000-000000000201",
   "urlPath": "tttri",
   "name": "罗德岛旅记",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "releaseVersion": "0.0.0-dev",
   "directory": "tttri",
   "inventoryPath": ".pbdh-runtime-files.json",
@@ -12,8 +12,8 @@
     {
       "path": "resources/tttri.pbres",
       "packageId": "01a05400-0000-7000-8000-000000000202",
-      "version": "1.0.1",
-      "snapshotDigest": "sha256:4b791d989c048d8737ff3eeb88b91fd8b98810b28bc89bab071796cb1eda4497"
+      "version": "1.0.2",
+      "snapshotDigest": "sha256:9d3861537ca224228f90981803b34ae14533baef1978d865f2ba66b564773e73"
     }
   ],
   "loadingPresentation": {

@@ -7,6 +7,7 @@ import {
   importFailure,
   jsonArtifact,
   formatNamedFeature,
+  formatNamedFeatures,
   namedFeature,
   numberedTextList,
   parseJson,
@@ -294,7 +295,7 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
   if (group === "subclass") return {
     id, 名称: resource.name, 子职业: resource.name, 主职: text(fields.主职),
     等级: dhsheetSubclassLevel(fields.等级), 施法: text(fields.施法属性),
-    描述: text(fields.描述), 风味描述: text(fields.风味描述),
+    描述: formatNamedFeatures(fields.特性), 风味描述: text(fields.风味描述),
   };
   if (group === "domain") return {
     id, 名称: resource.name, 领域: text(fields.领域), 等级: Number(text(fields.等级)) || 0,

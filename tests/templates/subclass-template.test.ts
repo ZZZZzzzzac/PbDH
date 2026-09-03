@@ -24,7 +24,7 @@ describe("子职业 Template 1.0.0", () => {
         名称: "吟游诗人之言",
         主职: "吟游诗人",
         等级: level,
-        描述: `${level}能力`,
+        特性: [{ 名称: `${level}能力`, 特性描述: "帮助盟友。" }],
       };
       expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
       expect(subclassTemplate.proposeResourceId(data)).toBe(`吟游诗人:吟游诗人之言:${level}`);
@@ -37,5 +37,36 @@ describe("子职业 Template 1.0.0", () => {
     expect(subclassTemplate.defaultData.等级).toBe("");
     expect(renderToStaticMarkup(createElement(subclassAuthoring.Editor, { data: subclassTemplate.defaultData, onValue: () => undefined })))
       .toContain("展开等级选项");
+  });
+
+  test("stores multiple named features and exposes array authoring actions", () => {
+    const data = {
+      ...subclassTemplate.defaultData,
+      特性: [
+        { 名称: "激昂演说", 原名: "Rousing Speech", 特性描述: "为盟友清除压力。" },
+        { 名称: "诗人之心", 特性描述: "为掷骰添加加值。" },
+      ],
+    };
+    expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
+    expect(validate({ ...data, 描述: "旧字段" }), JSON.stringify(validate.errors)).toBe(false);
+    const markup = renderToStaticMarkup(createElement(subclassAuthoring.Editor, { data, onValue: () => undefined }));
+    expect(markup).toContain("＋ 新增");
+    expect(markup.match(/>特性名</gu)).toHaveLength(2);
+    expect(markup.match(/>英文</gu)).toHaveLength(3);
+    expect(markup.match(/>描述</gu)).toHaveLength(2);
+    expect(markup.match(/>清空<\/button>/gu)).toHaveLength(2);
+    expect(markup.match(/>删除<\/button>/gu)).toHaveLength(2);
+    expect(markup).not.toContain(">特性类型<");
+    expect(markup).toMatch(/>特性名<.*>英文<.*>清空<\/button>.*>删除<\/button>.*>描述</su);
+    expect(markup).toContain("grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto auto");
+    expect(markup).toContain(".subclass-editor .subclass-features{container-type:inline-size;display:flex");
+    expect(markup).not.toContain(".subclass-editor section{grid-template-columns");
+    expect(subclassTemplate.project(data).searchText).toContain("Rousing Speech");
+  });
+
+  test("旧资源缺少特性数组时不会阻断工坊，且旧描述仍不属于模板字段", () => {
+    const legacyData = { ...subclassTemplate.defaultData, 特性: undefined, 描述: "旧描述" };
+    expect(() => subclassTemplate.project(legacyData as never)).not.toThrow();
+    expect(validate(legacyData), JSON.stringify(validate.errors)).toBe(false);
   });
 });

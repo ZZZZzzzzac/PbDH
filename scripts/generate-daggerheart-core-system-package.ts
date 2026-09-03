@@ -49,7 +49,7 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.8";
+const resourcePackageVersion = "1.0.9";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
 const legacyManifest = JSON.parse(await readFile(
@@ -377,8 +377,16 @@ function transformProfession(entry: SourceEntry) {
 function transformSubclass(entry: SourceEntry) {
   return {
     名称: string(entry.名称), 类型: string(entry.类型 || "子职业"), 主职: string(entry.主职), 等级: string(entry.等级),
-    施法属性: string(entry.施法属性), 描述: string(entry.描述), 风味描述: string(entry.风味描述),
+    施法属性: string(entry.施法属性), 特性: structuredSubclassFeatures(entry.特性), 风味描述: string(entry.风味描述),
   };
+}
+
+function structuredSubclassFeatures(value: unknown): Array<{ 名称: string; 特性描述: string }> {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const feature = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
+    return { 名称: string(feature.名称), 特性描述: string(feature.特性描述) };
+  });
 }
 
 function transformWeapon(entry: SourceEntry) {

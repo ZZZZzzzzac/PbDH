@@ -337,8 +337,17 @@ function transformSubclass(entry: SourceEntry) {
   const stage = string(entry.阶段);
   return {
     名称: string(entry.名称), 类型: string(entry.类型 || "子职业"), 主职: string(entry.主职), 等级: stage.startsWith("T4") ? "精通" : stage === "T3" ? "进阶" : "基础",
-    施法属性: string(entry.施法属性), 描述: string(entry.子职提升 ?? entry.描述), 风味描述: string(entry.风味描述),
+    施法属性: string(entry.施法属性), 特性: migratedSubclassFeatures(entry.子职提升 ?? entry.描述), 风味描述: string(entry.风味描述),
   };
+}
+function migratedSubclassFeatures(value: unknown): Array<{ 名称: string; 特性描述: string }> {
+  const source = string(value).trim();
+  if (!source) return [];
+  const markers = [...source.matchAll(/(?:^|\n\n)(?:子职|职业|希望)特性(?:获得|增强|追加)：([^：\n]+)：/gu)];
+  return markers.map((marker, index) => ({
+    名称: marker[1]!.trim(),
+    特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
+  }));
 }
 function transformArmor(entry: SourceEntry) {
   return {

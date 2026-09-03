@@ -171,16 +171,16 @@ const professionBatch: TemporaryResourceBatch = {
 const subclassBatch: TemporaryResourceBatch = {
   name: "子职业转换",
   resources: ([
-    ["基础", "振奋之言：帮助盟友恢复压力。"],
-    ["进阶", "英勇之言：强化盟友的行动。"],
-    ["精通", "传奇之言：扭转绝境。"],
-  ] as const).map(([level, description], index) => ({
+    ["基础", "振奋之言", "帮助盟友恢复压力。"],
+    ["进阶", "英勇之言", "强化盟友的行动。"],
+    ["精通", "传奇之言", "扭转绝境。"],
+  ] as const).map(([level, featureName, featureDescription], index) => ({
     sourceId: `subclass:wordsmith:${index}`,
     kind: "subclass" as const,
     name: "言语大师",
     fields: {
       名称: "言语大师", 类型: "子职业", 主职: "吟游诗人", 等级: level, 施法属性: "风度",
-      描述: description, 风味描述: "他们用故事改写现实。",
+      特性: [{ 名称: featureName, 特性描述: featureDescription }], 风味描述: "他们用故事改写现实。",
     },
     source: { formatId: "pbres" as const, upstreamRevision: "test", path: `/resources/${index}`, raw: {} },
   })),

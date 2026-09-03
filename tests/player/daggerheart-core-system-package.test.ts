@@ -54,7 +54,22 @@ function hasStructuredEquipmentFeature(data: unknown): boolean {
     && Object.hasOwn(data, "特性描述");
 }
 
+function subclassFeatures(data: unknown): unknown[] | null {
+  if (data === null || typeof data !== "object" || Array.isArray(data) || Object.hasOwn(data, "描述")) return null;
+  const features = (data as Record<string, unknown>).特性;
+  return Array.isArray(features) ? features : null;
+}
+
 describe("migrated Daggerheart Core System Package", () => {
+  test("领域卡权威资源的回想值不包含闪电符号", () => {
+    const entries = readJson<Array<{ 回想: string }>>(path.join(
+      root,
+      "apps/player/system-package-sources/daggerheart-core/resources/domain-cards.json",
+    ));
+    expect(entries).toHaveLength(189);
+    expect(entries.every((entry) => !entry.回想.includes("⚡"))).toBe(true);
+  });
+
   test("uses one valid native Resource Package for all System Package libraries", async () => {
     const system = readJson<SystemPackageDocument>(path.join(packageRoot, "system.json"));
     expect(runtime.validate({
@@ -102,7 +117,7 @@ describe("migrated Daggerheart Core System Package", () => {
       推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 灵巧: "+1" }, { 本能: "+0" }, { 风度: "+2" }, { 知识: "+1" }],
       推荐初始武器: ["刺剑", "匕首"],
     });
-    expect(candidates[0]?.document.package.version).toBe("1.0.8");
+    expect(candidates[0]?.document.package.version).toBe("1.0.9");
     expect(resources.every((resource) => resource.presentation.fixedRatio
       && Object.keys(resource.presentation).length === 2)).toBe(true);
     const armorResources = resources.filter((resource) => resource.template.id === "护甲");
@@ -119,6 +134,9 @@ describe("migrated Daggerheart Core System Package", () => {
       expect(matching).toHaveLength(count);
       expect(matching.every((resource) => resource.template.version === "1.0.0")).toBe(true);
     }
+    const subclassResources = resources.filter((resource) => resource.template.id === "子职业");
+    expect(subclassResources.every((resource) => subclassFeatures(resource.data) !== null)).toBe(true);
+    expect(subclassResources.flatMap((resource) => subclassFeatures(resource.data) ?? [])).toHaveLength(75);
     expect(system.resourceCompatibility.every((item) => item.versionRange.minimumInclusive === "1.0.0"
       && item.versionRange.maximumExclusive === "2.0.0")).toBe(true);
     expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);

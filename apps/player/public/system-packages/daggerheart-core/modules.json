@@ -252,7 +252,15 @@
         }
       },
       { "类型": "resourceLibrary", "ID": "communities" },
-      { "类型": "resourceLibrary", "ID": "subclasses" },
+      {
+        "类型": "resourceLibrary",
+        "ID": "subclasses",
+        "卡牌展示": {
+          "名称模板": "{{名称}}",
+          "描述模板": "{{特性}}",
+          "标签字段": []
+        }
+      },
       { "类型": "resourceLibrary", "ID": "domain-cards" },
       { "类型": "otherResourceLibraries", "ID": "其他" }
     ],
@@ -297,7 +305,7 @@
           { "键": "主职", "列宽": "normal" },
           { "键": "等级", "列宽": "compact" },
           { "键": "施法属性", "列宽": "compact" },
-          { "键": "描述", "列宽": "fill" }
+          { "键": "特性", "列宽": "fill" }
         ],
         "默认查询": {
           "sort": {

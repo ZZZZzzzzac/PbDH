@@ -1,6 +1,7 @@
 import {
   asJsonObject,
   exportFailure,
+  formatNamedFeatures,
   importFailure,
   isObject,
   jsonArtifact,
@@ -484,7 +485,7 @@ function subclassToKid(resources: TemporaryResource[], options: ExportOptions): 
     message: "导出基德格式需要 creator 与 owner。",
     resourceId: first.sourceId,
   };
-  const feature = (level: string) => text(resources.find((resource) => text(resource.fields.等级) === level)?.fields.描述);
+  const feature = (level: string) => formatNamedFeatures(resources.find((resource) => text(resource.fields.等级) === level)?.fields.特性);
   return {
     ...native,
     id: text(native.id) || first.sourceId,

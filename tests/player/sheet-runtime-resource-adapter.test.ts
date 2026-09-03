@@ -21,6 +21,7 @@ import type { ResourceLibrary } from "../../apps/player/src/resources/resource-l
 const currentSystem = {
   resourceCompatibility: [
     { templateId: "种族", nativeEntry: { id: "ancestries", label: "种族" } },
+    { templateId: "子职", nativeEntry: { id: "subclasses", label: "子职" } },
     { templateId: "护甲", nativeEntry: { id: "armor", label: "护甲" } },
     { templateId: "自由", nativeEntry: { id: "free-resources", label: "自由资源" } },
   ],
@@ -144,6 +145,27 @@ describe("Sheet Runtime 平台资源适配", () => {
       第一特性名称: "独行智慧",
       第一特性规则: "没有队友时具有优势。",
     });
+  });
+
+  it("把子职特性数组投影为可读的 Sheet 字段，同时保留结构化资源副本", () => {
+    const library = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        resource("subclass", "子职", {
+          名称: "言文巧匠",
+          特性: [
+            { 名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
+            { 名称: "闻名遐迩", 特性描述: "你的声名远播。" },
+          ],
+        }),
+      ]),
+    }).find((candidate) => candidate.ID === "subclasses")!;
+
+    expect(library.entries[0]?.fields.特性).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
+    expect(library.entries[0]?.resourceCopy?.data.特性).toEqual([
+      { 名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
+      { 名称: "闻名遐迩", 特性描述: "你的声名远播。" },
+    ]);
   });
 
   it("把资源包卡面显示方式传给 Sheet 卡牌", () => {
@@ -300,6 +322,8 @@ function installedPackage(
       destination: "native" as const,
       nativeEntry: candidate.template.id === "护甲"
         ? { id: "armor", label: "护甲" }
+        : candidate.template.id === "子职"
+          ? { id: "subclasses", label: "子职" }
         : candidate.template.id === "自由"
           ? { id: "free-resources", label: "自由资源" }
           : { id: "ancestries", label: "种族" },

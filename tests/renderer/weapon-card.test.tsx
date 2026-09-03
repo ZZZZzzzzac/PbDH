@@ -66,8 +66,24 @@ describe("weapon-card-r2 Canonical Surface", () => {
     }
     expect(markup).not.toContain("<img");
     expect(markup).not.toContain("weapon-art");
+    expect(markup).toContain('<div class="weapon-title-stack">');
     expect(markup).toContain('<span class="weapon-title-meta"><span>位阶 1</span><span>主武器</span></span>');
+    expect(markup).toContain('<div class="weapon-detail"><span>伤害类型</span><b>物理</b></div>');
+    expect(markup).toContain('<div class="weapon-detail"><span>负荷</span><b>单手</b></div>');
     expect(markup).toContain("data-renderer-revision=\"weapon-card-r2\"");
+  });
+
+  test("uses the approved compact equipment layout", () => {
+    expect(weaponRendererStyles).toContain(".weapon-card-frame{position:relative;width:63px;height:88px");
+    expect(weaponRendererStyles).toContain(".weapon-title-meta{display:flex;flex-direction:column;align-items:flex-end");
+    expect(weaponRendererStyles).toContain(".weapon-card.is-split .weapon-header{position:absolute;z-index:2;inset:0;height:auto");
+    expect(weaponRendererStyles).toContain(".weapon-stats{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid #bfa47d");
+    expect(weaponRendererStyles).toContain(".weapon-detail{display:flex;align-items:baseline;gap:8px");
+    expect(weaponRendererStyles).not.toContain(".weapon-detail{display:flex;align-items:center;justify-content:space-between;padding:");
+    expect(weaponRendererStyles).not.toContain(".weapon-detail{display:flex;align-items:baseline;gap:8px;background:");
+    expect(weaponRendererStyles).toContain(".weapon-feature{flex:none;padding:6px;background:#f7ebd6;border:1px solid #d4b78d;border-radius:4px}");
+    expect(weaponRendererRevision.styles).toContain(".weapon-feature h2>[data-restricted-markdown]{min-height:0;overflow:visible;color:inherit;font:inherit}");
+    expect(weaponRendererRevision.styles).not.toContain("font:500 2.1px/1.3");
   });
 
   test("renders split and image presentation modes from the optional portrait", () => {
@@ -94,7 +110,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
     expect(weaponRendererStyles).toContain("overflow:hidden");
     expect(weaponRendererStyles).toContain(".weapon-description");
     expect(weaponRendererStyles).toContain(".weapon-card.is-fluid");
-    expect(weaponRendererStyles).toContain(".weapon-card>.pbdh-card-footer{min-height:3.5px");
+    expect(weaponRendererStyles).toContain(".weapon-card>.pbdh-card-footer{color:#725747;background:var(--bone);border-top:1px solid #d4b78d");
 
     const fluidResource = structuredClone(resource);
     fluidResource.presentation.fixedRatio = false;
@@ -143,7 +159,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("aa77d5e840305510e0dc3f2596b1741e460863f2c3845093885c3a82a36cd672");
+    expect(signature).toBe("7000aca0a3cd301ec97720a70ca58f2608f1de2a84b81239f73d685e60aa2a35");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {
@@ -180,6 +196,7 @@ describe("weapon-card-r2 flavor surface", () => {
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
     expect(markup).toContain("刀身映着冷白月光。");
     expect(markup).toContain("攻击掷骰+1。");
+    expect(markup).toMatch(/<section class="weapon-feature">.*攻击掷骰\+1。.*<\/section><div class="weapon-flavor"/u);
     expect(markup).toContain("data-renderer-revision=\"weapon-card-r2\"");
   });
 });

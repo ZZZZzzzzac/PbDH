@@ -310,7 +310,8 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(adversaryRendererStyles).toContain("transform: scale(.175)");
     expect(adversaryRendererStyles).not.toContain("zoom:");
     expect(adversaryRendererStyles).toContain(".enemy-feature-type { color: #87504b; font: 650 var(--enemy-feature-font-size, 15px)/1.2");
-    expect(adversaryRendererStyles).toContain(".enemy-feature p { min-width: 0; margin: 0; padding-top: 10px; overflow: visible");
+    expect(adversaryRendererStyles).toContain(".enemy-feature p { min-width: 0; margin: 0; overflow: visible");
+    expect(adversaryRendererStyles).not.toContain(".enemy-feature p { min-width: 0; margin: 0; padding-top:");
     expect(markup).toContain('<span class="enemy-state-label">生命点</span>');
     expect(markup).toContain('<span class="enemy-state-label">压力点</span>');
     expect(markup).toContain("aria-label=\"将生命设为 6\"");
@@ -322,7 +323,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("47eeaa8161cb03b2863e6785c4e84d593282b26ae272f40db60c2ad790e31327");
+    expect(signature).toBe("d5b9a79947f6a54d501534f8b8402e829077f14c78878047a3ae67d896e9cdb8");
   });
 
   test("removes empty English titles instead of reserving their layout space", () => {

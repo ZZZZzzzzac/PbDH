@@ -90,15 +90,14 @@ export const adversaryRendererStyles = `
 .enemy-feature-heading { height: 18px; flex: none; display: flex; align-items: center; gap: 8px; color: var(--oxblood); font: 800 13px/1 "Noto Sans SC", sans-serif; }
 .enemy-feature-heading::after { content: ""; flex: 1; height: 2px; background: #b88a57; }
 .enemy-features { min-height: 0; height: auto; flex: none; display: flex; flex-direction: column; gap: 4px; overflow: visible; }
-.enemy-feature { position: relative; min-height: 60px; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 8px; overflow: visible; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
+.enemy-feature { position: relative; min-height: 60px; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px; overflow: visible; background: #f7ebd6; border: 1px solid #d4b78d; border-radius: 4px; }
 .enemy-feature h2 { margin: 0; min-width: 0; color: var(--oxblood); }
-.enemy-feature h2::after { content: ""; position: absolute; top: 14px; right: 8px; left: 92px; height: 1px; background: #b88a57; }
 .enemy-feature-primary { display: grid; gap: 1px; }
 .enemy-feature-primary span { display: block; }
 .enemy-feature-name { font: 800 calc(var(--enemy-feature-font-size, 15px) + 4px)/1.2 "Noto Sans SC", sans-serif; }
 .enemy-feature-type { color: #87504b; font: 650 var(--enemy-feature-font-size, 15px)/1.2 "Noto Sans SC", sans-serif; }
 .enemy-feature h2 small { display: block; margin-top: 1px; color: #5e4637; font: 650 max(8px, calc(var(--enemy-feature-font-size, 15px) - 3px))/1.2 "Noto Sans SC", sans-serif; }
-.enemy-feature p { min-width: 0; margin: 0; padding-top: 10px; overflow: visible; color: var(--ink); font: 450 15px/1.35 "Noto Sans SC", sans-serif; }
+.enemy-feature p { min-width: 0; margin: 0; overflow: visible; color: var(--ink); font: 450 15px/1.35 "Noto Sans SC", sans-serif; }
 .enemy-card.is-fluid .enemy-body { height: auto; }
 .enemy-feature p,.enemy-feature [data-restricted-markdown] { font-size: var(--enemy-feature-font-size, 15px); }.enemy-card > .pbdh-card-footer { color: #725747; background: var(--bone); border-top: 1px solid #d4b78d; }.enemy-art > .pbdh-card-footer.is-overlay { position: absolute; z-index: 3; inset: auto 0 0; color: #fff4df; background: linear-gradient(180deg, #1d131000, #1d1310dc); text-shadow: 0 1px 2px #0e0907; }
 `;

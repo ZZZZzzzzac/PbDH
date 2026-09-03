@@ -136,6 +136,7 @@ describe("敌人 Template Authoring 与支持清单", () => {
     }));
     const source = readFileSync(path.join(root, "packages/templates/src/frontend/adversary/1.0.0/authoring-editor.tsx"), "utf8");
     const primitives = readFileSync(path.join(root, "packages/templates/src/frontend/authoring-primitives.tsx"), "utf8");
+    const standardStyles = readFileSync(path.join(root, "packages/templates/src/frontend/standard-editor-styles.ts"), "utf8");
 
     expect(markup).toContain("adversary-editor");
     expect(markup).toContain("adversary-identity");
@@ -147,6 +148,11 @@ describe("敌人 Template Authoring 与支持清单", () => {
     expect(markup).toContain("template-editor-select-arrow");
     expect(markup).not.toContain("⌄");
     expect(primitives).toContain("place-items:center");
+    expect(primitives).toContain("right:5px");
+    expect(standardStyles).toContain("button:not(.template-editor-select-toggle):not([role=option])");
+    expect(standardStyles).not.toContain(".template-owned-editor button{");
+    expect(source).toContain("button:not(.template-editor-select-toggle):not([role=option])");
+    expect(source).not.toContain(".adversary-editor button{");
     expect(source).toContain("adversary-feature-action");
     expect(source).toContain(">清空</button>");
     expect(source).not.toContain("清空内容");

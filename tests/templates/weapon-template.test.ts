@@ -44,6 +44,7 @@ describe("武器 Template Core", () => {
   test("validates the shared fixture and complete defaults", () => {
     expect(validateData(resource.data), JSON.stringify(validateData.errors)).toBe(true);
     expect(validateData(weaponTemplate.defaultData), JSON.stringify(validateData.errors)).toBe(true);
+    expect(weaponTemplate.defaultData.类型).toBe("主武器");
     expect(Object.keys(weaponTemplate.defaultData)).toEqual(
       Object.keys((weaponTemplate.schema as { properties: object }).properties),
     );

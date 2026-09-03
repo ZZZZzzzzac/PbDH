@@ -47,8 +47,21 @@ describe("armor-card-r1 Canonical Surface", () => {
     }
     expect(markup).not.toContain("<img");
     expect(markup).toContain("data-renderer-revision=\"armor-card-r1\"");
+    expect(markup).toContain('<div class="armor-title-stack">');
     expect(markup).toContain('<span class="armor-title-meta"><span>位阶 1</span><span>护甲</span></span>');
     expect(markup).not.toContain("armor-tier");
+  });
+
+  test("uses the approved compact equipment layout", () => {
+    expect(armorRendererStyles).toContain(".armor-title-meta{display:flex;flex-direction:column;align-items:flex-end");
+    expect(armorRendererStyles).toContain(".armor-stats{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid #bfa47d");
+    expect(armorRendererStyles).not.toContain(".armor-stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px");
+    expect(armorRendererStyles).toContain(".armor-feature{flex:none;padding:6px;background:#f7ebd6;border:1px solid #d4b78d;border-radius:4px}");
+    expect(armorRendererStyles).toContain('.armor-feature h2{display:flex;align-items:baseline;gap:8px;margin:0;color:var(--oxblood);font:800 19px/1.25 "Noto Sans SC",sans-serif}');
+    expect(armorRendererStyles).toContain('.armor-feature h2 [data-restricted-markdown]{color:inherit;font:inherit}');
+    expect(armorRendererStyles).toContain('.armor-feature h2 small{color:#725747;font:650 12px/1.25 "Noto Sans SC",sans-serif;letter-spacing:.025em}');
+    expect(armorRendererStyles).toContain('.armor-feature p,.armor-feature [data-restricted-markdown]{margin:5px 0 0;white-space:pre-wrap;font:450 var(--armor-content-font-size,15px)/1.45 "Noto Sans SC",sans-serif}');
+    expect(armorRendererStyles).toContain('.armor-flavor[data-restricted-markdown]{margin:5px 0 0;white-space:pre-wrap;font:500 var(--armor-content-font-size,15px)/1.42 "Noto Sans SC",sans-serif');
   });
 
   test("uses the optional portrait for split and image modes", () => {
