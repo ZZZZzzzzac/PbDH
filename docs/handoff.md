@@ -352,6 +352,15 @@
 - 纯文字和纯图片模式未改。真实 Creator 页面复验非固定比例环境卡图片区为 `170px`，子职业为 `170.375px`，控制台错误为 0。
 - 新增跨模板比例回归测试并更新武器已审阅视觉签名。全量 TypeScript 98 个文件、763 项测试通过；类型检查、Renderer 性能测量与 Platform 构建通过，构建仍只有既有入口 chunk 大于 500 KiB 提示。
 
+### Creator / GM 标签页拖拽排序
+
+- Creator 资源标签和 GM 桌面标签均支持指针拖拽调整顺序；拖到目标标签左半区插到其前方，右半区插到其后方。拖拽期间显示半透明源标签与酒红色落点标记，鼠标、触控笔和触摸 Pointer Event 共用同一套交互。
+- 键盘替代操作为聚焦标签后按 `Alt+ArrowLeft` 或 `Alt+ArrowRight`。排序不会切换当前活动标签，关闭按钮也不会误触发拖拽。
+- 顺序属于当前浏览器的界面偏好，分别存入 localStorage 的 `pbdh.creator.tabs.resources` 与 `pbdh.creator.tabs.tabletops`；不写入资源包、GM 桌面文档、Contract 或云端 revision。Creator 资源标签使用 `[workspaceKey, resourceId]` 复合身份，因此可以跨资源包排序且不会因不同包内同名或同 ID 资源发生冲突。
+- 排序读取会去重并忽略已关闭标签；新打开标签自动追加到末尾。通用顺序逻辑位于 `apps/creator/src/workspace-prototype/tab-order.ts`，两个 Workbench 只负责各自的指针和键盘交互。
+- 真实 Creator 页面已完成拖拽验收：把“长柄巨斧”从第六位拖到第一位后，活动标签仍为“龙人”；刷新页面后顺序保持，控制台 warning/error 均为 0。当前浏览器没有 GM 桌面测试数据，为避免污染用户数据未临时创建桌面；GM 使用同一纯函数排序核心和对称交互实现，并通过类型检查与完整测试。
+- 新增 `tests/creator/tab-order.test.ts`，覆盖新建/关闭标签对已存顺序的协调、前后落点、跨资源包复合身份和 localStorage 读写去重。合并前远端验证状态为：`npm run verify` 通过，TypeScript 99 个文件、743 项测试，Python 141 项测试，其余完整验证入口通过。
+
 ### 待续：拆除共享卡面容器并统一特性栏 padding
 
 - 用户明确新的架构边界：模板之间可以统一视觉风格和数值，但不能共享完整的卡面容器、DOM 或 CSS；每个模板必须拥有自己的 Renderer 实现。可共享范围仅限无模板语义的底层能力，例如 `CardFooter`、`RestrictedMarkdown`、`SingleLineTextFit`、`useContainerTextFit` 和固定比例 Frame 工具。

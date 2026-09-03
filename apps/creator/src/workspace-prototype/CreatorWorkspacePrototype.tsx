@@ -96,6 +96,16 @@ import {
   type CreatorWorkbenchCommand,
 } from "./creator-workbench.tsx";
 import {
+  creatorResourceTabOrderKey,
+  gmTabletopTabOrderKey,
+  moveTab,
+  readStoredTabOrder,
+  reconcileTabOrder,
+  resourceTabKey,
+  sameTabOrder,
+  writeStoredTabOrder,
+} from "./tab-order.ts";
+import {
   CreatorContextMenus,
   type CreatorContextMenuCommand,
   type CreatorContextMenuState,
@@ -226,6 +236,7 @@ export function CreatorWorkspacePrototype({
   const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
   const [activeKey, setActiveKey] = useState("");
   const [activeResourceId, setActiveResourceId] = useState("");
+  const [resourceTabOrder, setResourceTabOrder] = useState(() => readStoredTabOrder(creatorResourceTabOrderKey));
   const {
     urls: assetUrls,
     addBytes: addAssetBytes,
@@ -260,6 +271,7 @@ export function CreatorWorkspacePrototype({
   }, [mode, onModeChange]);
   const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
   const [activeTabletopId, setActiveTabletopId] = useState("");
+  const [tabletopTabOrder, setTabletopTabOrder] = useState(() => readStoredTabOrder(gmTabletopTabOrderKey));
   const [tabletopNameDraft, setTabletopNameDraft] = useState("");
   const [selectedInstanceId, setSelectedInstanceId] = useState("");
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
@@ -375,11 +387,32 @@ export function CreatorWorkspacePrototype({
   const selectedInstanceAuthoring = selectedInstance
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)?.authoring
     : undefined;
+  const availableResourceTabKeys = useMemo(() => workspaces.flatMap((workspace) =>
+    workspace.openResourceIds.map((resourceId) => resourceTabKey(workspace.key, resourceId))), [workspaces]);
+  const availableTabletopTabKeys = useMemo(() => tabletops.map((tabletop) => tabletop.id), [tabletops]);
   const resourceTemplateOptions = useMemo(() => [...new Set(workspaces.flatMap((workspace) =>
     workspace.document.resources.map((item) => item.template.id)))].sort(), [workspaces]);
   const filteredWorkspaceResources = useMemo(() => {
     return filterWorkspaceResources(workspaces, resourceSearch, resourceTemplateFilters, workspaceSortDirection);
   }, [resourceSearch, resourceTemplateFilters, workspaceSortDirection, workspaces]);
+
+  useEffect(() => {
+    if (!workspaceStorageReady) return;
+    setResourceTabOrder((current) => {
+      const next = reconcileTabOrder(current, availableResourceTabKeys);
+      writeStoredTabOrder(creatorResourceTabOrderKey, next);
+      return sameTabOrder(current, next) ? current : next;
+    });
+  }, [availableResourceTabKeys, workspaceStorageReady]);
+
+  useEffect(() => {
+    if (!tabletopStorageReady) return;
+    setTabletopTabOrder((current) => {
+      const next = reconcileTabOrder(current, availableTabletopTabKeys);
+      writeStoredTabOrder(gmTabletopTabOrderKey, next);
+      return sameTabOrder(current, next) ? current : next;
+    });
+  }, [availableTabletopTabKeys, tabletopStorageReady]);
 
   useEffect(() => {
     const currentKeys = new Set(workspaces.map((workspace) => workspace.key));
@@ -1513,6 +1546,18 @@ export function CreatorWorkspacePrototype({
       case "tabletop-command": applyTabletopCommand(command.command); return;
       case "edit-instance-data": editInstanceData(command.path, command.value); return;
       case "request-cloud-edit": requestTabletopCloudSyncAfterEditing(); return;
+      case "reorder-tabletop-tab":
+        setTabletopTabOrder((current) => {
+          const next = moveTab(
+            reconcileTabOrder(current, availableTabletopTabKeys),
+            command.sourceKey,
+            command.targetKey,
+            command.placement,
+          );
+          writeStoredTabOrder(gmTabletopTabOrderKey, next);
+          return next;
+        });
+        return;
     }
   }
 
@@ -1534,6 +1579,18 @@ export function CreatorWorkspacePrototype({
         return;
       case "presentation-mode": updatePresentation((presentation) => { presentation.mode = command.mode; }); return;
       case "toggle-fixed-ratio": updatePresentation((presentation) => { presentation.fixedRatio = !presentation.fixedRatio; }); return;
+      case "reorder-resource-tab":
+        setResourceTabOrder((current) => {
+          const next = moveTab(
+            reconcileTabOrder(current, availableResourceTabKeys),
+            command.sourceKey,
+            command.targetKey,
+            command.placement,
+          );
+          writeStoredTabOrder(creatorResourceTabOrderKey, next);
+          return next;
+        });
+        return;
     }
   }
 
@@ -1669,6 +1726,7 @@ export function CreatorWorkspacePrototype({
             activeWorkspace: active,
             activeResource: resource,
             activeResourceId,
+            tabOrder: resourceTabOrder,
             editorColumnShare,
             assetUrls,
           }}
@@ -1680,6 +1738,7 @@ export function CreatorWorkspacePrototype({
             tabletops,
             activeTabletop,
             activeTabletopId,
+            tabOrder: tabletopTabOrder,
             sync: tabletopSync,
             savingTabletopId: tabletopSaving ? activeTabletopId : null,
             view: tabletopView,
