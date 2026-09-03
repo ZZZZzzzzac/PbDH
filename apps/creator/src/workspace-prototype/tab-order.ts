@@ -2,6 +2,11 @@ export type TabDropPlacement = "before" | "after";
 
 export const creatorResourceTabOrderKey = "pbdh.creator.tabs.resources";
 export const gmTabletopTabOrderKey = "pbdh.creator.tabs.tabletops";
+export const tabDragThreshold = 8;
+
+export function shouldActivateTabDrag(startX: number, currentX: number): boolean {
+  return Math.abs(currentX - startX) > tabDragThreshold;
+}
 
 export function resourceTabKey(workspaceKey: string, resourceId: string): string {
   return JSON.stringify([workspaceKey, resourceId]);

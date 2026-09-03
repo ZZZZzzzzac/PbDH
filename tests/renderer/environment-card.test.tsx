@@ -37,7 +37,11 @@ function resource(mode: "text" | "split" | "image" = "text"): SurfaceResource<En
   };
 }
 
-describe("environment-card-r1 Canonical Surface", () => {
+describe("environment-card-r2 Canonical Surface", () => {
+  test("defaults to fluid height", () => {
+    expect(environmentTemplate.defaultPresentation).toEqual({ mode: "text", fixedRatio: false });
+  });
+
   test("renders every environment field in text mode", () => {
     const result = prepareCanonicalSurface({
       resource: resource(),
@@ -53,7 +57,14 @@ describe("environment-card-r1 Canonical Surface", () => {
       "野兽，林地守卫", "蔓生战场", "Overgrown Battlefield", "被动", "曾在此地", "为何发生冲突",
     ]) expect(markup).toContain(value);
     expect(markup).not.toContain("<img");
-    expect(markup).toContain("data-renderer-revision=\"environment-card-r1\"");
+    expect(markup).toContain("data-renderer-revision=\"environment-card-r2\"");
+    expect(markup).toContain("environment-header-columns");
+    expect(markup).toContain("environment-difficulty-label");
+    expect(markup).toContain("environment-record");
+    expect(markup).toContain("environment-feature-identity");
+    expect(markup).toContain("environment-feature-copy");
+    expect(markup).toMatch(/environment-feature-copy[^]*?<\/div><p class="environment-question"/u);
+    expect(markup.indexOf("environment-difficulty")).toBeLessThan(markup.indexOf("environment-feature-heading"));
   });
 
   test("uses optional portrait and resolves only the exact stable version", () => {
@@ -69,6 +80,11 @@ describe("environment-card-r1 Canonical Surface", () => {
     expect(environmentRendererFor("1.0.0")).toBe(environmentRendererRevision);
     expect(() => environmentRendererFor("0.9.0")).toThrow("Unsupported environment Renderer version");
     expect(environmentRendererStyles).toContain(".environment-card");
+    expect(environmentRendererStyles).toContain(".environment-record{margin:0;padding:6px 18px}");
+    expect(environmentRendererStyles).toContain(".environment-record>div+div{margin-top:0;padding-top:6px;");
+    expect(environmentRendererStyles).toContain(".environment-feature-identity{min-width:0;padding-right:7px}");
+    expect(environmentRendererStyles).toContain(".environment-question{grid-column:1/-1;");
+    expect(environmentRendererStyles).toContain(".environment-header-columns{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;");
   });
 
   test("does not render empty English title nodes", () => {
@@ -88,6 +104,24 @@ describe("environment-card-r1 Canonical Surface", () => {
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
 
     expect(markup).not.toContain("environment-original");
-    expect(markup).not.toContain("<small>");
+    expect(markup).not.toMatch(/environment-feature-identity[^]*?<small>/u);
+  });
+
+  test("omits empty optional scene rows without weakening the difficulty marker", () => {
+    const sparseResource = resource();
+    sparseResource.data = { ...data, 简介: " ", 趋向: "", 潜在敌人: "  " };
+    const result = prepareCanonicalSurface({
+      resource: sparseResource,
+      expectedRendererRevision: environmentTemplate.rendererRevision,
+      renderer: environmentRendererRevision,
+      assets: new Map(),
+    });
+    if (result.status !== "ready") throw new Error("Expected ready Surface");
+    const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
+
+    expect(markup).toContain("environment-difficulty-label");
+    expect(markup).not.toContain(">简介<");
+    expect(markup).not.toContain(">趋向<");
+    expect(markup).not.toContain(">潜在敌人<");
   });
 });

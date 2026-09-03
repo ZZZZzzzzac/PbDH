@@ -52,5 +52,5 @@ def test_official_system_contains_a_complete_stable_pbres() -> None:
     assert result["diagnostics"] == []
     resource = result["candidate"]["document"]
     assert resource["contractVersion"] == "1.0.0"
-    assert resource["package"]["version"] == "1.0.9"
+    assert resource["package"]["version"] == "1.0.13"
     assert {item["template"]["version"] for item in resource["resources"]} == {"1.0.0"}

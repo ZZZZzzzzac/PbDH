@@ -60,6 +60,12 @@ function subclassFeatures(data: unknown): unknown[] | null {
   return Array.isArray(features) ? features : null;
 }
 
+function professionFeatures(data: unknown): unknown[] | null {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) return null;
+  const features = (data as Record<string, unknown>).特性;
+  return Array.isArray(features) ? features : null;
+}
+
 describe("migrated Daggerheart Core System Package", () => {
   test("领域卡权威资源的回想值不包含闪电符号", () => {
     const entries = readJson<Array<{ 回想: string }>>(path.join(
@@ -114,12 +120,16 @@ describe("migrated Daggerheart Core System Package", () => {
     });
     expect(resources.find((resource) => resource.id === "职业:吟游诗人")?.data).toMatchObject({
       类型: "职业",
-      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 灵巧: "+1" }, { 本能: "+0" }, { 风度: "+2" }, { 知识: "+1" }],
-      推荐初始武器: ["刺剑", "匕首"],
+      希望特性: { 名称: expect.any(String), 原名: expect.any(String), 特性描述: expect.any(String) },
+      特性: [{ 名称: "鼓舞人心", 原名: "Rally", 特性描述: expect.any(String) }],
+      推荐初始属性: { 敏捷: "+0", 力量: "-1", 灵巧: "+1", 本能: "+0", 风度: "+2", 知识: "+1" },
+      推荐初始武器: "刺剑 + 匕首",
     });
-    expect(candidates[0]?.document.package.version).toBe("1.0.9");
-    expect(resources.every((resource) => resource.presentation.fixedRatio
-      && Object.keys(resource.presentation).length === 2)).toBe(true);
+    expect(candidates[0]?.document.package.version).toBe("1.0.13");
+    expect(resources.every((resource) => Object.keys(resource.presentation).length === 2)).toBe(true);
+    expect(resources.filter((resource) => resource.template.id === "职业").every((resource) => !resource.presentation.fixedRatio)).toBe(true);
+    expect(resources.filter((resource) => resource.template.id === "环境").every((resource) => !resource.presentation.fixedRatio)).toBe(true);
+    expect(resources.filter((resource) => !["职业", "环境"].includes(resource.template.id)).every((resource) => resource.presentation.fixedRatio)).toBe(true);
     const armorResources = resources.filter((resource) => resource.template.id === "护甲");
     expect(armorResources).toHaveLength(34);
     expect(armorResources.every((resource) => resource.template.version === "1.0.0")).toBe(true);
@@ -137,6 +147,9 @@ describe("migrated Daggerheart Core System Package", () => {
     const subclassResources = resources.filter((resource) => resource.template.id === "子职业");
     expect(subclassResources.every((resource) => subclassFeatures(resource.data) !== null)).toBe(true);
     expect(subclassResources.flatMap((resource) => subclassFeatures(resource.data) ?? [])).toHaveLength(75);
+    const professionResources = resources.filter((resource) => resource.template.id === "职业");
+    expect(professionResources.every((resource) => professionFeatures(resource.data) !== null)).toBe(true);
+    expect(professionResources.flatMap((resource) => professionFeatures(resource.data) ?? [])).toHaveLength(15);
     expect(system.resourceCompatibility.every((item) => item.versionRange.minimumInclusive === "1.0.0"
       && item.versionRange.maximumExclusive === "2.0.0")).toBe(true);
     expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);

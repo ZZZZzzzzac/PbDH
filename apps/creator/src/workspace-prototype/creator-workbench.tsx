@@ -1,15 +1,15 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { RESOURCE_PACKAGE_VERSION } from "@pbdh/contract-runtime";
 import { resolveTemplateFrontend, TemplateAuthoringSurface } from "@pbdh/templates/frontend";
-import { templateRegistry } from "@pbdh/templates/core";
+import { normalizeProfessionData, professionDataNeedsMigration, templateRegistry } from "@pbdh/templates/core";
 
 import { Icon } from "./creator-controls.tsx";
 import { CreatorColumnResizeHandle, creatorColumnPreferences } from "./creator-layout.tsx";
 import { ReplacementEditor, ResourceAttributionEditor } from "./resource-authoring.tsx";
 import { ResourceIcon, TemplateRuntimePreview, resourceTitle } from "./resource-preview.tsx";
 import { resolveResourceAttribution, type CreatorWorkspace, type WorkspaceResource } from "./workspace-model.ts";
-import { orderTabsByKey, resourceTabKey, type TabDropPlacement } from "./tab-order.ts";
+import { orderTabsByKey, resourceTabKey, shouldActivateTabDrag, type TabDropPlacement } from "./tab-order.ts";
 
 export type CreatorWorkbenchSnapshot = {
   workspaces: readonly CreatorWorkspace[];
@@ -27,6 +27,7 @@ export type CreatorWorkbenchCommand =
   | { type: "request-cloud-edit" | "choose-portrait" | "remove-portrait" }
   | { type: "set-editor-share"; value: number }
   | { type: "authoring-value"; path: string; value: unknown }
+  | { type: "replace-authoring-data"; data: Record<string, unknown> }
   | { type: "attribution-value"; field: "artworkCredit" | "sourceLabel"; value: string }
   | { type: "replacement"; resourceId: string; replacementId: string; targetResourceId: string | null }
   | { type: "presentation-mode"; mode: "text" | "split" | "image" }
@@ -57,6 +58,12 @@ export function CreatorWorkbench({ snapshot, execute }: {
     return candidate ? [{ key: resourceTabKey(workspace.key, candidate.id), workspace, candidate }] : [];
   })), snapshot.tabOrder ?? [], (tab) => tab.key);
 
+  useEffect(() => {
+    if (resource?.template.id === "职业" && professionDataNeedsMigration(resource.data)) {
+      execute({ type: "replace-authoring-data", data: normalizeProfessionData(resource.data) as unknown as Record<string, unknown> });
+    }
+  }, [execute, resource]);
+
   function dropAt(clientX: number, clientY: number) {
     const element = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-resource-tab-key]");
     const key = element?.dataset.resourceTabKey;
@@ -68,7 +75,11 @@ export function CreatorWorkbench({ snapshot, execute }: {
   function movePointer(event: PointerEvent<HTMLDivElement>) {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    if (Math.abs(event.clientX - drag.startX) > 4) drag.moved = true;
+    if (!drag.moved && shouldActivateTabDrag(drag.startX, event.clientX)) {
+      drag.moved = true;
+      setDraggedTabKey(drag.sourceKey);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     if (!drag.moved) return;
     event.preventDefault();
     setDropTarget(dropAt(event.clientX, event.clientY));
@@ -115,8 +126,6 @@ export function CreatorWorkbench({ snapshot, execute }: {
           onPointerDown={(event) => {
             if (event.button !== 0 || (event.target as Element).closest(".resource-tab-close")) return;
             dragRef.current = { pointerId: event.pointerId, sourceKey: key, startX: event.clientX, moved: false };
-            setDraggedTabKey(key);
-            event.currentTarget.setPointerCapture(event.pointerId);
           }}
           onPointerMove={movePointer}
           onPointerUp={finishPointer}

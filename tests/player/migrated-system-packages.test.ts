@@ -31,6 +31,11 @@ function hasStructuredSubclassFeatures(data: unknown): boolean {
   return Array.isArray((data as Record<string, unknown>).特性);
 }
 
+function hasStructuredProfessionFeatures(data: unknown): boolean {
+  if (data === null || typeof data !== "object" || Array.isArray(data) || Object.hasOwn(data, "职业特性")) return false;
+  return Array.isArray((data as Record<string, unknown>).特性);
+}
+
 describe("additional migrated System Packages", () => {
   test("registers every supported system and uses the official-resource naming rule", async () => {
     expect(playerSystemPackageCatalog.map((entry) => entry.system.package.name)).toEqual([
@@ -62,6 +67,9 @@ describe("additional migrated System Packages", () => {
         const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
         expect(subclasses).toHaveLength(240);
         expect(subclasses.every((resource) => hasStructuredSubclassFeatures(resource.data))).toBe(true);
+        const professions = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "职业") ?? [];
+        expect(professions).toHaveLength(7);
+        expect(professions.every((resource) => hasStructuredProfessionFeatures(resource.data))).toBe(true);
       }
     }
 
@@ -115,12 +123,19 @@ describe("additional migrated System Packages", () => {
     if (item.directory === "tttri") {
       const ancestries = loaded.package.resourceLibraries?.find((library) => library.ID === "ancestries");
       const communities = loaded.package.resourceLibraries?.find((library) => library.ID === "communities");
+      const professions = loaded.package.resourceLibraries?.find((library) => library.ID === "classes");
       expect(ancestries?.entries).toHaveLength(35);
       expect(communities?.entries).toHaveLength(15);
       expect(ancestries?.entries[0]?.fields).toMatchObject({ 名称: "乌萨斯" });
       expect(ancestries?.entries[0]?.fields.简介).not.toBe("");
       expect(communities?.entries[0]?.fields).toMatchObject({ 名称: "高城之民" });
       expect(communities?.entries[0]?.fields.简介).not.toBe("");
+      expect(professions?.entries[0]?.fields).toMatchObject({
+        名称: "辅助",
+        描述: "\\*医疗合并至辅助",
+        希望特性: expect.stringContaining("共勉前路："),
+        职业特性: expect.stringContaining("状态分析："),
+      });
 
       for (const [moduleId, libraryId] of [["pick-community", "communities"], ["pick-domain-card", "domain-cards"]] as const) {
         const module = loaded.package.modules.find((candidate) => candidate.ID === moduleId);
@@ -193,6 +208,20 @@ describe("additional migrated System Packages", () => {
       .toBe(witchyResources!.document.resources.length
         + daggerheartResources!.document.resources.length
         + hopefindResources!.document.resources.length);
+    const projectedBard = refreshed.resourceLibraries
+      ?.flatMap((resourceLibrary) => resourceLibrary.entries)
+      .find((entry) => entry.ID.endsWith(":职业:吟游诗人"));
+    expect(projectedBard?.fields).toMatchObject({
+      名称: "吟游诗人",
+      原文: "Bard",
+      描述: expect.stringContaining("吟游诗人是诸界域中最富魅力的存在"),
+      风味描述: expect.stringContaining("吟游诗人是诸界域中最富魅力的存在"),
+      希望特性: expect.stringContaining("大闹一场："),
+      职业特性: expect.stringContaining("鼓舞人心："),
+      推荐初始属性: "敏捷 **+0** 力量 **-1** 灵巧 **+1** 本能 **+0** 风度 **+2** 知识 **+1**",
+      推荐初始武器: "刺剑 + 匕首",
+      推荐初始护甲: "填充布甲",
+    });
 
     const withoutDaggerheart = commitResourcePackageRemoval(library, daggerheartResources!.document.package.id);
     const restored = commitResourcePackageRemoval(withoutDaggerheart, hopefindResources!.document.package.id);

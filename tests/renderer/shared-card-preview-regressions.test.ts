@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { adversaryTemplate, armorTemplate, weaponTemplate } from "@pbdh/templates/core";
+import { adversaryTemplate, armorTemplate, environmentTemplate, weaponTemplate } from "@pbdh/templates/core";
 import { armorRendererStyles, environmentRendererStyles, freeRendererStyles } from "@pbdh/templates/frontend";
 import { describe, expect, it } from "vitest";
 
@@ -47,7 +47,9 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
   });
 
   it("只有固定卡面使用 63:88，流式敌人卡由内容决定高度", async () => {
-    expect(adversaryTemplate.defaultPresentation).toMatchObject({ fixedRatio: false });
+    for (const template of [adversaryTemplate, environmentTemplate]) {
+      expect(template.defaultPresentation).toMatchObject({ fixedRatio: false });
+    }
     for (const template of [weaponTemplate, armorTemplate]) {
       expect(template.defaultPresentation).toMatchObject({ fixedRatio: true });
     }

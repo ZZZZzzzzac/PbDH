@@ -13,7 +13,7 @@ import {
   weaponTemplate,
 } from "@pbdh/templates/core";
 
-import { isObject, namedFeatures, text } from "./shared.ts";
+import { isObject, namedFeatureGroup, namedFeatures, text } from "./shared.ts";
 import { validateTemplateData } from "./template-validation.ts";
 import type { ConversionDiagnostic, GameResourceCandidate, JsonObject, JsonValue, TemporaryResource } from "./types.ts";
 
@@ -71,7 +71,10 @@ function templateData(resource: TemporaryResource): {
     const data = structuredClone(professionTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       const value = resource.fields[key];
-      if (Array.isArray(data[key])) data[key] = Array.isArray(value) ? value.map(text).filter(Boolean) : [];
+      if (key === "特性") data[key] = namedFeatures(value ?? resource.fields.职业特性);
+      else if (key === "希望特性") data[key] = namedFeatureGroup(value);
+      else if (key === "风味描述") data[key] = text(value ?? resource.fields.描述);
+      else if (Array.isArray(data[key])) data[key] = Array.isArray(value) ? value.map(text).filter(Boolean) : [];
       else if (isObject(data[key])) data[key] = isObject(value)
         ? Object.fromEntries(Object.entries(value).map(([name, item]) => [name, text(item)]))
         : {};
@@ -81,17 +84,17 @@ function templateData(resource: TemporaryResource): {
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
     const recommendedAttributes = resource.fields.推荐初始属性;
-    data.推荐初始属性 = Array.isArray(recommendedAttributes)
-      ? recommendedAttributes.flatMap((value) => isObject(value)
-        ? Object.entries(value).map(([name, item]) => ({ [name]: text(item) }))
-        : [])
-      : isObject(recommendedAttributes)
-        ? Object.entries(recommendedAttributes).map(([name, item]) => ({ [name]: text(item) }))
-        : [];
+    data.推荐初始属性 = Object.fromEntries(["敏捷", "力量", "灵巧", "本能", "风度", "知识"].map((name) => {
+      if (Array.isArray(recommendedAttributes)) {
+        const entry = recommendedAttributes.find((item) => isObject(item) && Object.hasOwn(item, name));
+        return [name, isObject(entry) ? text(entry[name]) : ""];
+      }
+      return [name, isObject(recommendedAttributes) ? text(recommendedAttributes[name]) : ""];
+    }));
     const recommendedWeapons = resource.fields.推荐初始武器;
     data.推荐初始武器 = Array.isArray(recommendedWeapons)
-      ? recommendedWeapons.map(text).filter(Boolean)
-      : text(recommendedWeapons).split("+").map((item) => item.trim()).filter(Boolean);
+      ? recommendedWeapons.map(text).filter(Boolean).join(" + ")
+      : text(recommendedWeapons);
     return { template: professionTemplate, data };
   }
   if (resource.kind === "subclass") {

@@ -45,17 +45,19 @@ export function semanticCount(value: unknown): string {
   return text(value).replace(/[级⚡]/gu, "").trim();
 }
 
-export function recommendedAttributes(value: unknown): JsonObject[] {
-  if (Array.isArray(value)) return value.flatMap((item) => isObject(item)
-    ? Object.entries(item).map(([key, entry]) => ({ [key]: text(entry) }))
-    : []);
-  if (isObject(value)) {
-    return Object.entries(value).map(([key, item]) => ({ [key]: text(item) }));
+export function recommendedAttributes(value: unknown): JsonObject {
+  const result: JsonObject = Object.fromEntries(["敏捷", "力量", "灵巧", "本能", "风度", "知识"].map((name) => [name, ""]));
+  if (Array.isArray(value)) {
+    for (const item of value) if (isObject(item)) for (const [key, entry] of Object.entries(item)) if (key in result) result[key] = text(entry);
+    return result;
   }
-  const result: JsonObject[] = [];
+  if (isObject(value)) {
+    for (const [key, item] of Object.entries(value)) if (key in result) result[key] = text(item);
+    return result;
+  }
   const source = text(value);
   for (const match of source.matchAll(/(敏捷|力量|灵巧|本能|风度|知识)[^+\-−\d]*([+\-−]?\d+)/gu)) {
-    result.push({ [match[1]!]: match[2]!.replace("−", "-") });
+    result[match[1]!] = match[2]!.replace("−", "-");
   }
   return result;
 }
@@ -76,6 +78,19 @@ export function namedFeature(value: unknown): JsonObject {
   const match = /^(?::[^\[]+\[)?\*\*(.+?)\*\*\]?[：:]\s*([\s\S]*)$/u.exec(source)
     ?? /^([^\n：:]{1,80})[：:]\s*([\s\S]+)$/u.exec(source);
   return match ? { 名称: match[1]!.trim(), 描述: match[2]!.trim() } : { 名称: "", 描述: source };
+}
+
+export function namedFeatureGroup(value: unknown): JsonObject {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const feature = value as JsonObject;
+    return { 名称: text(feature.名称), 原名: text(feature.原名), 特性描述: text(feature.特性描述 ?? feature.描述) };
+  }
+  const feature = namedFeature(value);
+  return { 名称: text(feature.名称), 原名: "", 特性描述: text(feature.描述) };
+}
+
+export function formatNamedFeatureGroup(value: unknown): string {
+  return formatNamedFeatures([namedFeatureGroup(value)]);
 }
 
 export function formatNamedFeature(value: unknown): string {

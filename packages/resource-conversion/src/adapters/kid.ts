@@ -2,8 +2,11 @@ import {
   asJsonObject,
   exportFailure,
   formatNamedFeatures,
+  formatNamedFeatureGroup,
   importFailure,
   isObject,
+  namedFeatures,
+  namedFeatureGroup,
   jsonArtifact,
   parseJson,
   report,
@@ -244,19 +247,18 @@ function fieldsFor(raw: JsonObject): JsonObject {
   if (type === "class") {
     return {
       名称: text(raw.name),
-      描述: text(raw.description),
+      风味描述: text(raw.description),
       领域: [text(raw.domain1), text(raw.domain2)].filter(Boolean),
       生命点: text(raw.hp),
       闪避值: text(raw.evasion),
       职业物品: text(raw.startingItems),
-      希望特性: text(raw.hopeFeature),
-      职业特性: text(raw.classFeature),
-      推荐初始属性: [],
-      推荐初始武器: [],
+      希望特性: namedFeatureGroup(raw.hopeFeature),
+      特性: namedFeatures(raw.features ?? raw.classFeature),
+      推荐初始属性: { 敏捷: "", 力量: "", 灵巧: "", 本能: "", 风度: "", 知识: "" },
+      推荐初始武器: "",
       推荐初始护甲: "",
       背景问题: [],
       关系问题: [],
-      施法属性: text(raw.spellcastingAttribute),
     };
   }
   if (type === "ancestry") {
@@ -342,7 +344,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     name: resource.name,
     description: resource.kind === "weapon" || resource.kind === "armor" || resource.kind === "item"
       ? text(fields.风味描述)
-      : text(fields.描述 || fields.简介),
+      : text(fields.风味描述 || fields.描述 || fields.简介),
     creator,
     owner,
   };
@@ -379,9 +381,8 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
       type: "class",
       evasion: text(fields.闪避值),
       hp: text(fields.生命点),
-      spellcastingAttribute: text(fields.施法属性),
-      classFeature: text(fields.职业特性),
-      hopeFeature: text(fields.希望特性),
+      classFeature: formatNamedFeatures(fields.特性),
+      hopeFeature: formatNamedFeatureGroup(fields.希望特性),
       domain1: domains[0] ?? "",
       domain2: domains[1] ?? "",
       startingItems: text(fields.职业物品),

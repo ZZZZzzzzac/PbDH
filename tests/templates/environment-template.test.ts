@@ -40,7 +40,7 @@ describe("环境 Template 1.0.0", () => {
     expect(validateStable(abandonedGrove), JSON.stringify(validateStable.errors)).toBe(true);
     expect(validateStable(environmentTemplate.defaultData), JSON.stringify(validateStable.errors)).toBe(true);
     expect(environmentTemplate.project(abandonedGrove).searchText).toContain("Overgrown Battlefield");
-    expect(environmentTemplate.rendererRevision).toBe("environment-card-r1");
+    expect(environmentTemplate.rendererRevision).toBe("environment-card-r2");
   });
 
   test("treats environment and feature English titles as optional fields", () => {
@@ -60,7 +60,7 @@ describe("环境 Template 1.0.0", () => {
     expect(buildTemplateSupportManifest({
       templates: templateRegistry.list(),
       authoringCapabilities: [environmentAuthoring],
-      rendererRevisions: new Set(["environment-card-r1"]),
-    }).templates).toEqual([{ id: "环境", version: "1.0.0", rendererRevision: "environment-card-r1" }]);
+      rendererRevisions: new Set(["environment-card-r2"]),
+    }).templates).toEqual([{ id: "环境", version: "1.0.0", rendererRevision: "environment-card-r2" }]);
   });
 });

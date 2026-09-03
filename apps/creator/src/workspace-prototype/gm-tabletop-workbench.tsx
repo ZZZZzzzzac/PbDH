@@ -14,7 +14,7 @@ import { gmTabletopZoomSteps } from "./gm-tabletop-viewport.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
 import { gmCardPixelsPerDesignUnit } from "./gm-tabletop-geometry.ts";
 import { AutoFitPreview, ResourceIcon } from "./resource-preview.tsx";
-import { orderTabsByKey, type TabDropPlacement } from "./tab-order.ts";
+import { orderTabsByKey, shouldActivateTabDrag, type TabDropPlacement } from "./tab-order.ts";
 
 export type GmTabletopWorkbenchSnapshot = {
   tabletops: readonly TabletopDocumentModel[];
@@ -89,7 +89,11 @@ export function GmTabletopWorkbench({
   function moveTabPointer(event: PointerEvent<HTMLDivElement>) {
     const drag = tabDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    if (Math.abs(event.clientX - drag.startX) > 4) drag.moved = true;
+    if (!drag.moved && shouldActivateTabDrag(drag.startX, event.clientX)) {
+      drag.moved = true;
+      setDraggedTabKey(drag.sourceKey);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     if (!drag.moved) return;
     event.preventDefault();
     setDropTarget(dropAt(event.clientX, event.clientY));
@@ -137,8 +141,6 @@ export function GmTabletopWorkbench({
         onPointerDown={(event) => {
           if (event.button !== 0 || (event.target as Element).closest(".tabletop-tab-close")) return;
           tabDragRef.current = { pointerId: event.pointerId, sourceKey: tabletop.id, startX: event.clientX, moved: false };
-          setDraggedTabKey(tabletop.id);
-          event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={moveTabPointer}
         onPointerUp={finishTabPointer}

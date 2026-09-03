@@ -1571,6 +1571,12 @@ export function CreatorWorkspacePrototype({
       case "remove-portrait": if (active && resource) replaceActive(removePortrait(active, resource.id)); return;
       case "set-editor-share": setEditorColumnShare(command.value); return;
       case "authoring-value": updateReferenceValue(command.path, command.value); return;
+      case "replace-authoring-data":
+        if (active && resource) replaceActive(updateWorkspaceResourceData(active, (draft) => {
+          for (const key of Object.keys(draft)) delete draft[key];
+          Object.assign(draft, structuredClone(command.data));
+        }, resource.id));
+        return;
       case "attribution-value":
         if (active) replaceActive(updateResourceAttribution(active, (attribution) => { attribution[command.field] = command.value; }, resource?.id));
         return;

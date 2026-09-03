@@ -7,6 +7,7 @@ import {
   reconcileTabOrder,
   resourceTabKey,
   sameTabOrder,
+  shouldActivateTabDrag,
   writeStoredTabOrder,
 } from "../../apps/creator/src/workspace-prototype/tab-order.ts";
 
@@ -20,6 +21,12 @@ describe("Creator and GM tab ordering", () => {
     expect(moveTab(["a", "b", "c", "d"], "d", "b", "before")).toEqual(["a", "d", "b", "c"]);
     expect(moveTab(["a", "b", "c", "d"], "a", "c", "after")).toEqual(["b", "c", "a", "d"]);
     expect(moveTab(["a", "b"], "a", "a", "after")).toEqual(["a", "b"]);
+  });
+
+  test("keeps click-sized pointer jitter below the drag activation threshold", () => {
+    expect(shouldActivateTabDrag(100, 108)).toBe(false);
+    expect(shouldActivateTabDrag(100, 108.1)).toBe(true);
+    expect(shouldActivateTabDrag(100, 91.9)).toBe(true);
   });
 
   test("orders resource tabs across packages by their composite identity", () => {

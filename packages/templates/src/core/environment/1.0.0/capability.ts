@@ -60,8 +60,8 @@ export const environmentTemplate = deepFreeze<TemplateCoreCapability<Environment
     return { title, summary, searchText };
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
-  defaultPresentation: { mode: "text", fixedRatio: true },
-  rendererRevision: "environment-card-r1",
+  defaultPresentation: { mode: "text", fixedRatio: false },
+  rendererRevision: "environment-card-r2",
   tabletop: {
     stateSchema: { type: "object", properties: {}, additionalProperties: false },
     defaultState() {

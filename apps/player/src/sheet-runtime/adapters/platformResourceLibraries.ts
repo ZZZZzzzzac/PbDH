@@ -170,10 +170,18 @@ function toSheetResourceEntry(
     }
     case "职业": {
       const recommendedAttributes = isRecord(data.推荐初始属性) ? data.推荐初始属性 : undefined;
+      const hopeFeature = isRecord(data.希望特性) ? data.希望特性 : undefined;
       return {
         ...common,
+        描述: stringField(data.风味描述),
+        希望特性: structuredFeature(hopeFeature),
+        职业特性: structuredFeatures(data.特性),
         领域: Array.isArray(data.领域) ? data.领域.map(stringField).filter(Boolean).join(" + ") : stringField(data.领域),
-        推荐初始属性: stringField(recommendedAttributes?.说明),
+        推荐初始属性: ["敏捷", "力量", "灵巧", "本能", "风度", "知识"]
+          .map((name) => [name, stringField(recommendedAttributes?.[name]).trim()] as const)
+          .filter(([, score]) => score)
+          .map(([name, score]) => `${name} **${score}**`)
+          .join(" "),
         背景问题1: arrayItem(data.背景问题, 0),
         背景问题2: arrayItem(data.背景问题, 1),
         背景问题3: arrayItem(data.背景问题, 2),
@@ -204,7 +212,7 @@ function toSheetResourceEntry(
   }
 }
 
-function subclassFeatures(value: unknown): string {
+function structuredFeatures(value: unknown): string {
   if (!Array.isArray(value)) return "";
   return value.filter(isRecord).map((feature) => {
     const name = stringField(feature.名称).trim();
@@ -212,6 +220,15 @@ function subclassFeatures(value: unknown): string {
     return name && description ? `${name}：${description}` : name || description;
   }).filter(Boolean).join("\n\n");
 }
+
+function structuredFeature(value: Record<string, unknown> | undefined): string {
+  if (!value) return "";
+  const name = stringField(value.名称).trim();
+  const description = stringField(value.特性描述).trim();
+  return name && description ? `${name}：${description}` : name || description;
+}
+
+const subclassFeatures = structuredFeatures;
 
 function freeTemplateSections(value: unknown): Record<string, string> {
   if (!Array.isArray(value)) return {};

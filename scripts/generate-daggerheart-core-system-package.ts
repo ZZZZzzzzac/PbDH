@@ -49,7 +49,7 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.9";
+const resourcePackageVersion = "1.0.13";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
 const legacyManifest = JSON.parse(await readFile(
@@ -330,20 +330,18 @@ function feature(value: unknown) {
   return { 名称: prefix?.[1] ?? "特性", 描述: prefix ? text.slice(prefix[0].length) : text };
 }
 
-function recommendedAttributes(value: unknown): Array<Record<string, string>> {
-  if (Array.isArray(value)) return value.flatMap((item) => item && typeof item === "object"
-    ? Object.entries(item).map(([name, score]) => ({ [name]: string(score) }))
-    : []);
-  if (value && typeof value === "object") {
-    return Object.entries(value).map(([name, score]) => ({ [name]: string(score) }));
-  }
-  return [...string(value).matchAll(/([^\s<>]+)\s+\*\*([^*]+)\*\*/gu)]
-    .map((match) => ({ [match[1]!]: match[2]! }));
+function recommendedAttributes(value: unknown): Record<string, string> {
+  const result: Record<string, string> = Object.fromEntries(["敏捷", "力量", "灵巧", "本能", "风度", "知识"].map((name) => [name, ""]));
+  const entries = Array.isArray(value) ? value.flatMap((item) => item && typeof item === "object" ? Object.entries(item) : [])
+    : value && typeof value === "object" ? Object.entries(value)
+      : [...string(value).matchAll(/([^\s<>]+)\s+\*\*([^*]+)\*\*/gu)].map((match) => [match[1]!, match[2]!] as const);
+  for (const [name, score] of entries) if (name in result) result[name] = string(score);
+  return result;
 }
 
-function recommendedWeapons(value: unknown): string[] {
+function recommendedWeapons(value: unknown): string {
   return (Array.isArray(value) ? value : string(value).split("+"))
-    .map(string).map((item) => item.trim()).filter(Boolean);
+    .map(string).map((item) => item.trim()).filter(Boolean).join(" + ");
 }
 
 function transformAncestry(entry: SourceEntry) {
@@ -357,21 +355,52 @@ function transformCommunity(entry: SourceEntry) {
 function transformProfession(entry: SourceEntry) {
   return {
     名称: string(entry.名称),
+    原文: string(entry.原名),
     类型: string(entry.类型 || "职业"),
-    描述: string(entry.描述),
+    风味描述: string(entry.描述),
     领域: string(entry.领域).split("+").map((value) => value.trim()).filter(Boolean),
     生命点: string(entry.生命点),
     闪避值: string(entry.闪避值),
     职业物品: string(entry.职业物品),
-    希望特性: string(entry.希望特性),
-    职业特性: string(entry.职业特性),
+    希望特性: structuredHopeFeature(entry.希望特性),
+    特性: structuredProfessionFeatures(entry.职业特性, string(entry.名称)),
     推荐初始属性: recommendedAttributes(entry.推荐初始属性),
     推荐初始武器: recommendedWeapons(entry.推荐初始武器),
     推荐初始护甲: string(entry.推荐初始护甲),
     背景问题: [entry.背景问题1, entry.背景问题2, entry.背景问题3].map(string),
     关系问题: [entry.关系问题1, entry.关系问题2, entry.关系问题3].map(string),
-    施法属性: string(entry.施法属性),
   };
+}
+
+function structuredHopeFeature(value: unknown): { 名称: string; 原名: string; 特性描述: string } {
+  const parsed = feature(value);
+  return { 名称: parsed.名称, 原名: "", 特性描述: parsed.描述 };
+}
+
+function professionFeatureOriginalName(professionName: string, featureName: string): string {
+  const names: Record<string, Record<string, string>> = {
+    吟游诗人: { 鼓舞人心: "Rally" },
+    德鲁伊: { 野兽形态: "Beastform", 荒野恩泽: "Wildtouch" },
+    守护者: { 势不可挡: "Unstoppable" },
+    游侠: { 游侠专注: "Ranger's Focus" },
+    游荡者: { 隐匿无踪: "Cloaked", 隐匿偷袭: "Sneak Attack" },
+    神使: { 虔信骰: "Prayer Dice" },
+    术士: { 奥术感应: "Arcane Sense", 次级幻术: "Minor Illusion", 引导原力: "Channel Raw Power" },
+    战士: { 借机攻击: "Attack of Opportunity", 战斗专训: "Combat Training" },
+    法师: { 魔法伎俩: "Prestidigitation", 奇异规律: "Strange Patterns" },
+  };
+  return names[professionName]?.[featureName] ?? "";
+}
+
+function structuredProfessionFeatures(value: unknown, professionName: string): Array<{ 名称: string; 原名: string; 特性描述: string }> {
+  const source = string(value).trim();
+  if (!source) return [];
+  const markers = [...source.matchAll(/:red\[\*\*(.*?)\*\*\]：/gu)];
+  return markers.map((marker, index) => ({
+    名称: marker[1]!.trim(),
+    原名: professionFeatureOriginalName(professionName, marker[1]!.trim()),
+    特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
+  }));
 }
 
 function transformSubclass(entry: SourceEntry) {

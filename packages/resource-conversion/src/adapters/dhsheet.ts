@@ -8,7 +8,10 @@ import {
   jsonArtifact,
   formatNamedFeature,
   formatNamedFeatures,
+  formatNamedFeatureGroup,
   namedFeature,
+  namedFeatures,
+  namedFeatureGroup,
   numberedTextList,
   parseJson,
   recommendedAttributes,
@@ -168,21 +171,20 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   if (group === "profession") return {
     名称: text(raw.名称),
     类型: text(raw.类型 || "职业"),
-    描述: text(raw.描述 || raw.简介),
+    风味描述: text(raw.风味描述 || raw.描述 || raw.简介),
     领域: splitJoined(raw.领域).length > 0
       ? splitJoined(raw.领域)
       : [text(raw.领域1), text(raw.领域2)].filter(Boolean),
     生命点: text(raw.生命点 || raw.起始生命 || raw.初始生命点),
     闪避值: text(raw.闪避值 || raw.起始闪避 || raw.初始闪避值),
     职业物品: text(raw.职业物品 || raw.起始物品),
-    希望特性: text(raw.希望特性),
-    职业特性: text(raw.职业特性),
+    希望特性: namedFeatureGroup(raw.希望特性),
+    特性: namedFeatures(raw.特性 ?? raw.职业特性),
     推荐初始属性: recommendedAttributes(raw.推荐初始属性),
-    推荐初始武器: splitJoined(raw.推荐初始武器),
+    推荐初始武器: splitJoined(raw.推荐初始武器).join(" + "),
     推荐初始护甲: text(raw.推荐初始护甲),
     背景问题: numberedTextList(raw, "背景问题", "背景问题"),
     关系问题: numberedTextList(raw, "关系问题", "关系问题"),
-    施法属性: text(raw.施法属性 || raw.施法),
   };
   if (group === "ancestry") return {
     名称: text(raw.种族),
@@ -284,10 +286,10 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
   const id = resource.sourceId;
   if (group === "profession") return {
     ...fields,
-    id, 名称: resource.name, 简介: text(fields.描述), 描述: text(fields.描述),
+    id, 名称: resource.name, 简介: text(fields.风味描述), 描述: text(fields.风味描述),
     领域1: splitJoined(fields.领域)[0] ?? "", 领域2: splitJoined(fields.领域)[1] ?? "",
     起始生命: Number(text(fields.生命点)) || 0, 起始闪避: Number(text(fields.闪避值)) || 0,
-    起始物品: text(fields.职业物品), 希望特性: text(fields.希望特性), 职业特性: text(fields.职业特性),
+    起始物品: text(fields.职业物品), 希望特性: formatNamedFeatureGroup(fields.希望特性), 职业特性: formatNamedFeatures(fields.特性),
   };
   if (group === "community") return {
     id, 名称: resource.name, 特性: text(fields.性格), 简介: text(fields.简介), 描述: formatNamedFeature(fields.特性),

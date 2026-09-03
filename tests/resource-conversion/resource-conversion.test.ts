@@ -148,19 +148,18 @@ const professionBatch: TemporaryResourceBatch = {
     fields: {
       名称: "吟游诗人",
       类型: "职业",
-      描述: "富有魅力的表演者。",
+      风味描述: "富有魅力的表演者。",
       领域: ["优雅", "典籍"],
       生命点: "5",
       闪避值: "10",
       职业物品: "一本浪漫小说",
-      希望特性: "大闹一场",
-      职业特性: "鼓舞人心",
-      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 风度: "+2" }],
-      推荐初始武器: ["刺剑", "匕首"],
+      希望特性: { 名称: "大闹一场", 原名: "", 特性描述: "干扰一个目标。" },
+      特性: [{ 名称: "鼓舞人心", 原名: "", 特性描述: "每场游戏开始时获得一枚鼓舞骰。" }],
+      推荐初始属性: { 敏捷: "+0", 力量: "-1", 灵巧: "+1", 本能: "+0", 风度: "+2", 知识: "+1" },
+      推荐初始武器: "刺剑 + 匕首",
       推荐初始护甲: "填充布甲",
       背景问题: ["谁教会了你自信？", "你曾爱过谁？"],
       关系问题: ["我们为何成为朋友？", "我做了什么让你烦恼？"],
-      施法属性: "风度",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -740,9 +739,12 @@ describe("registered Template mapping and native pbres", () => {
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.template).toEqual({ id: "职业", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
-      领域: ["优雅", "典籍"], 生命点: "5", 闪避值: "10", 施法属性: "风度",
-      推荐初始属性: [], 推荐初始武器: [], 背景问题: [], 关系问题: [],
+      领域: ["优雅", "典籍"], 生命点: "5", 闪避值: "10",
+      希望特性: { 名称: "", 原名: "", 特性描述: "大闹一场" },
+      特性: [{ 名称: "", 原名: "", 特性描述: "鼓舞人心" }],
+      推荐初始属性: { 敏捷: "", 力量: "", 灵巧: "", 本能: "", 风度: "", 知识: "" }, 推荐初始武器: "", 背景问题: [], 关系问题: [],
     });
+    expect(candidate?.data).not.toHaveProperty("施法属性");
     expect(candidate?.diagnostics).toEqual([]);
   });
 
@@ -764,10 +766,11 @@ describe("registered Template mapping and native pbres", () => {
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.data).toMatchObject({
       领域: ["优雅", "典籍"],
-      推荐初始属性: [{ 敏捷: "+0" }, { 力量: "-1" }, { 风度: "+2" }],
-      推荐初始武器: ["刺剑", "匕首"],
+      推荐初始属性: { 敏捷: "+0", 力量: "-1", 灵巧: "", 本能: "", 风度: "+2", 知识: "" },
+      推荐初始武器: "刺剑 + 匕首",
       背景问题: ["谁教会了你自信？", "你曾爱过谁？"],
       关系问题: ["我们为何成为朋友？"],
+      特性: [{ 名称: "", 原名: "", 特性描述: "鼓舞人心" }],
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -779,9 +782,10 @@ describe("registered Template mapping and native pbres", () => {
     expect(exported.report.diagnostics).toEqual([]);
     expect(kidEngineRead(exported.artifact.bytes)).toMatchObject({
       type: "class", description: "富有魅力的表演者。", evasion: "10", hp: "5",
-      domain1: "优雅", domain2: "典籍", spellcastingAttribute: "风度",
-      classFeature: "鼓舞人心", hopeFeature: "大闹一场", startingItems: "一本浪漫小说",
+      domain1: "优雅", domain2: "典籍",
+      classFeature: "鼓舞人心：每场游戏开始时获得一枚鼓舞骰。", hopeFeature: "大闹一场：干扰一个目标。", startingItems: "一本浪漫小说",
     });
+    expect(kidEngineRead(exported.artifact.bytes)).not.toHaveProperty("spellcastingAttribute");
   });
 
   test("profession remains complete through dhsheet and ZZZ native shapes", async () => {

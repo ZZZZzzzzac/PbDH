@@ -105,6 +105,96 @@ describe("Daggerheart Core 稳定参考卡面", () => {
     expect(renderer.styles).toContain('[data-template-id="领域卡"] .reference-card-flavor{flex:none;margin-top:auto}');
   });
 
+  test("职业卡以非固定比例完整渲染资料和结构化特性组", () => {
+    const renderer = stableReferenceRendererFor(professionTemplate.id, professionTemplate.version)!;
+    const markup = renderToStaticMarkup(renderer.render({
+      data: {
+        ...professionTemplate.defaultData,
+        名称: "战士",
+        原文: "Warrior",
+        风味描述: "投入一生磨炼武器与战斗技艺。",
+        领域: ["利刃", "骸骨"],
+        生命点: "6",
+        闪避值: "11",
+        希望特性: { 名称: "绝不手软", 原名: "No Mercy", 特性描述: "花费希望点，攻击掷骰获得加值。" },
+        特性: [{ 名称: "借机攻击", 原名: "Attack of Opportunity", 特性描述: "阻止敌人离开。" }],
+        推荐初始属性: { 敏捷: "+2", 力量: "+1", 灵巧: "+0", 本能: "+1", 风度: "-1", 知识: "+0" },
+        推荐初始武器: "长剑",
+        推荐初始护甲: "链甲",
+        职业物品: "爱人的画像或一块磨刀石",
+        背景问题: ["是谁教会你战斗？", "谁曾背叛你？", "你渴望造访哪里？"],
+        关系问题: ["我们如何相识？", "你如何帮助我？", "我在帮你克服什么？"],
+      },
+      state: {},
+      assets: {},
+      presentation: { mode: "text", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+
+    expect(markup).toContain("绝不手软");
+    expect(markup).toContain("No Mercy");
+    expect(markup).toMatch(/<h3><span>借机攻击<\/span><small>Attack of Opportunity<\/small><\/h3>/u);
+    expect(markup).toContain("阻止敌人离开。");
+    expect(markup).not.toContain("职业特性：");
+    expect(markup).toContain("reference-card-frame is-fluid");
+    expect(markup).toMatch(/profession-card-header-columns[^>]*><div class="profession-card-identity">.*reference-card-title[^>]*>战士<\/h1><p class="reference-card-original-title">Warrior<\/p><\/div><div class="profession-card-taxonomy"><div class="reference-card-kicker">职业<\/div><div class="reference-card-meta"><span>利刃<\/span><span>骸骨<\/span><\/div><\/div>/u);
+    expect(renderer.styles).toContain(".profession-card-header-columns{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end");
+    expect(renderer.styles).toContain(".profession-card-taxonomy .reference-card-meta span{min-width:0;padding:0;border:0;background:none");
+    for (const expected of [
+      "投入一生磨炼武器与战斗技艺。",
+      "利刃",
+      "骸骨",
+      ">6<",
+      ">11<",
+      "长剑",
+      "链甲",
+      "爱人的画像或一块磨刀石",
+      "是谁教会你战斗？",
+      "谁曾背叛你？",
+      "你渴望造访哪里？",
+      "我们如何相识？",
+      "你如何帮助我？",
+      "我在帮你克服什么？",
+    ]) {
+      expect(markup).toContain(expected);
+    }
+    expect(markup).toMatch(/profession-card-attribute-names[^>]*><span>敏捷<\/span>.*<span>知识<\/span>/u);
+    expect(markup).toMatch(/profession-card-attribute-values[^>]*><b>\+2<\/b>.*<b>\+0<\/b>/u);
+    expect(markup).toContain("长剑 + 链甲");
+    expect(markup).not.toContain("施法属性");
+    expect(markup).not.toContain("信息索引");
+  });
+
+  test("职业卡不为为空的非关键字段生成占位 DOM", () => {
+    const renderer = stableReferenceRendererFor(professionTemplate.id, professionTemplate.version)!;
+    const markup = renderToStaticMarkup(renderer.render({
+      data: {
+        ...professionTemplate.defaultData,
+        名称: "极简职业",
+        类型: "职业",
+        领域: ["利刃"],
+        生命点: "5",
+        闪避值: "10",
+        希望特性: { 名称: "保持希望", 原名: "", 特性描述: "保持希望。" },
+        特性: [{ 名称: "专注", 特性描述: "保持阵线。" }],
+        风味描述: " ",
+        职业物品: "",
+        背景问题: ["", "  "],
+        关系问题: [],
+      },
+      state: {},
+      assets: {},
+      presentation: { mode: "text", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+
+    for (const hidden of ["风味描述", "创建配置", "职业物品", "背景问题", "关系问题"]) {
+      expect(markup).not.toContain(hidden);
+    }
+    expect(markup).toMatch(/<div class="profession-card-identity"><h1[^>]*>极简职业<\/h1><\/div>/u);
+    expect(markup).not.toContain("reference-card-original-title");
+  });
+
   test("子职业采用方案 A，身份值在标签上方并渲染具名特性卡", () => {
     const renderer = stableReferenceRendererFor(subclassTemplate.id, subclassTemplate.version)!;
     const markup = renderToStaticMarkup(renderer.render({

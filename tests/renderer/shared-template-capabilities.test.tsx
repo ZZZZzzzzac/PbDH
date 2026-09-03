@@ -121,7 +121,7 @@ describe("other first-party templates share ancestry card capabilities", () => {
     expect(weaponRendererStyles).toContain(".weapon-art{position:relative;height:170px");
     expect(freeRendererStyles).toContain(".free-art{height:170px");
     expect(environmentRendererStyles).toContain(".environment-art{height:170px");
-    expect(environmentRendererStyles).toContain(".environment-card.is-split .environment-header{position:absolute;z-index:2;inset:0 0 auto;height:170px");
+    expect(environmentRendererStyles).toContain(".environment-card.is-split .environment-header{position:absolute;inset:0 0 auto;height:170px");
   });
 
   test("all first-party feature cards use compact padding", () => {
@@ -268,7 +268,7 @@ describe("other first-party templates share ancestry card capabilities", () => {
   test("fits only effect text instead of statistics or flexible card whitespace", () => {
     expect(referenceCardStyles).toContain(".reference-card-sections{min-height:0");
     expect(armorRendererStyles).toContain(".armor-effects{min-height:0");
-    expect(environmentRendererStyles).toContain(".environment-features{min-height:0;flex:1;overflow:hidden}");
+    expect(environmentRendererStyles).toContain(".environment-features{min-height:0;flex:1;overflow:hidden;");
     expect(weaponRendererStyles).toContain(".weapon-description{min-height:0;flex:1");
   });
 
@@ -277,7 +277,8 @@ describe("other first-party templates share ancestry card capabilities", () => {
     expect(ancestryRendererStyles).toContain(".ancestry-feature h2::after");
     expect(adversaryRendererStyles).not.toContain(".enemy-feature h2::after");
     expect(armorRendererStyles).toContain(".armor-feature h2::after");
-    expect(environmentRendererStyles).toContain(".environment-feature h2::after");
+    expect(environmentRendererStyles).toContain(".environment-feature-heading::after");
+    expect(environmentRendererStyles).not.toContain(".environment-feature h2::after");
     expect(freeRendererStyles).toContain(".free-block h2::after");
     expect(weaponRendererStyles).toContain(".weapon-feature h2::after");
   });
