@@ -33,6 +33,8 @@
     "measure:renderer": "tsx scripts/measure-renderer-performance.ts",
     "template:status": "tsx scripts/template-status.ts",
     "system-package": "tsx scripts/system-package-cli.ts",
+    "build:daggerheart-core": "tsx scripts/build-daggerheart-core-system-package.ts",
+    "check:daggerheart-core": "tsx scripts/build-daggerheart-core-system-package.ts --check",
     "typecheck": "tsc --noEmit",
     "dev:platform": "npm run dev -w @pbdh/platform",
     "build:platform": "npm run build -w @pbdh/platform",

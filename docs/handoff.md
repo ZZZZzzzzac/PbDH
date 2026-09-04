@@ -1,6 +1,6 @@
 # PbDH 当前交接
 
-更新时间：2026-09-04
+更新时间：2026-09-05
 
 ## 接手入口
 
@@ -12,7 +12,7 @@
 2. 运行 `git status --short`。工作树包含大量未提交和未跟踪改动，其中既有本轮改动，也有此前工作；全部按用户资产处理，不清理、不还原。
 3. 涉及 Daggerheart Core 资源时，额外阅读 `apps/player/system-package-sources/daggerheart-core/AGENTS.md`。
 
-完成条件：修改后先跑相关定向测试，最后跑 `npm run verify`；资源源文件发生变化时，JSON 审阅副本与 PBRES 必须重新生成并保持一致。
+完成条件：修改后先跑相关定向测试，最后跑 `npm run verify`；资源源文件发生变化时，运行 `npm run build:daggerheart-core` 重新生成两个 PBRES。
 
 ## 本轮完成内容
 
@@ -27,12 +27,20 @@
 
 ### 特性翻译与资源数据
 
-- 同英文名且效果相同或近似的特性译名、描述通过 `extraction-overrides.json` 统一；括号内参数属于正确数据，不能删除。
+- 同英文名且效果相同或近似的特性译名、描述已回写 ParaTranz 权威译文；括号内参数属于正确数据，不能删除。
 - 同英文名但效果明显不同且形成规模时允许不同译名。护甲的 Heavy 当前明确分为：
   - 链甲系，`闪避值 −1。`：`沉重`
   - 全板甲系，`闪避值 −2；敏捷 −1。`：`极重`
 - 资源中的敌人特性描述继续保留具体敌人名称；只有下拉预设使用 `<该敌人>`。
-- 英文官方原文不修改。所有人工翻译修订都放在 `apps/player/system-package-sources/daggerheart-core/extraction-overrides.json`，同时记录提取器旧输出 `expected`，保持上游变化时 fail-closed。
+- 英文官方原文不修改。所有人工翻译修订先回写 ParaTranz，仓库不再保留独立 override。
+
+### 本地化字段英文残留清理
+
+- 已遍历玩家与 GM 两个资源包的全部 `resources[].data`，修正 222 个包含非预期拉丁字母的本地化字符串；`原文`、`特性原文`、骰子记法（如 `2d8+3`）和独立变量 `X` 保留。
+- 玩家包修正 41 项，GM 包修正 181 项。包括资源名称、特性名称与描述、经历、潜在敌人、动机与战术、引导问题、攻击武器及简介。
+- 对照 `DaggerHeart_CN` 翻译工程确认 `Cryptimoths`/`Yufos` 使用“秘蛾/幽浮”；补译 `Dragon Bond` 为“龙之羁绊”、`Ruins` 为“遗迹”，并修复游唱乐手描述中的残损 `|item (` 标记。
+- 提取器会结构化剔除 ParaTranz 译文中用于对照的英文，并在打包前对非原文字段执行拉丁字母 fail-closed 扫描。
+- 定向测试会扫描两个生成包，阻止非预期拉丁字母再次进入本地化字段。
 
 ### 武器位阶提取修复
 
@@ -54,20 +62,15 @@
 
 - Daggerheart Core 玩家资源包版本：`1.0.19`。
 - 玩家资源：956；GM 资源：311。
-- 玩家包当前摘要：`sha256:d089eb844f556c8a489c624c1d13b0d22112fd728e1b9dfad0aa85af38bc22e1`。
-- GM 包当前摘要：`sha256:cfff683dedab685991322866ac2f99c36a9e3d47a2d001b918cf587d05d47a55`。
-- 已更新：
-  - `apps/player/system-package-sources/daggerheart-core/resources/*.json`
-  - `daggerheart-core-player.resource-package.json`
-  - `daggerheart-core-gm.resource-package.json`
-  - `apps/player/public/system-packages/daggerheart-core/resources/*.pbres`
-  - `apps/player/src/daggerheart-core-preset.generated.json`
+- 玩家包当前摘要：`sha256:1b99a2afa3fa6e7c36831bd6e3b4c1c6e24cd596b365751cc72dc17f1c6710ea`。
+- GM 包当前摘要：`sha256:68ecefc68a5771bfd703952ed269499afae4dcd998aada14c793c513c6aa12c4`。
+- 唯一人工维护的资源内容源是 `docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json`。
+- 运行时只提交 `apps/player/public/system-packages/daggerheart-core/resources/*.pbres`；临时提取 JSON、PBRES 审阅 JSON、`extraction-overrides.json` 和 `source-provenance.json` 已移除。
 
-资源文本或提取覆盖变化后的执行顺序：
+资源文本变化后的单一生成入口：
 
 ```powershell
-npx tsx scripts/extract-daggerheart-srd2-resources.ts
-npx tsx scripts/generate-daggerheart-core-system-package.ts
+npm run build:daggerheart-core
 npm run verify
 ```
 
@@ -75,7 +78,7 @@ npm run verify
 
 最终 `npm run verify` 已通过：
 
-- TypeScript：99 个测试文件，806 项测试。
+- TypeScript：99 个测试文件，807 项测试。
 - Python：141 项测试。
 - 依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 生产构建全部通过。
 - Python 仍有既有 FastAPI/Pydantic deprecation warnings；Vite 仍有入口 chunk 大于 500 KiB 的提示，本轮未处理。
@@ -88,8 +91,9 @@ Creator 页面可以正常加载，但浏览器本地当时没有打开的资源
 - `packages/templates/src/frontend/authoring-primitives.tsx`：支持预设选择的共享输入控件。
 - `packages/templates/src/frontend/types.ts`、`authoring-surface.tsx`：整份数据原子回写接口。
 - `scripts/extract-daggerheart-srd2-resources.ts`：SRD 提取及跨记录位阶继承。
-- `apps/player/system-package-sources/daggerheart-core/extraction-overrides.json`：人工审阅的翻译修订。
-- `scripts/generate-daggerheart-core-system-package.ts`：JSON 审阅副本与 PBRES 生成入口。
+- `docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json`：唯一资源内容源。
+- `scripts/build-daggerheart-core-system-package.ts`：临时提取与 PBRES 构建的单一入口。
+- `scripts/generate-daggerheart-core-system-package.ts`：PBRES 打包实现，不直接作为日常入口。
 - `tests/templates/template-authoring-surface.test.tsx`：预设数量、中文标签与参数规则。
 - `tests/player/daggerheart-core-system-package.test.ts`：武器位阶分布、Heavy 译名及生成包一致性。
 - `tests/tabletop/tabletop-core.test.ts`：GM 桌面整份实例数据替换。

@@ -43,6 +43,16 @@ import {
   weaponRendererStyles,
   WeaponAuthoringEditor,
 } from "../../packages/templates/src/frontend/index.ts";
+import { adversaryRendererRevision as adversaryRendererRevisionV101 } from "../../packages/templates/src/frontend/adversary/1.0.1/renderer.tsx";
+import { ancestryRendererRevision as ancestryRendererRevisionV101 } from "../../packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx";
+import { armorRendererRevision as armorRendererRevisionV101 } from "../../packages/templates/src/frontend/armor/1.0.1/renderer.tsx";
+import { communityRendererRevision as communityRendererRevisionV101 } from "../../packages/templates/src/frontend/community/1.0.1/renderer.tsx";
+import { domainRendererRevision as domainRendererRevisionV101 } from "../../packages/templates/src/frontend/domain/1.0.1/renderer.tsx";
+import { environmentRendererRevision as environmentRendererRevisionV101 } from "../../packages/templates/src/frontend/environment/1.0.1/renderer.tsx";
+import { freeRendererRevision as freeRendererRevisionV101 } from "../../packages/templates/src/frontend/free/1.0.1/renderer.tsx";
+import { itemRendererRevision as itemRendererRevisionV101, itemRendererStyles as itemRendererStylesV101 } from "../../packages/templates/src/frontend/item/1.0.1/renderer.tsx";
+import { subclassRendererRevision as subclassRendererRevisionV101 } from "../../packages/templates/src/frontend/subclass/1.0.1/renderer.tsx";
+import { weaponRendererRevision as weaponRendererRevisionV101 } from "../../packages/templates/src/frontend/weapon/1.0.1/renderer.tsx";
 import { weaponBurdenOptions, weaponDamageTypeOptions, weaponRangeOptions, weaponTraitOptions, weaponTypeOptions } from "../../packages/templates/src/frontend/weapon/1.0.0/authoring-editor.tsx";
 
 type GenericRenderer = RendererRevisionCapability<Record<string, unknown>, unknown, ReactNode>;
@@ -58,6 +68,19 @@ const cases = [
   [professionTemplate, professionRendererRevision],
   [subclassTemplate, subclassRendererRevision],
   [weaponTemplate, weaponRendererRevision],
+] as const;
+
+const headerSummaryCases = [
+  ["敌人", adversaryTemplate, adversaryRendererRevisionV101],
+  ["种族", ancestryTemplate, ancestryRendererRevisionV101],
+  ["护甲", armorTemplate, armorRendererRevisionV101],
+  ["社群", communityTemplate, communityRendererRevisionV101],
+  ["领域卡", domainTemplate, domainRendererRevisionV101],
+  ["环境", environmentTemplate, environmentRendererRevisionV101],
+  ["自由", freeTemplate, freeRendererRevisionV101],
+  ["物品", itemTemplate, itemRendererRevisionV101],
+  ["子职业", subclassTemplate, subclassRendererRevisionV101],
+  ["武器", weaponTemplate, weaponRendererRevisionV101],
 ] as const;
 
 function renderCard(template: (typeof cases)[number][0], renderer: (typeof cases)[number][1], mode: "text" | "split" | "image" = "text") {
@@ -116,6 +139,30 @@ describe("first-party template capabilities", () => {
     expect(freeRendererStyles).toContain(".free-header{padding:10px 14px");
     expect(weaponRendererStyles).toContain(".weapon-header{flex:none;padding:10px 14px");
     expect(adversaryRendererStyles).toContain("top: calc(var(--enemy-media-height) + 10px)");
+  });
+
+  test.each(headerSummaryCases)("%s 1.0.1 renders its summary inside the title header", (_name, template, renderer) => {
+    const data = structuredClone(template.defaultData) as Record<string, unknown>;
+    data.简介 = "简介位置标记";
+    const genericRenderer = renderer as unknown as GenericRenderer;
+    const markup = renderToStaticMarkup(genericRenderer.render({
+      data,
+      state: genericRenderer.defaultState(data),
+      assets: {},
+      presentation: { mode: "text", fixedRatio: true },
+      attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+    const summaryIndex = markup.indexOf("简介位置标记");
+    const headerStart = markup.lastIndexOf("<header", summaryIndex);
+    const headerEnd = markup.indexOf("</header>", summaryIndex);
+    expect(summaryIndex).toBeGreaterThan(headerStart);
+    expect(headerStart).toBeGreaterThanOrEqual(0);
+    expect(headerEnd).toBeGreaterThan(summaryIndex);
+  });
+
+  test("item feature box follows its content height", () => {
+    expect(itemRendererStylesV101).toContain(".item-card-feature{min-height:0;flex:none;");
+    expect(itemRendererStylesV101).not.toContain(".item-card-feature{min-height:0;flex:1;");
   });
 
   test("all first-party split cards share the ancestry image proportion", () => {

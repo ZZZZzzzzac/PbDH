@@ -8,70 +8,28 @@ import { templateRegistry } from "../packages/templates/src/core/index.ts";
 
 type RecordEntry = { key: string; original: string; translation: string; stage: number };
 type SourceResource = Record<string, unknown> & { ID: string; 名称: string };
-type ExtractionOverride = {
-  kind: string;
-  original: string;
-  fields: Array<{ field: string; expected: unknown; value: unknown }>;
-};
-type FeatureNameOverride = {
-  kind: string;
-  featureOriginal: string;
-  value: string;
-  changes: Array<{ resourceOriginal: string; expected: string }>;
-};
-type FeatureDescriptionOverride = {
-  kind: string;
-  featureOriginal: string;
-  value?: string;
-  changes: Array<{ resourceOriginal: string; expected: string; value?: string }>;
-};
-type ParameterizedFeatureNameOverride = {
-  kind: string;
-  baseOriginal: string;
-  baseName: string;
-  expected: Record<string, Record<string, number>>;
-};
-
 const kindTemplateId: Record<string, string> = {
   ancestries: "种族", communities: "社群", classes: "职业", subclasses: "子职业",
   weapons: "武器", armor: "护甲", loot: "物品", "domain-cards": "领域卡",
   adversaries: "敌人", environments: "环境",
 };
+// 已发布资源的身份不能因纠正译名而漂移。
+const publishedResourceIds = new Map([
+  ["weapons\u0000武器:回响利刃:4:副武器", "0585bc96-de93-5371-8d04-c4ab5d2da68f"],
+]);
 
 const repositorySource = "docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json";
 const sourcePath = argument("--source") ?? repositorySource;
 const resolvedSourcePath = path.resolve(sourcePath);
 const sourceBytes = await readFile(resolvedSourcePath);
-const sourceSha256 = createHash("sha256").update(sourceBytes).digest("hex");
 const records = JSON.parse(sourceBytes.toString("utf8")) as RecordEntry[];
 if (!Array.isArray(records) || records.length !== 1102) throw new Error(`Expected 1102 paired records, received ${records.length}`);
 for (const record of records) if (!record.original?.trim()) throw new Error(`Missing original text: ${record.key}`);
+const localizedExperiences = buildLocalizedExperienceIndex(records);
 
-const officialOutputRoot = path.resolve("apps/player/system-package-sources/daggerheart-core/resources");
-const outputRoot = path.resolve(argument("--output-root") ?? officialOutputRoot);
-const extractionOverrides = JSON.parse(await readFile(
-  path.resolve("apps/player/system-package-sources/daggerheart-core/extraction-overrides.json"),
-  "utf8",
-)) as {
-  schemaVersion: number;
-  overrides: ExtractionOverride[];
-  featureNameOverrides: FeatureNameOverride[];
-  featureDescriptionOverrides: FeatureDescriptionOverride[];
-  parameterizedFeatureNameOverrides: ParameterizedFeatureNameOverride[];
-};
-if (
-  extractionOverrides.schemaVersion !== 4
-  || !Array.isArray(extractionOverrides.overrides)
-  || !Array.isArray(extractionOverrides.featureNameOverrides)
-  || !Array.isArray(extractionOverrides.featureDescriptionOverrides)
-  || !Array.isArray(extractionOverrides.parameterizedFeatureNameOverrides)
-) {
-  throw new Error("Invalid Daggerheart extraction overrides.");
-}
-const appliedFeatureNameOverrides = new Set<FeatureNameOverride["changes"][number]>();
-const appliedFeatureDescriptionOverrides = new Set<FeatureDescriptionOverride["changes"][number]>();
-const observedParameterizedFeatureNames = new Map<ParameterizedFeatureNameOverride, Record<string, Record<string, number>>>();
-const previous = await loadPreviousMedia(officialOutputRoot);
+const outputRootArgument = argument("--output-root");
+if (!outputRootArgument) throw new Error("Missing required --output-root; use npm run build:daggerheart-core for normal generation.");
+const outputRoot = path.resolve(outputRootArgument);
 const proseFields = new Set([
   "简介", "特性描述", "描述", "动机与战术", "经历", "趋向", "潜在敌人", "引导问题", "职业物品", "背景问题", "关系问题",
 ]);
@@ -107,78 +65,18 @@ for (const [kind, entries] of Object.entries(resources) as Array<[keyof typeof r
       ? `子职业:${String(entry.主职)}:${String(entry.名称)}:${String(entry.等级)}`
       : stableResourceId(kind, entry.ID);
     normalizeResourceText(entry);
-    applyExtractionOverrides(kind, entry);
-    applyParameterizedFeatureNameOverrides(kind, entry);
-    applyFeatureNameOverrides(kind, entry);
-    applyFeatureDescriptionOverrides(kind, entry);
+    assertNoUnexpectedLatin(kind, entry);
     if (!entry.ID || !entry.名称) throw new Error(`${kind}: resource is missing ID or 名称`);
     if (ids.has(entry.ID)) throw new Error(`${kind}: duplicate ID ${entry.ID}`);
     ids.add(entry.ID);
-    const media = previous[kind]?.get(String(entry.名称));
-    if (media) Object.assign(entry, media);
     const { ID, 卡图, 卡背, ...data } = entry;
     if (!validate(data)) throw new Error(`${kind}/${entry.ID}: does not match ${templateId} schema: ${JSON.stringify(validate.errors)}`);
   }
 }
-const featureNameOverrideCount = extractionOverrides.featureNameOverrides.reduce((total, override) => total + override.changes.length, 0);
-if (appliedFeatureNameOverrides.size !== featureNameOverrideCount) {
-  const missing = extractionOverrides.featureNameOverrides.flatMap((override) => override.changes
-    .filter((change) => !appliedFeatureNameOverrides.has(change))
-    .map((change) => `${override.kind}/${change.resourceOriginal}/${override.featureOriginal}`));
-  throw new Error(`Unused feature name overrides: ${missing.join(", ")}`);
-}
-const featureDescriptionOverrideCount = extractionOverrides.featureDescriptionOverrides.reduce((total, override) => total + override.changes.length, 0);
-if (appliedFeatureDescriptionOverrides.size !== featureDescriptionOverrideCount) {
-  const missing = extractionOverrides.featureDescriptionOverrides.flatMap((override) => override.changes
-    .filter((change) => !appliedFeatureDescriptionOverrides.has(change))
-    .map((change) => `${override.kind}/${change.resourceOriginal}/${override.featureOriginal}`));
-  throw new Error(`Unused feature description overrides: ${missing.join(", ")}`);
-}
-for (const override of extractionOverrides.parameterizedFeatureNameOverrides) {
-  const observed = observedParameterizedFeatureNames.get(override) ?? {};
-  if (JSON.stringify(sortedFeatureNameCounts(observed)) !== JSON.stringify(sortedFeatureNameCounts(override.expected))) {
-    throw new Error(`${override.kind}/${override.baseOriginal}: parameterized feature names changed; review the upstream diff before updating this override`);
-  }
-}
-
-function sortedFeatureNameCounts(value: Record<string, Record<string, number>>): Array<[string, Array<[string, number]>]> {
-  return Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([original, names]) => [
-    original,
-    Object.entries(names).sort(([left], [right]) => left.localeCompare(right)),
-  ]);
-}
-
 await mkdir(outputRoot, { recursive: true });
 for (const [kind, entries] of Object.entries(resources)) {
   await writeFile(path.join(outputRoot, `${kind}.json`), `${JSON.stringify(entries, null, 2)}\n`, "utf8");
 }
-const provenanceOutput = outputRoot === officialOutputRoot
-  ? path.resolve("apps/player/system-package-sources/daggerheart-core/source-provenance.json")
-  : path.join(outputRoot, "source-provenance.json");
-await writeFile(provenanceOutput, `${JSON.stringify({
-  schemaVersion: 1,
-  sourceFile: resolvedSourcePath === path.resolve(repositorySource) ? repositorySource : path.basename(sourcePath),
-  sha256: sourceSha256,
-  recordCount: records.length,
-  extractedCounts: Object.fromEntries(Object.entries(resources).map(([kind, entries]) => [kind, entries.length])),
-  comparison: {
-    playerResourceCount: Object.entries(resources).filter(([kind]) => !["adversaries", "environments"].includes(kind)).reduce((total, [, entries]) => total + entries.length, 0),
-    gmResourceCount: resources.adversaries.length + resources.environments.length,
-    checks: ["英文/中文表格逐行配对", "特性标题按原文顺序逐项配对", "敌人/环境目录名称集合对照", "资源 ID 唯一", "分类数量固定", "生成前 Schema 校验"],
-    repairedSourceRows: [
-      { key: "SRD2_SECTION_309", original: "Legendary Rope | Instinct Dart", interpretedAs: "Legendary Rope Dart | Instinct" },
-      { key: "SRD2_SECTION_309", original: "Severed Dragon | Instinct Claw", interpretedAs: "Severed Dragon Claw | Instinct" },
-      { key: "SRD2_SECTION_469", original: "POL TERGEIST", interpretedAs: "POLTERGEIST" },
-      { key: "SRD2_SECTION_561", original: "RA VENOUS MOCKERY", interpretedAs: "RAVENOUS MOCKERY" },
-      { key: "SRD2_SECTION_666", original: "OUTER REALMS CORRUPTER", interpretedAs: "OUTER REALMS CORRUPTOR" },
-      { key: "SRD2_SECTION_723", original: "OCEAN VOY AGE", interpretedAs: "OCEAN VOYAGE" },
-      { key: "SRD2_SECTION_740", original: "CONVERGENCE, THE CITY OF PORTALS", interpretedAs: "CONVERGENCE, CITY OF PORTALS" },
-    ],
-    sourceAnomalies: [
-      { key: "SRD2_SECTION_746", issue: "TIME COURT 的 translation 重复为 MOON KINGDOM", handling: "使用人工校对的完整中文译文，保留英文特性名称作为配对依据" },
-    ],
-  },
-}, null, 2)}\n`, "utf8");
 console.log(JSON.stringify(Object.fromEntries(Object.entries(resources).map(([kind, entries]) => [kind, entries.length])), null, 2));
 
 function argument(name: string): string | undefined {
@@ -187,89 +85,15 @@ function argument(name: string): string | undefined {
 }
 
 function stableResourceId(kind: string, sourceIdentity: string): string {
+  const publishedId = publishedResourceIds.get(`${kind}\u0000${sourceIdentity}`);
+  if (publishedId) return publishedId;
   const hex = createHash("sha256").update(`pbdh:daggerheart-srd2:${kind}:${sourceIdentity}`, "utf8").digest("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
-function applyExtractionOverrides(kind: string, entry: SourceResource): void {
-  const matches = extractionOverrides.overrides.filter((override) => override.kind === kind && override.original === entry.原文);
-  if (matches.length > 1) throw new Error(`${kind}/${entry.原文}: duplicate extraction overrides`);
-  const override = matches[0];
-  if (!override) return;
-  for (const field of override.fields) {
-    if (JSON.stringify(entry[field.field]) !== JSON.stringify(field.expected)) {
-      throw new Error(`${kind}/${entry.原文}/${field.field}: SRD output changed; review the upstream diff before updating this override`);
-    }
-    entry[field.field] = structuredClone(field.value);
-  }
-}
-
-function applyFeatureNameOverrides(kind: string, entry: SourceResource): void {
-  applyFeatureValueOverrides(kind, entry, extractionOverrides.featureNameOverrides, "特性名称", appliedFeatureNameOverrides);
-}
-
-function applyFeatureDescriptionOverrides(kind: string, entry: SourceResource): void {
-  applyFeatureValueOverrides(kind, entry, extractionOverrides.featureDescriptionOverrides, "特性描述", appliedFeatureDescriptionOverrides);
-}
-
-function applyFeatureValueOverrides(
-  kind: string,
-  entry: SourceResource,
-  overrides: Array<FeatureNameOverride | FeatureDescriptionOverride>,
-  field: "特性名称" | "特性描述",
-  applied: Set<FeatureNameOverride["changes"][number] | FeatureDescriptionOverride["changes"][number]>,
-): void {
-  const matches = overrides.flatMap((override) => override.kind === kind
-    ? override.changes
-      .filter((change) => change.resourceOriginal === entry.原文)
-      .map((change) => ({ override, change }))
-    : []);
-  if (matches.length === 0) return;
-  const features = Array.isArray(entry.特性) ? entry.特性 : [entry];
-  for (const { override, change } of matches) {
-    const featureMatches = features.filter((feature) => (
-      feature
-      && typeof feature === "object"
-      && (feature as Record<string, unknown>).特性原文 === override.featureOriginal
-    ));
-    if (featureMatches.length !== 1) {
-      throw new Error(`${kind}/${entry.原文}/${override.featureOriginal}: expected exactly one feature, received ${featureMatches.length}`);
-    }
-    const feature = featureMatches[0] as Record<string, unknown>;
-    if (feature[field] !== change.expected) {
-      throw new Error(`${kind}/${entry.原文}/${override.featureOriginal}/${field}: SRD output changed; review the upstream diff before updating this override`);
-    }
-    const value = change.value ?? override.value;
-    if (value === undefined) {
-      throw new Error(`${kind}/${entry.原文}/${override.featureOriginal}/${field}: override is missing a replacement value`);
-    }
-    feature[field] = value;
-    applied.add(change);
-  }
-}
-
-function applyParameterizedFeatureNameOverrides(kind: string, entry: SourceResource): void {
-  const features = Array.isArray(entry.特性) ? entry.特性 : [entry];
-  for (const override of extractionOverrides.parameterizedFeatureNameOverrides.filter((candidate) => candidate.kind === kind)) {
-    for (const feature of features) {
-      if (!feature || typeof feature !== "object") continue;
-      const data = feature as Record<string, unknown>;
-      const original = String(data.特性原文 ?? "");
-      const match = original.match(new RegExp(`^${override.baseOriginal.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")} \\((.+)\\)$`, "u"));
-      if (!match) continue;
-      const currentName = String(data.特性名称 ?? "");
-      const observed = observedParameterizedFeatureNames.get(override) ?? {};
-      observed[original] ??= {};
-      observed[original][currentName] = (observed[original][currentName] ?? 0) + 1;
-      observedParameterizedFeatureNames.set(override, observed);
-      data.特性名称 = `${override.baseName} (${match[1]})`;
-    }
-  }
-}
-
 function normalizeResourceText(entry: SourceResource): void {
   for (const [key, value] of Object.entries(entry)) {
-    if (["ID", "卡图", "卡背"].includes(key)) continue;
+    if (["ID", "卡图", "卡背", "原文", "特性原文"].includes(key)) continue;
     entry[key] = normalizeResourceValue(value, key);
   }
 }
@@ -277,13 +101,57 @@ function normalizeResourceText(entry: SourceResource): void {
 function normalizeResourceValue(value: unknown, field: string): unknown {
   if (typeof value === "string") {
     const stripped = stripMarkdownSyntax(value);
-    return proseFields.has(field) ? applyMakeup(normalizeLineBreaks(stripped)) : plain(stripped);
+    const normalized = proseFields.has(field) ? applyMakeup(normalizeLineBreaks(stripped)) : plain(stripped);
+    return stripParallelEnglish(normalized);
   }
   if (Array.isArray(value)) return value.map((item) => normalizeResourceValue(item, field));
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, normalizeResourceValue(item, key)]));
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      ["原文", "特性原文"].includes(key) ? item : normalizeResourceValue(item, key),
+    ]));
   }
   return value;
+}
+
+function stripParallelEnglish(value: string): string {
+  const protectedValues: string[] = [];
+  const protectedText = value
+    .replace(/\b\d*d\d+(?:\s*[+−-]\s*\d+)?\b/giu, (match) => {
+      protectedValues.push(match);
+      return `§甲${protectedValues.length - 1}§`;
+    })
+    .replace(/\bX\b/gu, () => {
+      protectedValues.push("X");
+      return `§甲${protectedValues.length - 1}§`;
+    });
+  let result = protectedText
+    .replace(/\|item\s*\($/giu, "")
+    .replace(/[A-Za-z]+(?:[’'][A-Za-z]+)*(?:-[A-Za-z]+)*/gu, "")
+    .replace(/\s*[“"][\s.…,!?！？]*[”"]\s*/gu, " ")
+    .replace(/\s+([,，。；：！？）])/gu, "$1")
+    .replace(/([（])\s+/gu, "$1")
+    .replace(/[ \t]{2,}/gu, " ")
+    .replace(/\n[ \t]+/gu, "\n")
+    .trim();
+  result = result.replace(/§甲(\d+)§/gu, (_match, index: string) => protectedValues[Number(index)] ?? "");
+  return result;
+}
+
+function assertNoUnexpectedLatin(kind: string, entry: SourceResource): void {
+  const visit = (value: unknown, field: string, location: string): void => {
+    if (["ID", "卡图", "卡背", "原文", "特性原文"].includes(field)) return;
+    if (typeof value === "string") {
+      const residue = value.replace(/\b\d*d\d+(?:\s*[+−-]\s*\d+)?\b/giu, "").replace(/\bX\b/gu, "");
+      if (/[A-Za-z]/u.test(residue)) throw new Error(`${kind}/${entry.ID}/${location}: unexpected Latin text: ${value}`);
+      return;
+    }
+    if (Array.isArray(value)) value.forEach((item, index) => visit(item, field, `${location}[${index}]`));
+    else if (value && typeof value === "object") {
+      for (const [key, item] of Object.entries(value as Record<string, unknown>)) visit(item, key, `${location}.${key}`);
+    }
+  };
+  visit(entry, "", "resource");
 }
 
 function stripMarkdownSyntax(value: string): string {
@@ -458,7 +326,12 @@ function localizedHeadingPrefix(record: RecordEntry): { name: string; original: 
 }
 
 function localizedCell(value: string, original: string): string {
-  const result = plain(value.replace(new RegExp(`\\s+${escaped(original)}\\s*$`, "iu"), ""));
+  const normalizedValue = fold(value);
+  const normalizedOriginal = fold(original);
+  const suffixAt = normalizedValue.endsWith(normalizedOriginal)
+    ? value.length - original.length
+    : -1;
+  const result = plain(suffixAt >= 0 ? value.slice(0, suffixAt) : value);
   return result || plain(value);
 }
 
@@ -473,6 +346,23 @@ function beforeHeading(markdown: string, titlePattern: RegExp): string {
 function field(markdown: string, label: string): string {
   const match = new RegExp(`(?:\\*\\*)?${escaped(label)}\\s*(?:[：:]|[-–—])\\s*(?:\\*\\*)?\\s*([^\\n|]+)`, "iu").exec(markdown);
   return plain(match?.[1] ?? "");
+}
+
+function buildLocalizedExperienceIndex(sourceRecords: RecordEntry[]): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const record of sourceRecords) {
+    const original = field(record.original, "Experience");
+    const translated = field(record.translation, "经历");
+    if (original && translated && /[\u3400-\u9fff]/u.test(translated)) result.set(fold(original), translated);
+  }
+  return result;
+}
+
+function localizedExperience(record: RecordEntry): string {
+  const translated = field(record.translation, "经历");
+  if (/[\u3400-\u9fff]/u.test(translated)) return translated;
+  const original = field(record.original, "Experience");
+  return localizedExperiences.get(fold(original)) ?? translated;
 }
 
 function dashField(markdown: string, label: string): string {
@@ -527,6 +417,12 @@ function pairedFeatures(original: string, translation: string): Array<{ 特性�
   return result;
 }
 
+function firstSentence(value: string): string {
+  const normalized = clean(value);
+  const period = normalized.indexOf("。");
+  return period >= 0 ? normalized.slice(0, period + 1) : normalized;
+}
+
 function extractAncestries(): SourceResource[] {
   const result = records.filter((record) => {
     const number = sectionNumber(record);
@@ -536,12 +432,12 @@ function extractAncestries(): SourceResource[] {
     const originalParts = record.original.split(/^### ANCESTRY FEATURES?\s*$/imu);
     const translatedParts = record.translation.split(/^#{3,4}\s+(?:\*+)?种族特性(?:\*+)?\s*$/imu);
     const features = pairedFeatures(originalParts[1] ?? "", translatedParts[1] ?? "");
-    return { ID: `种族:${names.name}`, 名称: names.name, 原文: names.original, 类型: "种族", 简介: clean(afterHeading(translatedParts[0] ?? "")), 特性: features };
+    return { ID: `种族:${names.name}`, 名称: names.name, 原文: names.original, 类型: "种族", 简介: firstSentence(afterHeading(translatedParts[0] ?? "")), 特性: features };
   });
   const faerie = records.find((record) => sectionNumber(record) === 177)!;
   const faerieFeatures = records.find((record) => sectionNumber(record) === 178)!;
   const names = localizedName(faerie);
-  result.push({ ID: `种族:${names.name}`, 名称: names.name, 原文: names.original, 类型: "种族", 简介: afterHeading(faerie.translation), 特性: pairedFeatures(afterHeading(faerieFeatures.original), afterHeading(faerieFeatures.translation)) });
+  result.push({ ID: `种族:${names.name}`, 名称: names.name, 原文: names.original, 类型: "种族", 简介: firstSentence(afterHeading(faerie.translation)), 特性: pairedFeatures(afterHeading(faerieFeatures.original), afterHeading(faerieFeatures.translation)) });
   return result;
 }
 
@@ -554,7 +450,7 @@ function extractCommunities(): SourceResource[] {
     if (features.length !== 1) throw new Error(`${record.key}: expected one community feature`);
     const introduction = afterHeading(translatedParts[0] ?? "");
     const personality = introduction.split(/\n+/u).filter(Boolean).at(-1) ?? "";
-    return { ID: `社群:${names.name}`, 名称: names.name, 原文: names.original, 类型: "社群", 简介: introduction, 性格: plain(personality), 特性: features[0] };
+    return { ID: `社群:${names.name}`, 名称: names.name, 原文: names.original, 类型: "社群", 简介: firstSentence(introduction), 性格: plain(personality), 特性: features[0] };
   });
 }
 
@@ -649,9 +545,11 @@ function extractWeapons(): SourceResource[] {
         const feature = splitFeature(row.original[5]!, row.translated[5]!);
         const damage = plain(row.translated[3]!);
         const tier = tierAt(record.original, row.position, inheritedTier);
+        const extractedName = localizedCell(row.translated[0]!, originalName);
+        const name = normalizeWeaponName(extractedName);
         result.push({
-          ID: `武器:${localizedCell(row.translated[0]!, originalName)}:${tier}:${sectionNumber(record) >= 314 ? "副武器" : "主武器"}`,
-          名称: localizedCell(row.translated[0]!, originalName), 原文: originalName, 类型: sectionNumber(record) >= 314 ? "副武器" : "主武器",
+          ID: `武器:${extractedName}:${tier}:${sectionNumber(record) >= 314 ? "副武器" : "主武器"}`,
+          名称: name, 原文: originalName, 类型: sectionNumber(record) >= 314 ? "副武器" : "主武器",
           属性: plain(row.translated[1]!), 距离: plain(row.translated[2]!).replace(/范围$/u, ""), 伤害: damage.replace(/\s*(物理|魔法)$/u, ""),
           负荷: /^双手/u.test(plain(row.translated[4]!)) ? "双手" : "单手", 伤害类型: /魔法$/u.test(damage) ? "魔法" : "物理", ...feature,
           简介: "", 位阶: tier,
@@ -666,9 +564,15 @@ function extractWeapons(): SourceResource[] {
     const originalName = plain(row.original[0]!);
     const feature = splitFeature(row.original[6]!, row.translated[6]!);
     const damage = plain(row.translated[4]!);
-    result.push({ ID: `武器:${localizedCell(row.translated[0]!, originalName)}:${plain(row.original[1]!)}:主武器`, 名称: localizedCell(row.translated[0]!, originalName), 原文: originalName, 类型: "主武器", 属性: plain(row.translated[2]!), 距离: plain(row.translated[3]!).replace(/范围$/u, ""), 伤害: damage.replace(/\s*(物理|魔法)$/u, ""), 负荷: /^双手/u.test(plain(row.translated[5]!)) ? "双手" : "单手", 伤害类型: /魔法$/u.test(damage) ? "魔法" : "物理", ...feature, 简介: "", 位阶: plain(row.original[1]!) });
+    const extractedName = localizedCell(row.translated[0]!, originalName);
+    const name = normalizeWeaponName(extractedName);
+    result.push({ ID: `武器:${extractedName}:${plain(row.original[1]!)}:主武器`, 名称: name, 原文: originalName, 类型: "主武器", 属性: plain(row.translated[2]!), 距离: plain(row.translated[3]!).replace(/范围$/u, ""), 伤害: damage.replace(/\s*(物理|魔法)$/u, ""), 负荷: /^双手/u.test(plain(row.translated[5]!)) ? "双手" : "单手", 伤害类型: /魔法$/u.test(damage) ? "魔法" : "物理", ...feature, 简介: "", 位阶: plain(row.original[1]!) });
   }
   return result;
+}
+
+function normalizeWeaponName(value: string): string {
+  return value.replace(/^高级\s+(?=\p{Script=Han})/u, "高级");
 }
 
 function extractArmor(): SourceResource[] {
@@ -790,7 +694,7 @@ function extractAdversaries(): SourceResource[] {
       ID: `敌人:${names.name}:${tier?.[1] ?? ""}:${names.original}`, 名称: names.name, 原文: names.original, 位阶: tier?.[1] ?? "", 种类: localizedType(summary.typeLine, tier?.[2] ?? ""), 特性: features, 类型: "敌人",
       简介: summary.introduction, 动机与战术: field(record.translation, "动机与战术"), 难度: field(record.translation, "难度"),
       重度伤害阈值: thresholds[0] ?? "", 严重伤害阈值: thresholds[1] ?? "",
-      生命点: field(record.translation, "生命点"), 压力点: field(record.translation, "压力点") || field(record.translation, "压力"), ...attack, 经历: field(record.translation, "经历"),
+      生命点: field(record.translation, "生命点"), 压力点: field(record.translation, "压力点") || field(record.translation, "压力"), ...attack, 经历: localizedExperience(record),
     };
   });
 }
@@ -798,8 +702,8 @@ function extractAdversaries(): SourceResource[] {
 function pairedTypedFeatures(record: RecordEntry, kind: "敌人" | "环境"): Array<Record<string, string>> {
   const original = record.original.split(/^#### FEATURES\s*$/imu)[1] ?? "";
   const translated = record.translation.split(/^####\s+(?:\*+)?特性(?:\*+)?(?:\s+FEATURES?)?\s*$/imu)[1] ?? "";
-  const markers = [...original.matchAll(/^\*\*(.+?)\s+-\s+(Passive|Action|Reaction):\*\*\s*/gimu)].map((match) => ({ name: plain(match[1]!), type: match[2]!, start: match.index!, bodyStart: match.index! + match[0].length }));
-  const translatedMarkers = [...translated.matchAll(/^(?:[-*]\s*)?(?:\*{1,2}|_{1,2})?(.+?)\s*(被动|动作|反应)(?:（[^）]+）)?(?:\*{1,2}|_{1,2})?\s*[：:]\s*/gmu)].map((match) => ({ title: plain(match[1]!), start: match.index!, bodyStart: match.index! + match[0].length }));
+  const markers = [...original.matchAll(/^\*\*(.+?)\s+-\s+(Passive|Action|Reaction|Evolution):\*\*\s*/gimu)].map((match) => ({ name: plain(match[1]!), type: match[2]!, start: match.index!, bodyStart: match.index! + match[0].length }));
+  const translatedMarkers = [...translated.matchAll(/^(?:[-*•]\s*)?(?:\*{1,2}|_{1,2})?(.+?)\s*(被动|动作|反应|进化|演化)(?:\s+Evolution)?(?:（[^）]+）)?(?:\*{1,2}|_{1,2})?\s*[：:]\s*/gmu)].map((match) => ({ title: plain(match[1]!), start: match.index!, bodyStart: match.index! + match[0].length }));
   if (markers.length !== translatedMarkers.length) throw new Error(`${record.key}: ${kind} feature count mismatch ${markers.length}/${translatedMarkers.length}`);
   const result: Array<Record<string, string>> = [];
   for (let index = 0; index < markers.length; index += 1) {
@@ -815,20 +719,20 @@ function pairedTypedFeatures(record: RecordEntry, kind: "敌人" | "环境"): Ar
       question = clean(questionLines.join("\n"));
       body = clean(parts.filter((line) => !questionLines.includes(line)).join("\n"));
     }
-    const localizedTitle = plain(translatedMarker.title.replace(/\s+[A-Za-z][\s\S]*$/u, "").replace(/\s*[-–—]\s*$/u, ""));
-    result.push({ 特性名称: localizedTitle || translatedMarker.title, 特性原文: marker.name, 特性类型: ({ Passive: "被动", Action: "动作", Reaction: "反应" } as Record<string, string>)[marker.type]!, 特性描述: body, ...(kind === "环境" ? { 引导问题: question } : {}) });
+    const localizedTitle = plain(translatedMarker.title.replace(/\s+[“"]?[A-Za-z][\s\S]*$/u, "").replace(/\s*[-–—]\s*$/u, ""));
+    result.push({ 特性名称: localizedTitle || translatedMarker.title, 特性原文: marker.name, 特性类型: ({ Passive: "被动", Action: "动作", Reaction: "反应", Evolution: "进化" } as Record<string, string>)[marker.type]!, 特性描述: body, ...(kind === "环境" ? { 引导问题: question } : {}) });
   }
   return result;
 }
 
 function originalTypedFeatures(record: RecordEntry): Array<Record<string, string>> {
   const original = record.original.split(/^#### FEATURES\s*$/imu)[1] ?? "";
-  const markers = [...original.matchAll(/^\*\*(.+?)\s+-\s+(Passive|Action|Reaction):\*\*\s*/gimu)].map((match) => ({ name: plain(match[1]!), type: match[2]!, start: match.index!, bodyStart: match.index! + match[0].length }));
+  const markers = [...original.matchAll(/^\*\*(.+?)\s+-\s+(Passive|Action|Reaction|Evolution):\*\*\s*/gimu)].map((match) => ({ name: plain(match[1]!), type: match[2]!, start: match.index!, bodyStart: match.index! + match[0].length }));
   return markers.map((marker, index) => {
     const body = clean(original.slice(marker.bodyStart, markers[index + 1]?.start ?? original.length));
     const lines = body.split("\n");
     const questions = lines.filter((line) => /\?\s*$/u.test(line));
-    return { 特性名称: marker.name, 特性原文: marker.name, 特性类型: ({ Passive: "被动", Action: "动作", Reaction: "反应" } as Record<string, string>)[marker.type]!, 特性描述: clean(lines.filter((line) => !questions.includes(line)).join("\n")), 引导问题: clean(questions.join("\n")) };
+    return { 特性名称: marker.name, 特性原文: marker.name, 特性类型: ({ Passive: "被动", Action: "动作", Reaction: "反应", Evolution: "进化" } as Record<string, string>)[marker.type]!, 特性描述: clean(lines.filter((line) => !questions.includes(line)).join("\n")), 引导问题: clean(questions.join("\n")) };
   });
 }
 
@@ -844,45 +748,9 @@ function localizedType(line: string, englishType: string): string {
 
 function extractEnvironments(): SourceResource[] {
   return records.filter((record) => sectionNumber(record) >= 697 && sectionNumber(record) < 760 && /^### .+\n\nTier \d/imu.test(record.original)).map((record) => {
-    if (record.key === "SRD2_SECTION_746") return timeCourtCorrection();
     const names = localizedName(record);
     const tier = /Tier\s+(\d+)\s+([^\n]+)/iu.exec(record.original);
     const summary = statBlockIntroduction(record.translation, ["趋向", "难度", "潜在敌人", "特性"]);
     return { ID: `环境:${names.name}`, 名称: names.name, 原文: names.original, 类型: "环境", 位阶: tier?.[1] ?? "", 种类: localizedType(summary.typeLine, tier?.[2] ?? ""), 简介: summary.introduction, 趋向: field(record.translation, "趋向"), 难度: field(record.translation, "难度"), 潜在敌人: field(record.translation, "潜在敌人"), 特性: pairedTypedFeatures(record, "环境") };
   });
-}
-
-function timeCourtCorrection(): SourceResource {
-  return {
-    ID: "环境:时间法庭",
-    名称: "时光法庭",
-    原文: "TIME COURT",
-    类型: "环境",
-    位阶: "4",
-    种类: "事件",
-    简介: "一名或多名玩家角色被强行从时间线上拽走，因破坏连续性而受审。",
-    趋向: "查明真相，伸张正义，剥夺他们的力量",
-    难度: "20",
-    潜在敌人: "裁断者（君主）、陪审团 Jury（圣咏合唱团 Hallowed Choir）、处刑者 Executioners（时空执法者 Temporal Enforcers）",
-    特性: [
-      { 特性名称: "超脱时间", 特性原文: "Out of Time", 特性类型: "被动", 特性描述: "这场审判发生在一个口袋维度中，不受其他界域影响。在这里，玩家角色不能使用自己的特性和能力。每位玩家必须把自己的领域卡牌放入宝库。", 引导问题: "这个口袋维度里，除了法庭还藏着什么？是什么力量维持着保护此地的宇宙屏障？" },
-      { 特性名称: "陪审团审判", 特性原文: "Trial by Jury", 特性类型: "被动", 特性描述: "庭审结束时，陪审团将投票决定开释还是定罪。法庭宣布开庭后，先让控方陈述针对玩家角色的案情，并开始一个倒计时（9）。每当玩家角色进行动作掷骰时，倒计时便推进 1 点。倒计时触发时，玩家角色和游戏主持人各自掷骰自己的裁决骰。如果队伍的总结果不低于游戏主持人的总结果，陪审团便判他们无罪。", 引导问题: "哪些玩家角色会受审？他们被指控什么？如果被判有罪，可能面临什么惩罚？" },
-      { 特性名称: "辩护律师", 特性原文: "Counsel for the Defense", 特性类型: "被动", 特性描述: "玩家角色可以进行一次动作掷骰为自己辩护（例如用知识掷骰解释法律条文、用风度掷骰打动陪审团、或用本能掷骰指出控方案情中的漏洞）。成功时，队伍获得 1 枚 d6 裁决骰。若为暴击成功，则获得 2 枚。若失败，控方反驳玩家角色的辩护，你获得 1 枚 d6 裁决骰。", 引导问题: "控方案情最薄弱之处在哪？队伍最有力的辩护是什么？" },
-      { 特性名称: "公诉律师", 特性原文: "Counsel for the Prosecution", 特性类型: "动作", 特性描述: "控方提出一项确凿的不利证据（例如目击证词、检测结果，或从案发现场取来的物证），你获得 1 枚 d6 裁决骰。玩家角色可以标记 1 压力点，用知识、本能或风度反应掷骰尝试反驳这项证据。成功时，队伍获得这枚裁决骰而不是你。若失败，你额外获得 1 枚 d6 裁决骰。", 引导问题: "谁主导控方？他们与时光议会 Time Council 是什么关系？这座法庭靠什么魔法或技术来展示和记录证据？" },
-      { 特性名称: "“法庭肃静！”", 特性原文: "“Order in the Court!”", 特性类型: "反应", 特性描述: "当玩家角色试图武力逃跑或强行终结审判时，召唤一批时空执法者 Temporal Enforcers，数量与场景中的玩家角色人数相同，出现在近距离范围内，并立即聚焦其中一名。", 引导问题: "这座法庭的权威值得尊重吗？除了时光议会 Time Council 及其执法者的武力，还有什么能证明他们掌控时间线是正当的？" },
-    ],
-  };
-}
-
-async function loadPreviousMedia(root: string): Promise<Record<string, Map<string, Record<string, string>>>> {
-  const result: Record<string, Map<string, Record<string, string>>> = {};
-  for (const kind of ["ancestries", "communities", "classes", "subclasses", "weapons", "armor", "loot", "domain-cards"]) {
-    try {
-      const entries = JSON.parse(await readFile(path.join(root, `${kind}.json`), "utf8")) as SourceResource[];
-      result[kind] = new Map(entries.map((entry) => [String(entry.名称), Object.fromEntries(Object.entries(entry).filter(([key, value]) => ["卡图", "卡背"].includes(key) && typeof value === "string"))]));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-  }
-  return result;
 }

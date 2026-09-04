@@ -1,5 +1,4 @@
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import type { AnySchema } from "ajv";
@@ -47,15 +46,6 @@ const runtime = new ContractRuntime(catalog, schemas);
 const preset = readJson<{
   embeddedResourceIndex: Array<{ path: string; packageId: string; version: string; snapshotDigest: string }>;
 }>(path.join(root, "apps/player/src/daggerheart-core-preset.generated.json"));
-const sourceResourceRoot = path.join(root, "apps/player/system-package-sources/daggerheart-core/resources");
-const playerSourceLibraries = [
-  ["ancestries", "种族"], ["communities", "社群"], ["classes", "职业"], ["subclasses", "子职业"],
-  ["weapons", "武器"], ["armor", "护甲"], ["loot", "物品"], ["domain-cards", "领域卡"],
-] as const;
-const gmSourceLibraries = [["adversaries", "敌人"], ["environments", "环境"]] as const;
-
-type ExtractedSourceResource = { ID: string; 名称: string; 原文?: string };
-
 async function loadEmbeddedResource(pathName: string) {
   const archive = new Uint8Array(readFileSync(path.join(packageRoot, ...pathName.split("/"))));
   const loaded = await loadPbres(archive, validateResourcePackageCandidate);
@@ -90,12 +80,59 @@ function nestedStrings(value: unknown): string[] {
   return [];
 }
 
+function unexpectedLocalizedLatin(value: unknown, pathParts: string[] = []): string[] {
+  if (typeof value === "string") {
+    const field = pathParts.at(-1);
+    if (field === "原文" || field === "特性原文") return [];
+    const residual = value
+      .replace(/(?<![A-Za-z])(?:\d+)?d\d+(?:[+−-]\d+)?(?![A-Za-z])/giu, "")
+      .replace(/\bX\b/gu, "");
+    return /[A-Za-z]/u.test(residual) ? [`${pathParts.join(".")}: ${value}`] : [];
+  }
+  if (Array.isArray(value)) return value.flatMap((item, index) => unexpectedLocalizedLatin(item, [...pathParts, String(index)]));
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .flatMap(([field, item]) => unexpectedLocalizedLatin(item, [...pathParts, field]));
+  }
+  return [];
+}
+
 describe("migrated Daggerheart Core System Package", () => {
-  test("跨源记录继承武器位阶", () => {
-    const entries = readJson<Array<{ 位阶: string; 类型: string }>>(path.join(
-      sourceResourceRoot,
-      "weapons.json",
+  test("Echo Blade 的译名修正不会创建新的武器资源", async () => {
+    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const echoBlade = playerPackage.document.resources.find((resource) => (
+      resource.template.id === "武器" && (resource.data as Record<string, unknown>).原文 === "Echo Blade"
     ));
+    expect(echoBlade).toMatchObject({
+      id: "0585bc96-de93-5371-8d04-c4ab5d2da68f",
+      data: { 名称: "回响利刃", 特性名称: "加倍", 特性原文: "Up" },
+    });
+  });
+
+  test("本地化资源字段只保留骰子、变量与专用原文字段中的拉丁字母", async () => {
+    const packages = await Promise.all([
+      loadEmbeddedResource("resources/daggerheart-core.pbres"),
+      loadEmbeddedResource("resources/daggerheart-core-gm.pbres"),
+    ]);
+    const violations = packages.flatMap((candidate, packageIndex) => candidate.document.resources
+      .flatMap((resource, resourceIndex) => unexpectedLocalizedLatin(resource.data, [String(packageIndex), String(resourceIndex), "data"])));
+    expect(violations).toEqual([]);
+  });
+
+  test("种族和社群简介只保留第一句", async () => {
+    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const resources = playerPackage.document.resources.filter((resource) => ["种族", "社群"].includes(resource.template.id));
+    expect(resources).toHaveLength(39);
+    for (const resource of resources) {
+      const introduction = String((resource.data as Record<string, unknown>).简介);
+      expect(introduction, String((resource.data as Record<string, unknown>).名称)).toMatch(/^[^。]*。$/u);
+    }
+  });
+
+  test("跨源记录继承武器位阶", async () => {
+    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const entries = playerPackage.document.resources.filter((resource) => resource.template.id === "武器")
+      .map((resource) => resource.data as { 名称: string; 位阶: string; 类型: string });
     const counts: Record<string, number> = {};
     for (const entry of entries) {
       const key = `${entry.位阶}/${entry.类型}`;
@@ -111,22 +148,26 @@ describe("migrated Daggerheart Core System Package", () => {
       "4/主武器": 68,
       "4/副武器": 20,
     });
+    const tierThreePrimaryWeapons = entries.filter((entry) => entry.位阶 === "3" && entry.类型 === "主武器");
+    expect(tierThreePrimaryWeapons.some((entry) => entry.名称 === "高级奥术步枪")).toBe(true);
+    expect(tierThreePrimaryWeapons.filter((entry) => /^高级\s/u.test(entry.名称))).toEqual([]);
+    expect(playerPackage.document.resources.find((resource) => (
+      resource.template.id === "武器" && (resource.data as Record<string, unknown>).原文 === "Advanced Arcane Rifle"
+    ))?.id).toBe("f26e0225-2ca4-52da-8fd8-fb0370eb65e4");
   });
 
-  test("用不同译名区分两种 Heavy 护甲特性", () => {
-    const entries = readJson<Array<{ 原文: string; 特性名称: string }>>(path.join(
-      sourceResourceRoot,
-      "armor.json",
-    ));
+  test("用不同译名区分两种 Heavy 护甲特性", async () => {
+    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const entries = playerPackage.document.resources.filter((resource) => resource.template.id === "护甲")
+      .map((resource) => resource.data as { 原文: string; 特性名称: string });
     expect(entries.find((entry) => entry.原文 === "Chainmail Armor")?.特性名称).toBe("沉重");
     expect(entries.find((entry) => entry.原文 === "Full Plate Armor")?.特性名称).toBe("极重");
   });
 
-  test("领域卡权威资源的回想值不包含闪电符号", () => {
-    const entries = readJson<Array<{ 回想: string }>>(path.join(
-      root,
-      "apps/player/system-package-sources/daggerheart-core/resources/domain-cards.json",
-    ));
+  test("领域卡权威资源的回想值不包含闪电符号", async () => {
+    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const entries = playerPackage.document.resources.filter((resource) => resource.template.id === "领域卡")
+      .map((resource) => resource.data as { 回想: string });
     expect(entries).toHaveLength(210);
     expect(entries.every((entry) => !entry.回想.includes("⚡"))).toBe(true);
   });
@@ -192,7 +233,7 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(resources.filter((resource) => !["职业", "环境", "敌人"].includes(resource.template.id)).every((resource) => resource.presentation.fixedRatio)).toBe(true);
     const armorResources = resources.filter((resource) => resource.template.id === "护甲");
     expect(armorResources).toHaveLength(69);
-    expect(armorResources.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+    expect(armorResources.every((resource) => resource.template.version === "1.0.1")).toBe(true);
     const equipmentResources = resources.filter((resource) => resource.template.id === "护甲" || resource.template.id === "武器");
     expect(equipmentResources).toHaveLength(376);
     expect(equipmentResources.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
@@ -202,7 +243,7 @@ describe("migrated Daggerheart Core System Package", () => {
     for (const [templateId, count] of stableCounts) {
       const matching = resources.filter((resource) => resource.template.id === templateId);
       expect(matching).toHaveLength(count);
-      expect(matching.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+      expect(matching.every((resource) => resource.template.version === "1.0.1")).toBe(true);
     }
     const subclassResources = resources.filter((resource) => resource.template.id === "子职业");
     expect(subclassResources.every((resource) => subclassFeatures(resource.data) !== null)).toBe(true);
@@ -212,6 +253,11 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(professionResources.flatMap((resource) => professionFeatures(resource.data) ?? []).length).toBeGreaterThanOrEqual(13);
     expect(system.resourceCompatibility.every((item) => item.versionRange.minimumInclusive === "1.0.0"
       && item.versionRange.maximumExclusive === "2.0.0")).toBe(true);
+    expect(candidates.every((candidate) => candidate.document.contractVersion === "1.1.0")).toBe(true);
+    expect(resources.every((resource) => resource.attribution?.artworkCredit === ""
+      && resource.attribution.sourceLabel === (resource.template.id === "敌人" || resource.template.id === "环境"
+        ? "匕首之心主持人资源"
+        : "匕首之心玩家资源"))).toBe(true);
     expect(resources.filter((resource) => resource.media.portrait).every((resource) => resource.presentation.mode === "image")).toBe(true);
     expect(resources.filter((resource) => !resource.media.portrait).every((resource) => resource.presentation.mode === "text")).toBe(true);
     expect(resources.find((resource) => resource.template.id === "敌人" && (resource.data as Record<string, unknown>).原文 === "PERFECTED ZOMBIE")).toBeDefined();
@@ -262,52 +308,13 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(((wyrmlings?.data as Record<string, unknown>).特性 as Array<Record<string, string>>).every((feature) => !feature.特性描述.includes("\n"))).toBe(true);
   });
 
-  test("matches every extracted SRD resource against the generated player and GM archives", async () => {
-    const provenance = readJson<{
-      sourceFile: string;
-      sha256: string;
-      extractedCounts: Record<string, number>;
-      comparison: { playerResourceCount: number; gmResourceCount: number };
-    }>(path.join(root, "apps/player/system-package-sources/daggerheart-core/source-provenance.json"));
-    expect(provenance.sourceFile).toBe("docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json");
-    expect(createHash("sha256").update(readFileSync(path.join(root, provenance.sourceFile))).digest("hex")).toBe(provenance.sha256);
-    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
-    const gmPackage = await loadEmbeddedResource("resources/daggerheart-core-gm.pbres");
-
-    const comparePartition = (
-      definitions: ReadonlyArray<readonly [string, string]>,
-      packagedResources: typeof playerPackage.document.resources,
-      expectedTotal: number,
-    ) => {
-      const extracted = definitions.flatMap(([fileStem, templateId]) => {
-        const entries = readJson<ExtractedSourceResource[]>(path.join(sourceResourceRoot, `${fileStem}.json`));
-        expect(entries).toHaveLength(provenance.extractedCounts[fileStem]);
-        return entries.map((entry) => ({ entry, templateId }));
-      });
-      expect(extracted).toHaveLength(expectedTotal);
-      expect(new Set(extracted.map(({ entry }) => entry.ID)).size).toBe(extracted.length);
-      expect(new Set(packagedResources.map((resource) => resource.id)).size).toBe(packagedResources.length);
-      expect(packagedResources.map((resource) => resource.id).sort()).toEqual(extracted.map(({ entry }) => entry.ID).sort());
-
-      const packagedById = new Map(packagedResources.map((resource) => [resource.id, resource] as const));
-      for (const { entry, templateId } of extracted) {
-        const packaged = packagedById.get(entry.ID);
-        expect(packaged, `PBRES 缺少 ${entry.ID}`).toBeDefined();
-        expect(packaged?.template).toEqual({ id: templateId, version: "1.0.0" });
-        expect((packaged?.data as Record<string, unknown>).名称).toBe(entry.名称);
-        if (entry.原文 !== undefined) expect((packaged?.data as Record<string, unknown>).原文).toBe(entry.原文);
-      }
-    };
-
-    comparePartition(playerSourceLibraries, playerPackage.document.resources, provenance.comparison.playerResourceCount);
-    comparePartition(gmSourceLibraries, gmPackage.document.resources, provenance.comparison.gmResourceCount);
-  });
-
-  test("keeps the two review JSON documents identical to the PBRES logical documents", async () => {
-    const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
-    const gmPackage = await loadEmbeddedResource("resources/daggerheart-core-gm.pbres");
-    expect(readJson(path.join(sourceResourceRoot, "..", "daggerheart-core-player.resource-package.json"))).toEqual(playerPackage.document);
-    expect(readJson(path.join(sourceResourceRoot, "..", "daggerheart-core-gm.resource-package.json"))).toEqual(gmPackage.document);
+  test("只保留 ParaTranz 快照作为可编辑资源源", () => {
+    const sourceRoot = path.join(root, "apps/player/system-package-sources/daggerheart-core");
+    expect(existsSync(path.join(root, "docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json"))).toBe(true);
+    expect(existsSync(path.join(sourceRoot, "resources"))).toBe(false);
+    expect(existsSync(path.join(sourceRoot, "extraction-overrides.json"))).toBe(false);
+    expect(existsSync(path.join(sourceRoot, "daggerheart-core-player.resource-package.json"))).toBe(false);
+    expect(existsSync(path.join(sourceRoot, "daggerheart-core-gm.resource-package.json"))).toBe(false);
   });
 
   test("keeps old Sheet resource documents out of the public runtime", () => {

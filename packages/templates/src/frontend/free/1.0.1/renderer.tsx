@@ -18,6 +18,7 @@ export const freeRendererStyles = `
 .free-card-frame{position:relative;width:63px;height:88px;overflow:hidden}.free-card-frame.is-fluid{overflow:visible}.free-card{position:absolute;inset:0 auto auto 0;width:360px;height:502.857px;transform:scale(.175);transform-origin:top left}.free-card.is-fluid{height:auto}
 .free-card.is-split{height:auto;min-height:0;overflow:visible}.free-card.is-split .free-art{position:relative;height:auto;overflow:visible}.free-card.is-split .free-art img{width:100%;height:auto;object-fit:contain}.free-card.is-split.has-portrait .free-header{inset:auto 0 0;height:auto;min-height:74px;background:linear-gradient(180deg,#1d131000 0%,#1d1310b8 48%,#1d1310f5 100%)}.free-card.is-split:not(.has-portrait) .free-header{position:relative;height:auto;background:#251a14}.free-card.is-split:not(.has-portrait) .free-art{min-height:74px}
 .free-card.is-split.has-fixed-base{height:var(--split-fixed-native-height)}
+.free-summary[data-restricted-markdown]{margin:2% 0 0;color:#dcb299;font:italic 500 clamp(10px,3.5cqw,14px)/1.4 "Noto Sans SC",sans-serif;overflow-wrap:anywhere}
 `;
 
 const freeScale = .175;
@@ -60,6 +61,7 @@ function FreeCard({ data, presentation, portrait, attribution }: {
   const header = <header className="free-header">
     <div className="free-title-row"><SingleLineTextFit className="free-title" contentKey={data.名称} minFontSizePx={10} maxFontSizePx={36} cssVariable="--free-title-font-size">{data.名称 || "未命名自由资源"}</SingleLineTextFit><p className="free-type">{data.类型 || "自由"}</p></div>
     {data.原文?.trim() ? <p className="free-original">{data.原文}</p> : null}
+    {data.简介 ? <RestrictedMarkdown className="free-summary" inline value={data.简介} /> : null}
   </header>;
 
   return <div
@@ -72,7 +74,6 @@ function FreeCard({ data, presentation, portrait, attribution }: {
       {presentation.mode === "split" ? header : null}
     </div>}
     <div className="free-content" ref={contentRef}>
-      {data.简介 ? <RestrictedMarkdown className="free-summary" value={data.简介} /> : null}
       {data.内容.map((block, index) => <section className="free-block" key={`${block.名称}:${index}`}>
         <h2><span>{block.名称}</span>{block.原文?.trim() ? <small>{block.原文}</small> : null}</h2><RestrictedMarkdown value={block.描述} />
       </section>)}

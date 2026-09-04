@@ -43,6 +43,7 @@ type LegacyRuntimeManifest = {
 };
 
 const sourceRoot = path.resolve("apps/player/system-package-sources/daggerheart-core");
+const resourceRoot = path.resolve(argument("--resource-root") ?? path.join(sourceRoot, "resources"));
 const outputRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
 const generatedSystemDocumentPath = path.resolve("apps/player/src/daggerheart-core-system.generated.json");
 const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-preset.generated.json");
@@ -53,25 +54,26 @@ const resourcePackageVersion = "1.0.19";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 const gmResourcePackageVersion = "1.0.4";
 const gmResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660003";
-const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
+const previousPlayerPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
+const previousGmPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core-gm.pbres"));
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
 )) as LegacyRuntimeManifest;
 
 const playerLibraries = [
-  library("ancestries", "种族", "种族", "1.0.0", transformAncestry),
-  library("communities", "社群", "社群", "1.0.0", transformCommunity),
-  library("classes", "职业", "职业", "1.0.0", transformProfession),
-  library("subclasses", "子职业", "子职业", "1.0.0", transformSubclass),
-  library("weapons", "武器", "武器", "1.0.0", transformWeapon),
-  library("armor", "护甲", "护甲", "1.0.0", transformArmor),
-  library("loot", "物品与消耗品", "物品", "1.0.0", transformItem),
-  library("domain-cards", "领域卡", "领域卡", "1.0.0", transformDomain),
+  library("ancestries", "种族", "种族", "1.0.1", transformAncestry),
+  library("communities", "社群", "社群", "1.0.1", transformCommunity),
+  library("classes", "职业", "职业", "1.0.1", transformProfession),
+  library("subclasses", "子职业", "子职业", "1.0.1", transformSubclass),
+  library("weapons", "武器", "武器", "1.0.1", transformWeapon),
+  library("armor", "护甲", "护甲", "1.0.1", transformArmor),
+  library("loot", "物品与消耗品", "物品", "1.0.1", transformItem),
+  library("domain-cards", "领域卡", "领域卡", "1.0.1", transformDomain),
 ] as const;
 const gmLibraries = [
-  library("adversaries", "敌人", "敌人", "1.0.0", transformAdversary),
-  library("environments", "环境", "环境", "1.0.0", transformEnvironment),
+  library("adversaries", "敌人", "敌人", "1.0.1", transformAdversary),
+  library("environments", "环境", "环境", "1.0.1", transformEnvironment),
 ] as const;
 const libraries = [...playerLibraries, ...gmLibraries] as const;
 
@@ -90,9 +92,12 @@ for (const definition of libraries) {
   if (!template) throw new Error(`Missing Template: ${definition.templateId}@${definition.templateVersion}`);
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(template.schema);
   const entries = JSON.parse(await readFile(
-    path.join(sourceRoot, "resources", `${definition.id}.json`),
+    path.join(resourceRoot, `${definition.id}.json`),
     "utf8",
   )) as SourceEntry[];
+  const previousPackage = playerLibraries.some((candidate) => candidate.id === definition.id)
+    ? previousPlayerPackage
+    : previousGmPackage;
   for (const entry of entries) {
     const data = definition.transform(entry);
     if (!validate(data)) {
@@ -111,6 +116,7 @@ for (const definition of libraries) {
       },
       data: data as ResourceData,
       media: resourceMedia,
+      attribution: { artworkCredit: "", sourceLabel: playerLibraries.some((candidate) => candidate.id === definition.id) ? "匕首之心玩家资源" : "匕首之心主持人资源" },
     });
   }
   generatedLibraries.push({
@@ -150,7 +156,7 @@ gmDocument = {
 function resourceDocument(id: string, version: string, name: string, description: string, libraryIds: Set<string>): ResourcePackageLogicalDocument {
   const selected = generatedLibraries.filter(({ definition }) => libraryIds.has(definition.id));
   return {
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
   package: {
     id,
     version,
@@ -192,9 +198,7 @@ const systemDocument: SystemPackageDocument = {
   runtime: mapLegacyRuntime(legacyManifest),
   resourceCompatibility: libraries.map((definition) => ({
     templateId: definition.templateId,
-    versionRange: definition.templateVersion === "1.0.0"
-      ? { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" }
-      : { minimumInclusive: definition.templateVersion, maximumExclusive: "1.0.0" },
+    versionRange: { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" },
     nativeEntry: { id: definition.id, label: definition.label },
   })),
   embeddedResources: [
@@ -216,17 +220,6 @@ await writeFile(
   path.join(outputRoot, "resources", "daggerheart-core-gm.pbres"),
   writePbres(gmDocument, gmMedia),
 );
-await writeFile(
-  path.join(sourceRoot, "daggerheart-core-player.resource-package.json"),
-  `${JSON.stringify(coreDocument, null, 2)}\n`,
-  "utf8",
-);
-await writeFile(
-  path.join(sourceRoot, "daggerheart-core-gm.resource-package.json"),
-  `${JSON.stringify(gmDocument, null, 2)}\n`,
-  "utf8",
-);
-
 const runtimeFiles = [
   ...await collectPublishedRuntimePaths(outputRoot),
   "system.json",
@@ -330,18 +323,22 @@ async function admitSourceImage(
   media: Map<string, Uint8Array>,
 ) {
   const relativePath = entry[sourceField];
-  if (typeof relativePath !== "string" || !relativePath.endsWith(".webp")) return;
+  const previousResource = previousPackage?.document.resources.find((resource) => resource.id === entry.ID)
+    ?? previousPackage?.document.resources.find((resource) => resource.data.名称 === entry.名称 && (entry.等级 === undefined || resource.data.等级 === entry.等级));
+  const previousAssetId = previousResource?.media[slot];
+  const previousBytes = previousAssetId ? previousPackage?.media.get(previousAssetId) : undefined;
+  if ((typeof relativePath !== "string" || !relativePath.endsWith(".webp")) && !previousBytes) return;
   let bytes: Uint8Array;
-  try {
-    bytes = new Uint8Array(await readFile(path.join(sourceRoot, ...relativePath.split("/"))));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    const previousResource = previousPackage?.document.resources.find((resource) => resource.id === entry.ID)
-      ?? previousPackage?.document.resources.find((resource) => resource.data.名称 === entry.名称 && (entry.等级 === undefined || resource.data.等级 === entry.等级));
-    const previousAssetId = previousResource?.media[slot];
-    const previousBytes = previousAssetId ? previousPackage?.media.get(previousAssetId) : undefined;
-    if (!previousBytes) throw new Error(`Missing packed media for ${entry.ID}/${slot}: ${relativePath}`);
-    bytes = previousBytes;
+  if (typeof relativePath === "string" && relativePath.endsWith(".webp")) {
+    try {
+      bytes = new Uint8Array(await readFile(path.join(sourceRoot, ...relativePath.split("/"))));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      if (!previousBytes) throw new Error(`Missing packed media for ${entry.ID}/${slot}: ${relativePath}`);
+      bytes = previousBytes;
+    }
+  } else {
+    bytes = previousBytes!;
   }
   const id = `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
   if (!assets.has(id)) {
@@ -356,6 +353,11 @@ async function admitSourceImage(
     media.set(id, bytes);
   }
   resourceMedia[slot] = id;
+}
+
+function argument(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  return index >= 0 ? process.argv[index + 1] : undefined;
 }
 
 async function collectPublishedRuntimePaths(sourceDirectory: string, relative = ""): Promise<string[]> {

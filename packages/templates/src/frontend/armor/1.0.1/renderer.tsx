@@ -18,6 +18,7 @@ export const armorRendererStyles = `
 .armor-card-frame{position:relative;width:63px;height:88px;overflow:hidden}.armor-card-frame.is-fluid{overflow:visible}.armor-card{position:absolute;inset:0 auto auto 0;width:360px;height:502.857px;transform:scale(.175);transform-origin:top left}.armor-card.is-fluid{height:auto}
 .armor-card.is-split{height:auto;min-height:0;overflow:visible}.armor-card.is-split .armor-art{position:relative;height:auto;overflow:visible}.armor-card.is-split .armor-art img{width:100%;height:auto;object-fit:contain}.armor-card.is-split.has-portrait .armor-header{position:absolute;z-index:2;inset:auto 0 0;width:100%;background:linear-gradient(180deg,#1d131000 0%,#1d1310b8 48%,#1d1310f5 100%);border-bottom:0;text-shadow:0 1px 2px #0e0907}.armor-card.is-split:not(.has-portrait) .armor-header{position:relative;background:#251a14}.armor-card.is-split:not(.has-portrait) .armor-art{height:auto}
 .armor-card.is-split.has-fixed-base{height:var(--split-fixed-native-height)}
+.armor-header .armor-flavor[data-restricted-markdown]{margin:8px 0 0;color:#dcb299;font:italic 500 14px/1.4 "Noto Sans SC",sans-serif;overflow-wrap:anywhere;white-space:normal}
 `;
 
 const armorScale = .175;
@@ -75,6 +76,7 @@ export const armorRendererRevision: RendererRevisionCapability<ArmorData, ArmorR
     const fixedSurface = presentation.fixedRatio && presentation.mode !== "split";
     const header = <header className="armor-header">
       <div className="armor-title-row"><div className="armor-title-stack"><SingleLineTextFit className="armor-title" contentKey={data.名称} minFontSizePx={10} maxFontSizePx={36} cssVariable="--armor-title-font-size">{data.名称 || "未命名护甲"}</SingleLineTextFit>{data.原文?.trim() ? <p className="armor-original">{data.原文}</p> : null}</div><span className="armor-title-meta">{data.位阶 ? <span>位阶 {data.位阶}</span> : null}<span>{data.类型 || "护甲"}</span></span></div>
+      {data.简介 ? <RestrictedMarkdown className="armor-flavor" inline value={data.简介} /> : null}
     </header>;
     const splitFixed = presentation.fixedRatio && presentation.mode === "split";
     return <ArmorCardFrame fixedRatio={fixedSurface} splitFixed={splitFixed} imageKey={portrait}>{(cardRef) => <article ref={cardRef} className={["armor-card", `is-${presentation.mode}`, fixedSurface ? "" : "is-fluid", splitFixed ? "has-fixed-base" : "", portrait ? "has-portrait" : ""].filter(Boolean).join(" ")} data-renderer-revision="armor-card-r2">
@@ -89,9 +91,8 @@ export const armorRendererRevision: RendererRevisionCapability<ArmorData, ArmorR
           <div className="armor-stat"><b>{data.重度伤害阈值}</b><span>重度阈值</span></div>
           <div className="armor-stat"><b>{data.严重伤害阈值}</b><span>严重阈值</span></div>
         </section>
-        <TextFitContainer className="armor-effects" contentKey={`${data.特性名称}\0${data.特性原文 ?? ""}\0${data.特性描述}\0${data.简介}`} enabled={fixedSurface && presentation.mode !== "image"} cssVariable="--armor-content-font-size">
+        <TextFitContainer className="armor-effects" contentKey={`${data.特性名称}\0${data.特性原文 ?? ""}\0${data.特性描述}`} enabled={fixedSurface && presentation.mode !== "image"} cssVariable="--armor-content-font-size">
           {(data.特性名称 || data.特性描述) && <section className="armor-feature"><h2><span><RestrictedMarkdown inline value={data.特性名称 || "护甲特性"} /></span>{data.特性原文?.trim() ? <small>{data.特性原文}</small> : null}</h2><RestrictedMarkdown value={data.特性描述} /></section>}
-          {data.简介 && <RestrictedMarkdown className="armor-flavor" value={data.简介} />}
         </TextFitContainer>
       </div>
       {presentation.mode !== "image" ? <CardFooter attribution={attribution ?? { artworkCredit: "", sourceLabel: "" }} /> : null}

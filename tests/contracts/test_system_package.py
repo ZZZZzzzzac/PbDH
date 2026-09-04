@@ -30,7 +30,7 @@ DOCUMENT = read_json(SYSTEM_ROOT / "system.json")
 def validate_resource(document: dict[str, Any], media: dict[str, bytes]) -> list[dict[str, Any]]:
     diagnostics = RUNTIME.validate({
         "family": "resource-package",
-        "version": "1.0.0",
+        "version": document["contractVersion"],
         "mode": "development",
         "candidate": document,
     })
@@ -51,6 +51,6 @@ def test_official_system_contains_a_complete_stable_pbres() -> None:
     result = load_pbres(pbres, validate_resource)
     assert result["diagnostics"] == []
     resource = result["candidate"]["document"]
-    assert resource["contractVersion"] == "1.0.0"
+    assert resource["contractVersion"] == "1.1.0"
     assert resource["package"]["version"] == "1.0.19"
-    assert {item["template"]["version"] for item in resource["resources"]} == {"1.0.0"}
+    assert {item["template"]["version"] for item in resource["resources"]} == {"1.0.1"}

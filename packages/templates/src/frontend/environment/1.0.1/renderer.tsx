@@ -20,6 +20,7 @@ export const environmentRendererStyles = `
 .environment-features-wrap{padding:12px 11px 14px}.environment-feature-heading{display:flex;align-items:center;gap:8px;margin:0 0 7px;color:var(--oxblood);font:800 13px/1 "Noto Sans SC",sans-serif;letter-spacing:.08em}.environment-feature-heading::after{content:"";height:2px;flex:1;background:var(--brass)}.environment-features{min-height:0;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:6px}.environment-card.is-fluid .environment-features{flex:none;overflow:visible}.environment-feature{padding:6px;display:grid;grid-template-columns:76px minmax(0,1fr);align-items:start;gap:8px;background:#f7ebd6;border:1px solid #d4b78d;border-radius:4px}.environment-feature-identity{min-width:0;padding-right:7px}.environment-feature h2{margin:0;color:var(--oxblood);font:800 calc(var(--environment-content-font-size,15px) + 3px)/1.2 "Noto Sans SC",sans-serif}.environment-feature-type{display:block;margin-top:2px;color:#87504b;font:650 var(--environment-content-font-size,15px)/1.2 "Noto Sans SC",sans-serif}.environment-feature small{display:block;margin-top:3px;color:#5e4637;font:650 max(8px,calc(var(--environment-content-font-size,15px) - 3px))/1.2 "Noto Sans SC",sans-serif}.environment-feature-copy{min-width:0}.environment-feature-copy>[data-restricted-markdown]{margin:0;color:var(--ink);font:450 var(--environment-content-font-size,15px)/1.35 "Noto Sans SC",sans-serif}.environment-question{grid-column:1/-1;margin:0!important;padding-top:6px;border-top:1px solid #d4b78d;color:#5e4637!important;font-style:italic!important}.environment-question strong{color:var(--oxblood);font-style:normal}.environment-card>.pbdh-card-footer{color:#725747;background:var(--bone);border-top:1px solid #d4b78d}.environment-card.is-image>.pbdh-card-footer{display:none}
 .environment-card.is-split{height:auto;min-height:0;overflow:visible}.environment-card.is-split .environment-art{position:relative;height:auto;overflow:visible}.environment-card.is-split .environment-art img{width:100%;height:auto;object-fit:contain}.environment-card.is-split.has-portrait .environment-header{inset:auto 0 0;height:auto;min-height:74px;background:linear-gradient(180deg,#1d131000 0%,#1d1310b8 48%,#1d1310f5 100%)}.environment-card.is-split:not(.has-portrait) .environment-header{position:relative;height:auto;background:#251a14}.environment-card.is-split:not(.has-portrait) .environment-art{min-height:74px}
 .environment-card.is-split.has-fixed-base{height:var(--split-fixed-native-height)}
+.environment-summary{margin:8px 0 0;color:#dcb299;font:italic 500 14px/1.4 "Noto Sans SC",sans-serif;overflow-wrap:anywhere}
 `;
 
 const environmentScale = .175;
@@ -80,6 +81,7 @@ export const environmentRendererRevision: RendererRevisionCapability<Environment
         <div className="environment-identity"><SingleLineTextFit className="environment-title" contentKey={data.名称} minFontSizePx={10} maxFontSizePx={36} cssVariable="--environment-title-font-size">{data.名称 || "未命名环境"}</SingleLineTextFit>{data.原文?.trim() ? <p className="environment-original">{data.原文}</p> : null}</div>
         <div className="environment-taxonomy"><span className="environment-type">{data.类型 || "环境"}</span><div className="environment-kicker"><span>{data.位阶 ? `位阶 ${data.位阶}` : ""}</span><span>{data.种类}</span></div></div>
       </div>
+      {data.简介?.trim() ? <RestrictedMarkdown className="environment-summary" inline value={data.简介} /> : null}
     </header>;
     const splitFixed = presentation.fixedRatio && presentation.mode === "split";
     return <EnvironmentCardFrame fixedRatio={fixedSurface} splitFixed={splitFixed} imageKey={portrait}>{(cardRef) => <article ref={cardRef} className={["environment-card", `is-${presentation.mode}`, fixedSurface ? "" : "is-fluid", splitFixed ? "has-fixed-base" : "", portrait ? "has-portrait" : ""].filter(Boolean).join(" ")} data-renderer-revision="environment-card-r3">
@@ -92,7 +94,6 @@ export const environmentRendererRevision: RendererRevisionCapability<Environment
         <section className="environment-scene" aria-label="环境资料">
           <div className="environment-difficulty"><span className="environment-difficulty-label">难度</span><b>{data.难度 || "—"}</b><small>DIFFICULTY</small></div>
           <dl className="environment-record">
-            {data.简介?.trim() ? <div><dt>简介</dt><dd className="environment-intro"><RestrictedMarkdown inline value={data.简介} /></dd></div> : null}
             {data.趋向?.trim() ? <div><dt>趋向</dt><dd><RestrictedMarkdown inline value={data.趋向} /></dd></div> : null}
             {data.潜在敌人?.trim() ? <div><dt>潜在敌人</dt><dd><RestrictedMarkdown inline value={data.潜在敌人} /></dd></div> : null}
           </dl>
