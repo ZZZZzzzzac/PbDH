@@ -59,7 +59,7 @@ describe("Sheet Runtime Character Save adapter", () => {
       template: { id: "种族", version: "1.0.0" },
       data: {
         名称: "人类 / 精灵",
-        特性: [{ 描述: "**适应**：说明" }, { 描述: "**冥想**：说明" }],
+        特性: [{ 特性名称: "适应", 特性描述: "说明" }, { 特性名称: "冥想", 特性描述: "说明" }],
       },
     });
     expect(await validateCharacterSaveCandidate(candidate.document, candidate.media)).toEqual([]);
@@ -105,11 +105,11 @@ describe("Sheet Runtime Character Save adapter", () => {
     expect(restored.cards.instances[0]).toMatchObject({ tokenCount: 3 });
     expect(restored.embeddedResourceEntries[`character-copy:${standardCardId}`]).toMatchObject({
       libraryId: "communities",
-      entry: { fields: { 名称: "荒野之民", 描述: "**通晓地形**：说明" } },
+      entry: { fields: { 名称: "荒野之民", 描述: "通晓地形：说明" } },
     });
     expect(restored.embeddedResourceEntries[`character-copy:${compositeCardId}`]).toMatchObject({
       libraryId: "ancestries",
-      entry: { fields: { 名称: "人类 / 精灵", 特性A: "**适应**：说明", 特性B: "**冥想**：说明" } },
+      entry: { fields: { 名称: "人类 / 精灵", 特性A: "适应：说明", 特性B: "冥想：说明" } },
     });
 
     const duplicateId = "00000000-0000-7000-8000-000000000041";
@@ -288,7 +288,7 @@ function installedPackages(): ResourceLibrary {
       名称: "荒野之民",
       简介: "荒野社群",
       性格: "坚韧",
-      特性: { 名称: "通晓地形", 描述: "**通晓地形**：说明" },
+      特性: { 特性名称: "通晓地形", 特性描述: "说明" },
     },
     media: { portrait: `sha256:${"a".repeat(64)}` },
   };

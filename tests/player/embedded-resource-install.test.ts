@@ -51,16 +51,16 @@ describe("系统包内置 .pbres 安装", () => {
       fetchFile,
     });
 
-    expect(first.installedPackageIds).toHaveLength(1);
-    expect(repository.packages).toHaveLength(1);
+    expect(first.installedPackageIds).toHaveLength(2);
+    expect(repository.packages).toHaveLength(2);
     expect(repository.packages.reduce((total, candidate) =>
-      total + candidate.document.resources.length, 0)).toBe(625);
+      total + candidate.document.resources.length, 0)).toBe(1267);
     expect(second).toMatchObject({
       installedPackageIds: [],
       unchangedPackageIds: preset.embeddedResourceIndex.map((item) => item.packageId),
       rejected: [],
     });
-    expect(fetchCount).toBe(1);
+    expect(fetchCount).toBe(2);
   });
 
   it("内置资源低于最低版本时自动替换为系统包版本", async () => {
@@ -91,8 +91,9 @@ describe("系统包内置 .pbres 安装", () => {
     });
 
     expect(result.installedPackageIds).toEqual([embedded.packageId]);
-    expect(repository.packages[0]?.document.package.version).toBe(embedded.version);
-    expect(repository.packages[0]?.document.snapshotDigest).toBe(embedded.snapshotDigest);
+    const replaced = repository.packages.find((item) => item.document.package.id === embedded.packageId);
+    expect(replaced?.document.package.version).toBe(embedded.version);
+    expect(replaced?.document.snapshotDigest).toBe(embedded.snapshotDigest);
   });
 
   it("自动重装媒体记录缺失的内置资源包", async () => {
@@ -128,8 +129,8 @@ describe("系统包内置 .pbres 安装", () => {
       });
 
       expect(repaired.installedPackageIds).toEqual([preset.embeddedResourceIndex[0]!.packageId]);
-      await expect(repository.list(systemPackage.package.id)).resolves.toHaveLength(1);
-      expect(fetchCount).toBe(2);
+      await expect(repository.list(systemPackage.package.id)).resolves.toHaveLength(2);
+      expect(fetchCount).toBe(3);
     } finally {
       database.close();
       await database.delete();

@@ -7,13 +7,13 @@ export function ItemAuthoringEditor({ data, onValue }: TemplateAuthoringEditorPr
     <style>{standardEditorStyles + `.item-editor section{grid-template-columns:repeat(2,minmax(0,1fr))}`}</style>
     <section>
       <EditorInput label="名称" value={data.名称} onChange={(value) => onValue("名称", value)} />
-      <EditorInput label="英文" value={data.原文} onChange={(value) => onValue("原文", value)} />
+      <EditorInput label="原文" value={data.原文} onChange={(value) => onValue("原文", value)} />
       <EditorInput label="掷骰" value={data.掷骰} onChange={(value) => onValue("掷骰", value)} />
       <EditorInput label="类型" value={data.类型} options={["物品", "消耗品"]} onChange={(value) => onValue("类型", value)} />
     </section>
     <section>
-      <div className="template-editor-span-all"><EditorTextarea label="描述" value={data.描述} onChange={(value) => onValue("描述", value)} /></div>
-      <div className="template-editor-span-all"><EditorTextarea label="风味描述" value={data.风味描述} onChange={(value) => onValue("风味描述", value)} /></div>
+      <div className="template-editor-span-all"><EditorTextarea label="特性描述" value={data.特性描述} onChange={(value) => onValue("特性描述", value)} /></div>
+      <div className="template-editor-span-all"><EditorTextarea label="简介" value={data.简介} onChange={(value) => onValue("简介", value)} /></div>
     </section>
   </div>;
 }

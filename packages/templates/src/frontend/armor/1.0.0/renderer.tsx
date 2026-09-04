@@ -77,9 +77,9 @@ export const armorRendererRevision: RendererRevisionCapability<ArmorData, ArmorR
           <div className="armor-stat"><b>{data.重度伤害阈值}</b><span>重度阈值</span></div>
           <div className="armor-stat"><b>{data.严重伤害阈值}</b><span>严重阈值</span></div>
         </section>
-        <TextFitContainer className="armor-effects" contentKey={`${data.特性名}\0${data.特性原名 ?? ""}\0${data.特性描述}\0${data.风味描述}`} enabled={presentation.fixedRatio && presentation.mode !== "image"} cssVariable="--armor-content-font-size">
-          {(data.特性名 || data.特性描述) && <section className="armor-feature"><h2><span><RestrictedMarkdown inline value={data.特性名 || "护甲特性"} /></span>{data.特性原名?.trim() ? <small>{data.特性原名}</small> : null}</h2><RestrictedMarkdown value={data.特性描述} /></section>}
-          {data.风味描述 && <RestrictedMarkdown className="armor-flavor" value={data.风味描述} />}
+        <TextFitContainer className="armor-effects" contentKey={`${data.特性名称}\0${data.特性原文 ?? ""}\0${data.特性描述}\0${data.简介}`} enabled={presentation.fixedRatio && presentation.mode !== "image"} cssVariable="--armor-content-font-size">
+          {(data.特性名称 || data.特性描述) && <section className="armor-feature"><h2><span><RestrictedMarkdown inline value={data.特性名称 || "护甲特性"} /></span>{data.特性原文?.trim() ? <small>{data.特性原文}</small> : null}</h2><RestrictedMarkdown value={data.特性描述} /></section>}
+          {data.简介 && <RestrictedMarkdown className="armor-flavor" value={data.简介} />}
         </TextFitContainer>
       </div>
       {presentation.mode !== "image" ? <CardFooter attribution={attribution ?? { artworkCredit: "", sourceLabel: "" }} /> : null}

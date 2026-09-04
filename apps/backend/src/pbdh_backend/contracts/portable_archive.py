@@ -13,7 +13,7 @@ from typing import Any
 FAMILY = "resource-package"
 VERSION = "1.0.0"
 ROOT_PATH = "package.json"
-MAX_ENTRIES = 1024
+MAX_ENTRIES = 2048
 MAX_PATH_BYTES = 512
 MAX_FILE_BYTES = 8 * 1024 * 1024
 MAX_EXPANDED_BYTES = 64 * 1024 * 1024

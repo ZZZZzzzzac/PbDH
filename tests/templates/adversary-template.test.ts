@@ -81,7 +81,7 @@ describe("敌人 Template Core", () => {
     delete withoutEnglish.原文;
     withoutEnglish.特性 = withoutEnglish.特性.map((feature) => {
       const result = { ...feature };
-      delete result.原名;
+      delete result.特性原文;
       return result;
     });
     expect(validateData(withoutEnglish), JSON.stringify(validateData.errors)).toBe(true);
@@ -142,7 +142,7 @@ describe("敌人 Template Authoring 与支持清单", () => {
     expect(markup).toContain("adversary-identity");
     expect(markup).toContain("adversary-combat");
     expect(markup).toContain("adversary-feature");
-    expect(markup.indexOf("名称")).toBeLessThan(markup.indexOf("英文"));
+    expect(markup.indexOf("名称")).toBeLessThan(markup.indexOf("原文"));
     expect(markup).toContain("展开位阶选项");
     expect(markup).toContain("展开种类选项");
     expect(markup).toContain("template-editor-select-arrow");

@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import { normalizeProfessionData } from "../../../core/index.ts";
 import { EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
 import { standardEditorStyles } from "../../standard-editor-styles.ts";
 import type { TemplateAuthoringCapability, TemplateAuthoringEditorProps } from "../../types.ts";
@@ -16,7 +15,6 @@ function listValue(value: unknown): string[] {
 }
 
 export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEditorProps) {
-  data = normalizeProfessionData(data) as unknown as Record<string, unknown>;
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const features = Array.isArray(data.特性) ? data.特性 as Record<string, unknown>[] : [];
   const hope = recordValue(data.希望特性);
@@ -24,7 +22,7 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
   const domains = listValue(data.领域);
   const backgroundQuestions = listValue(data.背景问题);
   const relationshipQuestions = listValue(data.关系问题);
-  const emptyFeature = { 名称: "新特性", 原名: "", 特性描述: "" };
+  const emptyFeature = { 特性名称: "新特性", 特性原文: "", 特性描述: "" };
   const updateFeature = (index: number, path: string, value: string) => onValue("特性", features.map((feature, rowIndex) => rowIndex === index ? { ...feature, [path]: value } : feature));
   const updateList = (path: "领域" | "背景问题" | "关系问题", source: string[], index: number, value: string, length: number) => {
     const next = Array.from({ length }, (_, rowIndex) => source[rowIndex] ?? "");
@@ -48,7 +46,7 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
   `}</style>
     <section>
       <div className="span-4"><EditorInput label="名称" value={data.名称} onChange={(value) => onValue("名称", value)} /></div>
-      <div className="span-4"><EditorInput label="英文" value={data.原文} onChange={(value) => onValue("原文", value)} /></div>
+      <div className="span-4"><EditorInput label="原文" value={data.原文} onChange={(value) => onValue("原文", value)} /></div>
       <div className="span-4"><EditorInput label="类型" value={data.类型} onChange={(value) => onValue("类型", value)} /></div>
       <div className="span-3"><EditorInput label="领域1" value={domains[0]} onChange={(value) => updateList("领域", domains, 0, value, 2)} /></div>
       <div className="span-3"><EditorInput label="领域2" value={domains[1]} onChange={(value) => updateList("领域", domains, 1, value, 2)} /></div>
@@ -57,20 +55,20 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
     </section>
     <section className="profession-hope">
       <div className="profession-hope-row">
-        <EditorInput label="希望特性名" value={hope.名称} onChange={(value) => onValue("希望特性", { ...hope, 名称: value })} />
-        <EditorInput label="英文" value={hope.原名} onChange={(value) => onValue("希望特性", { ...hope, 原名: value })} />
-        <button type="button" className="profession-feature-action" onClick={() => onValue("希望特性", { 名称: "", 原名: "", 特性描述: "" })}>清空</button>
+        <EditorInput label="特性名称" value={hope.特性名称} onChange={(value) => onValue("希望特性", { ...hope, 特性名称: value })} />
+        <EditorInput label="特性原文" value={hope.特性原文} onChange={(value) => onValue("希望特性", { ...hope, 特性原文: value })} />
+        <button type="button" className="profession-feature-action" onClick={() => onValue("希望特性", { 特性名称: "", 特性原文: "", 特性描述: "" })}>清空</button>
         <EditorTextarea label="希望特性描述" value={hope.特性描述} onChange={(value) => onValue("希望特性", { ...hope, 特性描述: value })} />
       </div>
     </section>
     <section className="profession-features"><header><h3>职业特性</h3><button type="button" onClick={() => onValue("特性", [...features, { ...emptyFeature }])}>＋ 新增</button></header>
       {features.map((feature, index) => <article className="profession-feature" key={index}>
-        <EditorInput label="职业特性名" value={feature.名称} onChange={(value) => updateFeature(index, "名称", value)} />
-        <EditorInput label="英文" value={feature.原名} onChange={(value) => updateFeature(index, "原名", value)} />
+        <EditorInput label="特性名称" value={feature.特性名称} onChange={(value) => updateFeature(index, "特性名称", value)} />
+        <EditorInput label="特性原文" value={feature.特性原文} onChange={(value) => updateFeature(index, "特性原文", value)} />
         <button type="button" className="profession-feature-action" onClick={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))}>清空</button>
         <button type="button" className="profession-feature-action" onClick={() => setPendingDelete(index)}>删除</button>
         <EditorTextarea label="职业特性描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} />
-        {pendingDelete === index ? <div className="profession-feature-confirm"><span>确认删除“{textValue(feature.名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
+        {pendingDelete === index ? <div className="profession-feature-confirm"><span>确认删除“{textValue(feature.特性名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
       </article>)}
     </section>
     <section>
@@ -80,7 +78,7 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
       <div className="span-6"><EditorInput label="推荐初始护甲" value={data.推荐初始护甲} onChange={(value) => onValue("推荐初始护甲", value)} /></div>
     </section>
     <section>
-      <div className="span-12"><EditorTextarea label="风味描述" value={data.风味描述} onChange={(value) => onValue("风味描述", value)} /></div>
+      <div className="span-12"><EditorTextarea label="简介" value={data.简介} onChange={(value) => onValue("简介", value)} /></div>
       {[0, 1, 2].map((index) => <div className="span-12" key={`background-${index}`}><EditorInput label={`背景问题${index + 1}`} value={backgroundQuestions[index]} onChange={(value) => updateList("背景问题", backgroundQuestions, index, value, 3)} /></div>)}
       {[0, 1, 2].map((index) => <div className="span-12" key={`relationship-${index}`}><EditorInput label={`关系问题${index + 1}`} value={relationshipQuestions[index]} onChange={(value) => updateList("关系问题", relationshipQuestions, index, value, 3)} /></div>)}
     </section>

@@ -2,7 +2,7 @@
   "id": "01a04186-51be-74e1-b94f-ec17d354dc00",
   "urlPath": "heart-of-hopefind",
   "name": "寻望之心",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "releaseVersion": "0.0.0-dev",
   "directory": "heart-of-hopefind",
   "inventoryPath": ".pbdh-runtime-files.json",
@@ -12,8 +12,8 @@
     {
       "path": "resources/heart-of-hopefind.pbres",
       "packageId": "01a04186-51bf-7c26-8c27-2f7147125243",
-      "version": "1.0.0",
-      "snapshotDigest": "sha256:3670f3773feea5e286ee3f0e379c6e9d6221f68508539260e7649afb46839457"
+      "version": "1.0.1",
+      "snapshotDigest": "sha256:cf708b2ad09a71c81b5a7eec578bf95f31bd1c63b6cf2974bbcd49637286b3ec"
     }
   ],
   "loadingPresentation": {

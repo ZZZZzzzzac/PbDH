@@ -18,12 +18,12 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["名称", "类型", "描述", "引导问题"],
+        "required": ["特性名称", "特性类型", "特性描述", "引导问题"],
         "properties": {
-          "名称": { "type": "string" },
-          "原名": { "type": "string" },
-          "类型": { "type": "string" },
-          "描述": { "type": "string" },
+          "特性名称": { "type": "string" },
+          "特性原文": { "type": "string" },
+          "特性类型": { "type": "string" },
+          "特性描述": { "type": "string" },
           "引导问题": { "type": "string" }
         },
         "additionalProperties": false

@@ -85,9 +85,9 @@ export const environmentRendererRevision: RendererRevisionCapability<Environment
             {data.潜在敌人?.trim() ? <div><dt>潜在敌人</dt><dd><RestrictedMarkdown inline value={data.潜在敌人} /></dd></div> : null}
           </dl>
         </section>
-        <div className="environment-features-wrap"><h2 className="environment-feature-heading">环境特性 / FEATURES</h2><TextFitContainer className="environment-features" contentKey={JSON.stringify(data.特性)} enabled={presentation.fixedRatio && presentation.mode !== "image"} cssVariable="--environment-content-font-size">{data.特性.map((feature, index) => <section className="environment-feature" key={`${feature.名称}:${index}`}>
-          <div className="environment-feature-identity"><h2>{feature.名称 || "未命名特性"}</h2><span className="environment-feature-type">{feature.类型}</span>{feature.原名?.trim() ? <small>{feature.原名}</small> : null}</div>
-          <div className="environment-feature-copy">{feature.描述 && <RestrictedMarkdown value={feature.描述} />}</div>
+        <div className="environment-features-wrap"><h2 className="environment-feature-heading">环境特性 / FEATURES</h2><TextFitContainer className="environment-features" contentKey={JSON.stringify(data.特性)} enabled={presentation.fixedRatio && presentation.mode !== "image"} cssVariable="--environment-content-font-size">{data.特性.map((feature, index) => <section className="environment-feature" key={`${feature.特性名称}:${index}`}>
+          <div className="environment-feature-identity"><h2>{feature.特性名称 || "未命名特性"}</h2><span className="environment-feature-type">{feature.特性类型}</span>{feature.特性原文?.trim() ? <small>{feature.特性原文}</small> : null}</div>
+          <div className="environment-feature-copy">{feature.特性描述 && <RestrictedMarkdown value={feature.特性描述} />}</div>
           {feature.引导问题 && <p className="environment-question"><RestrictedMarkdown inline value={feature.引导问题} /></p>}
         </section>)}</TextFitContainer></div>
       </div>

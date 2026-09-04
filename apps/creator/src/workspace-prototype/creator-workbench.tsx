@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { RESOURCE_PACKAGE_VERSION } from "@pbdh/contract-runtime";
 import { resolveTemplateFrontend, TemplateAuthoringSurface } from "@pbdh/templates/frontend";
-import { normalizeProfessionData, professionDataNeedsMigration, templateRegistry } from "@pbdh/templates/core";
+import { templateRegistry } from "@pbdh/templates/core";
 
 import { Icon } from "./creator-controls.tsx";
 import { CreatorColumnResizeHandle, creatorColumnPreferences } from "./creator-layout.tsx";
@@ -57,12 +57,6 @@ export function CreatorWorkbench({ snapshot, execute }: {
     const candidate = workspace.document.resources.find((item) => item.id === resourceId);
     return candidate ? [{ key: resourceTabKey(workspace.key, candidate.id), workspace, candidate }] : [];
   })), snapshot.tabOrder ?? [], (tab) => tab.key);
-
-  useEffect(() => {
-    if (resource?.template.id === "职业" && professionDataNeedsMigration(resource.data)) {
-      execute({ type: "replace-authoring-data", data: normalizeProfessionData(resource.data) as unknown as Record<string, unknown> });
-    }
-  }, [execute, resource]);
 
   function dropAt(clientX: number, clientY: number) {
     const element = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-resource-tab-key]");

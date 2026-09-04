@@ -15,7 +15,8 @@ describe("Creator 发布封面", () => {
       data: {
         ...freeTemplate.defaultData,
         名称: "纯文字卡牌",
-        内容: [{ 标题: "简介", 正文: "没有图片也必须能生成发布封面。" }],
+        简介: "没有图片也必须能生成发布封面。",
+        内容: [],
       },
       media: {},
     } satisfies WorkspaceResource;

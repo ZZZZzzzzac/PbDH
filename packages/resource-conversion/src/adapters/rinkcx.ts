@@ -24,9 +24,9 @@ const upstreamRevision = "bbf7faa1303c2bbeacfbe8ff339c7ba4cec6e10a";
 function feature(value: unknown): JsonObject {
   const item = isObject(value) ? value : {};
   return {
-    名称: text(item.name),
-    原名: "",
-    类型: text(item.type || "被动"),
+    特性名称: text(item.name),
+    特性原文: "",
+    特性类型: text(item.type || "被动"),
     特性描述: text(item.desc || item.effect),
     ...(item.flavor !== undefined ? { 风味: text(item.flavor) } : {}),
     ...(item.trigger !== undefined ? { 触发: text(item.trigger) } : {}),
@@ -75,9 +75,10 @@ function sceneFields(raw: JsonObject): JsonObject {
     特性: Array.isArray(raw.traits) ? raw.traits.map((value) => {
       const item = isObject(value) ? value : {};
       return {
-        名称: text(item.name),
-        类型: text(item.type),
-        描述: text(item.desc),
+        特性名称: text(item.name),
+        特性原文: "",
+        特性类型: text(item.type),
+        特性描述: text(item.desc),
         引导问题: text(item.qs),
       };
     }) : [],
@@ -113,13 +114,13 @@ function featureToRink(value: JsonValue, special: boolean): JsonObject {
   const item = isObject(value) ? value : {};
   if (special) {
     return {
-      name: text(item.名称),
+      name: text(item.特性名称),
       trigger: text(item.触发),
       choice: text(item.选择),
       effect: text(item.特性描述),
     };
   }
-  return { name: text(item.名称), desc: text(item.特性描述), flavor: text(item.风味) };
+  return { name: text(item.特性名称), type: text(item.特性类型), desc: text(item.特性描述), flavor: text(item.风味) };
 }
 
 function exportEnemy(resource: TemporaryResource): JsonObject {
@@ -167,9 +168,9 @@ function exportScene(resource: TemporaryResource): JsonObject {
     traits: Array.isArray(fields.特性) ? fields.特性.map((value) => {
       const item = isObject(value) ? value : {};
       return {
-        name: text(item.名称),
-        type: text(item.类型),
-        desc: text(item.描述),
+        name: text(item.特性名称),
+        type: text(item.特性类型),
+        desc: text(item.特性描述),
         qs: text(item.引导问题),
       };
     }) : [],

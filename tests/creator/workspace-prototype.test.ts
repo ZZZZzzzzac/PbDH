@@ -205,10 +205,10 @@ describe("Creator Workspace prototype state model", () => {
       伤害: "d10+3",
       伤害类型: "物理",
       负荷: "双手",
-      特性名: "击退",
-      特性原名: "Knockback",
+      特性名称: "击退",
+      特性原文: "Knockback",
       特性描述: "命中后将目标推开。",
-      风味描述: "",
+      简介: "",
     };
     const edited = updateResourceData<WeaponData>(created.workspace, (data) => Object.assign(data, values), created.resourceId);
     expect(resourceData<WeaponData>(edited, created.resourceId)).toEqual(values);
@@ -228,10 +228,10 @@ describe("Creator Workspace prototype state model", () => {
       护甲值: "4",
       重度伤害阈值: "7",
       严重伤害阈值: "14",
-      特性名: "坚韧",
-      特性原名: "Sturdy",
+      特性名称: "坚韧",
+      特性原文: "Sturdy",
       特性描述: "降低伤害。",
-      风味描述: "由铁木编成。",
+      简介: "由铁木编成。",
       位阶: "2",
     };
     const edited = updateResourceData<ArmorData>(created.workspace, (data) => Object.assign(data, values), created.resourceId);
@@ -444,9 +444,8 @@ describe("Creator Workspace prototype state model", () => {
     expect(helper?.data).toMatchObject({
       名称: "小帮手",
       类型: "使魔类型",
-      内容: [
-        { 标题: "简介", 正文: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。" },
-      ],
+      简介: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。",
+      内容: [],
     });
     expect(freeAuthoring.templateId).toBe("自由");
     expect(trustedRendererFor("自由", "1.0.0")?.revision).toBe("free-card-r1");
@@ -499,15 +498,15 @@ describe("Creator Workspace prototype state model", () => {
   test("clears or deletes a feature without mutating the source Workspace", () => {
     const workspace = createWorkspace({ document, media });
     const cleared = updateResourceData<AdversaryData>(workspace, (data) => {
-      data.特性[1] = { 名称: "", 原名: "", 类型: "", 特性描述: "" };
+      data.特性[1] = { 特性名称: "", 特性原文: "", 特性类型: "", 特性描述: "" };
     });
-    expect(resourceData<AdversaryData>(cleared).特性[1]).toEqual({ 名称: "", 原名: "", 类型: "", 特性描述: "" });
-    expect(resourceData<AdversaryData>(workspace).特性[1]?.名称).toBe("蛮牛冲撞");
+    expect(resourceData<AdversaryData>(cleared).特性[1]).toEqual({ 特性名称: "", 特性原文: "", 特性类型: "", 特性描述: "" });
+    expect(resourceData<AdversaryData>(workspace).特性[1]?.特性名称).toBe("蛮牛冲撞");
 
     const deleted = updateResourceData<AdversaryData>(workspace, (data) => {
       data.特性.splice(1, 1);
     });
-    expect(resourceData<AdversaryData>(deleted).特性.map((feature) => feature.名称)).toEqual(["蓄力", "角撞"]);
+    expect(resourceData<AdversaryData>(deleted).特性.map((feature) => feature.特性名称)).toEqual(["蓄力", "角撞"]);
     expect(resourceData<AdversaryData>(deleted)).not.toBe(resourceData<AdversaryData>(workspace));
   });
 
@@ -634,7 +633,7 @@ describe("Creator Workspace prototype state model", () => {
     const edited = updateResourceData<ArmorData>(armorWorkspace, (data) => {
       data.名称 = "改良填充布甲";
       data.护甲值 = "4";
-      data.风味描述 = "工坊重新缝制了内衬。";
+      data.简介 = "工坊重新缝制了内衬。";
     });
     const exported = await prepareWorkspaceExport(edited);
     expect(await validateResourcePackageCandidate(exported.document, exported.media)).toEqual([]);
@@ -646,7 +645,7 @@ describe("Creator Workspace prototype state model", () => {
       id: armorPackage.resources[0]!.id,
       path: armorPackage.resources[0]!.path,
       template: { id: "护甲", version: "1.0.0" },
-      data: { 名称: "改良填充布甲", 护甲值: "4", 风味描述: "工坊重新缝制了内衬。" },
+      data: { 名称: "改良填充布甲", 护甲值: "4", 简介: "工坊重新缝制了内衬。" },
     });
   });
 

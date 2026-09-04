@@ -4,7 +4,7 @@
     "document": "valid/daggerheart-core-reference-types.json",
     "media": [],
     "targets": null,
-    "expected": "sha256:f0ba89fb42d6573f7fc7b24979ccd92e1b719c4636cf27596fad378556d60585"
+    "expected": "sha256:0d13fd3aad8b9e4d2a6eaa0fb6ab030f3c02246a7c608942bb03d0379924bb6e"
   },
   {
     "name": "minotaur-wrecker-known-answer",
@@ -16,7 +16,7 @@
       }
     ],
     "targets": null,
-    "expected": "sha256:2f6012cc728fd194138feafbf09ae1d40833fe94dcda73d2e301999d1f712f46"
+    "expected": "sha256:a6651b0014a22e0e15e45bf170e34117a6996ce4cef2ff5294ba5c736b77af92"
   },
   {
     "name": "target-order-is-canonical",
@@ -37,6 +37,6 @@
         "version": "1.0.0"
       }
     ],
-    "expected": "sha256:753e5bd3aa4e4d56d3f55ce7a1125f0436fb0636c868d3d956182c32970daefa"
+    "expected": "sha256:6c2c6f28a519d613652c0a452cb7660caa5b299561b58a3df978ef463ef6cdf2"
   }
 ]

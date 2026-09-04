@@ -96,9 +96,9 @@ export const weaponRendererRevision: RendererRevisionCapability<
             <div className="weapon-detail"><span>伤害类型</span><b>{data.伤害类型}</b></div>
             <div className="weapon-detail"><span>负荷</span><b>{data.负荷}</b></div>
           </section>
-          <TextFitContainer className="weapon-description" contentKey={`${data.特性名}\0${data.特性原名 ?? ""}\0${data.特性描述}\0${data.风味描述}`} enabled={presentation.fixedRatio} minFontSizePx={11} maxFontSizePx={15} cssVariable="--weapon-content-font-size">
-            <section className="weapon-feature"><h2><RestrictedMarkdown inline value={data.特性名 || "特性"} />{data.特性原名?.trim() ? <small>{data.特性原名}</small> : null}</h2><RestrictedMarkdown value={data.特性描述} /></section>
-            {data.风味描述 && <RestrictedMarkdown className="weapon-flavor" value={data.风味描述} />}
+          <TextFitContainer className="weapon-description" contentKey={`${data.特性名称}\0${data.特性原文 ?? ""}\0${data.特性描述}\0${data.简介}`} enabled={presentation.fixedRatio} minFontSizePx={11} maxFontSizePx={15} cssVariable="--weapon-content-font-size">
+            <section className="weapon-feature"><h2><RestrictedMarkdown inline value={data.特性名称 || "特性"} />{data.特性原文?.trim() ? <small>{data.特性原文}</small> : null}</h2><RestrictedMarkdown value={data.特性描述} /></section>
+            {data.简介 && <RestrictedMarkdown className="weapon-flavor" value={data.简介} />}
           </TextFitContainer>
         </div>
         <CardFooter attribution={attribution ?? { artworkCredit: "", sourceLabel: "" }} />

@@ -130,11 +130,11 @@ describe("Player Resource Library", () => {
     if (plan.kind !== "insert") return;
     expect(plan.routes).toMatchObject([
       { destination: "native", nativeEntry: { id: "weapons", label: "武器" } },
-      { destination: "other-resources", reason: "template-incompatible" },
+      { destination: "native", nativeEntry: { id: "adversaries", label: "敌人" } },
     ]);
   });
 
-  test("routes an adversary to other resources because Daggerheart Core has no native adversary entry", () => {
+  test("routes an adversary to the Daggerheart Core GM native entry", () => {
     const plan = planResourcePackageInstall({
       currentSystem: system,
       library: new Map(),
@@ -144,7 +144,7 @@ describe("Player Resource Library", () => {
     expect(plan.kind).toBe("insert");
     if (plan.kind !== "insert") return;
     expect(plan.routes).toMatchObject([
-      { destination: "other-resources", reason: "template-incompatible" },
+      { destination: "native", nativeEntry: { id: "adversaries", label: "敌人" } },
     ]);
   });
 });

@@ -2,7 +2,7 @@ import schema from "./schema.json";
 
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
-export type AdversaryFeature = { 名称: string; 原名?: string; 类型: string; 特性描述: string };
+export type AdversaryFeature = { 特性名称: string; 特性原文?: string; 特性类型: string; 特性描述: string };
 export type AdversaryData = {
   名称: string; 原文?: string; 位阶: string; 种类: string; 特性: AdversaryFeature[]; 类型: string;
   简介: string; 动机与战术: string; 难度: string; 重度伤害阈值: string; 严重伤害阈值: string;
@@ -23,7 +23,7 @@ function normalize(value: unknown): string {
 export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData>>({
   id: "敌人",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {
@@ -36,7 +36,7 @@ export const adversaryTemplate = deepFreeze<TemplateCoreCapability<AdversaryData
       data.名称, data.原文, data.位阶, data.种类, data.类型, data.简介, data.动机与战术, data.难度,
       data.重度伤害阈值, data.严重伤害阈值, data.生命点, data.压力点, data.攻击命中, data.攻击武器,
       data.攻击范围, data.攻击伤害, data.攻击属性, data.经历,
-      ...data.特性.flatMap((feature) => [feature.名称, feature.原名, feature.类型, feature.特性描述]),
+      ...data.特性.flatMap((feature) => [feature.特性名称, feature.特性原文, feature.特性类型, feature.特性描述]),
     ].map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };
   },

@@ -57,7 +57,7 @@ describe("寻望之心 Sheet Runtime 加载", () => {
     expect(currentSystem.package).toMatchObject({
       id: "01a04186-51be-74e1-b94f-ec17d354dc00",
       name: "寻望之心",
-      version: "1.0.0",
+      version: "1.0.1",
     });
     expect(loaded.package.manifest.ID).toBe(currentSystem.package.id);
     expect(loaded.package.pages).toHaveLength(1);
@@ -67,7 +67,7 @@ describe("寻望之心 Sheet Runtime 加载", () => {
     expect(loaded.package.resourceLibraries?.map((library) => [library.ID, library.entries.length]))
       .toEqual([["survivor-styles", 8]]);
     expect(loaded.package.resourceLibraries?.[0]?.entries[0]?.fields)
-      .toHaveProperty("第一特性名称");
+      .toHaveProperty("内容1名称");
     const packageAssetUrls = new Map(
       loaded.packageAssets?.map((asset) => [asset.路径, asset.staticUrl]) ?? [],
     );
@@ -81,8 +81,8 @@ describe("寻望之心 Sheet Runtime 加载", () => {
     expect(composer?.类型).toBe("resourceComposer");
     if (composer?.类型 !== "resourceComposer") throw new Error("Missing survivor style composer.");
     expect(composer.来源槽位.map((slot) => slot.字段模板?.map((field) => field.键))).toEqual([
-      ["名称", "简介", "第一特性名称", "第一特性规则", "第二特性名称", "第二特性规则"],
-      ["名称", "简介", "第一特性名称", "第一特性规则", "第二特性名称", "第二特性规则"],
+      ["名称", "简介", "内容1名称", "内容1描述", "内容2名称", "内容2描述"],
+      ["名称", "简介", "内容1名称", "内容1描述", "内容2名称", "内容2描述"],
     ]);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     const inventory = JSON.parse(await readFile(

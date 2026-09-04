@@ -49,15 +49,17 @@ const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-prese
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.13";
+const resourcePackageVersion = "1.0.18";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+const gmResourcePackageVersion = "1.0.3";
+const gmResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660003";
 const previousPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
 )) as LegacyRuntimeManifest;
 
-const libraries = [
+const playerLibraries = [
   library("ancestries", "种族", "种族", "1.0.0", transformAncestry),
   library("communities", "社群", "社群", "1.0.0", transformCommunity),
   library("classes", "职业", "职业", "1.0.0", transformProfession),
@@ -67,6 +69,11 @@ const libraries = [
   library("loot", "物品与消耗品", "物品", "1.0.0", transformItem),
   library("domain-cards", "领域卡", "领域卡", "1.0.0", transformDomain),
 ] as const;
+const gmLibraries = [
+  library("adversaries", "敌人", "敌人", "1.0.0", transformAdversary),
+  library("environments", "环境", "环境", "1.0.0", transformEnvironment),
+] as const;
+const libraries = [...playerLibraries, ...gmLibraries] as const;
 
 const generatedLibraries: Array<{
   definition: typeof libraries[number];
@@ -96,7 +103,7 @@ for (const definition of libraries) {
     await admitSourceImage(entry, previousPackage, "卡背", "back", resourceMedia, assets, media);
     resources.push({
       id: entry.ID,
-      path: `${definition.label}/${portableName(entry.ID)}.json`,
+      path: resourcePath(definition.id, data as ResourceData),
       template: { id: definition.templateId, version: definition.templateVersion },
       presentation: {
         ...template.defaultPresentation,
@@ -114,36 +121,65 @@ for (const definition of libraries) {
   });
 }
 
-const coreMedia = new Map<string, Uint8Array>();
-for (const { media } of generatedLibraries) {
-  for (const [assetId, bytes] of media) coreMedia.set(assetId, bytes);
-}
-let coreDocument: ResourcePackageLogicalDocument = {
-  contractVersion: "1.0.0",
-  package: {
-    id: resourcePackageId,
-    version: resourcePackageVersion,
-    name: "匕首之心官方资源",
-    description: "匕首之心系统包随附的完整游戏资源。",
-  },
-  targets: [{ systemPackageId, version: systemPackageVersion }],
-  license: {
-    label: "系统包内置资源",
-    declaration: "由匕首之心系统包提供。",
-  },
-  forkSource: null,
-  assets: [...new Map(generatedLibraries.flatMap(({ assets }) =>
-    assets.map((asset) => [asset.id, asset] as const))).values()]
-    .sort((left, right) => left.id.localeCompare(right.id)),
-  resources: generatedLibraries.flatMap(({ resources }) => resources)
-    .sort((left, right) => left.path.localeCompare(right.path)),
-  emptyDirectories: [],
-  snapshotDigest: `sha256:${"0".repeat(64)}`,
-};
+let coreDocument: ResourcePackageLogicalDocument = resourceDocument(
+  resourcePackageId,
+  resourcePackageVersion,
+  "匕首之心玩家资源",
+  "种族、社群、职业、子职业、武器、护甲、物品与领域卡。",
+  new Set(playerLibraries.map((definition) => definition.id)),
+);
+const coreMedia = mediaFor(new Set(playerLibraries.map((definition) => definition.id)));
 coreDocument = {
   ...coreDocument,
   snapshotDigest: await computeResourcePackageSnapshotDigest(coreDocument, coreMedia),
 };
+
+let gmDocument: ResourcePackageLogicalDocument = resourceDocument(
+  gmResourcePackageId,
+  gmResourcePackageVersion,
+  "匕首之心主持人资源",
+  "仅包含环境与敌人资源。",
+  new Set(gmLibraries.map((definition) => definition.id)),
+);
+const gmMedia = mediaFor(new Set(gmLibraries.map((definition) => definition.id)));
+gmDocument = {
+  ...gmDocument,
+  snapshotDigest: await computeResourcePackageSnapshotDigest(gmDocument, gmMedia),
+};
+
+function resourceDocument(id: string, version: string, name: string, description: string, libraryIds: Set<string>): ResourcePackageLogicalDocument {
+  const selected = generatedLibraries.filter(({ definition }) => libraryIds.has(definition.id));
+  return {
+  contractVersion: "1.0.0",
+  package: {
+    id,
+    version,
+    name,
+    description,
+  },
+  targets: [{ systemPackageId, version: systemPackageVersion }],
+  license: {
+    label: "Darrington Press Community Gaming License",
+    declaration: "https://darringtonpress.com/license/",
+  },
+  forkSource: null,
+  assets: [...new Map(selected.flatMap(({ assets }) =>
+    assets.map((asset) => [asset.id, asset] as const))).values()]
+    .sort((left, right) => left.id.localeCompare(right.id)),
+  resources: selected.flatMap(({ resources }) => resources)
+    .sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0),
+  emptyDirectories: [],
+  snapshotDigest: `sha256:${"0".repeat(64)}`,
+  };
+}
+
+function mediaFor(libraryIds: Set<string>): Map<string, Uint8Array> {
+  const media = new Map<string, Uint8Array>();
+  for (const library of generatedLibraries.filter(({ definition }) => libraryIds.has(definition.id))) {
+    for (const [assetId, bytes] of library.media) media.set(assetId, bytes);
+  }
+  return media;
+}
 
 const systemDocument: SystemPackageDocument = {
   contractVersion: "1.0.0",
@@ -161,9 +197,10 @@ const systemDocument: SystemPackageDocument = {
       : { minimumInclusive: definition.templateVersion, maximumExclusive: "1.0.0" },
     nativeEntry: { id: definition.id, label: definition.label },
   })),
-  embeddedResources: [{
-    path: "resources/daggerheart-core.pbres",
-  }],
+  embeddedResources: [
+    { path: "resources/daggerheart-core.pbres" },
+    { path: "resources/daggerheart-core-gm.pbres" },
+  ],
 };
 
 await mkdir(outputRoot, { recursive: true });
@@ -174,6 +211,20 @@ await mkdir(path.join(outputRoot, "resources"), { recursive: true });
 await writeFile(
   path.join(outputRoot, "resources", "daggerheart-core.pbres"),
   writePbres(coreDocument, coreMedia),
+);
+await writeFile(
+  path.join(outputRoot, "resources", "daggerheart-core-gm.pbres"),
+  writePbres(gmDocument, gmMedia),
+);
+await writeFile(
+  path.join(sourceRoot, "daggerheart-core-player.resource-package.json"),
+  `${JSON.stringify(coreDocument, null, 2)}\n`,
+  "utf8",
+);
+await writeFile(
+  path.join(sourceRoot, "daggerheart-core-gm.resource-package.json"),
+  `${JSON.stringify(gmDocument, null, 2)}\n`,
+  "utf8",
 );
 
 const runtimeFiles = [
@@ -195,12 +246,10 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   inventoryPath: runtimeInventoryName,
   fileCount: runtimeFiles.length,
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
-  embeddedResourceIndex: [{
-    path: "resources/daggerheart-core.pbres",
-    packageId: coreDocument.package.id,
-    version: coreDocument.package.version,
-    snapshotDigest: coreDocument.snapshotDigest,
-  }],
+  embeddedResourceIndex: [
+    { path: "resources/daggerheart-core.pbres", packageId: coreDocument.package.id, version: coreDocument.package.version, snapshotDigest: coreDocument.snapshotDigest },
+    { path: "resources/daggerheart-core-gm.pbres", packageId: gmDocument.package.id, version: gmDocument.package.version, snapshotDigest: gmDocument.snapshotDigest },
+  ],
   loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");
 
@@ -211,6 +260,13 @@ console.log(JSON.stringify({
     bytes: [...coreMedia.values()].reduce((total, value) => total + value.byteLength, 0),
     resources: coreDocument.resources.length,
     snapshotDigest: coreDocument.snapshotDigest,
+  },
+  gmArchive: {
+    id: "daggerheart-core-gm",
+    assets: gmDocument.assets.length,
+    bytes: [...gmMedia.values()].reduce((total, value) => total + value.byteLength, 0),
+    resources: gmDocument.resources.length,
+    snapshotDigest: gmDocument.snapshotDigest,
   },
 }, null, 2));
 
@@ -280,7 +336,8 @@ async function admitSourceImage(
     bytes = new Uint8Array(await readFile(path.join(sourceRoot, ...relativePath.split("/"))));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    const previousResource = previousPackage?.document.resources.find((resource) => resource.id === entry.ID);
+    const previousResource = previousPackage?.document.resources.find((resource) => resource.id === entry.ID)
+      ?? previousPackage?.document.resources.find((resource) => resource.data.名称 === entry.名称 && (entry.等级 === undefined || resource.data.等级 === entry.等级));
     const previousAssetId = previousResource?.media[slot];
     const previousBytes = previousAssetId ? previousPackage?.media.get(previousAssetId) : undefined;
     if (!previousBytes) throw new Error(`Missing packed media for ${entry.ID}/${slot}: ${relativePath}`);
@@ -324,129 +381,67 @@ async function loadPreviousPackage(filePath: string): Promise<ResourcePackageCan
   }
 }
 
-function feature(value: unknown) {
-  const text = string(value);
-  const prefix = /^(?::red\[)?\*\*([^*]+)\*\*(?:\])?[：:]\s*/u.exec(text);
-  return { 名称: prefix?.[1] ?? "特性", 描述: prefix ? text.slice(prefix[0].length) : text };
-}
-
-function recommendedAttributes(value: unknown): Record<string, string> {
-  const result: Record<string, string> = Object.fromEntries(["敏捷", "力量", "灵巧", "本能", "风度", "知识"].map((name) => [name, ""]));
-  const entries = Array.isArray(value) ? value.flatMap((item) => item && typeof item === "object" ? Object.entries(item) : [])
-    : value && typeof value === "object" ? Object.entries(value)
-      : [...string(value).matchAll(/([^\s<>]+)\s+\*\*([^*]+)\*\*/gu)].map((match) => [match[1]!, match[2]!] as const);
-  for (const [name, score] of entries) if (name in result) result[name] = string(score);
-  return result;
-}
-
-function recommendedWeapons(value: unknown): string {
-  return (Array.isArray(value) ? value : string(value).split("+"))
-    .map(string).map((item) => item.trim()).filter(Boolean).join(" + ");
-}
-
 function transformAncestry(entry: SourceEntry) {
-  return { 名称: string(entry.名称), 类型: string(entry.类型 || "种族"), 简介: string(entry.简介), 特性: [feature(entry.特性A), feature(entry.特性B)] };
+  return { 名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 简介: string(entry.简介), 特性: entry.特性 };
 }
 
 function transformCommunity(entry: SourceEntry) {
-  return { 名称: string(entry.名称), 类型: string(entry.类型 || "社群"), 简介: string(entry.简介), 性格: string(entry.性格), 特性: feature(entry.描述) };
+  return { 名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 简介: string(entry.简介), 性格: string(entry.性格), 特性: entry.特性 };
 }
 
 function transformProfession(entry: SourceEntry) {
   return {
-    名称: string(entry.名称),
-    原文: string(entry.原名),
-    类型: string(entry.类型 || "职业"),
-    风味描述: string(entry.描述),
-    领域: string(entry.领域).split("+").map((value) => value.trim()).filter(Boolean),
-    生命点: string(entry.生命点),
-    闪避值: string(entry.闪避值),
-    职业物品: string(entry.职业物品),
-    希望特性: structuredHopeFeature(entry.希望特性),
-    特性: structuredProfessionFeatures(entry.职业特性, string(entry.名称)),
-    推荐初始属性: recommendedAttributes(entry.推荐初始属性),
-    推荐初始武器: recommendedWeapons(entry.推荐初始武器),
-    推荐初始护甲: string(entry.推荐初始护甲),
-    背景问题: [entry.背景问题1, entry.背景问题2, entry.背景问题3].map(string),
-    关系问题: [entry.关系问题1, entry.关系问题2, entry.关系问题3].map(string),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 简介: string(entry.简介),
+    领域: entry.领域, 生命点: string(entry.生命点), 闪避值: string(entry.闪避值), 职业物品: string(entry.职业物品),
+    希望特性: entry.希望特性, 特性: entry.特性, 推荐初始属性: entry.推荐初始属性,
+    推荐初始武器: string(entry.推荐初始武器), 推荐初始护甲: string(entry.推荐初始护甲), 背景问题: entry.背景问题, 关系问题: entry.关系问题,
   };
-}
-
-function structuredHopeFeature(value: unknown): { 名称: string; 原名: string; 特性描述: string } {
-  const parsed = feature(value);
-  return { 名称: parsed.名称, 原名: "", 特性描述: parsed.描述 };
-}
-
-function professionFeatureOriginalName(professionName: string, featureName: string): string {
-  const names: Record<string, Record<string, string>> = {
-    吟游诗人: { 鼓舞人心: "Rally" },
-    德鲁伊: { 野兽形态: "Beastform", 荒野恩泽: "Wildtouch" },
-    守护者: { 势不可挡: "Unstoppable" },
-    游侠: { 游侠专注: "Ranger's Focus" },
-    游荡者: { 隐匿无踪: "Cloaked", 隐匿偷袭: "Sneak Attack" },
-    神使: { 虔信骰: "Prayer Dice" },
-    术士: { 奥术感应: "Arcane Sense", 次级幻术: "Minor Illusion", 引导原力: "Channel Raw Power" },
-    战士: { 借机攻击: "Attack of Opportunity", 战斗专训: "Combat Training" },
-    法师: { 魔法伎俩: "Prestidigitation", 奇异规律: "Strange Patterns" },
-  };
-  return names[professionName]?.[featureName] ?? "";
-}
-
-function structuredProfessionFeatures(value: unknown, professionName: string): Array<{ 名称: string; 原名: string; 特性描述: string }> {
-  const source = string(value).trim();
-  if (!source) return [];
-  const markers = [...source.matchAll(/:red\[\*\*(.*?)\*\*\]：/gu)];
-  return markers.map((marker, index) => ({
-    名称: marker[1]!.trim(),
-    原名: professionFeatureOriginalName(professionName, marker[1]!.trim()),
-    特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
-  }));
 }
 
 function transformSubclass(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型 || "子职业"), 主职: string(entry.主职), 等级: string(entry.等级),
-    施法属性: string(entry.施法属性), 特性: structuredSubclassFeatures(entry.特性), 风味描述: string(entry.风味描述),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 主职: string(entry.主职), 等级: string(entry.等级),
+    施法属性: string(entry.施法属性), 特性: entry.特性, 简介: string(entry.简介),
   };
-}
-
-function structuredSubclassFeatures(value: unknown): Array<{ 名称: string; 特性描述: string }> {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => {
-    const feature = item && typeof item === "object" && !Array.isArray(item) ? item as Record<string, unknown> : {};
-    return { 名称: string(feature.名称), 特性描述: string(feature.特性描述) };
-  });
 }
 
 function transformWeapon(entry: SourceEntry) {
   return {
     名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 属性: string(entry.属性), 距离: string(entry.距离),
     伤害: string(entry.伤害), 负荷: string(entry.负荷), 伤害类型: string(entry.伤害类型),
-    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述), 位阶: string(entry.位阶),
+    特性名称: string(entry.特性名称), 特性原文: string(entry.特性原文), 特性描述: string(entry.特性描述), 简介: string(entry.简介), 位阶: string(entry.位阶),
   };
 }
 
 function transformArmor(entry: SourceEntry) {
   return {
     名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
-    重度伤害阈值: string(entry.重度阈值), 严重伤害阈值: string(entry.严重阈值),
-    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述),
-    风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
+    重度伤害阈值: string(entry.重度伤害阈值), 严重伤害阈值: string(entry.严重伤害阈值),
+    特性名称: string(entry.特性名称), 特性原文: string(entry.特性原文), 特性描述: string(entry.特性描述),
+    简介: string(entry.简介), 位阶: string(entry.位阶),
   };
 }
 
 function transformItem(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型), 掷骰: string(entry.掷骰),
-    描述: string(entry.描述), 风味描述: string(entry.风味描述),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 掷骰: string(entry.掷骰),
+    特性描述: string(entry.特性描述), 简介: string(entry.简介),
   };
 }
 
 function transformDomain(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型 || "领域卡"), 领域: string(entry.领域), 等级: numericToken(entry.等级), 属性: string(entry.属性),
-    回想: numericToken(entry.回想), 描述: string(entry.描述), 风味描述: string(entry.风味描述),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 领域: string(entry.领域), 等级: numericToken(entry.等级), 属性: string(entry.属性),
+    回想: numericToken(entry.回想), 特性描述: string(entry.特性描述), 简介: string(entry.简介),
   };
+}
+
+function transformAdversary(entry: SourceEntry) {
+  return Object.fromEntries(Object.entries(entry).filter(([key]) => !["ID", "卡图", "卡背"].includes(key)));
+}
+
+function transformEnvironment(entry: SourceEntry) {
+  return Object.fromEntries(Object.entries(entry).filter(([key]) => !["ID", "卡图", "卡背"].includes(key)));
 }
 
 function string(value: unknown): string {
@@ -459,6 +454,27 @@ function numericToken(value: unknown): string {
 
 function portableName(value: unknown): string {
   return string(value).normalize("NFC").replace(/[<>:"/\\|?*]/gu, "-").trim() || "未命名资源";
+}
+
+function resourcePath(kind: string, data: ResourceData): string {
+  const value = data as Record<string, unknown>;
+  const name = `${portableName(value.名称)}.json`;
+  const parts = (() => {
+    switch (kind) {
+      case "weapons": return ["武器", `位阶${portableName(value.位阶)}`, portableName(value.类型), name];
+      case "armor": return ["护甲", `位阶${portableName(value.位阶)}`, name];
+      case "loot": return ["物品", portableName(value.类型), name];
+      case "domain-cards": return ["领域卡", portableName(value.领域), `等级${portableName(value.等级)}`, name];
+      case "subclasses": return ["子职业", portableName(value.主职), `${portableName(value.名称)}-${portableName(value.等级)}.json`];
+      case "adversaries": return ["敌人", `位阶${portableName(value.位阶)}`, portableName(value.种类), name];
+      case "environments": return ["环境", `位阶${portableName(value.位阶)}`, portableName(value.种类), name];
+      case "ancestries": return ["种族", name];
+      case "communities": return ["社群", name];
+      case "classes": return ["职业", name];
+      default: throw new Error(`Unsupported resource library path: ${kind}`);
+    }
+  })();
+  return parts.join("/");
 }
 
 function webpDimensions(bytes: Uint8Array): { width: number; height: number } {

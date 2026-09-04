@@ -83,10 +83,10 @@ export function namedFeature(value: unknown): JsonObject {
 export function namedFeatureGroup(value: unknown): JsonObject {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     const feature = value as JsonObject;
-    return { 名称: text(feature.名称), 原名: text(feature.原名), 特性描述: text(feature.特性描述 ?? feature.描述) };
+    return { 特性名称: text(feature.特性名称 ?? feature.名称), 特性原文: text(feature.特性原文 ?? feature.原文 ?? feature.原名), 特性描述: text(feature.特性描述 ?? feature.描述) };
   }
   const feature = namedFeature(value);
-  return { 名称: text(feature.名称), 原名: "", 特性描述: text(feature.描述) };
+  return { 特性名称: text(feature.名称), 特性原文: "", 特性描述: text(feature.描述) };
 }
 
 export function formatNamedFeatureGroup(value: unknown): string {
@@ -95,32 +95,32 @@ export function formatNamedFeatureGroup(value: unknown): string {
 
 export function formatNamedFeature(value: unknown): string {
   const feature = asJsonObject(value) ?? {};
-  const name = text(feature.名称).trim();
-  const description = text(feature.描述).trim();
+  const name = text(feature.特性名称).trim();
+  const description = text(feature.特性描述).trim();
   return name ? `${name}：${description}` : description;
 }
 
 export function namedFeatures(value: unknown): JsonObject[] {
   if (Array.isArray(value)) return value.map((item) => {
     const feature = asJsonObject(item) ?? {};
-    return { 名称: text(feature.名称), 原名: text(feature.原名), 特性描述: text(feature.特性描述 ?? feature.描述) };
+    return { 特性名称: text(feature.特性名称 ?? feature.名称), 特性原文: text(feature.特性原文 ?? feature.原文 ?? feature.原名), 特性描述: text(feature.特性描述 ?? feature.描述) };
   });
   const source = text(value).trim();
   if (!source) return [];
   const markers = [...source.matchAll(/:red\[\*\*(.*?)\*\*\]：/gu)];
   if (markers.length > 0) return markers.map((marker, index) => ({
-    名称: marker[1]!.trim(),
+    特性名称: marker[1]!.trim(),
     特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
   }));
   const feature = namedFeature(source);
-  return [{ 名称: text(feature.名称), 特性描述: text(feature.描述) }];
+  return [{ 特性名称: text(feature.名称), 特性原文: "", 特性描述: text(feature.描述) }];
 }
 
 export function formatNamedFeatures(value: unknown): string {
   if (!Array.isArray(value)) return "";
   return value.map((item) => {
     const feature = asJsonObject(item) ?? {};
-    const name = text(feature.名称).trim();
+    const name = text(feature.特性名称 ?? feature.名称).trim();
     const description = text(feature.特性描述 ?? feature.描述).trim();
     return name ? `${name}：${description}` : description;
   }).filter(Boolean).join("\n\n");

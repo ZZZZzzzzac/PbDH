@@ -69,7 +69,7 @@ const adversaryBatch: TemporaryResourceBatch = {
       重度伤害阈值: "12", 严重伤害阈值: "24", 生命点: "9", 压力点: "5",
       攻击命中: "+4", 攻击武器: "重锤", 攻击范围: "近战", 攻击伤害: "3d10+2",
       攻击属性: "物理", 经历: "守卫 +3；威吓 +2",
-      特性: [{ 名称: "坚守", 原名: "Hold Fast", 类型: "被动", 特性描述: "不会后退。" }],
+      特性: [{ 特性名称: "坚守", 特性原文: "Hold Fast", 特性类型: "被动", 特性描述: "不会后退。" }],
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -85,8 +85,8 @@ const weaponBatch: TemporaryResourceBatch = {
     name: "月刃",
     fields: {
       名称: "月刃", 原文: "", 类型: "主武器", 属性: "敏捷", 距离: "近战", 伤害: "d8+2",
-      负荷: "单手", 伤害类型: "魔法", 特性名: "可靠", 特性原名: "Reliable", 特性描述: "攻击掷骰+1。",
-      风味描述: "刀身映着冷白月光。", 位阶: "2",
+      负荷: "单手", 伤害类型: "魔法", 特性名称: "可靠", 特性原文: "Reliable", 特性描述: "攻击掷骰+1。",
+      简介: "刀身映着冷白月光。", 位阶: "2",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -102,8 +102,8 @@ const armorBatch: TemporaryResourceBatch = {
     name: "填充布甲",
     fields: {
       名称: "填充布甲", 原文: "", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
-      严重伤害阈值: "11", 特性名: "灵活", 特性原名: "Flexible", 特性描述: "闪避值+1。",
-      风味描述: "层叠缝制的轻便布甲。", 位阶: "1",
+      严重伤害阈值: "11", 特性名称: "灵活", 特性原文: "Flexible", 特性描述: "闪避值+1。",
+      简介: "层叠缝制的轻便布甲。", 位阶: "1",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -119,8 +119,8 @@ const itemBatch: TemporaryResourceBatch = {
       kind: "item",
       name: "风笛哨",
       fields: {
-        名称: "风笛哨", 类型: "物品", 掷骰: "02", 描述: "一英里外都能听到。",
-        风味描述: "手工制作的独特哨子。",
+        名称: "风笛哨", 类型: "物品", 掷骰: "02", 特性描述: "一英里外都能听到。",
+        简介: "手工制作的独特哨子。",
       },
       source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
     },
@@ -129,8 +129,8 @@ const itemBatch: TemporaryResourceBatch = {
       kind: "item",
       name: "治疗药水",
       fields: {
-        名称: "治疗药水", 类型: "消耗品", 掷骰: "51", 描述: "恢复 1 生命点。",
-        风味描述: "盛在红色小瓶中。",
+        名称: "治疗药水", 类型: "消耗品", 掷骰: "51", 特性描述: "恢复 1 生命点。",
+        简介: "盛在红色小瓶中。",
       },
       source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/1", raw: {} },
     },
@@ -148,13 +148,13 @@ const professionBatch: TemporaryResourceBatch = {
     fields: {
       名称: "吟游诗人",
       类型: "职业",
-      风味描述: "富有魅力的表演者。",
+      简介: "富有魅力的表演者。",
       领域: ["优雅", "典籍"],
       生命点: "5",
       闪避值: "10",
       职业物品: "一本浪漫小说",
-      希望特性: { 名称: "大闹一场", 原名: "", 特性描述: "干扰一个目标。" },
-      特性: [{ 名称: "鼓舞人心", 原名: "", 特性描述: "每场游戏开始时获得一枚鼓舞骰。" }],
+      希望特性: { 特性名称: "大闹一场", 特性原文: "", 特性描述: "干扰一个目标。" },
+      特性: [{ 特性名称: "鼓舞人心", 特性原文: "", 特性描述: "每场游戏开始时获得一枚鼓舞骰。" }],
       推荐初始属性: { 敏捷: "+0", 力量: "-1", 灵巧: "+1", 本能: "+0", 风度: "+2", 知识: "+1" },
       推荐初始武器: "刺剑 + 匕首",
       推荐初始护甲: "填充布甲",
@@ -179,7 +179,7 @@ const subclassBatch: TemporaryResourceBatch = {
     name: "言语大师",
     fields: {
       名称: "言语大师", 类型: "子职业", 主职: "吟游诗人", 等级: level, 施法属性: "风度",
-      特性: [{ 名称: featureName, 特性描述: featureDescription }], 风味描述: "他们用故事改写现实。",
+      特性: [{ 特性名称: featureName, 特性原文: "", 特性描述: featureDescription }], 简介: "他们用故事改写现实。",
     },
     source: { formatId: "pbres" as const, upstreamRevision: "test", path: `/resources/${index}`, raw: {} },
   })),
@@ -199,8 +199,8 @@ const ancestryBatch: TemporaryResourceBatch = {
       类型: "种族",
       简介: "龙人的外观类似无翼的龙类。",
       特性: [
-        { 名称: "鳞片保护", 原名: "", 描述: "受到严重伤害时可以减少生命损失。" },
-        { 名称: "元素吐息", 原名: "", 描述: "喷吐元素能量并造成魔法伤害。" },
+        { 特性名称: "鳞片保护", 特性原文: "", 特性描述: "受到严重伤害时可以减少生命损失。" },
+        { 特性名称: "元素吐息", 特性原文: "", 特性描述: "喷吐元素能量并造成魔法伤害。" },
       ],
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
@@ -217,7 +217,7 @@ const communityBatch: TemporaryResourceBatch = {
     name: "高城之民",
     fields: {
       名称: "高城之民", 类型: "社群", 简介: "来自充满声望的上流社会。", 性格: "亲切、坦率、狡猾、沉着。",
-      特性: { 名称: "高人一等", 描述: "与贵族交际或利用声誉时具有优势。" },
+      特性: { 特性名称: "高人一等", 特性原文: "", 特性描述: "与贵族交际或利用声誉时具有优势。" },
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -233,7 +233,7 @@ const domainBatch: TemporaryResourceBatch = {
     name: "符文护符",
     fields: {
       名称: "符文护符", 类型: "领域卡", 领域: "奥术", 等级: "1", 属性: "法术", 回想: "0",
-      描述: "花费希望点以减少即将到来的伤害。", 风味描述: "一件意义深远的个人小饰品。",
+      特性描述: "花费希望点以减少即将到来的伤害。", 简介: "一件意义深远的个人小饰品。",
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -250,7 +250,7 @@ const environmentBatch: TemporaryResourceBatch = {
     fields: {
       名称: "燃烧的图书馆", 位阶: "2", 种类: "险境", 简介: "烈焰吞噬了古老藏书。",
       趋向: "蔓延火势；隔断退路", 难度: "14", 潜在敌人: "纵火者、灰烬幽灵",
-      特性: [{ 名称: "坍塌", 类型: "动作", 描述: "燃烧的书架轰然倒下。", 引导问题: "谁被困在火海中？" }],
+      特性: [{ 特性名称: "坍塌", 特性原文: "", 特性类型: "动作", 特性描述: "燃烧的书架轰然倒下。", 引导问题: "谁被困在火海中？" }],
     },
     source: { formatId: "pbres", upstreamRevision: "test", path: "/resources/0", raw: {} },
   }],
@@ -357,8 +357,8 @@ describe("third-party resource source engines", () => {
         伤害: "d8+1",
         负荷: "单手",
         伤害类型: "物理",
-        特性名: "六发",
-        特性原名: "",
+        特性名称: "六发",
+        特性原文: "",
         特性描述: "花费 1 弹药指示物进行攻击。",
         位阶: "1",
       },
@@ -473,7 +473,7 @@ describe("registered Template mapping and native pbres", () => {
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
     expect(candidate?.template).toEqual({ id: "武器", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
-      特性名: "", 特性描述: "可靠：攻击掷骰+1。", 风味描述: "一把朴素的短剑。", 位阶: "",
+      特性名称: "", 特性描述: "可靠：攻击掷骰+1。", 简介: "一把朴素的短剑。", 位阶: "",
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -521,8 +521,8 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.template).toEqual({ id: "护甲", version: "1.0.0" });
     expect(candidate?.data).toEqual({
       名称: "填充布甲", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
-      严重伤害阈值: "11", 特性名: "", 特性描述: "灵活：闪避值+1。",
-      风味描述: "层叠缝制的轻便布甲。", 位阶: "",
+      严重伤害阈值: "11", 特性名称: "", 特性原文: "", 特性描述: "灵活：闪避值+1。",
+      简介: "层叠缝制的轻便布甲。", 位阶: "",
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -578,8 +578,8 @@ describe("registered Template mapping and native pbres", () => {
       expect(candidate?.data).toMatchObject({
         类型: source.type === "consumable" ? "消耗品" : "物品",
         掷骰: "",
-        描述: source.type === "consumable" ? "恢复生命。" : "远处可闻。",
-        风味描述: source.description,
+        特性描述: source.type === "consumable" ? "恢复生命。" : "远处可闻。",
+        简介: source.description,
       });
       expect(candidate?.diagnostics).toEqual([]);
     }
@@ -596,10 +596,10 @@ describe("registered Template mapping and native pbres", () => {
       const read = kidEngineRead(exported.artifact.bytes);
       expect(read).toMatchObject({
         type: resource.fields.类型 === "消耗品" ? "consumable" : "loot",
-        description: resource.fields.风味描述,
+        description: resource.fields.简介,
       });
       expect(read).not.toHaveProperty("roll");
-      expect(read[resource.fields.类型 === "消耗品" ? "effect" : "feature"]).toBe(resource.fields.描述);
+      expect(read[resource.fields.类型 === "消耗品" ? "effect" : "feature"]).toBe(resource.fields.特性描述);
     }
   });
 
@@ -632,7 +632,7 @@ describe("registered Template mapping and native pbres", () => {
       expect(mapped.unmapped).toEqual([]);
       expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.0" });
       expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}` });
-      expect(mapped.candidates[0]?.data.内容).toContainEqual({ 标题: "简介", 正文: "可见简介" });
+      expect(mapped.candidates[0]?.data.简介).toBe("可见简介");
       expect(mapped.candidates[0]?.data.内容).toEqual(expect.any(Array));
       expect((mapped.candidates[0]?.data.内容 as JsonValue[]).length).toBeGreaterThan(0);
       expect(mapped.candidates[0]?.diagnostics).toEqual([]);
@@ -685,7 +685,7 @@ describe("registered Template mapping and native pbres", () => {
       .filter((candidate) => candidate.template.id === "自由");
     expect(freeCandidates.length).toBeGreaterThan(0);
     for (const candidate of freeCandidates) {
-      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称", "类型"]);
+      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称", "简介", "类型"]);
       expect(JSON.stringify(candidate.data)).not.toContain("[object Object]");
       expect(candidate.data.内容).toEqual(expect.any(Array));
       expect(candidate.diagnostics).toEqual([]);
@@ -740,8 +740,8 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.template).toEqual({ id: "职业", version: "1.0.0" });
     expect(candidate?.data).toMatchObject({
       领域: ["优雅", "典籍"], 生命点: "5", 闪避值: "10",
-      希望特性: { 名称: "", 原名: "", 特性描述: "大闹一场" },
-      特性: [{ 名称: "", 原名: "", 特性描述: "鼓舞人心" }],
+      希望特性: { 特性名称: "", 特性原文: "", 特性描述: "大闹一场" },
+      特性: [{ 特性名称: "", 特性原文: "", 特性描述: "鼓舞人心" }],
       推荐初始属性: { 敏捷: "", 力量: "", 灵巧: "", 本能: "", 风度: "", 知识: "" }, 推荐初始武器: "", 背景问题: [], 关系问题: [],
     });
     expect(candidate?.data).not.toHaveProperty("施法属性");
@@ -770,7 +770,7 @@ describe("registered Template mapping and native pbres", () => {
       推荐初始武器: "刺剑 + 匕首",
       背景问题: ["谁教会了你自信？", "你曾爱过谁？"],
       关系问题: ["我们为何成为朋友？"],
-      特性: [{ 名称: "", 原名: "", 特性描述: "鼓舞人心" }],
+      特性: [{ 特性名称: "", 特性原文: "", 特性描述: "鼓舞人心" }],
     });
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -931,7 +931,7 @@ describe("registered Template mapping and native pbres", () => {
         ...ancestryBatch.resources[0]!,
         fields: {
           ...ancestryBatch.resources[0]!.fields,
-          特性: [{ 名称: "鳞片保护", 原名: "", 描述: "受到严重伤害时可以减少生命损失。" }],
+          特性: [{ 特性名称: "鳞片保护", 特性原文: "", 特性描述: "受到严重伤害时可以减少生命损失。" }],
         },
       }],
     }, { creator: "测试", owner: "测试" });
@@ -982,7 +982,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(ambiguous.ok).toBe(true);
     if (!ambiguous.ok) throw new Error("ambiguous import failed");
     expect(mapBatchToRegisteredCandidates(ambiguous.batch.resources).candidates[0]?.data).toMatchObject({
-      特性: [{ 名称: "", 描述: ambiguousText }],
+      特性: [{ 特性名称: "", 特性原文: "", 特性描述: ambiguousText }],
     });
   });
 
@@ -1047,7 +1047,7 @@ describe("registered Template mapping and native pbres", () => {
       expect(imported.ok).toBe(true);
       if (!imported.ok) throw new Error("import failed");
       expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]?.data).toMatchObject({
-        特性: { 名称: "", 描述: description },
+        特性: { 特性名称: "", 特性原文: "", 特性描述: description },
       });
     }
   });
@@ -1080,7 +1080,7 @@ describe("registered Template mapping and native pbres", () => {
     });
   });
 
-  test("domain normalizes dhsheet and ZZZ numeric fields with approved flavor loss", async () => {
+  test("domain normalizes dhsheet and ZZZ numeric fields without losing its summary", async () => {
     for (const formatId of ["dhsheet", "zzz"] as const) {
       const exported = await resourceConversionRegistry.export(formatId, domainBatch);
       expect(exported.ok).toBe(true);
@@ -1090,14 +1090,14 @@ describe("registered Template mapping and native pbres", () => {
         ? (dhsheetEngineImport(exported.artifact.bytes, false).domain as Record<string, unknown>[])[0]
         : zzzEngineRead(exported.artifact.bytes)[0];
       expect(target).toMatchObject({ 名称: "符文护符", 领域: "奥术", 等级: 1, 属性: "法术", 回想: 0, 描述: "花费希望点以减少即将到来的伤害。" });
-      expect(target).not.toHaveProperty("风味描述");
+      expect(target).toHaveProperty("风味描述", "一件意义深远的个人小饰品。");
       const imported = await resourceConversionRegistry.import(formatId, {
         bytes: exported.artifact.bytes, fileName: exported.artifact.fileName,
       });
       expect(imported.ok).toBe(true);
       if (!imported.ok) throw new Error("re-import failed");
       const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-      expect(candidate?.data).toEqual({ ...domainBatch.resources[0]?.fields, 风味描述: "" });
+      expect(candidate?.data).toEqual(domainBatch.resources[0]?.fields);
       expect(candidate?.diagnostics).toEqual([]);
     }
   });
@@ -1121,7 +1121,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.template).toEqual({ id: "环境", version: "1.0.0" });
     expect(candidate?.data).toMatchObject(environmentBatch.resources[0]?.fields ?? {});
     expect(candidate?.data.原文).toBe("Burning Library");
-    expect((candidate?.data.特性 as Array<Record<string, unknown>>)[0]?.原名).toBe("");
+    expect((candidate?.data.特性 as Array<Record<string, unknown>>)[0]?.特性原文).toBe("");
     expect(candidate?.diagnostics).toEqual([]);
 
     const exported = await resourceConversionRegistry.export("rinkcx", environmentBatch);
@@ -1199,10 +1199,10 @@ describe("registered Template mapping and native pbres", () => {
     resource.data = {
       名称: "复仇誓言",
       类型: "专属",
+      简介: "你不会忘记那一天。",
       内容: [
-        { 标题: "简介", 正文: "你不会忘记那一天。" },
-        { 标题: "触发条件", 正文: "造成伤害时" },
-        { 标题: "效果", 正文: "伤害+2" },
+        { 名称: "触发条件", 描述: "造成伤害时" },
+        { 名称: "效果", 描述: "伤害+2" },
       ],
     };
     document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, loaded.candidate.media);

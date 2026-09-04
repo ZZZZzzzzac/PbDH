@@ -3,10 +3,10 @@ import schema from "./schema.json";
 import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type EnvironmentFeature = {
-  名称: string;
-  原名?: string;
-  类型: string;
-  描述: string;
+  特性名称: string;
+  特性原文?: string;
+  特性类型: string;
+  特性描述: string;
   引导问题: string;
 };
 
@@ -43,7 +43,7 @@ const defaultData: EnvironmentData = {
 export const environmentTemplate = deepFreeze<TemplateCoreCapability<EnvironmentData>>({
   id: "环境",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {
@@ -55,7 +55,7 @@ export const environmentTemplate = deepFreeze<TemplateCoreCapability<Environment
       .map(normalize).filter(Boolean).join(" · ");
     const searchText = [
       data.名称, data.类型, data.原文, data.位阶, data.种类, data.简介, data.趋向, data.难度, data.潜在敌人,
-      ...data.特性.flatMap((feature) => [feature.名称, feature.原名, feature.类型, feature.描述, feature.引导问题]),
+      ...data.特性.flatMap((feature) => [feature.特性名称, feature.特性原文, feature.特性类型, feature.特性描述, feature.引导问题]),
     ].map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };
   },

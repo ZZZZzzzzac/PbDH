@@ -16,11 +16,11 @@ export function WeaponAuthoringEditor({ data, onValue }: TemplateAuthoringEditor
   return <div className="template-owned-editor weapon-editor">
     <style>{standardEditorStyles + `.weapon-editor .identity,.weapon-editor .feature{grid-template-columns:repeat(2,minmax(0,1fr))}.weapon-editor .combat{grid-template-columns:repeat(6,minmax(0,1fr))}.weapon-editor .combat>:nth-child(-n+3){grid-column:span 2}.weapon-editor .combat>:nth-child(n+4){grid-column:span 3}@media(max-width:760px){.weapon-editor .combat>*{grid-column:1!important}}`}</style>
     <section className="identity">
-      {field("名称")}<EditorInput label="英文" value={data.原文} onChange={(value) => onValue("原文", value)} />{field("位阶")}{field("类型", weaponTypeOptions)}
-      <div className="template-editor-span-all"><EditorTextarea label="风味描述" value={data.风味描述} onChange={(value) => onValue("风味描述", value)} /></div>
+      {field("名称")}<EditorInput label="原文" value={data.原文} onChange={(value) => onValue("原文", value)} />{field("位阶")}{field("类型", weaponTypeOptions)}
+      <div className="template-editor-span-all"><EditorTextarea label="简介" value={data.简介} onChange={(value) => onValue("简介", value)} /></div>
     </section>
     <section className="combat">{field("属性", weaponTraitOptions)}{field("距离", weaponRangeOptions)}{field("负荷", weaponBurdenOptions)}{field("伤害")}{field("伤害类型", weaponDamageTypeOptions)}</section>
-    <section className="feature">{field("特性名")}<EditorInput label="英文" value={data.特性原名} onChange={(value) => onValue("特性原名", value)} /><div className="template-editor-span-all"><EditorTextarea label="特性描述" value={data.特性描述} onChange={(value) => onValue("特性描述", value)} /></div></section>
+    <section className="feature">{field("特性名称")}<EditorInput label="特性原文" value={data.特性原文} onChange={(value) => onValue("特性原文", value)} /><div className="template-editor-span-all"><EditorTextarea label="特性描述" value={data.特性描述} onChange={(value) => onValue("特性描述", value)} /></div></section>
   </div>;
 }
 

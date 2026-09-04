@@ -282,17 +282,19 @@ function compositeData(templateId: string, fields: Record<string, string>): Reco
   if (templateId === "种族") {
     return {
       名称: [fields.种族A名称, fields.种族B名称].filter(Boolean).join(" / "),
+      类型: "种族",
       简介: "",
       特性: [
-        { 名称: featureName(fields.特性A), 描述: fields.特性A ?? "" },
-        { 名称: featureName(fields.特性B), 描述: fields.特性B ?? "" },
+        { 特性名称: featureName(fields.特性A), 特性描述: featureDescription(fields.特性A) },
+        { 特性名称: featureName(fields.特性B), 特性描述: featureDescription(fields.特性B) },
       ],
     };
   }
   return {
     名称: fields.名称 ?? "组合资源",
     类型: "自由资源",
-    描述: Object.entries(fields).map(([key, value]) => `${key}：${value}`).join("\n"),
+    简介: "",
+    内容: Object.entries(fields).map(([key, value]) => ({ 名称: key, 描述: value })),
   };
 }
 
@@ -316,6 +318,10 @@ function assetIdFromRuntimePath(value: string | undefined): string | undefined {
 
 function featureName(value: string | undefined): string {
   return /\*\*([^*]+)\*\*/u.exec(value ?? "")?.[1] ?? "特性";
+}
+
+function featureDescription(value: string | undefined): string {
+  return (value ?? "").replace(/^\*\*[^*]+\*\*[：:]\s*/u, "");
 }
 
 function parseIndicators(value: string | undefined): CardInstance["indicators"] {

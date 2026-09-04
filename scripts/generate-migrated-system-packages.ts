@@ -303,29 +303,28 @@ function transformFree(entry: SourceEntry, type: string) {
   const excluded = new Set(["ID", "名称", "简介", "描述", "卡图", "卡背", "卡牌显示方式"]);
   const content = Object.entries(entry).flatMap(([title, value]) => excluded.has(title)
     ? []
-    : [{ 标题: title, 正文: typeof value === "string" ? value : JSON.stringify(value) }]);
+    : [{ 名称: title, 描述: typeof value === "string" ? value : JSON.stringify(value) }]);
   const summary = string(entry.简介 ?? entry.描述);
   const description = string(entry.描述);
-  if (description && description !== summary) content.unshift({ 标题: "描述", 正文: description });
+  if (description && description !== summary) content.unshift({ 名称: "描述", 描述: description });
   return {
     名称: string(entry.名称),
+    原文: string(entry.原文),
     类型: type || "自由",
-    内容: [
-      ...(summary ? [{ 标题: "简介", 正文: summary }] : []),
-      ...content,
-    ],
+    简介: summary,
+    内容: content,
   };
 }
 
 function transformAncestry(entry: SourceEntry) {
-  return { 名称: string(entry.名称), 类型: string(entry.类型 || "种族"), 简介: string(entry.简介), 特性: [feature(entry.特性A), feature(entry.特性B)] };
+  return { 名称: string(entry.名称), 原文: string(entry.原文 ?? entry.原名), 类型: string(entry.类型 || "种族"), 简介: string(entry.简介), 特性: [feature(entry.特性A), feature(entry.特性B)] };
 }
 function transformCommunity(entry: SourceEntry) {
-  return { 名称: string(entry.名称), 类型: string(entry.类型 || "社群"), 简介: string(entry.简介), 性格: string(entry.性格), 特性: feature(entry.描述) };
+  return { 名称: string(entry.名称), 原文: string(entry.原文 ?? entry.原名), 类型: string(entry.类型 || "社群"), 简介: string(entry.简介), 性格: string(entry.性格), 特性: feature(entry.描述) };
 }
 function transformProfession(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 原文: string(entry.原名), 类型: string(entry.类型 || "职业"), 风味描述: string(entry.描述), 领域: [string(entry.主领域 ?? entry.领域)].filter(Boolean),
+    名称: string(entry.名称), 原文: string(entry.原文 ?? entry.原名), 类型: string(entry.类型 || "职业"), 简介: string(entry.简介 ?? entry.描述), 领域: [string(entry.主领域 ?? entry.领域)].filter(Boolean),
     生命点: string(entry.生命点), 闪避值: string(entry.闪避值), 职业物品: string(entry.职业物品),
     希望特性: migratedHopeFeature(entry.希望特性), 特性: migratedProfessionFeatures(entry.职业特性), 推荐初始属性: recommendedAttributes(entry.推荐初始属性),
     推荐初始武器: recommendedWeapons(entry.推荐初始武器), 推荐初始护甲: string(entry.推荐初始护甲),
@@ -333,37 +332,38 @@ function transformProfession(entry: SourceEntry) {
     关系问题: [entry.关系问题1, entry.关系问题2, entry.关系问题3].map(string),
   };
 }
-function migratedHopeFeature(value: unknown): { 名称: string; 原名: string; 特性描述: string } {
+function migratedHopeFeature(value: unknown): { 特性名称: string; 特性原文: string; 特性描述: string } {
   const source = string(value).trim();
   const marker = /^(?:\*\\?\*)?([^：\n]{1,80})(?:\*\\?\*)?：/u.exec(source);
   return marker
-    ? { 名称: marker[1]!.trim(), 原名: "", 特性描述: source.slice(marker[0].length).trim() }
-    : { 名称: "", 原名: "", 特性描述: source };
+    ? { 特性名称: marker[1]!.trim(), 特性原文: "", 特性描述: source.slice(marker[0].length).trim() }
+    : { 特性名称: "", 特性原文: "", 特性描述: source };
 }
-function migratedProfessionFeatures(value: unknown): Array<{ 名称: string; 原名: string; 特性描述: string }> {
+function migratedProfessionFeatures(value: unknown): Array<{ 特性名称: string; 特性原文: string; 特性描述: string }> {
   const source = string(value).trim();
   if (!source) return [];
   const markers = [...source.matchAll(/(?:^|\n\n?)(?:\*\\?\*)?([^：\n]{1,80})(?:\*\\?\*)?：/gu)];
-  if (markers.length === 0) return [{ 名称: "职业特性", 原名: "", 特性描述: source }];
+  if (markers.length === 0) return [{ 特性名称: "职业特性", 特性原文: "", 特性描述: source }];
   return markers.map((marker, index) => ({
-    名称: marker[1]!.trim(),
-    原名: "",
+    特性名称: marker[1]!.trim(),
+    特性原文: "",
     特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
   }));
 }
 function transformSubclass(entry: SourceEntry) {
   const stage = string(entry.阶段);
   return {
-    名称: string(entry.名称), 类型: string(entry.类型 || "子职业"), 主职: string(entry.主职), 等级: stage.startsWith("T4") ? "精通" : stage === "T3" ? "进阶" : "基础",
-    施法属性: string(entry.施法属性), 特性: migratedSubclassFeatures(entry.子职提升 ?? entry.描述), 风味描述: string(entry.风味描述),
+    名称: string(entry.名称), 原文: string(entry.原文 ?? entry.原名), 类型: string(entry.类型 || "子职业"), 主职: string(entry.主职), 等级: stage.startsWith("T4") ? "精通" : stage === "T3" ? "进阶" : "基础",
+    施法属性: string(entry.施法属性), 特性: migratedSubclassFeatures(entry.子职提升 ?? entry.描述), 简介: string(entry.简介 ?? entry.风味描述),
   };
 }
-function migratedSubclassFeatures(value: unknown): Array<{ 名称: string; 特性描述: string }> {
+function migratedSubclassFeatures(value: unknown): Array<{ 特性名称: string; 特性原文: string; 特性描述: string }> {
   const source = string(value).trim();
   if (!source) return [];
   const markers = [...source.matchAll(/(?:^|\n\n)(?:子职|职业|希望)特性(?:获得|增强|追加)：([^：\n]+)：/gu)];
   return markers.map((marker, index) => ({
-    名称: marker[1]!.trim(),
+    特性名称: marker[1]!.trim(),
+    特性原文: "",
     特性描述: source.slice(marker.index! + marker[0].length, markers[index + 1]?.index ?? source.length).trim(),
   }));
 }
@@ -371,23 +371,23 @@ function transformArmor(entry: SourceEntry) {
   return {
     名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 护甲值: string(entry.护甲值),
     重度伤害阈值: string(entry.重度阈值), 严重伤害阈值: string(entry.严重阈值),
-    特性名: string(entry.特性名), 特性原名: string(entry.特性原名), 特性描述: string(entry.特性描述),
-    风味描述: string(entry.风味描述), 位阶: string(entry.位阶),
+    特性名称: string(entry.特性名称 ?? entry.特性名), 特性原文: string(entry.特性原文 ?? entry.特性原名), 特性描述: string(entry.特性描述),
+    简介: string(entry.简介 ?? entry.风味描述), 位阶: string(entry.位阶),
   };
 }
 function transformItem(entry: SourceEntry) {
-  return { 名称: string(entry.名称), 类型: string(entry.类型), 掷骰: string(entry.掷骰), 描述: string(entry.描述), 风味描述: string(entry.风味描述) };
+  return { 名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 掷骰: string(entry.掷骰), 特性描述: string(entry.特性描述 ?? entry.描述), 简介: string(entry.简介 ?? entry.风味描述) };
 }
 function transformDomain(entry: SourceEntry) {
   return {
-    名称: string(entry.名称), 类型: string(entry.类型 || "领域卡"), 领域: string(entry.领域), 等级: numericToken(entry.等级), 属性: string(entry.属性),
-    回想: numericToken(entry.回想), 描述: string(entry.描述), 风味描述: string(entry.风味描述),
+    名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型 || "领域卡"), 领域: string(entry.领域), 等级: numericToken(entry.等级), 属性: string(entry.属性),
+    回想: numericToken(entry.回想), 特性描述: string(entry.特性描述 ?? entry.描述), 简介: string(entry.简介 ?? entry.风味描述),
   };
 }
 function feature(value: unknown) {
   const text = string(value);
   const prefix = /^(?::red\[)?\*\*([^*]+)\*\*(?:\])?[：:]\s*/u.exec(text);
-  return { 名称: prefix?.[1] ?? "特性", 描述: prefix ? text.slice(prefix[0].length) : text };
+  return { 特性名称: prefix?.[1] ?? "特性", 特性原文: "", 特性描述: prefix ? text.slice(prefix[0].length) : text };
 }
 function recommendedAttributes(value: unknown): Record<string, string> {
   const result: Record<string, string> = Object.fromEntries(["敏捷", "力量", "灵巧", "本能", "风度", "知识"].map((name) => [name, ""]));

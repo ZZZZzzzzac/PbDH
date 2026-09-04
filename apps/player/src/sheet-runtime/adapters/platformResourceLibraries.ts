@@ -152,6 +152,7 @@ function toSheetResourceEntry(
     case "自由":
       return {
         ...freeTemplateSections(data.内容),
+        ...indexedFreeTemplateSections(data.内容),
         ...common,
       };
     case "种族": {
@@ -160,20 +161,20 @@ function toSheetResourceEntry(
       return {
         ...common,
         类型: "种族",
-        特性A: stringField(features[0]?.描述),
-        特性B: stringField(features[1]?.描述),
+        特性A: structuredFeature(features[0]),
+        特性B: structuredFeature(features[1]),
       };
     }
     case "社群": {
       const feature = isRecord(data.特性) ? data.特性 : undefined;
-      return { ...common, 类型: "社群", 描述: stringField(feature?.描述) };
+      return { ...common, 类型: "社群", 描述: structuredFeature(feature) };
     }
     case "职业": {
       const recommendedAttributes = isRecord(data.推荐初始属性) ? data.推荐初始属性 : undefined;
       const hopeFeature = isRecord(data.希望特性) ? data.希望特性 : undefined;
       return {
         ...common,
-        描述: stringField(data.风味描述),
+        描述: stringField(data.简介),
         希望特性: structuredFeature(hopeFeature),
         职业特性: structuredFeatures(data.特性),
         领域: Array.isArray(data.领域) ? data.领域.map(stringField).filter(Boolean).join(" + ") : stringField(data.领域),
@@ -190,7 +191,7 @@ function toSheetResourceEntry(
         关系问题3: arrayItem(data.关系问题, 2),
       };
     }
-    case "子职":
+    case "子职业":
       return {
         ...common,
         特性: subclassFeatures(data.特性),
@@ -215,7 +216,7 @@ function toSheetResourceEntry(
 function structuredFeatures(value: unknown): string {
   if (!Array.isArray(value)) return "";
   return value.filter(isRecord).map((feature) => {
-    const name = stringField(feature.名称).trim();
+    const name = stringField(feature.特性名称).trim();
     const description = stringField(feature.特性描述).trim();
     return name && description ? `${name}：${description}` : name || description;
   }).filter(Boolean).join("\n\n");
@@ -223,7 +224,7 @@ function structuredFeatures(value: unknown): string {
 
 function structuredFeature(value: Record<string, unknown> | undefined): string {
   if (!value) return "";
-  const name = stringField(value.名称).trim();
+  const name = stringField(value.特性名称).trim();
   const description = stringField(value.特性描述).trim();
   return name && description ? `${name}：${description}` : name || description;
 }
@@ -234,9 +235,22 @@ function freeTemplateSections(value: unknown): Record<string, string> {
   if (!Array.isArray(value)) return {};
   return Object.fromEntries(value.flatMap((section) => {
     if (!isRecord(section)) return [];
-    const title = stringField(section.标题).trim();
+    const title = stringField(section.名称).trim();
     if (!title) return [];
-    return [[title, stringField(section.正文)]];
+    return [[title, stringField(section.描述)]];
+  }));
+}
+
+function indexedFreeTemplateSections(value: unknown): Record<string, string> {
+  if (!Array.isArray(value)) return {};
+  return Object.fromEntries(value.flatMap((section, index) => {
+    if (!isRecord(section)) return [];
+    const prefix = `内容${index + 1}`;
+    return [
+      [`${prefix}名称`, stringField(section.名称)],
+      [`${prefix}原文`, stringField(section.原文)],
+      [`${prefix}描述`, stringField(section.描述)],
+    ];
   }));
 }
 

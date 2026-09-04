@@ -4,12 +4,12 @@ import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type ArmorData = {
   名称: string; 原文?: string; 类型: string; 护甲值: string; 重度伤害阈值: string; 严重伤害阈值: string;
-  特性名: string; 特性原名?: string; 特性描述: string; 风味描述: string; 位阶: string;
+  特性名称: string; 特性原文?: string; 特性描述: string; 简介: string; 位阶: string;
 };
 
 const defaultData: ArmorData = {
   名称: "", 原文: "", 类型: "护甲", 护甲值: "", 重度伤害阈值: "", 严重伤害阈值: "",
-  特性名: "", 特性原名: "", 特性描述: "", 风味描述: "", 位阶: "",
+  特性名称: "", 特性原文: "", 特性描述: "", 简介: "", 位阶: "",
 };
 
 function normalize(value: unknown): string {
@@ -19,7 +19,7 @@ function normalize(value: unknown): string {
 export const armorTemplate = deepFreeze<TemplateCoreCapability<ArmorData>>({
   id: "护甲",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {

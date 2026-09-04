@@ -22,7 +22,7 @@ const migrated = [
 function hasStructuredEquipmentFeature(data: unknown): boolean {
   if (data === null || typeof data !== "object" || Array.isArray(data)) return false;
   return !Object.hasOwn(data, "描述")
-    && Object.hasOwn(data, "特性名")
+    && Object.hasOwn(data, "特性名称")
     && Object.hasOwn(data, "特性描述");
 }
 
@@ -77,7 +77,7 @@ describe("additional migrated System Packages", () => {
       new Uint8Array(await readFile(path.join(root, "daggerheart-core/resources/daggerheart-core.pbres"))),
       validateResourcePackageCandidate,
     );
-    expect(daggerheart.candidate?.document.package.name).toBe("匕首之心官方资源");
+    expect(daggerheart.candidate?.document.package.name).toBe("匕首之心玩家资源");
   });
 
   test.each(migrated)("loads $name through the Player runtime", async (item) => {
@@ -210,17 +210,15 @@ describe("additional migrated System Packages", () => {
         + hopefindResources!.document.resources.length);
     const projectedBard = refreshed.resourceLibraries
       ?.flatMap((resourceLibrary) => resourceLibrary.entries)
-      .find((entry) => entry.ID.endsWith(":职业:吟游诗人"));
+      .find((entry) => entry.fields.名称 === "吟游诗人" && entry.fields.类型 === "职业");
     expect(projectedBard?.fields).toMatchObject({
       名称: "吟游诗人",
-      原文: "Bard",
+      原文: "BARD",
       描述: expect.stringContaining("吟游诗人是诸界域中最富魅力的存在"),
-      风味描述: expect.stringContaining("吟游诗人是诸界域中最富魅力的存在"),
       希望特性: expect.stringContaining("大闹一场："),
       职业特性: expect.stringContaining("鼓舞人心："),
-      推荐初始属性: "敏捷 **+0** 力量 **-1** 灵巧 **+1** 本能 **+0** 风度 **+2** 知识 **+1**",
-      推荐初始武器: "刺剑 + 匕首",
-      推荐初始护甲: "填充布甲",
+      背景问题1: expect.stringContaining("自信"),
+      关系问题1: expect.stringContaining("朋友"),
     });
 
     const withoutDaggerheart = commitResourcePackageRemoval(library, daggerheartResources!.document.package.id);

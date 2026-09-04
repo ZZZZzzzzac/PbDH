@@ -12,7 +12,7 @@ const kindOptions = ["斗士", "集群", "头目", "杂兵", "远程", "潜伏",
 const rangeOptions = ["近战", "邻近", "近距离", "远距离", "极远"];
 const damageTypeOptions = ["物理", "魔法"];
 const featureTypeOptions = ["动作", "被动", "反应"];
-const emptyFeature = { 名称: "新特性", 原名: "", 类型: "动作", 特性描述: "" };
+const emptyFeature = { 特性名称: "新特性", 特性原文: "", 特性类型: "动作", 特性描述: "" };
 
 export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEditorProps) {
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
@@ -22,7 +22,7 @@ export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEdi
 
   return <div className="adversary-editor"><style>{styles}</style>
     <section className="adversary-editor-group adversary-identity" data-authoring-section="identity">
-      {field("名称", "名称")}{field("原文", "英文")}{field("位阶", "位阶", tierOptions)}{field("种类", "种类", kindOptions)}{field("类型", "类型")}
+      {field("名称", "名称")}{field("原文", "原文")}{field("位阶", "位阶", tierOptions)}{field("种类", "种类", kindOptions)}{field("类型", "类型")}
     </section>
     <section className="adversary-editor-group adversary-description" data-authoring-section="description">
       <EditorTextarea label="简介" value={data.简介} onChange={(value) => onValue("简介", value)} />
@@ -34,13 +34,13 @@ export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEdi
     </section>
     <section className="adversary-editor-group adversary-features" data-authoring-section="features"><header><h3>特性</h3><button type="button" onClick={() => onValue("特性", [...features, { ...emptyFeature }])}>＋ 新增</button></header>
       {features.map((feature, index) => <article className="adversary-feature" key={index}>
-        <EditorInput label="特性名" value={feature.名称} onChange={(value) => updateFeature(index, "名称", value)} />
-        <EditorInput label="英文" value={feature.原名} onChange={(value) => updateFeature(index, "原名", value)} />
-        <EditorInput label="类型" value={feature.类型} options={featureTypeOptions} onChange={(value) => updateFeature(index, "类型", value)} />
+        <EditorInput label="特性名称" value={feature.特性名称} onChange={(value) => updateFeature(index, "特性名称", value)} />
+        <EditorInput label="特性原文" value={feature.特性原文} onChange={(value) => updateFeature(index, "特性原文", value)} />
+        <EditorInput label="特性类型" value={feature.特性类型} options={featureTypeOptions} onChange={(value) => updateFeature(index, "特性类型", value)} />
         <button type="button" className="adversary-feature-action" onClick={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))}>清空</button>
         <button type="button" className="adversary-feature-action" onClick={() => setPendingDelete(index)}>删除</button>
-        <EditorTextarea label="描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} />
-        {pendingDelete === index ? <div className="adversary-feature-confirm"><span>确认删除“{textValue(feature.名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
+        <EditorTextarea label="特性描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} />
+        {pendingDelete === index ? <div className="adversary-feature-confirm"><span>确认删除“{textValue(feature.特性名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
       </article>)}
     </section>
   </div>;

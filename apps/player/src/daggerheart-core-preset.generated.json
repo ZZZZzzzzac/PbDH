@@ -12,8 +12,14 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.13",
-      "snapshotDigest": "sha256:849ba6375d522004c12d6dfaa17e0615a855d692a622991d3c5c81af1de31aef"
+      "version": "1.0.18",
+      "snapshotDigest": "sha256:b38b151b286b7ba45c34eb529a4abf4894a60d49ec2c7f48d9ef6fc271203535"
+    },
+    {
+      "path": "resources/daggerheart-core-gm.pbres",
+      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660003",
+      "version": "1.0.3",
+      "snapshotDigest": "sha256:90d2f050f18af617b15932ed7b5db34330bdd6a7361b374b7411f8651483c7b9"
     }
   ],
   "loadingPresentation": {

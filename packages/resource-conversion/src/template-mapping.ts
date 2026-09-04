@@ -20,10 +20,10 @@ import type { ConversionDiagnostic, GameResourceCandidate, JsonObject, JsonValue
 function adversaryFeature(value: JsonValue): JsonObject {
   const item = isObject(value) ? value : {};
   return {
-    名称: text(item.名称),
-    原名: text(item.原名),
-    类型: text(item.类型 || "被动"),
-    特性描述: text(item.特性描述 || item.描述),
+    特性名称: text(item.特性名称),
+    特性原文: text(item.特性原文),
+    特性类型: text(item.特性类型 || "被动"),
+    特性描述: text(item.特性描述),
   };
 }
 
@@ -43,7 +43,8 @@ function templateData(resource: TemporaryResource): {
   if (resource.kind === "weapon") {
     const data = structuredClone(weaponTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
-      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      if (key === "原文" && resource.fields[key] === undefined) delete data[key];
+      else if (key === "特性原文" && resource.fields.特性原文 === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
@@ -52,7 +53,8 @@ function templateData(resource: TemporaryResource): {
   if (resource.kind === "armor") {
     const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
-      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      if (key === "原文" && resource.fields[key] === undefined) delete data[key];
+      else if (key === "特性原文" && resource.fields.特性原文 === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
@@ -61,7 +63,7 @@ function templateData(resource: TemporaryResource): {
   if (resource.kind === "item") {
     const data = structuredClone(itemTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
-      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      if ((key === "原文" || key === "特性原文") && resource.fields[key] === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
@@ -71,9 +73,9 @@ function templateData(resource: TemporaryResource): {
     const data = structuredClone(professionTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       const value = resource.fields[key];
-      if (key === "特性") data[key] = namedFeatures(value ?? resource.fields.职业特性);
+      if (key === "特性") data[key] = namedFeatures(value);
       else if (key === "希望特性") data[key] = namedFeatureGroup(value);
-      else if (key === "风味描述") data[key] = text(value ?? resource.fields.描述);
+      else if (key === "简介") data[key] = text(value);
       else if (Array.isArray(data[key])) data[key] = Array.isArray(value) ? value.map(text).filter(Boolean) : [];
       else if (isObject(data[key])) data[key] = isObject(value)
         ? Object.fromEntries(Object.entries(value).map(([name, item]) => [name, text(item)]))
@@ -106,8 +108,8 @@ function templateData(resource: TemporaryResource): {
     data.主职 = text(resource.fields.主职);
     data.等级 = text(resource.fields.等级);
     data.施法属性 = text(resource.fields.施法属性);
-    data.特性 = namedFeatures(resource.fields.特性 ?? resource.fields.描述);
-    data.风味描述 = text(resource.fields.风味描述);
+    data.特性 = namedFeatures(resource.fields.特性);
+    data.简介 = text(resource.fields.简介);
     return { template: subclassTemplate, data };
   }
   if (resource.kind === "ancestry") {
@@ -118,7 +120,7 @@ function templateData(resource: TemporaryResource): {
     data.简介 = text(resource.fields.简介);
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
-      return { 名称: text(feature.名称), 原名: text(feature.原名), 描述: text(feature.描述) };
+      return { 特性名称: text(feature.特性名称), 特性原文: text(feature.特性原文), 特性描述: text(feature.特性描述) };
     }) : [];
     return { template: ancestryTemplate, data };
   }
@@ -130,14 +132,14 @@ function templateData(resource: TemporaryResource): {
       类型: text(resource.fields.类型 || communityTemplate.defaultData.类型),
       简介: text(resource.fields.简介),
       性格: text(resource.fields.性格),
-      特性: { 名称: text(feature.名称), ...(feature.原名 === undefined ? {} : { 原名: text(feature.原名) }), 描述: text(feature.描述) },
+      特性: { 特性名称: text(feature.特性名称), 特性原文: text(feature.特性原文), 特性描述: text(feature.特性描述) },
     };
     return { template: communityTemplate, data };
   }
   if (resource.kind === "domain") {
     const data = structuredClone(domainTemplate.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
-      if ((key === "原文" || key === "特性原名") && resource.fields[key] === undefined) delete data[key];
+      if ((key === "原文" || key === "特性原文") && resource.fields[key] === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
@@ -154,8 +156,8 @@ function templateData(resource: TemporaryResource): {
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return {
-        名称: text(feature.名称), 原名: text(feature.原名), 类型: text(feature.类型),
-        描述: text(feature.描述 || feature.特性描述), 引导问题: text(feature.引导问题 || feature.问题),
+        特性名称: text(feature.特性名称), 特性原文: text(feature.特性原文), 特性类型: text(feature.特性类型),
+        特性描述: text(feature.特性描述), 引导问题: text(feature.引导问题),
       };
     }) : [];
     return { template: environmentTemplate, data };
@@ -165,9 +167,10 @@ function templateData(resource: TemporaryResource): {
       名称: resource.name,
       ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
       类型: text(resource.fields.类型 || freeTemplate.defaultData.类型),
+      简介: text(resource.fields.简介),
       内容: resource.fields.内容.map((value) => {
         const block = isObject(value) ? value : {};
-        return { 标题: text(block.标题), ...(block.原名 === undefined ? {} : { 原名: text(block.原名) }), 正文: text(block.正文) };
+        return { 名称: text(block.名称), 原文: text(block.原文), 描述: text(block.描述) };
       }),
     };
     return { template: freeTemplate, data };

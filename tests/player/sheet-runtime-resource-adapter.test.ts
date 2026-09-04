@@ -21,7 +21,7 @@ import type { ResourceLibrary } from "../../apps/player/src/resources/resource-l
 const currentSystem = {
   resourceCompatibility: [
     { templateId: "种族", nativeEntry: { id: "ancestries", label: "种族" } },
-    { templateId: "子职", nativeEntry: { id: "subclasses", label: "子职" } },
+    { templateId: "子职业", nativeEntry: { id: "subclasses", label: "子职业" } },
     { templateId: "护甲", nativeEntry: { id: "armor", label: "护甲" } },
     { templateId: "自由", nativeEntry: { id: "free-resources", label: "自由资源" } },
   ],
@@ -36,8 +36,8 @@ describe("Sheet Runtime 平台资源适配", () => {
           名称: "械灵",
           简介: "机械生命",
           特性: [
-            { 名称: "定制设计", 描述: "特性一" },
-            { 名称: "高效休整", 描述: "特性二" },
+            { 特性名称: "定制设计", 特性描述: "特性一" },
+            { 特性名称: "高效休整", 特性描述: "特性二" },
           ],
         }, { portrait: "sha256:portrait", back: "sha256:back" }),
         resource("armor", "护甲", {
@@ -54,8 +54,8 @@ describe("Sheet Runtime 平台资源适配", () => {
       fields: {
         名称: "械灵",
         类型: "种族",
-        特性A: "特性一",
-        特性B: "特性二",
+        特性A: "定制设计：特性一",
+        特性B: "高效休整：特性二",
         卡图: "blob:sha256:portrait",
         卡背: "blob:sha256:back",
       },
@@ -131,8 +131,7 @@ describe("Sheet Runtime 平台资源适配", () => {
           类型: "求生者风格",
           简介: "独自求生",
           内容: [
-            { 标题: "第一特性名称", 正文: "独行智慧" },
-            { 标题: "第一特性规则", 正文: "没有队友时具有优势。" },
+            { 名称: "独行智慧", 描述: "没有队友时具有优势。" },
           ],
         }),
       ]),
@@ -142,8 +141,8 @@ describe("Sheet Runtime 平台资源适配", () => {
       名称: "孤独",
       类型: "求生者风格",
       简介: "独自求生",
-      第一特性名称: "独行智慧",
-      第一特性规则: "没有队友时具有优势。",
+      内容1名称: "独行智慧",
+      内容1描述: "没有队友时具有优势。",
     });
   });
 
@@ -151,11 +150,11 @@ describe("Sheet Runtime 平台资源适配", () => {
     const library = buildSheetResourceLibraries({
       currentSystem,
       installedPackages: libraryWith([
-        resource("subclass", "子职", {
+        resource("subclass", "子职业", {
           名称: "言文巧匠",
           特性: [
-            { 名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
-            { 名称: "闻名遐迩", 特性描述: "你的声名远播。" },
+            { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
+            { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
           ],
         }),
       ]),
@@ -163,8 +162,8 @@ describe("Sheet Runtime 平台资源适配", () => {
 
     expect(library.entries[0]?.fields.特性).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
     expect(library.entries[0]?.resourceCopy?.data.特性).toEqual([
-      { 名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
-      { 名称: "闻名遐迩", 特性描述: "你的声名远播。" },
+      { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
+      { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
     ]);
   });
 
@@ -210,11 +209,9 @@ describe("Sheet Runtime 平台资源适配", () => {
     const portraitId = "sha256:other-portrait";
     const other = resource("madness", "自由", {
       名称: "记忆障碍",
-      内容: [
-        { 标题: "类型", 正文: "疯狂" },
-        { 标题: "简介", 正文: "一张疯狂卡" },
-        { 标题: "效果", 正文: "无法清晰回忆。" },
-      ],
+      类型: "疯狂",
+      简介: "一张疯狂卡",
+      内容: [{ 名称: "效果", 描述: "无法清晰回忆。" }],
     }, { portrait: portraitId }, "image");
     const installed = installedPackage(
       packageId,
@@ -322,8 +319,8 @@ function installedPackage(
       destination: "native" as const,
       nativeEntry: candidate.template.id === "护甲"
         ? { id: "armor", label: "护甲" }
-        : candidate.template.id === "子职"
-          ? { id: "subclasses", label: "子职" }
+        : candidate.template.id === "子职业"
+          ? { id: "subclasses", label: "子职业" }
         : candidate.template.id === "自由"
           ? { id: "free-resources", label: "自由资源" }
           : { id: "ancestries", label: "种族" },

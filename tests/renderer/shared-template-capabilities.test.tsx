@@ -25,21 +25,24 @@ import {
   armorRendererRevision,
   armorRendererStyles,
   communityRendererRevision,
+  communityRendererStyles,
   CommunityAuthoringEditor,
   domainRendererRevision,
+  domainRendererStyles,
   environmentRendererRevision,
   environmentRendererStyles,
   freeRendererRevision,
   freeRendererStyles,
   itemRendererRevision,
+  itemRendererStyles,
   professionRendererRevision,
+  professionRendererStyles,
   subclassRendererRevision,
   subclassRendererStyles,
   weaponRendererRevision,
   weaponRendererStyles,
   WeaponAuthoringEditor,
 } from "../../packages/templates/src/frontend/index.ts";
-import { referenceCardStyles } from "../../packages/templates/src/frontend/reference-card/renderer-factory.tsx";
 import { weaponBurdenOptions, weaponDamageTypeOptions, weaponRangeOptions, weaponTraitOptions, weaponTypeOptions } from "../../packages/templates/src/frontend/weapon/1.0.0/authoring-editor.tsx";
 
 type GenericRenderer = RendererRevisionCapability<Record<string, unknown>, unknown, ReactNode>;
@@ -71,7 +74,7 @@ function renderCard(template: (typeof cases)[number][0], renderer: (typeof cases
   }));
 }
 
-describe("other first-party templates share ancestry card capabilities", () => {
+describe("first-party template capabilities", () => {
   test.each(cases)("%s renders optional English title and shared footer", (template, renderer) => {
     const markup = renderCard(template, renderer);
     expect(markup).toContain("English Name");
@@ -96,7 +99,8 @@ describe("other first-party templates share ancestry card capabilities", () => {
     }
     for (const styles of [
       adversaryRendererStyles, ancestryRendererStyles, armorRendererStyles,
-      environmentRendererStyles, freeRendererStyles, referenceCardStyles, weaponRendererStyles,
+      communityRendererStyles, domainRendererStyles, environmentRendererStyles, freeRendererStyles,
+      itemRendererStyles, professionRendererStyles, subclassRendererStyles, weaponRendererStyles,
     ]) {
       expect(styles).not.toContain("text-overflow:ellipsis");
     }
@@ -104,7 +108,9 @@ describe("other first-party templates share ancestry card capabilities", () => {
 
   test("all first-party card titles share ancestry header padding", () => {
     expect(ancestryRendererStyles).toContain("padding: 10px 14px");
-    expect(referenceCardStyles).toContain(".reference-card-header{position:relative;z-index:2;padding:10px 14px");
+    expect(communityRendererStyles).toContain("community-card-header");
+    expect(domainRendererStyles).toContain("domain-card-header");
+    expect(itemRendererStyles).toContain("item-card-header");
     expect(armorRendererStyles).toContain(".armor-header{flex:none;padding:10px 14px");
     expect(environmentRendererStyles).toContain(".environment-header{padding:10px 14px");
     expect(freeRendererStyles).toContain(".free-header{padding:10px 14px");
@@ -115,7 +121,7 @@ describe("other first-party templates share ancestry card capabilities", () => {
   test("all first-party split cards share the ancestry image proportion", () => {
     expect(ancestryRendererStyles).toContain("--ancestry-media-height: 96px");
     expect(adversaryRendererStyles).toContain("--enemy-media-height: 96px");
-    expect(referenceCardStyles).toContain("--reference-media-height:96px");
+    expect(communityRendererStyles).toContain("min-height:96px");
     expect(subclassRendererStyles).not.toContain("--reference-media-height:158px");
     expect(armorRendererStyles).toContain(".armor-art{height:170px");
     expect(weaponRendererStyles).toContain(".weapon-art{position:relative;height:170px");
@@ -131,23 +137,23 @@ describe("other first-party templates share ancestry card capabilities", () => {
     expect(weaponRendererStyles).toContain(".weapon-feature{flex:none;padding:6px;");
     expect(environmentRendererStyles).toContain(".environment-feature{padding:6px;");
     expect(freeRendererStyles).toContain(".free-block{padding:6px;");
-    expect(referenceCardStyles).toContain(".reference-card-section{padding:6px;");
+    expect(communityRendererStyles).toContain(".community-card-section");
   });
 
-  test("armor and weapon editors split the legacy merged feature into name, English, and description", () => {
+  test("armor and weapon editors expose the published feature fields", () => {
     const description = "受魔法伤害时，在计算伤害阈值前按护甲值减免伤害。";
-    const armor = { ...structuredClone(armorTemplate.defaultData), 特性名: "防护", 特性原名: "", 特性描述: description };
+    const armor = { ...structuredClone(armorTemplate.defaultData), 特性名称: "防护", 特性原文: "", 特性描述: description };
     const armorMarkup = renderToStaticMarkup(<ArmorAuthoringEditor data={armor} onValue={() => undefined} />);
-    expect(armorMarkup).toContain(">特性名<");
+    expect(armorMarkup).toContain(">特性名称<");
     expect(armorMarkup).toContain('value="防护"');
-    expect(armorMarkup).toContain(">英文<");
+    expect(armorMarkup).toContain(">特性原文<");
     expect(armorMarkup).toContain(">特性描述<");
     expect(armorMarkup).toContain(description);
     expect(armorMarkup).not.toContain(">特性英文<");
 
-    const weapon = { ...structuredClone(weaponTemplate.defaultData), 特性名: "横扫", 特性原名: "Sweep", 特性描述: description };
+    const weapon = { ...structuredClone(weaponTemplate.defaultData), 特性名称: "横扫", 特性原文: "Sweep", 特性描述: description };
     const weaponMarkup = renderToStaticMarkup(<WeaponAuthoringEditor data={weapon} onValue={() => undefined} />);
-    expect(weaponMarkup).toContain(">特性名<");
+    expect(weaponMarkup).toContain(">特性名称<");
     expect(weaponMarkup).toContain('value="横扫"');
     expect(weaponMarkup).toContain('value="Sweep"');
     expect(weaponMarkup).toContain(">特性描述<");
@@ -159,17 +165,17 @@ describe("other first-party templates share ancestry card capabilities", () => {
 
     const armorMarkup = renderToStaticMarkup(<ArmorAuthoringEditor data={structuredClone(armorTemplate.defaultData)} onValue={() => undefined} />);
     expect(labels(armorMarkup)).toEqual([
-      "名称", "英文", "位阶", "类型", "风味描述",
+      "名称", "原文", "位阶", "类型", "简介",
       "护甲值", "重度伤害阈值", "严重伤害阈值",
-      "特性名", "英文", "特性描述",
+      "特性名称", "特性原文", "特性描述",
     ]);
     expect(armorMarkup.match(/<textarea/gu)).toHaveLength(2);
 
     const weaponMarkup = renderToStaticMarkup(<WeaponAuthoringEditor data={structuredClone(weaponTemplate.defaultData)} onValue={() => undefined} />);
     expect(labels(weaponMarkup)).toEqual([
-      "名称", "英文", "位阶", "类型", "风味描述",
+      "名称", "原文", "位阶", "类型", "简介",
       "属性", "距离", "负荷", "伤害", "伤害类型",
-      "特性名", "英文", "特性描述",
+      "特性名称", "特性原文", "特性描述",
     ]);
     expect(weaponMarkup.match(/<textarea/gu)).toHaveLength(2);
     for (const label of ["类型", "属性", "距离", "负荷", "伤害类型"]) {
@@ -189,7 +195,7 @@ describe("other first-party templates share ancestry card capabilities", () => {
 
   test("renders English labels for named effect blocks without reserving empty rows", () => {
     const community = structuredClone(communityTemplate.defaultData);
-    community.特性 = { 名称: "社群特性", 原名: "Community Feature", 描述: "效果" };
+    community.特性 = { 特性名称: "社群特性", 特性原文: "Community Feature", 特性描述: "效果" };
     const communityMarkup = renderToStaticMarkup(communityRendererRevision.render({
       data: community,
       state: {},
@@ -200,7 +206,7 @@ describe("other first-party templates share ancestry card capabilities", () => {
     expect(communityMarkup).toContain("Community Feature");
 
     const free = structuredClone(freeTemplate.defaultData);
-    free.内容 = [{ 标题: "自定义效果", 原名: "Custom Effect", 正文: "效果" }];
+    free.内容 = [{ 名称: "自定义效果", 原文: "Custom Effect", 描述: "效果" }];
     const freeMarkup = renderToStaticMarkup(freeRendererRevision.render({
       data: free,
       state: {},
@@ -219,14 +225,14 @@ describe("other first-party templates share ancestry card capabilities", () => {
     community.类型 = "社群";
     community.性格 = "亲切、坦率、沉着。";
     community.简介 = "来自上流社会。";
-    community.特性 = { 名称: "高人一等", 原名: "Privilege", 描述: "与贵族交际时具有优势。" };
+    community.特性 = { 特性名称: "高人一等", 特性原文: "Privilege", 特性描述: "与贵族交际时具有优势。" };
 
     const editorMarkup = renderToStaticMarkup(<CommunityAuthoringEditor data={community} onValue={() => undefined} />);
     expect(editorMarkup).toContain("community-basics");
     expect(editorMarkup).toContain("repeat(3,minmax(0,1fr))");
     expect(editorMarkup.match(/class="is-auto-grow"/gu)).toHaveLength(3);
-    expect(editorMarkup.indexOf(">名称<")).toBeLessThan(editorMarkup.indexOf(">英文<"));
-    expect(editorMarkup.indexOf(">英文<")).toBeLessThan(editorMarkup.indexOf(">类型<"));
+    expect(editorMarkup.indexOf(">名称<")).toBeLessThan(editorMarkup.indexOf(">原文<"));
+    expect(editorMarkup.indexOf(">原文<")).toBeLessThan(editorMarkup.indexOf(">类型<"));
     expect(editorMarkup.indexOf(">类型<")).toBeLessThan(editorMarkup.indexOf(">性格<"));
     expect(editorMarkup.indexOf(">性格<")).toBeLessThan(editorMarkup.indexOf(">简介<"));
 
@@ -238,8 +244,8 @@ describe("other first-party templates share ancestry card capabilities", () => {
       attribution: { artworkCredit: "", sourceLabel: "" },
     }));
     const personalityHeading = cardMarkup.indexOf(">性格<");
-    expect(personalityHeading).toBeGreaterThan(cardMarkup.indexOf("reference-card-body"));
-    expect(cardMarkup).not.toContain("reference-card-meta");
+    expect(personalityHeading).toBeGreaterThan(cardMarkup.indexOf("community-card-body"));
+    expect(cardMarkup).not.toContain("reference-card");
   });
 
   test("fixed cards declare measured text fitting while fluid cards keep natural growth", () => {
@@ -256,8 +262,8 @@ describe("other first-party templates share ancestry card capabilities", () => {
     expect(adversaryMarkup).toMatch(/enemy-art[^>]*>.*enemy-heading/u);
     expect(adversaryRendererStyles).toContain(".enemy-art::after");
     expect(ancestryRendererStyles).toContain(".ancestry-card.is-split .ancestry-art::after");
-    expect(referenceMarkup).toMatch(/reference-card-art[^>]*>.*reference-card-header/u);
-    expect(referenceCardStyles).toContain(".reference-card.is-split .reference-card-art::after");
+    expect(referenceMarkup).toMatch(/community-card-art[^>]*>.*community-card-header/u);
+    expect(communityRendererStyles).toContain(".community-card-art:after");
     expect(armorRendererStyles).toContain(".armor-card.is-split .armor-header{position:absolute");
     expect(environmentRendererStyles).toContain(".environment-card.is-split .environment-header{position:absolute");
     expect(freeRendererStyles).toContain(".free-card.is-split .free-header{position:absolute");
@@ -266,14 +272,14 @@ describe("other first-party templates share ancestry card capabilities", () => {
   });
 
   test("fits only effect text instead of statistics or flexible card whitespace", () => {
-    expect(referenceCardStyles).toContain(".reference-card-sections{min-height:0");
+    expect(communityRendererStyles).toContain(".community-card-sections{min-height:0");
     expect(armorRendererStyles).toContain(".armor-effects{min-height:0");
     expect(environmentRendererStyles).toContain(".environment-features{min-height:0;flex:1;overflow:hidden;");
     expect(weaponRendererStyles).toContain(".weapon-description{min-height:0;flex:1");
   });
 
   test("draws decorative feature rules except above adversary descriptions", () => {
-    expect(referenceCardStyles).toContain(".reference-card-section h2::after");
+    expect(communityRendererStyles).toContain(".community-card-section h2");
     expect(ancestryRendererStyles).toContain(".ancestry-feature h2::after");
     expect(adversaryRendererStyles).not.toContain(".enemy-feature h2::after");
     expect(armorRendererStyles).toContain(".armor-feature h2::after");

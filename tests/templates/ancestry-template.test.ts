@@ -32,7 +32,7 @@ describe("种族 Template 1.0.0", () => {
     expect(templateRegistry.resolve("种族", "1.0.0")).toBe(ancestryTemplate);
     const data = {
       名称: "龙人", 原文: "Drakona", 类型: "种族", 简介: "拥有类人形态的龙类。",
-      特性: [{ 名称: "鳞片保护", 原名: "Scales", 描述: "受到严重伤害时减少生命损失。" }, { 名称: "元素吐息", 原名: "Elemental Breath", 描述: "喷吐元素能量。" }],
+      特性: [{ 特性名称: "鳞片保护", 特性原文: "Scales", 特性描述: "受到严重伤害时减少生命损失。" }, { 特性名称: "元素吐息", 特性原文: "Elemental Breath", 特性描述: "喷吐元素能量。" }],
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
     expect(ancestryTemplate.project(data).searchText).toContain("元素吐息");
@@ -40,7 +40,7 @@ describe("种族 Template 1.0.0", () => {
   });
 
   test("rejects a third feature and unstructured strings", () => {
-    const feature = { 名称: "特性", 原名: "Feature", 描述: "效果" };
+    const feature = { 特性名称: "特性", 特性原文: "Feature", 特性描述: "效果" };
     expect(validate({ ...ancestryTemplate.defaultData, 特性: [feature, feature, feature] })).toBe(false);
     expect(validate({ ...ancestryTemplate.defaultData, 特性: ["特性：效果"] })).toBe(false);
   });
@@ -50,7 +50,7 @@ describe("种族 Template 1.0.0", () => {
       名称: "龙人",
       类型: "种族",
       简介: "拥有类人形态的龙类。",
-      特性: [{ 名称: "鳞片保护", 描述: "受到严重伤害时减少生命损失。" }],
+      特性: [{ 特性名称: "鳞片保护", 特性描述: "受到严重伤害时减少生命损失。" }],
     }), JSON.stringify(validate.errors)).toBe(true);
   });
 
@@ -58,7 +58,7 @@ describe("种族 Template 1.0.0", () => {
     const markup = renderToStaticMarkup(createElement(ancestryAuthoring.Editor, {
       data: {
         名称: "龙人", 原文: "Drakona", 类型: "种族", 简介: "拥有类人形态的龙类。",
-        特性: [{ 名称: "鳞片保护", 原名: "Scales", 描述: "受到严重伤害时减少生命损失。" }, { 名称: "元素吐息", 原名: "Elemental Breath", 描述: "喷吐元素能量。" }],
+        特性: [{ 特性名称: "鳞片保护", 特性原文: "Scales", 特性描述: "受到严重伤害时减少生命损失。" }, { 特性名称: "元素吐息", 特性原文: "Elemental Breath", 特性描述: "喷吐元素能量。" }],
       },
       onValue: () => undefined,
     }));
@@ -95,7 +95,7 @@ describe("种族 Template 1.0.0", () => {
   test("renders text and mixed-media cards with ancestry-owned adversary-aligned DOM and colors", () => {
     const data = {
       名称: "龙人", 原文: "Drakona", 类型: "种族", 简介: "拥有类人形态的龙类。",
-      特性: [{ 名称: "鳞片保护", 原名: "Scales", 描述: "受到严重伤害时减少生命损失。" }, { 名称: "元素吐息", 原名: "Elemental Breath", 描述: "喷吐元素能量。" }],
+      特性: [{ 特性名称: "鳞片保护", 特性原文: "Scales", 特性描述: "受到严重伤害时减少生命损失。" }, { 特性名称: "元素吐息", 特性原文: "Elemental Breath", 特性描述: "喷吐元素能量。" }],
     };
     const base = {
       data,
@@ -114,7 +114,7 @@ describe("种族 Template 1.0.0", () => {
       data: {
         ...data,
         原文: "   ",
-        特性: data.特性.map((feature) => ({ ...feature, 原名: "   " })),
+        特性: data.特性.map((feature) => ({ ...feature, 特性原文: "   " })),
       },
     }));
 

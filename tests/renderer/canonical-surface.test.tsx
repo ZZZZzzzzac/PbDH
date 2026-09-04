@@ -329,7 +329,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
   test("removes empty English titles instead of reserving their layout space", () => {
     const candidate = structuredClone(resource);
     candidate.data.原文 = "   ";
-    candidate.data.特性 = candidate.data.特性.map((feature) => ({ ...feature, 原名: "   " }));
+    candidate.data.特性 = candidate.data.特性.map((feature) => ({ ...feature, 特性原文: "   " }));
     const result = prepare({ candidate });
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));

@@ -163,11 +163,36 @@
         "id": "domain-cards",
         "label": "领域卡"
       }
+    },
+    {
+      "templateId": "敌人",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "adversaries",
+        "label": "敌人"
+      }
+    },
+    {
+      "templateId": "环境",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "environments",
+        "label": "环境"
+      }
     }
   ],
   "embeddedResources": [
     {
       "path": "resources/daggerheart-core.pbres"
+    },
+    {
+      "path": "resources/daggerheart-core-gm.pbres"
     }
   ]
 }

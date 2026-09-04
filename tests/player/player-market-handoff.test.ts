@@ -61,7 +61,7 @@ const runtimeSystem = {
       {
         类型: "fillText",
         目标模块ID: "primary-weapon-description",
-        内容: { 类型: "selectedResourceTemplate", 格式: "{{特性名}}：{{特性描述}}" },
+        内容: { 类型: "selectedResourceTemplate", 格式: "{{特性名称}}：{{特性描述}}" },
       },
     ],
   }],
@@ -157,7 +157,7 @@ describe("Player Market handoff ingress", () => {
     });
   });
 
-  test("routes a real Market adversary archive to other resources", async () => {
+  test("routes a real Market adversary archive to the native GM resource entry", async () => {
     const result = await prepareResourcePackageInstall({
       bytes: adversaryBytes,
       currentSystem: system,
@@ -173,7 +173,7 @@ describe("Player Market handoff ingress", () => {
 
     expect(result).toMatchObject({
       kind: "ready",
-      plan: { kind: "insert", routes: [{ destination: "other-resources" }] },
+      plan: { kind: "insert", routes: [{ destination: "native", nativeEntry: { id: "adversaries", label: "敌人" } }] },
     });
   });
 

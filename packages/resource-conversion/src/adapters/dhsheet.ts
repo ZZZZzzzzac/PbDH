@@ -9,7 +9,6 @@ import {
   formatNamedFeature,
   formatNamedFeatures,
   formatNamedFeatureGroup,
-  namedFeature,
   namedFeatures,
   namedFeatureGroup,
   numberedTextList,
@@ -82,8 +81,8 @@ function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
       伤害: text(raw.damage),
       负荷: equipmentValue(raw.burden),
       伤害类型: equipmentValue(raw.damageType),
-      特性名: text(raw.featureName),
-      特性原名: "",
+      特性名称: text(raw.featureName),
+      特性原文: "",
       特性描述: text(raw.description),
       位阶: equipmentTier(raw.tier),
     });
@@ -99,8 +98,8 @@ function normalizeEquipmentPack(document: JsonObject): JsonObject | null {
       护甲值: text(raw.baseArmorMax),
       重度伤害阈值: text(thresholds.minor),
       严重伤害阈值: text(thresholds.major),
-      特性名: text(raw.featureName),
-      特性原名: "",
+      特性名称: text(raw.featureName),
+      特性原文: "",
       特性描述: text(raw.description),
       位阶: equipmentTier(raw.tier),
     });
@@ -144,25 +143,33 @@ function freeFieldBody(value: JsonValue): string {
 }
 
 function freeVariantFields(raw: JsonObject): JsonObject {
-  const omitted = new Set(["id", "名称", "类型", "内容", "imageUrl"]);
+  const omitted = new Set(["id", "名称", "原文", "类型", "简介", "内容", "imageUrl"]);
   const looseBlocks = Object.entries(raw)
     .filter(([key, value]) => !omitted.has(key)
       && !(key === "类型" && Array.isArray(raw.内容) && text(value) === "自由"))
-    .map(([key, value]) => ({ 标题: key, 正文: freeFieldBody(value) }))
-    .filter((block) => block.正文.trim().length > 0);
+    .map(([key, value]) => ({ 名称: key, 描述: freeFieldBody(value) }))
+    .filter((block) => block.描述.trim().length > 0);
   if (Array.isArray(raw.内容)) {
     return {
       名称: text(raw.名称),
+      ...(raw.原文 === undefined ? {} : { 原文: text(raw.原文) }),
       类型: text(raw.类型 || "自由"),
+      简介: text(raw.简介),
       内容: [...looseBlocks, ...raw.内容.map((value) => {
         const block = asJsonObject(value) ?? {};
-        return { 标题: text(block.标题), 正文: freeFieldBody(block.正文) };
+        return {
+          名称: text(block.名称 ?? block.标题),
+          ...(block.原文 === undefined && block.原名 === undefined ? {} : { 原文: text(block.原文 ?? block.原名) }),
+          描述: freeFieldBody(block.描述 ?? block.正文),
+        };
       })],
     };
   }
   return {
     名称: text(raw.名称),
+    ...(raw.原文 === undefined ? {} : { 原文: text(raw.原文) }),
     类型: text(raw.类型 || "自由"),
+    简介: text(raw.简介),
     内容: looseBlocks,
   };
 }
@@ -171,7 +178,7 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
   if (group === "profession") return {
     名称: text(raw.名称),
     类型: text(raw.类型 || "职业"),
-    风味描述: text(raw.风味描述 || raw.描述 || raw.简介),
+    简介: text(raw.简介 || raw.风味描述 || raw.描述),
     领域: splitJoined(raw.领域).length > 0
       ? splitJoined(raw.领域)
       : [text(raw.领域1), text(raw.领域2)].filter(Boolean),
@@ -191,14 +198,14 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     原文: "",
     类型: "种族",
     简介: text(raw.简介),
-    特性: [{ 名称: text(raw.名称), 原名: "", 描述: text(raw.效果) }],
+    特性: [{ 特性名称: text(raw.名称), 特性原文: "", 特性描述: text(raw.效果) }],
   };
   if (group === "community") return {
     名称: text(raw.名称),
     类型: "社群",
     简介: text(raw.简介),
     性格: text(raw.特性),
-    特性: namedFeature(raw.描述),
+    特性: namedFeatures(raw.描述)[0] ?? { 特性名称: "", 特性原文: "", 特性描述: "" },
   };
   if (group === "subclass") return {
     名称: subclassName(raw.子职业 || raw.名称),
@@ -206,8 +213,8 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     主职: text(raw.主职),
     等级: canonicalSubclassLevel(raw.等级),
     施法属性: text(raw.施法属性 || raw.施法),
-    描述: text(raw.描述),
-    风味描述: text(raw.风味描述),
+    特性: namedFeatures(raw.描述),
+    简介: text(raw.简介 || raw.风味描述),
   };
   if (group === "domain") return {
     名称: text(raw.名称),
@@ -216,8 +223,8 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     等级: semanticCount(raw.等级),
     属性: text(raw.属性),
     回想: semanticCount(raw.回想),
-    描述: text(raw.描述),
-    风味描述: text(raw.风味描述),
+    特性描述: text(raw.描述),
+    简介: text(raw.简介 || raw.风味描述),
   };
   if (["主武器", "副武器", "武器"].includes(text(raw.类型))) return {
     名称: text(raw.名称),
@@ -228,10 +235,10 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     伤害: text(raw.伤害),
     负荷: text(raw.负荷),
     伤害类型: text(raw.伤害类型),
-    特性名: text(raw.特性名),
-    特性原名: text(raw.特性原名),
+    特性名称: text(raw.特性名称 || raw.特性名),
+    特性原文: text(raw.特性原文 || raw.特性原名),
     特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
-    风味描述: text(raw.风味描述),
+    简介: text(raw.简介 || raw.风味描述),
     位阶: text(raw.位阶),
   };
   if (text(raw.类型) === "护甲") return {
@@ -241,18 +248,18 @@ function fieldsFor(group: Group, raw: JsonObject): JsonObject {
     护甲值: text(raw.护甲值),
     重度伤害阈值: text(raw.重度伤害阈值 || raw.重度阈值 || raw.重伤阈值),
     严重伤害阈值: text(raw.严重伤害阈值 || raw.严重阈值),
-    特性名: text(raw.特性名),
-    特性原名: text(raw.特性原名),
+    特性名称: text(raw.特性名称 || raw.特性名),
+    特性原文: text(raw.特性原文 || raw.特性原名),
     特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
-    风味描述: text(raw.风味描述),
+    简介: text(raw.简介 || raw.风味描述),
     位阶: text(raw.位阶),
   };
   if (["物品", "消耗品", "战利品"].includes(text(raw.类型))) return {
     名称: text(raw.名称),
     类型: text(raw.类型) === "消耗品" ? "消耗品" : "物品",
     掷骰: text(raw.掷骰),
-    描述: text(raw.描述 || raw.效果),
-    风味描述: text(raw.风味描述),
+    特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
+    简介: text(raw.简介 || raw.风味描述),
   };
   if (group === "variant" && kindFor(group, raw) === "free") return freeVariantFields(raw);
   return { ...raw };
@@ -286,7 +293,7 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
   const id = resource.sourceId;
   if (group === "profession") return {
     ...fields,
-    id, 名称: resource.name, 简介: text(fields.风味描述), 描述: text(fields.风味描述),
+    id, 名称: resource.name, 简介: text(fields.简介), 描述: text(fields.简介),
     领域1: splitJoined(fields.领域)[0] ?? "", 领域2: splitJoined(fields.领域)[1] ?? "",
     起始生命: Number(text(fields.生命点)) || 0, 起始闪避: Number(text(fields.闪避值)) || 0,
     起始物品: text(fields.职业物品), 希望特性: formatNamedFeatureGroup(fields.希望特性), 职业特性: formatNamedFeatures(fields.特性),
@@ -297,29 +304,32 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
   if (group === "subclass") return {
     id, 名称: resource.name, 子职业: resource.name, 主职: text(fields.主职),
     等级: dhsheetSubclassLevel(fields.等级), 施法: text(fields.施法属性),
-    描述: formatNamedFeatures(fields.特性), 风味描述: text(fields.风味描述),
+    描述: formatNamedFeatures(fields.特性), 风味描述: text(fields.简介),
   };
   if (group === "domain") return {
     id, 名称: resource.name, 领域: text(fields.领域), 等级: Number(text(fields.等级)) || 0,
-    属性: text(fields.属性), 回想: Number(text(fields.回想)) || 0, 描述: text(fields.描述),
+    属性: text(fields.属性), 回想: Number(text(fields.回想)) || 0,
+    描述: text(fields.特性描述), 风味描述: text(fields.简介),
   };
   if (resource.kind === "armor") return {
     id,
     名称: resource.name,
     类型: "护甲",
-    特性名: text(fields.特性名),
-    特性原名: text(fields.特性原名),
+    特性名: text(fields.特性名称),
+    特性原名: text(fields.特性原文),
     特性描述: text(fields.特性描述),
     护甲值: text(fields.护甲值),
     重度阈值: text(fields.重度伤害阈值),
     严重阈值: text(fields.严重伤害阈值),
-    风味描述: text(fields.风味描述),
+    风味描述: text(fields.简介),
     位阶: text(fields.位阶),
   };
   if (resource.kind === "free") return {
     id,
     名称: resource.name,
+    ...(fields.原文 === undefined ? {} : { 原文: text(fields.原文) }),
     类型: text(fields.类型 || "自由"),
+    简介: text(fields.简介),
     内容: Array.isArray(fields.内容) ? fields.内容 : [],
   };
   return {
@@ -329,7 +339,7 @@ function crossFormatRecord(resource: TemporaryResource, group: Group): JsonObjec
       : resource.kind === "adversary" ? "敌人"
         : resource.kind === "environment" ? "环境"
           : text(fields.类型 || resource.kind),
-    效果: text(fields.描述 || fields.简介),
+    效果: text(fields.特性描述 || fields.简介),
     ...fields,
   };
 }
@@ -344,10 +354,10 @@ function ancestryRecords(resource: TemporaryResource): JsonObject[] {
     const feature = asJsonObject(value) ?? {};
     return {
       id: `${resource.sourceId}:${index + 1}`,
-      名称: text(feature.名称),
+      名称: text(feature.特性名称),
       种族: resource.name,
       简介: text(resource.fields.简介),
-      效果: text(feature.描述),
+      效果: text(feature.特性描述),
       类别: index + 1,
     };
   });
@@ -408,7 +418,7 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
               名称: name,
               原文: "",
               简介: text(first.raw.简介),
-              特性: entries.map(({ raw }) => ({ 名称: text(raw.名称), 原名: "", 描述: text(raw.效果) })),
+              特性: entries.map(({ raw }) => ({ 特性名称: text(raw.名称), 特性原文: "", 特性描述: text(raw.效果) })),
             },
             source: {
               formatId: "dhsheet", upstreamRevision, path: `/ancestry/${first.index}`,

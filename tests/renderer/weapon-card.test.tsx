@@ -181,7 +181,7 @@ describe("weapon-card-r2 flavor surface", () => {
         特性名: "可靠",
         特性原名: "Reliable",
         特性描述: "攻击掷骰+1。",
-        风味描述: "刀身映着冷白月光。",
+        简介: "刀身映着冷白月光。",
       },
       media: {},
     };

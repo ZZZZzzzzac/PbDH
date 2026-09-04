@@ -63,8 +63,9 @@ function FreeCard({ data, presentation, portrait, attribution }: {
       {portrait ? <img src={portrait} alt={data.名称} /> : <div className="free-image-missing" role="status">缺少主图</div>}
     </div>}
     <div className="free-content" ref={contentRef}>
-      {data.内容.map((block, index) => <section className="free-block" key={`${block.标题}:${index}`}>
-        <h2><span>{block.标题}</span>{block.原名?.trim() ? <small>{block.原名}</small> : null}</h2><RestrictedMarkdown value={block.正文} />
+      {data.简介 ? <RestrictedMarkdown className="free-summary" value={data.简介} /> : null}
+      {data.内容.map((block, index) => <section className="free-block" key={`${block.名称}:${index}`}>
+        <h2><span>{block.名称}</span>{block.原文?.trim() ? <small>{block.原文}</small> : null}</h2><RestrictedMarkdown value={block.描述} />
       </section>)}
     </div>
     {presentation.mode !== "image" ? <CardFooter attribution={attribution} /> : null}

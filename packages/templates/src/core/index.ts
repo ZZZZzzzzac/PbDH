@@ -30,7 +30,7 @@ export { freeTemplate } from "./free/1.0.0/capability.ts";
 export type { FreeContentBlock, FreeData } from "./free/1.0.0/capability.ts";
 export { itemTemplate } from "./item/1.0.0/capability.ts";
 export type { ItemData } from "./item/1.0.0/capability.ts";
-export { normalizeProfessionData, professionDataNeedsMigration, professionTemplate } from "./profession/1.0.0/capability.ts";
+export { professionTemplate } from "./profession/1.0.0/capability.ts";
 export type { ProfessionData } from "./profession/1.0.0/capability.ts";
 export { subclassTemplate } from "./subclass/1.0.0/capability.ts";
 export type { SubclassData } from "./subclass/1.0.0/capability.ts";

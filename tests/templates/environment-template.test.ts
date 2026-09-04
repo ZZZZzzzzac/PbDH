@@ -26,10 +26,10 @@ describe("环境 Template 1.0.0", () => {
     难度: "11",
     潜在敌人: "野兽，林地守卫",
     特性: [{
-      名称: "蔓生战场",
-      原名: "Overgrown Battlefield",
-      类型: "被动",
-      描述: "此地曾发生过一场战斗。",
+      特性名称: "蔓生战场",
+      特性原文: "Overgrown Battlefield",
+      特性类型: "被动",
+      特性描述: "此地曾发生过一场战斗。",
       引导问题: "曾在此地的那些团体为何发生冲突？",
     }],
   };
@@ -47,7 +47,7 @@ describe("环境 Template 1.0.0", () => {
     const { 原文: _originalTitle, ...withoutEnvironmentEnglish } = abandonedGrove;
     const withoutEnglish = {
       ...withoutEnvironmentEnglish,
-      特性: abandonedGrove.特性.map(({ 原名: _originalName, ...feature }) => feature),
+      特性: abandonedGrove.特性.map(({ 特性原文: _originalName, ...feature }) => feature),
     };
     expect(validateStable(withoutEnglish), JSON.stringify(validateStable.errors)).toBe(true);
   });

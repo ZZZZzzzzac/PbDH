@@ -25,7 +25,7 @@ describe("物品 Template 1.0.0", () => {
     const markup = renderToStaticMarkup(createElement(itemAuthoring.Editor, { data: itemTemplate.defaultData, onValue: () => undefined }));
     expect(markup).toContain("展开类型选项");
     expect([...markup.matchAll(/class="template-editor-field"[^>]*><span>([^<]+)<\/span>/gu)]
-      .map((match) => match[1]).slice(0, 4)).toEqual(["名称", "英文", "掷骰", "类型"]);
+      .map((match) => match[1]).slice(0, 4)).toEqual(["名称", "原文", "掷骰", "类型"]);
     expect(markup).toContain(".item-editor section{grid-template-columns:repeat(2,minmax(0,1fr))}");
   });
 
@@ -34,8 +34,8 @@ describe("物品 Template 1.0.0", () => {
       ...itemTemplate.defaultData,
       名称: "风笛哨",
       掷骰: "02",
-      描述: "声音在一英里外都能听到。",
-      风味描述: "手工制作的独特哨子。",
+      特性描述: "声音在一英里外都能听到。",
+      简介: "手工制作的独特哨子。",
     };
     expect(validate(data), JSON.stringify(validate.errors)).toBe(true);
     expect(itemTemplate.project(data).searchText).toContain("手工制作的独特哨子。");

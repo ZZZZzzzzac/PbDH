@@ -2,7 +2,7 @@
   "id": "01a05400-0000-7000-8000-000000000001",
   "urlPath": "witchy",
   "name": "巫趣 Witchy",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "releaseVersion": "0.0.0-dev",
   "directory": "witchy",
   "inventoryPath": ".pbdh-runtime-files.json",
@@ -12,8 +12,8 @@
     {
       "path": "resources/witchy.pbres",
       "packageId": "01a05400-0000-7000-8000-000000000002",
-      "version": "1.2.0",
-      "snapshotDigest": "sha256:8d01ddf802d51af11e60a2826f248f4fb3200a4465b7c63114c1da5485c88eaf"
+      "version": "1.2.1",
+      "snapshotDigest": "sha256:ee2df5df273813148f907c4bdfab6a653f2baf8ae54588a909f808a683985256"
     }
   ],
   "loadingPresentation": {

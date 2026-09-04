@@ -16,7 +16,7 @@
 以下部分不在本次重画范围内，应尽量原样保留：
 
 - 特性卡的浅色纸面、细金边、酒红标题、标题尾部装饰横线；
-- 特性名称、可选英文、特性描述与风味描述的渲染逻辑；
+- 特性名称、可选特性原文、特性描述与简介的渲染逻辑；
 - 卡牌 footer；
 - 纯文字、图文、纯图片三种展示模式；
 - 固定比例与非固定比例行为；
@@ -25,7 +25,7 @@
 视觉风格应与项目中的种族、社群等卡牌属于同一套产品，而不是复制它们的具体网格。可参考：
 
 - `packages/templates/src/frontend/ancestry/1.0.0/renderer.tsx`
-- `packages/templates/src/frontend/reference-card/renderer-factory.tsx`
+- `packages/templates/src/frontend/community/1.0.0/renderer.tsx`
 
 共同视觉语言包括：暖骨色纸张、深褐标题区、酒红强调、低饱和金色分隔线、清晰的中文粗体层级。不要引入紫色渐变、玻璃拟态、现代 SaaS 卡片、圆角胶囊标签或与桌游规则书不相干的图标系统。
 
@@ -180,10 +180,10 @@ Creator Workbench
 | `伤害` | 如 `d8+1` | 核心规则数据 |
 | `伤害类型` | 如物理、魔法 | 规则数据 |
 | `负荷` | 如单手、双手 | 规则数据 |
-| `特性名` | 特性中文名 | 特性卡，保留现有逻辑 |
-| `特性原名` | 可选特性英文名 | 空值不占位 |
+| `特性名称` | 特性中文名 | 特性卡，保留现有逻辑 |
+| `特性原文` | 可选特性英文名 | 空值不占位 |
 | `特性描述` | 规则描述 | Restricted Markdown |
-| `风味描述` | 可选风味文案 | 与规则描述区分 |
+| `简介` | 可选风味文案 | 与规则描述区分 |
 
 武器没有独立的“摘要”字段。不要把属性、距离、负荷再拼成标题区摘要。
 
@@ -198,10 +198,10 @@ Creator Workbench
 | `护甲值` | 可消耗护甲格相关数值 | 核心主值 |
 | `重度伤害阈值` | 重度伤害阈值 | 与严重阈值有递进关系 |
 | `严重伤害阈值` | 严重伤害阈值 | 与重度阈值有递进关系 |
-| `特性名` | 特性中文名 | 特性卡，保留现有逻辑 |
-| `特性原名` | 可选特性英文名 | 空值不占位 |
+| `特性名称` | 特性中文名 | 特性卡，保留现有逻辑 |
+| `特性原文` | 可选特性英文名 | 空值不占位 |
 | `特性描述` | 规则描述 | Restricted Markdown |
-| `风味描述` | 可选风味文案 | 与规则描述区分 |
+| `简介` | 可选风味文案 | 与规则描述区分 |
 
 ## 6. 卡面尺寸与缩放机制
 
@@ -285,20 +285,20 @@ CSS `transform` 不参与普通文档流尺寸计算，所以不能删除 Frame 
 ```tsx
 {hasDescription ? <TextFitContainer
   className="weapon-description"
-  contentKey={`${data.特性名}\0${data.特性原名 ?? ""}\0${data.特性描述}\0${data.风味描述}`}
+  contentKey={`${data.特性名称}\0${data.特性原文 ?? ""}\0${data.特性描述}\0${data.简介}`}
   enabled={presentation.fixedRatio}
   minFontSizePx={11}
   maxFontSizePx={17}
   cssVariable="--weapon-content-font-size"
 >
-  {(data.特性名 || data.特性描述) && <section className="weapon-feature">
+  {(data.特性名称 || data.特性描述) && <section className="weapon-feature">
     <h2>
-      <span><RestrictedMarkdown inline value={data.特性名 || "武器特性"} /></span>
-      {data.特性原名?.trim() ? <small>{data.特性原名}</small> : null}
+      <span><RestrictedMarkdown inline value={data.特性名称 || "武器特性"} /></span>
+      {data.特性原文?.trim() ? <small>{data.特性原文}</small> : null}
     </h2>
     <RestrictedMarkdown value={data.特性描述} />
   </section>}
-  {data.风味描述 && <RestrictedMarkdown className="weapon-flavor" value={data.风味描述} />}
+  {data.简介 && <RestrictedMarkdown className="weapon-flavor" value={data.简介} />}
 </TextFitContainer> : null}
 ```
 
@@ -311,7 +311,7 @@ CSS `transform` 不参与普通文档流尺寸计算，所以不能删除 Frame 
 - `hasDescription` 为假时不要输出空的 `TextFitContainer`；
 - 特性卡不要 `flex: 1` 拉满剩余空间；
 - 拟合容器只测量真实特性/风味内容，不要把标题和核心数据一起放入正文拟合范围；
-- 风味描述应弱于规则描述，通常使用较浅颜色和斜体。
+- 简介应弱于规则描述，通常使用较浅颜色和斜体。
 
 ## 9. 视觉设计自由度与最低标准
 

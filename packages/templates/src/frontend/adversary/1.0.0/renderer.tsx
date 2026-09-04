@@ -233,8 +233,8 @@ export const adversaryRendererRevision: RendererRevisionCapability<
           </div>
         </section>
         <div className="enemy-feature-heading">特性</div>
-        <section className="enemy-features" aria-label="敌人特性">{data.特性.map((feature, index) => <article className="enemy-feature" key={`${feature.名称}:${index}`}>
-          <h2><span className="enemy-feature-primary"><span className="enemy-feature-name">{feature.名称}</span><span className="enemy-feature-type">{feature.类型}</span></span>{feature.原名?.trim() ? <small>{feature.原名}</small> : null}</h2>
+        <section className="enemy-features" aria-label="敌人特性">{data.特性.map((feature, index) => <article className="enemy-feature" key={`${feature.特性名称}:${index}`}>
+          <h2><span className="enemy-feature-primary"><span className="enemy-feature-name">{feature.特性名称}</span><span className="enemy-feature-type">{feature.特性类型}</span></span>{feature.特性原文?.trim() ? <small>{feature.特性原文}</small> : null}</h2>
           <RestrictedMarkdown value={feature.特性描述} />
         </article>)}</section>
       </TextFitContainer>

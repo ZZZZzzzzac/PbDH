@@ -81,7 +81,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.package.modules.length).toBeGreaterThan(20);
     expect(loaded.package.pages.length).toBeGreaterThan(1);
     expect(loaded.package.resourceLibraries?.reduce((total, library) =>
-      total + library.entries.length, 0)).toBe(625);
+      total + library.entries.length, 0)).toBe(1267);
     for (const libraryId of ["subclasses", "domain-cards"]) {
       const imageEntry = loaded.package.resourceLibraries?.find((library) => library.ID === libraryId)
         ?.entries.find((entry) => entry.fields.卡牌显示方式 === "image");
@@ -111,7 +111,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(applied.characterData.character.values).toMatchObject({
       "armor-name": "**填充布甲**｜阈值 5/11｜护甲值 3",
       "armor-value": "3",
-      "armor-description": "灵活：闪避值+1。",
+      "armor-description": "灵活：+1 闪避值",
       "armor-slots": { current: 0, max: 3 },
     });
     expect(applied.characterData.resourceSelections).not.toHaveProperty("pick-armor");

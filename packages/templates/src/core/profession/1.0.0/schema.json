@@ -3,22 +3,22 @@
   "$id": "https://pbdh.dev/templates/%E8%81%8C%E4%B8%9A/1.0.0/schema.json",
   "title": "职业 Template Data",
   "type": "object",
-  "required": ["名称", "类型", "风味描述", "领域", "生命点", "闪避值", "职业物品", "希望特性", "特性", "推荐初始属性", "推荐初始武器", "推荐初始护甲", "背景问题", "关系问题"],
+  "required": ["名称", "类型", "简介", "领域", "生命点", "闪避值", "职业物品", "希望特性", "特性", "推荐初始属性", "推荐初始武器", "推荐初始护甲", "背景问题", "关系问题"],
   "properties": {
     "名称": { "type": "string" },
     "原文": { "type": "string" },
     "类型": { "type": "string" },
-    "风味描述": { "type": "string" },
+    "简介": { "type": "string" },
     "领域": { "type": "array", "maxItems": 2, "items": { "type": "string" } },
     "生命点": { "type": "string" },
     "闪避值": { "type": "string" },
     "职业物品": { "type": "string" },
     "希望特性": {
       "type": "object",
-      "required": ["名称", "特性描述"],
+      "required": ["特性名称", "特性描述"],
       "properties": {
-        "名称": { "type": "string" },
-        "原名": { "type": "string" },
+        "特性名称": { "type": "string" },
+        "特性原文": { "type": "string" },
         "特性描述": { "type": "string" }
       },
       "additionalProperties": false
@@ -27,10 +27,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["名称", "特性描述"],
+        "required": ["特性名称", "特性描述"],
         "properties": {
-          "名称": { "type": "string" },
-          "原名": { "type": "string" },
+          "特性名称": { "type": "string" },
+          "特性原文": { "type": "string" },
           "特性描述": { "type": "string" }
         },
         "additionalProperties": false

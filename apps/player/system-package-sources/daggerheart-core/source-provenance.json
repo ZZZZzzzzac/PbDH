@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "sourceFile": "docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json",
+  "sha256": "2d417c24ff47d26d97ad60c19945c351eab44c63060444a77fd79871e9b1bf4c",
+  "recordCount": 1102,
+  "extractedCounts": {
+    "ancestries": 24,
+    "communities": 15,
+    "classes": 13,
+    "subclasses": 78,
+    "weapons": 307,
+    "armor": 69,
+    "loot": 240,
+    "domain-cards": 210,
+    "adversaries": 264,
+    "environments": 47
+  },
+  "comparison": {
+    "playerResourceCount": 956,
+    "gmResourceCount": 311,
+    "checks": [
+      "英文/中文表格逐行配对",
+      "特性标题按原文顺序逐项配对",
+      "敌人/环境目录名称集合对照",
+      "资源 ID 唯一",
+      "分类数量固定",
+      "生成前 Schema 校验"
+    ],
+    "repairedSourceRows": [
+      {
+        "key": "SRD2_SECTION_309",
+        "original": "Legendary Rope | Instinct Dart",
+        "interpretedAs": "Legendary Rope Dart | Instinct"
+      },
+      {
+        "key": "SRD2_SECTION_309",
+        "original": "Severed Dragon | Instinct Claw",
+        "interpretedAs": "Severed Dragon Claw | Instinct"
+      },
+      {
+        "key": "SRD2_SECTION_469",
+        "original": "POL TERGEIST",
+        "interpretedAs": "POLTERGEIST"
+      },
+      {
+        "key": "SRD2_SECTION_561",
+        "original": "RA VENOUS MOCKERY",
+        "interpretedAs": "RAVENOUS MOCKERY"
+      },
+      {
+        "key": "SRD2_SECTION_666",
+        "original": "OUTER REALMS CORRUPTER",
+        "interpretedAs": "OUTER REALMS CORRUPTOR"
+      },
+      {
+        "key": "SRD2_SECTION_723",
+        "original": "OCEAN VOY AGE",
+        "interpretedAs": "OCEAN VOYAGE"
+      },
+      {
+        "key": "SRD2_SECTION_740",
+        "original": "CONVERGENCE, THE CITY OF PORTALS",
+        "interpretedAs": "CONVERGENCE, CITY OF PORTALS"
+      }
+    ],
+    "sourceAnomalies": [
+      {
+        "key": "SRD2_SECTION_746",
+        "issue": "TIME COURT 的 translation 重复为 MOON KINGDOM",
+        "handling": "保留英文机制文本，资源名称标为时间法庭，等待人工补译"
+      }
+    ]
+  }
+}

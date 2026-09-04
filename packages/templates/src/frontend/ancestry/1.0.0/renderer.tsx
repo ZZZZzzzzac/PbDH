@@ -151,7 +151,7 @@ export const ancestryRendererRevision: RendererRevisionCapability<
       "ancestry-card", `is-${mode}`, presentation.fixedRatio ? "" : "is-fluid",
     ].filter(Boolean).join(" ");
     const fitContentKey = data.特性
-      .map((feature) => `${feature.名称}\u0000${feature.原名 ?? ""}\u0000${feature.描述}`)
+      .map((feature) => `${feature.特性名称}\u0000${feature.特性原文 ?? ""}\u0000${feature.特性描述}`)
       .join("\u0001");
 
     if (mode === "image") {
@@ -176,12 +176,12 @@ export const ancestryRendererRevision: RendererRevisionCapability<
       </div>
       <div className="ancestry-body">
         <section ref={featureContainerRef} className="ancestry-features" aria-label="种族特性" data-text-fit-scope="ancestry-features">
-          {data.特性.length ? data.特性.map((feature, index) => <article className="ancestry-feature" key={`${feature.名称}:${index}`}>
+          {data.特性.length ? data.特性.map((feature, index) => <article className="ancestry-feature" key={`${feature.特性名称}:${index}`}>
             <h2>
-              <span className="ancestry-feature-name">{feature.名称 || "未命名特性"}</span>
-              {feature.原名?.trim() ? <small>{feature.原名}</small> : null}
+              <span className="ancestry-feature-name">{feature.特性名称 || "未命名特性"}</span>
+              {feature.特性原文?.trim() ? <small>{feature.特性原文}</small> : null}
             </h2>
-            <RestrictedMarkdown value={feature.描述} />
+            <RestrictedMarkdown value={feature.特性描述} />
           </article>) : <div className="ancestry-empty">尚未添加种族特性</div>}
         </section>
       </div>

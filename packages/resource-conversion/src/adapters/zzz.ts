@@ -8,7 +8,6 @@ import {
   isObject,
   jsonArtifact,
   numberedTextList,
-  namedFeature,
   namedFeatures,
   namedFeatureGroup,
   parseJson,
@@ -41,17 +40,17 @@ function ancestryFeatures(value: unknown): JsonValue[] {
   const lines = description.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
   if (lines.length <= 2) {
     const parsed = lines.map((line) => /^(.+?)[：:]\s*(.+)$/u.exec(line));
-    if (parsed.every(Boolean)) return parsed.map((match) => ({ 名称: match![1]!.trim(), 原名: "", 描述: match![2]!.trim() }));
+    if (parsed.every(Boolean)) return parsed.map((match) => ({ 特性名称: match![1]!.trim(), 特性原文: "", 特性描述: match![2]!.trim() }));
   }
-  return [{ 名称: "", 原名: "", 描述: description }];
+  return [{ 特性名称: "", 特性原文: "", 特性描述: description }];
 }
 
 function ancestryDescription(value: unknown): string {
   if (!Array.isArray(value)) return "";
   return value.map((item) => {
     const feature = asJsonObject(item) ?? {};
-    const name = text(feature.名称).trim();
-    const description = text(feature.描述).trim();
+    const name = text(feature.特性名称).trim();
+    const description = text(feature.特性描述).trim();
     return name ? `${name}：${description}` : description;
   }).filter(Boolean).join("\n");
 }
@@ -75,8 +74,8 @@ function normalizedFields(raw: JsonObject): JsonObject {
   if (kindFor(type) === "weapon") return {
     名称: text(raw.名称), 类型: type, 属性: text(raw.属性), 距离: text(raw.距离), 伤害: text(raw.伤害),
     负荷: text(raw.双手) === "true" || raw.双手 === true ? "双手" : text(raw.负荷 || "单手"),
-    伤害类型: text(raw.伤害类型), 特性名: text(raw.特性名), 特性原名: text(raw.特性原名),
-    特性描述: text(raw.特性描述 || raw.描述), 风味描述: text(raw.风味描述), 位阶: text(raw.位阶),
+    伤害类型: text(raw.伤害类型), 特性名称: text(raw.特性名称 || raw.特性名), 特性原文: text(raw.特性原文 || raw.特性原名),
+    特性描述: text(raw.特性描述 || raw.描述), 简介: text(raw.简介 || raw.风味描述), 位阶: text(raw.位阶),
   };
   if (kindFor(type) === "armor") return {
     名称: text(raw.名称),
@@ -84,23 +83,23 @@ function normalizedFields(raw: JsonObject): JsonObject {
     护甲值: text(raw.护甲值),
     重度伤害阈值: text(raw.重度伤害阈值 || raw.重伤阈值 || raw.重度阈值),
     严重伤害阈值: text(raw.严重伤害阈值 || raw.严重阈值),
-    特性名: text(raw.特性名),
-    特性原名: text(raw.特性原名),
+    特性名称: text(raw.特性名称 || raw.特性名),
+    特性原文: text(raw.特性原文 || raw.特性原名),
     特性描述: text(raw.特性描述 || raw.描述),
-    风味描述: text(raw.风味描述),
+    简介: text(raw.简介 || raw.风味描述),
     位阶: text(raw.位阶),
   };
   if (kindFor(type) === "item") return {
     名称: text(raw.名称),
     类型: type === "消耗品" ? "消耗品" : "物品",
     掷骰: text(raw.掷骰),
-    描述: text(raw.描述 || raw.效果),
-    风味描述: text(raw.风味描述),
+    特性描述: text(raw.特性描述 || raw.描述 || raw.效果),
+    简介: text(raw.简介 || raw.风味描述),
   };
   if (kindFor(type) === "class") return {
     名称: text(raw.名称),
     类型: text(raw.资源类型 || type || "职业"),
-    风味描述: text(raw.风味描述 || raw.描述),
+    简介: text(raw.简介 || raw.风味描述 || raw.描述),
     领域: splitJoined(raw.领域),
     生命点: text(raw.生命点 || raw.初始生命点 || raw.起始生命),
     闪避值: text(raw.闪避值 || raw.初始闪避值 || raw.起始闪避),
@@ -119,8 +118,8 @@ function normalizedFields(raw: JsonObject): JsonObject {
     主职: text(raw.主职),
     等级: text(raw.等级),
     施法属性: text(raw.施法属性),
-    描述: text(raw.描述),
-    风味描述: text(raw.风味描述),
+    特性: namedFeatures(raw.描述),
+    简介: text(raw.简介 || raw.风味描述),
   };
   if (kindFor(type) === "ancestry") return {
     名称: text(raw.名称),
@@ -134,7 +133,7 @@ function normalizedFields(raw: JsonObject): JsonObject {
     类型: text(raw.资源类型 || type || "社群"),
     简介: text(raw.简介),
     性格: text(raw.性格 || raw.特性),
-    特性: namedFeature(raw.描述),
+    特性: namedFeatures(raw.描述)[0] ?? { 特性名称: "", 特性原文: "", 特性描述: "" },
   };
   if (kindFor(type) === "domain") return {
     名称: text(raw.名称),
@@ -143,8 +142,8 @@ function normalizedFields(raw: JsonObject): JsonObject {
     等级: semanticCount(raw.等级),
     属性: text(raw.属性),
     回想: semanticCount(raw.回想),
-    描述: text(raw.描述),
-    风味描述: text(raw.风味描述),
+    特性描述: text(raw.描述),
+    简介: text(raw.简介 || raw.风味描述),
   };
   return { ...raw };
 }
@@ -156,8 +155,8 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
   if (resource.kind === "weapon") return {
     名称: resource.name, 类型: text(fields.类型 || "主武器"), 属性: text(fields.属性), 距离: text(fields.距离),
     伤害: text(fields.伤害), 双手: text(fields.负荷) === "双手", 伤害类型: text(fields.伤害类型),
-    特性名: text(fields.特性名), 特性原名: text(fields.特性原名), 特性描述: text(fields.特性描述),
-    风味描述: text(fields.风味描述), 位阶: text(fields.位阶),
+    特性名: text(fields.特性名称), 特性原名: text(fields.特性原文), 特性描述: text(fields.特性描述),
+    风味描述: text(fields.简介), 位阶: text(fields.位阶),
   };
   if (resource.kind === "armor") return {
     名称: resource.name,
@@ -165,17 +164,17 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     护甲值: text(fields.护甲值),
     重伤阈值: text(fields.重度伤害阈值),
     严重阈值: text(fields.严重伤害阈值),
-    特性名: text(fields.特性名),
-    特性原名: text(fields.特性原名),
+    特性名: text(fields.特性名称),
+    特性原名: text(fields.特性原文),
     特性描述: text(fields.特性描述),
-    风味描述: text(fields.风味描述),
+    风味描述: text(fields.简介),
     位阶: text(fields.位阶),
   };
   if (resource.kind === "class") return {
     名称: resource.name,
     类型: "主职",
     资源类型: text(fields.类型 || "职业"),
-    描述: text(fields.风味描述),
+    描述: text(fields.简介),
     领域: splitJoined(fields.领域).join("+"),
     初始生命点: text(fields.生命点),
     初始闪避值: text(fields.闪避值),
@@ -196,7 +195,7 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     等级: text(fields.等级),
     施法属性: text(fields.施法属性),
     描述: formatNamedFeatures(fields.特性),
-    风味描述: text(fields.风味描述),
+    风味描述: text(fields.简介),
   };
   if (resource.kind === "ancestry") return {
     名称: resource.name,
@@ -221,7 +220,8 @@ function crossFormat(resource: TemporaryResource): JsonObject | undefined {
     等级: Number(semanticCount(fields.等级)) || 0,
     属性: text(fields.属性),
     回想: Number(semanticCount(fields.回想)) || 0,
-    描述: text(fields.描述),
+    描述: text(fields.特性描述),
+    风味描述: text(fields.简介),
   };
   if (["ancestry", "community", "domain", "item", "free"].includes(resource.kind)) {
     return { 名称: resource.name, ...fields };

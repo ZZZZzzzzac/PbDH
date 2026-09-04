@@ -133,12 +133,12 @@ function freeFieldsFor(raw: JsonObject, type: string): JsonObject {
   return {
     名称: text(raw.name),
     类型: typeLabel || "自由",
+    简介: description,
     内容: [
-      ...(description ? [{ 标题: "简介", 正文: description }] : []),
       ...(freeFields[type] ?? []).map(({ field, title, itemFields }) => ({
-        标题: title,
-        正文: freeFieldBody(raw[field], itemFields),
-      })).filter((block) => block.正文),
+        名称: title,
+        描述: freeFieldBody(raw[field], itemFields),
+      })).filter((block) => block.描述),
     ],
   };
 }
@@ -167,7 +167,7 @@ function fieldsFor(raw: JsonObject): JsonObject {
   const common: JsonObject = {
     名称: text(raw.name),
     类型: type,
-    描述: text(raw.description),
+    简介: text(raw.description),
     创作者: text(raw.creator),
     所有者: text(raw.owner),
   };
@@ -181,7 +181,9 @@ function fieldsFor(raw: JsonObject): JsonObject {
       特性: Array.isArray(raw.features) ? raw.features.map((value) => {
         const item = isObject(value) ? value : {};
         return {
-          名称: text(item.name),
+          特性名称: text(item.name),
+          特性原文: "",
+          特性类型: text(item.type || "被动"),
           触发: text(item.trigger),
           选择: text(item.choice),
           特性描述: text(item.effect),
@@ -201,8 +203,8 @@ function fieldsFor(raw: JsonObject): JsonObject {
       特性: Array.isArray(raw.features) ? raw.features.map((value) => {
         const feature = isObject(value) ? value : {};
         return {
-          名称: text(feature.name), 类型: text(feature.type),
-          描述: text(feature.description), 引导问题: text(feature.guidingQuestion),
+          特性名称: text(feature.name), 特性原文: "", 特性类型: text(feature.type),
+          特性描述: text(feature.description), 引导问题: text(feature.guidingQuestion),
         };
       }) : [],
     };
@@ -216,9 +218,10 @@ function fieldsFor(raw: JsonObject): JsonObject {
       伤害: text(raw.damage),
       负荷: text(raw.burden),
       伤害类型: text(raw.damageType),
-      特性名: "",
+      特性名称: "",
+      特性原文: "",
       特性描述: text(raw.feature),
-      风味描述: text(raw.description),
+      简介: text(raw.description),
       位阶: text(raw.tier),
     };
   }
@@ -229,9 +232,10 @@ function fieldsFor(raw: JsonObject): JsonObject {
       护甲值: text(raw.score),
       重度伤害阈值: text(raw.majorThreshold),
       严重伤害阈值: text(raw.severeThreshold),
-      特性名: "",
+      特性名称: "",
+      特性原文: "",
       特性描述: text(raw.feature),
-      风味描述: text(raw.description),
+      简介: text(raw.description),
       位阶: text(raw.tier),
     };
   }
@@ -240,14 +244,14 @@ function fieldsFor(raw: JsonObject): JsonObject {
       ...common,
       类型: type === "consumable" ? "消耗品" : "物品",
       掷骰: text(raw.roll),
-      描述: text(type === "consumable" ? raw.effect : raw.feature),
-      风味描述: text(raw.description),
+      特性描述: text(type === "consumable" ? raw.effect : raw.feature),
+      简介: text(raw.description),
     };
   }
   if (type === "class") {
     return {
       名称: text(raw.name),
-      风味描述: text(raw.description),
+      简介: text(raw.description),
       领域: [text(raw.domain1), text(raw.domain2)].filter(Boolean),
       生命点: text(raw.hp),
       闪避值: text(raw.evasion),
@@ -267,9 +271,9 @@ function fieldsFor(raw: JsonObject): JsonObject {
       原文: "",
       简介: text(raw.description),
       特性: [
-        { 名称: text(raw.feature1Name), 原名: "", 描述: text(raw.feature1Desc) },
-        { 名称: text(raw.feature2Name), 原名: "", 描述: text(raw.feature2Desc) },
-      ].filter((feature) => feature.名称 || feature.描述),
+        { 特性名称: text(raw.feature1Name), 特性原文: "", 特性描述: text(raw.feature1Desc) },
+        { 特性名称: text(raw.feature2Name), 特性原文: "", 特性描述: text(raw.feature2Desc) },
+      ].filter((feature) => feature.特性名称 || feature.特性描述),
     };
   }
   if (type === "community") {
@@ -277,7 +281,7 @@ function fieldsFor(raw: JsonObject): JsonObject {
       名称: text(raw.name),
       简介: text(raw.description),
       性格: text(raw.demeanor),
-      特性: { 名称: text(raw.featureName), 描述: text(raw.featureDesc) },
+      特性: { 特性名称: text(raw.featureName), 特性原文: "", 特性描述: text(raw.featureDesc) },
     };
   }
   if (type === "domain") {
@@ -287,8 +291,8 @@ function fieldsFor(raw: JsonObject): JsonObject {
       等级: semanticCount(raw.level),
       属性: text(raw.category),
       回想: semanticCount(raw.recallCost),
-      描述: text(raw.ability),
-      风味描述: text(raw.description),
+      特性描述: text(raw.ability),
+      简介: text(raw.description),
     };
   }
   return { ...raw };
@@ -307,8 +311,8 @@ function subclassResources(raw: JsonObject, name: string): TemporaryResource[] {
       主职: text(raw.baseClass),
       等级: level,
       施法属性: text(raw.spellcastingAttribute),
-      描述: text(raw[field]),
-      风味描述: text(raw.description),
+      特性: namedFeatures(raw[field]),
+      简介: text(raw.description),
     },
     source: { formatId: "kid", upstreamRevision, path: `/${field}`, raw },
   }));
@@ -342,9 +346,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
   const base = {
     id: resource.sourceId,
     name: resource.name,
-    description: resource.kind === "weapon" || resource.kind === "armor" || resource.kind === "item"
-      ? text(fields.风味描述)
-      : text(fields.风味描述 || fields.描述 || fields.简介),
+    description: text(fields.简介),
     creator,
     owner,
   };
@@ -371,7 +373,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     return {
       ...base,
       type: consumable ? "consumable" : "loot",
-      [consumable ? "effect" : "feature"]: text(fields.描述),
+      [consumable ? "effect" : "feature"]: text(fields.特性描述),
     };
   }
   if (resource.kind === "class") {
@@ -394,10 +396,10 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
       ...base,
       type: "ancestry",
       description: text(fields.简介),
-      feature1Name: text(features[0]?.名称),
-      feature1Desc: text(features[0]?.描述),
-      feature2Name: text(features[1]?.名称),
-      feature2Desc: text(features[1]?.描述),
+      feature1Name: text(features[0]?.特性名称),
+      feature1Desc: text(features[0]?.特性描述),
+      feature2Name: text(features[1]?.特性名称),
+      feature2Desc: text(features[1]?.特性描述),
     };
   }
   if (resource.kind === "community") {
@@ -407,19 +409,19 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
       type: "community",
       description: text(fields.简介),
       demeanor: text(fields.性格),
-      featureName: text(feature.名称),
-      featureDesc: text(feature.描述),
+      featureName: text(feature.特性名称),
+      featureDesc: text(feature.特性描述),
     };
   }
   if (resource.kind === "domain") return {
     ...base,
     type: "domain",
-    description: text(fields.风味描述),
+    description: text(fields.简介),
     domainName: text(fields.领域),
     level: semanticCount(fields.等级),
     category: text(fields.属性),
     recallCost: semanticCount(fields.回想),
-    ability: text(fields.描述),
+    ability: text(fields.特性描述),
   };
   if (resource.kind === "adversary") return {
     ...base,
@@ -429,7 +431,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     features: Array.isArray(fields.特性) ? fields.特性.map((value) => {
       const item = isObject(value) ? value : {};
       return {
-        name: text(item.名称),
+        name: text(item.特性名称),
         choice: text(item.选择),
         trigger: text(item.触发),
         effect: text(item.特性描述),
@@ -447,8 +449,8 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
     features: Array.isArray(fields.特性) ? fields.特性.map((value) => {
       const feature = isObject(value) ? value : {};
       return {
-        name: text(feature.名称), type: text(feature.类型),
-        description: text(feature.描述), guidingQuestion: text(feature.引导问题),
+        name: text(feature.特性名称), type: text(feature.特性类型),
+        description: text(feature.特性描述), guidingQuestion: text(feature.引导问题),
       };
     }) : [],
   };
@@ -461,7 +463,7 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
 }
 
 function formatEquipmentFeature(fields: JsonObject): string {
-  const name = text(fields.特性名).trim();
+  const name = text(fields.特性名称).trim();
   const description = text(fields.特性描述).trim();
   return name && description ? `${name}：${description}` : name || description;
 }
@@ -492,7 +494,7 @@ function subclassToKid(resources: TemporaryResource[], options: ExportOptions): 
     id: text(native.id) || first.sourceId,
     type: "subclass",
     name,
-    description: text(resources.find((resource) => text(resource.fields.风味描述))?.fields.风味描述),
+    description: text(resources.find((resource) => text(resource.fields.简介))?.fields.简介),
     creator,
     owner,
     baseClass: mainClass,

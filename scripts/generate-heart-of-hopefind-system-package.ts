@@ -45,7 +45,7 @@ const generatedPresetPath = path.resolve("apps/player/src/heart-of-hopefind-pres
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a04186-51be-74e1-b94f-ec17d354dc00";
 const resourcePackageId = "01a04186-51bf-7c26-8c27-2f7147125243";
-const resourcePackageVersion = "1.0.0";
+const resourcePackageVersion = "1.0.1";
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
@@ -64,12 +64,10 @@ const resources: ResourcePackageLogicalDocument["resources"] = sourceEntries.map
   const data = {
     名称: entry.名称,
     类型: "求生者风格",
+    简介: entry.简介,
     内容: [
-      { 标题: "简介", 正文: entry.简介 },
-      { 标题: "第一特性名称", 正文: entry.第一特性名称 },
-      { 标题: "第一特性规则", 正文: entry.第一特性规则 },
-      { 标题: "第二特性名称", 正文: entry.第二特性名称 },
-      { 标题: "第二特性规则", 正文: entry.第二特性规则 },
+      { 名称: entry.第一特性名称, 描述: entry.第一特性规则 },
+      { 名称: entry.第二特性名称, 描述: entry.第二特性规则 },
     ],
   };
   if (!validateFreeTemplate(data)) {

@@ -2,8 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { normalizeProfessionData, professionTemplate, type ProfessionData } from "../../../core/index.ts";
-import { referenceCardStyles } from "../../reference-card/renderer-factory.tsx";
+import { professionTemplate, type ProfessionData } from "../../../core/index.ts";
 
 const scale = .175;
 
@@ -32,8 +31,7 @@ function ProfessionCard({ data, mode, portrait, attribution }: {
   portrait?: string;
   attribution: { artworkCredit: string; sourceLabel: string };
 }) {
-  data = normalizeProfessionData(data);
-  const features = data.特性.filter((feature) => present(feature.名称) || present(feature.原名) || present(feature.特性描述));
+  const features = data.特性.filter((feature) => present(feature.特性名称) || present(feature.特性原文) || present(feature.特性描述));
   const hope = data.希望特性;
   const attributes = Object.entries(data.推荐初始属性).filter(([, score]) => present(score));
   const equipment = [data.推荐初始武器, data.推荐初始护甲].filter(present).join(" + ");
@@ -61,8 +59,8 @@ function ProfessionCard({ data, mode, portrait, attribution }: {
       </header>
     </div>
     <div className="reference-card-body">
-      {(present(hope.名称) || present(hope.原名) || present(hope.特性描述) || present(data.生命点) || present(data.闪避值)) ? <div className="profession-card-core">
-        {(present(hope.名称) || present(hope.原名) || present(hope.特性描述)) ? <section className="profession-card-hope"><h2><span>{hope.名称 || "希望特性"}</span>{present(hope.原名) ? <small>{hope.原名}</small> : null}</h2>{present(hope.特性描述) ? <RestrictedMarkdown value={hope.特性描述} /> : null}</section> : null}
+      {(present(hope.特性名称) || present(hope.特性原文) || present(hope.特性描述) || present(data.生命点) || present(data.闪避值)) ? <div className="profession-card-core">
+        {(present(hope.特性名称) || present(hope.特性原文) || present(hope.特性描述)) ? <section className="profession-card-hope"><h2><span>{hope.特性名称 || "希望特性"}</span>{present(hope.特性原文) ? <small>{hope.特性原文}</small> : null}</h2>{present(hope.特性描述) ? <RestrictedMarkdown value={hope.特性描述} /> : null}</section> : null}
         {(present(data.生命点) || present(data.闪避值)) ? <section className="profession-card-vitals" aria-label="职业数据">
           {present(data.生命点) ? <div><b>{data.生命点}</b><span>生命</span></div> : null}
           {present(data.闪避值) ? <div><b>{data.闪避值}</b><span>闪避</span></div> : null}
@@ -70,12 +68,12 @@ function ProfessionCard({ data, mode, portrait, attribution }: {
       </div> : null}
       {features.length > 0 ? <section className="profession-card-features" aria-label="职业特性">
         <h2>职业特性 <small>CLASS FEATURES</small></h2>
-        {features.map((feature, index) => <article className="reference-card-section" key={`${feature.名称}-${index}`}>
-          {(present(feature.名称) || present(feature.原名)) ? <h3><span>{feature.名称 || "未命名特性"}</span>{present(feature.原名) ? <small>{feature.原名}</small> : null}</h3> : null}
+        {features.map((feature, index) => <article className="reference-card-section" key={`${feature.特性名称}-${index}`}>
+          {(present(feature.特性名称) || present(feature.特性原文)) ? <h3><span>{feature.特性名称 || "未命名特性"}</span>{present(feature.特性原文) ? <small>{feature.特性原文}</small> : null}</h3> : null}
           {present(feature.特性描述) ? <RestrictedMarkdown value={feature.特性描述} /> : null}
         </article>)}
       </section> : null}
-      {present(data.风味描述) ? <section className="reference-card-section profession-card-description"><h2>风味描述</h2><RestrictedMarkdown value={data.风味描述} /></section> : null}
+      {present(data.简介) ? <section className="reference-card-section profession-card-description"><h2>简介</h2><RestrictedMarkdown value={data.简介} /></section> : null}
       {hasCreation ? <section className="reference-card-section profession-card-creation"><h2>创建配置</h2>
         {attributes.length > 0 ? <div className="profession-card-attributes" aria-label="推荐初始属性" style={{ "--profession-attribute-count": attributes.length } as CSSProperties}>
           <div className="profession-card-attribute-names">{attributes.map(([name], index) => <span key={`${name}-${index}`}>{name}</span>)}</div>
@@ -91,7 +89,11 @@ function ProfessionCard({ data, mode, portrait, attribution }: {
   </article>}</ProfessionFrame>;
 }
 
-export const professionRendererStyles = referenceCardStyles + `
+const professionBaseStyles = `
+.reference-card-frame{position:relative;width:63px;overflow:hidden}.reference-card-frame.is-fluid{overflow:visible}.reference-card{box-sizing:border-box;position:absolute;inset:0 auto auto 0;width:360px;min-height:568px;transform:scale(.175);transform-origin:top left;display:flex;flex-direction:column;border:3px solid #21150f;background:#eee4d0;color:#1d1713;font-family:"Noto Sans SC",sans-serif}.reference-card *{box-sizing:border-box}.reference-card-art{position:relative;flex:none;min-height:96px;overflow:hidden;background:#251a14;border-bottom:3px solid #b88a57}.reference-card.is-text .reference-card-art{min-height:0}.reference-card-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.62}.reference-card-art:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,#1d1310e8)}.reference-card-header{position:relative;z-index:1;padding:15px;color:#fff4df}.reference-card-title{min-width:0;margin:0;font:900 var(--reference-card-title-font-size,32px)/1.05 Georgia,"Noto Serif SC",serif}.reference-card-original-title{color:#d6bea0;font-size:11px}.reference-card-meta{display:flex;gap:8px}.reference-card-meta span{color:#e6c99f;font-size:11px}.reference-card-body{min-height:0;flex:1;display:flex;flex-direction:column}.reference-card-section{padding:10px;border:1px solid #c4a477;background:#f8f0df;font-size:15px;line-height:1.45}.reference-card-section h2{margin:0 0 6px;color:#641f1d}.reference-card-art.is-image-only{height:568px;border:0}.reference-card-art.is-image-only img{position:static;width:100%;height:100%;object-fit:cover}.reference-card-image-missing{height:100%;display:grid;place-items:center;color:#d8c4a5}
+`;
+
+export const professionRendererStyles = professionBaseStyles + `
 [data-template-id="职业"].profession-card{height:auto;overflow:visible}
 [data-template-id="职业"] .reference-card-art{background:#251713;border-bottom-color:#b78a4f}
 [data-template-id="职业"] .profession-card-header-columns{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:16px}

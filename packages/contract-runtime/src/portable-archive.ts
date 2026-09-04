@@ -15,7 +15,7 @@ import type {
 const FAMILY = "resource-package";
 const VERSION = "1.0.0";
 const ROOT_PATH = "package.json";
-const MAX_ENTRIES = 1024;
+const MAX_ENTRIES = 2048;
 const MAX_PATH_BYTES = 512;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const MAX_EXPANDED_BYTES = 64 * 1024 * 1024;

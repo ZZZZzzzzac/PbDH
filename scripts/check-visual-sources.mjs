@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ignoredDirectories = new Set([".git", ".pytest_cache", ".venv", "dist", "node_modules"]);
+const ignoredDirectories = new Set([".git", ".pytest_cache", ".scratch", ".venv", "dist", "node_modules"]);
 const forbiddenFiles = [];
 
 function visit(directory) {

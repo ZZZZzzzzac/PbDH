@@ -70,7 +70,7 @@ describe("shared Restricted Markdown", () => {
         data: {
           ...communityTemplate.defaultData,
           名称: "海港居民",
-          特性: { 名称: "潮起潮落", 描述: ":blue[**保持冷静**]，然后前进。" },
+          特性: { 特性名称: "潮起潮落", 特性描述: ":blue[**保持冷静**]，然后前进。" },
         },
         media: {},
       },
@@ -85,7 +85,7 @@ describe("shared Restricted Markdown", () => {
         data: {
           ...armorTemplate.defaultData,
           名称: "测试护甲",
-          特性名: ":red[**燃烧**]",
+          特性名称: ":red[**燃烧**]",
           特性描述: "**标记 1 压力点**。",
         },
         media: {},

@@ -3,20 +3,21 @@
   "$id": "https://pbdh.dev/templates/%E8%87%AA%E7%94%B1/1.0.0/schema.json",
   "title": "自由 Template Data",
   "type": "object",
-  "required": ["名称", "类型", "内容"],
+  "required": ["名称", "类型", "简介", "内容"],
   "properties": {
     "名称": { "type": "string" },
     "原文": { "type": "string" },
     "类型": { "type": "string" },
+    "简介": { "type": "string" },
     "内容": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["标题", "正文"],
+        "required": ["名称", "描述"],
         "properties": {
-          "标题": { "type": "string" },
-          "原名": { "type": "string" },
-          "正文": { "type": "string" }
+          "名称": { "type": "string" },
+          "原文": { "type": "string" },
+          "描述": { "type": "string" }
         },
         "additionalProperties": false
       }

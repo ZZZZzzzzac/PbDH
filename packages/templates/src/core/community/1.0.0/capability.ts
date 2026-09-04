@@ -4,10 +4,10 @@ import { deepFreeze, type TemplateCoreCapability } from "../../types.ts";
 
 export type CommunityData = {
   名称: string; 原文?: string; 类型: string; 简介: string; 性格: string;
-  特性: { 名称: string; 原名?: string; 描述: string };
+  特性: { 特性名称: string; 特性原文?: string; 特性描述: string };
 };
 
-const defaultData: CommunityData = { 名称: "", 原文: "", 类型: "社群", 简介: "", 性格: "", 特性: { 名称: "", 原名: "", 描述: "" } };
+const defaultData: CommunityData = { 名称: "", 原文: "", 类型: "社群", 简介: "", 性格: "", 特性: { 特性名称: "", 特性原文: "", 特性描述: "" } };
 
 function normalize(value: unknown): string {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
@@ -16,7 +16,7 @@ function normalize(value: unknown): string {
 export const communityTemplate = deepFreeze<TemplateCoreCapability<CommunityData>>({
   id: "社群",
   version: "1.0.0",
-  state: "development",
+  state: "published",
   schema,
   defaultData,
   proposeResourceId(data) {
@@ -24,8 +24,8 @@ export const communityTemplate = deepFreeze<TemplateCoreCapability<CommunityData
   },
   project(data) {
     const title = normalize(data.名称 || "未命名社群");
-    const summary = [data.性格, data.特性.名称].map(normalize).filter(Boolean).join(" · ");
-    const searchText = [data.名称, data.原文, data.类型, data.简介, data.性格, data.特性.名称, data.特性.原名, data.特性.描述]
+    const summary = [data.性格, data.特性.特性名称].map(normalize).filter(Boolean).join(" · ");
+    const searchText = [data.名称, data.原文, data.类型, data.简介, data.性格, data.特性.特性名称, data.特性.特性原文, data.特性.特性描述]
       .map(normalize).filter(Boolean).join(" ");
     return { title, summary, searchText };
   },

@@ -14,11 +14,11 @@
       "maxItems": 2,
       "items": {
         "type": "object",
-        "required": ["名称", "描述"],
+        "required": ["特性名称", "特性描述"],
         "properties": {
-          "名称": { "type": "string" },
-          "原名": { "type": "string" },
-          "描述": { "type": "string" }
+          "特性名称": { "type": "string" },
+          "特性原文": { "type": "string" },
+          "特性描述": { "type": "string" }
         },
         "additionalProperties": false
       }

@@ -58,21 +58,19 @@ describe("Daggerheart Core 稳定参考卡面", () => {
     if (result.status !== "ready") throw new Error("Expected ready Surface");
     const markup = renderToStaticMarkup(result.renderer.render(result.renderInput));
 
-    expect(markup).toMatch(/<div class="reference-card-split-header"><div class="reference-card-header-main"><h1 class="reference-card-title"[^>]*>风笛哨<\/h1><p class="reference-card-original-title">Whistle<\/p><\/div><div class="reference-card-header-side"><div class="reference-card-kicker">物品<\/div><div class="reference-card-header-value">04<\/div><\/div><\/div>/u);
-    expect(renderer.styles).toContain(".reference-card-split-header{display:grid;grid-template-columns:minmax(0,1fr) 72px");
-    expect(renderer.styles).toContain(".reference-card-header-main,.reference-card-header-side{display:flex;flex-direction:column}");
-    expect(renderer.styles).not.toContain(".reference-card-split-header{border");
+    expect(markup).toMatch(/<header class="item-card-header"><div><h1 class="item-card-title"[^>]*>风笛哨<\/h1><p class="item-card-original">Whistle<\/p><\/div><div class="item-card-side"><div class="item-card-type">物品<\/div><div class="item-card-roll">04<\/div><\/div><\/header>/u);
+    expect(renderer.styles).toContain(".item-card-header{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto");
     expect(markup).not.toContain("掷骰：");
     expect(markup).not.toContain("掷骰:");
-    expect(markup).not.toContain("reference-card-stats");
+    expect(markup).not.toContain("item-card-stats");
 
     const withoutEnglish = renderer.render({
       ...result.renderInput,
       data: { ...result.renderInput.data, 原文: "   " },
     });
     const withoutEnglishMarkup = renderToStaticMarkup(withoutEnglish);
-    expect(withoutEnglishMarkup).toMatch(/<div class="reference-card-header-main"><h1[^>]*>风笛哨<\/h1><\/div>/u);
-    expect(withoutEnglishMarkup).not.toContain("reference-card-original-title");
+    expect(withoutEnglishMarkup).toMatch(/<header class="item-card-header"><div><h1[^>]*>风笛哨<\/h1><\/div>/u);
+    expect(withoutEnglishMarkup).not.toContain("item-card-original");
   });
 
   test("领域卡标题只保留名称类型与英文，四项字段位于正文", () => {
@@ -87,8 +85,8 @@ describe("Daggerheart Core 稳定参考卡面", () => {
         等级: "1",
         属性: "法术",
         回想: "3⚡",
-        描述: "造成法术伤害。",
-        风味描述: "将奥术压缩成一瞬间的耀光。",
+        特性描述: "造成法术伤害。",
+        简介: "将奥术压缩成一瞬间的耀光。",
       },
       state: {},
       assets: {},
@@ -96,13 +94,13 @@ describe("Daggerheart Core 稳定参考卡面", () => {
       attribution: { artworkCredit: "", sourceLabel: "" },
     }));
 
-    expect(markup).toMatch(/<div class="reference-card-title-row"><h1[^>]*>破坏轰击<\/h1><div class="reference-card-kicker">领域卡<\/div><\/div><p class="reference-card-original-title">Arcane Barrage<\/p>/u);
-    expect(markup).not.toContain("reference-card-meta");
-    expect(markup).toMatch(/<section class="reference-card-stats"[^>]*>.*<b>奥术<\/b><span>领域<\/span>.*<b>1级<\/b><span>等级<\/span>.*<b>法术<\/b><span>属性<\/span>.*<b>3<\/b><span>回想<\/span>/u);
+    expect(markup).toMatch(/<div class="domain-card-title-row"><h1[^>]*>破坏轰击<\/h1><span class="domain-card-type">领域卡<\/span><\/div><p class="domain-card-original">Arcane Barrage<\/p>/u);
+    expect(markup).not.toContain("domain-card-meta");
+    expect(markup).toMatch(/<section class="domain-card-stats"[^>]*>.*<b>奥术<\/b><span>领域<\/span>.*<b>1级<\/b><span>等级<\/span>.*<b>法术<\/b><span>属性<\/span>.*<b>3<\/b><span>回想<\/span>/u);
     expect(markup).not.toContain("⚡");
     expect(markup).not.toContain(">能力<");
-    expect(renderer.styles).toContain('[data-template-id="领域卡"] .reference-card-stats{grid-template-columns:repeat(4');
-    expect(renderer.styles).toContain('[data-template-id="领域卡"] .reference-card-flavor{flex:none;margin-top:auto}');
+    expect(renderer.styles).toContain(".domain-card-stats{display:grid;grid-template-columns:repeat(4");
+    expect(renderer.styles).toContain(".domain-card-summary{flex:none;margin-top:auto");
   });
 
   test("职业卡以非固定比例完整渲染资料和结构化特性组", () => {
@@ -112,12 +110,12 @@ describe("Daggerheart Core 稳定参考卡面", () => {
         ...professionTemplate.defaultData,
         名称: "战士",
         原文: "Warrior",
-        风味描述: "投入一生磨炼武器与战斗技艺。",
+        简介: "投入一生磨炼武器与战斗技艺。",
         领域: ["利刃", "骸骨"],
         生命点: "6",
         闪避值: "11",
-        希望特性: { 名称: "绝不手软", 原名: "No Mercy", 特性描述: "花费希望点，攻击掷骰获得加值。" },
-        特性: [{ 名称: "借机攻击", 原名: "Attack of Opportunity", 特性描述: "阻止敌人离开。" }],
+        希望特性: { 特性名称: "绝不手软", 特性原文: "No Mercy", 特性描述: "花费希望点，攻击掷骰获得加值。" },
+        特性: [{ 特性名称: "借机攻击", 特性原文: "Attack of Opportunity", 特性描述: "阻止敌人离开。" }],
         推荐初始属性: { 敏捷: "+2", 力量: "+1", 灵巧: "+0", 本能: "+1", 风度: "-1", 知识: "+0" },
         推荐初始武器: "长剑",
         推荐初始护甲: "链甲",
@@ -175,9 +173,9 @@ describe("Daggerheart Core 稳定参考卡面", () => {
         领域: ["利刃"],
         生命点: "5",
         闪避值: "10",
-        希望特性: { 名称: "保持希望", 原名: "", 特性描述: "保持希望。" },
-        特性: [{ 名称: "专注", 特性描述: "保持阵线。" }],
-        风味描述: " ",
+        希望特性: { 特性名称: "保持希望", 特性原文: "", 特性描述: "保持希望。" },
+        特性: [{ 特性名称: "专注", 特性描述: "保持阵线。" }],
+        简介: " ",
         职业物品: "",
         背景问题: ["", "  "],
         关系问题: [],
@@ -188,7 +186,7 @@ describe("Daggerheart Core 稳定参考卡面", () => {
       attribution: { artworkCredit: "", sourceLabel: "" },
     }));
 
-    for (const hidden of ["风味描述", "创建配置", "职业物品", "背景问题", "关系问题"]) {
+    for (const hidden of ["简介", "创建配置", "职业物品", "背景问题", "关系问题"]) {
       expect(markup).not.toContain(hidden);
     }
     expect(markup).toMatch(/<div class="profession-card-identity"><h1[^>]*>极简职业<\/h1><\/div>/u);
@@ -205,7 +203,7 @@ describe("Daggerheart Core 稳定参考卡面", () => {
         主职: "吟游诗人",
         等级: "基础",
         施法属性: "风度",
-        特性: [{ 名称: "激昂演说", 原名: "Rousing Speech", 特性描述: "为盟友清除压力。" }],
+        特性: [{ 特性名称: "激昂演说", 特性原文: "Rousing Speech", 特性描述: "为盟友清除压力。" }],
       },
       state: {},
       assets: {},
@@ -213,15 +211,15 @@ describe("Daggerheart Core 稳定参考卡面", () => {
       attribution: { artworkCredit: "", sourceLabel: "" },
     }));
 
-    expect(markup).not.toContain("reference-card-meta");
-    expect(markup).toMatch(/<section class="reference-card-stats"[^>]*>.*<b>吟游诗人<\/b><span>主职<\/span>.*<b>基础<\/b><span>阶段<\/span>.*<b>风度<\/b><span>施法属性<\/span>/u);
-    expect(markup).toMatch(/<span class="reference-card-section-title">激昂演说<\/span><small>Rousing Speech<\/small>/u);
-    expect(renderer.styles).toContain('[data-template-id="子职业"] .reference-card-stat b{font-size:17px');
-    expect(renderer.styles).toContain('[data-template-id="子职业"] .reference-card-flavor{flex:none;margin-top:auto}');
+    expect(markup).not.toContain("subclass-card-meta");
+    expect(markup).toMatch(/<section class="subclass-card-stats"[^>]*>.*<b>吟游诗人<\/b><span>主职<\/span>.*<b>基础<\/b><span>阶段<\/span>.*<b>风度<\/b><span>施法属性<\/span>/u);
+    expect(markup).toMatch(/<h2><span>激昂演说<\/span><small>Rousing Speech<\/small><\/h2>/u);
+    expect(renderer.styles).toContain(".subclass-card-stat b{color:#641f1d;font-size:17px");
+    expect(renderer.styles).toContain(".subclass-card-summary{flex:none;margin-top:auto");
   });
 
   test("拒绝旧版和未知模板", () => {
     expect(stableReferenceRendererFor("种族", "0.9.0")).toBeUndefined();
-    expect(stableReferenceRendererFor("环境", "1.0.0")).toBeUndefined();
+    expect(stableReferenceRendererFor("未知模板", "1.0.0")).toBeUndefined();
   });
 });
