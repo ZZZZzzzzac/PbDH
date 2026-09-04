@@ -25,6 +25,11 @@ export type TabletopReplacement = {
   label: string;
 };
 
+export type TemplateUpgrade = {
+  fromVersion: string;
+  upgradeData: (data: Readonly<Record<string, unknown>>) => Record<string, unknown>;
+};
+
 export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
   id: string;
   version: string;
@@ -39,6 +44,7 @@ export type TemplateCoreCapability<TData extends Record<string, unknown>> = {
     fixedRatio: boolean;
   };
   rendererRevision: string;
+  upgrades?: readonly TemplateUpgrade[];
   tabletop: {
     stateSchema: Record<string, unknown>;
     defaultState: (data: TData) => Record<string, string>;

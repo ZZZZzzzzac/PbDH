@@ -1,9 +1,10 @@
-import { Component, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Component, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
   prepareCanonicalSurface,
   canonicalCardDesignSize,
+  usesFixedSurfaceRatio,
   type ManagedAsset,
   type RendererRevisionCapability,
   type SurfaceResource,
@@ -228,15 +229,17 @@ export function CardDisplay({
   children: ReactNode;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const safeWidth = Number.isFinite(designWidth) && designWidth > 0
     ? designWidth
     : canonicalCardDesignSize.width;
+  const [measuredHeight, setMeasuredHeight] = useState(designHeight);
   const safeHeight = fixedRatio
     ? canonicalCardDesignSize.height
-    : (Number.isFinite(designHeight) && designHeight > 0
-        ? designHeight
+    : (Number.isFinite(measuredHeight) && measuredHeight > 0
+        ? measuredHeight
         : canonicalCardDesignSize.height);
-  const safeDisplayAspectRatio = Number.isFinite(displayAspectRatio) && Number(displayAspectRatio) > 0
+  const safeDisplayAspectRatio = fixedRatio && Number.isFinite(displayAspectRatio) && Number(displayAspectRatio) > 0
     ? Number(displayAspectRatio)
     : safeWidth / safeHeight;
   const [scale, setScale] = useState(1);
@@ -256,12 +259,26 @@ export function CardDisplay({
     return () => observer.disconnect();
   }, [fit, safeHeight, safeWidth]);
 
+  useLayoutEffect(() => {
+    if (fixedRatio) {
+      setMeasuredHeight(canonicalCardDesignSize.height);
+      return;
+    }
+    const content = innerRef.current?.firstElementChild as HTMLElement | null;
+    if (!content) return;
+    const update = () => setMeasuredHeight(Math.max(content.offsetHeight, content.scrollHeight, designHeight));
+    const observer = new ResizeObserver(update);
+    observer.observe(content);
+    update();
+    return () => observer.disconnect();
+  }, [children, designHeight, fixedRatio]);
+
   return <div
     ref={frameRef}
     data-pbdh-card-display=""
     style={{ position: "relative", width: displayWidth, aspectRatio: safeDisplayAspectRatio, overflow: "hidden" }}
   >
-    <div data-pbdh-card-display-inner="" style={{
+    <div ref={innerRef} data-pbdh-card-display-inner="" style={{
       position: "absolute",
       left: "50%",
       top: "50%",
@@ -433,7 +450,7 @@ export function CanonicalCardSurface<TData, TState>(
     setShadowRoot(hostRef.current.shadowRoot ?? hostRef.current.attachShadow({ mode: "open" }));
   }, []);
 
-  const fixedRatio = props.resource.presentation.fixedRatio;
+  const fixedRatio = usesFixedSurfaceRatio(props.resource.presentation);
   const rendererResetKey = JSON.stringify([
     props.expectedRendererRevision,
     props.resource,

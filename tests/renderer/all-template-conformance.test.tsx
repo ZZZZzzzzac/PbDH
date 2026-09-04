@@ -8,6 +8,7 @@ import {
   ancestryTemplate,
   armorTemplate,
   communityTemplate,
+  currentTemplates,
   domainTemplate,
   environmentTemplate,
   freeTemplate,
@@ -116,12 +117,42 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
   test("未知 Template 或不支持的精确版本不会近似回退", () => {
     expect(trustedRendererFor("未知", "1.0.0")).toBeUndefined();
     expect(trustedRendererFor(adversaryTemplate.id, "2.0.0")).toBeUndefined();
-    expect(trustedRendererFor(weaponTemplate.id, "1.0.1")).toBeUndefined();
+    expect(trustedRendererFor(weaponTemplate.id, "1.0.2")).toBeUndefined();
   });
 
-  test("只有当前 Renderer 可以按精确 Template 版本按需加载", async () => {
+  test.each(currentTemplates)("$id@$version 图文模式按图片固有比例扩展固定正文", (template) => {
+    const renderer = trustedRendererFor(template.id, template.version);
+    expect(renderer).toBeDefined();
+    if (!renderer) throw new Error(`缺少 ${template.id}@${template.version} Renderer`);
+    const assetId = "sha256:portrait";
+    const resource: SurfaceResource<Record<string, unknown>> = {
+      template: { id: template.id, version: template.version },
+      presentation: { mode: "split", fixedRatio: true },
+      data: structuredClone(template.defaultData),
+      media: { portrait: assetId },
+    };
+    const result = prepareCanonicalSurface({
+      resource,
+      expectedRendererRevision: template.rendererRevision,
+      renderer,
+      assets: new Map([[assetId, { status: "ready", url: "asset://portrait" }]]),
+    });
+    expect(result.status).toBe("ready");
+    if (result.status !== "ready") throw new Error(JSON.stringify(result.diagnostics));
+    expect(result.designRatio).toBeNull();
+    expect(renderer.styles).toContain(".is-split");
+    expect(renderer.styles).toMatch(/object-fit:\s*contain/);
+    expect(renderer.styles).toContain("linear-gradient");
+    expect(renderer.styles).toContain("--split-fixed-native-height");
+    const markup = renderToStaticMarkup(renderer.render(result.renderInput));
+    expect(markup).toContain("asset://portrait");
+    expect(markup).toContain("has-fixed-base");
+  });
+
+  test("已保留和当前 Renderer 都可以按精确 Template 版本按需加载", async () => {
     expect(listLazyRendererBindings()).not.toContain("敌人@0.9.0");
     expect(listLazyRendererBindings()).toContain("敌人@1.0.0");
+    expect(listLazyRendererBindings()).toContain("敌人@1.0.1");
     await expect(loadTrustedRenderer("敌人", "0.9.0"))
       .resolves.toBeUndefined();
     await expect(loadTrustedRenderer("敌人", "2.0.0")).resolves.toBeUndefined();

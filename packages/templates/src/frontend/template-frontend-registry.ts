@@ -25,6 +25,28 @@ import { subclassRendererRevision } from "./subclass/1.0.0/renderer.tsx";
 import type { TemplateAuthoringCapability } from "./types.ts";
 import { weaponAuthoring } from "./weapon/1.0.0/authoring-editor.tsx";
 import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
+import { adversaryAuthoring as adversaryAuthoring101 } from "./adversary/1.0.1/authoring-editor.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision101 } from "./adversary/1.0.1/renderer.tsx";
+import { ancestryAuthoring as ancestryAuthoring101 } from "./ancestry/1.0.1/authoring-editor.tsx";
+import { ancestryRendererRevision as ancestryRendererRevision101 } from "./ancestry/1.0.1/renderer.tsx";
+import { armorAuthoring as armorAuthoring101 } from "./armor/1.0.1/authoring-editor.tsx";
+import { armorRendererRevision as armorRendererRevision101 } from "./armor/1.0.1/renderer.tsx";
+import { communityAuthoring as communityAuthoring101 } from "./community/1.0.1/authoring-editor.tsx";
+import { communityRendererRevision as communityRendererRevision101 } from "./community/1.0.1/renderer.tsx";
+import { domainAuthoring as domainAuthoring101 } from "./domain/1.0.1/authoring-editor.tsx";
+import { domainRendererRevision as domainRendererRevision101 } from "./domain/1.0.1/renderer.tsx";
+import { environmentAuthoring as environmentAuthoring101 } from "./environment/1.0.1/authoring-editor.tsx";
+import { environmentRendererRevision as environmentRendererRevision101 } from "./environment/1.0.1/renderer.tsx";
+import { freeAuthoring as freeAuthoring101 } from "./free/1.0.1/authoring-editor.tsx";
+import { freeRendererRevision as freeRendererRevision101 } from "./free/1.0.1/renderer.tsx";
+import { itemAuthoring as itemAuthoring101 } from "./item/1.0.1/authoring-editor.tsx";
+import { itemRendererRevision as itemRendererRevision101 } from "./item/1.0.1/renderer.tsx";
+import { professionAuthoring as professionAuthoring101 } from "./profession/1.0.1/authoring-editor.tsx";
+import { professionRendererRevision as professionRendererRevision101 } from "./profession/1.0.1/renderer.tsx";
+import { subclassAuthoring as subclassAuthoring101 } from "./subclass/1.0.1/authoring-editor.tsx";
+import { subclassRendererRevision as subclassRendererRevision101 } from "./subclass/1.0.1/renderer.tsx";
+import { weaponAuthoring as weaponAuthoring101 } from "./weapon/1.0.1/authoring-editor.tsx";
+import { weaponRendererRevision as weaponRendererRevision101 } from "./weapon/1.0.1/renderer.tsx";
 import { manifestEntryFor } from "./template-frontend-manifest.ts";
 
 export type TrustedTemplateRenderer = RendererRevisionCapability<any, any, ReactNode>;
@@ -50,6 +72,17 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(professionAuthoring, professionRendererRevision),
   binding(subclassAuthoring, subclassRendererRevision),
   binding(weaponAuthoring, weaponRendererRevision),
+  binding(adversaryAuthoring101, adversaryRendererRevision101),
+  binding(ancestryAuthoring101, ancestryRendererRevision101),
+  binding(armorAuthoring101, armorRendererRevision101),
+  binding(communityAuthoring101, communityRendererRevision101),
+  binding(domainAuthoring101, domainRendererRevision101),
+  binding(environmentAuthoring101, environmentRendererRevision101),
+  binding(freeAuthoring101, freeRendererRevision101),
+  binding(itemAuthoring101, itemRendererRevision101),
+  binding(professionAuthoring101, professionRendererRevision101),
+  binding(subclassAuthoring101, subclassRendererRevision101),
+  binding(weaponAuthoring101, weaponRendererRevision101),
 ];
 
 const frontendsByKey = new Map(supportedTemplateFrontends.map((frontend) => [

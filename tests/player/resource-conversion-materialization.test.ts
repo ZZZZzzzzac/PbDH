@@ -34,7 +34,7 @@ describe("Player third-party resource conversion", () => {
       version: (systemJson as SystemPackageDocument).package.version,
     }]);
     expect(result.candidate?.document.resources[0]).toMatchObject({
-      template: { id: "敌人", version: "1.0.0" },
+      template: { id: "敌人", version: "1.0.1" },
       data: { 名称: "夜巡者" },
       media: {},
     });
@@ -74,7 +74,7 @@ describe("Player third-party resource conversion", () => {
       code: "player.resource-conversion.unmapped",
     }));
     expect(result.candidate?.document.resources[0]).toMatchObject({
-      template: { id: "自由", version: "1.0.0" },
+      template: { id: "自由", version: "1.0.1" },
       data: {
         名称: "疯狂机制说明",
         类型: "疯狂",

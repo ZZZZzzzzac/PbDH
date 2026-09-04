@@ -1,5 +1,5 @@
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
-import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, usesFixedSurfaceRatio } from "@pbdh/resource-renderer/core";
 import { TabletopContextMenu } from "@pbdh/tabletop/react";
 import type { CSSProperties } from "react";
 import { maxCardIndicators, readCardIndicators, type CardInstance } from "../../domain/cardEngine";
@@ -107,7 +107,7 @@ export function CardDetailOverlay({
     <CardPreviewDialog
       designWidth={canonicalCardDesignSize.width}
       designHeight={canonicalCardDesignSize.height}
-      fixedRatio={definition?.resourceCopy?.presentation.fixedRatio ?? true}
+      fixedRatio={definition?.resourceCopy ? usesFixedSurfaceRatio(definition.resourceCopy.presentation) : true}
       label={`${name}详情`}
       onClose={onClose}
     >

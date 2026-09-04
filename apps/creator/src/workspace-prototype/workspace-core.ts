@@ -105,6 +105,45 @@ export function treeItemsInFolder(
   ], direction).map((item, order) => ({ ...item, order }));
 }
 
+export function workspaceTreeItemsByParent(
+  workspace: CreatorWorkspace,
+  direction: "ascending" | "descending" = "ascending",
+): ReadonlyMap<string | null, WorkspaceTreeItem[]> {
+  const itemsByParent = new Map<string | null, WorkspaceTreeItem[]>([[null, []]]);
+  const folderNameById = new Map(workspace.folders.map((folder) => [folder.id, folder.name]));
+  const resourceNameById = new Map(workspace.document.resources.map((resource) => [
+    resource.id,
+    resource.path.split("/").at(-1) ?? resource.id,
+  ]));
+  const add = (item: WorkspaceTreeItem) => {
+    const items = itemsByParent.get(item.parentId) ?? [];
+    items.push(item);
+    itemsByParent.set(item.parentId, items);
+  };
+
+  for (const folder of workspace.folders) {
+    add({ kind: "folder", id: folder.id, parentId: folder.parentId, order: folder.order });
+    if (!itemsByParent.has(folder.id)) itemsByParent.set(folder.id, []);
+  }
+  for (const location of workspace.resourceLocations) {
+    add({ kind: "resource", id: location.resourceId, parentId: location.parentId, order: location.order });
+  }
+
+  const label = (item: WorkspaceTreeItem) => item.kind === "folder"
+    ? folderNameById.get(item.id) ?? item.id
+    : resourceNameById.get(item.id) ?? item.id;
+  for (const [parentId, items] of itemsByParent) {
+    items.sort((left, right) => {
+      if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
+      const byLabel = label(left).localeCompare(label(right), "zh-CN", { numeric: true, sensitivity: "base" });
+      const byId = left.id.localeCompare(right.id);
+      return direction === "ascending" ? byLabel || byId : -(byLabel || byId);
+    });
+    itemsByParent.set(parentId, items.map((item, order) => ({ ...item, order })));
+  }
+  return itemsByParent;
+}
+
 export function uuidV7(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   let timestamp = BigInt(Date.now());
@@ -138,6 +177,19 @@ export function descendantWorkspaceFolderIds(workspace: CreatorWorkspace, folder
   return workspace.folders
     .filter((folder) => folder.parentId === folderId)
     .flatMap((folder) => [folder.id, ...descendantWorkspaceFolderIds(workspace, folder.id)]);
+}
+
+export function workspaceResourceCountByFolder(workspace: CreatorWorkspace): ReadonlyMap<string, number> {
+  const folderById = new Map(workspace.folders.map((folder) => [folder.id, folder]));
+  const counts = new Map(workspace.folders.map((folder) => [folder.id, 0]));
+  for (const location of workspace.resourceLocations) {
+    let folderId = location.parentId;
+    while (folderId) {
+      counts.set(folderId, (counts.get(folderId) ?? 0) + 1);
+      folderId = folderById.get(folderId)?.parentId ?? null;
+    }
+  }
+  return counts;
 }
 
 export function workspaceFolderPath(workspace: CreatorWorkspace, folderId: string | null): string {
@@ -248,7 +300,7 @@ function deriveWorkspaceLayout(document: ResourcePackageLogicalDocument): {
       if (!id) {
         id = `folder-${folderIdByPath.size + 1}`;
         folderIdByPath.set(currentPath, id);
-        folders.push({ id, name: segment, parentId, order: takeOrder(parentId), collapsed: false });
+        folders.push({ id, name: segment, parentId, order: takeOrder(parentId), collapsed: true });
       }
       parentId = id;
     }

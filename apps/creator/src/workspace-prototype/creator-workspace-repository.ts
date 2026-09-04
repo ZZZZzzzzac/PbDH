@@ -17,6 +17,7 @@ import {
   type WorkspaceResourceLocation,
 } from "./workspace-model.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
+import { upgradeCreatorTemplateCandidate } from "./creator-template-upgrade.ts";
 
 type CreatorWorkspacePayload = {
   version: 1;
@@ -96,9 +97,10 @@ export class CreatorWorkspaceRepository {
         continue;
       }
       const media = await this.#store.getMedia(envelope.assetIds);
+      const upgraded = await upgradeCreatorTemplateCandidate({ document: envelope.payload.document, media });
       workspaces.push({ workspace: createWorkspace({
-        document: envelope.payload.document,
-        media,
+        document: upgraded.document,
+        media: upgraded.media,
         folders: envelope.payload.folders,
         resourceLocations: envelope.payload.resourceLocations,
         openResourceIds: envelope.payload.openResourceIds,
@@ -165,9 +167,10 @@ export class CreatorWorkspaceRepository {
     if (diagnostics.some((item) => item.severity === "error")) {
       throw new Error(`云端 Creator Workspace 无效：${diagnostics[0]!.code}`);
     }
+    const upgraded = await upgradeCreatorTemplateCandidate({ document: remote.payload.document, media });
     const workspace = createWorkspace({
-      document: remote.payload.document,
-      media: new Map(media),
+      document: upgraded.document,
+      media: new Map(upgraded.media),
       folders: remote.payload.folders,
       resourceLocations: remote.payload.resourceLocations,
       openResourceIds: remote.payload.openResourceIds,

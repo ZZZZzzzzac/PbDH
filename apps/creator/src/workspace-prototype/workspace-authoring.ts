@@ -155,6 +155,7 @@ export function removePortrait(workspace: CreatorWorkspace, resourceId?: string)
   const resource = workspaceResource(next, resourceId);
   const removedAssetId = resource.media.portrait;
   delete resource.media.portrait;
+  resource.presentation.mode = "text";
   if (removedAssetId && !next.document.resources.some((candidate) =>
     Object.values(candidate.media).includes(removedAssetId))) {
     next.document.assets = next.document.assets.filter((asset) => asset.id !== removedAssetId);

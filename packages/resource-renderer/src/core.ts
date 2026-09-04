@@ -15,6 +15,10 @@ export type SurfacePresentation = {
   fixedRatio: boolean;
 };
 
+export function usesFixedSurfaceRatio(presentation: SurfacePresentation): boolean {
+  return presentation.fixedRatio && presentation.mode !== "split";
+}
+
 export type SurfaceAttribution = {
   artworkCredit: string;
   sourceLabel: string;
@@ -116,7 +120,7 @@ export function prepareCanonicalSurface<TData, TState, TOutput>(input: {
   const diagnostics: RendererDiagnostic[] = [];
   const presentation = input.resource.presentation;
   const attribution = input.resource.attribution ?? { artworkCredit: "", sourceLabel: "" };
-  const designRatio = presentation.fixedRatio ? canonicalCardDesignSize : null;
+  const designRatio = usesFixedSurfaceRatio(presentation) ? canonicalCardDesignSize : null;
   const validMode = presentation.mode === "text"
     || presentation.mode === "split"
     || presentation.mode === "image";

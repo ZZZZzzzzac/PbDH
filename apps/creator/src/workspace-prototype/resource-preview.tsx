@@ -38,18 +38,23 @@ export function AutoFitPreview({ children }: { children: ReactNode }) {
         (stage.clientWidth * 0.7) / width,
         (stage.clientHeight * 0.7) / referenceHeight,
       );
-      setLayout({
+      const next = {
         scale: Math.max(0, widthScale),
         displayWidth: width * widthScale,
         displayHeight: height * widthScale,
-      });
+      };
+      setLayout((current) => current.scale === next.scale
+        && current.displayWidth === next.displayWidth
+        && current.displayHeight === next.displayHeight
+        ? current
+        : next);
     };
     const observer = new ResizeObserver(fit);
     observer.observe(stage);
     observer.observe(card);
     fit();
     return () => observer.disconnect();
-  }, [children]);
+  }, []);
 
   return <div ref={stageRef} className="preview-stage">
     <div className="preview-stage-content">

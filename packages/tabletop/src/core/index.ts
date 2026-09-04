@@ -105,6 +105,7 @@ export type TabletopCommand =
       assets?: TabletopAsset[];
     }
   | { type: "edit-instance-data"; instanceId: string; path: string[]; value: unknown }
+  | { type: "replace-instance-data"; instanceId: string; data: Record<string, unknown> }
   | { type: "template-state"; instanceId: string; commandId: string; value: string };
 
 export type ExecuteTabletopCommandOptions = {
@@ -132,6 +133,7 @@ const commandCapability: Record<TabletopCommand["type"], TabletopCapability> = {
   "delete-many": "delete",
   replace: "replace",
   "edit-instance-data": "edit-instance-data",
+  "replace-instance-data": "edit-instance-data",
   "template-state": "template-state-command",
 };
 
@@ -513,6 +515,12 @@ export function executeTabletopCommand(
     const leaf = command.path.at(-1)!;
     if (Array.isArray(parent)) parent[Number(leaf)] = command.value;
     else (parent as Record<string, unknown>)[leaf] = command.value;
+    return { document: next, diagnostics: [] };
+  }
+
+  if (command.type === "replace-instance-data") {
+    const next = cloneDocument(document);
+    next.instances[instanceIndex]!.resource.data = structuredClone(command.data);
     return { document: next, diagnostics: [] };
   }
 

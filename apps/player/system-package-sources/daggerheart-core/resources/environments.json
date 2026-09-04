@@ -58,7 +58,7 @@
         "特性原文": "Pitch Black",
         "特性类型": "被动",
         "特性描述": "这些地下矿道里没有任何光源，天然的或其他的都没有。问问玩家角色用什么照明，或打算如何在黑暗中摸索前进。没有可靠光源的玩家角色进行动作与反应掷骰时带有劣势。",
-        "引导问题": "队伍的光源用什么燃料？还能撑多久？\n光亮会引来什么不必要的注意？"
+        "引导问题": "队伍的光源用什么燃料？还能撑多久？光亮会引来什么不必要的注意？"
       },
       {
         "特性名称": "迷宫",
@@ -1269,7 +1269,7 @@
         "特性原文": "Siege Weapons (Environment Change)",
         "特性类型": "动作",
         "特性描述": "后果倒计时（6）。进攻的军队部署攻城武器，试图夷平守军的防御工事。攻城开始时就启动倒计时（若是旷日持久的围城，则改为长期倒计时）。倒计时触发时，守军的防御工事已被攻破，攻方涌入城内。你**获得 2 恐惧点**，然后切换到“两军对垒 Pitched Battle”环境并聚焦它。",
-        "引导问题": "攻方部署了哪些攻城武器？它们是魔法造物、凡俗器械，还是两者兼有？\n角色要突破哪些防御才能攻入城堡？"
+        "引导问题": "攻方部署了哪些攻城武器？它们是魔法造物、凡俗器械，还是两者兼有？角色要突破哪些防御才能攻入城堡？"
       },
       {
         "特性名称": "援军来了！",
@@ -1324,7 +1324,7 @@
         "特性名称": "木炭构装体",
         "特性原文": "Charcoal Constructs",
         "特性类型": "动作",
-        "特性描述": "一群被靛蓝火焰缠绕的扭曲兽形生物踏过你选定的某一点。该点近距离范围内的所有目标必须进行敏捷反应掷骰。\n失败的目标受到 **3d12+3** 点物理伤害；成功的目标只受一半伤害。",
+        "特性描述": "一群被靛蓝火焰缠绕的扭曲兽形生物踏过你选定的某一点。该点近距离范围内的所有目标必须进行敏捷反应掷骰。失败的目标受到 **3d12+3** 点物理伤害；成功的目标只受一半伤害。",
         "引导问题": "这些是被火焰吞噬的真实动物，还是腐化魔法造出的构装体？"
       },
       {
@@ -1626,7 +1626,7 @@
         "特性原文": "Impossible Architecture",
         "特性类型": "被动",
         "特性描述": "上下颠倒，左右错乱，连方向都指向星空。重力与方向本身都在流动，想穿越这个界域本身就是一场冒险，需要启动进展倒计时（8）。失败时，玩家角色除了承受这次掷骰带来的其他后果外，还必须**标记 1 压力点**。",
-        "引导问题": "在这样一个与凡人界域截然不同的空间里移动，究竟是什么感觉？\n你会盯住哪个地标或点位来保持平衡？\n旅途中你会穿过哪些奇异的地标？"
+        "引导问题": "在这样一个与凡人界域截然不同的空间里移动，究竟是什么感觉？你会盯住哪个地标或点位来保持平衡？旅途中你会穿过哪些奇异的地标？"
       },
       {
         "特性名称": "此地将夺走你的一切",
@@ -1968,7 +1968,7 @@
         "特性名称": "触死之民",
         "特性原文": "Death-Touched Denizens",
         "特性类型": "被动",
-        "特性描述": "所有凡物在前往彼岸的旅途中都会经过这里，但逗留或徘徊不去者，会被阴霾扭曲、异变。队伍在此遭遇的任何敌人皆为褪色者。\n描述一下，它们在这里度过的时光如何把它们扭曲成比死亡更糟的东西。当玩家角色受到褪色者敌人攻击造成的伤害骰时，还必须**标记 1 压力点**。若有玩家角色在此地被击败，不会进行死亡行动，而是变成一名由游戏主持人操控的褪色者敌人。",
+        "特性描述": "所有凡物在前往彼岸的旅途中都会经过这里，但逗留或徘徊不去者，会被阴霾扭曲、异变。队伍在此遭遇的任何敌人皆为褪色者。描述一下，它们在这里度过的时光如何把它们扭曲成比死亡更糟的东西。当玩家角色受到褪色者敌人攻击造成的伤害骰时，还必须**标记 1 压力点**。若有玩家角色在此地被击败，不会进行死亡行动，而是变成一名由游戏主持人操控的褪色者敌人。",
         "引导问题": "这些生物为什么不肯离去？阴霾把它们褪成的模样，有没有规律可循？"
       },
       {
@@ -1989,50 +1989,50 @@
   },
   {
     "ID": "ee1fdaca-a6f4-5490-83f8-1e5ff7480118",
-    "名称": "时间法庭",
+    "名称": "时光法庭",
     "原文": "TIME COURT",
     "类型": "环境",
     "位阶": "4",
     "种类": "事件",
-    "简介": "One or more PCs are forcibly plucked from the timeline and put on trial for crimes against continuity.",
-    "趋向": "Find the truth, mete out justice, nullify their powers",
+    "简介": "一名或多名玩家角色被强行从时间线上拽走，因破坏连续性而受审。",
+    "趋向": "查明真相，伸张正义，剥夺他们的力量",
     "难度": "20",
-    "潜在敌人": "Judge (Monarch), Jury (Hallowed Choir),",
+    "潜在敌人": "裁断者（君主）、陪审团 Jury（圣咏合唱团 Hallowed Choir）、处刑者 Executioners（时空执法者 Temporal Enforcers）",
     "特性": [
       {
-        "特性名称": "Out of Time",
+        "特性名称": "超脱时间",
         "特性原文": "Out of Time",
         "特性类型": "被动",
-        "特性描述": "The trial takes place in a pocket dimension that exists beyond the influence of the other realms. While here,PCs can’t use their features and abilities. Each player must put their Domain cards in their vault.\nWhat besides the courtroom resides in this pocket dimension? What",
-        "引导问题": "powers maintain the universal barrier protecting this place?"
+        "特性描述": "这场审判发生在一个口袋维度中，不受其他界域影响。在这里，玩家角色不能使用自己的特性和能力。每位玩家必须把自己的领域卡牌放入宝库。",
+        "引导问题": "这个口袋维度里，除了法庭还藏着什么？是什么力量维持着保护此地的宇宙屏障？"
       },
       {
-        "特性名称": "Trial by Jury",
+        "特性名称": "陪审团审判",
         "特性原文": "Trial by Jury",
         "特性类型": "被动",
-        "特性描述": "At the end of the proceedings, a jury votes whether to acquit or convict the party. When the court is called to order, have the prosecution present its case against the PCs and start a Countdown (9). It ticks down when a 玩家角色 makes an action roll. When it triggers, the PCs and 游戏主持人 roll their Judgment Dice. If the party’s total result meets or exceeds the 游戏主持人’s, the jury acquits them.\nWhich PCs are put on trial? What are they accused of? What",
-        "引导问题": "potential penalties would a guilty verdict bring?"
+        "特性描述": "庭审结束时，陪审团将投票决定开释还是定罪。法庭宣布开庭后，先让控方陈述针对玩家角色的案情，并开始一个倒计时（9）。每当玩家角色进行动作掷骰时，倒计时便推进 1 点。倒计时触发时，玩家角色和游戏主持人各自掷骰自己的裁决骰。如果队伍的总结果不低于游戏主持人的总结果，陪审团便判他们无罪。",
+        "引导问题": "哪些玩家角色会受审？他们被指控什么？如果被判有罪，可能面临什么惩罚？"
       },
       {
-        "特性名称": "Counsel for the Defense",
+        "特性名称": "辩护律师",
         "特性原文": "Counsel for the Defense",
         "特性类型": "被动",
-        "特性描述": "A 玩家角色 can make an action roll to argue for their innocence (such as a Knowledge Roll to interpret the letter of the law, a Presence Roll to play on the jury’s emotions, or an Instinct Roll to point out holes in the prosecution’s case). On a success, the party gains a **d6** Judgment Die. On a critical success, they gain two. On a failure,the prosecution rebuts the 玩家角色’s argument, and you gain a **d6** Judgment Die.\nWhat is the weakest part of the prosecution’s case? What is the",
-        "引导问题": "strongest part of the party’s defense?"
+        "特性描述": "玩家角色可以进行一次动作掷骰为自己辩护（例如用**知识掷骰**解释法律条文、用**风度掷骰**打动陪审团、或用**本能掷骰**指出控方案情中的漏洞）。成功时，队伍获得 1 枚 **d6** 裁决骰。若为暴击成功，则获得 2 枚。若失败，控方反驳玩家角色的辩护，你获得 1 枚 **d6** 裁决骰。",
+        "引导问题": "控方案情最薄弱之处在哪？队伍最有力的辩护是什么？"
       },
       {
-        "特性名称": "Counsel for the Prosecution",
+        "特性名称": "公诉律师",
         "特性原文": "Counsel for the Prosecution",
         "特性类型": "动作",
-        "特性描述": "The prosecution introduces a damning piece of evidence (such as an eyewitness testimony,test results, or a physical exhibit taken from the scene of the crime), and you gain a **d6** Judgment Die. A 玩家角色 can mark a Stress to attempt a rebuttal of the evidence with a Knowledge, Instinct,or Presence Reaction Roll. On a success, the party gains the Judgment Die instead of you. On a failure, you gain an additional **d6** Judgment Die.\nWho leads the prosecution, and what is their relationship to the Time Council? What magic or technology does this court rely on to present",
-        "引导问题": "and record evidence?"
+        "特性描述": "控方提出一项确凿的不利证据（例如目击证词、检测结果，或从案发现场取来的物证），你获得 1 枚 **d6** 裁决骰。玩家角色可以**标记 1 压力点**，用知识、本能或风度反应掷骰尝试反驳这项证据。成功时，队伍获得这枚裁决骰而不是你。若失败，你额外获得 1 枚 **d6** 裁决骰。",
+        "引导问题": "谁主导控方？他们与时光议会 Time Council 是什么关系？这座法庭靠什么魔法或技术来展示和记录证据？"
       },
       {
-        "特性名称": "“Order in the Court!”",
+        "特性名称": "“法庭肃静！”",
         "特性原文": "“Order in the Court!”",
         "特性类型": "反应",
-        "特性描述": "When the PCs attempt to escape or end the trial through force, summon a number of Temporal Enforcers equal to the number of PCs in the scene within Close range and immediately spotlight one.\nIs this court’s authority worthy of respect? What besides the might of the Time Council and its enforcers justifies their control over the",
-        "引导问题": "timeline?"
+        "特性描述": "当玩家角色试图武力逃跑或强行终结审判时，召唤一批时空执法者 Temporal Enforcers，数量与场景中的玩家角色人数相同，出现在近距离范围内，并立即聚焦其中一名。",
+        "引导问题": "这座法庭的权威值得尊重吗？除了时光议会 Time Council 及其执法者的武力，还有什么能证明他们掌控时间线是正当的？"
       }
     ]
   }

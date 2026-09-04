@@ -10,6 +10,17 @@ import { professionTemplate } from "./profession/1.0.0/capability.ts";
 import { subclassTemplate } from "./subclass/1.0.0/capability.ts";
 import { TemplateRegistry } from "./registry.ts";
 import { weaponTemplate } from "./weapon/1.0.0/capability.ts";
+import { adversaryTemplate as adversaryTemplate101 } from "./adversary/1.0.1/capability.ts";
+import { ancestryTemplate as ancestryTemplate101 } from "./ancestry/1.0.1/capability.ts";
+import { armorTemplate as armorTemplate101 } from "./armor/1.0.1/capability.ts";
+import { communityTemplate as communityTemplate101 } from "./community/1.0.1/capability.ts";
+import { domainTemplate as domainTemplate101 } from "./domain/1.0.1/capability.ts";
+import { environmentTemplate as environmentTemplate101 } from "./environment/1.0.1/capability.ts";
+import { freeTemplate as freeTemplate101 } from "./free/1.0.1/capability.ts";
+import { itemTemplate as itemTemplate101 } from "./item/1.0.1/capability.ts";
+import { professionTemplate as professionTemplate101 } from "./profession/1.0.1/capability.ts";
+import { subclassTemplate as subclassTemplate101 } from "./subclass/1.0.1/capability.ts";
+import { weaponTemplate as weaponTemplate101 } from "./weapon/1.0.1/capability.ts";
 
 export { adversaryTemplate } from "./adversary/1.0.0/capability.ts";
 export type {
@@ -44,27 +55,63 @@ export type {
   TemplateCoreCapability,
   TemplateLifecycleState,
   TemplateProjection,
+  TemplateUpgrade,
 } from "./types.ts";
 
 export const currentTemplates = Object.freeze([
-  adversaryTemplate,
-  ancestryTemplate,
-  armorTemplate,
-  communityTemplate,
-  domainTemplate,
-  environmentTemplate,
-  freeTemplate,
-  itemTemplate,
-  professionTemplate,
-  subclassTemplate,
-  weaponTemplate,
+  adversaryTemplate101,
+  ancestryTemplate101,
+  armorTemplate101,
+  communityTemplate101,
+  domainTemplate101,
+  environmentTemplate101,
+  freeTemplate101,
+  itemTemplate101,
+  professionTemplate101,
+  subclassTemplate101,
+  weaponTemplate101,
 ]);
+
+export {
+  adversaryTemplate101 as currentAdversaryTemplate,
+  ancestryTemplate101 as currentAncestryTemplate,
+  armorTemplate101 as currentArmorTemplate,
+  communityTemplate101 as currentCommunityTemplate,
+  domainTemplate101 as currentDomainTemplate,
+  environmentTemplate101 as currentEnvironmentTemplate,
+  freeTemplate101 as currentFreeTemplate,
+  itemTemplate101 as currentItemTemplate,
+  professionTemplate101 as currentProfessionTemplate,
+  subclassTemplate101 as currentSubclassTemplate,
+  weaponTemplate101 as currentWeaponTemplate,
+};
 
 export function currentTemplateFor(id: string) {
   return currentTemplates.find((template) => template.id === id);
 }
 
-export const templateRegistry = new TemplateRegistry([
+export function upgradeTemplateResourceToCurrent<T extends {
+  template: { id: string; version: string };
+  data: unknown;
+}>(resource: T): T {
+  const current = currentTemplateFor(resource.template.id);
+  if (!current || current.version === resource.template.version) return resource;
+  if (!resource.data || typeof resource.data !== "object" || Array.isArray(resource.data)) {
+    throw new Error(`Template data must be an object: ${resource.template.id}@${resource.template.version}`);
+  }
+  return {
+    ...resource,
+    template: { ...resource.template, version: current.version },
+    data: templateRegistry.upgradeData(
+      resource.template.id,
+      resource.template.version,
+      current.version,
+      resource.data as Record<string, unknown>,
+    ),
+  } as T;
+}
+
+export const supportedTemplates = Object.freeze([
   adversaryTemplate,
   ancestryTemplate,
   armorTemplate,
@@ -76,4 +123,17 @@ export const templateRegistry = new TemplateRegistry([
   professionTemplate,
   subclassTemplate,
   weaponTemplate,
+  adversaryTemplate101,
+  ancestryTemplate101,
+  armorTemplate101,
+  communityTemplate101,
+  domainTemplate101,
+  environmentTemplate101,
+  freeTemplate101,
+  itemTemplate101,
+  professionTemplate101,
+  subclassTemplate101,
+  weaponTemplate101,
 ]);
+
+export const templateRegistry = new TemplateRegistry(supportedTemplates);

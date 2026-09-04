@@ -12,6 +12,7 @@ import armorPackage from "../../contracts/conformance/resource-package/1.0.0/val
 import { storedColumnShare } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import { CreatorResourceExplorer } from "../../apps/creator/src/workspace-prototype/creator-resource-explorer.tsx";
 import { CreatorWorkbench } from "../../apps/creator/src/workspace-prototype/creator-workbench.tsx";
+import { WorkspaceTree } from "../../apps/creator/src/workspace-prototype/WorkspaceTree.tsx";
 import { creatorWorkspaceDesign } from "../../apps/creator/src/workspace-prototype/design.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
@@ -40,6 +41,7 @@ import {
   updateResourceReplacement,
   updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
+  workspaceResourceCountByFolder,
   type CreatorWorkspace,
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import {
@@ -288,6 +290,48 @@ describe("Creator Workspace prototype state model", () => {
     expect(created.workspace.folders.some((folder) => folder.name === "武器")).toBe(false);
   });
 
+  test("imports every package folder collapsed and shows recursive resource counts", () => {
+    const nestedDocument = structuredClone(document);
+    const first = nestedDocument.resources[0]!;
+    nestedDocument.resources = [
+      { ...structuredClone(first), id: "weapon-1", path: "武器/位阶1/短剑.json" },
+      { ...structuredClone(first), id: "weapon-2", path: "武器/位阶2/长剑.json" },
+      { ...structuredClone(first), id: "armor-1", path: "护甲/位阶1/布甲.json" },
+    ];
+    const workspace = createWorkspace({ document: nestedDocument, media });
+    expect(workspace.folders.every((folder) => folder.collapsed)).toBe(true);
+
+    const counts = workspaceResourceCountByFolder(workspace);
+    const folderId = (name: string) => workspace.folders.find((folder) => folder.name === name)!.id;
+    expect(counts.get(folderId("武器"))).toBe(2);
+    expect(counts.get(folderId("护甲"))).toBe(1);
+    expect(counts.get(folderId("位阶2"))).toBe(1);
+
+    const html = renderToStaticMarkup(createElement(WorkspaceTree, {
+      workspace,
+      activeResourceId: "",
+      onActivateResource: () => undefined,
+      onPinResource: () => undefined,
+      onSelectFolder: () => undefined,
+      onToggleFolder: () => undefined,
+      onRenameFolder: () => null,
+      onMoveNode: () => null,
+      onDeleteNode: () => undefined,
+      onResourceContextMenu: () => undefined,
+      onRootContextMenu: () => undefined,
+      resourceTitle: (resource) => resource.path.split("/").at(-1) ?? resource.id,
+      renderResourceIcon: () => null,
+    }));
+    expect(html).toContain('aria-label="2 个资源">2</small>');
+    expect(html).not.toContain("短剑.json");
+    expect(html).not.toContain("长剑.json");
+    expect(html).not.toContain("布甲.json");
+
+    const expanded = toggleWorkspaceFolder(workspace, folderId("武器"));
+    expect(expanded.folders.find((folder) => folder.id === folderId("武器"))?.collapsed).toBe(false);
+    expect(createWorkspace(expanded).folders.find((folder) => folder.id === folderId("武器"))?.collapsed).toBe(false);
+  });
+
   test("defaults per-card attribution from the current package and keeps cards independent", async () => {
     const legacy = createWorkspace({ document: structuredClone(document), media });
     expect(resolveResourceAttribution(legacy.document.resources[0]!, legacy.document.package.name)).toEqual({
@@ -530,6 +574,7 @@ describe("Creator Workspace prototype state model", () => {
   test("removing portrait produces a text-only resource and drops its unused package media", () => {
     const textOnly = removePortrait(createWorkspace({ document, media }));
     expect(textOnly.document.resources[0]?.media).toEqual({});
+    expect(textOnly.document.resources[0]?.presentation.mode).toBe("text");
     expect(textOnly.document.assets).toEqual([]);
     expect(textOnly.media.has(asset.id)).toBe(false);
     expect(resourceData<AdversaryData>(textOnly).名称).toBe("牛头人破坏者");
@@ -539,6 +584,20 @@ describe("Creator Workspace prototype state model", () => {
     const workspace = createWorkspace({ document, media });
     expect(renderCreatorWorkbench(workspace)).toContain("删除卡图");
     expect(renderCreatorWorkbench(removePortrait(workspace))).not.toContain("删除卡图");
+  });
+
+  test("shows compact debug metadata at the bottom of the authoring area", () => {
+    const html = renderCreatorWorkbench(createWorkspace({ document, media }));
+    expect(html).toContain("模板版本");
+    expect(html).toContain("1.0.0");
+    expect(html).toContain("渲染器");
+    expect(html).toContain("enemy-card-r1");
+    expect(html).toContain("资源包版本");
+    expect(html).toContain(document.package.version);
+    expect(html).toContain("合约版本");
+    expect(html).not.toContain("资源 ID");
+    expect(html).not.toContain("文件路径");
+    expect(html).not.toContain("已发布");
   });
 
   test("plans insert, no-op, safe update and dirty conflict explicitly", () => {

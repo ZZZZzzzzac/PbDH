@@ -310,6 +310,17 @@ describe("Tabletop Core", () => {
     expect(replacedFeatures.document.instances[0]?.resource.data.特性).toEqual([
       { 名称: "新特性", 描述: "可编辑结构化字段" },
     ]);
+
+    const replacedData = executeTabletopCommand(document, {
+      type: "replace-instance-data",
+      instanceId: "enemy-1",
+      data: { 名称: "预设敌人", 特性: [{ 特性名称: "无情(X)" }] },
+    }, { capabilities: allCapabilities });
+    expect(replacedData.document.instances[0]?.resource.data).toEqual({
+      名称: "预设敌人",
+      特性: [{ 特性名称: "无情(X)" }],
+    });
+    expect(document.instances[0]?.resource.data).toEqual(resource.data);
   });
 
   test("rejects invalid commands with stable diagnostics and zero writes", () => {

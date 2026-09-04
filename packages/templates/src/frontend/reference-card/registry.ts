@@ -1,9 +1,9 @@
 import type { TemplateAuthoringCapability } from "../types.ts";
 import { resolveTemplateFrontend, supportedTemplateFrontends } from "../template-frontend-registry.ts";
 
-export const stableReferenceTemplateIds = supportedTemplateFrontends
+export const stableReferenceTemplateIds = [...new Set(supportedTemplateFrontends
   .filter((frontend) => frontend.stableReferenceCard)
-  .map((frontend) => frontend.templateId) as StableReferenceTemplateId[];
+  .map((frontend) => frontend.templateId))] as StableReferenceTemplateId[];
 export type StableReferenceTemplateId = "种族" | "社群" | "职业" | "子职业" | "物品" | "领域卡";
 
 export function isStableReferenceTemplateId(id: string): id is StableReferenceTemplateId {

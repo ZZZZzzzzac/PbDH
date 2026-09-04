@@ -24,16 +24,23 @@ const key = (item: { id: string; version: string }) => `${item.id}@${item.versio
 describe("Resource Template support matrix", () => {
   test("catalog and core registry contain the same exact versions", () => {
     expect(templateRegistry.list().map(key).sort()).toEqual(catalog.templates.map(key).sort());
-  });
-
-  test("every version accepted for new development publications is complete and non-prerelease", async () => {
-    const currentEntries = catalog.templates.filter((item) => item.publication.development);
-    expect(currentTemplates.map(key).sort()).toEqual(currentEntries.map(key).sort());
     expect(supportedTemplateFrontends.map((frontend) => key({
       id: frontend.templateId,
       version: frontend.templateVersion,
-    })).sort()).toEqual(currentEntries.map(key).sort());
-    for (const entry of currentEntries) {
+    })).sort()).toEqual(catalog.templates.map(key).sort());
+  });
+
+  test("every development-publishable version is complete and every Template has one current version", async () => {
+    const developmentEntries = catalog.templates.filter((item) => item.publication.development);
+    expect(currentTemplates).toHaveLength(11);
+    expect(new Set(currentTemplates.map((item) => item.id)).size).toBe(11);
+    expect(currentTemplates.every((template) => developmentEntries.some((entry) => key(entry) === key(template)))).toBe(true);
+    expect(supportedTemplateFrontends.filter((frontend) => developmentEntries.some((entry) =>
+      entry.id === frontend.templateId && entry.version === frontend.templateVersion)).map((frontend) => key({
+      id: frontend.templateId,
+      version: frontend.templateVersion,
+    })).sort()).toEqual(developmentEntries.map(key).sort());
+    for (const entry of developmentEntries) {
       const core = templateRegistry.resolve(entry.id, entry.version);
       const frontend = resolveTemplateFrontend(entry.id, entry.version);
 
@@ -49,11 +56,28 @@ describe("Resource Template support matrix", () => {
 
   test("every production-publishable version is published consistently", () => {
     const productionEntries = catalog.templates.filter((item) => item.publication.production);
-    expect(productionEntries).toHaveLength(11);
+    expect(productionEntries.map(key).sort()).toEqual(
+      catalog.templates.filter((item) => item.state === "published").map(key).sort(),
+    );
     for (const entry of productionEntries) {
       expect(entry.state, key(entry)).toBe("published");
       expect(templateRegistry.resolve(entry.id, entry.version)?.state, key(entry)).toBe("published");
     }
+  });
+
+  test.each(currentTemplates)("$id@$version owns a valid upgrade from 1.0.0", (template) => {
+    const previous = templateRegistry.resolve(template.id, "1.0.0");
+    expect(previous, `${template.id}@1.0.0 缺少旧模板`).toBeDefined();
+    expect(template.upgrades?.map((upgrade) => upgrade.fromVersion)).toContain("1.0.0");
+    const upgraded = templateRegistry.upgradeData(
+      template.id,
+      "1.0.0",
+      template.version,
+      previous!.defaultData,
+    );
+    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(template.schema);
+    expect(validate(upgraded), `${key(template)}: ${JSON.stringify(validate.errors)}`).toBe(true);
+    expect(upgraded).not.toBe(previous!.defaultData);
   });
 
   test("字段审阅 JSON 对 published 1.0.0 Templates 各提供一个合法资源", async () => {
@@ -64,12 +88,12 @@ describe("Resource Template support matrix", () => {
       resources: Array<{ template: { id: string; version: string }; data: unknown }>;
       snapshotDigest: string;
     };
-    const published = catalog.templates.filter((item) => item.publication.production);
+    const published100 = catalog.templates.filter((item) => item.version === "1.0.0" && item.state === "published");
 
     expect(await validateResourcePackageCandidate(document as never, new Map())).toEqual([]);
     expect(document.snapshotDigest).toBe(await computeResourcePackageSnapshotDigest(document as never, new Map()));
     expect(document.resources.map((resource) => key(resource.template)).sort()).toEqual(
-      published.map(key).sort(),
+      published100.map(key).sort(),
     );
     for (const resource of document.resources) {
       const template = templateRegistry.resolve(resource.template.id, resource.template.version);

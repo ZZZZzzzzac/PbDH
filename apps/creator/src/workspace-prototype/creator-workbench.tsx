@@ -144,6 +144,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
           authoring={templateFrontend.authoring}
           data={resource.data as Record<string, unknown>}
           onValue={(path, value) => execute({ type: "authoring-value", path, value })}
+          onData={(data) => execute({ type: "replace-authoring-data", data })}
         />}
         <ResourceAttributionEditor
           artworkCredit={resolveResourceAttribution(resource, active.document.package.name).artworkCredit}
@@ -157,6 +158,13 @@ export function CreatorWorkbench({ snapshot, execute }: {
           options={active.document.resources.filter((candidate) => candidate.id !== resource.id).map((candidate) => ({ id: candidate.id, name: resourceTitle(candidate) }))}
           onChange={(targetResourceId) => execute({ type: "replacement", resourceId: resource.id, replacementId: replacement.id, targetResourceId })}
         />)}
+        <dl className="resource-metadata" aria-label="调试信息">
+          <div><dt>模板</dt><dd>{resource.template.id}</dd></div>
+          <div><dt>模板版本</dt><dd>{resource.template.version}</dd></div>
+          <div><dt>渲染器</dt><dd>{template?.rendererRevision ?? "未知"}</dd></div>
+          <div><dt>资源包版本</dt><dd>{active.document.package.version}</dd></div>
+          <div><dt>合约版本</dt><dd>{active.document.contractVersion}</dd></div>
+        </dl>
       </div>
 
       <CreatorColumnResizeHandle label="调整编辑区与预览区宽度" value={snapshot.editorColumnShare} preference={creatorColumnPreferences.editor} cssVariable="--creator-editor-share" onChange={(value) => execute({ type: "set-editor-share", value })} />

@@ -1,13 +1,13 @@
 import type { ErrorObject, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
-import { currentTemplates, type TemplateCoreCapability } from "@pbdh/templates/core";
+import { supportedTemplates, type TemplateCoreCapability } from "@pbdh/templates/core";
 
 import type { ConversionDiagnostic, JsonObject } from "./types.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validators = new Map<string, ValidateFunction>();
 const templates = new Map(
-  currentTemplates.map((template) => [`${template.id}@${template.version}`, template]),
+  supportedTemplates.map((template) => [`${template.id}@${template.version}`, template]),
 );
 
 function validatorFor(

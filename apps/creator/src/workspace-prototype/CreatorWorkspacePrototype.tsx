@@ -31,7 +31,7 @@ import {
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
-import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, usesFixedSurfaceRatio } from "@pbdh/resource-renderer/core";
 import {
   createTabletopDocument,
   type TabletopCommand,
@@ -56,7 +56,7 @@ import {
   downloadBytes,
   isSemanticVersion,
 } from "./creator-file-actions.ts";
-import { runCreatorPackageFileWorkflow } from "./creator-package-file-workflow.ts";
+import { runCreatorPackageFileWorkflow, upgradeCreatorImportCandidate } from "./creator-package-file-workflow.ts";
 import {
   CreatorColumnResizeHandle,
   creatorColumnPreferences,
@@ -439,7 +439,7 @@ export function CreatorWorkspacePrototype({
         return new Uint8Array(await response.arrayBuffer());
       })
       .then((bytes) => loadPbres(bytes, validateResourcePackageCandidate))
-      .then((result) => {
+      .then(async (result) => {
         if (!result.candidate) {
           setDialog({ kind: "diagnostics", title: "市场导入失败 · 零写入", diagnostics: result.diagnostics });
           return;
@@ -460,8 +460,13 @@ export function CreatorWorkspacePrototype({
           });
           return;
         }
+        const upgraded = await upgradeCreatorImportCandidate(result.candidate);
+        if (upgraded.type === "invalid") {
+          setDialog({ kind: "diagnostics", title: upgraded.title, diagnostics: upgraded.diagnostics });
+          return;
+        }
         if (handoff.creatorMode === "fork") {
-          const source = createWorkspace(result.candidate);
+          const source = createWorkspace(upgraded.candidate);
           return forkCurrentWorkspace(source, {
             publicationId: handoff.publicationId,
             packageId: handoff.packageId,
@@ -469,7 +474,7 @@ export function CreatorWorkspacePrototype({
             snapshotDigest: handoff.snapshotDigest,
           }).then((fork) => acceptIncoming({ document: fork.document, media: fork.media }, handoff));
         }
-        acceptIncoming(result.candidate, handoff);
+        acceptIncoming(upgraded.candidate, handoff);
       })
       .catch((error) => setDialog({
         kind: "diagnostics",
@@ -1545,6 +1550,9 @@ export function CreatorWorkspacePrototype({
         return;
       case "tabletop-command": applyTabletopCommand(command.command); return;
       case "edit-instance-data": editInstanceData(command.path, command.value); return;
+      case "replace-instance-data":
+        if (selectedInstance) applyTabletopCommand({ type: "replace-instance-data", instanceId: selectedInstance.id, data: command.data });
+        return;
       case "request-cloud-edit": requestTabletopCloudSyncAfterEditing(); return;
       case "reorder-tabletop-tab":
         setTabletopTabOrder((current) => {
@@ -1783,7 +1791,7 @@ export function CreatorWorkspacePrototype({
       {detailTabletopInstance && <CardPreviewDialog
         designWidth={canonicalCardDesignSize.width}
         designHeight={canonicalCardDesignSize.height}
-        fixedRatio={detailTabletopInstance.resource.presentation.fixedRatio}
+        fixedRatio={usesFixedSurfaceRatio(detailTabletopInstance.resource.presentation)}
         label="卡牌详情"
         onClose={() => setDetailTabletopInstanceId("")}
       ><GmTabletopCard instance={detailTabletopInstance} assetUrls={assetUrls} onCommand={applyTabletopCommand} /></CardPreviewDialog>}

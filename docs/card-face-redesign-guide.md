@@ -228,7 +228,9 @@ Frame 逻辑位于各自 `renderer.tsx`：
 - `WeaponCardFrame`
 - `ArmorCardFrame`
 
-固定比例时 Frame 高度必须是 `88px`，内层高度必须是 `502.857px`，溢出裁切。
+纯文字或纯图片的固定比例模式中，Frame 高度必须是 `88px`，内层高度必须是 `502.857px`，溢出裁切。
+
+图文固定比例模式保留 `502.857px` 正文基底，并把作者裁切后的图片高度叠加到卡高；Frame 跟随扩展后的高度，不得裁切图片或正文。
 
 非固定比例时：
 
@@ -256,11 +258,11 @@ CSS `transform` 不参与普通文档流尺寸计算，所以不能删除 Frame 
 ### 7.2 `split`
 
 - 图片从卡牌上边沿开始；
-- 图片区当前约占卡面高度 `34%`；
+- 图片按卡牌原生 `360px` 宽度显示，图片固有比例决定其高度；
 - 标题位于图片下缘的深色渐变区；
 - 图片下边沿就是标题/正文分界；
-- 图片使用 `object-fit: cover`；
-- 图片元素必须有明确宽高，并保留 `min-width: 0; min-height: 0; display: block`，防止固有尺寸撑高裁剪框。
+- 图片使用 `height: auto` 与 `object-fit: contain`，Renderer 不做第二次裁切；
+- 固定比例时总原生高度为 `502.857px + 图片渲染高度`，图片只负责把正文整体向下推；正文溢出由作者修改内容或裁图处理，不触发图片相关的自动缩字。
 
 纯文字与图文模式必须保持：
 
@@ -434,7 +436,7 @@ failed to write kernel assets: 系统找不到指定的路径。 (os error 3)
 - 卡牌 Frame 为 `63 × 88px`，内层为约 `360 × 503px`，transform 为 `.175`；
 - 固定比例卡 `scrollWidth === clientWidth`、`scrollHeight === clientHeight`，或只存在允许的 1px 测量容差；
 - 纯文字与图文正文宽度一致；
-- 图片没有撑高裁剪框；
+- 图文固定比例卡高等于正文基底加图片高度，且外层没有裁切；
 - 无特性时没有空特性容器；
 - 纯图片时 footer 数量为 0；
 - Shadow DOM 控制台无 `renderer.render.failed`、错误或警告；

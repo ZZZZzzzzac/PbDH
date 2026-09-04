@@ -111,7 +111,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(applied.characterData.character.values).toMatchObject({
       "armor-name": "**填充布甲**｜阈值 5/11｜护甲值 3",
       "armor-value": "3",
-      "armor-description": "灵活：+1 闪避值",
+      "armor-description": "灵活：闪避值 +1。",
       "armor-slots": { current: 0, max: 3 },
     });
     expect(applied.characterData.resourceSelections).not.toHaveProperty("pick-armor");

@@ -66,7 +66,7 @@ describe("Canonical Surface Renderer Port", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.designRatio).toEqual({ width: 63, height: 88 });
+    expect(result.designRatio).toBeNull();
     expect(result.renderInput.state).toEqual({
       currentHp: "0",
       currentStress: "0",
@@ -269,7 +269,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(markup).toContain("data-pbdh-canonical-surface");
     expect(markup).toContain("width:100%");
     expect(markup).toContain("height:auto");
-    expect(markup).toContain("aspect-ratio:63 / 88");
+    expect(markup).not.toContain("aspect-ratio:63 / 88");
     expect(markup).not.toContain("enemy-card");
 
     const fluidResource = structuredClone(resource);

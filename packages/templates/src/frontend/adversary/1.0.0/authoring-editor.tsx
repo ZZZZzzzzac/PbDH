@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { authoringControlStyles, EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
+import { adversaryFeaturePresets } from "../../feature-presets.ts";
 import type { TemplateAuthoringCapability, TemplateAuthoringEditorProps } from "../../types.ts";
 
 const styles = `${authoringControlStyles}
@@ -19,6 +20,17 @@ export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEdi
   const features = Array.isArray(data.特性) ? data.特性 as Record<string, unknown>[] : [];
   const field = (path: string, label: string, options?: readonly string[]) => <EditorInput label={label} value={data[path]} options={options} onChange={(value) => onValue(path, value)} />;
   const updateFeature = (index: number, path: string, value: string) => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...item, [path]: value } : item));
+  const selectFeature = (index: number, label: string) => {
+    const preset = adversaryFeaturePresets.find((item) => item.label === label);
+    if (!preset) return;
+    onValue("特性", features.map((item, rowIndex) => rowIndex === index ? {
+      ...item,
+      特性名称: preset.name,
+      特性原文: preset.original,
+      特性类型: preset.type ?? item.特性类型,
+      特性描述: preset.description,
+    } : item));
+  };
 
   return <div className="adversary-editor"><style>{styles}</style>
     <section className="adversary-editor-group adversary-identity" data-authoring-section="identity">
@@ -34,7 +46,7 @@ export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEdi
     </section>
     <section className="adversary-editor-group adversary-features" data-authoring-section="features"><header><h3>特性</h3><button type="button" onClick={() => onValue("特性", [...features, { ...emptyFeature }])}>＋ 新增</button></header>
       {features.map((feature, index) => <article className="adversary-feature" key={index}>
-        <EditorInput label="特性名称" value={feature.特性名称} onChange={(value) => updateFeature(index, "特性名称", value)} />
+        <EditorInput label="特性名称" value={feature.特性名称} options={adversaryFeaturePresets.map((item) => item.label)} onOptionSelect={(label) => selectFeature(index, label)} onChange={(value) => updateFeature(index, "特性名称", value)} />
         <EditorInput label="特性原文" value={feature.特性原文} onChange={(value) => updateFeature(index, "特性原文", value)} />
         <EditorInput label="特性类型" value={feature.特性类型} options={featureTypeOptions} onChange={(value) => updateFeature(index, "特性类型", value)} />
         <button type="button" className="adversary-feature-action" onClick={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))}>清空</button>

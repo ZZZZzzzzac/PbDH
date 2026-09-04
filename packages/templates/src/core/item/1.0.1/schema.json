@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E7%89%A9%E5%93%81/1.0.1/schema.json",
+  "title": "物品 Template Data",
+  "type": "object",
+  "required": ["名称", "类型", "掷骰", "特性描述", "简介"],
+  "properties": {
+    "名称": { "type": "string" },
+    "原文": { "type": "string" },
+    "类型": { "type": "string" },
+    "掷骰": { "type": "string" },
+    "特性描述": { "type": "string" },
+    "简介": { "type": "string" }
+  },
+  "additionalProperties": false
+}

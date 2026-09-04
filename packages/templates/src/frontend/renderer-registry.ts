@@ -2,80 +2,60 @@ import type { ReactNode } from "react";
 
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 
-import { adversaryRendererRevision } from "./adversary/1.0.0/renderer.tsx";
-import { freeRendererRevision } from "./free/1.0.0/renderer.tsx";
-import { armorRendererRevision } from "./armor/1.0.0/renderer.tsx";
-import { ancestryRendererRevision } from "./ancestry/1.0.0/renderer.tsx";
-import { communityRendererRevision } from "./community/1.0.0/renderer.tsx";
-import { domainRendererRevision } from "./domain/1.0.0/renderer.tsx";
-import { environmentRendererRevision } from "./environment/1.0.0/renderer.tsx";
-import { itemRendererRevision } from "./item/1.0.0/renderer.tsx";
-import { professionRendererRevision } from "./profession/1.0.0/renderer.tsx";
-import { subclassRendererRevision } from "./subclass/1.0.0/renderer.tsx";
-import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
 import { resolveTemplateFrontend } from "./template-frontend-registry.ts";
 
 type TrustedRenderer = RendererRevisionCapability<any, any, ReactNode>;
 
 export function adversaryRendererFor(version: string) {
-  if (version === adversaryRendererRevision.templateVersion) {
-    return adversaryRendererRevision;
-  }
-  throw new Error(`Unsupported adversary Renderer version: ${version}`);
+  return rendererFor("敌人", version, "adversary");
 }
 
 export function weaponRendererFor(version: string): TrustedRenderer {
-  if (version === weaponRendererRevision.templateVersion) {
-    return weaponRendererRevision;
-  }
-  throw new Error(`Unsupported weapon Renderer version: ${version}`);
+  return rendererFor("武器", version, "weapon");
 }
 
 export function freeRendererFor(version: string) {
-  if (version === freeRendererRevision.templateVersion) return freeRendererRevision;
-  throw new Error(`Unsupported free Renderer version: ${version}`);
+  return rendererFor("自由", version, "free");
 }
 
 export function armorRendererFor(version: string) {
-  if (version === armorRendererRevision.templateVersion) return armorRendererRevision;
-  throw new Error(`Unsupported armor Renderer version: ${version}`);
+  return rendererFor("护甲", version, "armor");
 }
 
 export function ancestryRendererFor(version: string) {
-  if (version === ancestryRendererRevision.templateVersion) return ancestryRendererRevision;
-  throw new Error(`Unsupported ancestry Renderer version: ${version}`);
+  return rendererFor("种族", version, "ancestry");
 }
 
 export function communityRendererFor(version: string) {
-  if (version === communityRendererRevision.templateVersion) return communityRendererRevision;
-  throw new Error(`Unsupported community Renderer version: ${version}`);
+  return rendererFor("社群", version, "community");
 }
 
 export function professionRendererFor(version: string) {
-  if (version === professionRendererRevision.templateVersion) return professionRendererRevision;
-  throw new Error(`Unsupported profession Renderer version: ${version}`);
+  return rendererFor("职业", version, "profession");
 }
 
 export function subclassRendererFor(version: string) {
-  if (version === subclassRendererRevision.templateVersion) return subclassRendererRevision;
-  throw new Error(`Unsupported subclass Renderer version: ${version}`);
+  return rendererFor("子职业", version, "subclass");
 }
 
 export function itemRendererFor(version: string) {
-  if (version === itemRendererRevision.templateVersion) return itemRendererRevision;
-  throw new Error(`Unsupported item Renderer version: ${version}`);
+  return rendererFor("物品", version, "item");
 }
 
 export function domainRendererFor(version: string) {
-  if (version === domainRendererRevision.templateVersion) return domainRendererRevision;
-  throw new Error(`Unsupported domain Renderer version: ${version}`);
+  return rendererFor("领域卡", version, "domain");
 }
 
 export function environmentRendererFor(version: string) {
-  if (version === environmentRendererRevision.templateVersion) return environmentRendererRevision;
-  throw new Error(`Unsupported environment Renderer version: ${version}`);
+  return rendererFor("环境", version, "environment");
 }
 
 export function trustedRendererFor(templateId: string, version: string) {
   return resolveTemplateFrontend(templateId, version)?.rendererRevision;
+}
+
+function rendererFor(templateId: string, version: string, label: string): TrustedRenderer {
+  const renderer = trustedRendererFor(templateId, version);
+  if (renderer) return renderer;
+  throw new Error(`Unsupported ${label} Renderer version: ${version}`);
 }

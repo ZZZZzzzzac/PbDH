@@ -1,6 +1,6 @@
 import { Ellipsis } from "lucide-react";
 import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
-import { canonicalCardDesignSize, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { useEffect, useRef, useState } from "react";
 import type { CardInstance } from "../../domain/cardEngine";
@@ -65,7 +65,7 @@ export function CardFace({
     return <CardDisplay
       designWidth={canonicalCardDesignSize.width}
       designHeight={canonicalCardDesignSize.height}
-      fixedRatio={canonicalResource.presentation.fixedRatio}
+      fixedRatio={usesFixedSurfaceRatio(canonicalResource.presentation)}
       displayAspectRatio={63 / 88}
     ><CanonicalCardSurface
         resource={canonicalResource}

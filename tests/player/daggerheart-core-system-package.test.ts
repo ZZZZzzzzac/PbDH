@@ -91,6 +91,37 @@ function nestedStrings(value: unknown): string[] {
 }
 
 describe("migrated Daggerheart Core System Package", () => {
+  test("跨源记录继承武器位阶", () => {
+    const entries = readJson<Array<{ 位阶: string; 类型: string }>>(path.join(
+      sourceResourceRoot,
+      "weapons.json",
+    ));
+    const counts: Record<string, number> = {};
+    for (const entry of entries) {
+      const key = `${entry.位阶}/${entry.类型}`;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    expect(counts).toEqual({
+      "1/主武器": 38,
+      "1/副武器": 13,
+      "2/主武器": 68,
+      "2/副武器": 20,
+      "3/主武器": 60,
+      "3/副武器": 20,
+      "4/主武器": 68,
+      "4/副武器": 20,
+    });
+  });
+
+  test("用不同译名区分两种 Heavy 护甲特性", () => {
+    const entries = readJson<Array<{ 原文: string; 特性名称: string }>>(path.join(
+      sourceResourceRoot,
+      "armor.json",
+    ));
+    expect(entries.find((entry) => entry.原文 === "Chainmail Armor")?.特性名称).toBe("沉重");
+    expect(entries.find((entry) => entry.原文 === "Full Plate Armor")?.特性名称).toBe("极重");
+  });
+
   test("领域卡权威资源的回想值不包含闪电符号", () => {
     const entries = readJson<Array<{ 回想: string }>>(path.join(
       root,
@@ -151,8 +182,8 @@ describe("migrated Daggerheart Core System Package", () => {
       希望特性: { 特性名称: expect.any(String), 特性原文: expect.any(String), 特性描述: expect.any(String) },
       特性: [{ 特性名称: "鼓舞人心", 特性原文: "Rally", 特性描述: expect.any(String) }],
     });
-    expect(candidates[0]?.document.package.version).toBe("1.0.18");
-    expect(candidates[1]?.document.package.version).toBe("1.0.3");
+    expect(candidates[0]?.document.package.version).toBe("1.0.19");
+    expect(candidates[1]?.document.package.version).toBe("1.0.4");
     expect(candidates.every((candidate) => candidate.document.license.label === "Darrington Press Community Gaming License"
       && candidate.document.license.declaration === "https://darringtonpress.com/license/")).toBe(true);
     expect(resources.every((resource) => Object.keys(resource.presentation).length === 2)).toBe(true);
@@ -185,8 +216,23 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(resources.filter((resource) => !resource.media.portrait).every((resource) => resource.presentation.mode === "text")).toBe(true);
     expect(resources.find((resource) => resource.template.id === "敌人" && (resource.data as Record<string, unknown>).原文 === "PERFECTED ZOMBIE")).toBeDefined();
     expect(resources.find((resource) => resource.template.id === "敌人" && (resource.data as Record<string, unknown>).原文 === "ZOMBIE LEGION")).toBeDefined();
+    expect(resources.find((resource) => resource.template.id === "环境" && (resource.data as Record<string, unknown>).原文 === "TIME COURT")?.data).toMatchObject({
+      名称: "时光法庭",
+      简介: "一名或多名玩家角色被强行从时间线上拽走，因破坏连续性而受审。",
+      特性: [
+        { 特性名称: "超脱时间", 特性原文: "Out of Time", 特性类型: "被动" },
+        { 特性名称: "陪审团审判", 特性原文: "Trial by Jury", 特性类型: "被动" },
+        { 特性名称: "辩护律师", 特性原文: "Counsel for the Defense", 特性类型: "被动" },
+        { 特性名称: "公诉律师", 特性原文: "Counsel for the Prosecution", 特性类型: "动作" },
+        { 特性名称: "“法庭肃静！”", 特性原文: "“Order in the Court!”", 特性类型: "反应" },
+      ],
+    });
     expect(resources.filter((resource) => resource.template.id === "领域卡").every((resource) => (resource.data as Record<string, unknown>).领域 !== "Dread")).toBe(true);
     expect(resources.filter((resource) => resource.template.id === "敌人").every((resource) => !/[#]|\bHorde\b/u.test(String((resource.data as Record<string, unknown>).种类)))).toBe(true);
+    expect(resources.filter((resource) => ["敌人", "环境"].includes(resource.template.id)).flatMap((resource) => {
+      const features = (resource.data as Record<string, unknown>).特性;
+      return Array.isArray(features) ? features as Array<Record<string, string>> : [];
+    }).every((feature) => feature.特性类型 !== "演化" && !/[-—]\s*(?:进化|演化)(?:\s+Evolution)?\s*[:：]/u.test(feature.特性描述))).toBe(true);
     expect(resources.filter((resource) => resource.template.id !== "子职业").every((resource) => /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/u.test(resource.id))).toBe(true);
     expect(resources.filter((resource) => resource.template.id === "子职业").every((resource) => {
       const data = resource.data as Record<string, unknown>;

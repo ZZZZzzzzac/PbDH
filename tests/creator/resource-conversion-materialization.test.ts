@@ -92,8 +92,37 @@ describe("Creator third-party resource conversion", () => {
     const converted = await materializeCreatorResourceConversion(imported.batch);
     const weapon = converted.candidate?.document.resources[0];
 
-    expect(weapon?.template).toEqual({ id: "武器", version: "1.0.0" });
+    expect(weapon?.template).toEqual({ id: "武器", version: "1.0.1" });
     expect(trustedAuthoringFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
     expect(trustedRendererFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
   });
+
+  it("upgrades old pbres Template versions before Creator can export them", async () => {
+    const bytes = new Uint8Array(readFileSync(path.join(
+      process.cwd(),
+      "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
+    )));
+    const imported = await resourceConversionRegistry.import("pbres", {
+      bytes,
+      fileName: "legacy.pbres",
+      container: "pbres",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+
+    const converted = await materializeCreatorResourceConversion(imported.batch);
+
+    expect(converted.candidate?.document.resources.map((resource) => resource.template)).toEqual([
+      { id: "敌人", version: "1.0.1" },
+    ]);
+    expect(converted.candidate).not.toBeNull();
+    if (!converted.candidate) return;
+    const exported = await loadPbres(
+      writePbres(converted.candidate.document, converted.candidate.media),
+      validateResourcePackageCandidate,
+    );
+    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.1" });
+  });
 });
+import { readFileSync } from "node:fs";
+import path from "node:path";

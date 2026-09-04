@@ -13,7 +13,7 @@ import {
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
 import { CanonicalCardSurface, CardPreviewDialog } from "@pbdh/resource-renderer/react";
-import { canonicalCardDesignSize, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { OperationStatus } from "@pbdh/platform-ui";
 
@@ -174,7 +174,7 @@ function PlayerResourcePreviewContent({
   return <CardPreviewDialog
     designWidth={canonicalCardDesignSize.width}
     designHeight={canonicalCardDesignSize.height}
-    fixedRatio={resource.presentation.fixedRatio}
+    fixedRatio={usesFixedSurfaceRatio(resource.presentation)}
     label={`${name}资源详情`}
     onClose={onClose}
   >

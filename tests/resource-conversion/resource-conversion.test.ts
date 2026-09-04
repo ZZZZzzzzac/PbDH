@@ -392,7 +392,7 @@ describe("registered Template mapping and native pbres", () => {
     const mapped = mapBatchToRegisteredCandidates([...rink.batch.resources, ...kid.batch.resources]);
     expect(mapped.unmapped).toEqual([]);
     expect(mapped.candidates.map((item) => item.template.id)).toEqual(["敌人", "武器"]);
-    expect(mapped.candidates[1]?.template.version).toBe("1.0.0");
+    expect(mapped.candidates[1]?.template.version).toBe("1.0.1");
     expect(mapped.candidates[0]?.data.难度).toBe("15");
     expect(mapped.candidates[1]?.data.伤害).toBe("d8");
   });
@@ -471,7 +471,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "武器", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "武器", version: "1.0.1" });
     expect(candidate?.data).toMatchObject({
       特性名称: "", 特性描述: "可靠：攻击掷骰+1。", 简介: "一把朴素的短剑。", 位阶: "",
     });
@@ -518,7 +518,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "护甲", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "护甲", version: "1.0.1" });
     expect(candidate?.data).toEqual({
       名称: "填充布甲", 类型: "护甲", 护甲值: "3", 重度伤害阈值: "5",
       严重伤害阈值: "11", 特性名称: "", 特性原文: "", 特性描述: "灵活：闪避值+1。",
@@ -574,7 +574,7 @@ describe("registered Template mapping and native pbres", () => {
       expect(imported.ok).toBe(true);
       if (!imported.ok) throw new Error("import failed");
       const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-      expect(candidate?.template).toEqual({ id: "物品", version: "1.0.0" });
+      expect(candidate?.template).toEqual({ id: "物品", version: "1.0.1" });
       expect(candidate?.data).toMatchObject({
         类型: source.type === "consumable" ? "消耗品" : "物品",
         掷骰: "",
@@ -630,7 +630,7 @@ describe("registered Template mapping and native pbres", () => {
       if (!imported.ok) throw new Error("import failed");
       const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
       expect(mapped.unmapped).toEqual([]);
-      expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.0" });
+      expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.1" });
       expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}` });
       expect(mapped.candidates[0]?.data.简介).toBe("可见简介");
       expect(mapped.candidates[0]?.data.内容).toEqual(expect.any(Array));
@@ -737,7 +737,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "职业", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "职业", version: "1.0.1" });
     expect(candidate?.data).toMatchObject({
       领域: ["优雅", "典籍"], 生命点: "5", 闪避值: "10",
       希望特性: { 特性名称: "", 特性原文: "", 特性描述: "大闹一场" },
@@ -826,7 +826,7 @@ describe("registered Template mapping and native pbres", () => {
     if (!imported.ok) throw new Error("import failed");
     const candidates = mapBatchToRegisteredCandidates(imported.batch.resources).candidates;
     expect(candidates).toHaveLength(3);
-    expect(candidates.map((candidate) => candidate.template)).toEqual(Array(3).fill({ id: "子职业", version: "1.0.0" }));
+    expect(candidates.map((candidate) => candidate.template)).toEqual(Array(3).fill({ id: "子职业", version: "1.0.1" }));
     expect(candidates.map((candidate) => candidate.data)).toEqual(subclassBatch.resources.map((resource) => resource.fields));
     expect(candidates.flatMap((candidate) => candidate.diagnostics)).toEqual([]);
   });
@@ -911,7 +911,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "种族", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "种族", version: "1.0.1" });
     expect(candidate?.data).toEqual(ancestryBatch.resources[0]?.fields);
     expect(candidate?.diagnostics).toEqual([]);
   });
@@ -1001,7 +1001,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "社群", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "社群", version: "1.0.1" });
     expect(candidate?.data).toEqual(communityBatch.resources[0]?.fields);
     expect(candidate?.diagnostics).toEqual([]);
 
@@ -1067,7 +1067,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "领域卡", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "领域卡", version: "1.0.1" });
     expect(candidate?.data).toEqual(domainBatch.resources[0]?.fields);
     expect(candidate?.diagnostics).toEqual([]);
 
@@ -1118,7 +1118,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "环境", version: "1.0.0" });
+    expect(candidate?.template).toEqual({ id: "环境", version: "1.0.1" });
     expect(candidate?.data).toMatchObject(environmentBatch.resources[0]?.fields ?? {});
     expect(candidate?.data.原文).toBe("Burning Library");
     expect((candidate?.data.特性 as Array<Record<string, unknown>>)[0]?.特性原文).toBe("");
@@ -1186,7 +1186,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(read.candidate?.document.package.id).toBe(imported.batch.nativePackage?.package.id);
   });
 
-  test("pbres restores the exact Free Template identity", async () => {
+  test("pbres upgrades an old Free Template to the current version", async () => {
     const bytes = new Uint8Array(readFileSync(path.join(
       process.cwd(), "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
     )));
@@ -1213,7 +1213,7 @@ describe("registered Template mapping and native pbres", () => {
     if (!imported.ok) throw new Error("pbres import failed");
     expect(imported.batch.resources[0]?.kind).toBe("free");
     expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]).toMatchObject({
-      template: { id: "自由", version: "1.0.0" },
+      template: { id: "自由", version: "1.0.1" },
       data: resource.data,
     });
   });

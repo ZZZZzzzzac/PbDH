@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 
 import type { LocalDocumentSync } from "@pbdh/local-storage";
-import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
+import { canonicalCardDesignSize, usesFixedSurfaceRatio } from "@pbdh/resource-renderer/core";
 import { CardDisplay } from "@pbdh/resource-renderer/react";
 import type { TabletopCommand, TabletopDocumentModel } from "@pbdh/tabletop/core";
 import { TabletopSurface } from "@pbdh/tabletop/react";
@@ -44,7 +44,8 @@ export type GmTabletopWorkbenchCommand =
   | { type: "select-instance"; instanceId: string; mode: "replace" | "add" | "toggle" }
   | { type: "open-instance-context"; instanceId: string; x: number; y: number }
   | { type: "tabletop-command"; command: TabletopCommand }
-  | { type: "edit-instance-data"; path: string[]; value: unknown };
+  | { type: "edit-instance-data"; path: string[]; value: unknown }
+  | { type: "replace-instance-data"; data: Record<string, unknown> };
 
 export function GmTabletopWorkbench({
   snapshot,
@@ -250,7 +251,7 @@ export function GmTabletopWorkbench({
         capabilities={gmTabletopCapabilities}
         selectedInstanceId={snapshot.selectedInstanceId}
         selectedInstanceIds={snapshot.selectedInstanceIds}
-        renderInstance={(instance) => <CardDisplay designWidth={canonicalCardDesignSize.width} designHeight={canonicalCardDesignSize.height} fixedRatio={instance.resource.presentation.fixedRatio} displayWidth="250px" displayAspectRatio={63 / 88}>
+        renderInstance={(instance) => <CardDisplay designWidth={canonicalCardDesignSize.width} designHeight={canonicalCardDesignSize.height} fixedRatio={usesFixedSurfaceRatio(instance.resource.presentation)} displayWidth="250px" displayAspectRatio={63 / 88}>
           <GmTabletopCard instance={instance} assetUrls={snapshot.assetUrls} onCommand={(command) => execute({ type: "tabletop-command", command })} />
         </CardDisplay>}
         onSelect={(instanceId, mode) => execute({ type: "select-instance", instanceId, mode })}
@@ -279,7 +280,7 @@ export function GmTabletopWorkbench({
     {snapshot.view === "instance-editor" && selectedInstance && <>
       <div className="instance-editor-toolbar"><button type="button" onClick={() => execute({ type: "set-view", view: "canvas" })}>← 返回桌面</button><strong><ResourceIcon resource={selectedInstance.resource} />{selectedTemplate?.project(selectedInstance.resource.data).title ?? selectedInstance.id} · 实例</strong></div>
       <div className="workbench-body instance-editor-body" onFocusCapture={() => execute({ type: "request-cloud-edit" })} onBlurCapture={() => execute({ type: "request-cloud-edit" })}>
-        {selectedFrontend && <TemplateAuthoringSurface authoring={selectedFrontend.authoring} data={selectedInstance.resource.data} onValue={(path, value) => execute({ type: "edit-instance-data", path: path.split("."), value })} />}
+        {selectedFrontend && <TemplateAuthoringSurface authoring={selectedFrontend.authoring} data={selectedInstance.resource.data} onValue={(path, value) => execute({ type: "edit-instance-data", path: path.split("."), value })} onData={(data) => execute({ type: "replace-instance-data", data })} />}
         <aside className="preview-panel"><header><h1>实例预览</h1><span className="instance-edit-note">修改只作用于桌面上的这张卡</span></header><AutoFitPreview><GmTabletopCard instance={selectedInstance} assetUrls={snapshot.assetUrls} onCommand={(command) => execute({ type: "tabletop-command", command })} /></AutoFitPreview><footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer></aside>
       </div>
     </>}

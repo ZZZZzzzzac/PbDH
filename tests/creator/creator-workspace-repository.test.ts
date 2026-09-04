@@ -54,6 +54,7 @@ describe("Creator Workspace local repository", () => {
 
     expect(restored).toHaveLength(1);
     expect(restored[0]!.document.resources[0]!.data).toMatchObject({ 名称: "刷新后仍存在" });
+    expect(restored[0]!.document.resources[0]!.template.version).toBe("1.0.1");
     expect(restored[0]!.folders.map((folder) => folder.name)).toContain("遭遇");
     expect(restored[0]!.openResourceIds).toEqual(workspace.openResourceIds);
     expect(restored[0]!.dirtyResourceIds).toEqual(workspace.dirtyResourceIds);

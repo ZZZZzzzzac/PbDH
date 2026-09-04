@@ -11,6 +11,7 @@ import {
 
 import type { CreatorConversionReview } from "./creator-dialogs.tsx";
 import { safeFileName, resourceContainer } from "./creator-file-actions.ts";
+import { CreatorTemplateUpgradeError, upgradeCreatorTemplateCandidate } from "./creator-template-upgrade.ts";
 import { materializeCreatorResourceConversion } from "./materialize-resource-conversion.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import { prepareWorkspaceExport, type CreatorWorkspace } from "./workspace-model.ts";
@@ -29,14 +30,34 @@ export type CreatorPackageFileResult =
   | { type: "conversion-export"; bytes: Uint8Array; fileName: string }
   | { type: "no-conversion" };
 
+export async function upgradeCreatorImportCandidate(candidate: ResourcePackageCandidate): Promise<
+  Extract<CreatorPackageFileResult, { type: "import-ready" | "invalid" }>
+> {
+  try {
+    return { type: "import-ready", candidate: await upgradeCreatorTemplateCandidate(candidate) };
+  } catch (error) {
+    return {
+      type: "invalid",
+      title: "模板升级失败 · 零写入",
+      diagnostics: error instanceof CreatorTemplateUpgradeError ? error.diagnostics : [{
+        code: "template.upgrade.unavailable",
+        severity: "error",
+        family: "resource-template",
+        version: candidate.document.contractVersion,
+        location: "/resources",
+        params: { message: error instanceof Error ? error.message : "模板升级失败" },
+      }],
+    };
+  }
+}
+
 export async function runCreatorPackageFileWorkflow(
   command: CreatorPackageFileCommand,
 ): Promise<CreatorPackageFileResult> {
   if (command.type === "inspect-import") {
     const result = await loadPbres(command.bytes, validateResourcePackageCandidate);
-    return result.candidate
-      ? { type: "import-ready", candidate: result.candidate }
-      : { type: "invalid", title: "导入失败 · 零写入", diagnostics: result.diagnostics };
+    if (!result.candidate) return { type: "invalid", title: "导入失败 · 零写入", diagnostics: result.diagnostics };
+    return upgradeCreatorImportCandidate(result.candidate);
   }
 
   if (command.type === "export-workspace") {

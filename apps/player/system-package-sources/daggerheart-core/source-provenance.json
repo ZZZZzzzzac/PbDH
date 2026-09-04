@@ -67,7 +67,7 @@
       {
         "key": "SRD2_SECTION_746",
         "issue": "TIME COURT 的 translation 重复为 MOON KINGDOM",
-        "handling": "保留英文机制文本，资源名称标为时间法庭，等待人工补译"
+        "handling": "使用人工校对的完整中文译文，保留英文特性名称作为配对依据"
       }
     ]
   }

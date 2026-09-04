@@ -1,16 +1,16 @@
 import {
-  adversaryTemplate,
-  ancestryTemplate,
-  armorTemplate,
-  communityTemplate,
-  domainTemplate,
-  environmentTemplate,
-  freeTemplate,
-  itemTemplate,
-  professionTemplate,
-  subclassTemplate,
+  currentAdversaryTemplate as adversaryTemplate,
+  currentAncestryTemplate as ancestryTemplate,
+  currentArmorTemplate as armorTemplate,
+  currentCommunityTemplate as communityTemplate,
+  currentDomainTemplate as domainTemplate,
+  currentEnvironmentTemplate as environmentTemplate,
+  currentFreeTemplate as freeTemplate,
+  currentItemTemplate as itemTemplate,
+  currentProfessionTemplate as professionTemplate,
+  currentSubclassTemplate as subclassTemplate,
   type TemplateCoreCapability,
-  weaponTemplate,
+  currentWeaponTemplate as weaponTemplate,
 } from "@pbdh/templates/core";
 
 import { isObject, namedFeatureGroup, namedFeatures, text } from "./shared.ts";

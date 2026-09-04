@@ -24,6 +24,7 @@ describe("Creator package file workflow", () => {
     expect(result.type).toBe("import-ready");
     if (result.type !== "import-ready") return;
     expect(result.candidate.document.package.name).toBe("牛头人破坏者测试资源包");
+    expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.1" });
   });
 
   test("prepares, validates and writes one export result", async () => {

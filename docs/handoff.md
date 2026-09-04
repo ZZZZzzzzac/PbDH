@@ -1,409 +1,95 @@
-# PbDH 开发交接
+# PbDH 当前交接
 
 更新时间：2026-09-04
 
-## 明日续接入口
+## 接手入口
 
-- 已将种族卡确认的字体、可选英文、footer、内容自然增长与固定比例文字拟合能力同步到其余 10 个模板，并完成用户提出的四项修正：纯图无 footer、全模板署名编辑、图文标题压在图片下缘、短效果不误缩。
-- 全模板标题区留白已按种族/社群统一：360px 原生画布使用上下 `10px`、左右 `14px`；武器按 `.175` 比例换算，敌人标题定位使用等价边距。
-- 武器与护甲的正式卡面及编辑区均已按用户确认的装备布局完成；下一轮继续按用户反馈审阅其他模板实际视觉。
-- Resource Package `1.1.0` 当前处于 `development`，Creator、Player、PBRES 适配器已支持 1.0/1.1 双读。不要修改已发布的 `1.0.0` Schema 或 conformance 权威。
-- GM 桌面使用独立的 Tabletop Document `1.0.0`，其 `resourceCopy` 尚无 `attribution`。若下一轮要求桌面副本也永久保留 footer，需显式设计 Tabletop Document 的兼容升级；不要把字段偷偷塞进 1.0.0。
-- 当前工作树含整轮模板迁移及用户已有改动，未提交且不可清理。开始前先读 `AGENTS.md`、本文件和 `git status --short`。
+当前用户请求已经完成，没有遗留的必做编码项。下一步通常是让用户在 Creator 中实际试用护甲、武器和敌人特性下拉菜单，再按反馈调整预设文本或交互。
 
-## 本轮目标
+开始新工作前：
 
-把 11 个第一方 Resource Template 的 Creator 编辑区与卡面视觉从平台声明式通用控件迁移为模板自有的 React/HTML/CSS；“敌人”模板已经完成首轮人工审阅，其余模板已统一到敌人模板确立的首轮视觉语言。用户明确不考虑第三方模板。
+1. 阅读根目录 `AGENTS.md` 与目标目录下的局部 `AGENTS.md`。
+2. 运行 `git status --short`。工作树包含大量未提交和未跟踪改动，其中既有本轮改动，也有此前工作；全部按用户资产处理，不清理、不还原。
+3. 涉及 Daggerheart Core 资源时，额外阅读 `apps/player/system-package-sources/daggerheart-core/AGENTS.md`。
 
-## 当前结论与不可回退的边界
+完成条件：修改后先跑相关定向测试，最后跑 `npm run verify`；资源源文件发生变化时，JSON 审阅副本与 PBRES 必须重新生成并保持一致。
 
-- 模板自己拥有编辑区结构、字段布局、控件选择和卡面 DOM/CSS；平台只挂载模板能力，不理解字段语义，也不硬编码模板 UI。
-- 不再使用 OpenPencil。前端 JSX/HTML/CSS 是唯一视觉源，相关 `.op`、生成物与同步脚本已从工作树移除；`scripts/check-visual-sources.mjs` 会阻止重新引入双视觉源。
-- 模板 JSON 字段结构或可输入字段集合发生兼容性变化时才需要新版本；字体、间距、颜色、布局等视觉修改不因此发布新版本。
-- 11 个模板的 `1.0.0` 发布过早，当前已全部从 `published` 切回 `development`。参见：
-  - `docs/adr/0066-let-trusted-templates-own-authoring-editors.md`
-  - `docs/adr/0067-return-first-party-resource-templates-to-development.md`
-  - `docs/adr/0068-use-frontend-code-as-the-only-visual-source.md`
-- 后续视觉修改默认只能改模板。若需求只能通过平台实现，先说明原因和最小改动范围，等待用户授权。本轮用户仅额外授权了卡面模式工具栏“图+文”按钮去除定宽。
+## 本轮完成内容
 
-## 当前工作树
+### 重复特性预设
 
-- 分支为 `main`，存在大量未提交改动；不要清理、还原或覆盖这些改动。
-- `git status --short` 是当前修改清单的权威，不在本文件复制完整列表。
-- 核心迁移文件位于：
-  - `packages/templates/src/frontend/*/1.0.0/authoring-editor.tsx`
-  - `packages/templates/src/frontend/authoring-primitives.tsx`
-  - `packages/templates/src/frontend/authoring-surface.tsx`
-  - `packages/templates/src/frontend/template-frontend-registry.ts`
-  - `packages/templates/src/frontend/types.ts`
-- 平台不再持有模板字段布局；ADR、README、roadmap 与测试已有配套修改，具体内容直接看 diff。
+- 将出现至少 4 次且内容相同或近似的特性做成 Creator 下拉预设：护甲 7 项（6 个英文原名，其中 Heavy 分成两种效果）、武器 22 项、敌人 10 项；环境按用户要求不处理。
+- 下拉菜单只显示中文，不显示英文原名。选择后会一次性填写特性中文名、英文原名和描述；敌人还会填写特性类型。
+- 护甲与武器只在特性描述中列出完整参数选择，例如 `<+1/2/3/4>`。敌人不枚举位阶值，使用 `<X>`、`<范围>`、`<该敌人>` 等通用占位符。
+- 敌人参数化名称使用 `无情(X)`、`杂兵(X)`、`集群(X)`；英文原名保持官方格式 `Relentless (X)`、`Minion (X)`、`Horde (X)`。
+- 预设权威位于 `packages/templates/src/frontend/feature-presets.ts`。`1.0.0` 与 `1.0.1` 的护甲、武器、敌人编辑器共用该目录。
+- `TemplateAuthoringSurface` 新增可选的整份数据回写入口 `onData`，Creator 和 GM 桌面都已接入。这样选中预设时多个字段是一次原子更新，不会被连续的单字段更新互相覆盖。
 
-## 敌人模板已完成
+### 特性翻译与资源数据
 
-编辑区：`packages/templates/src/frontend/adversary/1.0.0/authoring-editor.tsx`
+- 同英文名且效果相同或近似的特性译名、描述通过 `extraction-overrides.json` 统一；括号内参数属于正确数据，不能删除。
+- 同英文名但效果明显不同且形成规模时允许不同译名。护甲的 Heavy 当前明确分为：
+  - 链甲系，`闪避值 −1。`：`沉重`
+  - 全板甲系，`闪避值 −2；敏捷 −1。`：`极重`
+- 资源中的敌人特性描述继续保留具体敌人名称；只有下拉预设使用 `<该敌人>`。
+- 英文官方原文不修改。所有人工翻译修订都放在 `apps/player/system-package-sources/daggerheart-core/extraction-overrides.json`，同时记录提取器旧输出 `expected`，保持上游变化时 fail-closed。
 
-- 位阶：`1 / 2 / 3 / 4` 下拉建议。
-- 种类：`斗士 / 集群 / 头目 / 杂兵 / 远程 / 潜伏 / 社交 / 独狼 / 标准 / 辅助`。
-- 范围：`近战 / 邻近 / 近距离 / 远距离 / 极远`。
-- 攻击类型：`物理 / 魔法`。
-- 特性类型：`动作 / 被动 / 反应`。
-- 下拉入口使用 CSS 三角形，无外框；浏览器实测已经垂直居中。
-- 编辑区字体与控件已放大，布局使用响应式 grid/flex，不给输入框固定宽度。
-- 特性“清空”“删除”按钮与输入框均为 `34px` 高，浏览器实测上下边缘一致。
-- “换卡”整栏已移除。
+### 武器位阶提取修复
 
-卡面：`packages/templates/src/frontend/adversary/1.0.0/renderer.tsx`
+- 原问题：位阶 1 主武器显示 178 个。
+- 根因：ParaTranz 源把部分位阶标题和武器表拆到相邻记录。旧提取器只搜索当前记录，找不到标题时默认位阶 1，导致位阶 2–4 的表被归入位阶 1。
+- `scripts/extract-daggerheart-srd2-resources.ts` 现在跨记录继承最近的位阶标题，同时仍允许同一记录内的新标题覆盖继承值。
+- 当前武器数量为：
 
-- 生命点、压力点的 GM 操作在卡面图标上完成；点击空心/实心图标切换状态，不再有预览工具栏。
-- 生命与压力图标分别使用两套 SVG 填充状态，间距一致。
-- 特性类型与名称处于同一信息组，但类型字号和颜色稍弱；英文名独立置于下方。
-- 修复了标题、正文和控件文字裁切。
-- “纯文字”与“图+文”共用同一 DOM；纯文字通过 `--enemy-media-height: 0px` 去掉图片区并把标题上移到卡片顶部。
-- 非固定比例下：
-  - 图+文保留 `568px` 原生最小高度，内容超过时增长。
-  - 纯文字按实际正文内容收缩。当前浏览器样例原生高度为 `474px`，图+文为 `570px`。
-  - 纯图片通过 `height: auto` 按图片自身比例撑开，不继承图文卡最小高度。
-- 当前 Browser 验收资源没有设置卡图，因此纯图片“真实图片比例”只由 CSS 与测试确认，尚未在本地页面用实际图片复验。
+| 位阶 | 主武器 | 副武器 |
+| --- | ---: | ---: |
+| 1 | 38 | 13 |
+| 2 | 68 | 20 |
+| 3 | 60 | 20 |
+| 4 | 68 | 20 |
 
-平台工具栏的已授权例外：
+- 总武器数仍为 307。回归测试锁定上述完整分布，防止再次把跨记录表格归入位阶 1。
 
-- `apps/creator/src/workspace-prototype/workspace.css` 已删除第二个卡面模式按钮的 `width: 82px`。
-- 浏览器实测按钮宽度：纯文字 `49px`、图+文 `44.5px`、纯图片 `49px`；均由文字宽度加左右各 `8px` 内边距决定。
-- 文案“半图半文字”已改为“图+文”。
+## 资源生成状态
 
-## 种族模板已完成首轮
+- Daggerheart Core 玩家资源包版本：`1.0.19`。
+- 玩家资源：956；GM 资源：311。
+- 玩家包当前摘要：`sha256:d089eb844f556c8a489c624c1d13b0d22112fd728e1b9dfad0aa85af38bc22e1`。
+- GM 包当前摘要：`sha256:cfff683dedab685991322866ac2f99c36a9e3d47a2d001b918cf587d05d47a55`。
+- 已更新：
+  - `apps/player/system-package-sources/daggerheart-core/resources/*.json`
+  - `daggerheart-core-player.resource-package.json`
+  - `daggerheart-core-gm.resource-package.json`
+  - `apps/player/public/system-packages/daggerheart-core/resources/*.pbres`
+  - `apps/player/src/daggerheart-core-preset.generated.json`
 
-编辑区：`packages/templates/src/frontend/ancestry/1.0.0/authoring-editor.tsx`
+资源文本或提取覆盖变化后的执行顺序：
 
-- 采用与敌人模板一致的暖灰底、分组容器、赭红标题、控件字号与按钮样式。
-- 身份、简介、种族特性按种族字段重新布局，没有复制敌人的字段语义。
-- 名称、英文、类型与简介现已合并在同一个基础信息分组卡片内；简介独占第二行，原独立简介分组已移除。
-- 种族固定显示 2 个特性槽，不提供“新增”或“删除”；旧数据即使特性数组为空，编辑区也会显示两个空槽。槽内不再另设标题，名称输入标签直接为“特性1”“特性2”。
-- 种族名称后新增“英文”栏，数据字段沿用敌人模板的 `原文`；每个种族特性名称后也新增“英文”栏，数据字段为 `原名`。
-- 每项特性保留“清空”；操作按钮和输入框均为 `34px` 高。
-- 使用响应式 grid；窄屏下字段与操作按钮改为单列。
-
-卡面：`packages/templates/src/frontend/ancestry/1.0.0/renderer.tsx`
-
-- 已从共享 `reference-card` 工厂迁移为种族模板自有 React/HTML/CSS，Renderer Revision 保持 `ancestry-card-r1`。
-- 色调、字体层级、深褐标题区、骨色正文、赭红标题与特性分隔线沿用敌人卡的视觉语言。
-- 卡面标题按“中文种族名 + 英文副标题”渲染；特性标题按“中文特性名称 + 英文副名”渲染，英文使用与敌人卡一致的弱化字号和颜色层级。
-- 纯文字与图+文共用同一 DOM；纯文字通过 `--ancestry-media-height: 0px` 去掉图片区。
-- 图+文保留图片区；未设置卡图时显示深褐底，标题仍位于图片区下缘的信息带。
-- 纯图片只渲染主图；非固定比例时按图片自身比例撑开。
-- 固定比例下两项特性与简介均已在真实 Creator 页面确认无裁切。
-- 已修复固定比例切换状态残留：非固定模式的 ResizeObserver 测量值不再决定固定 Frame 高度，切回固定时 Frame 强制恢复 `88px` 并复位内部原生高度。
-- 纯文字 `ancestry-heading` 已改为 `74px` 高的底部对齐纵向内容流；标题自身下对齐，标题、可选英文、简介自然堆叠，标题与简介的空白状态实际间距为 `7px`。
-- 右侧类型标签（如“种族”）已移入与名称相同的 `ancestry-title-row`，通过 Grid `align-items: end` 共用底边；真实 Creator 页面测得名称与类型标签底边差约 `0.00002px`，仅为浮点误差。
-- 标题区与正文区交界处已加入其他卡片同款 `#b88a57` 分割线；纯图片模式不显示。真实 Creator 页面测得标题区底边与正文区顶边误差约 `0.000008px`，控制台无错误。
-- 卡面正文顶部的 `ancestry-feature-heading`（“种族特性”标题及横线）已删除；编辑区的“种族特性”分组标题保留。
-- 卡面字体已整体放大：主标题 `28px → 32px`、类型 `15px → 17px`、简介与顶层英文 `10px → 11.5px`、特性名称 `15px → 17px`、特性英文 `9px → 10.5px`、特性正文 `11px → 12.5px`。同时微调标题区高度、特性名称列宽与内边距；真实固定比例 Creator 卡面中两项特性及正文均无横纵裁切，控制台无错误。
-- 标题区已从绝对定位的固定 `80px` 高度改为正常文档流：简介不再设置 `max-height` 或隐藏溢出，内容增加时标题区自然增高。固定比例下卡片总高保持 `503px`，浏览器长简介样例中标题由 `74px` 增至 `118px`、正文由 `420px` 压缩至 `377px`；非固定比例下正文不压缩，整卡由 `333px` 增至 `377px`。媒体高度仍由 `--ancestry-media-height` 独立控制。
-- 特性文字再次放大：特性名称 `17px → 19px`、特性英文 `10.5px → 12px`、特性正文 `12.5px → 15px`；固定比例短简介样例中两个特性卡各占 `193px`，长简介样例中各占 `171px`，均无裁切。非固定模式已显式取消正文与特性卡的零基准 Flex 收缩，避免内容区域折叠。
-- `ancestry-feature` 已从左右两列改为上下信息流：第一行是特性名与可选英文（Flex 基线对齐），描述在下一行占满宽度；英文为空时仍不生成节点。
-- `ancestry-feature` 不再设置固定或最小高度，也不再伸展填满正文余量，使用 `flex: none` 按内容自然增高。真实固定比例 Creator 页面中，两个短描述特性卡各为 `106px`；临时加长第一项描述后仅该卡增至 `171px`，第二项仍为 `106px`，两者均无裁切，测试内容已恢复。
-- 种族卡标题背景按模式分离：纯文字继续使用 `#251a14` 纯色并关闭遮罩；图+文让图片铺满整个图片区与自适应标题区，叠加从透明到约 `96%` 不透明的深褐渐变（比敌人卡更早、更强地变暗）并增加轻微文字阴影，避免浅色图片降低可读性。真实 Creator 页面确认纯文字遮罩 `display:none`，图+文遮罩覆盖完整 `174px` 标题图片区，模式已恢复为纯文字。
-- 种族简介字号已从 `11.5px/1.3` 放大到 `14px/1.4`。真实固定比例 Creator 页面中当前两行简介高度为 `39px`、无裁切，动态标题区增至 `99px`，正文区自然调整为 `396px`。
-- 固定比例种族卡已接入容器级文字拟合：两个 `ancestry-feature` 仍按各自内容自然增高，只有外层 `.ancestry-features` 的完整 `scrollHeight` 超过可用 `clientHeight` 时，才统一把两段特性描述从 `15px` 向下拟合，当前下限为 `11px`。非固定比例关闭拟合，内容或模式变化时会先恢复自然字号再重新测量。
-- 拟合逻辑已下沉到 `packages/resource-renderer/src/text-fit.ts`：提供四分之一像素精度的字号搜索、容器实测、ResizeObserver/字体加载重测、自然字号恢复，以及 `natural` / `fitted` / `overflow` 状态。模板只声明受约束容器、字号范围和 CSS 变量。
-- 种族卡已加入卡片级 footer。左侧为“图片作者或来源”，右侧为“卡牌来源或所属”；作者默认空，来源默认取创建该卡时的当前资源包名。两项均可逐卡编辑，纯文字/图+文位于正文下缘；纯图片不额外渲染 footer，因为完整卡图通常已经自带署名。
-- footer 的持久化不放进种族 Template 数据，而是进入 Resource Package `1.1.0` 的通用 `attribution`：`artworkCredit` 与 `sourceLabel`。这样署名会随单卡复制、PBRES 导出/导入保留，后续其他模板可直接复用共享 `CardFooter`，无需污染各模板字段。
-- 旧 `1.0.0` 资源包继续可读；首次新增资源、编辑署名或导出时升级到 `1.1.0`，并为旧卡补 `{ artworkCredit: "", sourceLabel: 当前资源包名 }`。Player、Creator 与 PBRES 转换链路均支持 1.0/1.1 双读。
-
-## 其余模板已完成视觉统一
-
-编辑区：
-
-- `packages/templates/src/frontend/standard-editor-styles.ts` 已统一到敌人编辑区的暖灰底、分组边框、赭红标题、控件间距、按钮尺寸与交互反馈。
-- 护甲、社群、领域卡、物品、职业、子职业、武器继续各自拥有字段结构，只消费统一的视觉基线。
-- 环境与自由是本轮剩余模板中仅有的可变数量内容结构；两者均提供新增、清空、删除与删除确认。
-- 已审阅的敌人模板保持原状，不在本轮回退其可变特性行为。
-
-卡面：
-
-- 11 个第一方 Renderer 均使用敌人卡确立的骨色 `#eee4d0`、赭红 `#641f1d`、深褐标题区与 `Noto Sans SC` 字体语言。
-- 通用参考卡视觉基线已覆盖社群、领域卡、物品、职业、子职业；各模板仍按自己的数据模型组合标题、属性、效果与简介。
-- 护甲、环境、自由、武器的独立 Renderer 已调整为同一暖色语言；图+文模式不再使用“独立标题栏—图片—正文”的割裂结构，标题与类型位于图片下缘渐变区。
-- 固定比例、非固定比例、文字、图+文、纯图片模式均保留；所有模板纯图片模式都不额外渲染 footer。
-
-## 英文字段的全模板规则
-
-- 英文字段统一作为可选信息：当前敌人、种族、环境的顶层 `原文` 与特性 `原名` 已从 Schema 必填项中移除；默认数据仍提供空字符串，编辑器可直接填写。
-- 空字符串、纯空白和字段完全缺失均视为“无英文”；Renderer 不生成对应英文 DOM，因此不会留下空行或占位高度。
-- 敌人与种族的绝对定位标题区只有在英文存在时才启用 `has-original-title` 间距；无英文时简介从原英文位置自动上移。敌人特性的空英文 `<small>` 也不再生成。
-- 环境卡原本使用文档流和条件渲染，本轮补强为纯空白同样不渲染。
-- 后续为其他模板增加英文字段时必须沿用此规则，不得为可选英文预留固定空位。
+```powershell
+npx tsx scripts/extract-daggerheart-srd2-resources.ts
+npx tsx scripts/generate-daggerheart-core-system-package.ts
+npm run verify
+```
 
 ## 验证状态
 
-- 本轮新增种族与种族特性英文栏后的定向验证通过：`tests/templates/ancestry-template.test.ts` 与 `tests/resource-conversion/resource-conversion.test.ts`，共 59 项测试。
-- 英文字段可选与空值收缩的定向验证通过：敌人、种族、环境共 5 个测试文件、36 项测试；TypeScript 类型检查通过。
-- 种族 Frame 高度回归测试覆盖残留 `568px` 非固定测量值下固定模式仍输出 `88px`；真实 Creator 页面复验固定 `88px` → 非固定 `99.4px` → 固定 `88px`，卡面本体同步从 `498px` → `563px` → `498px`。
-- Kid、DHSHEET 与 ZZZ 不提供对应英文栏，导入时统一补为空字符串；PBRES 仍可原样保存新增字段，模板映射不丢失字段。
-- 已重启本地服务并在真实 Creator 页面完成有/无英文对照：敌人与种族有英文时标题区带 `has-original-title`，简介位置为 153px；英文清空或只含空白后英文节点消失、简介上移至 138px，特性英文节点数量归零，控制台无错误。
-- 先前英文栏 Browser 验收使用的测试资源均保持英文字段为空；本地 IndexedDB 内容仅作手工验收状态，不作为实现权威。
-- 最新 `npm run verify` 通过：
-  - TypeScript：98 个测试文件、729 项测试。
-  - Python：141 项测试。
-  - 依赖边界、Contract release、唯一视觉源检查、类型检查、Renderer 性能测量与 Platform 构建均通过。
-- `git diff --check` 通过；输出只有现有 CRLF/LF 提示。
-- Python 仍输出既有 Pydantic/FastAPI deprecation 警告；Platform 构建仍有入口 chunk 大于 500 KiB 的提示，本轮未处理。
-- 已重新运行 `node scripts/restart-dev.mjs`，Backend `8001` 与 Platform `5173` 均为 `OK`。真实 Creator 页面当前短内容的种族特性拟合状态为 `natural`，两段描述均保持 `15px`，容器 `clientHeight` 与 `scrollHeight` 均为 `368px`，控制台无错误；未为验收改动现有资源内容。
-- footer 真实页面验收通过：新建种族卡时“图片作者或来源”为空、“卡牌来源或所属”为“新资源包”；临时填写 `Anthony Jones` / `DH Core 061/270` 后卡面左右两端即时更新，随后已恢复空作者与默认来源。footer 两列实测左侧 `text-align:start`、右侧 `text-align:right`，控制台无错误。验收新增了一个“未命名种族”本地测试资源，没有删除现有资源。
+最终 `npm run verify` 已通过：
 
-## 下一步建议
+- TypeScript：99 个测试文件，806 项测试。
+- Python：141 项测试。
+- 依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 生产构建全部通过。
+- Python 仍有既有 FastAPI/Pydantic deprecation warnings；Vite 仍有入口 chunk 大于 500 KiB 的提示，本轮未处理。
 
-1. 等用户逐个审阅其余模板的实际视觉；有反馈时只调整共享基线或对应模板适配层中实际相关的部分。
-2. footer 已覆盖 11 个模板；署名继续属于 Resource，不得复制进每个 Template 的 `data`。
-3. 若用户要求 GM 桌面副本持久化署名，先升级 Tabletop Document Contract 并补导入、导出、Repository 与桌面 Renderer 回归测试。
-4. 每个模板完成后运行对应定向测试与真实 Creator 页面验收；整轮结束执行 `npm run verify` 和 `git diff --check`。
+Creator 页面可以正常加载，但浏览器本地当时没有打开的资源，因此本轮没有在真实资源编辑器里点击下拉菜单；预设内容、编辑器接线和原子更新由自动化测试覆盖。
 
-## 其余 10 个模板同步种族共性能力
+## 关键文件
 
-- 已将种族卡确认的共性能力同步到敌人、护甲、社群、领域卡、环境、自由、物品、职业、子职业、武器：更大的标题/效果文字层级、可选顶层英文、共享 `CardFooter`、非固定比例自然增高、固定比例容器实测与自动缩字。
-- 社群的单个特性与自由模板的具名内容块新增可选 `原名`；护甲、武器已改为独立的 `特性名称`、可选 `特性原文`、`特性描述`，Template、Renderer 与转换映射不再解析旧 `描述` 字符串。
-- 领域卡、物品、子职业等整卡本身就是具名能力的模板，顶层 `原文` 同时承担卡名/能力名英文，不另造重复的特性名称字段。职业的“希望特性”“职业特性”等固定栏目不增加不可编辑的英文标题字段。
-- 英文空值规则保持不变：空字符串、纯空白、字段缺失均不渲染、不占位；旧格式导入缺少英文时保持字段缺失，不为兼容数据强行注入空键。Creator 新建资源的默认数据仍提供空英文输入栏。
-- 社群、领域卡、物品、职业、子职业已经拆为模板自有 Renderer；模板之间只共享 footer、Markdown、文字拟合和编辑控件等叶子组件。
-- 新增共享 `TextFitContainer`，复用 `useContainerTextFit` 的四分之一像素测量逻辑；非固定比例关闭拟合并恢复自然字号。敌人和环境通常使用非固定比例，固定比例只保留极限兜底。
-- Browser 验收发现并修复跨资源包同 ID 切换时的运行状态串用：`TemplateRuntimePreview` 现在用 `package.id + resource.id + template.id + version` 作为组件身份，环境卡不再继承敌人的 HP/压力状态并报 `renderer.state.invalid`。
-- 真实 Creator 页面验收：环境卡非固定比例正文保持 `15px`，卡片、正文 `clientHeight === scrollHeight`，footer 正常；护甲固定比例短内容保持自然 `15px`，顶层英文、特性英文与 footer 均渲染，无横纵溢出；控制台无错误。
-- 为浏览器验收在本地“环境 Template 验收包”新增了“铁木甲”测试资源，未删除。
-- 新增 `tests/renderer/shared-template-capabilities.test.tsx`，覆盖其余 10 个模板的顶层英文与 footer，并覆盖社群/自由的具名效果英文和拟合样式声明。
-- Creator 的 `ResourceAttributionEditor` 已从种族专属条件中移出，所有模板编辑区都显示“卡面署名”；署名仍保存在 Resource `attribution`，没有复制进模板数据。
-- 11 个 Renderer 的纯图片分支均不生成 `CardFooter`；回归测试覆盖种族及其余 10 个模板。真实 Creator 页面中护甲纯图片 Shadow DOM 的 footer 数量为 `0`。
-- 社群、领域卡、物品、职业、子职业共用的 `reference-card` 已改为种族式画布：图文标题位于图片下缘的渐变信息区。护甲、环境、自由与武器也使用相同结构，不再把图片夹在独立标题栏和正文之间。
-- 自动缩字只测量真实效果容器：参考卡测 `.reference-card-sections`，护甲测 `.armor-effects`，环境测 `.environment-features`，武器测 `.weapon-description`；统计块、简介和弹性空白不参与判定。非固定比例继续关闭拟合并自然增长。
-- 真实 Creator 页面新增本地回归资源“领域短效果验收”：固定比例短描述实测为 `15px`、`data-text-fit="natural"`，效果容器 `clientHeight === scrollHeight === 376`；图文标题位于图片区下缘。护甲短特性同样保持 `15px` 和 `natural`。
-- 社群编辑器基础信息卡已改为三行：名称/英文/类型同处第一行，性格独占第二行，简介独占第三行。共享 `EditorTextarea` 现已统一为单行 `34px` 起步并随内容自增高，因此全部 11 个模板的多行编辑框都采用相同行为；社群真实页面输入两行内容后，性格、简介、特性描述均自然增至 `51px` 且无内部滚动条。
-- 社群卡不再把性格作为标题区标签；性格现在是正文区第一个标准特性块，标题固定为“性格”，其后才是原社群特性。真实页面确认标题区不存在 `.reference-card-meta`，正文特性顺序为“性格”→“高人一等”。浏览器验收新增本地资源“高城之民”，未删除现有数据。
-- 除敌人外，第一方模板的特性标题使用 `#b88a57` 装饰横线。敌人卡保留“特性”分区标题右侧的 2px 横线，但按用户后续反馈移除了每项 `.enemy-feature h2::after`，特性描述上方不再出现横线。
-
-## Suggested skills
-
-- `$ui-ux-pro-max`：实现或审查每个模板的布局、控件尺寸与视觉细节。
-- `$browser:control-in-app-browser`：必须用于真实 Creator 页面截图、DOM 和像素尺寸验收。
-- `$diagnosing-bugs`：仅在出现裁切、错误高度、状态不同步或测试失败时进入诊断循环。
-- `$code-review`：整轮模板迁移完成后审查边界、测试与无关改动。
-- `$handoff`：下一轮结束时更新本文件。
-
-## 护甲标题、图文结构与卡图删除
-
-- 护甲标题已改为单行“名称 / 位阶 + 类型”，英文名继续位于下一行；武器卡存在相同的位阶独占一行问题，也同步改为“名称 / 位阶 + 类型”。
-- 重新核对了 11 个模板的图文结构：统一规则是卡图从卡牌上边沿延伸到标题/正文分界，标题位于图片下缘并使用深色透明渐变；纯文字不保留图片区。种族、敌人和共享参考卡用标题嵌套图片区实现，护甲、环境、自由用绝对定位标题覆盖图片区，武器在图片区内嵌标题，行为一致。
-- 没有采用“纯文字与图文共用同高标题背景”的错误方案；图文模式仍会在标题上方增加真实图片区。
-- 浏览器审计发现武器卡的 63×88 原生小画布错误继承了按大画布容器宽度计算的共享 footer 尺寸，footer 挤压正文并让图文特性文字从自然 `2.1px` 降到 `1.5px` 下限。武器 Renderer 已覆盖为原生尺寸 footer；真实页面中纯文字与图文现均为 `natural / 2.1px`。护甲“铁木甲”两种模式均保持 `natural / 15px`。
-- Creator 预览底栏在已有卡图时显示“替换”和“删除卡图”；删除命令复用现有 `removePortrait`，清空当前资源引用，并只在媒体不再被其他资源使用时移除包内资产。无卡图时仍只显示“添加”。
-- 定向验证通过：TypeScript 类型检查，以及护甲、武器、共享模板能力、Creator Workspace 共 4 个测试文件、94 项测试。完整 `npm run verify` 通过：TypeScript 98 个文件、730 项测试，Python 141 项测试，依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量与 Platform 构建均通过。
-
-### 大画布 Renderer 缺少规范缩放框架
-
-- 用户带实际卡图复验后发现：护甲图文模式虽然外框仍是 63:88，但标题、数值和正文整体比纯文字小，视觉上像图片把卡牌撑宽。随后将 Creator `.card-scale` 直接锁为 `63px` 的修法又让 360px 原生护甲画布未经缩放塞进 63px 外层，产生巨大文字和横向裁切；该方案已撤回。
-- 规范 `63×88` 的尺寸现在由各 Renderer 自己承担，不由 Creator 的 AutoFit 外层承担。Creator `.card-scale` 恢复为 `width:max-content; height:max-content`；护甲、环境、自由三个仍使用 360px 大画布的 Renderer 已补上 `63×88` Frame，内层固定 `360×502.857px` 并以 `.175` 等比缩放。
-- 护甲、环境、自由的非固定比例模式使用 `ResizeObserver` 测量内层自然高度；Frame 宽度仍为 `63px`，高度按 `nativeHeight × .175` 增长。种族、敌人、共享参考卡原本已有同类 Frame，武器原生就是 `63×88` 小画布，不需要重复套缩放层。
-- `tests/renderer/shared-card-preview-regressions.test.ts` 新增失败后转绿的回归测试，同时约束 Creator 外层与三个大画布 Renderer 的缩放责任。定向验证通过：4 个测试文件、91 项测试，TypeScript 类型检查通过。
-- 真实 Creator 页面中护甲纯文字/图文均测得：Frame `63×88px`、内层 `360×503px`、transform `.175`、标题 `36px`、数值 `28px`；两种模式都没有横向溢出，控制台无警告或错误，模式已恢复为纯文字。
-- 修正后的完整 `npm run verify` 通过：TypeScript 98 个文件、731 项测试，Python 141 项测试，依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量与 Platform 构建均通过。`git diff --check` 通过，仅输出既有换行符提示。
-
-### Creator 预览统一宽度与长卡滚动
-
-- `AutoFitPreview` 不再用卡牌实际高度参与缩放，否则非固定比例卡会随着内容增长不断缩小。所有固定/非固定比例与纯文字/图文/纯图模式现在使用同一参考宽度。
-- 预览宽度同时受预览区宽度与标准 `63:88` 卡牌完整可见高度约束：固定比例卡保证在一个预览窗口内完整显示；非固定比例卡沿用相同宽度，超出窗口的部分通过预览区纵向滚动查看。
-- 新增按缩放后宽高占位的 `card-scale-slot`，解决 CSS transform 不参与文档流尺寸的问题；预览舞台改为纵向滚动并保留稳定滚动条槽，短卡继续居中，长卡顶部和底部均可到达。
-- 回归测试覆盖不再存在实际高度缩放、标准比例高度约束、缩放占位层和纵向滚动样式。真实 Creator 页面中固定比例“伤痕牛头人”为 `244×340px`、无需滚动；非固定比例保持 `244px` 宽、增至 `464px` 高，预览区产生 `26px` 可滚动范围并已滚动到底，控制台无警告或错误，验收后恢复图文与固定比例状态。
-- 完整 `npm run verify` 通过：TypeScript 98 个文件、732 项测试，Python 141 项测试，依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量与 Platform 构建均通过。
-
-### 全模板标题拟合、装备结构化特性与系统包重建
-
-- 11 个第一方 Renderer 的主标题已统一接入单行实测拟合。`text-fit.ts` 新增 `axis: "inline"`，标题只检查横向宽度，不再因中文字形的 `scrollHeight` 多出数像素而把短标题误降到最小字号；正文容器仍继续检查宽高双轴。
-- 各模板保留自己的自然字号，并降低长标题的最小字号下限。真实 Creator 页面中“铁木甲”为 `36px / natural`；“埃伦德里昂的远古守护者重型魔法防护链甲”为 `10.75px / fitted`，`scrollWidth=204`、`clientWidth=203`，满足 1px 测量容差且不再截断。
-- 护甲、武器 `1.0.0` Development Schema 已删除旧 `描述`，改为必填 `特性名称`、`特性描述` 与可选 `特性原文`；顶层可选英文继续使用 `原文`。编辑器直接显示“特性名称 / 英文 / 特性描述”，Renderer 直接读取这些字段，没有运行时正则或旧字段拆分兼容。
-- Daggerheart Core 与 TTTRI 的作者源 JSON 已改为结构化装备字段；生成器只逐字段复制。Player 的武器/护甲依赖规则改为组合 `{{特性名}}：{{特性描述}}`，避免选择装备后读取已删除的 `描述`。
-- 已重新运行全部系统包生成器：Daggerheart Core、Heart of Hopefind、How's My Driving、TTTRI、Witchy。后三者内容未受模板字段影响，因此重建后字节未变化；Daggerheart Core 和 TTTRI 的 `.pbres` 已更新。
-- PBRES 自动检查结果：Daggerheart Core 共 625 个资源、226 个护甲/武器；TTTRI 共 682 个资源、34 个护甲；两包全部装备均包含 `特性名称`、`特性描述`，旧 `描述` 数量为 0。其余三包没有护甲/武器资源。
-- 更新了 Resource Package conformance JSON/PBRES、Market/Player 物化、发布校验和系统包加载测试，防止旧字段重新进入生成物。
-- 真实页面新建了本地验收资源“埃伦德里昂的远古守护者重型魔法防护链甲”，字段为“防护 / 空英文 / 受魔法伤害时，在计算伤害阈值前按护甲值减免伤害。”；该资源只存在浏览器 IndexedDB，未删除。
-- 最新 `npm run verify` 通过：TypeScript 98 个文件、735 项测试；Python 141 项测试；依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 构建均通过。`git diff --check` 通过，仅有既有换行符提示。
-- 已运行 `node scripts/restart-dev.mjs`，Backend `8001` 与 Platform `5173` 均为 `OK`。
-
-### Player 装备选择器白屏修复
-
-- 白屏直接原因不是卡面副本丢字段，而是 Daggerheart `modules.json` 的五个武器/护甲 Picker 仍声明旧列 `描述`。资源表把不存在的字段值 `undefined` 传给 Restricted Markdown，随后在下划线强调规范化时调用 `.replace()` 崩溃。
-- 主武器、副武器、两处备用武器和护甲 Picker 已统一改为显示 `特性名称`、`特性描述`；Dependencies 原有的 `{{特性名}}：{{特性描述}}` 保持不变。
-- 共享 Restricted Markdown 增加运行时空值保护：缺失字段按空文本渲染，避免单条不完整资源使整个 Player 或卡面白屏。回归测试直接复现了 `Cannot read properties of undefined (reading 'replace')` 后转绿。
-- Daggerheart 内置 Resource Package 已从 `1.0.7` 升至 `1.0.8` 并重新生成 PBRES 与 Preset Index。必须升版本：浏览器会按内置资源接纳规则保留同版本本地快照，仅替换仓库中的 `1.0.7` PBRES 不能更新已经安装的旧字段资源。
-- 真实 Player 页面验收：刷新后无 `System Package 错误`；主武器选择器显示 157 条结果和新特性列；护甲选择器显示 34 条结果和新特性列；全新页面控制台错误为 0。
-- 最新 `npm run verify` 通过：TypeScript 98 个文件、736 项测试；Python 141 项测试；依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 构建均通过。
-
-### 卡牌标题只缩字、不省略
-
-- 护甲标题此前同时使用 `SingleLineTextFit` 与 CSS `text-overflow: ellipsis`。单行拟合沿用了正文容器的 1px 溢出容差，导致标题可能被判定为已适配，却又被 CSS 在临界宽度替换为省略号。
-- 单行标题拟合现严格要求 `scrollWidth <= clientWidth`；正文容器继续保留 1px 容差。所有第一方标题样式均已移除 `text-overflow: ellipsis`，标题只有四分之一像素步进缩字这一套行为。
-- 真实 Player 规范卡面复验：“贝拉莫伊精致护甲”为 `25.25px`、`clientWidth=scrollWidth=203px`；“诚实蛋白石护甲”为 `29px`、`clientWidth=scrollWidth=203px`。两者均为 `fitted`，无省略号、无截断，控制台错误为 0。
-- 最新 `npm run verify` 通过：TypeScript 98 个文件、738 项测试；Python 141 项测试；其余完整验证入口全部通过。
-
-### 全模板标题区 padding 统一
-
-- 种族和社群的标题区基线为 360px 原生画布上的 `padding: 10px 14px`。护甲、环境、自由已从原来的 `7% 8% 6%` 改为同一固定值，避免标题距离卡边约 25–29px。
-- 武器是原生 `63×88` 小画布，使用视觉等价的 `1.75px 2.45px`；敌人没有独立标题容器，标题左右定位保持 `14px`，图片区下方顶部定位由 `12px` 调整为 `10px`。
-- 真实 Creator 页面确认种族、社群、护甲、环境的计算 padding 均为上下 `10px`、左右 `14px`；护甲纯文字与图文模式标题均完整拟合，字号一致，武器与敌人标题也无横向溢出。
-- 新增共享标题留白回归测试并更新敌人、武器的已审阅视觉签名。最新 `npm run verify` 通过：TypeScript 98 个文件、739 项测试；Python 141 项测试；依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 构建均通过。
-
-### 待处理：武器卡图与其他模板不一致
-
-- 用户在标题 padding 统一后继续审阅，确认武器的卡图表现仍明显不同于其他模板，并要求统一；随后决定下班，本轮没有继续诊断、改代码或更新视觉基线。
-- 当前武器 Renderer 位于 `packages/templates/src/frontend/weapon/1.0.0/renderer.tsx`，它是唯一直接使用原生 `63×88` 小画布的模板；图文模式的图片区固定为 `34px` 高，标题作为绝对定位元素覆盖整个 `.weapon-art`。种族、社群/参考卡、护甲等则使用 360px 原生画布再缩放，图片区和标题渐变的组织方式不同。下一轮应先用真实 Creator 页面并排比较，不要只凭 CSS 数值机械换算。
-- 目标逻辑仍以已确认规则为准：图文模式只是在纯文字卡标题上方加入卡图；卡图上边沿贴卡牌上边沿，下边沿位于标题与正文分界；标题位于图片下缘渐变区；卡图不得改变卡牌宽度、正文宽度或文字字号。
-- 建议验收顺序：同一武器资源依次检查纯文字与图文模式的卡牌宽度、正文宽度、标题字号、卡图上下边界和渐变范围，再与种族/护甲图文卡并排截图；修复后补武器 Renderer 回归测试、更新视觉签名，最后运行 `npm run verify` 与 `git diff --check`。
-
-### 武器与护甲临时卡面原型
-
-- 按用户要求暂停修改 PbDH 正式模板，先在 `.scratch/equipment-card-prototype/index.html` 制作 5 组一次性卡面原型；每组同时展示使用固定示例数据的武器与护甲，卡牌比例统一为 `63:88`。
-- 五组结构方向为：插画主导、器物铭牌、战术面板、古籍条目、全幅插画。页面默认显示总览，也可用底部切换器或 `?variant=A` 至 `?variant=E` 单独查看。
-- 原型引用的两张本地示例素材已复制到同目录 `assets/`；当前会话没有可调用的内置生图工具，因此没有改走需要 API Key 的 CLI 生图。
-- Browser 插件因安全策略拒绝自动访问 `file://` 页面，尚未完成自动截图验收；页面脚本已通过 `node --check`，HTML 与两张素材文件均存在。下一步由用户本机双击查看并选择方向，选择前不要把任一方案移入正式 Renderer。
-- 用户已确定组合方向：标题与卡图采用方案 A，以保持和其他模板一致；标题内部需改为英文位于中文名称下方，位阶与类型位于右侧；正文采用方案 E 的紧凑层级。临时方案 A 已按该组合更新。
-- 五组武器样例均已显式补回“伤害类型”和“负荷”，防止因原型漏字段误判布局；护甲没有这两个字段，不增加伪字段。正式模板仍未修改，等待用户再次查看组合后的方案 A。
-- 方案 A 第二轮反馈已应用：右侧信息改为“位阶 2”在上、“主武器”在下；伤害类型与负荷取消底色和内边距，直接跟在 stats 下方，并收紧两块之间的 margin。正式 Renderer 继续保持未修改。
-
-### 武器与护甲正式卡面采用组合方案
-
-- 用户确认正式采用临时方案 A 的卡图/标题结构与方案 E 的正文层级。武器、护甲 Renderer 已同步：图文模式为上方卡图，标题位于图片下缘渐变区；中文名称左侧，英文位于中文下方；右侧为位阶在上、类型在下。
-- 武器从唯一的原生 `63×88` 小画布迁移到与护甲一致的 `360×502.857px` 原生画布，再由 `63×88` Frame 以 `.175` 缩放。非固定比例继续通过 `ResizeObserver` 测量自然高度，Creator AutoFit 外层职责未改变。
-- 两个模板的 stats 均改为无卡片底色的轻量横线布局；特性区取消外框和底色，保留标题装饰横线与固定比例文字拟合。武器简介从标题区移到正文效果容器。
-- 武器“伤害类型 / 负荷”直接跟在 stats 下方，无背景、无 padding；每组标签和值使用 `align-items: baseline`，值在标签后左对齐。原型页也已同步这一对齐方式。
-- Browser 实测发现武器标题嵌套在 `.weapon-art` 内，不能沿用护甲相对整卡的 `height:34%`；标题覆盖层现使用 `inset:0` 铺满图片区并在底部对齐。另修复旧 `weaponMarkdownStyles` 的 `2.1px` 小画布字号覆盖，中文特性名“沉重挥击”已正常显示。
-- 真实 Creator 页面使用新建本地资源“战斧”和“铁木甲”完成图文固定比例验收；两项资源位于“牛头人破坏者测试资源包”，均添加了临时原型素材作为卡图，未删除其他本地资源。截图确认两卡无横向裁切，标题与正文结构符合选择结果。
-- 新增武器/护甲紧凑装备布局回归断言并更新武器视觉签名。最新 `npm run verify` 通过：TypeScript 98 个文件、741 项测试；Python 141 项测试；依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 构建均通过。构建仍只有既有入口 chunk 大于 500 KiB 提示。
-
-### 武器与护甲编辑区布局
-
-- 护甲编辑区调整为：名称/英文、位阶/类型、整行简介；护甲值/重度伤害阈值/严重伤害阈值三列；特性名称/英文、整行特性描述。简介和特性描述均继续使用自动增高 textarea。
-- 武器编辑区调整为：名称/英文、位阶/类型、整行简介；属性/距离/负荷三列；伤害/伤害类型两列；特性名称/英文、整行特性描述。
-- 武器属性提供 `敏捷 / 力量 / 灵巧 / 本能 / 风度 / 知识`，距离提供 `近战 / 邻近 / 近距离 / 远距离 / 极远`，负荷提供 `单手 / 双手`，伤害类型提供 `物理 / 魔法`。这些沿用可自由输入的下拉建议控件，不把数据限制为枚举。
-- 回归测试锁定两个编辑器的字段 DOM 顺序、textarea 数量、四组武器下拉入口与完整选项；定向测试 30 项和 TypeScript 类型检查通过。
-- 真实 Creator 页面使用“战斧”和“铁木甲”验收：桌面端各字段同排关系与目标一致；700px 窄屏全部收为单列，武器六列底层网格未产生隐式溢出；控制台无警告或错误，未改动资源内容。
-- 最新 `npm run verify` 通过：TypeScript 98 个文件、742 项测试；Python 141 项测试；依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 构建均通过。构建仍只有既有入口 chunk 大于 500 KiB 提示。
-- 所有带下拉建议的编辑器已统一移除箭头按钮和选项按钮的边框；共享箭头从距输入框右缘 `1px` 左移至 `5px`。同时修复敌人编辑器自有按钮规则对下拉选项边框的覆盖。真实 Creator 页面实测箭头与选项 `border-width: 0px`、箭头右侧间距 `5px`，控制台无警告或错误。
-
-### 武器与护甲特性外框
-
-- 护甲与武器的特性区恢复为种族/社群同款外部卡片：`14px` 内边距、`#f7ebd6` 背景、`1px solid #d4b78d` 边框和 `4px` 圆角；标题装饰横线及现有文字层级不变。
-- 武器新增独立 `.weapon-feature` 容器，只包裹特性标题与描述；简介仍位于特性卡外，没有被边框错误包入。
-- 定向测试通过：护甲、武器及共享模板能力共 3 个测试文件、44 项测试；TypeScript 类型检查通过。完整 TypeScript 测试通过：98 个文件、742 项测试；Renderer 性能测量与 Platform 构建通过。
-- 真实 Creator 页面使用“铁木胸甲”和“战斧”固定比例纯文字卡验收：两者特性卡计算样式均为 `14px` 内边距、浅骨色背景、`1px` 金棕边框和 `4px` 圆角，文字拟合为 `natural`，整卡 `clientHeight === scrollHeight === 501px`，控制台无警告或错误。
-- 本轮完整 `npm run verify` 被既有 `.scratch/pytest` 权限异常阻断：`check:visual-sources` 无法扫描该目录，沙箱内外结果一致；单独运行 Python 时 141 项中 95 项通过、46 项均在 fixture 初始化清理同一目录时失败。未修改 ACL、未删除目录，也未更改验证脚本绕过问题。
-- 护甲特性字体已进一步与种族/社群对齐：标题 `19px/1.25`、可选英文 `12px/1.25` 与 `.025em` 字距、正文 `450 15px/1.45`；简介继续保留原有 `500 15px/1.42`。首次验收错误地只读取了外层 `<h2>` 的 `19px`，用户截图证明特性名内部的 Restricted Markdown 节点仍被正文选择器覆盖为 `15px`；现已增加标题内层继承规则和对应回归断言。真实 Creator 页面“铁木胸甲”的最终文字节点实测为 `19px / 800 / 23.75px`，正文为 `15px / 450 / 21.75px`，固定比例 `natural` 且无溢出，控制台无警告或错误。
-- 武器编辑区“类型”已改为可自由输入的下拉建议，预设项为“主武器 / 副武器”；新建武器的默认 `类型` 从“武器”改为“主武器”，不改写既有资源。真实 Creator 页面确认下拉入口和两个选项正常，当前“战斧”保持“主武器”，控制台无警告或错误。
-
-### 敌人特性横线与匿名 PBRES 导出
-
-- 敌人卡每项特性标题的 `.enemy-feature h2::after` 已移除；“特性”分区标题的 `.enemy-feature-heading::after` 保留。真实页面计算样式分别为 `content:none` 与 2px 高横线。
-- 匿名新建资源包此前把许可名称与声明都保存为空字符串，Resource Package 1.1.0 导出门禁因此产生两条 `contract.schema.min-length`；通用诊断弹窗又把两个未知诊断码各自显示成“发布失败，请检查资源包后重试。”，形成错误文案重复两次。
-- 新资源包现默认使用保守的“保留所有权利 / All rights reserved.”；`prepareWorkspaceExport` 同时修复既有空许可本地包，因此用户无需重建已经创建的资源包。
-- 回归测试逐一覆盖 11 个当前模板的“新匿名资源包 → 新建默认资源 → 导出 PBRES → 重新读取”，并覆盖旧空许可 Workspace 的导出修复。
-- 真实 Creator 页面用本地资源包“匿名导出验收-0903”完成验证：通知中心只有一条导出成功记录，没有“发布失败”或诊断弹窗，控制台错误为 0。浏览器控制接口未捕获程序化下载事件；PBRES 字节及重新读取由自动化测试覆盖。该本地验收资源包未删除。
-- 全量 TypeScript 通过：98 个测试文件、754 项测试；依赖边界、Contract release、类型检查、Renderer 性能测量、Platform 构建与 `git diff --check` 均通过。`check:visual-sources` 仍被既有 `.scratch/pytest` 的 `EPERM` 阻断，未修改 ACL、删除目录或绕过检查。
-
-### 敌人描述间距与物品两列布局
-
-- 敌人特性描述已移除原有 `padding-top:10px`；真实 Creator 页面计算值为 `0px`。
-- 物品编辑器基础字段改为固定两列：第一行“名称 / 英文”，第二行“掷骰 / 类型”；描述与简介仍各自占满整行。
-- 共享参考卡标题区增加仅在模板显式传入时生成的右下值槽；物品用它把标题排成“名称 / 类型”“英文 / 掷骰”两行。掷骰只输出原值（如 `04`），不再在正文统计区显示“掷骰”标签；其余参考卡模板不生成该节点。
-- 真实 Creator 页面“阿利斯泰尔的火炬”确认名称/类型同排，右下角直接显示 `04`；该资源没有英文，因此左下不生成空英文节点。控制台错误为 0。
-- 定向测试 4 个文件、55 项通过；全量 TypeScript 为 98 个文件、755 项通过。类型检查、Renderer 性能测量、Platform 构建与 `git diff --check` 均通过；构建只有既有的大 chunk 提示。
-- 用户进一步明确“空英文不占位置”是通用规则后，物品标题改为无边框的两列独立内容流：左栏按实际内容渲染“名称 → 可选英文”，右栏渲染“类型 → 掷骰”，不再共享第二行轨道。真实页面空英文样例中左栏只有名称一个节点、高约 `30px`；右栏“物品 / 04”高约 `40px`，整体网格也仅约 `40px`，没有空英文节点、空 margin 或预留行。全量 TypeScript 755 项通过。
-
-### 领域卡正文布局原型
-
-- 按用户要求暂不修改正式领域卡 Renderer，先新增单文件原型 `.scratch/domain-card-prototype.html`；卡牌统一为 `63:88`，初版所有方案的标题区都只保留“名称 / 类型”，将“领域 / 等级 / 属性 / 回想”全部移入正文。
-- 原型提供 A“四格规格”、B“索引侧栏”、C“回想核心”、D“档案条目”、E“领域章题”五种结构方向；默认显示总览，也可通过底部切换器、键盘左右键或 `?variant=A` 至 `?variant=E` 单独查看。
-- 每种方案同时展示有英文与空英文两张示例卡；空字符串时不生成节点、不占位置，沿用全模板通用规则。
-- 用户已选择方案 A，并要求继续调整候选：英文回到标题栏、位于名称下方；简介锚定正文底部，内容增加时从下往上延伸。原型页已将 A 设为默认视图并应用这两项规则，其他方案仍保留用于对照。
-- 内联脚本已通过 Node 语法检查并确认五套方案均已注册。Browser 插件仍按安全策略拒绝访问独立 `file://` 页面，因此没有进行自动截图；用户可直接双击 HTML 选择方案。
-- 该原型选型已结束；正式实现与验收结果见下节，临时页面仅保留为本轮设计证据。
-
-### 领域卡正式采用方案 A
-
-- 用户确认方案 A 后，领域卡正式 Renderer 已改为：标题区左侧“名称 → 可选英文”、右侧“类型”；正文顶部按“领域 / 等级 / 属性 / 回想”四个等宽统计格排列，不再生成标题区 `.reference-card-meta`，也不再显示“能力”装饰标题。
-- 领域卡简介使用不可压缩的底部块；正文效果容器负责占用和让出中间空间，因此简介内容增加时从正文下方向上延伸。相关布局只通过 `[data-template-id="领域卡"]` 生效，不改变社群、物品、职业或子职业卡。
-- 回想显示值会移除已有数据中的 `⚡`；领域卡搜索摘要也不再追加该符号。Daggerheart Core 权威源 `resources/domain-cards.json` 的 189 个回想值已全部去除 `⚡`，原型页两张样例同步更新。
-- 已按目录规则重跑 `scripts/generate-daggerheart-core-system-package.ts`。生成摘要仍为 `sha256:4ce4668aabf571d37db27e42a8dcf70856e25649d1a2a7ed1821bbce36c27eb7`，说明 PBRES 运行时数据原本已由 `numericToken` 规范为纯数字，所以不需要升级内置资源包版本。
-- 真实 Creator 页面“奥术恩泽”验收：标题文本只有“奥术恩泽 / 领域卡”，正文统计为“奥术 / 7级 / 能力 / 2”，`.reference-card-meta` 与闪电符号数量均为 0；四列各 `80.5px`，正文 `padding:14px 16px`，卡面 `clientHeight === scrollHeight === 497px`，文字拟合为 `natural`，控制台无警告或错误。
-- 定向测试 3 个文件、15 项通过；全量 TypeScript 98 个文件、757 项通过，类型检查、Renderer 性能测量、Platform 构建和 `git diff --check` 通过。构建仍只有既有的大 chunk 提示；完整 `npm run verify` 未重复运行，因为已知 `.scratch/pytest` 权限异常仍会阻断 `check:visual-sources`。
-
-### 领域卡编辑区与子职业结构化特性
-
-- 领域卡编辑区现为 12 列布局：第一行“名称 / 英文 / 类型”，第二行“领域 / 等级 / 属性 / 回想”，随后“描述”“简介”各占整行；卡面署名继续由通用编辑区独立显示。窄屏收为单列。
-- 子职业 `1.0.0` Development Schema 已删除旧 `描述`，改为必填 `特性` 数组；每项包含“名称 / 可选原名 / 特性描述”，没有特性类型。编辑器支持新增、清空和二次确认删除。旧字段不迁移、不继续接纳；仅对缺少数组的旧本地资源做空数组防崩处理，使工坊能够打开并由用户自行删除。
-- Daggerheart Core 的 54 张子职业已拆为 75 条结构化特性；TTTRI 的 240 张子职业已拆为 288 条。Daggerheart Core Resource Package 升至 `1.0.9`，TTTRI 升至 `1.0.2`，对应 PBRES、System 与 Preset 生成物已重建。
-- KID、ZZZ、dhsheet 导出及通用导入映射已适配子职业特性数组；Sheet Runtime 额外投影为可读的“特性名：描述”文本，但资源副本继续保存结构化数组。Daggerheart 角色卡桌面的子职业 Card Presentation 与 Picker 也已改读 `特性`。
-- 新增独立原型 `.scratch/subclass-card-prototype.html`，包含 A“家族标准”、B“书脊索引”、C“阶段印章”、D“能力编号”、E“全幅图鉴”五种方向；每种同时展示双特性与长单特性样例，可用底部切换器或 `?variant=A` 至 `?variant=E` 查看。
-- 用户已选择方案 A。子职业正式 Renderer 已升级为 `subclass-card-r2`：图文模式使用 158px 原生图片区，标题位于图片下缘；正文身份带为三列无底色结构，字段值 `17px` 在上，`主职 / 阶段 / 施法属性` 标签 `9px` 在下；每条特性继续使用独立外框卡片，简介锚定正文底部。
-- 子职业编辑器的特性数组已与敌人编辑器对齐：常规宽度下第一行依次为“特性名称 / 英文 / 清空 / 删除”，第二行整宽为“描述”；仍不包含“类型”。窄容器时自动折为两列，避免操作按钮挤压输入框；搜索与卡面均读取特性英文。
-- 修复了导致截图中每张特性卡只有编辑栏三分之一宽的根因：原先基础字段的三列规则错误命中了整个特性 `section`，现只作用于 `.subclass-basics`。真实 Creator 页面实测特性区宽约 655px、单张特性卡宽约 633px，两个输入框各 236px、描述 611px；卡面身份值 `17px`、标签 `9px` 且标签全部位于值下方，固定比例内层无横纵溢出，控制台错误为 0。
-- 全量 TypeScript 通过：98 个文件、762 项测试；类型检查、Contract release、依赖边界、Renderer 性能测量与 Platform 构建通过。Python 中与系统包版本相关的单测已修正并单独通过；全套 Python 仍被既有 `.scratch/pytest` 权限异常阻断 46 个 fixture，用例未通过删除目录、修改 ACL 或更改验证脚本绕过。
-- 已运行 `node scripts/restart-dev.mjs`，Backend `8001` 与 Platform `5173` 均为 `OK`。真实 Creator 页面确认领域卡字段顺序正确，子职业旧资源不再令页面白屏；独立原型通过 Vite 本地地址验收，A 至 E 切换及查询参数均正常。
-
-### 全模板图文图片区比例统一
-
-- 图文模式以种族的 `96px` 纯图片区基准为准。敌人原本也是 `96px`；社群、职业、物品、领域卡与子职业共用 Reference Renderer，子职业已移除误加的 `158px` 覆盖，恢复共享 `96px`。
-- 护甲、武器、自由和环境原本使用整卡百分比高度，其中环境为 `32%`，其余为 `34%`；百分比在非固定比例卡的 `height:auto` 下不能稳定解析，真实环境卡曾塌缩到约 `14px`。四个 Renderer 现统一为原生 `170px` 图文图片区，与种族/子职业实际约 `170.375px` 的标题图片区边界以及敌人的 `96 + 74 = 170px` 一致。
-- 纯文字和纯图片模式未改。真实 Creator 页面复验非固定比例环境卡图片区为 `170px`，子职业为 `170.375px`，控制台错误为 0。
-- 新增跨模板比例回归测试并更新武器已审阅视觉签名。全量 TypeScript 98 个文件、763 项测试通过；类型检查、Renderer 性能测量与 Platform 构建通过，构建仍只有既有入口 chunk 大于 500 KiB 提示。
-
-### Creator / GM 标签页拖拽排序
-
-- Creator 资源标签和 GM 桌面标签均支持指针拖拽调整顺序；拖到目标标签左半区插到其前方，右半区插到其后方。拖拽期间显示半透明源标签与酒红色落点标记，鼠标、触控笔和触摸 Pointer Event 共用同一套交互。
-- 键盘替代操作为聚焦标签后按 `Alt+ArrowLeft` 或 `Alt+ArrowRight`。排序不会切换当前活动标签，关闭按钮也不会误触发拖拽。
-- 顺序属于当前浏览器的界面偏好，分别存入 localStorage 的 `pbdh.creator.tabs.resources` 与 `pbdh.creator.tabs.tabletops`；不写入资源包、GM 桌面文档、Contract 或云端 revision。Creator 资源标签使用 `[workspaceKey, resourceId]` 复合身份，因此可以跨资源包排序且不会因不同包内同名或同 ID 资源发生冲突。
-- 排序读取会去重并忽略已关闭标签；新打开标签自动追加到末尾。通用顺序逻辑位于 `apps/creator/src/workspace-prototype/tab-order.ts`，两个 Workbench 只负责各自的指针和键盘交互。
-- 真实 Creator 页面已完成拖拽验收：把“长柄巨斧”从第六位拖到第一位后，活动标签仍为“龙人”；刷新页面后顺序保持，控制台 warning/error 均为 0。当前浏览器没有 GM 桌面测试数据，为避免污染用户数据未临时创建桌面；GM 使用同一纯函数排序核心和对称交互实现，并通过类型检查与完整测试。
-- 新增 `tests/creator/tab-order.test.ts`，覆盖新建/关闭标签对已存顺序的协调、前后落点、跨资源包复合身份和 localStorage 读写去重。合并前远端验证状态为：`npm run verify` 通过，TypeScript 99 个文件、743 项测试，Python 141 项测试，其余完整验证入口通过。
-
-### 待续：拆除共享卡面容器并统一特性栏 padding
-
-- 用户明确新的架构边界：模板之间可以统一视觉风格和数值，但不能共享完整的卡面容器、DOM 或 CSS；每个模板必须拥有自己的 Renderer 实现。可共享范围仅限无模板语义的底层能力，例如 `CardFooter`、`RestrictedMarkdown`、`SingleLineTextFit`、`useContainerTextFit` 和固定比例 Frame 工具。
-- 社群、领域卡、物品、职业、子职业已经完成独立 Renderer 拆分；共享 Reference Renderer 工厂已退出代码路径。
-- 本轮原始视觉要求是：所有模板卡面中存在的特性条目/效果卡片，四边 `padding` 统一减少为 `6px`；不修改标题栏、卡面正文外层或 Creator 编辑区的 padding。
-- 停止前已经把以下现有容器改为 `6px`：`.ancestry-feature`、`.enemy-feature`、`.armor-feature`、`.weapon-feature`、`.environment-feature`、`.free-block`、`.reference-card-section`。其中敌人由 `6px 8px` 改为 `6px`，环境与自由由 `4%` 改为 `6px`，其余由 `14px` 改为 `6px`。
-- `tests/renderer/armor-card.test.tsx` 与 `tests/renderer/weapon-card.test.tsx` 的旧 `14px` 断言已同步为 `6px`；跨全部模板的统一 padding 回归测试尚未加入。由于用户在修改途中提出 Renderer 独立边界，本轮没有运行测试、类型检查、构建或浏览器验收，不能把当前状态视为已完成。
-- 建议续做顺序：先为 5 个共享 Reference Renderer 模板补能锁定现有输出行为的测试；逐模板复制并重命名必要 DOM/CSS，避免建立新的共享卡面结构；让每个模板自己的特性容器显式使用 `padding:6px`；确认共享工厂无引用后按项目规则移入回收站而非直接删除；最后运行相关 Renderer 定向测试、`npm run verify`、`git diff --check`，并在真实 Creator 页面抽查至少一种族、敌人、护甲、武器及拆分后的 5 个模板。
-
-## 操作提醒
-
-### 职业卡原型、结构化职业特性与标签点击修复
-
-- 独立原型 `.scratch/profession-card-prototype.html` 提供过 A“希望祭坛”、B“双栏战术页”、C“核心徽记”、D“档案索引”、E“双领域之门”五种非固定比例结构，用户已选择方案 A。原型默认打开 A；职业概述、职业物品和问题等有值时完整展示，无值时由正式 Renderer 不生成对应 DOM。
-- 职业 `1.0.0` Development Schema 已将旧字符串 `职业特性` 改为必填 `特性` 数组，每项为“名称 / 可选原名 / 特性描述”。职业编辑器按“名称、英文、类型 / 领域1、领域2、生命、闪避 / 结构化希望特性 / 可增删职业特性组 / 固定六项推荐属性 / 武器、护甲 / 简介与六个问题”的顺序展开；领域是两个小 input，特性组提供清空与二次确认删除。
-- Daggerheart Core 的 9 张职业已拆为 15 条结构化特性并补入官方英文名；TTTRI 的 7 张职业也转换为结构化特性。职业不再拥有 `施法属性` 字段；希望特性改为 `{ 名称, 原名, 特性描述 }`，推荐属性改为固定六属性对象，推荐武器改为单一字符串，职业概述字段统一为 `简介`。Schema、编辑器、转换 Adapter、Player 兼容投影与两套内置包均已同步。随后环境模板默认改为非固定比例，因此含环境资源的 Daggerheart Core Resource Package 升至 `1.0.13`；TTTRI 不含环境资源，仍为 `1.0.5`。
-- Kid、dhsheet、ZZZ 与通用导入映射已适配职业特性数组；旧格式字符串导入时会拆分，导出时会合并为“名称：描述”。Sheet Runtime 额外投影出可读的 `职业特性` 文本，资源副本继续保存结构化数组。
-- Creator 打开开发期遗留的本地职业草稿时，会把旧 `描述`、字符串希望/职业特性、数组属性/武器、拼接领域和编号问题一次性归一化并回写成当前结构；Renderer 同时做只读容错，迁移首帧不会再出现 `renderer.render.failed`。
-- 职业模板的默认呈现已改为 `fixedRatio: false`；Daggerheart Core 与 TTTRI 的内置职业资源已随生成脚本同步为非固定比例，其他资源类型继续维持固定比例。
-- 方案 A 已落入独立的 `profession-card-r2` Renderer：标题只分两个互不锁行的纵向栏，左栏为“名称 / 可选英文”，右栏为“类型 / 领域 1、领域 2”，两栏底部对齐；英文为空时该 DOM 消失并让名称自然下移。类型与领域均为无底色、无边框的纯文字。希望与生命/闪避组成首要信息区；创建配置为单栏，推荐属性使用“名称行 / 数值行”，推荐装备合并为如“长剑 + 链甲”的单行；不再显示重复的信息索引。
-- Creator 资源标签和 GM 桌面标签不再在按下指针时立即进入拖拽态；只有水平位移超过 `8px` 后才捕获指针并开始排序。普通点击及 8px 内的指针抖动保持为标签切换。
-- 原型与正式 Creator 页面均已验收。正式战士卡使用 `profession-card-r2`；标题类型、领域、两行属性和合并装备均正确，且不含施法属性或信息索引。Creator 真实页面已确认领域1/领域2为独立 textbox，希望特性与六项属性字段完整，新增职业特性后出现“职业特性名称 / 英文 / 清空 / 删除 / 职业特性描述”，旧草稿迁移后预览不再失败。完整 `npm run verify` 通过：TypeScript 99 个文件、773 项测试，Python 141 项测试，以及依赖边界、Contract release、视觉源、类型检查、Renderer 性能测量与 Platform 构建全部通过；构建只有既有的大 chunk 提示。
-
-### 环境卡流式默认与原型
-
-- 环境模板 `1.0.0` 的默认呈现已改为 `fixedRatio: false`；Daggerheart Core 内置环境资源随包 `1.0.13` 重建并全部采用非固定比例。TTTRI 不含环境资源，因此没有为此产生无意义的版本升级。
-- 独立原型 `.scratch/environment-card-prototype.html` 已收敛为六个“方案 A 中段变体”，严格共享同一个标题栏和特性栏，只替换难度、简介、趋向与潜在敌人的中段布局。用户已选择 05“河道标尺”，原型默认打开该方案，并已放大中段的“难度、简介、趋向、潜在敌人”标签。全部方案保持同一 500px 宽度，仅允许高度随内容变化。标题仍为左侧名称/英文、右侧类型与位阶/种类；特性仍使用正式敌人卡的左侧名称/类型/英文与右侧正文结构，并完整呈现环境特性问题。
-- 05 已落入正式 `environment-card-r2` Renderer：标题为左侧名称/可选英文、右侧类型与位阶/种类，两栏整体底部对齐；中段使用赭红垂直难度标尺和右侧环境资料列；特性上半部使用敌人卡的左侧身份、右侧规则结构，但不绘制两列之间的竖线，斜体特性问题在下方横跨整张特性卡。简介、趋向、潜在敌人的空值不会生成对应行。`environment-record` 上下 margin 为 `0`、上下 padding 为 `6px`，资料行间为 `0 margin + 6px padding`。
-- Creator 真实页面已用三项特性的“汹涌河流”验收：正式卡面使用 `environment-card-r2`，默认非固定比例，三项特性完整，卡面横纵溢出均为 0。
-- 正式实现后的完整 `npm run verify` 通过：TypeScript 99 个文件、775 项测试，Python 141 项测试，以及依赖边界、Contract release、视觉源、类型检查、Renderer 性能测量与 Platform 构建全部通过；构建仅保留既有的大 chunk 提示。
-
-### 领域卡属性下拉与自由模板编辑区
-
-- 领域卡编辑区的“属性”已接入共享下拉建议控件，预设项固定为“法术 / 能力 / 术典”；字段仍沿用现有自由文本 Contract，没有修改 Schema 或既有资源。
-- 自由模板基础信息改为“名称 / 英文 / 类型”三列同排；内容块改为“名称 / 英文 / 清空 / 删除”首行同排、“描述”下一行整宽。底层数据字段继续使用既有 `标题 / 原名 / 正文`，只调整编辑界面标签和布局。
-- 修复了旧布局用 `nth-of-type(2)` 错把英文栏当作描述栏并强制整行的根因；内容块现在使用独立结构类，不再依赖子元素序号。常规 Creator 编辑宽度下保持四项同排，仅在内容区窄于 `360px` 时折为两列。
-- 定向测试 2 个文件、6 项通过；TypeScript 类型检查通过。全量 TypeScript 99 个文件、776 项测试、Renderer 性能测量、Platform 构建与 `git diff --check` 通过。
-- 完整 `npm run verify` 仍被既有 `.scratch/pytest` 的 `EPERM` 阻断于 `check:visual-sources`；边界与 Contract 检查在阻断前通过。没有删除目录、修改 ACL 或改验证脚本绕过。
-- 已重启本地服务，Backend `8001` 与 Platform `5173` 均为 `OK`。真实 Creator 页面确认自由模板基础三列约各 `138px`；内容块首行为 `134.8 / 134.8 / 57.6 / 57.6px`，描述下一行约 `408.8px` 整宽；领域属性菜单完整显示三项预设，控制台无 warning/error。
-- 浏览器验收在“环境 Template 验收包”中新建了本地资源“未命名自由资源”，并添加一个空内容块；按项目规则未删除。
-
-- 遵守根目录 `AGENTS.md`；默认中文沟通。
-- 完整验证入口是 `npm run verify`。
-- 不得直接删除文件；需要清理时移入回收站。
-- 不修改 `.env`、密钥、CI/CD、数据库 schema，不执行 push/rebase/reset。
-- Browser 插件与本地开发服务当前可用；不要改用临时 Playwright 服务。
+- `packages/templates/src/frontend/feature-presets.ts`：三类特性预设的单一来源。
+- `packages/templates/src/frontend/authoring-primitives.tsx`：支持预设选择的共享输入控件。
+- `packages/templates/src/frontend/types.ts`、`authoring-surface.tsx`：整份数据原子回写接口。
+- `scripts/extract-daggerheart-srd2-resources.ts`：SRD 提取及跨记录位阶继承。
+- `apps/player/system-package-sources/daggerheart-core/extraction-overrides.json`：人工审阅的翻译修订。
+- `scripts/generate-daggerheart-core-system-package.ts`：JSON 审阅副本与 PBRES 生成入口。
+- `tests/templates/template-authoring-surface.test.tsx`：预设数量、中文标签与参数规则。
+- `tests/player/daggerheart-core-system-package.test.ts`：武器位阶分布、Heavy 译名及生成包一致性。
+- `tests/tabletop/tabletop-core.test.ts`：GM 桌面整份实例数据替换。

@@ -10,7 +10,8 @@ import {
 } from "react";
 
 import {
-  treeItemsInFolder,
+  workspaceResourceCountByFolder,
+  workspaceTreeItemsByParent,
   type CreatorWorkspace,
   type WorkspaceNodeRef,
   type WorkspaceResource,
@@ -63,17 +64,14 @@ export function WorkspaceTree({
   const menuRef = useRef<HTMLDivElement>(null);
   const folderById = useMemo(() => new Map(workspace.folders.map((folder) => [folder.id, folder])), [workspace.folders]);
   const resourceById = useMemo(() => new Map(workspace.document.resources.map((resource) => [resource.id, resource])), [workspace.document.resources]);
-  const resourceCountByParent = useMemo(() => {
-    const counts = new Map<string | null, number>();
-    for (const location of workspace.resourceLocations) {
-      counts.set(location.parentId, (counts.get(location.parentId) ?? 0) + 1);
-    }
-    return counts;
-  }, [workspace.resourceLocations]);
-  const treeItemsByParent = useMemo(() => new Map<string | null, ReturnType<typeof treeItemsInFolder>>([
-    [null, treeItemsInFolder(workspace, null, sortDirection)],
-    ...workspace.folders.map((folder) => [folder.id, treeItemsInFolder(workspace, folder.id, sortDirection)] as const),
-  ]), [sortDirection, workspace]);
+  const resourceCountByFolder = useMemo(
+    () => workspaceResourceCountByFolder(workspace),
+    [workspace.folders, workspace.resourceLocations],
+  );
+  const treeItemsByParent = useMemo(
+    () => workspaceTreeItemsByParent(workspace, sortDirection),
+    [sortDirection, workspace.document.resources, workspace.folders, workspace.resourceLocations],
+  );
 
   useEffect(() => {
     if (!menu) return;
@@ -149,7 +147,7 @@ export function WorkspaceTree({
         if (item.kind === "folder") {
           const folder = folderById.get(item.id)!;
           const node = { kind: "folder" as const, id: folder.id };
-          const count = resourceCountByParent.get(folder.id) ?? 0;
+          const count = resourceCountByFolder.get(folder.id) ?? 0;
           return <div className="workspace-tree-node" key={folder.id}>
             <div
               className={`folder-row${workspace.currentFolderId === folder.id ? " is-current" : ""}`}
@@ -173,10 +171,10 @@ export function WorkspaceTree({
               {renamingFolderId === folder.id
                 ? <input className="tree-rename" aria-label="文件夹名称" value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={handleRenameKey} onBlur={commitRename} autoFocus />
                 : <button type="button" className="tree-node-label" onClick={() => onSelectFolder(folder.id)}>{folder.name}</button>}
-              <small>{count || ""}</small>
+              <small aria-label={`${count} 个资源`}>{count}</small>
             </div>
             <div className={`workspace-tree-children${folder.collapsed ? "" : " is-open"}`} aria-hidden={folder.collapsed} inert={folder.collapsed}>
-              <div>{renderLevel(folder.id, depth + 1)}</div>
+              <div>{folder.collapsed ? null : renderLevel(folder.id, depth + 1)}</div>
             </div>
           </div>;
         }

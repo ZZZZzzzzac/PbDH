@@ -20,4 +20,24 @@ export class TemplateRegistry {
   list(): readonly AnyTemplate[] {
     return [...this.#templates.values()];
   }
+
+  upgradeData(id: string, fromVersion: string, toVersion: string, data: Record<string, unknown>): Record<string, unknown> {
+    let version = fromVersion;
+    let upgraded = structuredClone(data);
+    const visited = new Set<string>();
+    while (version !== toVersion) {
+      if (visited.has(version)) throw new Error(`Template upgrade cycle: ${id}@${version}`);
+      visited.add(version);
+      const candidates = [...this.#templates.values()].flatMap((template) => template.id === id
+        ? (template.upgrades ?? [])
+            .filter((upgrade) => upgrade.fromVersion === version)
+            .map((upgrade) => ({ template, upgrade }))
+        : []);
+      if (candidates.length !== 1) throw new Error(`Missing unambiguous Template upgrade: ${id}@${version} -> ${toVersion}`);
+      const next = candidates[0]!;
+      upgraded = next.upgrade.upgradeData(upgraded);
+      version = next.template.version;
+    }
+    return upgraded;
+  }
 }
