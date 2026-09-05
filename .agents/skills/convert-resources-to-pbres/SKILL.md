@@ -1,0 +1,65 @@
+---
+name: convert-resources-to-pbres
+description: 将非标准桌游资源（第三方卡包、Markdown、纯文本、表格或混合图文资料）整理并转换为 PbDH PBRES；用于需要识别资源边界、选择模板、保留语义、关联图片并完成字段与卡面验收的任务。
+---
+
+# 转换非标准资源为 PBRES
+
+把来源资料转换为可导入、可渲染且可追溯的 PBRES。来源是权威内容，PBRES 是最终交付物；中间副本、候选 JSON 与一次性提取代码只服务于本次转换，不成为第二份长期权威源。
+
+## 开始前
+
+1. 阅读仓库根 `AGENTS.md` 及与任务相关的 `docs/agents/` 规则。
+2. 完整阅读来源本体并盘点文件、附件、图片、已有 ID、目录关系和许可信息，不凭文件名猜格式。
+3. 阅读 [references/repository-contract.md](references/repository-contract.md)，确认仓库当前 Contract、Template、Adapter、PBRES 和图片入口。不要硬编码本技能编写时的版本号或字段。
+4. 原生文本转换必须阅读 [references/semantic-extraction.md](references/semantic-extraction.md)。进入验收前必须阅读 [references/validation-review.md](references/validation-review.md)。
+
+## 不可跳过的六步流程
+
+### 1. 阅读本体并选择入口
+
+先读完整来源。若来源是仓库已支持的第三方卡包格式，明确选择对应 Adapter，走应用或转换核心的正式导入流程，然后直接跳到第 6 步。不得仅凭扩展名跨格式探测、手工仿造 Adapter 输出，或在正式导入失败后偷偷退回文本猜测。
+
+如果格式不受支持、内容可能对应多个资源类型，或导入报告要求损失裁定，带上原文上下文、候选解释和影响，停下来询问用户。
+
+### 2. 为原生文本建立副本
+
+对 Markdown、纯文本、CSV、文档导出或混合资料先建立逐字副本，只在副本上工作，原件保持不动。在副本中剥离目录、导航、页眉页脚、广告、编辑说明、纯叙事章节等与资源无关的内容，但不得删除可能影响规则含义、归属、署名或许可的信息。
+
+无法确定某段是资源、背景材料还是包级元数据时，不自行取舍，询问用户。
+
+### 3. 先统一文本格式
+
+先在副本中统一资源边界、标题层级、格式、字段标签、列表、特性块、换行和图片引用，使同类资源遵循同一种可审阅文本结构。此阶段以统一格式, 修复格式错误, 方便脚本提取为首要目标。
+
+记录每个来源块对应的目标资源、保留内容、剥离内容以及尚未裁定的问题。
+
+### 4. 生成候选 JSON
+
+少量资源直接按当前 Template 的 `defaultData`、Schema 和现有合法资源写候选 JSON。大量资源可在格式已统一的副本上编写本次任务专用的一次性提取脚本，并人工抽查输出；脚本放在任务 `.scratch` 工作区，不加入本技能，不成为长期生成链。
+
+遵守 [references/semantic-extraction.md](references/semantic-extraction.md) 的模板选择、字段映射、拆分合并、图片关联和停止条件。发现非标准资源、不知道使用什么模板、字段含义不明或需要改变内容时，必须带上下文问用户，不能自作主张塞进自由模板、简介或特性。
+
+### 5. 转换为 PBRES
+
+使用仓库当前正式入口把候选 JSON 组装并写成 PBRES。优先复用 Creator 的导入/编辑能力、`packages/resource-conversion`、Contract Runtime 和仓库 PBRES 工具；不得另写一套归档、摘要或校验实现。
+
+图片必须走 `packages/media-admission` 的资源图片准入流程，再写入 PBRES 资产并绑定资源。图片对应关系不确定时询问用户。
+
+### 6. 验证 PBRES
+
+按 [references/validation-review.md](references/validation-review.md) 完成全部检查：正式回读、数量与路径、模板和字段、来源对照、媒体、真实卡面渲染及高度溢出。仅通过 Schema 或 `loadPbres` 不算完成。
+
+遇到真实内容装不下卡面时，先排查字段放错、重复内容和格式问题；仍溢出则向用户提供上下文与处理选项。不得擅自删减规则文本、改固定比例、拆卡或改变展示模式。
+
+## 交付要求
+
+交付时报告：
+
+- 来源格式、所走入口和输出 PBRES；
+- 来源资源数、输出资源数及 converted/skipped/pending 数量；
+- 使用的模板及需要用户裁定的项目；
+- 字段完整性、媒体、回读和卡面溢出检查结果；
+- 临时副本、统一格式文本和候选 JSON 的位置。
+
+未解决问题保持 `pending`，不得用猜测换取“全部成功”。
