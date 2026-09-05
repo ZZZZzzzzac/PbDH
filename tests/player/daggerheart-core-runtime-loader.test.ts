@@ -81,7 +81,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.package.modules.length).toBeGreaterThan(20);
     expect(loaded.package.pages.length).toBeGreaterThan(1);
     expect(loaded.package.resourceLibraries?.reduce((total, library) =>
-      total + library.entries.length, 0)).toBe(1267);
+      total + library.entries.length, 0)).toBe(980);
     for (const libraryId of ["subclasses", "domain-cards"]) {
       const imageEntry = loaded.package.resourceLibraries?.find((library) => library.ID === libraryId)
         ?.entries.find((entry) => entry.fields.卡牌显示方式 === "image");

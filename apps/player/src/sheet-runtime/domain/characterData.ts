@@ -104,6 +104,7 @@ const compositeResourceSchema = z.object({
   ID: z.string().min(1),
   composerModuleId: z.string().min(1),
   fields: z.record(z.string(), z.string()),
+  resourceCopy: z.custom<TabletopResourceCopy>().optional(),
 });
 
 const resourceSelectionSnapshotSchema = z.object({

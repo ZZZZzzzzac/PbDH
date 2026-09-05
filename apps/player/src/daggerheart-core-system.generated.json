@@ -121,6 +121,17 @@
       }
     },
     {
+      "templateId": "自由",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "beastforms",
+        "label": "野兽形态"
+      }
+    },
+    {
       "templateId": "武器",
       "versionRange": {
         "minimumInclusive": "1.0.0",
@@ -190,9 +201,6 @@
   "embeddedResources": [
     {
       "path": "resources/daggerheart-core.pbres"
-    },
-    {
-      "path": "resources/daggerheart-core-gm.pbres"
     }
   ]
 }

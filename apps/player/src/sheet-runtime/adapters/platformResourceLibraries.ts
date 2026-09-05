@@ -154,6 +154,7 @@ function toSheetResourceEntry(
         ...freeTemplateSections(data.内容),
         ...indexedFreeTemplateSections(data.内容),
         ...common,
+        特性: freeTemplateFeatures(data.内容),
       };
     case "种族": {
       const rawFeatures: unknown[] = Array.isArray(data.特性) ? data.特性 : [];
@@ -176,6 +177,7 @@ function toSheetResourceEntry(
         ...common,
         描述: stringField(data.简介),
         希望特性: structuredFeature(hopeFeature),
+        特性: structuredFeatures(data.特性),
         职业特性: structuredFeatures(data.特性),
         领域: Array.isArray(data.领域) ? data.领域.map(stringField).filter(Boolean).join(" + ") : stringField(data.领域),
         推荐初始属性: ["敏捷", "力量", "灵巧", "本能", "风度", "知识"]
@@ -194,14 +196,17 @@ function toSheetResourceEntry(
     case "子职业":
       return {
         ...common,
-        特性: subclassFeatures(data.特性),
+        描述: subclassFeatures(data.特性),
       };
     case "护甲":
       return {
         ...common,
         重度阈值: stringField(data.重度伤害阈值),
         严重阈值: stringField(data.严重伤害阈值),
+        特性: equipmentFeature(data),
       };
+    case "武器":
+      return { ...common, 特性: equipmentFeature(data) };
     default:
       return common;
   }
@@ -230,6 +235,19 @@ function structuredFeature(value: Record<string, unknown> | undefined): string {
 }
 
 const subclassFeatures = structuredFeatures;
+
+function equipmentFeature(data: Record<string, unknown>): string {
+  return structuredFeature({ 特性名称: data.特性名称, 特性描述: data.特性描述 });
+}
+
+function freeTemplateFeatures(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  return value.filter(isRecord).map((feature) => {
+    const name = stringField(feature.名称).trim();
+    const description = stringField(feature.描述).trim();
+    return name && description ? `${name}：${description}` : name || description;
+  }).filter(Boolean).join("\n\n");
+}
 
 function freeTemplateSections(value: unknown): Record<string, string> {
   if (!Array.isArray(value)) return {};

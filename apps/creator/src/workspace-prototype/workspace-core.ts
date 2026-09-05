@@ -107,7 +107,6 @@ export function treeItemsInFolder(
 
 export function workspaceTreeItemsByParent(
   workspace: CreatorWorkspace,
-  direction: "ascending" | "descending" = "ascending",
 ): ReadonlyMap<string | null, WorkspaceTreeItem[]> {
   const itemsByParent = new Map<string | null, WorkspaceTreeItem[]>([[null, []]]);
   const folderNameById = new Map(workspace.folders.map((folder) => [folder.id, folder.name]));
@@ -137,7 +136,7 @@ export function workspaceTreeItemsByParent(
       if (left.kind !== right.kind) return left.kind === "folder" ? -1 : 1;
       const byLabel = label(left).localeCompare(label(right), "zh-CN", { numeric: true, sensitivity: "base" });
       const byId = left.id.localeCompare(right.id);
-      return direction === "ascending" ? byLabel || byId : -(byLabel || byId);
+      return byLabel || byId;
     });
     itemsByParent.set(parentId, items.map((item, order) => ({ ...item, order })));
   }

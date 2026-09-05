@@ -4,7 +4,7 @@
 
 ## 接手入口
 
-当前用户请求已经完成，没有遗留的必做编码项。下一步通常是让用户在 Creator 中实际试用护甲、武器和敌人特性下拉菜单，再按反馈调整预设文本或交互。
+当前用户请求已实现：Player 会把没有专用入口的非空资源库统一归入“其他资源库”，`自由@1.0.1` 支持任意普通字符串字段和自由特性。下一步通常是继续按实际使用反馈调整资源浏览与编辑体验。
 
 开始新工作前：
 
@@ -12,9 +12,22 @@
 2. 运行 `git status --short`。工作树包含大量未提交和未跟踪改动，其中既有本轮改动，也有此前工作；全部按用户资产处理，不清理、不还原。
 3. 涉及 Daggerheart Core 资源时，额外阅读 `apps/player/system-package-sources/daggerheart-core/AGENTS.md`。
 
-完成条件：修改后先跑相关定向测试，最后跑 `npm run verify`；资源源文件发生变化时，运行 `npm run build:daggerheart-core` 重新生成两个 PBRES。
+完成条件：修改后先跑相关定向测试，最后跑 `npm run verify`；资源源文件发生变化时，运行 `npm run build:daggerheart-core` 重新生成内置玩家 PBRES 与 `docs/third` 下的 GM PBRES。
 
 ## 本轮完成内容
+
+### 野兽形态资源
+
+- 玩家资源包新增 SRD 2.0 `SRD2_SECTION_73–100` 中的 24 个野兽形态选项，每个位阶 6 个。
+- 每个形态是独立的 `自由@1.0.1` 资源，统一位于 `野兽形态/`；`类型` 固定为 `野兽形态`，动物示例去掉包裹括号后放在简介，`位阶`、`属性`、`闪避`、`武器`、`优势` 使用自由字段，各项特性按原顺序放入 `内容`。
+- 数据直接从仓库内 ParaTranz 快照提取，没有新增副本或 override；英文形态名与特性名仅保存在自由模板允许的 `原文` 字段中。
+
+### Player 其他资源与自由模板
+
+- Player 不再只识别 ID 为“其他”或扩展资源库：凡是非空且没有被系统专用入口引用的资源库，都会自动出现在“其他资源库”中。匕首心玩家包的野兽形态、敌人和环境因此均可从该入口使用。
+- `自由@1.0.1` 的固定字段为 `名称`、`原文`、`类型`、`简介`、`内容`；除此以外允许任意顶层字符串字段。`内容` 仍是严格的自由特性数组，每项只含 `名称`、`原文`、`描述`。
+- Creator 编辑器新增“自由字段”和“自由特性”两个区域，均支持新增、清空和删除；卡面会在特性前以紧凑标签显示非空自由字段，全文搜索也会索引自由字段名和值。
+- Player 的“其他资源库”表格只展示资源 JSON 顶层的标量字段，不再把 `内容`、`特性`及其兼容投影展开为大量表格列。
 
 ### 重复特性预设
 
@@ -60,12 +73,17 @@
 
 ## 资源生成状态
 
-- Daggerheart Core 玩家资源包版本：`1.0.19`。
-- 玩家资源：956；GM 资源：311。
-- 玩家包当前摘要：`sha256:1b99a2afa3fa6e7c36831bd6e3b4c1c6e24cd596b365751cc72dc17f1c6710ea`。
-- GM 包当前摘要：`sha256:68ecefc68a5771bfd703952ed269499afae4dcd998aada14c793c513c6aa12c4`。
+- Daggerheart Core 玩家资源包版本：`1.0.24`；GM 资源包版本：`1.0.5`。
+- 玩家资源：980；GM 资源：311。
+- 玩家包当前摘要：`sha256:8a6827ea5865018fe873d53fb7a8a042b6406ad1b082a9be0571a3f25e19ebb3`。
+- GM 包当前摘要：`sha256:477b58e17cf1a3fe673356b91e1a43fff73e4390aed1f24f240612293b555dcb`。
+- 匕首心系统包只原生安装玩家包 `resources/daggerheart-core.pbres`；GM 包不再出现在系统包目录、`embeddedResources` 或内置资源索引中，独立存放于 `docs/third/daggerheart-core-gm.pbres`。
+- 玩家包目录已扁平化：每个领域的 21 张领域卡直接位于 `领域卡/{领域}/`，武器使用 `武器/{主武器|副武器}/位阶N/`。
+- GM 包的 21 个集群敌人统一位于各位阶下的 `集群/` 文件夹，`种类` 统一为无空格、半角括号的 `集群(N/生命点)`。
+- Creator 与 GM 共用的资源搜索支持 `[模板:敌人] [位阶:4] [种类:独狼]` 标签语法；除保留键 `模板` 外，筛选键和值直接来自资源 `data` 顶层字段，不要求模板声明。标签值使用包含匹配，例如 `[种类:集群]` 可命中 `集群(3/生命点)`。搜索框聚焦后会从当前模板编辑器的 `input` 自动识别字段并显示字段/值提示，`textarea` 不进入候选；原独立模板筛选器已移除。
+- Creator 的导入、导出按钮均提供 PBRES、ZZZ、Rink、dhsheet 与不咕鸟格式菜单；PBRES 作为原生格式使用强调态，第三方格式保持普通菜单项。第三方导出经过共享 Adapter，无法完整表达时只显示转换报告，不下载部分产物。
 - 唯一人工维护的资源内容源是 `docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json`。
-- 运行时只提交 `apps/player/public/system-packages/daggerheart-core/resources/*.pbres`；临时提取 JSON、PBRES 审阅 JSON、`extraction-overrides.json` 和 `source-provenance.json` 已移除。
+- 运行时只提交 `apps/player/public/system-packages/daggerheart-core/resources/daggerheart-core.pbres`；临时提取 JSON、PBRES 审阅 JSON、`extraction-overrides.json` 和 `source-provenance.json` 已移除。
 
 资源文本变化后的单一生成入口：
 
@@ -78,12 +96,14 @@ npm run verify
 
 最终 `npm run verify` 已通过：
 
-- TypeScript：99 个测试文件，807 项测试。
+- TypeScript：102 个测试文件，832 项测试。
 - Python：141 项测试。
 - 依赖边界、Contract release、唯一视觉源、类型检查、Renderer 性能测量和 Platform 生产构建全部通过。
 - Python 仍有既有 FastAPI/Pydantic deprecation warnings；Vite 仍有入口 chunk 大于 500 KiB 的提示，本轮未处理。
 
-Creator 页面可以正常加载，但浏览器本地当时没有打开的资源，因此本轮没有在真实资源编辑器里点击下拉菜单；预设内容、编辑器接线和原子更新由自动化测试覆盖。
+已在真实本地页面完成资源选择器验收。当前匕首心系统包不再内置 GM 资源，因此 Player 的“其他资源库”默认只包含没有专用入口的玩家资源；子职特性显示在“描述”列；野兽形态表格显示顶层自由字段，并将结构化自由特性合并到一个可读的“特性”列；武器与护甲的空特性不再残留冒号，既有存档中的孤立冒号也会在载入时清理。
+
+职业资源选择器会把结构化职业特性投影为可读的“特性”列。Resource Composer 生成的纯血种族直接继承来源种族的精确模板、卡面与媒体；混血种族生成同一精确种族模板的结构化资源副本，因此两者在玩家桌面都由种族规范渲染器呈现，而不是退回 Player 通用文本卡。
 
 ## 关键文件
 

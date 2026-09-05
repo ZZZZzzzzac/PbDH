@@ -11,7 +11,7 @@ import {
   replacePlatformRuntimeMediaAssets,
   sheetRuntimeMediaPath,
 } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
-import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { getOtherResourceLibraryFields, getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import type { ResourceLibrary as SheetResourceLibrary } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import { getOtherResourceLibraries } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
@@ -21,6 +21,7 @@ import type { ResourceLibrary } from "../../apps/player/src/resources/resource-l
 const currentSystem = {
   resourceCompatibility: [
     { templateId: "种族", nativeEntry: { id: "ancestries", label: "种族" } },
+    { templateId: "职业", nativeEntry: { id: "classes", label: "职业" } },
     { templateId: "子职业", nativeEntry: { id: "subclasses", label: "子职业" } },
     { templateId: "护甲", nativeEntry: { id: "armor", label: "护甲" } },
     { templateId: "自由", nativeEntry: { id: "free-resources", label: "自由资源" } },
@@ -63,6 +64,7 @@ describe("Sheet Runtime 平台资源适配", () => {
     expect(libraries.find((library) => library.ID === "armor")?.entries[0]?.fields).toMatchObject({
       重度阈值: "7",
       严重阈值: "14",
+      特性: "",
     });
   });
 
@@ -141,6 +143,7 @@ describe("Sheet Runtime 平台资源适配", () => {
       名称: "孤独",
       类型: "求生者风格",
       简介: "独自求生",
+      特性: "独行智慧：没有队友时具有优势。",
       内容1名称: "独行智慧",
       内容1描述: "没有队友时具有优势。",
     });
@@ -160,11 +163,29 @@ describe("Sheet Runtime 平台资源适配", () => {
       ]),
     }).find((candidate) => candidate.ID === "subclasses")!;
 
-    expect(library.entries[0]?.fields.特性).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
+    expect(library.entries[0]?.fields.描述).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
     expect(library.entries[0]?.resourceCopy?.data.特性).toEqual([
       { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
       { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
     ]);
+  });
+
+  it("把职业特性数组投影为可读的 Sheet 表格字段", () => {
+    const library = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        resource("class", "职业", {
+          名称: "刺客",
+          特性: [
+            { 特性名称: "死亡标记", 特性描述: "标记一个目标。" },
+            { 特性名称: "来去自如", 特性描述: "下一次掷骰具有优势。" },
+          ],
+        }),
+      ]),
+    }).find((candidate) => candidate.ID === "classes")!;
+
+    expect(library.entries[0]?.fields.特性).toBe("死亡标记：标记一个目标。\n\n来去自如：下一次掷骰具有优势。");
+    expect(library.entries[0]?.resourceCopy?.data.特性).toHaveLength(2);
   });
 
   it("把资源包卡面显示方式传给 Sheet 卡牌", () => {
@@ -221,19 +242,25 @@ describe("Sheet Runtime 平台资源适配", () => {
     );
     const installedPackages = new Map([[packageId, {
       ...installed,
-      routes: [{ resource: other, destination: "other-resources", reason: "template-incompatible" }],
+      routes: [{ resource: other, destination: "native", nativeEntry: { id: "free-resources", label: "自由资源" } }],
     }]]) as unknown as ResourceLibrary;
 
     const libraries = buildSheetResourceLibraries({ currentSystem, installedPackages });
-    expect(libraries.filter((library) => library.ID === "其他")).toHaveLength(1);
-    expect(libraries.find((library) => library.ID === "其他")?.entries[0]).toMatchObject({
+    expect(libraries.filter((library) => library.ID === "free-resources")).toHaveLength(1);
+    expect(libraries.find((library) => library.ID === "free-resources")?.entries[0]).toMatchObject({
       fields: { 名称: "记忆障碍", 类型: "疯狂", 效果: "无法清晰回忆。" },
     });
     const packageWithOtherPicker = {
       modules: [{ ID: "pick-other-resources", 类型: "resourcePicker", 按钮文本: "选择其他资源", 资源库: "其他" }],
       resourceLibraries: libraries,
     } as unknown as SystemPackage;
-    expect(getOtherResourceLibraries(packageWithOtherPicker).map((library) => library.ID)).toEqual(["其他"]);
+    expect(getOtherResourceLibraries(packageWithOtherPicker).map((library) => library.ID)).toEqual(["free-resources"]);
+    expect(getOtherResourceLibraryFields(libraries.find((library) => library.ID === "free-resources")!).map((field) => field.key)).toEqual([
+      "名称",
+      "类型",
+      "简介",
+      "特性",
+    ]);
     expect(buildSheetRuntimeMediaAssets(installedPackages)).toMatchObject([{
       路径: sheetRuntimeMediaPath(packageId, portraitId),
     }]);
@@ -319,6 +346,8 @@ function installedPackage(
       destination: "native" as const,
       nativeEntry: candidate.template.id === "护甲"
         ? { id: "armor", label: "护甲" }
+        : candidate.template.id === "职业"
+          ? { id: "classes", label: "职业" }
         : candidate.template.id === "子职业"
           ? { id: "subclasses", label: "子职业" }
         : candidate.template.id === "自由"

@@ -9,6 +9,7 @@ import {
   buildTemplateSupportManifest,
   freeAuthoring,
   freeRendererRevision,
+  resolveTemplateFrontend,
 } from "../../packages/templates/src/frontend/index.ts";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
@@ -67,5 +68,59 @@ describe("自由 Template 1.0.0", () => {
     expect(markup.indexOf(">删除<")).toBeLessThan(markup.lastIndexOf(">描述<"));
     expect(markup).not.toContain(">标题<");
     expect(markup).not.toContain(">正文<");
+  });
+});
+
+describe("自由 Template 1.0.1", () => {
+  const current = templateRegistry.resolve("自由", "1.0.1")!;
+  const validateCurrent = ajv.compile(current.schema as AnySchema);
+  const frontend = resolveTemplateFrontend("自由", "1.0.1")!;
+  const beastform = {
+    名称: "迅捷斥候",
+    原文: "AGILE SCOUT",
+    类型: "野兽形态",
+    简介: "狐狸、老鼠、黄鼠狼等",
+    位阶: "1",
+    属性: "敏捷 +1",
+    闪避: "+2",
+    武器: "近战 敏捷 d4 物理",
+    优势: "欺骗、定位、潜行",
+    内容: [{ 名称: "敏捷", 原文: "Agile", 描述: "你的移动悄无声息。" }],
+  };
+
+  test("accepts arbitrary string fields while keeping features structured", () => {
+    expect(validateCurrent(beastform), JSON.stringify(validateCurrent.errors)).toBe(true);
+    expect(validateCurrent({ ...beastform, 位阶: { hidden: true } })).toBe(false);
+    expect(validateCurrent({ ...beastform, 内容: [{ 名称: "敏捷", 描述: "文本", extra: "invalid" }] })).toBe(false);
+    expect(current.project(beastform).searchText).toContain("位阶 1");
+    expect(current.project(beastform).searchText).toContain("近战 敏捷 d4 物理");
+  });
+
+  test("separates free fields from free features in authoring and rendering", () => {
+    const editorMarkup = renderToStaticMarkup(createElement(frontend.authoring.Editor, {
+      data: beastform,
+      onValue: () => undefined,
+      onData: () => undefined,
+    }));
+    expect(editorMarkup).toContain("自由字段");
+    expect(editorMarkup).toContain("自由特性");
+    expect(editorMarkup).toContain("字段名");
+    expect(editorMarkup).toContain("字段值");
+    expect(editorMarkup).toContain("free-field-row");
+    expect(editorMarkup).toContain("free-feature-row");
+    expect(editorMarkup.indexOf("自由字段")).toBeLessThan(editorMarkup.indexOf("自由特性"));
+
+    const rendererMarkup = renderToStaticMarkup(frontend.rendererRevision.render({
+      data: beastform,
+      presentation: current.defaultPresentation,
+      assets: {},
+      state: {},
+    }));
+    expect(rendererMarkup).toContain("free-fields");
+    expect(rendererMarkup).toContain("free-field-tag");
+    expect(rendererMarkup).not.toContain("<dl");
+    expect(rendererMarkup).toContain("位阶");
+    expect(rendererMarkup).toContain("近战 敏捷 d4 物理");
+    expect(rendererMarkup).toContain("敏捷");
   });
 });

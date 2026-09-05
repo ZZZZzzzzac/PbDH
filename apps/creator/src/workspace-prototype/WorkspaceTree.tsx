@@ -25,7 +25,6 @@ export function WorkspaceTree({
   activeResourceId,
   selectionMode,
   selectedResourceIds,
-  sortDirection = "ascending",
   onActivateResource,
   onToggleResourceSelection,
   onPinResource,
@@ -43,7 +42,6 @@ export function WorkspaceTree({
   activeResourceId: string;
   selectionMode?: boolean;
   selectedResourceIds?: ReadonlySet<string>;
-  sortDirection?: "ascending" | "descending";
   onActivateResource: (resourceId: string) => void;
   onToggleResourceSelection?: (resourceId: string) => void;
   onPinResource: (resourceId: string) => void;
@@ -69,8 +67,8 @@ export function WorkspaceTree({
     [workspace.folders, workspace.resourceLocations],
   );
   const treeItemsByParent = useMemo(
-    () => workspaceTreeItemsByParent(workspace, sortDirection),
-    [sortDirection, workspace.document.resources, workspace.folders, workspace.resourceLocations],
+    () => workspaceTreeItemsByParent(workspace),
+    [workspace.document.resources, workspace.folders, workspace.resourceLocations],
   );
 
   useEffect(() => {

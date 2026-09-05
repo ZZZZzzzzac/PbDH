@@ -44,6 +44,24 @@ describe("Creator package file workflow", () => {
     expect(reopened.candidate?.document.snapshotDigest).toBe(result.workspace.document.snapshotDigest);
   });
 
+  test("exports a PBRES workspace through a third-party adapter", async () => {
+    const inspected = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
+    if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
+
+    const result = await runCreatorPackageFileWorkflow({
+      type: "export-third-party",
+      formatId: "zzz",
+      workspace: createWorkspace(inspected.candidate),
+    });
+
+    expect(result.type).toBe("third-party-export");
+    if (result.type !== "third-party-export") return;
+    expect(result.fileName).toMatch(/_zzz\.json$/u);
+    expect(JSON.parse(new TextDecoder().decode(result.bytes))).toEqual([
+      expect.objectContaining({ 名称: "牛头人破坏者", 类型: "敌人" }),
+    ]);
+  });
+
   test.each(currentTemplates)("exports a default $id resource created inside a new anonymous workspace", async (template) => {
     const blank = await createBlankWorkspace("匿名资源包");
     const created = addTemplateResource(blank, template.id, template.version);

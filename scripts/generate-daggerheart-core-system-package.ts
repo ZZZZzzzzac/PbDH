@@ -45,17 +45,18 @@ type LegacyRuntimeManifest = {
 const sourceRoot = path.resolve("apps/player/system-package-sources/daggerheart-core");
 const resourceRoot = path.resolve(argument("--resource-root") ?? path.join(sourceRoot, "resources"));
 const outputRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
+const thirdPartyGmPackagePath = path.resolve("docs/third/daggerheart-core-gm.pbres");
 const generatedSystemDocumentPath = path.resolve("apps/player/src/daggerheart-core-system.generated.json");
 const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-preset.generated.json");
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
 const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.19";
+const resourcePackageVersion = "1.0.24";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
-const gmResourcePackageVersion = "1.0.4";
+const gmResourcePackageVersion = "1.0.5";
 const gmResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660003";
 const previousPlayerPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
-const previousGmPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core-gm.pbres"));
+const previousGmPackage = await loadPreviousPackage(thirdPartyGmPackagePath);
 const legacyManifest = JSON.parse(await readFile(
   path.join(sourceRoot, "manifest.json"),
   "utf8",
@@ -66,6 +67,7 @@ const playerLibraries = [
   library("communities", "社群", "社群", "1.0.1", transformCommunity),
   library("classes", "职业", "职业", "1.0.1", transformProfession),
   library("subclasses", "子职业", "子职业", "1.0.1", transformSubclass),
+  library("beastforms", "野兽形态", "自由", "1.0.1", transformBeastform),
   library("weapons", "武器", "武器", "1.0.1", transformWeapon),
   library("armor", "护甲", "护甲", "1.0.1", transformArmor),
   library("loot", "物品与消耗品", "物品", "1.0.1", transformItem),
@@ -131,7 +133,7 @@ let coreDocument: ResourcePackageLogicalDocument = resourceDocument(
   resourcePackageId,
   resourcePackageVersion,
   "匕首之心玩家资源",
-  "种族、社群、职业、子职业、武器、护甲、物品与领域卡。",
+  "种族、社群、职业、子职业、野兽形态、武器、护甲、物品与领域卡。",
   new Set(playerLibraries.map((definition) => definition.id)),
 );
 const coreMedia = mediaFor(new Set(playerLibraries.map((definition) => definition.id)));
@@ -203,7 +205,6 @@ const systemDocument: SystemPackageDocument = {
   })),
   embeddedResources: [
     { path: "resources/daggerheart-core.pbres" },
-    { path: "resources/daggerheart-core-gm.pbres" },
   ],
 };
 
@@ -216,10 +217,8 @@ await writeFile(
   path.join(outputRoot, "resources", "daggerheart-core.pbres"),
   writePbres(coreDocument, coreMedia),
 );
-await writeFile(
-  path.join(outputRoot, "resources", "daggerheart-core-gm.pbres"),
-  writePbres(gmDocument, gmMedia),
-);
+await mkdir(path.dirname(thirdPartyGmPackagePath), { recursive: true });
+await writeFile(thirdPartyGmPackagePath, writePbres(gmDocument, gmMedia));
 const runtimeFiles = [
   ...await collectPublishedRuntimePaths(outputRoot),
   "system.json",
@@ -241,7 +240,6 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
   embeddedResourceIndex: [
     { path: "resources/daggerheart-core.pbres", packageId: coreDocument.package.id, version: coreDocument.package.version, snapshotDigest: coreDocument.snapshotDigest },
-    { path: "resources/daggerheart-core-gm.pbres", packageId: gmDocument.package.id, version: gmDocument.package.version, snapshotDigest: gmDocument.snapshotDigest },
   ],
   loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");
@@ -407,6 +405,10 @@ function transformSubclass(entry: SourceEntry) {
   };
 }
 
+function transformBeastform(entry: SourceEntry) {
+  return Object.fromEntries(Object.entries(entry).filter(([key]) => !["ID", "卡图", "卡背"].includes(key)));
+}
+
 function transformWeapon(entry: SourceEntry) {
   return {
     名称: string(entry.名称), 原文: string(entry.原文), 类型: string(entry.类型), 属性: string(entry.属性), 距离: string(entry.距离),
@@ -463,12 +465,13 @@ function resourcePath(kind: string, data: ResourceData): string {
   const name = `${portableName(value.名称)}.json`;
   const parts = (() => {
     switch (kind) {
-      case "weapons": return ["武器", `位阶${portableName(value.位阶)}`, portableName(value.类型), name];
+      case "weapons": return ["武器", portableName(value.类型), `位阶${portableName(value.位阶)}`, name];
       case "armor": return ["护甲", `位阶${portableName(value.位阶)}`, name];
       case "loot": return ["物品", portableName(value.类型), name];
-      case "domain-cards": return ["领域卡", portableName(value.领域), `等级${portableName(value.等级)}`, name];
+      case "domain-cards": return ["领域卡", portableName(value.领域), name];
       case "subclasses": return ["子职业", portableName(value.主职), `${portableName(value.名称)}-${portableName(value.等级)}.json`];
-      case "adversaries": return ["敌人", `位阶${portableName(value.位阶)}`, portableName(value.种类), name];
+      case "beastforms": return ["野兽形态", name];
+      case "adversaries": return ["敌人", `位阶${portableName(value.位阶)}`, adversaryFolder(value.种类), name];
       case "environments": return ["环境", `位阶${portableName(value.位阶)}`, portableName(value.种类), name];
       case "ancestries": return ["种族", name];
       case "communities": return ["社群", name];
@@ -477,6 +480,11 @@ function resourcePath(kind: string, data: ResourceData): string {
     }
   })();
   return parts.join("/");
+}
+
+function adversaryFolder(type: unknown): string {
+  const name = portableName(type);
+  return /^集群(?:\(|$)/u.test(name) ? "集群" : name;
 }
 
 function webpDimensions(bytes: Uint8Array): { width: number; height: number } {

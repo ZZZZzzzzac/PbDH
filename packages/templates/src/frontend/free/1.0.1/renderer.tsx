@@ -2,7 +2,7 @@ import type { RendererRevisionCapability, SurfaceAttribution, SurfacePresentatio
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, useContainerTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { freeTemplate, type FreeData } from "../../../core/free/1.0.1/capability.ts";
+import { freeFieldEntries, freeTemplate, type FreeData } from "../../../core/free/1.0.1/capability.ts";
 
 export type FreeRuntimeState = Record<string, never>;
 
@@ -18,7 +18,7 @@ export const freeRendererStyles = `
 .free-card-frame{position:relative;width:63px;height:88px;overflow:hidden}.free-card-frame.is-fluid{overflow:visible}.free-card{position:absolute;inset:0 auto auto 0;width:360px;height:502.857px;transform:scale(.175);transform-origin:top left}.free-card.is-fluid{height:auto}
 .free-card.is-split{height:auto;min-height:0;overflow:visible}.free-card.is-split .free-art{position:relative;height:auto;overflow:visible}.free-card.is-split .free-art img{width:100%;height:auto;object-fit:contain}.free-card.is-split.has-portrait .free-header{inset:auto 0 0;height:auto;min-height:74px;background:linear-gradient(180deg,#1d131000 0%,#1d1310b8 48%,#1d1310f5 100%)}.free-card.is-split:not(.has-portrait) .free-header{position:relative;height:auto;background:#251a14}.free-card.is-split:not(.has-portrait) .free-art{min-height:74px}
 .free-card.is-split.has-fixed-base{height:var(--split-fixed-native-height)}
-.free-summary[data-restricted-markdown]{margin:2% 0 0;color:#dcb299;font:italic 500 clamp(10px,3.5cqw,14px)/1.4 "Noto Sans SC",sans-serif;overflow-wrap:anywhere}
+.free-summary[data-restricted-markdown]{margin:2% 0 0;color:#dcb299;font:italic 500 clamp(10px,3.5cqw,14px)/1.4 "Noto Sans SC",sans-serif;overflow-wrap:anywhere}.free-fields{display:flex;flex-wrap:wrap;gap:5px;margin:0}.free-field-tag{display:inline-flex;max-width:100%;align-items:baseline;gap:3px;padding:3px 7px;border:1px solid #c9a876;border-radius:999px;background:#ead9bc;color:var(--ink);font:600 clamp(10px,3.1cqw,13px)/1.3 "Noto Sans SC",sans-serif;overflow-wrap:anywhere}.free-field-tag b{color:var(--oxblood);font-weight:800}.free-field-tag b::after{content:":"}
 `;
 
 const freeScale = .175;
@@ -35,7 +35,7 @@ function FreeCard({ data, presentation, portrait, attribution }: {
   const cardRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [nativeHeight, setNativeHeight] = useState(presentation.fixedRatio ? fixedFreeNativeHeight : 568);
-  useContainerTextFit(contentRef, JSON.stringify(data.内容), {
+  useContainerTextFit(contentRef, JSON.stringify(data), {
     enabled: fixedSurface && presentation.mode !== "image",
     minFontSizePx: 11,
     maxFontSizePx: 15,
@@ -58,6 +58,8 @@ function FreeCard({ data, presentation, portrait, attribution }: {
     return () => observer.disconnect();
   }, [fixedSurface, splitFixed, portrait]);
 
+  const fields = freeFieldEntries(data).filter(([, value]) => value.trim());
+
   const header = <header className="free-header">
     <div className="free-title-row"><SingleLineTextFit className="free-title" contentKey={data.名称} minFontSizePx={10} maxFontSizePx={36} cssVariable="--free-title-font-size">{data.名称 || "未命名自由资源"}</SingleLineTextFit><p className="free-type">{data.类型 || "自由"}</p></div>
     {data.原文?.trim() ? <p className="free-original">{data.原文}</p> : null}
@@ -67,13 +69,14 @@ function FreeCard({ data, presentation, portrait, attribution }: {
   return <div
     className={`free-card-frame${fixedSurface ? "" : " is-fluid"}`}
     style={{ height: `${fixedSurface ? 88 : nativeHeight * freeScale}px`, "--split-fixed-native-height": `${nativeHeight}px` } as CSSProperties}
-  ><article ref={cardRef} className={["free-card", `is-${presentation.mode}`, fixedSurface ? "" : "is-fluid", splitFixed ? "has-fixed-base" : "", portrait ? "has-portrait" : ""].filter(Boolean).join(" ")} data-renderer-revision="free-card-r2">
+  ><article ref={cardRef} className={["free-card", `is-${presentation.mode}`, fixedSurface ? "" : "is-fluid", splitFixed ? "has-fixed-base" : "", portrait ? "has-portrait" : ""].filter(Boolean).join(" ")} data-renderer-revision="free-card-r4">
     {presentation.mode === "text" ? header : null}
     {(presentation.mode === "split" || presentation.mode === "image") && <div className="free-art">
       {portrait ? <img src={portrait} alt={data.名称} /> : <div className="free-image-missing" role="status">缺少主图</div>}
       {presentation.mode === "split" ? header : null}
     </div>}
     <div className="free-content" ref={contentRef}>
+      {fields.length ? <div className="free-fields">{fields.map(([name, value]) => <span className="free-field-tag" key={name}><b>{name}</b><span>{value}</span></span>)}</div> : null}
       {data.内容.map((block, index) => <section className="free-block" key={`${block.名称}:${index}`}>
         <h2><span>{block.名称}</span>{block.原文?.trim() ? <small>{block.原文}</small> : null}</h2><RestrictedMarkdown value={block.描述} />
       </section>)}
@@ -83,7 +86,7 @@ function FreeCard({ data, presentation, portrait, attribution }: {
 }
 
 export const freeRendererRevision: RendererRevisionCapability<FreeData, FreeRuntimeState, ReactNode> = {
-  revision: "free-card-r2",
+  revision: "free-card-r4",
   templateId: "自由",
   templateVersion: "1.0.1",
   requiredMediaSlots: [],

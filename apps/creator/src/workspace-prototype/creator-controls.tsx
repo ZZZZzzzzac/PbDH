@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus } from "@pbdh/platform-ui";
@@ -33,63 +33,6 @@ export function Icon({ name }: { name: keyof typeof iconPaths }) {
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
     {iconPaths[name].map((path) => <path key={path} d={path} />)}
   </svg>;
-}
-
-export function TemplateMultiSelect({
-  options,
-  value,
-  onChange,
-}: {
-  options: readonly string[];
-  value: readonly string[];
-  onChange: (value: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const dismiss = (event: globalThis.PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const escape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", dismiss);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", dismiss);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [open]);
-
-  const label = value.length === 0
-    ? "全部卡牌类型"
-    : value.length === 1
-      ? value[0]!
-      : `已选 ${value.length} 类`;
-
-  return <div ref={rootRef} className="workspace-template-filter" onMouseLeave={() => setOpen(false)}>
-    <button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
-      <span>{label}</span><Icon name="chevronDown" />
-    </button>
-    {open && <div className="workspace-template-filter-menu" role="menu" aria-label="按卡牌类型筛选">
-      <label role="menuitemcheckbox" aria-checked={value.length === 0}>
-        <input type="checkbox" checked={value.length === 0} onChange={() => onChange([])} />
-        <span>全部卡牌类型</span>
-      </label>
-      {options.map((templateId) => <label key={templateId} role="menuitemcheckbox" aria-checked={value.includes(templateId)}>
-        <input
-          type="checkbox"
-          checked={value.includes(templateId)}
-          onChange={() => onChange(value.includes(templateId)
-            ? value.filter((candidate) => candidate !== templateId)
-            : [...value, templateId])}
-        />
-        <span>{templateId}</span>
-      </label>)}
-    </div>}
-  </div>;
 }
 
 export function Field({

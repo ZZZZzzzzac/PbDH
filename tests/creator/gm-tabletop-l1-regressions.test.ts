@@ -23,7 +23,6 @@ describe("GM Tabletop L1 regressions", () => {
 
   test("provides working resource filters, batch placement, fixed zoom and fit controls", async () => {
     const rootSource = await readFile("apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx", "utf8");
-    const controls = await readFile("apps/creator/src/workspace-prototype/creator-controls.tsx", "utf8");
     const explorer = await readFile("apps/creator/src/workspace-prototype/creator-resource-explorer.tsx", "utf8");
     const contextMenus = await readFile("apps/creator/src/workspace-prototype/creator-context-menus.tsx", "utf8");
     const workbench = await readFile("apps/creator/src/workspace-prototype/gm-tabletop-workbench.tsx", "utf8");
@@ -31,8 +30,8 @@ describe("GM Tabletop L1 regressions", () => {
     const source = `${rootSource}\n${explorer}\n${contextMenus}\n${workbench}\n${viewport}`;
     const implementation = source;
     expect(explorer).toContain("value={snapshot.search}");
-    expect(controls).toContain('role="menuitemcheckbox"');
-    expect(controls).toContain("value.includes(templateId)");
+    expect(explorer).toContain('aria-label="清空搜索"');
+    expect(explorer).not.toContain("TemplateMultiSelect");
     expect(source).toContain("placeWorkspaceResources(selectedWorkspaceResources)");
     expect(source).toContain("const [resourceMultiSelect, setResourceMultiSelect] = useState(false)");
     expect(explorer).toContain("aria-pressed={snapshot.multiSelect}");
@@ -93,8 +92,10 @@ describe("GM Tabletop L1 regressions", () => {
         })),
       },
     })) as never;
-    expect(filterWorkspaceResources(workspaces, "首领", ["pbdh.adversary"]).length).toBeGreaterThan(0);
-    expect(filterWorkspaceResources(workspaces, "", ["pbdh.adversary", "pbdh.item"])).toHaveLength(1000);
+    expect(filterWorkspaceResources(workspaces, "首领").length).toBeGreaterThan(0);
+    expect(filterWorkspaceResources(workspaces, "")).toHaveLength(1000);
+    expect(filterWorkspaceResources(workspaces, "[模板:pbdh.adversary] [标签:首领]").length).toBeGreaterThan(0);
+    expect(filterWorkspaceResources(workspaces, "[模板:pbdh.adversary] [模板:pbdh.item]")).toHaveLength(1000);
 
     const capabilities = new Set<TabletopCapability>(["place", "arrange"]);
     let tabletop = createTabletopDocument("00000000-0000-7000-8000-000000000001", "压力桌面");

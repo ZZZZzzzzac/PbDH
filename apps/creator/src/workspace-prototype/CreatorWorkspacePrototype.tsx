@@ -65,6 +65,7 @@ import {
 } from "./creator-layout.tsx";
 export { storedColumnShare, type CreatorAppMode } from "./creator-layout.tsx";
 import { resourceTitle } from "./resource-preview.tsx";
+import { matchesResourceSearchQuery, parseResourceSearchQuery } from "./resource-search-query.ts";
 import {
   creatorMarketHandoffMismatch,
   parseCreatorMarketHandoff,
@@ -173,21 +174,13 @@ type PendingCreatorImage =
 export function filterWorkspaceResources(
   workspaces: readonly CreatorWorkspace[],
   search: string,
-  templateFilters: readonly string[],
-  sortDirection: "ascending" | "descending" = "ascending",
 ) {
-  const query = search.trim().toLocaleLowerCase();
+  const query = parseResourceSearchQuery(search);
   return workspaces.flatMap((workspace) => workspace.document.resources.flatMap((item) => {
-    if (templateFilters.length > 0 && !templateFilters.includes(item.template.id)) return [];
     const searchable = [workspace.document.package.name, item.path, item.template.id,
-      JSON.stringify(item.data)].join("\n").toLocaleLowerCase();
-    return query && !searchable.includes(query) ? [] : [{ workspace, resource: item }];
-  })).sort((left, right) => {
-    const byTitle = resourceTitle(left.resource).localeCompare(resourceTitle(right.resource), "zh-CN", { numeric: true, sensitivity: "base" });
-    const byPackage = left.workspace.document.package.name.localeCompare(right.workspace.document.package.name, "zh-CN", { numeric: true, sensitivity: "base" });
-    const result = byTitle || byPackage || left.resource.id.localeCompare(right.resource.id);
-    return sortDirection === "ascending" ? result : -result;
-  });
+      JSON.stringify(item.data)].join("\n");
+    return matchesResourceSearchQuery(item, searchable, query) ? [{ workspace, resource: item }] : [];
+  }));
 }
 
 
@@ -276,8 +269,6 @@ export function CreatorWorkspacePrototype({
   const [selectedInstanceId, setSelectedInstanceId] = useState("");
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<string[]>([]);
   const [resourceSearch, setResourceSearch] = useState("");
-  const [resourceTemplateFilters, setResourceTemplateFilters] = useState<string[]>([]);
-  const [workspaceSortDirection, setWorkspaceSortDirection] = useState<"ascending" | "descending">("ascending");
   const [selectedWorkspaceResources, setSelectedWorkspaceResources] = useState<WorkspaceResourceSelection[]>([]);
   const [resourceMultiSelect, setResourceMultiSelect] = useState(false);
   const [detailTabletopInstanceId, setDetailTabletopInstanceId] = useState("");
@@ -390,11 +381,9 @@ export function CreatorWorkspacePrototype({
   const availableResourceTabKeys = useMemo(() => workspaces.flatMap((workspace) =>
     workspace.openResourceIds.map((resourceId) => resourceTabKey(workspace.key, resourceId))), [workspaces]);
   const availableTabletopTabKeys = useMemo(() => tabletops.map((tabletop) => tabletop.id), [tabletops]);
-  const resourceTemplateOptions = useMemo(() => [...new Set(workspaces.flatMap((workspace) =>
-    workspace.document.resources.map((item) => item.template.id)))].sort(), [workspaces]);
   const filteredWorkspaceResources = useMemo(() => {
-    return filterWorkspaceResources(workspaces, resourceSearch, resourceTemplateFilters, workspaceSortDirection);
-  }, [resourceSearch, resourceTemplateFilters, workspaceSortDirection, workspaces]);
+    return filterWorkspaceResources(workspaces, resourceSearch);
+  }, [resourceSearch, workspaces]);
 
   useEffect(() => {
     if (!workspaceStorageReady) return;
@@ -1241,19 +1230,22 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  async function exportPackage() {
+  async function exportPackage(formatId: ResourceFormatId = "pbres") {
     if (!active || creatorOperation) return;
     setCreatorOperation("export-package");
     try {
-      const result = await runCreatorPackageFileWorkflow({
-        type: "export-workspace",
-        workspace: active,
-      });
+      const result = formatId === "pbres"
+        ? await runCreatorPackageFileWorkflow({ type: "export-workspace", workspace: active })
+        : await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId, workspace: active });
       if (result.type === "invalid") {
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
       }
-      if (result.type !== "workspace-export") return;
+      if (result.type === "conversion-review") {
+        setDialog({ kind: "conversion", review: result.review });
+        return;
+      }
+      if (result.type !== "workspace-export" && result.type !== "third-party-export") return;
       downloadBytes(result.bytes, result.fileName);
       replaceActive(result.workspace);
       notify(result.message);
@@ -1476,14 +1468,13 @@ export function CreatorWorkspacePrototype({
         conversionFormatRef.current = command.formatId;
         conversionImportRef.current?.click();
         return;
+      case "export-third-party": void exportPackage(command.formatId); return;
       case "export-package": void exportPackage(); return;
       case "publish-package": void openPublicationDialog(); return;
       case "new-resource": setDialog({ kind: "new-resource" }); return;
       case "new-folder": if (active) replaceActive(createWorkspaceFolder(active)); return;
       case "set-search": setResourceSearch(command.value); return;
-      case "set-template-filters": setResourceTemplateFilters(command.value); return;
       case "toggle-multi-select": toggleResourceMultiSelect(); return;
-      case "set-sort-direction": setWorkspaceSortDirection(command.value); return;
       case "activate-resource": activateWorkspaceResource(command.resourceId, command.workspaceKey); return;
       case "pin-resource": pinWorkspaceTab(command.resourceId, command.workspaceKey); return;
       case "toggle-resource-selection": toggleWorkspaceResourceSelection(command.workspaceKey, command.resourceId); return;
@@ -1713,12 +1704,9 @@ export function CreatorWorkspacePrototype({
             operation: creatorOperation,
             operationLabel: creatorOperation ? creatorOperationLabels[creatorOperation] : undefined,
             search: resourceSearch,
-            templateOptions: resourceTemplateOptions,
-            templateFilters: resourceTemplateFilters,
             filteredResources: filteredWorkspaceResources,
             multiSelect: resourceMultiSelect,
             selectedResources: selectedWorkspaceResources,
-            sortDirection: workspaceSortDirection,
             expandedWorkspaceKeys,
             sync: workspaceSync,
             savingWorkspaceKey: workspaceSaving ? activeKey : null,

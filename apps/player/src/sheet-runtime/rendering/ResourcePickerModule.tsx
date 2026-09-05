@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { findResourceLibrary, getOtherResourceLibraries, getResourcePickerLinks, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
-import { getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
+import { getOtherResourceLibraryFields, getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
 
@@ -25,7 +25,12 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   const library = active?.library;
   const commitResourceSelection = useRuntimeStore((state) => state.commitResourceSelection);
   const runtimeDefaultQuery = useRuntimeStore((state) => state.resourcePickerDefaultQueries[module.ID]);
-  const browserFields = useMemo(() => (library ? getResourceLibraryFields(library, active?.link.字段模板) : []), [active?.link.字段模板, library]);
+  const browserFields = useMemo(() => {
+    if (!library) return [];
+    return module.资源库 === "其他"
+      ? getOtherResourceLibraryFields(library)
+      : getResourceLibraryFields(library, active?.link.字段模板);
+  }, [active?.link.字段模板, library, module.资源库]);
   const defaultQuery = useMemo(
     () => mergeResourcePickerQuery(queriesByLibrary[library?.ID ?? ""] ?? active?.link.默认查询, runtimeDefaultQuery),
     [active?.link.默认查询, library?.ID, queriesByLibrary, runtimeDefaultQuery],

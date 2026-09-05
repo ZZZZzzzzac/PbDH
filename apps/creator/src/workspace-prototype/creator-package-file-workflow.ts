@@ -19,6 +19,7 @@ import { prepareWorkspaceExport, type CreatorWorkspace } from "./workspace-model
 export type CreatorPackageFileCommand =
   | { type: "inspect-import"; bytes: Uint8Array }
   | { type: "export-workspace"; workspace: CreatorWorkspace }
+  | { type: "export-third-party"; formatId: Exclude<ResourceFormatId, "pbres">; workspace: CreatorWorkspace }
   | { type: "convert"; formatId: Exclude<ResourceFormatId, "pbres">; bytes: Uint8Array; fileName: string }
   | { type: "export-conversion"; review: CreatorConversionReview };
 
@@ -26,6 +27,7 @@ export type CreatorPackageFileResult =
   | { type: "import-ready"; candidate: ResourcePackageCandidate }
   | { type: "invalid"; title: string; diagnostics: ContractDiagnostic[] }
   | { type: "workspace-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string }
+  | { type: "third-party-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string }
   | { type: "conversion-review"; review: CreatorConversionReview }
   | { type: "conversion-export"; bytes: Uint8Array; fileName: string }
   | { type: "no-conversion" };
@@ -72,6 +74,56 @@ export async function runCreatorPackageFileWorkflow(
       bytes: writePbres(workspace.document, workspace.media),
       fileName: `${safeFileName(workspace.document.package.name)}.pbres`,
       message: `已导出完整 .pbres · ${workspace.document.snapshotDigest.slice(0, 18)}…`,
+    };
+  }
+
+  if (command.type === "export-third-party") {
+    const workspace = await prepareWorkspaceExport(command.workspace);
+    const diagnostics = await validateResourcePackageCandidate(workspace.document, workspace.media);
+    if (diagnostics.some((item) => item.severity === "error")) {
+      return { type: "invalid", title: "导出门禁未通过", diagnostics };
+    }
+    const pbres = await resourceConversionRegistry.import("pbres", {
+      bytes: writePbres(workspace.document, workspace.media),
+      fileName: `${safeFileName(workspace.document.package.name)}.pbres`,
+      container: "pbres",
+    });
+    if (!pbres.ok) {
+      return {
+        type: "conversion-review",
+        review: {
+          formatId: command.formatId,
+          sourceFileName: workspace.document.package.name,
+          candidate: null,
+          converted: pbres.report.converted,
+          failed: pbres.report.failed,
+          diagnostics: pbres.report.diagnostics,
+        },
+      };
+    }
+    const exported = await resourceConversionRegistry.export(command.formatId, pbres.batch, {
+      packageName: workspace.document.package.name,
+      packageVersion: workspace.document.package.version,
+    });
+    if (!exported.ok) {
+      return {
+        type: "conversion-review",
+        review: {
+          formatId: command.formatId,
+          sourceFileName: workspace.document.package.name,
+          candidate: null,
+          converted: exported.report.converted,
+          failed: exported.report.failed,
+          diagnostics: exported.report.diagnostics,
+        },
+      };
+    }
+    return {
+      type: "third-party-export",
+      workspace,
+      bytes: exported.artifact.bytes,
+      fileName: exported.artifact.fileName,
+      message: `已导出 ${command.formatId} 格式 · ${exported.report.converted} 项资源`,
     };
   }
 

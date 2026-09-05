@@ -36,7 +36,7 @@ export function getOtherResourceLibraries(systemPackage: SystemPackage): Resourc
     }
   }
   return (systemPackage.resourceLibraries ?? []).filter((library) =>
-    (library.ID === "其他" || library.路径.startsWith("resource-extension:")) && !linked.has(library.ID));
+    library.entries.length > 0 && !linked.has(library.ID));
 }
 
 export function findCardTableResourceLibrarySource(

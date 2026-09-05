@@ -258,6 +258,9 @@ function snapshotCard(
   if (!composite || composer?.类型 !== "resourceComposer") {
     throw new Error(`组合桌面卡不可用：${card.definitionRef.compositeResourceId}`);
   }
+  if (composite.resourceCopy) {
+    return { resourceCopy: structuredClone(composite.resourceCopy) };
+  }
   const nativeEntryId = composer.来源槽位[0]?.资源库ID;
   const compatibility = input.currentSystem.resourceCompatibility.find((candidate) =>
     candidate.nativeEntry.id === nativeEntryId);
@@ -317,11 +320,14 @@ function assetIdFromRuntimePath(value: string | undefined): string | undefined {
 }
 
 function featureName(value: string | undefined): string {
-  return /\*\*([^*]+)\*\*/u.exec(value ?? "")?.[1] ?? "特性";
+  const source = value?.trim() ?? "";
+  return /^\*\*([^*]+)\*\*[：:]/u.exec(source)?.[1]
+    ?? /^([^：:\n]+)[：:]/u.exec(source)?.[1]?.trim()
+    ?? "特性";
 }
 
 function featureDescription(value: string | undefined): string {
-  return (value ?? "").replace(/^\*\*[^*]+\*\*[：:]\s*/u, "");
+  return (value ?? "").replace(/^(?:\*\*[^*]+\*\*|[^：:\n]+)[：:]\s*/u, "");
 }
 
 function parseIndicators(value: string | undefined): CardInstance["indicators"] {

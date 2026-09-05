@@ -54,6 +54,14 @@ async function loadEmbeddedResource(pathName: string) {
   return loaded.candidate!;
 }
 
+async function loadThirdPartyGmResource() {
+  const archive = new Uint8Array(readFileSync(path.join(root, "docs/third/daggerheart-core-gm.pbres")));
+  const loaded = await loadPbres(archive, validateResourcePackageCandidate);
+  expect(loaded.diagnostics).toEqual([]);
+  expect(loaded.candidate).toBeDefined();
+  return loaded.candidate!;
+}
+
 function hasStructuredEquipmentFeature(data: unknown): boolean {
   if (data === null || typeof data !== "object" || Array.isArray(data)) return false;
   return !Object.hasOwn(data, "描述")
@@ -112,7 +120,7 @@ describe("migrated Daggerheart Core System Package", () => {
   test("本地化资源字段只保留骰子、变量与专用原文字段中的拉丁字母", async () => {
     const packages = await Promise.all([
       loadEmbeddedResource("resources/daggerheart-core.pbres"),
-      loadEmbeddedResource("resources/daggerheart-core-gm.pbres"),
+      loadThirdPartyGmResource(),
     ]);
     const violations = packages.flatMap((candidate, packageIndex) => candidate.document.resources
       .flatMap((resource, resourceIndex) => unexpectedLocalizedLatin(resource.data, [String(packageIndex), String(resourceIndex), "data"])));
@@ -164,6 +172,13 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(entries.find((entry) => entry.原文 === "Full Plate Armor")?.特性名称).toBe("极重");
   });
 
+  test("装备描述使用完整特性字段，空特性不会留下冒号", () => {
+    const dependencies = readJson<unknown>(path.join(packageRoot, "dependencies.json"));
+    const templates = nestedStrings(dependencies);
+    expect(templates.filter((value) => value === "{{特性}}")).toHaveLength(5);
+    expect(templates).not.toContain("{{特性名称}}：{{特性描述}}");
+  });
+
   test("领域卡权威资源的回想值不包含闪电符号", async () => {
     const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
     const entries = playerPackage.document.resources.filter((resource) => resource.template.id === "领域卡")
@@ -172,7 +187,7 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(entries.every((entry) => !entry.回想.includes("⚡"))).toBe(true);
   });
 
-  test("uses separate valid player and GM Resource Packages", async () => {
+  test("只内置玩家资源，并把有效的 GM 资源包存放在 docs/third", async () => {
     const system = readJson<SystemPackageDocument>(path.join(packageRoot, "system.json"));
     expect(runtime.validate({
       family: "system-package",
@@ -181,30 +196,26 @@ describe("migrated Daggerheart Core System Package", () => {
       candidate: system,
     })).toEqual([]);
     expect(validateSystemPackageSemantics(system)).toEqual([]);
-    expect(system.embeddedResources).toHaveLength(2);
+    expect(system.embeddedResources).toHaveLength(1);
     expect(system.embeddedResources[0]?.path).toBe("resources/daggerheart-core.pbres");
-    expect(system.embeddedResources[1]?.path).toBe("resources/daggerheart-core-gm.pbres");
+    expect(preset.embeddedResourceIndex).toHaveLength(1);
+    expect(existsSync(path.join(packageRoot, "resources/daggerheart-core-gm.pbres"))).toBe(false);
+    expect(existsSync(path.join(root, "docs/third/daggerheart-core-gm.pbres"))).toBe(true);
 
-    const candidates = [];
-    for (const embedded of system.embeddedResources) {
-      const archive = new Uint8Array(readFileSync(path.join(packageRoot, ...embedded.path.split("/"))));
-      expect(archive.byteLength).toBeGreaterThan(1_000);
-      const loaded = await loadPbres(archive, validateResourcePackageCandidate);
-      expect(loaded.diagnostics).toEqual([]);
-      const index = preset.embeddedResourceIndex.find((item) => item.path === embedded.path);
-      expect(index).toBeDefined();
-      expect(loaded.candidate?.document.package.id).toBe(index?.packageId);
-      expect(loaded.candidate?.document.package.version).toBe(index?.version);
-      expect(loaded.candidate?.document.snapshotDigest).toBe(index?.snapshotDigest);
-      if (loaded.candidate) candidates.push(loaded.candidate);
-    }
-    expect(candidates[0]?.document.resources).toHaveLength(956);
+    const playerCandidate = await loadEmbeddedResource("resources/daggerheart-core.pbres");
+    const playerIndex = preset.embeddedResourceIndex[0];
+    expect(playerCandidate.document.package.id).toBe(playerIndex?.packageId);
+    expect(playerCandidate.document.package.version).toBe(playerIndex?.version);
+    expect(playerCandidate.document.snapshotDigest).toBe(playerIndex?.snapshotDigest);
+    const gmCandidate = await loadThirdPartyGmResource();
+    const candidates = [playerCandidate, gmCandidate];
+    expect(candidates[0]?.document.resources).toHaveLength(980);
     expect(candidates[1]?.document.resources).toHaveLength(311);
     expect(candidates[0]?.document.resources.every((resource) => !["敌人", "环境"].includes(resource.template.id))).toBe(true);
     expect(candidates[1]?.document.resources.every((resource) => ["敌人", "环境"].includes(resource.template.id))).toBe(true);
     expect(new Set(candidates.flatMap((candidate) => candidate.document.assets.map((asset) => asset.id)))).toHaveLength(280);
     expect(new Set(candidates.flatMap((candidate) => candidate.document.resources.map((resource) => resource.template.id)))).toEqual(
-      new Set(["种族", "社群", "职业", "子职业", "武器", "护甲", "物品", "领域卡", "敌人", "环境"]),
+      new Set(["种族", "社群", "职业", "子职业", "自由", "武器", "护甲", "物品", "领域卡", "敌人", "环境"]),
     );
     const resources = candidates.flatMap((candidate) => candidate.document.resources);
     expect(resources.find((resource) => resource.template.id === "种族" && (resource.data as Record<string, unknown>).名称 === "械灵")?.data).toMatchObject({
@@ -223,8 +234,8 @@ describe("migrated Daggerheart Core System Package", () => {
       希望特性: { 特性名称: expect.any(String), 特性原文: expect.any(String), 特性描述: expect.any(String) },
       特性: [{ 特性名称: "鼓舞人心", 特性原文: "Rally", 特性描述: expect.any(String) }],
     });
-    expect(candidates[0]?.document.package.version).toBe("1.0.19");
-    expect(candidates[1]?.document.package.version).toBe("1.0.4");
+    expect(candidates[0]?.document.package.version).toBe("1.0.24");
+    expect(candidates[1]?.document.package.version).toBe("1.0.5");
     expect(candidates.every((candidate) => candidate.document.license.label === "Darrington Press Community Gaming License"
       && candidate.document.license.declaration === "https://darringtonpress.com/license/")).toBe(true);
     expect(resources.every((resource) => Object.keys(resource.presentation).length === 2)).toBe(true);
@@ -237,6 +248,11 @@ describe("migrated Daggerheart Core System Package", () => {
     const equipmentResources = resources.filter((resource) => resource.template.id === "护甲" || resource.template.id === "武器");
     expect(equipmentResources).toHaveLength(376);
     expect(equipmentResources.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
+    const arcaneWheelchairs = resources.filter((resource) => resource.template.id === "武器"
+      && ["奥术框架轮椅", "改进奥术框架轮椅", "高级奥术框架轮椅", "传说奥术框架轮椅"]
+        .includes(String((resource.data as Record<string, unknown>).名称)));
+    expect(arcaneWheelchairs).toHaveLength(4);
+    expect(arcaneWheelchairs.every((resource) => (resource.data as Record<string, unknown>).属性 === "施法属性")).toBe(true);
     const stableCounts = new Map([
       ["种族", 24], ["社群", 15], ["职业", 13], ["子职业", 78], ["物品", 240], ["领域卡", 210], ["敌人", 264], ["环境", 47],
     ]);
@@ -292,8 +308,45 @@ describe("migrated Daggerheart Core System Package", () => {
         : `${name}.json`;
       return resource.path.split("/").at(-1) === filename;
     })).toBe(true);
-    expect(resources.filter((resource) => resource.template.id === "武器").every((resource) => /^武器\/位阶[^/]+\/[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
-    expect(resources.filter((resource) => resource.template.id === "领域卡").every((resource) => /^领域卡\/[^/]+\/等级[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+    expect(resources.filter((resource) => resource.template.id === "武器").every((resource) => /^武器\/(?:主武器|副武器)\/位阶[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+    expect(resources.filter((resource) => resource.template.id === "领域卡").every((resource) => /^领域卡\/[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+    const beastforms = resources.filter((resource) => resource.template.id === "自由"
+      && String((resource.data as Record<string, unknown>).类型).startsWith("野兽形态"));
+    expect(beastforms).toHaveLength(24);
+    expect(beastforms.every((resource) => resource.template.version === "1.0.1"
+      && /^野兽形态\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+    expect(new Set(beastforms.map((resource) => String((resource.data as Record<string, unknown>).类型)))).toEqual(new Set(["野兽形态"]));
+    expect(beastforms.reduce<Record<string, number>>((counts, resource) => {
+      const tier = String((resource.data as Record<string, unknown>).位阶);
+      counts[tier] = (counts[tier] ?? 0) + 1;
+      return counts;
+    }, {})).toEqual({ "1": 6, "2": 6, "3": 6, "4": 6 });
+    expect(beastforms.find((resource) => (resource.data as Record<string, unknown>).原文 === "AGILE SCOUT")?.data).toMatchObject({
+      名称: "迅捷斥候",
+      类型: "野兽形态",
+      简介: "狐狸、老鼠、黄鼠狼等",
+      位阶: "1",
+      属性: "敏捷 +1",
+      闪避: "+2",
+      武器: "近战 敏捷 d4 物理",
+      优势: "欺骗，定位，潜行",
+      内容: [
+        { 名称: "敏捷", 原文: "Agile", 描述: expect.stringContaining("花费 1 希望点") },
+        { 名称: "脆弱", 原文: "Fragile", 描述: expect.stringContaining("解除野兽形态") },
+      ],
+    });
+    const domainFolders = new Map<string, typeof resources>();
+    for (const resource of resources.filter((candidate) => candidate.template.id === "领域卡")) {
+      const domain = resource.path.split("/")[1]!;
+      domainFolders.set(domain, [...(domainFolders.get(domain) ?? []), resource]);
+    }
+    expect(domainFolders.size).toBe(10);
+    expect([...domainFolders.values()].every((entries) => entries.length === 21)).toBe(true);
+    const hordes = resources.filter((resource) => resource.template.id === "敌人"
+      && String((resource.data as Record<string, unknown>).种类).startsWith("集群"));
+    expect(hordes).toHaveLength(21);
+    expect(hordes.every((resource) => /^敌人\/位阶[^/]+\/集群\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+    expect(hordes.every((resource) => /^集群\(\d+\/生命点\)$/u.test(String((resource.data as Record<string, unknown>).种类)))).toBe(true);
     expect(resources.filter((resource) => resource.template.id === "子职业").every((resource) => /^子职业\/[^/]+\/[^/]+-(基础|进阶|精通)\.json$/u.test(resource.path))).toBe(true);
 
     const allText = resources.flatMap((resource) => nestedStrings(resource.data));

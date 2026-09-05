@@ -59,7 +59,10 @@ describe("Sheet Runtime Character Save adapter", () => {
       template: { id: "种族", version: "1.0.0" },
       data: {
         名称: "人类 / 精灵",
-        特性: [{ 特性名称: "适应", 特性描述: "说明" }, { 特性名称: "冥想", 特性描述: "说明" }],
+        特性: [
+          { 特性名称: "适应", 特性描述: "说明中包含 **标记 1 压力点**。" },
+          { 特性名称: "冥想", 特性描述: "说明中包含 **花费 1 希望点**。" },
+        ],
       },
     });
     expect(await validateCharacterSaveCandidate(candidate.document, candidate.media)).toEqual([]);
@@ -109,7 +112,11 @@ describe("Sheet Runtime Character Save adapter", () => {
     });
     expect(restored.embeddedResourceEntries[`character-copy:${compositeCardId}`]).toMatchObject({
       libraryId: "ancestries",
-      entry: { fields: { 名称: "人类 / 精灵", 特性A: "适应：说明", 特性B: "冥想：说明" } },
+      entry: { fields: {
+        名称: "人类 / 精灵",
+        特性A: "适应：说明中包含 **标记 1 压力点**。",
+        特性B: "冥想：说明中包含 **花费 1 希望点**。",
+      } },
     });
 
     const duplicateId = "00000000-0000-7000-8000-000000000041";
@@ -228,8 +235,8 @@ function sheetCharacterData(): SheetCharacterData {
           ID: "composite:pick-ancestry",
           种族A名称: "人类",
           种族B名称: "精灵",
-          特性A: "**适应**：说明",
-          特性B: "**冥想**：说明",
+          特性A: "适应：说明中包含 **标记 1 压力点**。",
+          特性B: "冥想：说明中包含 **花费 1 希望点**。",
         },
       },
     },

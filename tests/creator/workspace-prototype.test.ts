@@ -85,12 +85,9 @@ function renderResourceExplorer() {
       activeResourceCount: workspace.document.resources.length,
       operation: null,
       search: "",
-      templateOptions: [workspace.document.resources[0]!.template.id],
-      templateFilters: [],
       filteredResources: [],
       multiSelect: false,
       selectedResources: [],
-      sortDirection: "ascending",
       expandedWorkspaceKeys: new Set([workspace.key]),
       sync: new Map(),
       savingWorkspaceKey: null,
@@ -897,12 +894,16 @@ describe("Creator Workspace prototype state model", () => {
     expect(styles).toContain("@media (max-width: 1220px)");
   });
 
-  test("puts a working name sort control beside multi-select instead of the footer", () => {
+  test("removes sorting, places multi-select beside search, and orders the enlarged toolbar actions", () => {
     const markup = renderResourceExplorer();
+    const actions = ["新建资源包", "新建资源", "新建文件夹", "导入资源包", "导出资源包", "发布到资源市场"];
+    const actionOffsets = actions.map((label) => markup.indexOf(`aria-label="${label}"`));
 
-    expect(markup).toContain('class="workspace-sort-button"');
-    expect(markup).toContain("名称 ↑");
-    expect(markup).not.toContain("个资源</span><span>名称 ↑");
+    expect(markup).not.toContain("workspace-sort-button");
+    expect(markup).toContain('class="explorer-search-row"');
+    expect(markup).toContain('class="explorer-multi-select"');
+    expect(actionOffsets.every((offset) => offset >= 0)).toBe(true);
+    expect(actionOffsets).toEqual([...actionOffsets].sort((left, right) => left - right));
   });
 
   test("lets users resize both Creator column boundaries and remembers their choices", () => {
@@ -967,11 +968,15 @@ describe("Creator Workspace prototype state model", () => {
       "apps/creator/src/workspace-prototype/workspace.css",
     ), "utf8");
 
-    expect(markup).toContain('class="workspace-resource-filters"');
+    expect(markup).toContain('class="explorer-search-row"');
     expect(markup).toContain('class="workspace-package-list"');
     expect(markup).toContain('aria-label="筛选资源"');
-    expect(styles).toContain(".workspace-resource-filters");
+    expect(markup).not.toContain("workspace-template-filter");
+    expect(markup).toContain('aria-controls="resource-search-help"');
+    expect(markup).not.toContain("[模板:敌人] [位阶:4] [种类:独狼]");
+    expect(styles).toContain(".explorer-multi-select");
     expect(styles).toContain(".workspace-resource-results");
+    expect(styles).toContain(".resource-search-help");
   });
 
   test("makes the GM tabletop bounds visible against the surrounding viewport", () => {
@@ -1034,7 +1039,7 @@ describe("Creator Workspace prototype state model", () => {
     expect(platformSource).toContain("onHandoffNavigate={navigateHandoff}");
   });
 
-  test("offers every shared resource conversion format from the Creator import menu", () => {
+  test("offers every shared resource conversion format while highlighting PBRES as native", () => {
     const rootSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
@@ -1050,11 +1055,18 @@ describe("Creator Workspace prototype state model", () => {
     expect(rootSource).toContain("runCreatorPackageFileWorkflow");
     expect(workflowSource).toContain("resourceConversionRegistry.import(command.formatId");
     expect(creatorSource).toContain("materializeCreatorResourceConversion(imported.batch)");
-    expect(markup).toContain("导入 pbres 格式");
+    expect(markup).toContain("导入 PBRES 格式");
     expect(markup).toContain("导入 ZZZ 格式");
     expect(markup).toContain("导入 Rink 格式");
     expect(markup).toContain("导入 dhsheet 格式");
     expect(markup).toContain("导入不咕鸟格式");
+    expect(markup).toContain("导出 PBRES 格式");
+    expect(markup).toContain("导出 ZZZ 格式");
+    expect(markup).toContain("导出 Rink 格式");
+    expect(markup).toContain("导出 dhsheet 格式");
+    expect(markup).toContain("导出不咕鸟格式");
+    expect(markup.match(/class="is-native-format"/gu)).toHaveLength(2);
+    expect(workflowSource).toContain("resourceConversionRegistry.export(command.formatId");
     expect(creatorSource).toContain("导入工作区");
   });
 

@@ -389,6 +389,23 @@ function isComplexResourceValue(value: unknown): boolean {
   return typeof value === "object" && value !== null;
 }
 
+export function getOtherResourceLibraryFields(library: ResourceLibrary): ResourceLibraryField[] {
+  const scalarDataKeys = new Set<string>();
+  for (const entry of library.entries) {
+    const data = entry.resourceCopy?.data;
+    if (!isPlainObject(data)) continue;
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        scalarDataKeys.add(key);
+      }
+    }
+  }
+  if (library.fields.some((field) => field.key === "特性")) scalarDataKeys.add("特性");
+  return scalarDataKeys.size > 0
+    ? library.fields.filter((field) => scalarDataKeys.has(field.key))
+    : library.fields;
+}
+
 function isTabletopResourceCopy(value: unknown): value is TabletopResourceCopy {
   if (!isPlainObject(value) || !isPlainObject(value.template) || !isPlainObject(value.presentation)
     || !isPlainObject(value.data) || !isPlainObject(value.media)) return false;

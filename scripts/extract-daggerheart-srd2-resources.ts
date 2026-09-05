@@ -11,7 +11,7 @@ type SourceResource = Record<string, unknown> & { ID: string; 名称: string };
 const kindTemplateId: Record<string, string> = {
   ancestries: "种族", communities: "社群", classes: "职业", subclasses: "子职业",
   weapons: "武器", armor: "护甲", loot: "物品", "domain-cards": "领域卡",
-  adversaries: "敌人", environments: "环境",
+  beastforms: "自由", adversaries: "敌人", environments: "环境",
 };
 // 已发布资源的身份不能因纠正译名而漂移。
 const publishedResourceIds = new Map([
@@ -38,6 +38,7 @@ const resources = {
   communities: extractCommunities(),
   classes: extractClasses(),
   subclasses: extractSubclasses(),
+  beastforms: extractBeastforms(),
   weapons: extractWeapons(),
   armor: extractArmor(),
   loot: extractItems(),
@@ -47,7 +48,7 @@ const resources = {
 };
 
 const expectedCounts: Record<keyof typeof resources, number> = {
-  ancestries: 24, communities: 15, classes: 13, subclasses: 78, weapons: 307,
+  ancestries: 24, communities: 15, classes: 13, subclasses: 78, beastforms: 24, weapons: 307,
   armor: 69, loot: 240, "domain-cards": 210, adversaries: 264, environments: 47,
 };
 const countMismatches = (Object.entries(resources) as Array<[keyof typeof resources, SourceResource[]]>).filter(([kind, entries]) => entries.length !== expectedCounts[kind]).map(([kind, entries]) => `${kind}: expected ${expectedCounts[kind]}, extracted ${entries.length}`);
@@ -56,7 +57,7 @@ assertCatalogMatches(records.find((record) => record.key === "SRD2_SECTION_413")
 assertCatalogMatches(records.find((record) => record.key === "SRD2_SECTION_695"), resources.environments, "环境");
 for (const [kind, entries] of Object.entries(resources) as Array<[keyof typeof resources, SourceResource[]]>) {
   const templateId = kindTemplateId[kind];
-  const template = templateId ? templateRegistry.resolve(templateId, "1.0.0") : undefined;
+  const template = templateId ? templateRegistry.resolve(templateId, "1.0.1") : undefined;
   if (!template) throw new Error(`${kind}: missing template ${templateId}`);
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(template.schema);
   const ids = new Set<string>();
@@ -423,6 +424,73 @@ function firstSentence(value: string): string {
   return period >= 0 ? normalized.slice(0, period + 1) : normalized;
 }
 
+function extractBeastforms(): SourceResource[] {
+  return records.filter((record) => {
+    const number = sectionNumber(record);
+    return number >= 74 && number <= 100 && ![80, 87, 94].includes(number);
+  }).map((record) => {
+    const number = sectionNumber(record);
+    const tier = number <= 79 ? "1" : number <= 86 ? "2" : number <= 93 ? "3" : "4";
+    const names = localizedName(record);
+    const translation = clean(record.translation.replace(/^\s*[|/=]+\s*$/gmu, ""));
+    const body = afterHeading(translation);
+    const features = pairedBeastformFeatures(record, body);
+    const firstFeature = features[0];
+    const originalFeatureAt = firstFeature?.特性原文 ? fold(body).indexOf(fold(firstFeature.特性原文)) : -1;
+    const localizedFeatureAt = firstFeature?.特性名称 ? fold(body).indexOf(fold(firstFeature.特性名称)) : -1;
+    const firstFeatureAt = originalFeatureAt >= 0 ? originalFeatureAt : localizedFeatureAt;
+    const featureLineStart = firstFeatureAt >= 0 ? body.lastIndexOf("\n", firstFeatureAt) + 1 : body.length;
+    const introduction = body.slice(0, featureLineStart);
+    const example = /^\s*[（(][^\n]+[）)]\s*$/mu.exec(introduction)?.[0] ?? "";
+    const statistics = beastformStatistics(record);
+    return {
+      ID: `野兽形态:${names.name}`,
+      名称: names.name,
+      原文: names.original,
+      类型: "野兽形态",
+      简介: plain(example).replace(/^[（(]\s*|\s*[）)]$/gu, ""),
+      位阶: tier,
+      属性: statistics.trait,
+      闪避: statistics.evasion,
+      武器: statistics.weapon,
+      优势: field(translation, "获得优势"),
+      内容: features.map((feature) => ({ 名称: feature.特性名称, 原文: feature.特性原文, 描述: feature.特性描述 })),
+    };
+  });
+}
+
+function beastformStatistics(record: RecordEntry): { trait: string; evasion: string; weapon: string } {
+  const traitNames: Record<string, string> = { Agility: "敏捷", Strength: "力量", Finesse: "灵巧", Instinct: "本能" };
+  const rangeNames: Record<string, string> = { Melee: "近战", "Very Close": "邻近", Close: "近距离", Far: "远距离" };
+  const damageNames: Record<string, string> = { phy: "物理", mag: "魔法" };
+  const stat = /\b(Agility|Strength|Finesse|Instinct)\s+([+−-]\d+)\s*\|\s*Evasion\s+([+−-]\d+)/iu.exec(record.original);
+  const weapon = /^(?:(Melee|Very Close|Close|Far)\s+(Agility|Strength|Finesse|Instinct)|(Agility|Strength|Finesse|Instinct)\s+(Melee|Very Close|Close|Far))\s+(d\d+(?:[+−-]\d+)?)\s+(phy|mag)\s*$/imu.exec(record.original);
+  const traitName = stat?.[1] ? traitNames[stat[1]] ?? "" : "";
+  const range = weapon?.[1] ?? weapon?.[4] ?? "";
+  const weaponTrait = weapon?.[2] ?? weapon?.[3] ?? "";
+  return {
+    trait: stat ? `${traitName} ${stat[2]}` : "",
+    evasion: stat?.[3] ?? "",
+    weapon: weapon ? `${rangeNames[range] ?? range} ${traitNames[weaponTrait] ?? weaponTrait} ${weapon[5]} ${damageNames[weapon[6]!] ?? weapon[6]}` : "",
+  };
+}
+
+function pairedBeastformFeatures(record: RecordEntry, translation: string): Array<{ 特性名称: string; 特性原文: string; 特性描述: string }> {
+  try {
+    return pairedFeatures(record.original, translation);
+  } catch (error) {
+    const originalMarkers = englishFeatureMarkers(record.original);
+    const translatedMarkers = [...translation.matchAll(/^\s*[*_]{0,3}([^*\n：:]+?)[*_]{0,3}\s*[：:]\s*[*_]{0,3}/gmu)];
+    const translatedMarker = translatedMarkers.at(-1);
+    if (originalMarkers.length !== 1 || !translatedMarker) throw error;
+    return [{
+      特性名称: plain(translatedMarker[1]!),
+      特性原文: originalMarkers[0]!.name,
+      特性描述: clean(translation.slice(translatedMarker.index! + translatedMarker[0].length)),
+    }];
+  }
+}
+
 function extractAncestries(): SourceResource[] {
   const result = records.filter((record) => {
     const number = sectionNumber(record);
@@ -691,7 +759,7 @@ function extractAdversaries(): SourceResource[] {
     const features = pairedTypedFeatures(record, "敌人");
     const thresholds = field(record.translation, "阈值").split("/").map(plain);
     return {
-      ID: `敌人:${names.name}:${tier?.[1] ?? ""}:${names.original}`, 名称: names.name, 原文: names.original, 位阶: tier?.[1] ?? "", 种类: localizedType(summary.typeLine, tier?.[2] ?? ""), 特性: features, 类型: "敌人",
+      ID: `敌人:${names.name}:${tier?.[1] ?? ""}:${names.original}`, 名称: names.name, 原文: names.original, 位阶: tier?.[1] ?? "", 种类: localizedAdversaryType(summary.typeLine, tier?.[2] ?? ""), 特性: features, 类型: "敌人",
       简介: summary.introduction, 动机与战术: field(record.translation, "动机与战术"), 难度: field(record.translation, "难度"),
       重度伤害阈值: thresholds[0] ?? "", 严重伤害阈值: thresholds[1] ?? "",
       生命点: field(record.translation, "生命点"), 压力点: field(record.translation, "压力点") || field(record.translation, "压力"), ...attack, 经历: localizedExperience(record),
@@ -744,6 +812,11 @@ function localizedType(line: string, englishType: string): string {
     .replace(/位阶\s*\d+/u, "")
     .replace(new RegExp(escaped(englishType), "iu"), "")
     .replace(englishLabel ? new RegExp(`\\b${escaped(englishLabel)}\\b`, "iu") : /$^/u, ""));
+}
+
+function localizedAdversaryType(line: string, englishType: string): string {
+  const horde = /^Horde\s*\((\d+)\s*\/\s*HP\)$/iu.exec(plain(englishType));
+  return horde ? `集群(${horde[1]}/生命点)` : localizedType(line, englishType);
 }
 
 function extractEnvironments(): SourceResource[] {

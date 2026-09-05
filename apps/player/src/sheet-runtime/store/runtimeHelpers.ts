@@ -33,6 +33,13 @@ export function ensureCardState(data: CharacterData | null, systemPackage?: Syst
 
   const normalized = {
     ...data,
+    character: {
+      ...data.character,
+      values: Object.fromEntries(Object.entries(data.character.values).map(([moduleId, value]) => [
+        moduleId,
+        typeof value === "string" && /^[：:]$/u.test(value.trim()) ? "" : value,
+      ])),
+    },
     cards: {
       instances: (data.cards?.instances ?? []).map((instance) => {
         const legacy = instance as typeof instance & { libraryId?: string; definitionId?: string };
