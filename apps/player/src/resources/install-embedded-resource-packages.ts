@@ -1,6 +1,5 @@
 import {
   loadPbres,
-  planEmbeddedResourceAdmission,
   type SystemPackageDocument,
 } from "@pbdh/contract-runtime";
 
@@ -10,7 +9,6 @@ import { validateResourcePackageCandidate } from "./resource-package-validator.t
 export type EmbeddedResourceInstallResult = {
   installedPackageIds: string[];
   unchangedPackageIds: string[];
-  rejected: Array<{ packageId: string; code: string }>;
 };
 
 export async function installMissingEmbeddedResourcePackages(input: {
@@ -18,8 +16,6 @@ export async function installMissingEmbeddedResourcePackages(input: {
   embeddedResourceIndex: Array<{
     path: string;
     packageId: string;
-    version: string;
-    snapshotDigest: string;
   }>;
   systemPackageBaseUrl: string;
   repository: ResourcePackageRepository;
@@ -32,7 +28,6 @@ export async function installMissingEmbeddedResourcePackages(input: {
   const result: EmbeddedResourceInstallResult = {
     installedPackageIds: [],
     unchangedPackageIds: [],
-    rejected: [],
   };
 
   const declaredPaths = new Set(input.systemPackage.embeddedResources.map(({ path }) => path));
@@ -45,22 +40,8 @@ export async function installMissingEmbeddedResourcePackages(input: {
       throw new Error(`内嵌资源索引引用了未声明路径：${embedded.path}`);
     }
     const local = localById.get(embedded.packageId);
-    const admission = planEmbeddedResourceAdmission({
-      embedded: {
-        package: { version: embedded.version },
-        snapshotDigest: embedded.snapshotDigest,
-      },
-      local: local && {
-        version: local.document.package.version,
-        snapshotDigest: local.document.snapshotDigest,
-      },
-    });
-    if (admission.action === "no-op" || admission.action === "keep-local") {
+    if (local && local.source !== "bundled") {
       result.unchangedPackageIds.push(embedded.packageId);
-      continue;
-    }
-    if (admission.action === "reject") {
-      result.rejected.push({ packageId: embedded.packageId, code: admission.code });
       continue;
     }
     const response = await fetchFile(resolvePackageUrl(input.systemPackageBaseUrl, embedded.path));
@@ -75,15 +56,12 @@ export async function installMissingEmbeddedResourcePackages(input: {
       throw new Error(loaded.diagnostics.map((diagnostic) => diagnostic.code).join("\n"));
     }
     const document = loaded.candidate.document;
-    if (
-      document.package.id !== embedded.packageId
-      || document.package.version !== embedded.version
-      || document.snapshotDigest !== embedded.snapshotDigest
-    ) {
-      throw new Error(`系统包内置资源身份不匹配：${embedded.path}`);
+    if (local?.document.snapshotDigest === document.snapshotDigest) {
+      result.unchangedPackageIds.push(document.package.id);
+      continue;
     }
     await input.repository.replace(systemPackageId, loaded.candidate, "bundled");
-    result.installedPackageIds.push(embedded.packageId);
+    result.installedPackageIds.push(document.package.id);
   }
 
   return result;

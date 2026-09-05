@@ -35,11 +35,15 @@
     "system-package": "tsx scripts/system-package-cli.ts",
     "build:daggerheart-core": "tsx scripts/build-daggerheart-core-system-package.ts",
     "check:daggerheart-core": "tsx scripts/build-daggerheart-core-system-package.ts --check",
+    "sync:builtin-system-packages": "tsx scripts/sync-bundled-system-package-metadata.ts",
+    "check:builtin-system-packages": "tsx scripts/sync-bundled-system-package-metadata.ts --check",
+    "pbres:unpack": "tsx scripts/pbres-workspace-cli.ts unpack",
+    "pbres:pack": "tsx scripts/pbres-workspace-cli.ts pack",
     "typecheck": "tsc --noEmit",
     "dev:platform": "npm run dev -w @pbdh/platform",
     "build:platform": "npm run build -w @pbdh/platform",
     "dev:backend": "node --env-file-if-exists=.env.local scripts/python.mjs -m uvicorn pbdh_backend.app:create_app --factory --app-dir apps/backend/src --reload --port 8001",
-    "verify": "npm run check:boundaries && npm run check:contract-releases && npm run check:visual-sources && npm run test:ts && npm run test:python && npm run typecheck && npm run measure:renderer && npm run build:platform"
+    "verify": "npm run check:boundaries && npm run check:contract-releases && npm run check:visual-sources && npm run check:builtin-system-packages && npm run test:ts && npm run test:python && npm run typecheck && npm run measure:renderer && npm run build:platform"
   },
   "dependencies": {
     "dexie": "4.4.4",

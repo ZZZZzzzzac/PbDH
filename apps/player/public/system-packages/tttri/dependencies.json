@@ -1,34 +1,4 @@
-[
-  {
-    "ID": "fill-armor",
-    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-armor" }],
-    "targets": [
-      { "类型": "module", "模块ID": "armor-summary" },
-      { "类型": "module", "模块ID": "armor-feature" },
-      { "类型": "module", "模块ID": "armor-slots" },
-      { "类型": "module", "模块ID": "major-threshold" },
-      { "类型": "module", "模块ID": "severe-threshold" },
-      { "类型": "module", "模块ID": "armor-value" }
-    ],
-    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-armor" },
-    "条件": { "类型": "always" },
-    "动作": [
-      { "类型": "fillText", "目标模块ID": "armor-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "{{名称}} | 阈值 {{重度阈值}}/{{严重阈值}} | 护甲值 {{护甲值}}" } },
-      { "类型": "fillText", "目标模块ID": "armor-feature", "内容": { "类型": "selectedResourceTemplate", "格式": "{{特性名}}：{{特性描述}}" } },
-      { "类型": "fillCountable", "目标模块ID": "armor-slots", "最大值": { "类型": "selectedResourceField", "字段": "护甲值" } },
-      { "类型": "fillText", "目标模块ID": "major-threshold", "内容": { "类型": "selectedResourceField", "字段": "重度阈值" } },
-      { "类型": "fillText", "目标模块ID": "severe-threshold", "内容": { "类型": "selectedResourceField", "字段": "严重阈值" } },
-      { "类型": "fillText", "目标模块ID": "armor-value", "内容": { "类型": "selectedResourceField", "字段": "护甲值" } }
-    ]
-  },
-  {
-    "ID": "append-inventory-items",
-    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-inventory-item" }],
-    "targets": [{ "类型": "module", "模块ID": "inventory" }],
-    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-inventory-item" },
-    "条件": { "类型": "always" },
-    "动作": [{ "类型": "fillText", "目标模块ID": "inventory", "写入方式": "追加", "追加分隔符": "\n", "内容": { "类型": "selectedResourceTemplate", "格式": "- **{{名称}}**: {{描述}}", "分隔符": "\n" } }]
-  },
+[ 
   {
     "ID": "filter-domain-cards-on-primary",
     "sources": [

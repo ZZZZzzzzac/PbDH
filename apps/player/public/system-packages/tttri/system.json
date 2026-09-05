@@ -2,9 +2,9 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a05400-0000-7000-8000-000000000201",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "name": "罗德岛旅记",
-    "description": "由迁移后的 Sheet Runtime 驱动的罗德岛旅记系统包。"
+    "description": "由 Sheet Runtime 驱动的《共赴明日：罗德岛旅记》系统包。"
   },
   "runtime": {
     "characterDataVersion": "1.0.6",

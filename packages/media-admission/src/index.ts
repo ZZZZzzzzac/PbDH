@@ -260,6 +260,16 @@ export function createBrowserImageAdmission(): ImageAdmissionWorkflow {
   };
 }
 
+export async function admitResourceImageBytes(
+  bytes: Uint8Array,
+  fileName: string,
+  workflow: ImageAdmissionWorkflow = createBrowserImageAdmission(),
+): Promise<AdmittedImage> {
+  const source = bytes.slice();
+  const file = new File([source.buffer], fileName);
+  return workflow.admit(file, resourceImagePolicy);
+}
+
 export function centerCrop(sourceWidth: number, sourceHeight: number, aspectRatio: number): ImageCrop {
   if (sourceWidth <= 0 || sourceHeight <= 0 || aspectRatio <= 0) throw new Error("图片尺寸或裁剪比例无效。");
   let width = sourceWidth;

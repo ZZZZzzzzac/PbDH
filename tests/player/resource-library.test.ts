@@ -99,19 +99,16 @@ describe("Player Resource Library", () => {
     expect(library.has(current.document.package.id)).toBe(true);
   });
 
-  test("内置资源不能移除，安装更新后只能显式恢复内置快照", () => {
+  test("内置资源按稳定包 ID 锁定，不比较版本或摘要", () => {
     const current = installed();
-    const embedded = new Map([[current.document.package.id, {
-      version: current.document.package.version,
-      snapshotDigest: current.document.snapshotDigest,
-    }]]);
+    const embedded = new Map([[current.document.package.id, {}]]);
 
     expect(embeddedResourcePackageAction(current, embedded)).toBe("locked");
 
     const updated = installed();
     updated.document.package.version = "2.0.0";
     updated.document.snapshotDigest = "sha256:updated";
-    expect(embeddedResourcePackageAction(updated, embedded)).toBe("restore");
+    expect(embeddedResourcePackageAction(updated, embedded)).toBe("locked");
 
     expect(embeddedResourcePackageAction(current, new Map())).toBe("remove");
   });

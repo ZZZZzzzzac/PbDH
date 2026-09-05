@@ -247,10 +247,28 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         importNotice: null,
         pendingSystemPackageImport: null,
       });
-      const validation = await environment.dependencies.loadPresetSystemPackage(
-        preset,
-        (packageLoadProgress) => set({ packageLoadProgress }),
-      );
+      let validation: RuntimePackageLoadResult;
+      try {
+        validation = await environment.dependencies.loadPresetSystemPackage(
+          preset,
+          (packageLoadProgress) => set({ packageLoadProgress }),
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        set((state) => ({
+          bootStatus: state.currentPackage ? "ready" : "error",
+          packageLoadProgress: null,
+          packageLoadingPresentation: null,
+          packageIssues: [{
+            level: "error",
+            code: "PACKAGE_LOAD_FAILED",
+            text: `加载 System Package 时出错：${message}`,
+            path: "boot",
+          }],
+          importError: message,
+        }));
+        return;
+      }
       if (!validation.ok) {
         set((state) => ({
           bootStatus: state.currentPackage ? "ready" : "error",

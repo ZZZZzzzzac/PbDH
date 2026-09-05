@@ -9,7 +9,6 @@ import {
 
 import {
   loadPbcha,
-  loadPbres,
   writePbcha,
   type CharacterSaveCandidate,
   type ResourcePackageCandidate,
@@ -65,7 +64,6 @@ import {
   type ResourcePackageSource,
 } from "./resources/resource-package-repository.ts";
 import { routeResourcePackage } from "./resources/route-resource-package.ts";
-import { validateResourcePackageCandidate } from "./resources/resource-package-validator.ts";
 import {
   buildSheetResourceLibraryInputs,
   buildSheetRuntimeMediaAssets,
@@ -597,9 +595,6 @@ export function PlayerSheetSurface({
       currentSystem,
       basePackage,
       installedPackages: next,
-      ...(currentCatalogEntry?.embeddedResourceLibraries === "legacy-static"
-        ? { preloadedPackageIds: new Set(currentEmbeddedPackageIndex().keys()) }
-        : {}),
     });
     const currentAssets = await runtimeStorage.loadCurrentPackageAssets(currentSystem.package.id);
     await refreshPlatformResources(
@@ -831,38 +826,12 @@ export function PlayerSheetSurface({
   }), [characterSaveRepository, cloudDocumentService]);
   usePlatformTrashSource(playerTrashSource);
 
-  function currentEmbeddedPackageIndex(): Map<string, { version: string; snapshotDigest: string }> {
+  function currentEmbeddedPackageIndex(): Map<string, unknown> {
     if (currentCatalogEntry) {
-      return new Map(currentCatalogEntry.preset.embeddedResourceIndex.map((item) => [item.packageId, {
-        version: item.version,
-        snapshotDigest: item.snapshotDigest,
-      }]));
+      return new Map(currentCatalogEntry.preset.embeddedResourceIndex.map((item) => [item.packageId, {}]));
     }
     const candidates = importedEmbeddedPackagesRef.current.get(currentSystem.package.id) ?? new Map();
-    return new Map([...candidates].map(([packageId, candidate]) => [packageId, {
-      version: candidate.document.package.version,
-      snapshotDigest: candidate.document.snapshotDigest,
-    }]));
-  }
-
-  async function loadCurrentEmbeddedPackage(packageId: string): Promise<ResourcePackageCandidate | null> {
-    const imported = importedEmbeddedPackagesRef.current.get(currentSystem.package.id)?.get(packageId);
-    if (imported) return { document: structuredClone(imported.document), media: new Map(imported.media) };
-    const indexed = currentCatalogEntry?.preset.embeddedResourceIndex.find((item) => item.packageId === packageId);
-    if (!indexed || !currentCatalogEntry) return null;
-    const base = `${import.meta.env.BASE_URL}system-packages/${currentCatalogEntry.preset.directory}`.replace(/\/$/u, "");
-    const path = indexed.path.split("/").map(encodeURIComponent).join("/");
-    const response = await fetch(`${base}/${path}`);
-    if (!response.ok) throw new Error(`无法读取系统包内置资源（HTTP ${response.status}）。`);
-    const loaded = await loadPbres(new Uint8Array(await response.arrayBuffer()), validateResourcePackageCandidate);
-    const candidate = loaded.candidate;
-    if (!candidate
-      || candidate.document.package.id !== indexed.packageId
-      || candidate.document.package.version !== indexed.version
-      || candidate.document.snapshotDigest !== indexed.snapshotDigest) {
-      throw new Error("系统包内置资源身份不匹配。");
-    }
-    return candidate;
+    return new Map([...candidates].map(([packageId]) => [packageId, {}]));
   }
 
   async function openCharacterSave(save: (typeof allCharacterSaves)[number]) {
@@ -1253,7 +1222,6 @@ export function PlayerSheetSurface({
           currentSystem={currentSystem}
           library={library}
           embeddedPackageIndex={currentEmbeddedPackageIndex()}
-          loadEmbeddedPackage={loadCurrentEmbeddedPackage}
           incomingPackage={incomingPackage}
           onIncomingPackageHandled={(id) => setIncomingPackage((current) => current?.id === id ? undefined : current)}
           onCommitInstall={commitInstall}

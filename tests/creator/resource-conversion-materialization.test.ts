@@ -1,13 +1,64 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { loadPbres, writePbres } from "@pbdh/contract-runtime";
 import { resourceConversionRegistry } from "@pbdh/resource-conversion";
+import type { ResourceMediaNormalizer } from "@pbdh/resource-conversion";
 import { trustedAuthoringFor, trustedRendererFor } from "@pbdh/templates/frontend";
 
 import { materializeCreatorResourceConversion } from "../../apps/creator/src/workspace-prototype/materialize-resource-conversion.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 
 describe("Creator third-party resource conversion", () => {
+  it("binds every local dhsheet card image to its converted resource", async () => {
+    const sourcePath = path.join(process.cwd(), "docs/third/与龙同行战役框架卡牌包.dhcb");
+    const imported = await resourceConversionRegistry.import("dhsheet", {
+      bytes: new Uint8Array(readFileSync(sourcePath)),
+      fileName: path.basename(sourcePath),
+      container: "dhcb",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+
+    let normalizationCalls = 0;
+    const normalizeMedia: ResourceMediaNormalizer = async ({ bytes }) => {
+      normalizationCalls += 1;
+      const digest = await crypto.subtle.digest("SHA-256", bytes.slice().buffer);
+      const hash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+      return {
+        id: `sha256:${hash}`,
+        mediaType: "image/webp",
+        byteLength: bytes.byteLength,
+        width: 630,
+        height: 450,
+        bytes,
+      };
+    };
+    const converted = await materializeCreatorResourceConversion(imported.batch, normalizeMedia);
+
+    expect(normalizationCalls).toBe(159);
+    expect(converted.candidate?.document.resources).toHaveLength(159);
+    expect(converted.candidate?.document.assets).toHaveLength(141);
+    expect(converted.candidate?.media.size).toBe(141);
+    expect(converted.candidate?.document.assets.every((asset) => asset.mediaType === "image/webp" && asset.width === "630")).toBe(true);
+    expect(converted.candidate?.document.resources.every((resource) => Boolean(resource.media.portrait))).toBe(true);
+    expect(converted.candidate?.document.resources.every((resource) => resource.presentation.mode === "split")).toBe(true);
+    expect(converted.diagnostics).toEqual([]);
+    if (!converted.candidate) return;
+    await expect(validateResourcePackageCandidate(
+      converted.candidate.document,
+      converted.candidate.media,
+    )).resolves.toEqual([]);
+    const roundTrip = await loadPbres(
+      writePbres(converted.candidate.document, converted.candidate.media),
+      validateResourcePackageCandidate,
+    );
+    expect(roundTrip.diagnostics).toEqual([]);
+    expect(roundTrip.candidate?.document.resources.every((resource) => Boolean(resource.media.portrait))).toBe(true);
+  });
+
   it("uses the shared adapter result to build a target-neutral pbres candidate", async () => {
     const imported = await resourceConversionRegistry.import("dhsheet", {
       bytes: new TextEncoder().encode(JSON.stringify({
@@ -124,5 +175,3 @@ describe("Creator third-party resource conversion", () => {
     expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.1" });
   });
 });
-import { readFileSync } from "node:fs";
-import path from "node:path";

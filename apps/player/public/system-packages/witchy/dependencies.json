@@ -10,7 +10,7 @@
     "条件": { "类型": "always" },
     "动作": [
       { "类型": "fillText", "目标模块ID": "archetype-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
-      { "类型": "fillText", "目标模块ID": "archetype-description", "内容": { "类型": "selectedResourceField", "字段": "描述" } }
+      { "类型": "fillText", "目标模块ID": "archetype-description", "内容": { "类型": "selectedResourceField", "字段": "特性" } }
     ]
   },
   {
@@ -28,7 +28,7 @@
     "条件": { "类型": "always" },
     "动作": [
       { "类型": "fillText", "目标模块ID": "familiar-type-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
-      { "类型": "fillText", "目标模块ID": "familiar-type-description", "内容": { "类型": "selectedResourceField", "字段": "描述" } },
+      { "类型": "fillText", "目标模块ID": "familiar-type-description", "内容": { "类型": "selectedResourceField", "字段": "使魔能力" } },
       {
         "类型": "fillCountable",
         "目标模块ID": "magic-points",

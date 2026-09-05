@@ -73,6 +73,10 @@
 
 ## 资源生成状态
 
+- 除 Daggerheart Core 外，内置系统包的 `resources/*.pbres` 已成为资源内容唯一权威源；旧资源 JSON 与 JSON→PBRES 生成脚本已移除。卡片工坊负责小规模编辑和重新导出。
+- 替换非 Daggerheart PBRES 后运行 `npm run sync:builtin-system-packages`。该命令只读取 PBRES 并同步 preset、System Package 副本和运行时文件清单，不会写入 PBRES；`npm run check:builtin-system-packages` 是只读一致性检查并已接入统一验证。
+- TTTRI 暂时保留 `apps/player/src/tttri-legacy-resources.generated.json`，只补充当前 PBRES 缺失但人物卡仍依赖的系统专属字段（默认种族经历、武器原型等）；PBRES 字段优先。彻底移除它需要先把这些字段迁入 TTTRI PBRES。
+
 - Daggerheart Core 玩家资源包版本：`1.0.24`；GM 资源包版本：`1.0.5`。
 - 玩家资源：980；GM 资源：311。
 - 玩家包当前摘要：`sha256:8a6827ea5865018fe873d53fb7a8a042b6406ad1b082a9be0571a3f25e19ebb3`。

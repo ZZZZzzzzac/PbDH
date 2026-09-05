@@ -57,6 +57,9 @@ describe("Sheet Runtime 平台资源适配", () => {
         类型: "种族",
         特性A: "定制设计：特性一",
         特性B: "高效休整：特性二",
+        推荐经历: "定制设计特性一、高效休整特性二",
+        默认种族经历: "定制设计",
+        默认种族经历修正: "特性一",
         卡图: "blob:sha256:portrait",
         卡背: "blob:sha256:back",
       },
@@ -155,6 +158,7 @@ describe("Sheet Runtime 平台资源适配", () => {
       installedPackages: libraryWith([
         resource("subclass", "子职业", {
           名称: "言文巧匠",
+          推荐次领域: "心界、远见",
           特性: [
             { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
             { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
@@ -164,6 +168,7 @@ describe("Sheet Runtime 平台资源适配", () => {
     }).find((candidate) => candidate.ID === "subclasses")!;
 
     expect(library.entries[0]?.fields.描述).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
+    expect(library.entries[0]?.fields.推荐副领域).toBe("心界、远见");
     expect(library.entries[0]?.resourceCopy?.data.特性).toEqual([
       { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
       { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
@@ -223,6 +228,30 @@ describe("Sheet Runtime 平台资源适配", () => {
 
     expect(markup).toMatch(/<th class="resource-table-cell-centered"[^>]*>[\s\S]*?名称/);
     expect(markup).toMatch(/<td class="[^"]*resource-table-cell-centered[^"]*">/);
+  });
+
+  it("所有资源库的全部表头和单元格都水平垂直居中", () => {
+    const library = {
+      ID: "classes",
+      名称: "职业",
+      路径: "test:classes",
+      fields: [
+        { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true, width: "normal" },
+        { key: "特性", label: "特性", visible: true, filterable: false, sortable: false, searchable: true, width: "fill" },
+      ],
+      entries: [{ ID: "one", fields: { ID: "one", 名称: "测试", 特性: "这是一段超过十个字、原本不会自动居中的长内容。" } }],
+    } satisfies SheetResourceLibrary;
+
+    const markup = renderToStaticMarkup(createElement(ResourceLibraryBrowser, {
+      library,
+      multiSelect: false,
+      selectedIds: [],
+      onCommit: () => undefined,
+      onClose: () => undefined,
+    }));
+
+    expect(markup.match(/<th class="resource-table-cell-centered"/g)).toHaveLength(2);
+    expect(markup.match(/<td class="[^"]*resource-table-cell-centered[^"]*"/g)).toHaveLength(2);
   });
 
   it("把没有原生入口的资源统一接到系统可选的其他资源库", () => {

@@ -80,6 +80,14 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     expect(gmWorkbench).not.toContain('displayWidth="63mm"');
   });
 
+  it("固定比例图文卡把署名栏固定在 63:88 可视区域底部", async () => {
+    const shared = await readFile("packages/resource-renderer/src/react.tsx", "utf8");
+    expect(shared).toContain("--pbdh-fixed-native-height: 502.857px");
+    expect(shared).toMatch(
+      /\.pbdh-surface-root:not\(\.is-fluid\) \.has-fixed-base > \.pbdh-card-footer\s*\{[^}]*position:\s*absolute;[^}]*bottom:\s*calc\(100% - var\(--pbdh-fixed-native-height\)\)/s,
+    );
+  });
+
   it("规范卡面只允许宿主等比缩放或裁剪，不允许非等比压扁和固定旧预览框", async () => {
     const [adversaryRenderer, weaponRenderer, creatorStyles] = await Promise.all([
       readFile("packages/templates/src/frontend/adversary/1.0.0/renderer.tsx", "utf8"),

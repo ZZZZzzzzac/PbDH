@@ -16,15 +16,8 @@ const root = path.resolve("apps/player/public/system-packages");
 const migrated = [
   { directory: "witchy", name: "巫趣 Witchy", resources: 12, assets: 0 },
   { directory: "hows-my-driving", name: "我的车技如何？", resources: 39, assets: 0 },
-  { directory: "tttri", name: "罗德岛旅记", resources: 682, assets: 271 },
+  { directory: "tttri", name: "罗德岛旅记", resources: 528, assets: 281 },
 ] as const;
-
-function hasStructuredEquipmentFeature(data: unknown): boolean {
-  if (data === null || typeof data !== "object" || Array.isArray(data)) return false;
-  return !Object.hasOwn(data, "描述")
-    && Object.hasOwn(data, "特性名称")
-    && Object.hasOwn(data, "特性描述");
-}
 
 function hasStructuredSubclassFeatures(data: unknown): boolean {
   if (data === null || typeof data !== "object" || Array.isArray(data) || Object.hasOwn(data, "描述")) return false;
@@ -59,17 +52,47 @@ describe("additional migrated System Packages", () => {
       expect(loaded.candidate?.document.package.name).toBe(`${item.name}官方资源`);
       expect(loaded.candidate?.document.resources).toHaveLength(item.resources);
       expect(loaded.candidate?.document.assets).toHaveLength(item.assets);
-      expect(loaded.candidate?.document.snapshotDigest).toBe(entry.preset.embeddedResourceIndex[0]!.snapshotDigest);
+      if (item.directory === "hows-my-driving") {
+        const archetype = loaded.candidate?.document.resources.find((resource) => resource.id === "原型:肌肉");
+        expect(archetype?.template).toEqual({ id: "自由", version: "1.0.1" });
+        expect(archetype?.data).toMatchObject({
+          原文: "THE MUSCLE",
+          内容: [
+            { 名称: "力大无穷", 描述: expect.stringContaining("身体类行事风格") },
+            { 名称: "傲慢混蛋", 描述: expect.stringContaining("过度自信") },
+          ],
+        });
+      }
+      if (item.directory === "witchy") {
+        const archetype = loaded.candidate?.document.resources.find((resource) => resource.id === "原型:主宰");
+        const familiar = loaded.candidate?.document.resources.find((resource) => resource.path.startsWith("使魔类型/"));
+        expect(archetype?.template).toEqual({ id: "自由", version: "1.0.1" });
+        expect(archetype?.data).toMatchObject({
+          简介: "",
+          内容: [
+            { 名称: "不可违逆", 描述: expect.stringContaining("直接视为成功") },
+            { 名称: "还不够好", 描述: expect.stringContaining("混乱失败") },
+            { 名称: "魔力获取（每场景 1 次）", 描述: expect.stringContaining("获得 1 魔力点") },
+          ],
+        });
+        expect(familiar?.data).toMatchObject({
+          简介: "",
+          内容: [{ 名称: "使魔能力", 描述: expect.any(String) }],
+        });
+      }
       if (item.directory === "tttri") {
+        const domainCards = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "领域卡") ?? [];
+        expect(domainCards).toHaveLength(231);
+        expect(domainCards.every((resource) => /^领域卡\/[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
         const armor = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "护甲") ?? [];
-        expect(armor).toHaveLength(34);
-        expect(armor.every((resource) => hasStructuredEquipmentFeature(resource.data))).toBe(true);
+        expect(armor).toHaveLength(0);
         const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
         expect(subclasses).toHaveLength(240);
         expect(subclasses.every((resource) => hasStructuredSubclassFeatures(resource.data))).toBe(true);
         const professions = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "职业") ?? [];
         expect(professions).toHaveLength(7);
         expect(professions.every((resource) => hasStructuredProfessionFeatures(resource.data))).toBe(true);
+        expect(loaded.candidate?.document.resources.some((resource) => resource.template.id === "物品")).toBe(false);
       }
     }
 
@@ -126,13 +149,11 @@ describe("additional migrated System Packages", () => {
       const professions = loaded.package.resourceLibraries?.find((library) => library.ID === "classes");
       expect(ancestries?.entries).toHaveLength(35);
       expect(communities?.entries).toHaveLength(15);
-      expect(ancestries?.entries[0]?.fields).toMatchObject({ 名称: "乌萨斯" });
-      expect(ancestries?.entries[0]?.fields.简介).not.toBe("");
-      expect(communities?.entries[0]?.fields).toMatchObject({ 名称: "高城之民" });
-      expect(communities?.entries[0]?.fields.简介).not.toBe("");
-      expect(professions?.entries[0]?.fields).toMatchObject({
+      expect(ancestries?.entries.find((entry) => entry.fields.名称 === "乌萨斯")?.fields.简介).not.toBe("");
+      expect(communities?.entries.find((entry) => entry.fields.名称 === "高城之民")?.fields.简介).not.toBe("");
+      expect(professions?.entries.find((entry) => entry.fields.名称 === "辅助")?.fields).toMatchObject({
         名称: "辅助",
-        描述: "\\*医疗合并至辅助",
+        描述: "",
         希望特性: expect.stringContaining("共勉前路："),
         职业特性: expect.stringContaining("状态分析："),
       });

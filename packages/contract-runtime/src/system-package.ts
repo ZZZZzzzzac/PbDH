@@ -99,18 +99,6 @@ export type SystemPackageDocumentValidator = (
   document: SystemPackageSourceDocument,
 ) => ContractDiagnostic[];
 
-export type EmbeddedResourceAdmission =
-  | { action: "install" }
-  | { action: "no-op" }
-  | { action: "keep-local" }
-  | { action: "required-update" }
-  | { action: "reject"; code: string };
-
-export type EmbeddedResourceIdentity = {
-  package: { version: string };
-  snapshotDigest: string;
-};
-
 export function normalizeSystemPackageDocument(
   document: SystemPackageSourceDocument,
 ): SystemPackageDocument {
@@ -450,17 +438,3 @@ export async function loadPbsys(
   return loadSystemPackageDirectory(entries, options);
 }
 
-export function planEmbeddedResourceAdmission(input: {
-  embedded: EmbeddedResourceIdentity;
-  local?: { version: string; snapshotDigest: string };
-}): EmbeddedResourceAdmission {
-  if (!input.local) return { action: "install" };
-  const order = compareSemVer(input.local.version, input.embedded.package.version);
-  if (order === 0) {
-    return input.local.snapshotDigest === input.embedded.snapshotDigest
-      ? { action: "no-op" }
-      : { action: "reject", code: "system-package.embedded-resource.same-version-different-digest" };
-  }
-  if (order > 0) return { action: "keep-local" };
-  return { action: "required-update" };
-}

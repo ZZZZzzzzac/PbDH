@@ -271,8 +271,18 @@ function readInput(bytes: Uint8Array, dhcb: boolean): { document: unknown; media
   const cards = files["cards.json"];
   if (!cards) throw new Error("cards missing");
   const media = new Map<string, Uint8Array>();
-  Object.entries(files).filter(([path]) => path.startsWith("images/")).forEach(([path, value]) => media.set(path, value));
+  Object.entries(files).filter(([path, value]) => path.startsWith("images/") && value.byteLength > 0)
+    .forEach(([path, value]) => media.set(path, value));
   return { document: JSON.parse(decoder.decode(cards)) as unknown, media };
+}
+
+function localPortrait(raw: JsonObject, media: ReadonlyMap<string, Uint8Array>): Record<string, string> | undefined {
+  const id = text(raw.id);
+  if (!id || raw.hasLocalImage !== true) return undefined;
+  const path = ["png", "webp", "jpg", "jpeg"]
+    .map((extension) => `images/${id}.${extension}`)
+    .find((candidate) => media.has(candidate));
+  return path ? { portrait: path } : undefined;
 }
 
 function groupFor(resource: TemporaryResource): Group | undefined {
@@ -414,6 +424,7 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
             sourceId: text(first.raw.id) || `ancestry:${first.index}`,
             kind: "ancestry",
             name,
+            media: entries.map(({ raw }) => localPortrait(raw, read.media)).find(Boolean),
             fields: {
               名称: name,
               原文: "",
@@ -441,6 +452,7 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
           sourceId: text(raw.id) || `${group}:${index}`,
           kind: kindFor(group, raw),
           name,
+          media: localPortrait(raw, read.media),
           fields: fieldsFor(group, raw),
           source: { formatId: "dhsheet", upstreamRevision, path: `/${group}/${index}`, raw },
         });

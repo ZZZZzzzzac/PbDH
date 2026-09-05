@@ -5,7 +5,7 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { mapBatchToRegisteredCandidates } from "./template-mapping.ts";
-import type { ConversionDiagnostic, TemporaryResourceBatch } from "./types.ts";
+import type { ConversionDiagnostic, ResourceMediaNormalizer, TemporaryResourceBatch } from "./types.ts";
 
 export type ResourceConversionMaterialization = {
   candidate: ResourcePackageCandidate | null;
@@ -22,16 +22,14 @@ export async function materializeResourceConversion(input: {
     id: string;
     version: string;
     defaultPresentation: ResourcePackageLogicalDocument["resources"][number]["presentation"];
+    mediaSlots: ReadonlyArray<{ id: string; accepts: readonly string[] }>;
   }>;
+  normalizeMedia?: ResourceMediaNormalizer;
 }): Promise<ResourceConversionMaterialization> {
   const mapped = mapBatchToRegisteredCandidates(input.batch.resources);
+  const mappedResources = input.batch.resources.filter((resource) => !mapped.unmapped.includes(resource));
   const diagnostics = [
     ...mapped.candidates.flatMap((item) => item.diagnostics),
-    ...(input.batch.media.size > 0 ? [{
-      code: `${input.diagnosticNamespace}.resource-conversion.media-unbound`,
-      severity: "warning" as const,
-      message: `${input.batch.media.size} 个源媒体文件没有可信目标槽位，未写入资源包。`,
-    }] : []),
     ...mapped.unmapped.map<ConversionDiagnostic>((item) => ({
       code: `${input.diagnosticNamespace}.resource-conversion.unmapped`,
       severity: "error",
@@ -42,6 +40,86 @@ export async function materializeResourceConversion(input: {
   if (mapped.candidates.length === 0 || diagnostics.some((item) => item.severity === "error")) {
     return { candidate: null, diagnostics, converted: mapped.candidates.length, skipped: mapped.unmapped.length };
   }
+
+  const media = new Map<string, Uint8Array>();
+  const assets = new Map<string, ResourcePackageLogicalDocument["assets"][number]>();
+  const resourceMedia: Array<Record<string, string>> = [];
+  const remainingSourceMedia = new Set(input.batch.media.keys());
+  const normalizedSourceMedia = new Map<string, ReturnType<ResourceMediaNormalizer>>();
+  for (const [index, item] of mapped.candidates.entries()) {
+    const source = mappedResources[index]!;
+    const template = input.templates.find((candidate) =>
+      candidate.id === item.template.id && candidate.version === item.template.version);
+    if (!template) throw new Error(`可信资源模板不可用：${item.template.id}@${item.template.version}`);
+    const bindings: Record<string, string> = {};
+    for (const [slot, sourceKey] of Object.entries(source.media ?? {})) {
+      const bytes = input.batch.media.get(sourceKey);
+      if (!bytes) {
+        diagnostics.push({
+          code: `${input.diagnosticNamespace}.resource-conversion.media-missing`,
+          severity: "warning",
+          message: `“${source.name}”引用的源媒体不存在，未写入资源包。`,
+          resourceId: source.sourceId,
+          path: sourceKey,
+        });
+        continue;
+      }
+      remainingSourceMedia.delete(sourceKey);
+      const targetSlot = template.mediaSlots.find((candidate) => candidate.id === slot);
+      if (!targetSlot?.accepts.includes("image/webp")) {
+        diagnostics.push({
+          code: `${input.diagnosticNamespace}.resource-conversion.media-slot-unavailable`,
+          severity: "warning",
+          message: `“${source.name}”的 ${slot} 媒体没有可信目标槽位，未写入资源包。`,
+          resourceId: source.sourceId,
+          path: sourceKey,
+        });
+        continue;
+      }
+      if (!input.normalizeMedia) {
+        diagnostics.push({
+          code: `${input.diagnosticNamespace}.resource-conversion.media-normalizer-unavailable`,
+          severity: "warning",
+          message: `“${source.name}”的源媒体无法通过统一图片流程处理，未写入资源包。`,
+          resourceId: source.sourceId,
+          path: sourceKey,
+        });
+        continue;
+      }
+      try {
+        const pending = normalizedSourceMedia.get(sourceKey)
+          ?? input.normalizeMedia({ bytes, fileName: sourceKey });
+        normalizedSourceMedia.set(sourceKey, pending);
+        const normalized = await pending;
+        bindings[slot] = normalized.id;
+        if (!assets.has(normalized.id)) {
+          const copied = normalized.bytes.slice();
+          media.set(normalized.id, copied);
+          assets.set(normalized.id, {
+            id: normalized.id,
+            mediaType: normalized.mediaType,
+            byteLength: String(normalized.byteLength),
+            width: String(normalized.width),
+            height: String(normalized.height),
+          });
+        }
+      } catch {
+        diagnostics.push({
+          code: `${input.diagnosticNamespace}.resource-conversion.media-normalization-failed`,
+          severity: "warning",
+          message: `“${source.name}”的源媒体无法归一化为 WebP，未写入资源包。`,
+          resourceId: source.sourceId,
+          path: sourceKey,
+        });
+      }
+    }
+    resourceMedia.push(bindings);
+  }
+  if (remainingSourceMedia.size > 0) diagnostics.push({
+    code: `${input.diagnosticNamespace}.resource-conversion.media-unbound`,
+    severity: "warning",
+    message: `${remainingSourceMedia.size} 个源媒体文件没有可信目标槽位，未写入资源包。`,
+  });
 
   const packageName = input.batch.name.trim() || "导入的资源包";
   const document: ResourcePackageLogicalDocument = {
@@ -58,7 +136,7 @@ export async function materializeResourceConversion(input: {
       declaration: "此资源包由用户提供的第三方文件转换生成；安装或分发前须由用户确认原始内容许可。",
     },
     forkSource: null,
-    assets: [],
+    assets: [...assets.values()],
     resources: mapped.candidates.map((item, index) => {
       const template = input.templates.find((candidate) =>
         candidate.id === item.template.id && candidate.version === item.template.version);
@@ -67,19 +145,21 @@ export async function materializeResourceConversion(input: {
         id: uuidV7(),
         path: `${safePathSegment(item.template.id)}/${String(index + 1).padStart(4, "0")}-${safePathSegment(resourceName(item.data))}.json`,
         template: item.template,
-        presentation: structuredClone(template.defaultPresentation),
+        presentation: {
+          ...structuredClone(template.defaultPresentation),
+          ...(resourceMedia[index]?.portrait && template.defaultPresentation.mode === "text" ? { mode: "split" as const } : {}),
+        },
         attribution: {
           artworkCredit: "",
           sourceLabel: packageName,
         },
         data: structuredClone(item.data) as ResourcePackageLogicalDocument["resources"][number]["data"],
-        media: {},
+        media: resourceMedia[index]!,
       };
     }),
     emptyDirectories: [],
     snapshotDigest: `sha256:${"0".repeat(64)}`,
   };
-  const media = new Map<string, Uint8Array>();
   document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, media);
   return {
     candidate: { document, media },

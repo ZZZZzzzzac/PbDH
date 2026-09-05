@@ -42,6 +42,8 @@ export type TemporaryResource = {
   kind: ResourceKind;
   name: string;
   fields: JsonObject;
+  /** Template 媒体槽位到 TemporaryResourceBatch.media 键的映射。 */
+  media?: Record<string, string>;
   source: SourceEvidence;
 };
 
@@ -58,6 +60,20 @@ export type TemporaryResourceBatch = {
   nativePackage?: ResourcePackageLogicalDocument;
   media: Map<string, Uint8Array>;
 };
+
+export type NormalizedResourceMedia = {
+  id: `sha256:${string}`;
+  mediaType: "image/webp";
+  byteLength: number;
+  width: number;
+  height: number;
+  bytes: Uint8Array;
+};
+
+export type ResourceMediaNormalizer = (input: {
+  bytes: Uint8Array;
+  fileName: string;
+}) => Promise<NormalizedResourceMedia>;
 
 export type ResourceInput = {
   bytes: Uint8Array;

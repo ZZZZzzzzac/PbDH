@@ -78,6 +78,29 @@ describe("Platform Runtime Storage", () => {
     expect(repository.saves.size).toBe(1);
   });
 
+  it("预置系统包装载抛错时退出加载态并报告错误", async () => {
+    const currentSystem = systemJson as SystemPackageDocument;
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, {
+      loadPresetSystemPackage: async () => {
+        throw new Error("资源包内容无效");
+      },
+    });
+    const runtime = createRuntimeStore(environment);
+
+    await expect(runtime.getState().switchToPresetSystemPackage(minimalPreset(currentSystem), true)).resolves.toBeUndefined();
+
+    expect(runtime.getState().bootStatus).toBe("error");
+    expect(runtime.getState().packageLoadProgress).toBeNull();
+    expect(runtime.getState().packageLoadingPresentation).toBeNull();
+    expect(runtime.getState().packageIssues).toContainEqual({
+      level: "error",
+      code: "PACKAGE_LOAD_FAILED",
+      text: "加载 System Package 时出错：资源包内容无效",
+      path: "boot",
+    });
+  });
+
   it("使用统一 Character Save 仓库完成保存、重命名、恢复和删除", async () => {
     const repository = new MemoryCharacterSaveStore();
     const localStorage = new MemoryStorage();

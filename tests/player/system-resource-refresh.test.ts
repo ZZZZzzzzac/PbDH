@@ -57,9 +57,6 @@ describe("System Package resource refresh", () => {
       currentSystem: entry.system,
       basePackage: loaded.package,
       installedPackages: library,
-      ...(entry.embeddedResourceLibraries === "legacy-static"
-        ? { preloadedPackageIds: new Set(entry.preset.embeddedResourceIndex.map((item) => item.packageId)) }
-        : {}),
     });
     const after = refreshed.resourceLibraries?.reduce(
       (total, resourceLibrary) => total + resourceLibrary.entries.length,

@@ -3,6 +3,11 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 describe("Player layout regressions", () => {
+  it("让 sheet tool 无外边距填满 Player 运行区", async () => {
+    const styles = await readFile("apps/player/src/sheet-runtime/styles/app-shell.css", "utf8");
+    expect(styles).toMatch(/\.sheet-tool\s*\{[^}]*padding:\s*0;/u);
+  });
+
   it("把四个主页面 Tab 固定在 PbDH 品牌之后", async () => {
     const styles = await readFile("packages/platform-ui/src/styles.css", "utf8");
 

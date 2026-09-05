@@ -480,16 +480,19 @@ describe("Creator Workspace prototype state model", () => {
     const workspace = createWorkspace(result.candidate!);
     expect(workspace.document.resources).toHaveLength(12);
     expect(workspace.document.resources.every((resource) =>
-      resource.template.id === "自由" && resource.template.version === "1.0.0")).toBe(true);
+      resource.template.id === "自由" && resource.template.version === "1.0.1")).toBe(true);
     const helper = workspace.document.resources.find((resource) => resource.id === "使魔类型:小帮手");
     expect(helper?.data).toMatchObject({
       名称: "小帮手",
       类型: "使魔类型",
-      简介: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。",
-      内容: [],
+      简介: "",
+      内容: [{
+        名称: "使魔能力",
+        描述: "每场游戏一次。女巫掷出混乱失败时立刻再进行一次魔法掷骰，并与 WS 一起描述两个结果如何同时发生。",
+      }],
     });
     expect(freeAuthoring.templateId).toBe("自由");
-    expect(trustedRendererFor("自由", "1.0.0")?.revision).toBe("free-card-r1");
+    expect(trustedRendererFor("自由", "1.0.1")?.revision).toBe("free-card-r4");
 
   });
 

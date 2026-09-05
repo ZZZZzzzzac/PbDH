@@ -42,12 +42,20 @@ const boundaryStyles = `
 }
 *, *::before, *::after { box-sizing: border-box; }
 .pbdh-surface-root {
+  --pbdh-fixed-native-height: 502.857px;
   width: 100%;
   height: 100%;
   overflow: hidden;
   isolation: isolate;
 }
 .pbdh-surface-root.is-fluid { height: auto; overflow: visible; }
+.pbdh-surface-root:not(.is-fluid) .has-fixed-base > .pbdh-card-footer {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  left: 0;
+  bottom: calc(100% - var(--pbdh-fixed-native-height));
+}
 .pbdh-surface-status {
   width: 100%;
   height: 100%;

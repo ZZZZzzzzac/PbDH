@@ -56,12 +56,16 @@ export function replacePlatformResourceLibraries(input: {
   const mergedInputs = (input.basePackage.resourceLibraries ?? []).flatMap((library) => {
     const platform = platformLibraries.get(library.ID);
     if (platform) platformLibraries.delete(library.ID);
-    const staticEntries = library.entries.filter((entry) => !isPlatformResourceEntry(entry));
-    const hadPlatformEntries = staticEntries.length !== library.entries.length;
-    if (!platform && hadPlatformEntries && staticEntries.length === 0) return [];
+    const retainedEntries = library.entries.filter((entry) => {
+      const packageId = entry.resourceCopy?.source?.packageId;
+      return !isPlatformResourceEntry(entry)
+        || (typeof packageId === "string" && input.preloadedPackageIds?.has(packageId));
+    });
+    const hadReplaceablePlatformEntries = retainedEntries.length !== library.entries.length;
+    if (!platform && hadReplaceablePlatformEntries && retainedEntries.length === 0) return [];
     return [resourceLibraryInput(
       library,
-      [...staticEntries, ...(platform?.entries ?? [])],
+      [...retainedEntries, ...(platform?.entries ?? [])],
     )];
   });
   mergedInputs.push(...[...platformLibraries.values()].map((library) =>
@@ -105,7 +109,11 @@ export function buildSheetResourceLibraryInputs(input: {
         continue;
       }
       if (!route.nativeEntry) continue;
-      entriesByLibrary.get(route.nativeEntry.id)?.push(entry);
+      if (!entriesByLibrary.has(route.nativeEntry.id)) {
+        nativeEntries.set(route.nativeEntry.id, route.nativeEntry);
+        entriesByLibrary.set(route.nativeEntry.id, []);
+      }
+      entriesByLibrary.get(route.nativeEntry.id)!.push(entry);
     }
   }
 
@@ -159,16 +167,29 @@ function toSheetResourceEntry(
     case "种族": {
       const rawFeatures: unknown[] = Array.isArray(data.特性) ? data.特性 : [];
       const features = rawFeatures.filter(isRecord);
+      const recommendedExperiences = features.map((feature) => {
+        const name = stringField(feature.特性名称).trim();
+        const modifier = stringField(feature.特性描述).trim();
+        return `${name}${modifier}`;
+      }).filter(Boolean);
       return {
         ...common,
         类型: "种族",
         特性A: structuredFeature(features[0]),
         特性B: structuredFeature(features[1]),
+        推荐经历: recommendedExperiences.join("、"),
+        默认种族经历: stringField(features[0]?.特性名称),
+        默认种族经历修正: stringField(features[0]?.特性描述),
       };
     }
     case "社群": {
       const feature = isRecord(data.特性) ? data.特性 : undefined;
-      return { ...common, 类型: "社群", 描述: structuredFeature(feature) };
+      return {
+        ...common,
+        类型: "社群",
+        描述: structuredFeature(feature),
+        参考出身: stringField(data.性格),
+      };
     }
     case "职业": {
       const recommendedAttributes = isRecord(data.推荐初始属性) ? data.推荐初始属性 : undefined;
@@ -180,6 +201,7 @@ function toSheetResourceEntry(
         特性: structuredFeatures(data.特性),
         职业特性: structuredFeatures(data.特性),
         领域: Array.isArray(data.领域) ? data.领域.map(stringField).filter(Boolean).join(" + ") : stringField(data.领域),
+        主领域: Array.isArray(data.领域) ? stringField(data.领域[0]) : stringField(data.领域),
         推荐初始属性: ["敏捷", "力量", "灵巧", "本能", "风度", "知识"]
           .map((name) => [name, stringField(recommendedAttributes?.[name]).trim()] as const)
           .filter(([, score]) => score)
@@ -197,12 +219,16 @@ function toSheetResourceEntry(
       return {
         ...common,
         描述: subclassFeatures(data.特性),
+        推荐副领域: stringField(data.推荐次领域),
       };
+    case "领域卡":
+      return { ...common, 描述: stringField(data.特性描述) };
     case "护甲":
       return {
         ...common,
         重度阈值: stringField(data.重度伤害阈值),
         严重阈值: stringField(data.严重伤害阈值),
+        特性名: stringField(data.特性名称),
         特性: equipmentFeature(data),
       };
     case "武器":

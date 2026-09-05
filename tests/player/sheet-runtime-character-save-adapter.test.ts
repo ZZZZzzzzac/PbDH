@@ -132,7 +132,7 @@ describe("Sheet Runtime Character Save adapter", () => {
         ],
       },
       sheetSystemPackage: sheetSystemPackage(),
-      installedPackages: new Map(),
+      installedPackages: installedPackages(),
     });
     expect(duplicate.document.documentId).toBe(duplicateId);
     expect((duplicate.document.characterData["character-card-table"] as { instances: unknown[] }).instances).toHaveLength(2);
@@ -180,6 +180,32 @@ describe("Sheet Runtime Character Save adapter", () => {
     });
     expect(restored.character.values.avatar).toEqual({ kind: "player-image", imageId: assetId });
     expect(restored.playerImages[assetId]?.dataUrl).toBe(`blob:${assetId}`);
+  });
+
+  it("人物数据版本未变时允许使用同 ID 的新版系统包打开旧存档", async () => {
+    const candidate = await sheetCharacterToSave({
+      name: "旧版系统存档",
+      data: sheetCharacterData(),
+      currentSystem: {
+        id: systemPackageId,
+        version: "1.0.0",
+        resourceCompatibility: [
+          { templateId: "种族", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "ancestries" } },
+          { templateId: "社群", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "communities" } },
+        ],
+      },
+      sheetSystemPackage: sheetSystemPackage(),
+      installedPackages: installedPackages(),
+    });
+    const updatedSystem = sheetSystemPackage();
+    updatedSystem.manifest.版本 = "1.0.1";
+
+    expect(() => characterSaveToSheet({
+      candidate,
+      currentSystem: { resourceCompatibility: [] },
+      sheetSystemPackage: updatedSystem,
+      mediaUrl: (assetId) => `blob:${assetId}`,
+    })).not.toThrow();
   });
 });
 

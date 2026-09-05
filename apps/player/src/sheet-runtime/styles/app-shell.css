@@ -329,7 +329,7 @@
 .sheet-tool {
   width: 100%;
   margin: 0;
-  padding: clamp(12px, 2vw, 28px);
+  padding: 0;
 }
 
 .sheet-page {

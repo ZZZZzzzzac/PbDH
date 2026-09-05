@@ -71,14 +71,11 @@ export {
   loadPbsys,
   loadSystemPackageDirectory,
   normalizeSystemPackageDocument,
-  planEmbeddedResourceAdmission,
   validateSystemPackageSemantics,
   writePbsys,
   writeSystemPackageDirectory,
 } from "./system-package.ts";
 export type {
-  EmbeddedResourceIdentity,
-  EmbeddedResourceAdmission,
   NormalizedSystemPackage,
   SystemPackageDocument,
   SystemPackageLoadResult,

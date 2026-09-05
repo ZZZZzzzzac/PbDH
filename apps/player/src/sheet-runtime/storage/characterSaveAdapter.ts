@@ -404,7 +404,6 @@ export function validateCharacterDataForSystemPackage(
 ): string[] {
   const diagnostics: string[] = [];
   if (document.systemPackage.id !== systemPackage.manifest.ID) diagnostics.push("System Package ID 不匹配");
-  if (document.systemPackage.version !== systemPackage.manifest.版本) diagnostics.push("System Package 版本不匹配");
   if (document.characterDataVersion !== systemPackage.manifest.角色数据版本) diagnostics.push("Character Data 版本不匹配");
 
   const modules = new Map(systemPackage.modules.map((module) => [module.ID, module]));

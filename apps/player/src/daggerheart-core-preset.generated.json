@@ -11,9 +11,7 @@
   "embeddedResourceIndex": [
     {
       "path": "resources/daggerheart-core.pbres",
-      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "version": "1.0.24",
-      "snapshotDigest": "sha256:8a6827ea5865018fe873d53fb7a8a042b6406ad1b082a9be0571a3f25e19ebb3"
+      "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002"
     }
   ],
   "loadingPresentation": {

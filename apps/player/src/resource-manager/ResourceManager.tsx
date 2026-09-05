@@ -50,8 +50,7 @@ type ResourceManagerProps = {
     source: ResourcePackageSource,
   ) => Promise<void>;
   onRemovePackage: (packageId: string) => Promise<void>;
-  embeddedPackageIndex: ReadonlyMap<string, { version: string; snapshotDigest: string }>;
-  loadEmbeddedPackage: (packageId: string) => Promise<ResourcePackageCandidate | null>;
+  embeddedPackageIndex: ReadonlyMap<string, unknown>;
   incomingPackage?: ResourcePackageIngress;
   onIncomingPackageHandled?: (id: string) => void;
   onClose: () => void;
@@ -262,7 +261,7 @@ function DialogSurface({
   </div>;
 }
 
-export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, embeddedPackageIndex, loadEmbeddedPackage, incomingPackage, onIncomingPackageHandled, onClose }: ResourceManagerProps) {
+export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, embeddedPackageIndex, incomingPackage, onIncomingPackageHandled, onClose }: ResourceManagerProps) {
   const packages = [...library.values()];
   const [selectedId, setSelectedId] = useState(packages[0]?.document.package.id ?? "");
   const [packageQuery, setPackageQuery] = useState("");
@@ -271,7 +270,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   const [dialog, setDialog] = useState<Dialog>(null);
   const [preview, setPreview] = useState<ResourcePreview>();
   const [removingPackageId, setRemovingPackageId] = useState<string>();
-  const [operation, setOperation] = useState<"checking" | "converting" | "installing" | "removing" | "restoring" | null>(null);
+  const [operation, setOperation] = useState<"checking" | "converting" | "installing" | "removing" | null>(null);
   const [conversionReview, setConversionReview] = useState<ConversionReview>();
   const inputRef = useRef<HTMLInputElement>(null);
   const conversionInputRef = useRef<HTMLInputElement>(null);
@@ -460,35 +459,6 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
     }
   }
 
-  async function restoreSelectedEmbeddedPackage(installed = selected) {
-    if (!installed || operation || removingPackageId || !embeddedPackageIndex.has(installed.document.package.id)) return;
-    setRemovingPackageId(installed.document.package.id);
-    setOperation("restoring");
-    try {
-      const candidate = await loadEmbeddedPackage(installed.document.package.id);
-      if (!candidate) throw new Error("找不到系统包内置资源。");
-      const plan = planResourcePackageInstall({ currentSystem, library, candidate });
-      if (plan.kind === "no-op") return;
-      if (plan.kind === "insert") setDialog({ kind: "install", plan, source: "bundled" });
-      else setDialog({ kind: "update", plan, source: "bundled" });
-    } catch {
-      setDialog({
-        kind: "invalid",
-        diagnostics: [{
-          code: "player.resource-package.embedded-restore-failed",
-          severity: "error",
-          family: "player",
-          version: "1",
-          location: "",
-          params: {},
-        }],
-      });
-    } finally {
-      setRemovingPackageId(undefined);
-      setOperation(null);
-    }
-  }
-
   function openResource(installed: InstalledResourcePackage, resourceId?: string) {
     const target = installed.document.resources.find((resource) => resource.id === resourceId)
       ?? installed.document.resources[0];
@@ -504,9 +474,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
         <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
         <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span></p>
       </button>
-      {action === "restore" ? (
-        <button className="package-row-remove" type="button" aria-label={`恢复 ${installed.document.package.name}`} disabled={Boolean(operation)} onClick={() => { setSelectedId(installed.document.package.id); void restoreSelectedEmbeddedPackage(installed); }}>{operation === "restoring" && removingPackageId === installed.document.package.id ? <OperationStatus label="" /> : "↻"}</button>
-      ) : action === "remove" ? (
+      {action === "remove" ? (
         <button className="package-row-remove" type="button" aria-label={`移除 ${installed.document.package.name}`} disabled={Boolean(operation)} onClick={() => setDialog({ kind: "remove", installed })}>×</button>
       ) : null}
     </div>;
@@ -582,12 +550,9 @@ function downloadBytes(bytes: Uint8Array, fileName: string): void {
 
 export function embeddedResourcePackageAction(
   installed: InstalledResourcePackage,
-  index: ReadonlyMap<string, { version: string; snapshotDigest: string }>,
-): "locked" | "restore" | "remove" {
+  index: ReadonlyMap<string, unknown>,
+): "locked" | "remove" {
   const embedded = index.get(installed.document.package.id);
   if (!embedded) return "remove";
-  return installed.document.package.version === embedded.version
-    && installed.document.snapshotDigest === embedded.snapshotDigest
-    ? "locked"
-    : "restore";
+  return "locked";
 }

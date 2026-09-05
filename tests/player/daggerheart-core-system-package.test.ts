@@ -44,7 +44,7 @@ const schemas = Object.fromEntries(catalog.families.flatMap((family) =>
   ])));
 const runtime = new ContractRuntime(catalog, schemas);
 const preset = readJson<{
-  embeddedResourceIndex: Array<{ path: string; packageId: string; version: string; snapshotDigest: string }>;
+  embeddedResourceIndex: Array<{ path: string; packageId: string }>;
 }>(path.join(root, "apps/player/src/daggerheart-core-preset.generated.json"));
 async function loadEmbeddedResource(pathName: string) {
   const archive = new Uint8Array(readFileSync(path.join(packageRoot, ...pathName.split("/"))));
@@ -205,8 +205,6 @@ describe("migrated Daggerheart Core System Package", () => {
     const playerCandidate = await loadEmbeddedResource("resources/daggerheart-core.pbres");
     const playerIndex = preset.embeddedResourceIndex[0];
     expect(playerCandidate.document.package.id).toBe(playerIndex?.packageId);
-    expect(playerCandidate.document.package.version).toBe(playerIndex?.version);
-    expect(playerCandidate.document.snapshotDigest).toBe(playerIndex?.snapshotDigest);
     const gmCandidate = await loadThirdPartyGmResource();
     const candidates = [playerCandidate, gmCandidate];
     expect(candidates[0]?.document.resources).toHaveLength(980);

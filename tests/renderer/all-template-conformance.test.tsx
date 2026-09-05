@@ -120,7 +120,7 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     expect(trustedRendererFor(weaponTemplate.id, "1.0.2")).toBeUndefined();
   });
 
-  test.each(currentTemplates)("$id@$version 图文模式按图片固有比例扩展固定正文", (template) => {
+  test.each(currentTemplates)("$id@$version 图文模式保留图片固有比例并由固定外框裁切", (template) => {
     const renderer = trustedRendererFor(template.id, template.version);
     expect(renderer).toBeDefined();
     if (!renderer) throw new Error(`缺少 ${template.id}@${template.version} Renderer`);
@@ -128,6 +128,7 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     const resource: SurfaceResource<Record<string, unknown>> = {
       template: { id: template.id, version: template.version },
       presentation: { mode: "split", fixedRatio: true },
+      attribution: { artworkCredit: "图片来源", sourceLabel: "资源来源" },
       data: structuredClone(template.defaultData),
       media: { portrait: assetId },
     };
@@ -139,7 +140,7 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     });
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error(JSON.stringify(result.diagnostics));
-    expect(result.designRatio).toBeNull();
+    expect(result.designRatio).toEqual({ width: 63, height: 88 });
     expect(renderer.styles).toContain(".is-split");
     expect(renderer.styles).toMatch(/object-fit:\s*contain/);
     expect(renderer.styles).toContain("linear-gradient");
@@ -147,6 +148,7 @@ describe("首版可信 Template 的 Canonical Surface conformance", () => {
     const markup = renderToStaticMarkup(renderer.render(result.renderInput));
     expect(markup).toContain("asset://portrait");
     expect(markup).toContain("has-fixed-base");
+    expect(markup).toContain('data-card-footer="true"');
   });
 
   test("已保留和当前 Renderer 都可以按精确 Template 版本按需加载", async () => {

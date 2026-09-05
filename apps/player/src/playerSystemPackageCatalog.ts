@@ -28,7 +28,6 @@ import type { PackageLoadResult } from "./sheet-runtime/loaders/systemPackageLoa
 export type PlayerSystemPackageCatalogEntry = {
   system: SystemPackageDocument;
   preset: PresetSystemPackage;
-  embeddedResourceLibraries: "platform" | "legacy-static";
   load(input: {
     currentSystem: SystemPackageDocument;
     installedPackages: ResourceLibrary;
@@ -41,31 +40,26 @@ export const playerSystemPackageCatalog: readonly PlayerSystemPackageCatalogEntr
   {
     system: daggerheartSystemJson as SystemPackageDocument,
     preset: daggerheartCorePreset,
-    embeddedResourceLibraries: "platform",
     load: loadDaggerheartCoreRuntimePackage,
   },
   {
     system: heartOfHopefindSystemJson as SystemPackageDocument,
     preset: heartOfHopefindPreset,
-    embeddedResourceLibraries: "platform",
     load: loadHeartOfHopefindRuntimePackage,
   },
   {
     system: witchySystemJson as SystemPackageDocument,
     preset: witchyPreset,
-    embeddedResourceLibraries: "legacy-static",
     load: loadWitchyRuntimePackage,
   },
   {
     system: howsMyDrivingSystemJson as SystemPackageDocument,
     preset: howsMyDrivingPreset,
-    embeddedResourceLibraries: "legacy-static",
     load: loadHowsMyDrivingRuntimePackage,
   },
   {
     system: tttriSystemJson as SystemPackageDocument,
     preset: tttriPreset,
-    embeddedResourceLibraries: "legacy-static",
     load: loadTttriRuntimePackage,
   },
 ];

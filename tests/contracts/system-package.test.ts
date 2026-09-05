@@ -9,7 +9,6 @@ import {
   loadPbsys,
   loadSystemPackageDirectory,
   normalizeSystemPackageDocument,
-  planEmbeddedResourceAdmission,
   type ContractCatalog,
   type ContractDiagnostic,
   type PortableDirectoryEntry,
@@ -264,40 +263,3 @@ describe("System Package directory and .pbsys", () => {
   });
 });
 
-describe("embedded official Resource admission", () => {
-  const embedded = {
-    package: { version: embeddedDocument.package.version },
-    snapshotDigest: embeddedDocument.snapshotDigest,
-  };
-
-  test("installs, no-ops, preserves newer local, prompts, and enforces baseline", () => {
-    expect(planEmbeddedResourceAdmission({ embedded })).toEqual({ action: "install" });
-    expect(planEmbeddedResourceAdmission({
-      embedded,
-      local: { version: embedded.package.version, snapshotDigest: embedded.snapshotDigest },
-    })).toEqual({ action: "no-op" });
-    expect(planEmbeddedResourceAdmission({
-      embedded,
-      local: { version: "2.0.0", snapshotDigest: "sha256:newer" },
-    })).toEqual({ action: "keep-local" });
-
-    expect(planEmbeddedResourceAdmission({
-      embedded: { ...embedded, package: { version: "1.1.0" } },
-      local: { version: "1.0.0", snapshotDigest: "sha256:local" },
-    })).toEqual({ action: "required-update" });
-    expect(planEmbeddedResourceAdmission({
-      embedded,
-      local: { version: "0.9.0", snapshotDigest: "sha256:old" },
-    })).toEqual({ action: "required-update" });
-  });
-
-  test("rejects same ID/version with different digest", () => {
-    expect(planEmbeddedResourceAdmission({
-      embedded,
-      local: { version: embedded.package.version, snapshotDigest: `sha256:${"f".repeat(64)}` },
-    })).toEqual({
-      action: "reject",
-      code: "system-package.embedded-resource.same-version-different-digest",
-    });
-  });
-});

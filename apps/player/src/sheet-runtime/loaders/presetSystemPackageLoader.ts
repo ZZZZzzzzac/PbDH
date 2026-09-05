@@ -24,8 +24,6 @@ export interface PresetSystemPackage {
   embeddedResourceIndex: Array<{
     path: string;
     packageId: string;
-    version: string;
-    snapshotDigest: string;
   }>;
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
 }

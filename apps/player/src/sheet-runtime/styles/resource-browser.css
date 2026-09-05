@@ -163,8 +163,8 @@
 .resource-table td {
   padding: 8px 4px;
   border-bottom: 1px solid var(--framework-border-subtle);
-  text-align: left;
-  vertical-align: top;
+  text-align: center;
+  vertical-align: middle;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -172,12 +172,6 @@
 .resource-table th:not(:last-child),
 .resource-table td:not(:last-child) {
   border-right: 1px solid var(--framework-border-subtle);
-}
-
-.resource-table th.resource-table-cell-centered,
-.resource-table td.resource-table-cell-centered {
-  text-align: center;
-  vertical-align: middle;
 }
 
 .resource-table-cell-compact {
@@ -195,8 +189,7 @@
 }
 
 .resource-column-header { position: relative; display: flex; min-height: 40px; align-items: center; gap: 4px; }
-.resource-column-header > span { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; }
-.resource-table-cell-centered .resource-column-header > span { justify-content: center; text-align: center; }
+.resource-column-header > span { display: flex; min-width: 0; min-height: 40px; flex: 1; align-items: center; justify-content: center; text-align: center; }
 .resource-column-tools { display: grid; flex: 0 0 22px; grid-template-rows: 20px 20px; align-items: center; justify-items: center; }
 .column-tool-button { display: inline-grid; flex: 0 0 auto; place-items: center; width: 24px; height: 24px; border: 0; background: transparent; color: var(--framework-text-secondary); cursor: pointer; }
 .column-tool-placeholder { display: block; width: 22px; height: 20px; }

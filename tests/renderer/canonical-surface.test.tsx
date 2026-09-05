@@ -66,7 +66,7 @@ describe("Canonical Surface Renderer Port", () => {
     const result = prepare();
     expect(result.status).toBe("ready");
     if (result.status !== "ready") throw new Error("Expected ready Surface");
-    expect(result.designRatio).toBeNull();
+    expect(result.designRatio).toEqual({ width: 63, height: 88 });
     expect(result.renderInput.state).toEqual({
       currentHp: "0",
       currentStress: "0",
@@ -206,6 +206,19 @@ describe("Canonical Surface Renderer Port", () => {
   });
 
   test("uses the canonical ratio only for fixed cards", () => {
+    const fixed = prepare();
+    expect(fixed.designRatio).toEqual({ width: 63, height: 88 });
+
+    const fixedMarkup = renderToStaticMarkup(
+      <CanonicalCardSurface
+        resource={resource}
+        expectedRendererRevision="enemy-card-r1"
+        renderer={adversaryRendererRevision}
+        assets={readyAssets}
+      />,
+    );
+    expect(fixedMarkup).toContain("aspect-ratio:63 / 88");
+
     const fluidResource = structuredClone(resource);
     fluidResource.presentation.fixedRatio = false;
     const fluid = prepare({ candidate: fluidResource });
@@ -269,7 +282,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
     expect(markup).toContain("data-pbdh-canonical-surface");
     expect(markup).toContain("width:100%");
     expect(markup).toContain("height:auto");
-    expect(markup).not.toContain("aspect-ratio:63 / 88");
+    expect(markup).toContain("aspect-ratio:63 / 88");
     expect(markup).not.toContain("enemy-card");
 
     const fluidResource = structuredClone(resource);

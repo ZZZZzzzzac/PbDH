@@ -11,9 +11,7 @@
   "embeddedResourceIndex": [
     {
       "path": "resources/heart-of-hopefind.pbres",
-      "packageId": "01a04186-51bf-7c26-8c27-2f7147125243",
-      "version": "1.0.1",
-      "snapshotDigest": "sha256:cf708b2ad09a71c81b5a7eec578bf95f31bd1c63b6cf2974bbcd49637286b3ec"
+      "packageId": "01a04186-51bf-7c26-8c27-2f7147125243"
     }
   ],
   "loadingPresentation": {

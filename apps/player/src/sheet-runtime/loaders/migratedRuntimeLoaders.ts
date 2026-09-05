@@ -1,16 +1,12 @@
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 
-import howsMyDrivingResourcesJson from "../../hows-my-driving-legacy-resources.generated.json";
 import howsMyDrivingPresetJson from "../../hows-my-driving-preset.generated.json";
-import tttriResourcesJson from "../../tttri-legacy-resources.generated.json";
 import tttriPresetJson from "../../tttri-preset.generated.json";
-import witchyResourcesJson from "../../witchy-legacy-resources.generated.json";
 import witchyPresetJson from "../../witchy-preset.generated.json";
 import type { ResourceLibrary as PlatformResourceLibrary } from "../../resources/resource-library.ts";
 import {
   buildSheetResourceLibraryInputs,
   buildSheetRuntimeMediaAssets,
-  sheetRuntimeMediaPath,
   type PlatformMediaReferenceResolver,
 } from "../adapters/platformResourceLibraries.ts";
 import {
@@ -19,31 +15,32 @@ import {
 } from "./presetSystemPackageLoader.ts";
 import type { PackageLoadResult } from "./systemPackageLoader.ts";
 
-type LegacyLibrary = {
-  ID: string;
-  名称: string;
-  路径: string;
-  entries: Array<Record<string, unknown> & { ID: string }>;
-};
-
 export const witchyPreset = witchyPresetJson as PresetSystemPackage;
 export const howsMyDrivingPreset = howsMyDrivingPresetJson as PresetSystemPackage;
 export const tttriPreset = tttriPresetJson as PresetSystemPackage;
 
 export const loadWitchyRuntimePackage = migratedLoader(
   witchyPreset,
-  witchyResourcesJson as LegacyLibrary[],
+  { 原型: { id: "archetypes", label: "原型" }, 使魔类型: { id: "familiar-types", label: "使魔类型" } },
 );
 export const loadHowsMyDrivingRuntimePackage = migratedLoader(
   howsMyDrivingPreset,
-  howsMyDrivingResourcesJson as LegacyLibrary[],
+  { 原型: { id: "archetypes", label: "原型" }, 行事风格: { id: "approaches", label: "行事风格" }, 座驾: { id: "rides", label: "座驾" } },
+  normalizeHowsMyDrivingArchetypes,
 );
 export const loadTttriRuntimePackage = migratedLoader(
   tttriPreset,
-  tttriResourcesJson as LegacyLibrary[],
 );
 
-function migratedLoader(preset: PresetSystemPackage, legacyLibraries: LegacyLibrary[]) {
+type NativeEntryByPathRoot = Record<string, { id: string; label: string }>;
+
+function migratedLoader(
+  preset: PresetSystemPackage,
+  nativeEntryByPathRoot?: NativeEntryByPathRoot,
+  normalizeResourceLibraries?: (
+    libraries: ReturnType<typeof buildSheetResourceLibraryInputs>,
+  ) => ReturnType<typeof buildSheetResourceLibraryInputs>,
+) {
   return async function load(input: {
     currentSystem: SystemPackageDocument;
     installedPackages: PlatformResourceLibrary;
@@ -51,47 +48,17 @@ function migratedLoader(preset: PresetSystemPackage, legacyLibraries: LegacyLibr
     fetchFile?: typeof fetch;
     resolveMediaReference?: PlatformMediaReferenceResolver;
   }): Promise<PackageLoadResult> {
-    const officialPackageId = preset.embeddedResourceIndex[0]?.packageId;
-    const externalPackages = new Map([...input.installedPackages].filter(([packageId]) =>
-      packageId !== officialPackageId));
-    const externalInputs = buildSheetResourceLibraryInputs({
+    const installedPackages = routeOfficialFreeResourcesByPath(
+      input.installedPackages,
+      preset.embeddedResourceIndex[0]?.packageId,
+      nativeEntryByPathRoot,
+    );
+    const rawResourceLibraries = buildSheetResourceLibraryInputs({
       currentSystem: input.currentSystem,
-      installedPackages: externalPackages,
+      installedPackages,
       resolveMediaReference: input.resolveMediaReference,
     });
-    const officialPackage = officialPackageId
-      ? input.installedPackages.get(officialPackageId)
-      : undefined;
-    const officialResources = new Map(officialPackage?.document.resources.map((resource) =>
-      [resource.id, resource] as const) ?? []);
-    const legacyInputs = legacyLibraries.map((library) => ({
-      ID: library.ID,
-      名称: library.名称,
-      路径: library.路径,
-      entries: library.entries.map((entry) => {
-        const resource = officialResources.get(entry.ID);
-        return {
-          ...structuredClone(entry),
-          ...(resource?.media.portrait ? {
-            卡图: input.resolveMediaReference?.({ packageId: officialPackageId!, assetId: resource.media.portrait })
-              ?? sheetRuntimeMediaPath(officialPackageId!, resource.media.portrait),
-          } : {}),
-          ...(resource?.media.back ? {
-            卡背: input.resolveMediaReference?.({ packageId: officialPackageId!, assetId: resource.media.back })
-              ?? sheetRuntimeMediaPath(officialPackageId!, resource.media.back),
-          } : {}),
-        };
-      }),
-    }));
-    const mergedInputs = legacyInputs.map((legacy) => ({
-      ...legacy,
-      entries: [
-        ...legacy.entries,
-        ...(externalInputs.find((candidate) => candidate.ID === legacy.ID)?.entries ?? []),
-      ],
-    }));
-    const legacyLibraryIds = new Set(legacyInputs.map((library) => library.ID));
-    mergedInputs.push(...externalInputs.filter((library) => !legacyLibraryIds.has(library.ID)));
+    const resourceLibraries = normalizeResourceLibraries?.(rawResourceLibraries) ?? rawResourceLibraries;
 
     return loadPresetSystemPackage(
       preset,
@@ -99,9 +66,42 @@ function migratedLoader(preset: PresetSystemPackage, legacyLibraries: LegacyLibr
       input.fetchFile ?? fetch,
       undefined,
       {
-        resourceLibraries: mergedInputs,
-        packageAssets: buildSheetRuntimeMediaAssets(input.installedPackages),
+        resourceLibraries,
+        packageAssets: buildSheetRuntimeMediaAssets(installedPackages),
       },
     );
   };
+}
+
+function normalizeHowsMyDrivingArchetypes(
+  resourceLibraries: ReturnType<typeof buildSheetResourceLibraryInputs>,
+) {
+  return resourceLibraries.map((library) => library.ID !== "archetypes" ? library : {
+    ...library,
+    entries: library.entries.map((entry) => ({
+      ...entry,
+      内容1名称: entry.内容1名称 ?? entry.增益名称 ?? "",
+      内容1描述: entry.内容1描述 ?? entry.增益 ?? "",
+      内容2名称: entry.内容2名称 ?? entry.缺陷名称 ?? "",
+      内容2描述: entry.内容2描述 ?? entry.缺陷 ?? "",
+    })),
+  });
+}
+
+function routeOfficialFreeResourcesByPath(
+  installedPackages: PlatformResourceLibrary,
+  officialPackageId: string | undefined,
+  nativeEntryByPathRoot: NativeEntryByPathRoot | undefined,
+): PlatformResourceLibrary {
+  if (!officialPackageId || !nativeEntryByPathRoot) return installedPackages;
+  const officialPackage = installedPackages.get(officialPackageId);
+  if (!officialPackage) return installedPackages;
+  const routes = officialPackage.document.resources.map((resource) => {
+    const pathRoot = resource.path.split("/", 1)[0] ?? "";
+    const nativeEntry = nativeEntryByPathRoot[pathRoot];
+    return nativeEntry
+      ? { resource, destination: "native" as const, nativeEntry }
+      : { resource, destination: "other-resources" as const, reason: "template-incompatible" as const };
+  });
+  return new Map(installedPackages).set(officialPackageId, { ...officialPackage, routes });
 }

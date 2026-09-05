@@ -16,7 +16,7 @@ export type SurfacePresentation = {
 };
 
 export function usesFixedSurfaceRatio(presentation: SurfacePresentation): boolean {
-  return presentation.fixedRatio && presentation.mode !== "split";
+  return presentation.fixedRatio;
 }
 
 export type SurfaceAttribution = {

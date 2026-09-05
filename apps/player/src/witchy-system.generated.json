@@ -2,12 +2,12 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a05400-0000-7000-8000-000000000001",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "name": "巫趣 Witchy",
     "description": "由迁移后的 Sheet Runtime 驱动的巫趣 Witchy系统包。"
   },
   "runtime": {
-    "characterDataVersion": "1.2.1",
+    "characterDataVersion": "1.2.2",
     "loadingPresentation": {
       "tagline": "正在熬煮秘药...",
       "accentColor": "#553a75"
