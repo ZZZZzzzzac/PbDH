@@ -15,7 +15,10 @@ import { isSemanticVersion } from "./creator-file-actions.ts";
 import { publicationLicenses, type PublicationCoverDraft, type PublicationLicenseId } from "./creator-publication.ts";
 import type { WorkspaceResourceSelection } from "./gm-tabletop-session.ts";
 import type { CreatorMarketHandoff } from "./market-handoff.ts";
-import { publicationErrorMessage } from "./publication-feedback.ts";
+import {
+  collapseCreatorDiagnostics,
+  creatorDiagnosticMessage,
+} from "./publication-feedback.ts";
 import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { CreatorWorkspace, WorkspaceNodeRef } from "./workspace-model.ts";
 
@@ -126,7 +129,7 @@ export function CreatorDialogs({
       {currentTemplates.map((template) => <button type="button" key={`${template.id}@${template.version}`} onClick={() => execute({ type: "create-resource", template })}><TemplateIcon templateId={template.id} />{template.id}</button>)}
     </div>
       <div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button></div></>}
-    {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{dialog.diagnostics.map((item) => <li key={`${item.code}:${item.location}`}><b>{publicationErrorMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}{typeof item.params.count === "number" && item.params.count > 1 ? `（共 ${item.params.count} 处）` : ""}</b></li>)}</ul>
+    {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{collapseCreatorDiagnostics(dialog.diagnostics).map((item) => <li key={`${item.code}:${item.location}`}><b>{creatorDiagnosticMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}{typeof item.params.count === "number" && item.params.count > 1 ? `（共 ${item.params.count} 处）` : ""}</b></li>)}</ul>
       <div className="dialog-actions"><button type="button" className="primary" onClick={() => execute({ type: "close" })}>保留现状</button></div></>}
     {dialog.kind === "conversion" && <><h2>转换报告</h2><p><strong>{dialog.review.sourceFileName}</strong></p><p>格式 {dialog.review.formatId} · 转换 {dialog.review.converted} · 跳过或失败 {dialog.review.failed}</p>
       {dialog.review.diagnostics.length > 0 ? <ul className="diagnostics">{dialog.review.diagnostics.map((item, index) => <li key={`${item.code}:${item.resourceId ?? index}`}><b>{item.message}</b><small>{item.code}</small></li>)}</ul> : <p>没有发现字段损失。</p>}

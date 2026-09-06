@@ -1,3 +1,5 @@
+import type { ContractDiagnostic } from "@pbdh/contract-runtime";
+
 const publicationMessages: Record<string, string> = {
   AUTH_REQUIRED: "请先登录，再发布到资源市场。",
   "publication.auth.required": "请先登录，再发布到资源市场。",
@@ -15,6 +17,10 @@ const publicationMessages: Record<string, string> = {
   "creator.market-handoff.package-version-mismatch": "市场资源包版本校验失败，请返回资源市场后重试。",
   "creator.market-handoff.focus-resource-not-found": "市场资源定位已失效，请返回资源市场后重试。",
   "creator.market-handoff.request-failed": "无法从资源市场取得资源包，请确认服务已启动后重试。",
+};
+
+const contractMessages: Record<string, string> = {
+  "contract.schema.additional-property": "资源包包含当前文件格式不支持的字段，请检查文件版本或重新导出。",
 };
 
 export type PublicationFieldError = {
@@ -47,4 +53,33 @@ export function publicationSuccessMessage(
 
 export function publicationErrorMessage(code: string, fallback?: string): string {
   return publicationMessages[code] ?? fallback ?? "发布失败，请检查资源包后重试。";
+}
+
+export function creatorDiagnosticMessage(code: string, fallback?: string): string {
+  return publicationMessages[code]
+    ?? contractMessages[code]
+    ?? fallback
+    ?? "资源包未通过校验，请检查内容后重试。";
+}
+
+export function collapseCreatorDiagnostics(
+  diagnostics: readonly ContractDiagnostic[],
+): ContractDiagnostic[] {
+  const collapsed = new Map<string, ContractDiagnostic>();
+  for (const diagnostic of diagnostics) {
+    const fallback = typeof diagnostic.params.message === "string"
+      ? diagnostic.params.message
+      : "";
+    const key = `${diagnostic.code}\u0000${fallback}`;
+    const existing = collapsed.get(key);
+    if (existing) {
+      existing.params.count = Number(existing.params.count ?? 1) + 1;
+      continue;
+    }
+    collapsed.set(key, {
+      ...diagnostic,
+      params: { ...diagnostic.params, count: 1 },
+    });
+  }
+  return [...collapsed.values()];
 }

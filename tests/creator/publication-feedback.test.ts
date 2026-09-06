@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  collapseCreatorDiagnostics,
   collapsePublicationFieldErrors,
+  creatorDiagnosticMessage,
   publicationErrorMessage,
   publicationSuccessMessage,
 } from "../../apps/creator/src/workspace-prototype/publication-feedback.ts";
@@ -40,6 +42,28 @@ describe("Creator publication feedback", () => {
       { path: "/resources/0", code: "template.version.unsupported", message: "template.version.unsupported", count: 2 },
       { path: "/resources/2/data", code: "template.data.invalid", message: "template.data.invalid", count: 1 },
     ]);
+  });
+
+  test("describes and collapses repeated import validation diagnostics without saying publication failed", () => {
+    const diagnostics = Array.from({ length: 201 }, (_, index) => ({
+      code: "contract.schema.additional-property",
+      severity: "error" as const,
+      family: "resource-package",
+      version: "1.0.0",
+      location: `/resources/${Math.floor(index / 3)}/presentation`,
+      params: { property: ["height", "unit", "width"][index % 3] },
+    }));
+
+    const collapsed = collapseCreatorDiagnostics(diagnostics);
+
+    expect(collapsed).toHaveLength(1);
+    expect(collapsed[0]?.params.count).toBe(201);
+    expect(creatorDiagnosticMessage(collapsed[0]!.code)).toBe(
+      "资源包包含当前文件格式不支持的字段，请检查文件版本或重新导出。",
+    );
+    expect(creatorDiagnosticMessage("unknown.import.error")).toBe(
+      "资源包未通过校验，请检查内容后重试。",
+    );
   });
 
   test("distinguishes created, updated and idempotent publication results", () => {

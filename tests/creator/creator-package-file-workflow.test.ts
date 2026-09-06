@@ -16,6 +16,10 @@ const archive = new Uint8Array(readFileSync(new URL(
   "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
   import.meta.url,
 )));
+const fourSacredBeastsArchive = new Uint8Array(readFileSync(new URL(
+  "../../docs/third/《四圣兽》通用敌人数据卡.pbres",
+  import.meta.url,
+)));
 
 describe("Creator package file workflow", () => {
   test("inspects a package archive without mutating workspace state", async () => {
@@ -25,6 +29,20 @@ describe("Creator package file workflow", () => {
     if (result.type !== "import-ready") return;
     expect(result.candidate.document.package.name).toBe("牛头人破坏者测试资源包");
     expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.1" });
+  });
+
+  test("imports the repaired Four Sacred Beasts package without dropping resources", async () => {
+    const result = await runCreatorPackageFileWorkflow({
+      type: "inspect-import",
+      bytes: fourSacredBeastsArchive,
+    });
+
+    expect(result.type).toBe("import-ready");
+    if (result.type !== "import-ready") return;
+    expect(result.candidate.document.resources).toHaveLength(67);
+    expect(new Set(result.candidate.document.resources.map((resource) => (
+      `${resource.template.id}@${resource.template.version}`
+    )))).toEqual(new Set(["敌人@1.0.1", "自由@1.0.1"]));
   });
 
   test("prepares, validates and writes one export result", async () => {
