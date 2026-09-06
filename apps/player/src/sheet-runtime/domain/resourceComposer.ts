@@ -60,9 +60,7 @@ function composeCanonicalResourceCopy(
     template: structuredClone(first.template),
     presentation: {
       ...structuredClone(first.presentation),
-      mode: fields.卡牌显示方式 === "image" || fields.卡牌显示方式 === "split"
-        ? fields.卡牌显示方式
-        : "text",
+      mode: "text",
     },
     data: {
       名称: names.join(" / "),

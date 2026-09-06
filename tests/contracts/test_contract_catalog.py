@@ -52,6 +52,7 @@ def test_catalog_queries_exact_version_state() -> None:
     runtime = ContractRuntime(CATALOG, SCHEMAS)
     assert runtime.get_version_state("resource-package", "0.9.0") is None
     assert runtime.get_version_state("resource-package", "1.0.0") == "published"
+    assert runtime.get_version_state("resource-package", "1.1.0") == "published"
 
 
 def test_accepts_reviewed_resource_package_in_production_mode() -> None:
@@ -62,6 +63,18 @@ def test_accepts_reviewed_resource_package_in_production_mode() -> None:
         "mode": "production",
         "candidate": read_json(
             "contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json"
+        ),
+    }) == []
+
+
+def test_accepts_resource_package_1_1_0_in_production_mode() -> None:
+    runtime = ContractRuntime(CATALOG, SCHEMAS)
+    assert runtime.validate({
+        "family": "resource-package",
+        "version": "1.1.0",
+        "mode": "production",
+        "candidate": read_json(
+            "contracts/conformance/resource-package/1.1.0/valid/minimal.json"
         ),
     }) == []
 
@@ -88,6 +101,7 @@ def test_tracks_backend_api_without_treating_openapi_as_json_schema() -> None:
     "conformance_case",
     [
         *read_json("contracts/conformance/contract-catalog/cases.json"),
+        *read_json("contracts/conformance/resource-package/1.1.0/cases.json"),
         *read_json("contracts/conformance/system-package/1.0.0/cases.json"),
     ],
     ids=lambda item: item["name"],

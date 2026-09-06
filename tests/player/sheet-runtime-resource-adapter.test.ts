@@ -193,7 +193,7 @@ describe("Sheet Runtime 平台资源适配", () => {
     expect(library.entries[0]?.resourceCopy?.data.特性).toHaveLength(2);
   });
 
-  it("把资源包卡面显示方式传给 Sheet 卡牌", () => {
+  it("只在结构化资源副本中保留资源包卡面显示方式", () => {
     const imageResource = resource("ancestry", "种族", { 名称: "械灵", 特性: [] }, { portrait: "sha256:portrait" }, "image");
     const libraries = buildSheetResourceLibraries({
       currentSystem,
@@ -201,7 +201,7 @@ describe("Sheet Runtime 平台资源适配", () => {
     });
 
     const entry = libraries.find((library) => library.ID === "ancestries")?.entries[0];
-    expect(entry?.fields.卡牌显示方式).toBe("image");
+    expect(entry?.fields).not.toHaveProperty("卡牌显示方式");
     expect(entry?.resourceCopy).toMatchObject({
       template: { id: "种族", version: "1.0.0" },
       presentation: { mode: "image" },

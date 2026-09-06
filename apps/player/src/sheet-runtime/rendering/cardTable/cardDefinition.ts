@@ -88,6 +88,8 @@ export function resolveCardDisplayMode(
   definition: ResourceLibraryEntry | undefined,
   module: CardTableModule,
 ): "image" | "text" | "split" {
+  const canonicalMode = definition?.resourceCopy?.presentation.mode;
+  if (canonicalMode === "image" || canonicalMode === "text" || canonicalMode === "split") return canonicalMode;
   const entryMode = definition?.fields[cardField(module, "显示方式字段")];
   if (entryMode === "image" || entryMode === "text" || entryMode === "split") return entryMode;
   return module.显示方式 ?? "image";

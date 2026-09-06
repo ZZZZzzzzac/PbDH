@@ -124,7 +124,9 @@ def session_status(
     current_session_id: Annotated[str | None, Header(alias="X-PbDH-Session")] = None,
 ) -> dict[str, object]:
     account = identity_repository.get_or_create_account(identity.subject)
-    active = identity_repository.get_active_session(account.account_id)
+    active = identity_repository.get_active_session(
+        account.account_id, current_session_id
+    )
     current_active = bool(active and current_session_id == active.session_id)
     return {
         "profile": public_profile(account, resolved),

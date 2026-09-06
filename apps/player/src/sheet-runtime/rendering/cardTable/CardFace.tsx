@@ -92,7 +92,7 @@ export function CardFace({
   return <TextCard definition={definition} module={module} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
-function canonicalCardResource(
+export function canonicalCardResource(
   resourceCopy: NonNullable<ResourceLibraryEntry["resourceCopy"]>,
   definition: ResourceLibraryEntry,
   module: CardTableModule,
@@ -102,10 +102,7 @@ function canonicalCardResource(
   const showingBack = definitionRef && definition.fields[cardField(module, "卡图字段")] === definition.fields[cardField(module, "卡背字段")];
   return {
     template: structuredClone(resourceCopy.template),
-    presentation: {
-      ...structuredClone(resourceCopy.presentation),
-      mode: resolveCardDisplayMode(definition, module),
-    },
+    presentation: structuredClone(resourceCopy.presentation),
     data: structuredClone(resourceCopy.data),
     media: showingBack && backAssetId
       ? { ...structuredClone(resourceCopy.media), portrait: backAssetId }

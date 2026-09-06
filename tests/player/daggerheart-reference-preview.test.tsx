@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
 import { PlayerResourcePreviewDialog } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
-import { CardFace, canonicalCardAssets } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
+import { CardFace, canonicalCardAssets, canonicalCardResource } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
 import type { CardTableModule } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import type { InstalledResourcePackage } from "../../apps/player/src/resources/resource-library.ts";
 import {
@@ -77,5 +77,36 @@ describe("Player 六类稳定资源预览", () => {
     );
 
     expect(assets.get(portraitId)).toEqual({ status: "ready", url: "blob:portrait" });
+  });
+
+  test("规范资源卡面不接受系统包扁平字段覆盖", () => {
+    const portraitId = "sha256:portrait";
+    const resourceCopy = {
+      source: { packageId: "test-package", resourceId: "ancestry" },
+      template: { id: ancestryTemplate.id, version: ancestryTemplate.version },
+      presentation: { ...ancestryTemplate.defaultPresentation, mode: "split" as const },
+      data: { ...ancestryTemplate.defaultData, 名称: "乌萨斯" },
+      labels: [],
+      media: { portrait: portraitId },
+    };
+    const definition = {
+      ID: "test-package:ancestry",
+      fields: { 名称: "乌萨斯", 卡图: "portrait.webp", 显示方式: "image" },
+      resourceCopy,
+    };
+    const module = {
+      类型: "cardTable",
+      ID: "cards",
+      标签: "卡牌",
+      资源来源: [{ 类型: "resourceLibrary", ID: "ancestries" }],
+      显示方式: "image",
+      显示方式字段: "显示方式",
+    } as CardTableModule;
+
+    expect(canonicalCardResource(resourceCopy, definition, module, {
+      type: "resourceLibrary",
+      libraryId: "ancestries",
+      entryId: definition.ID,
+    }).presentation.mode).toBe("split");
   });
 });

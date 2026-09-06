@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements-dev.txt
+
+      - name: Verify source
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          node scripts/release-tools.mjs check-version "${VERSION#v}"
+          npm run verify
+
+      - name: Build preview frontend
+        env:
+          PBDH_BASE_PATH: /pbdh_tools/
+          PBDH_OUT_DIR: dist/pbdh_tools
+        run: |
+          PBDH_RELEASE_VERSION="${GITHUB_REF_NAME#v}" \
+            npm run build:platform
+
+      - name: Build primary frontend
+        env:
+          PBDH_BASE_PATH: /pbdh/
+          PBDH_OUT_DIR: dist/pbdh
+        run: |
+          PBDH_RELEASE_VERSION="${GITHUB_REF_NAME#v}" \
+            npm run build:platform
+
+      - name: Package immutable artifact
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARCHIVE="pbdh-platform-$VERSION.tar.gz"
+          mkdir -p artifact/apps/backend artifact/packages artifact/deploy artifact/python-packages
+          cp -a apps/platform/dist/pbdh_tools artifact/pbdh_tools
+          cp -a apps/platform/dist/pbdh artifact/pbdh
+          cp -a apps/backend/src apps/backend/migrations artifact/apps/backend/
+          cp -a contracts artifact/contracts
+          cp -a packages/templates artifact/packages/templates
+          cp deploy/backup_sqlite.py deploy/pbdh-platform.service artifact/deploy/
+          cp requirements-prod.txt artifact/
+          python -m pip install \
+            --target artifact/python-packages \
+            -r requirements-prod.txt
+          tar -C artifact -czf "$ARCHIVE" .
+          sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          ARCHIVE="pbdh-platform-$VERSION.tar.gz"
+          gh release create "$TAG" "$ARCHIVE" "$ARCHIVE.sha256" \
+            --verify-tag \
+            --generate-notes \
+            --title "$TAG"

@@ -107,6 +107,28 @@ def test_directory_profile_round_trips_empty_directories() -> None:
 
 @pytest.mark.parametrize(
     "archive_case",
+    read_json(
+        ROOT / "contracts/conformance/resource-package/1.1.0/archive-cases.json"
+    ),
+    ids=lambda item: item["name"],
+)
+def test_resource_package_1_1_archive_evidence(
+    archive_case: dict[str, Any],
+) -> None:
+    fixture_root = ROOT / "contracts/conformance/resource-package/1.1.0"
+    document = read_json(fixture_root / archive_case["document"])
+    result = load_resource_package_directory(
+        write_resource_package_directory(document, {}),
+        validate,
+    )
+
+    assert result["diagnostics"] == []
+    assert result["candidate"]["document"] == document
+    assert result["candidate"]["media"] == {}
+
+
+@pytest.mark.parametrize(
+    "archive_case",
     read_json(FIXTURE_ROOT / "archive-cases.json"),
     ids=lambda item: item["name"],
 )

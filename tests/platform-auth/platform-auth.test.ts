@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   AuthApiError,
+  createAuthSessionResolutionQueue,
   createAuthApi,
   isAuthConfigured,
   resolveSessionStatus,
@@ -47,6 +48,28 @@ describe("platform session resolution", () => {
     const remote = { profile, currentSessionActive: false, replacementRequired: true };
     expect(resolveSessionStatus(remote, null)).toBe("replacementRequired");
     expect(resolveSessionStatus(remote, "session_stale")).toBe("replaced");
+  });
+
+  it("serializes duplicate auth restoration callbacks", async () => {
+    const enqueue = createAuthSessionResolutionQueue();
+    const calls: string[] = [];
+    let releaseFirst!: () => void;
+    const firstBlocked = new Promise<void>((resolve) => { releaseFirst = resolve; });
+
+    const first = enqueue(async () => {
+      calls.push("first:start");
+      await firstBlocked;
+      calls.push("first:end");
+    });
+    const second = enqueue(async () => {
+      calls.push("second:start");
+    });
+
+    await Promise.resolve();
+    expect(calls).toEqual(["first:start"]);
+    releaseFirst();
+    await Promise.all([first, second]);
+    expect(calls).toEqual(["first:start", "first:end", "second:start"]);
   });
 });
 

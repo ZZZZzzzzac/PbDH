@@ -982,6 +982,27 @@ describe("Creator Workspace prototype state model", () => {
     expect(styles).toContain(".resource-search-help");
   });
 
+  test("keeps Creator dialogs above workspace explorer overlays", () => {
+    const creatorStyles = readFileSync(path.join(root, "apps/creator/src/styles.css"), "utf8");
+    const workspaceStyles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
+    const zIndex = (styles: string, selector: string) => {
+      const escapedSelector = selector.replaceAll(".", "\\.");
+      const rule = new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`, "u").exec(styles)?.[1];
+      const value = rule && /z-index:\s*(\d+)/u.exec(rule)?.[1];
+      if (!value) throw new Error(`Missing z-index for ${selector}`);
+      return Number(value);
+    };
+
+    const dialogLayer = zIndex(creatorStyles, ".dialog-backdrop");
+    const workspaceLayers = [...workspaceStyles.matchAll(/z-index:\s*(\d+)/gu)]
+      .map((match) => Number(match[1]));
+    expect(workspaceLayers).toContain(150);
+    expect(dialogLayer).toBeGreaterThan(Math.max(...workspaceLayers));
+  });
+
   test("makes the GM tabletop bounds visible against the surrounding viewport", () => {
     const styles = readFileSync(path.join(
       root,

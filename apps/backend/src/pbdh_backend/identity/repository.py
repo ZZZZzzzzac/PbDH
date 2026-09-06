@@ -3,11 +3,14 @@ from __future__ import annotations
 import sqlite3
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from pbdh_backend.api_errors import ApiError
 from pbdh_backend.database import Database
+
+
+ACTIVE_SESSION_STALE_AFTER = timedelta(minutes=5)
 
 
 @dataclass(frozen=True)
@@ -44,12 +47,29 @@ class IdentityRepository:
             raise ApiError(404, "AUTH_ACCOUNT_NOT_FOUND", "账号不存在。")
         return to_account(row)
 
-    def get_active_session(self, account_id: str) -> ActiveSession | None:
+    def get_active_session(
+        self, account_id: str, current_session_id: str | None = None
+    ) -> ActiveSession | None:
+        now = utc_now()
         with self.database.connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT session_id, account_id FROM active_sessions WHERE account_id = ?",
+                "SELECT session_id, account_id, last_seen_at FROM active_sessions "
+                "WHERE account_id = ?",
                 (account_id,),
             ).fetchone()
+            if row and current_session_id == row["session_id"]:
+                connection.execute(
+                    "UPDATE active_sessions SET last_seen_at = ? WHERE session_id = ?",
+                    (now, row["session_id"]),
+                )
+            elif row and session_is_stale(row["last_seen_at"], now):
+                connection.execute(
+                    "DELETE FROM active_sessions WHERE account_id = ? AND session_id = ?",
+                    (account_id, row["session_id"]),
+                )
+                row = None
+            connection.commit()
         return ActiveSession(row["session_id"], row["account_id"]) if row else None
 
     def claim_session(
@@ -63,7 +83,8 @@ class IdentityRepository:
         with self.database.connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
-                "SELECT session_id, account_id FROM active_sessions WHERE account_id = ?",
+                "SELECT session_id, account_id, last_seen_at FROM active_sessions "
+                "WHERE account_id = ?",
                 (account_id,),
             ).fetchone()
             if row and current_session_id == row["session_id"]:
@@ -73,6 +94,12 @@ class IdentityRepository:
                 )
                 connection.commit()
                 return ActiveSession(row["session_id"], row["account_id"]), False
+            if row and session_is_stale(row["last_seen_at"], now):
+                connection.execute(
+                    "DELETE FROM active_sessions WHERE account_id = ? AND session_id = ?",
+                    (account_id, row["session_id"]),
+                )
+                row = None
             if row and not replace_existing:
                 connection.rollback()
                 raise ApiError(
@@ -140,6 +167,14 @@ class IdentityRepository:
 
 def to_account(row: sqlite3.Row) -> Account:
     return Account(row["account_id"], row["auth_subject"], row["username"])
+
+
+def session_is_stale(last_seen_at: str, now: str) -> bool:
+    return parse_utc(now) - parse_utc(last_seen_at) >= ACTIVE_SESSION_STALE_AFTER
+
+
+def parse_utc(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def utc_now() -> str:

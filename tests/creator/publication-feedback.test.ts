@@ -25,6 +25,12 @@ describe("Creator publication feedback", () => {
     );
   });
 
+  test("turns Contract lifecycle diagnostics into an actionable Chinese message", () => {
+    expect(publicationErrorMessage("contract.version.development-not-allowed", "fallback")).toBe(
+      "当前资源包使用的文件格式尚未开放正式发布，请更新平台后重试，或联系平台管理员发布该 Contract 版本。",
+    );
+  });
+
   test("collapses repeated per-resource publication errors", () => {
     expect(collapsePublicationFieldErrors([
       { path: "/resources/0", code: "template.version.unsupported", message: "template.version.unsupported" },

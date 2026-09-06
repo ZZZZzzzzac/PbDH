@@ -149,6 +149,31 @@ describe("Resource Package Directory Profile", () => {
   }
 });
 
+describe("Resource Package 1.1 archive evidence", () => {
+  const fixtureRoot110 = "contracts/conformance/resource-package/1.1.0";
+  const archiveCases = readJson<Array<{
+    name: string;
+    document: string;
+    media: [];
+  }>>(`${fixtureRoot110}/archive-cases.json`);
+
+  for (const archiveCase of archiveCases) {
+    test(archiveCase.name, async () => {
+      const source = readJson<ResourcePackageLogicalDocument>(
+        `${fixtureRoot110}/${archiveCase.document}`,
+      );
+      const result = await loadResourcePackageDirectory(
+        writeResourcePackageDirectory(source, new Map()),
+        validate,
+      );
+
+      expect(result.diagnostics).toEqual([]);
+      expect(result.candidate?.document).toEqual(source);
+      expect(result.candidate?.media.size).toBe(0);
+    });
+  }
+});
+
 describe("Resource Package .pbres ZIP Profile", () => {
   test("mechanical ZIP differences preserve the logical Snapshot Digest", async () => {
     const stored = writePbres(document, media, {

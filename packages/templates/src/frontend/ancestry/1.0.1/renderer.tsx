@@ -37,7 +37,6 @@ export const ancestryRendererStyles = `
 .ancestry-card * { box-sizing: border-box; }
 .ancestry-card.is-text { --ancestry-media-height: 0px; }
 .ancestry-card.is-fluid { height: auto; overflow: visible; }
-.ancestry-card.is-split.is-fluid { min-height: 568px; }
 .ancestry-art { position: relative; flex: none; overflow: hidden; display: flex; flex-direction: column; background: #251a14; border-bottom: 3px solid #b88a57; }
 .ancestry-art::before { content: ""; height: var(--ancestry-media-height); flex: none; }
 .ancestry-art img { position: absolute; z-index: 0; inset: 0 0 auto; width: 100%; height: var(--ancestry-media-height); display: block; object-fit: cover; }
@@ -56,7 +55,7 @@ export const ancestryRendererStyles = `
 .ancestry-kicker { min-width: 72px; color: #f4dfbc; font: 650 17px/1.25 "Noto Sans SC", sans-serif; text-align: right; }
 .ancestry-heading { position: relative; z-index: 2; padding: 10px 14px; display: flex; flex-direction: column; pointer-events: none; }
 .ancestry-title-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 14px; }
-.ancestry-heading h1 { min-width: 0; min-height: 32px; margin: 0; display: flex; align-items: flex-end; overflow: hidden; color: #fff4df; font: 800 var(--ancestry-title-font-size, 32px)/1 "Noto Sans SC", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.ancestry-heading h1 { min-width: 0; min-height: 32px; margin: 0; display: flex; align-items: flex-end; overflow: hidden; color: #fff4df; font: 800 var(--ancestry-title-font-size, 32px)/1.2 "Noto Sans SC", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .ancestry-original-title { margin: 5px 0 0; color: #d8ba91; font: 650 11.5px/1.25 "Noto Sans SC", sans-serif; }
 .ancestry-summary { margin: 8px 0 0; color: #dcb299; font: italic 500 14px/1.4 "Noto Sans SC", sans-serif; overflow-wrap: anywhere; }
 .ancestry-body { min-height: 0; flex: 1 1 0; padding: 14px 10px; display: flex; flex-direction: column; overflow: hidden; }

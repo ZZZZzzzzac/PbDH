@@ -73,6 +73,8 @@ def create_app(
 
     @application.get("/api/health", tags=["system"])
     def health() -> dict[str, str]:
+        with database.connect() as connection:
+            connection.execute("SELECT 1").fetchone()
         return {"status": "ok", "service": "pbdh-platform-api"}
 
     install_openapi_contract(application)

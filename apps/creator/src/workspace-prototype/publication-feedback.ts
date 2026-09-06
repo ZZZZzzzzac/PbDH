@@ -6,6 +6,7 @@ const publicationMessages: Record<string, string> = {
   PACKAGE_ID_OWNED_BY_ANOTHER_ACCOUNT: "该资源包 ID 已由其他账号发布。",
   PUBLICATION_CANDIDATE_INVALID: "资源包未通过发布校验，请检查内容后重试。",
   PUBLICATION_REQUEST_FAILED: "发布失败，请稍后重试。",
+  "contract.version.development-not-allowed": "当前资源包使用的文件格式尚未开放正式发布，请更新平台后重试，或联系平台管理员发布该 Contract 版本。",
   "template.version.unsupported": "资源使用了市场尚未支持的卡牌模板版本。",
   "creator.publication-cover.resource-missing": "资源包至少需要一项资源，才能生成发布封面。",
   "creator.publication-cover.render-failed": "资源包内没有可渲染为发布封面的资源卡，请检查卡面后重试。",

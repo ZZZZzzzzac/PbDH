@@ -84,7 +84,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
       total + library.entries.length, 0)).toBe(980);
     for (const libraryId of ["subclasses", "domain-cards"]) {
       const imageEntry = loaded.package.resourceLibraries?.find((library) => library.ID === libraryId)
-        ?.entries.find((entry) => entry.fields.卡牌显示方式 === "image");
+        ?.entries.find((entry) => entry.resourceCopy?.presentation.mode === "image");
       expect(imageEntry?.fields.卡图).toBeTruthy();
       expect(loaded.packageAssets).toContainEqual(expect.objectContaining({
         路径: imageEntry?.fields.卡图,

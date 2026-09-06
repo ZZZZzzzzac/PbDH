@@ -151,7 +151,6 @@ function toSheetResourceEntry(
       media: structuredClone(resource.media),
     } satisfies TabletopResourceCopy,
     ...data,
-    卡牌显示方式: resource.presentation.mode,
     卡图: resolveMedia(resource.media.portrait),
     卡背: resolveMedia(resource.media.back),
   };

@@ -6,7 +6,7 @@
 
 - Node.js 22+
 - npm 11+
-- Python 3.12+
+- Python 3.10+
 
 Python 依赖必须安装到项目虚拟环境，不安装到全局环境：
 
@@ -23,6 +23,13 @@ npm run verify
 ```
 
 该命令统一执行依赖边界、TypeScript/Python Contract conformance、测试与类型检查。
+
+## 部署
+
+生产服务器沿用现有 Nginx 与不可变 GitHub Release：前端同时构建
+`/pbdh_tools/` 预览版和 `/pbdh/` 主入口版，单实例 FastAPI Backend
+沿用 systemd 且仅绑定宿主回环地址。配置、备份、发布和一键切换步骤见
+[deploy/README.md](deploy/README.md)。
 
 ## 目录
 

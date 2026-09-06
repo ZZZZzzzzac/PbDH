@@ -59,6 +59,7 @@ describe("Contract Catalog", () => {
     const runtime = new ContractRuntime(catalog, schemas);
     expect(runtime.getVersionState("resource-package", "0.9.0")).toBeUndefined();
     expect(runtime.getVersionState("resource-package", "1.0.0")).toBe("published");
+    expect(runtime.getVersionState("resource-package", "1.1.0")).toBe("published");
   });
 
   test("accepts the reviewed Resource Package in production mode", () => {
@@ -68,6 +69,16 @@ describe("Contract Catalog", () => {
       version: "1.0.0",
       mode: "production",
       candidate: readJson("contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json"),
+    })).toEqual([]);
+  });
+
+  test("accepts Resource Package 1.1.0 in production mode", () => {
+    const runtime = new ContractRuntime(catalog, schemas);
+    expect(runtime.validate({
+      family: "resource-package",
+      version: "1.1.0",
+      mode: "production",
+      candidate: readJson("contracts/conformance/resource-package/1.1.0/valid/minimal.json"),
     })).toEqual([]);
   });
 
@@ -94,6 +105,7 @@ describe("stable Contract Diagnostic conformance", () => {
   const runtime = new ContractRuntime(catalog, schemas);
   const cases = [
     ...readJson("contracts/conformance/contract-catalog/cases.json") as ConformanceCase[],
+    ...readJson("contracts/conformance/resource-package/1.1.0/cases.json") as ConformanceCase[],
     ...readJson("contracts/conformance/system-package/1.0.0/cases.json") as ConformanceCase[],
   ];
 

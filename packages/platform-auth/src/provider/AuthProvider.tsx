@@ -12,6 +12,7 @@ import {
 import {
   AuthApiError,
   createAuthApi,
+  createAuthSessionResolutionQueue,
   isAuthConfigured,
   resolveSessionStatus,
   type AccountProfile,
@@ -77,6 +78,7 @@ export function AuthProvider({
   const gatewayRef = useRef<AuthGateway | null>(null);
   const authSessionRef = useRef<AuthSession | null>(null);
   const siteSessionRef = useRef<string | null>(readSiteSession());
+  const authResolutionQueueRef = useRef(createAuthSessionResolutionQueue());
 
   const acceptSiteSession = useCallback((sessionId: string, nextProfile: AccountProfile) => {
     localStorage.setItem(siteSessionStorageKey, sessionId);
@@ -89,8 +91,6 @@ export function AuthProvider({
   const resolveAuthSession = useCallback(async (session: AuthSession | null) => {
     authSessionRef.current = session;
     if (!session) {
-      clearSiteSession();
-      siteSessionRef.current = null;
       setProfile(null);
       setMessage(null);
       setStatus("anonymous");
@@ -117,6 +117,10 @@ export function AuthProvider({
     }
   }, [acceptSiteSession, api]);
 
+  const enqueueAuthSession = useCallback((session: AuthSession | null) => (
+    authResolutionQueueRef.current(() => resolveAuthSession(session))
+  ), [resolveAuthSession]);
+
   useEffect(() => {
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
@@ -134,8 +138,8 @@ export function AuthProvider({
       });
       if (cancelled) return;
       gatewayRef.current = gateway;
-      unsubscribe = gateway.onAuthStateChange((session) => void resolveAuthSession(session));
-      await resolveAuthSession(await gateway.getSession());
+      unsubscribe = gateway.onAuthStateChange((session) => void enqueueAuthSession(session));
+      await enqueueAuthSession(await gateway.getSession());
     }).catch((error) => {
       if (cancelled) return;
       setAuthAvailable(false);
@@ -146,7 +150,7 @@ export function AuthProvider({
       cancelled = true;
       unsubscribe?.();
     };
-  }, [api, gatewayFactory, resolveAuthSession]);
+  }, [api, enqueueAuthSession, gatewayFactory]);
 
   useEffect(() => {
     const shareSessionAcrossTabs = (event: StorageEvent) => {

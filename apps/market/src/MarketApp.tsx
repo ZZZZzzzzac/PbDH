@@ -515,15 +515,20 @@ export function MarketApp({
   locationHref,
   onLocationNavigate,
   onHandoffNavigate,
+  basePath = "/",
   systemPackageOptions = [],
 }: {
   locationHref: string;
   onLocationNavigate(url: URL, replace?: boolean): void;
   onHandoffNavigate(target: HandoffTarget, url: URL): void;
+  basePath?: string;
   systemPackageOptions?: readonly SystemPackageOption[];
 }) {
   const auth = useAuth();
-  const locationRoute = useMemo(() => readMarketRoute(locationHref), [locationHref]);
+  const locationRoute = useMemo(
+    () => readMarketRoute(locationHref, basePath),
+    [basePath, locationHref],
+  );
   const [catalog, setCatalog] = useState<Publication[]>([]);
   const [detailPublication, setDetailPublication] = useState<Publication | null>(null);
   const [view, setView] = useState<ViewState>({ page: "discovery" });
@@ -623,7 +628,7 @@ export function MarketApp({
       page: "detail",
       publicationId: item.id,
       ...(focused ? { resourceId: focused.id } : {}),
-    }, window.location.origin));
+    }, window.location.origin, basePath));
   }
 
   function openHandoff(target: HandoffTarget, creatorMode: "import" | "fork" = "import") {
@@ -641,7 +646,7 @@ export function MarketApp({
       creatorMode,
     );
     if (target === "player" || target === "creator") {
-      const baseUrl = new URL(`/${target}`, window.location.origin);
+      const baseUrl = new URL(`${basePath}${target}`, window.location.origin);
       const url = target === "player"
         ? createPlayerHandoffUrl(intent, baseUrl)
         : createCreatorHandoffUrl(intent, baseUrl);
@@ -672,7 +677,7 @@ export function MarketApp({
 
   function completeHandoff() {
     if (!handoff) return;
-    const baseUrl = new URL(`/${handoff.target}`, window.location.origin);
+    const baseUrl = new URL(`${basePath}${handoff.target}`, window.location.origin);
     const url = handoff.target === "player"
       ? createPlayerHandoffUrl(handoff, baseUrl)
       : createCreatorHandoffUrl(handoff, baseUrl);
@@ -764,7 +769,7 @@ export function MarketApp({
       setDetailPublication(null);
       setDeletePublicationId(null);
       setCatalogRevision((current) => current + 1);
-      onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin), true);
+      onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath), true);
       notify("资源包已从市场永久删除");
     } catch (error) {
       notify(error instanceof Error ? error.message : "无法永久删除该资源包");
@@ -873,10 +878,10 @@ export function MarketApp({
 
   return <main className="market-app" style={{ "--market-appbar-height": `${marketDesign.appBar.height}px` } as React.CSSProperties}>
     {view.page === "missing"
-      ? <section className="missing-publication"><Icon name="package" /><h1>{view.resourceId ? "这张资源已经无法公开查看" : "这个资源包已经无法公开查看"}</h1><p>资源包可能已由作者取消公开，或者链接中的编号不存在。</p><button type="button" onClick={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin))}>返回资源市场</button></section>
+      ? <section className="missing-publication"><Icon name="package" /><h1>{view.resourceId ? "这张资源已经无法公开查看" : "这个资源包已经无法公开查看"}</h1><p>资源包可能已由作者取消公开，或者链接中的编号不存在。</p><button type="button" onClick={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))}>返回资源市场</button></section>
       : publication
-        ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin))} onSelectResource={(resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: publication.id, resourceId }, window.location.origin))} onShare={() => void navigator.clipboard.writeText(locationHref).then(() => notify("链接已复制"), () => notify("无法复制链接"))} onOpenAuthor={() => onLocationNavigate(marketRouteUrl({ page: "author", accountId: publication.ownerAccountId }, window.location.origin))} onHandoff={openHandoff} onDownload={() => void downloadCurrentPublication()} onEditMetadata={() => { discardCoverDraft(); setManagedPublicationId(publication.id); }} onUnpublish={() => setUnpublishPublicationId(publication.id)} onRepublish={() => void republishManagedPublication(publication)} onDelete={() => setDeletePublicationId(publication.id)} canManage={Boolean(auth.credentials && canManagePublication(publication, auth.credentials.accountId, auth.profile?.isAdmin))} busyAction={publicationOperation?.publicationId === publication.id && (publicationOperation.action === "republish" || publicationOperation.action === "unpublish" || publicationOperation.action === "delete") ? publicationOperation.action : undefined} downloadBusy={publicationOperation?.publicationId === publication.id && publicationOperation.action === "download"} />
-        : <Discovery query={query} filters={filters} results={results} facets={facets} total={total} sort={sort} page={page} hasMore={hasMore} heading={view.page === "author" ? `${results[0]?.author ?? "作者"}分享的资源包` : "资源市场"} onQuery={(value) => { setQuery(value); setPage(1); }} onFilters={(value) => { setFilters(value); setPage(1); }} onSort={(value) => { setSort(value); setPage(1); }} onPage={setPage} onOpen={openPublication} onOpenAuthor={(item) => onLocationNavigate(marketRouteUrl({ page: "author", accountId: item.ownerAccountId }, window.location.origin))} onOpenResource={(item, resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: item.id, resourceId }, window.location.origin))} />}
+        ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))} onSelectResource={(resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: publication.id, resourceId }, window.location.origin, basePath))} onShare={() => void navigator.clipboard.writeText(locationHref).then(() => notify("链接已复制"), () => notify("无法复制链接"))} onOpenAuthor={() => onLocationNavigate(marketRouteUrl({ page: "author", accountId: publication.ownerAccountId }, window.location.origin, basePath))} onHandoff={openHandoff} onDownload={() => void downloadCurrentPublication()} onEditMetadata={() => { discardCoverDraft(); setManagedPublicationId(publication.id); }} onUnpublish={() => setUnpublishPublicationId(publication.id)} onRepublish={() => void republishManagedPublication(publication)} onDelete={() => setDeletePublicationId(publication.id)} canManage={Boolean(auth.credentials && canManagePublication(publication, auth.credentials.accountId, auth.profile?.isAdmin))} busyAction={publicationOperation?.publicationId === publication.id && (publicationOperation.action === "republish" || publicationOperation.action === "unpublish" || publicationOperation.action === "delete") ? publicationOperation.action : undefined} downloadBusy={publicationOperation?.publicationId === publication.id && publicationOperation.action === "download"} />
+        : <Discovery query={query} filters={filters} results={results} facets={facets} total={total} sort={sort} page={page} hasMore={hasMore} heading={view.page === "author" ? `${results[0]?.author ?? "作者"}分享的资源包` : "资源市场"} onQuery={(value) => { setQuery(value); setPage(1); }} onFilters={(value) => { setFilters(value); setPage(1); }} onSort={(value) => { setSort(value); setPage(1); }} onPage={setPage} onOpen={openPublication} onOpenAuthor={(item) => onLocationNavigate(marketRouteUrl({ page: "author", accountId: item.ownerAccountId }, window.location.origin, basePath))} onOpenResource={(item, resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: item.id, resourceId }, window.location.origin, basePath))} />}
     {handoff && publication && <HandoffDialog intent={handoff} publication={publication} onClose={() => setHandoff(null)} onComplete={completeHandoff} />}
     <input ref={coverInputRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={chooseMarketCover} />
     {pendingCoverFile && <ImageCropDialog

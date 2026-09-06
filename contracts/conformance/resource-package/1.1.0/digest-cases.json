@@ -1,0 +1,9 @@
+[
+  {
+    "name": "attribution-fork-and-replacements-known-answer",
+    "document": "valid/fork-with-replacements.json",
+    "media": [],
+    "targets": null,
+    "expected": "sha256:9de283aa6ad11d2eb3df2f17b3e4fd0ef50b5450b3169b0928b097881b1488bb"
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "$schema": "../../release.schema.json",
+  "family": "resource-package",
+  "version": "1.1.0",
+  "schema": "resource-package/1.1.0/schema.json",
+  "schemaSha256": "sha256:0081499e03862964cde08e70e18b4c607557c1d75ed37f32dac69b9a3f62e15f",
+  "reviewedAt": "2026-09-06",
+  "conformance": [
+    "conformance/resource-package/1.1.0/cases.json",
+    "conformance/resource-package/1.1.0/valid/minimal.json",
+    "conformance/resource-package/1.1.0/archive-cases.json",
+    "conformance/resource-package/1.1.0/digest-cases.json",
+    "conformance/resource-package-version/1.0.0/cases.json"
+  ],
+  "producerTests": [
+    "tests/creator/workspace-prototype.test.ts",
+    "tests/contracts/resource-attribution.test.ts"
+  ],
+  "consumerTests": [
+    "tests/player/daggerheart-core-system-package.test.ts",
+    "tests/backend/test_publications.py",
+    "tests/contracts/test_system_package.py"
+  ],
+  "implementations": ["typescript", "python"]
+}

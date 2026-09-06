@@ -16,6 +16,10 @@ ROOT = Path(__file__).parents[2]
 FIXTURE_ROOTS = [
     ROOT / "contracts/conformance/resource-package/1.0.0",
 ]
+DIGEST_FIXTURE_ROOTS = [
+    *FIXTURE_ROOTS,
+    ROOT / "contracts/conformance/resource-package/1.1.0",
+]
 
 
 def read_json(path: Path) -> Any:
@@ -100,7 +104,7 @@ def test_resource_package_conformance(
     "fixture_root, digest_case",
     [
         (fixture_root, digest_case)
-        for fixture_root in FIXTURE_ROOTS
+        for fixture_root in DIGEST_FIXTURE_ROOTS
         for digest_case in read_json(fixture_root / "digest-cases.json")
     ],
     ids=lambda item: item["name"] if isinstance(item, dict) else item.name,

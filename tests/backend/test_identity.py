@@ -51,12 +51,14 @@ def claim(
 
 
 def test_unconfigured_auth_keeps_public_health_available(tmp_path: Path) -> None:
-    api = TestClient(create_app(settings(tmp_path, configured=False)))
+    resolved_settings = settings(tmp_path, configured=False)
+    api = TestClient(create_app(resolved_settings))
 
     assert api.get("/api/health").json() == {
         "status": "ok",
         "service": "pbdh-platform-api",
     }
+    assert resolved_settings.database_path.is_file()
     assert api.get("/api/auth/config").json() == {"configured": False}
     response = api.post("/api/auth/session/claim", json={})
     assert response.status_code == 503
@@ -120,6 +122,50 @@ def test_reuses_current_session_without_replacement(tmp_path: Path) -> None:
 
     assert repeated["sessionId"] == first["sessionId"]
     assert repeated["replacedExisting"] is False
+
+
+def test_stale_current_session_is_renewed_after_browser_sleep(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    first = claim(api, "subject-one").json()
+    repository = api.app.state.identity_repository
+    with repository.database.connect() as connection:
+        connection.execute(
+            "UPDATE active_sessions SET last_seen_at = ? WHERE session_id = ?",
+            ("2000-01-01T00:00:00Z", first["sessionId"]),
+        )
+
+    restored = api.get(
+        "/api/auth/session/status",
+        headers={**bearer("subject-one"), "X-PbDH-Session": first["sessionId"]},
+    ).json()
+    assert restored["currentSessionActive"] is True
+
+    contender = api.get(
+        "/api/auth/session/status",
+        headers=bearer("subject-one"),
+    ).json()
+    assert contender["replacementRequired"] is True
+
+
+def test_stale_session_does_not_impersonate_another_device(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    first = claim(api, "subject-one").json()
+    repository = api.app.state.identity_repository
+    with repository.database.connect() as connection:
+        connection.execute(
+            "UPDATE active_sessions SET last_seen_at = ? WHERE session_id = ?",
+            ("2000-01-01T00:00:00Z", first["sessionId"]),
+        )
+
+    status = api.get(
+        "/api/auth/session/status",
+        headers=bearer("subject-one"),
+    ).json()
+    assert status["replacementRequired"] is False
+
+    replacement = claim(api, "subject-one").json()
+    assert replacement["sessionId"] != first["sessionId"]
+    assert replacement["replacedExisting"] is False
 
 
 def test_username_is_normalized_unique_and_never_accepts_client_identity(tmp_path: Path) -> None:

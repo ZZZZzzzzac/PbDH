@@ -1,0 +1,94 @@
+name: Deploy Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "已发布版本，不带 v，例如 0.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pbdh-platform-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production-preview
+      url: ${{ vars.PUBLIC_URL }}
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Validate deployment input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          node scripts/release-tools.mjs check-version "$VERSION"
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_PATH"
+          test -n "$PUBLIC_URL"
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+
+      - name: Download and verify Release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          TAG="v$VERSION"
+          test "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = "false"
+          test "$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)" = "false"
+          gh release download "$TAG" \
+            --pattern "pbdh-platform-$VERSION.tar.gz" \
+            --pattern "pbdh-platform-$VERSION.tar.gz.sha256"
+          sha256sum -c "pbdh-platform-$VERSION.tar.gz.sha256"
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Stage and activate Release
+        env:
+          VERSION: ${{ inputs.version }}
+          RUN_KEY: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          ARCHIVE="pbdh-platform-$VERSION.tar.gz"
+          ARTIFACT_SHA256="$(sha256sum "$ARCHIVE" | cut -d ' ' -f 1)"
+          TARGET="$DEPLOY_USER@$DEPLOY_HOST"
+          STAGING_PATH="$DEPLOY_PATH/.staging/$VERSION-$RUN_KEY"
+          STATE="$(ssh "$TARGET" sudo bash -s -- prepare "$VERSION" "$ARTIFACT_SHA256" "$DEPLOY_PATH" "$RUN_KEY" < deploy/deploy-release.sh)"
+          if [[ "$STATE" == "upload" ]]; then
+            gzip -dc "$ARCHIVE" | ssh "$TARGET" "sudo tar -x -C '$STAGING_PATH'"
+          elif [[ "$STATE" != "reuse" ]]; then
+            echo "Unexpected remote state: $STATE" >&2
+            exit 1
+          fi
+          ssh "$TARGET" sudo bash -s -- activate "$VERSION" "$ARTIFACT_SHA256" "$DEPLOY_PATH" "$RUN_KEY" < deploy/deploy-release.sh
+
+      - name: Verify preview
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          HTML="$(curl --fail --silent --show-error --retry 5 --retry-delay 2 "$PUBLIC_URL?deploy=${GITHUB_RUN_ID}")"
+          grep -Fq "<meta name=\"pbdh-version\" content=\"$VERSION\">" <<< "$HTML"
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            "https://daggerheart.cn/api/health"

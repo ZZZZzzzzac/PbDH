@@ -1,0 +1,40 @@
+[
+  {
+    "name": "resource package 1.1 requires per-resource attribution",
+    "request": {
+      "family": "resource-package",
+      "version": "1.1.0",
+      "mode": "production",
+      "candidate": {
+        "contractVersion": "1.1.0",
+        "package": { "id": "01989f4e-7b2c-7000-8000-000000000110", "version": "1.0.0", "name": "Missing attribution", "description": "Invalid conformance fixture." },
+        "targets": [],
+        "license": { "label": "Test only", "declaration": "Conformance fixture." },
+        "forkSource": null,
+        "assets": [],
+        "resources": [
+          {
+            "id": "resource-1",
+            "path": "自由/resource-1.json",
+            "template": { "id": "自由", "version": "1.0.1" },
+            "presentation": { "mode": "text", "fixedRatio": false },
+            "data": {},
+            "media": {}
+          }
+        ],
+        "emptyDirectories": [],
+        "snapshotDigest": "sha256:96d2332d441100f9af97ac007f2b7b96799e9fd15ee44ccdfc62d831dd6458b9"
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "resource-package",
+        "version": "1.1.0",
+        "location": "/resources/0/attribution",
+        "params": { "property": "attribution" }
+      }
+    ]
+  }
+]

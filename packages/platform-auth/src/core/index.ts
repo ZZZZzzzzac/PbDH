@@ -1,5 +1,5 @@
 export { AuthApiError, createAuthApi, type AuthApi } from "./api.ts";
-export { isAuthConfigured, resolveSessionStatus } from "./session.ts";
+export { createAuthSessionResolutionQueue, isAuthConfigured, resolveSessionStatus } from "./session.ts";
 export { createSupabaseGateway } from "./supabase-gateway.ts";
 export type {
   AccountProfile,

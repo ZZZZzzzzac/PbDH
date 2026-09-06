@@ -24,4 +24,18 @@ describe("Market stable links", () => {
     const url = marketRouteUrl({ page: "author", accountId: "account/作者" }, "https://pbdh.example");
     expect(readMarketRoute(url)).toEqual({ page: "author", accountId: "account/作者" });
   });
+
+  it("keeps stable links inside a deployment base path", () => {
+    const url = marketRouteUrl(
+      { page: "detail", publicationId: "publication-1" },
+      "https://daggerheart.cn",
+      "/pbdh_tools/",
+    );
+
+    expect(url.pathname).toBe("/pbdh_tools/market/publications/publication-1");
+    expect(readMarketRoute(url, "/pbdh_tools/")).toEqual({
+      page: "detail",
+      publicationId: "publication-1",
+    });
+  });
 });

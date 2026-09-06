@@ -43,16 +43,17 @@ import {
   weaponRendererStyles,
   WeaponAuthoringEditor,
 } from "../../packages/templates/src/frontend/index.ts";
-import { adversaryRendererRevision as adversaryRendererRevisionV101 } from "../../packages/templates/src/frontend/adversary/1.0.1/renderer.tsx";
-import { ancestryRendererRevision as ancestryRendererRevisionV101 } from "../../packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx";
-import { armorRendererRevision as armorRendererRevisionV101 } from "../../packages/templates/src/frontend/armor/1.0.1/renderer.tsx";
-import { communityRendererRevision as communityRendererRevisionV101 } from "../../packages/templates/src/frontend/community/1.0.1/renderer.tsx";
-import { domainRendererRevision as domainRendererRevisionV101 } from "../../packages/templates/src/frontend/domain/1.0.1/renderer.tsx";
-import { environmentRendererRevision as environmentRendererRevisionV101 } from "../../packages/templates/src/frontend/environment/1.0.1/renderer.tsx";
-import { freeRendererRevision as freeRendererRevisionV101 } from "../../packages/templates/src/frontend/free/1.0.1/renderer.tsx";
+import { adversaryRendererRevision as adversaryRendererRevisionV101, adversaryRendererStyles as adversaryRendererStylesV101 } from "../../packages/templates/src/frontend/adversary/1.0.1/renderer.tsx";
+import { ancestryRendererRevision as ancestryRendererRevisionV101, ancestryRendererStyles as ancestryRendererStylesV101 } from "../../packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx";
+import { armorRendererRevision as armorRendererRevisionV101, armorRendererStyles as armorRendererStylesV101 } from "../../packages/templates/src/frontend/armor/1.0.1/renderer.tsx";
+import { communityRendererRevision as communityRendererRevisionV101, communityRendererStyles as communityRendererStylesV101 } from "../../packages/templates/src/frontend/community/1.0.1/renderer.tsx";
+import { domainRendererRevision as domainRendererRevisionV101, domainRendererStyles as domainRendererStylesV101 } from "../../packages/templates/src/frontend/domain/1.0.1/renderer.tsx";
+import { environmentRendererRevision as environmentRendererRevisionV101, environmentRendererStyles as environmentRendererStylesV101 } from "../../packages/templates/src/frontend/environment/1.0.1/renderer.tsx";
+import { freeRendererRevision as freeRendererRevisionV101, freeRendererStyles as freeRendererStylesV101 } from "../../packages/templates/src/frontend/free/1.0.1/renderer.tsx";
 import { itemRendererRevision as itemRendererRevisionV101, itemRendererStyles as itemRendererStylesV101 } from "../../packages/templates/src/frontend/item/1.0.1/renderer.tsx";
-import { subclassRendererRevision as subclassRendererRevisionV101 } from "../../packages/templates/src/frontend/subclass/1.0.1/renderer.tsx";
-import { weaponRendererRevision as weaponRendererRevisionV101 } from "../../packages/templates/src/frontend/weapon/1.0.1/renderer.tsx";
+import { professionRendererStyles as professionRendererStylesV101 } from "../../packages/templates/src/frontend/profession/1.0.1/renderer.tsx";
+import { subclassRendererRevision as subclassRendererRevisionV101, subclassRendererStyles as subclassRendererStylesV101 } from "../../packages/templates/src/frontend/subclass/1.0.1/renderer.tsx";
+import { weaponRendererRevision as weaponRendererRevisionV101, weaponRendererStyles as weaponRendererStylesV101 } from "../../packages/templates/src/frontend/weapon/1.0.1/renderer.tsx";
 import { weaponBurdenOptions, weaponDamageTypeOptions, weaponRangeOptions, weaponTraitOptions, weaponTypeOptions } from "../../packages/templates/src/frontend/weapon/1.0.0/authoring-editor.tsx";
 
 type GenericRenderer = RendererRevisionCapability<Record<string, unknown>, unknown, ReactNode>;
@@ -141,6 +142,26 @@ describe("first-party template capabilities", () => {
     expect(adversaryRendererStyles).toContain("top: calc(var(--enemy-media-height) + 10px)");
   });
 
+  test("all first-party card titles reserve vertical space for Latin descenders", () => {
+    const titleRules = [
+      [adversaryRendererStylesV101, /\.enemy-heading h1\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [ancestryRendererStylesV101, /\.ancestry-heading h1\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [armorRendererStylesV101, /\.armor-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [communityRendererStylesV101, /\.community-card-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [domainRendererStylesV101, /\.domain-card-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [environmentRendererStylesV101, /\.environment-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [freeRendererStylesV101, /\.free-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [itemRendererStylesV101, /\.item-card-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [professionRendererStylesV101, /\.reference-card-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [subclassRendererStylesV101, /\.subclass-card-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+      [weaponRendererStylesV101, /\.weapon-title\s*\{[^}]*font:[^;}]+\/1\.2\b/],
+    ] as const;
+
+    for (const [styles, titleRule] of titleRules) {
+      expect(styles).toMatch(titleRule);
+    }
+  });
+
   test.each(headerSummaryCases)("%s 1.0.1 renders its summary inside the title header", (_name, template, renderer) => {
     const data = structuredClone(template.defaultData) as Record<string, unknown>;
     data.简介 = "简介位置标记";
@@ -160,6 +181,96 @@ describe("first-party template capabilities", () => {
     expect(headerEnd).toBeGreaterThan(summaryIndex);
   });
 
+  test("adversary 1.0.1 wraps long headings, attack text, and state markers", () => {
+    const data = {
+      ...structuredClone(adversaryTemplate.defaultData),
+      名称: "机械领主-“操作大师”",
+      简介: "一个巨大威严的机械领主，操控周围的一切作为自我意志的延伸",
+      位阶: "3",
+      种类: "独狼",
+      生命点: "11",
+      压力点: "8",
+      攻击命中: "+4",
+      攻击武器: "机械重刃",
+      攻击范围: "近距离",
+      攻击伤害: "3d12+4",
+      攻击属性: "物理",
+    };
+    const markup = renderToStaticMarkup(adversaryRendererRevisionV101.render({
+      data,
+      state: adversaryRendererRevisionV101.defaultState(data),
+      assets: {},
+      presentation: { mode: "split", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "jf" },
+    }));
+
+    expect(markup).toContain('<div class="enemy-heading-copy"><h1>机械领主-“操作大师”</h1>');
+    expect(markup).toContain('<div class="enemy-kicker">位阶3 独狼</div>');
+    expect(markup).toContain("攻击+4 | 机械重刃 | 近距离 | 3d12+4 | 物理");
+    expect(markup).not.toContain(" · ");
+    expect(markup.match(/class="enemy-state-marker"/gu)).toHaveLength(19);
+    expect(adversaryRendererStylesV101).toContain("grid-template-columns: minmax(0, 1fr) minmax(58px, 82px)");
+    expect(adversaryRendererStylesV101).toContain("white-space: normal; overflow-wrap: anywhere");
+    expect(adversaryRendererStylesV101).toContain("flex-wrap: wrap");
+  });
+  test("adversary 1.0.1 features are expanded and independently collapsible", () => {
+    const data = {
+      ...structuredClone(adversaryTemplate.defaultData),
+      特性: [{ 特性名称: "伟大进化", 特性原文: "Great Evolution", 特性类型: "被动", 特性描述: "展开后的完整描述。" }],
+    };
+    const markup = renderToStaticMarkup(adversaryRendererRevisionV101.render({
+      data,
+      state: adversaryRendererRevisionV101.defaultState(data),
+      assets: {},
+      presentation: { mode: "split", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "jf" },
+    }));
+
+    expect(markup).toContain('<article class="enemy-feature is-expanded"><button type="button" class="enemy-feature-toggle" aria-expanded="true">');
+    expect(markup).toContain("伟大进化");
+    expect(markup).toContain("被动");
+    expect(markup).toContain("Great Evolution");
+    expect(markup).toContain("展开后的完整描述。");
+    expect(adversaryRendererStylesV101).toContain(".enemy-feature:not(.is-expanded) { min-height: 0; display: block; }");
+    expect(adversaryRendererStylesV101).toContain(".enemy-feature:not(.is-expanded) .enemy-feature-toggle { height: 24px;");
+    expect(adversaryRendererStylesV101).toContain(".enemy-feature:not(.is-expanded) .enemy-feature-primary { min-width: 0; display: flex;");
+    expect(adversaryRendererStylesV101).toContain("white-space: nowrap; overflow: hidden;");
+    expect(adversaryRendererStylesV101).toContain("text-overflow: ellipsis");
+    expect(adversaryRendererStylesV101).toContain('.enemy-feature-toggle::after { content: "+";');
+    expect(adversaryRendererStylesV101).toContain('.enemy-feature.is-expanded .enemy-feature-toggle::after { content: "−";');
+  });
+  test("environment 1.0.1 features collapse to one line and omit the English difficulty label", () => {
+    const data = {
+      ...structuredClone(environmentTemplate.defaultData),
+      难度: "17",
+      特性: [{
+        特性名称: "崩塌边缘",
+        特性原文: "Crumbling Edge",
+        特性类型: "被动",
+        特性描述: "展开后的环境特性描述。",
+        引导问题: "谁会最先发现危险？",
+      }],
+    };
+    const markup = renderToStaticMarkup(environmentRendererRevisionV101.render({
+      data,
+      state: environmentRendererRevisionV101.defaultState(data),
+      assets: {},
+      presentation: { mode: "split", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "测试" },
+    }));
+
+    expect(markup).toContain('<section class="environment-feature is-expanded"><button type="button" class="environment-feature-toggle" aria-expanded="true">');
+    expect(markup).toContain("崩塌边缘");
+    expect(markup).toContain("被动");
+    expect(markup).toContain("Crumbling Edge");
+    expect(markup).toContain("展开后的环境特性描述。");
+    expect(markup).toContain("谁会最先发现危险？");
+    expect(markup).not.toContain("DIFFICULTY");
+    expect(environmentRendererStylesV101).toContain(".environment-feature:not(.is-expanded) .environment-feature-toggle{height:24px;");
+    expect(environmentRendererStylesV101).toContain(".environment-feature:not(.is-expanded) .environment-feature-primary{display:flex;");
+    expect(environmentRendererStylesV101).toContain("text-overflow:ellipsis;white-space:nowrap");
+    expect(environmentRendererStylesV101).not.toContain(".environment-difficulty small");
+  });
   test("item feature box follows its content height", () => {
     expect(itemRendererStylesV101).toContain(".item-card-feature{min-height:0;flex:none;");
     expect(itemRendererStylesV101).not.toContain(".item-card-feature{min-height:0;flex:1;");

@@ -11,6 +11,7 @@ import { commitResourcePackageRemoval, type ResourceLibrary } from "../../apps/p
 import { routeResourcePackage } from "../../apps/player/src/resources/route-resource-package.ts";
 import { replacePlatformResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { resolveCardDisplayMode } from "../../apps/player/src/sheet-runtime/rendering/cardTable/cardDefinition.ts";
 
 const root = path.resolve("apps/player/public/system-packages");
 const migrated = [
@@ -151,6 +152,13 @@ describe("additional migrated System Packages", () => {
       expect(communities?.entries).toHaveLength(15);
       expect(ancestries?.entries.find((entry) => entry.fields.名称 === "乌萨斯")?.fields.简介).not.toBe("");
       expect(communities?.entries.find((entry) => entry.fields.名称 === "高城之民")?.fields.简介).not.toBe("");
+      const ancestry = ancestries?.entries.find((entry) => entry.fields.名称 === "乌萨斯");
+      const cardTable = loaded.package.modules.find((candidate) => candidate.ID === "character-card-table");
+      expect(ancestry?.resourceCopy?.presentation.mode).toBe("split");
+      expect(ancestry?.fields).not.toHaveProperty("卡牌显示方式");
+      expect(cardTable?.类型).toBe("cardTable");
+      if (!cardTable || cardTable.类型 !== "cardTable") throw new Error("tttri character-card-table missing");
+      expect(resolveCardDisplayMode(ancestry, cardTable)).toBe("split");
       expect(professions?.entries.find((entry) => entry.fields.名称 === "辅助")?.fields).toMatchObject({
         名称: "辅助",
         描述: "",

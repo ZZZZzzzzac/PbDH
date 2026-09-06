@@ -77,6 +77,20 @@ def candidate() -> tuple[dict[str, Any], dict[str, bytes]]:
     return document, media
 
 
+def candidate_1_1() -> tuple[dict[str, Any], dict[str, bytes]]:
+    document, media = candidate()
+    document["contractVersion"] = "1.1.0"
+    for resource in document["resources"]:
+        resource["attribution"] = {
+            "artworkCredit": "",
+            "sourceLabel": document["package"]["name"],
+        }
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(
+        document, media
+    )
+    return document, media
+
+
 def metadata(document: dict[str, Any]) -> dict[str, Any]:
     return {
         "title": "荒野遭遇集",
@@ -448,6 +462,16 @@ def test_production_mode_accepts_published_template(tmp_path: Path) -> None:
     response = publish(api, claim(api, "author-one"), document, media)
 
     assert response.status_code == 200, response.text
+
+
+def test_production_mode_accepts_resource_package_1_1_0(tmp_path: Path) -> None:
+    api = client(tmp_path, "production")
+    document, media = candidate_1_1()
+
+    response = publish(api, claim(api, "author-1-1"), document, media)
+
+    assert response.status_code == 200, response.text
+    assert response.json()["publication"]["document"]["contractVersion"] == "1.1.0"
 
 
 def test_publication_accepts_declared_replacement_and_rejects_unknown_button(tmp_path: Path) -> None:

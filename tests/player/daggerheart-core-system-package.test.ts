@@ -106,6 +106,16 @@ function unexpectedLocalizedLatin(value: unknown, pathParts: string[] = []): str
 }
 
 describe("migrated Daggerheart Core System Package", () => {
+  test("规范资源的卡面模式不再复制到系统包字段", () => {
+    const modules = readJson<Array<Record<string, unknown>>>(path.join(packageRoot, "modules.json"));
+    const ancestryPicker = modules.find((module) => module.ID === "pick-ancestry");
+    const cardTable = modules.find((module) => module.ID === "character-card-table");
+
+    expect(ancestryPicker).not.toHaveProperty("选择关系输出");
+    expect(cardTable).not.toHaveProperty("显示方式字段");
+    expect(JSON.stringify(modules)).not.toContain("卡牌显示方式");
+  });
+
   test("Echo Blade 的译名修正不会创建新的武器资源", async () => {
     const playerPackage = await loadEmbeddedResource("resources/daggerheart-core.pbres");
     const echoBlade = playerPackage.document.resources.find((resource) => (

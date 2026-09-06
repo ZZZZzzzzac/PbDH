@@ -15,7 +15,7 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 
 const root = process.cwd();
-const fixtureProfiles = ["1.0.0"].map((version) => ({
+const fixtureProfiles = ["1.0.0", "1.1.0"].map((version) => ({
   version,
   fixtureRoot: `contracts/conformance/resource-package/${version}`,
 }));
@@ -97,7 +97,7 @@ function applyMutation(
 }
 
 for (const profile of fixtureProfiles) {
-  describe(`Resource Package ${profile.version} conformance`, () => {
+  if (profile.version === "1.0.0") describe(`Resource Package ${profile.version} conformance`, () => {
     const cases = readJson<ConformanceCase[]>(`${profile.fixtureRoot}/cases.json`);
 
     for (const conformanceCase of cases) {

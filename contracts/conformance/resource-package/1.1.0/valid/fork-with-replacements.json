@@ -1,0 +1,78 @@
+{
+  "contractVersion": "1.1.0",
+  "package": {
+    "id": "01989f4e-7b2c-7000-8000-000000000111",
+    "version": "1.0.0",
+    "name": "Resource Package 1.1 fork and replacement evidence",
+    "description": "Exercises attribution, fork provenance, and tabletop replacements."
+  },
+  "targets": [
+    {
+      "systemPackageId": "01989f4e-7b2c-7000-8000-000000000120",
+      "version": "1.0.0"
+    }
+  ],
+  "license": {
+    "label": "Test only",
+    "declaration": "Conformance fixture."
+  },
+  "forkSource": {
+    "publicationId": "01989f4e-7b2c-7000-8000-000000000121",
+    "packageId": "01989f4e-7b2c-7000-8000-000000000122",
+    "version": "0.9.0",
+    "snapshotDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "copiedResources": [
+      {
+        "packageId": "01989f4e-7b2c-7000-8000-000000000122",
+        "resourceId": "source-enemy"
+      }
+    ]
+  },
+  "assets": [],
+  "resources": [
+    {
+      "id": "enemy-base",
+      "path": "敌人/enemy-base.json",
+      "template": {
+        "id": "敌人",
+        "version": "1.0.1"
+      },
+      "presentation": {
+        "mode": "text",
+        "fixedRatio": false
+      },
+      "attribution": {
+        "artworkCredit": "",
+        "sourceLabel": "Forked conformance source"
+      },
+      "data": {},
+      "replacements": [
+        {
+          "replacementId": "alternate-form",
+          "targetResourceId": "enemy-z-alternate"
+        }
+      ],
+      "media": {}
+    },
+    {
+      "id": "enemy-z-alternate",
+      "path": "敌人/enemy-z-alternate.json",
+      "template": {
+        "id": "敌人",
+        "version": "1.0.1"
+      },
+      "presentation": {
+        "mode": "text",
+        "fixedRatio": false
+      },
+      "attribution": {
+        "artworkCredit": "",
+        "sourceLabel": "Replacement conformance target"
+      },
+      "data": {},
+      "media": {}
+    }
+  ],
+  "emptyDirectories": [],
+  "snapshotDigest": "sha256:9de283aa6ad11d2eb3df2f17b3e4fd0ef50b5450b3169b0928b097881b1488bb"
+}

@@ -80,6 +80,17 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     expect(gmWorkbench).not.toContain('displayWidth="63mm"');
   });
 
+  it("可变高度图文卡不会被旧的 568px 高优先级规则阻止收缩", async () => {
+    const [adversaryRenderer, ancestryRenderer] = await Promise.all([
+      readFile("packages/templates/src/frontend/adversary/1.0.1/renderer.tsx", "utf8"),
+      readFile("packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx", "utf8"),
+    ]);
+
+    for (const renderer of [adversaryRenderer, ancestryRenderer]) {
+      expect(renderer).not.toMatch(/\.is-split\.is-fluid\s*\{[^}]*min-height:\s*568px/);
+      expect(renderer).toMatch(/\.is-split\s*\{[^}]*min-height:\s*0/);
+    }
+  });
   it("固定比例图文卡把署名栏固定在 63:88 可视区域底部", async () => {
     const shared = await readFile("packages/resource-renderer/src/react.tsx", "utf8");
     expect(shared).toContain("--pbdh-fixed-native-height: 502.857px");

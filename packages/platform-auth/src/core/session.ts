@@ -14,3 +14,11 @@ export function resolveSessionStatus(
   if (!status.replacementRequired) return "claim";
   return currentSessionId ? "replaced" : "replacementRequired";
 }
+export function createAuthSessionResolutionQueue() {
+  let tail = Promise.resolve();
+  return <T>(resolve: () => Promise<T>): Promise<T> => {
+    const current = tail.then(resolve);
+    tail = current.then(() => undefined, () => undefined);
+    return current;
+  };
+}

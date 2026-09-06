@@ -8,34 +8,29 @@ import { MarketAppSurface } from "@pbdh/market/surface";
 import { PlayerAppSurface, playerSystemPackageOptions } from "@pbdh/player/surface";
 import { PlatformChrome, type PlatformPage } from "@pbdh/platform-ui";
 
-type PlatformLocation = {
-  page: PlatformPage;
-  href: string;
-};
+import {
+  normalizeBasePath,
+  platformPageUrl,
+  readPlatformLocation,
+} from "./platform-route.ts";
 
-const platformPages = new Set<PlatformPage>(["player", "creator", "gm", "market"]);
-
-function readPlatformLocation(source: string | URL = window.location.href): PlatformLocation {
-  const url = new URL(source);
-  const segment = url.pathname.split("/").filter(Boolean)[0];
-  const page = platformPages.has(segment as PlatformPage)
-    ? segment as PlatformPage
-    : "creator";
-  return { page, href: url.href };
-}
+const platformBasePath = normalizeBasePath(import.meta.env.BASE_URL);
 
 export function PlatformApp() {
-  const [location, setLocation] = useState<PlatformLocation>(() => readPlatformLocation());
+  const [location, setLocation] = useState(() => readPlatformLocation(
+    window.location.href,
+    platformBasePath,
+  ));
 
   const commitLocation = useCallback((url: URL, replace: boolean) => {
     const relativeUrl = `${url.pathname}${url.search}${url.hash}`;
     if (replace) window.history.replaceState(null, "", relativeUrl);
     else window.history.pushState(null, "", relativeUrl);
-    setLocation(readPlatformLocation(url));
+    setLocation(readPlatformLocation(url, platformBasePath));
   }, []);
 
   const navigate = useCallback((page: PlatformPage) => {
-    commitLocation(new URL(`/${page}`, window.location.origin), false);
+    commitLocation(platformPageUrl(page, window.location.origin, platformBasePath), false);
   }, [commitLocation]);
 
   const navigateHandoff = useCallback((target: "player" | "creator" | "gm", url: URL) => {
@@ -51,10 +46,19 @@ export function PlatformApp() {
   }, [commitLocation]);
 
   useEffect(() => {
-    if (window.location.pathname === "/") {
-      commitLocation(new URL("/creator", window.location.origin), true);
+    if (
+      window.location.pathname === platformBasePath
+      || window.location.pathname === platformBasePath.slice(0, -1)
+    ) {
+      commitLocation(
+        platformPageUrl("creator", window.location.origin, platformBasePath),
+        true,
+      );
     }
-    const restoreLocation = () => setLocation(readPlatformLocation());
+    const restoreLocation = () => setLocation(readPlatformLocation(
+      window.location.href,
+      platformBasePath,
+    ));
     window.addEventListener("popstate", restoreLocation);
     return () => window.removeEventListener("popstate", restoreLocation);
   }, [commitLocation]);
@@ -81,6 +85,7 @@ export function PlatformApp() {
           locationHref={location.href}
           onLocationNavigate={navigateMarket}
           onHandoffNavigate={navigateHandoff}
+          basePath={platformBasePath}
           systemPackageOptions={playerSystemPackageOptions}
         />
       </section>
