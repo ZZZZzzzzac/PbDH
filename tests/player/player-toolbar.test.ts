@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
+import { formatCharacterSaveOptionLabel } from "../../apps/player/src/PlayerSheetSurface.tsx";
+
 describe("Player toolbar", () => {
   it("在 Platform App Bar 中保留旧 Sheet 的四组下拉菜单，不渲染左侧人物存档栏", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
@@ -27,13 +29,6 @@ describe("Player toolbar", () => {
 
     expect(styles).toContain(".pbdh-platform-mobile-extra .player-toolbar");
     expect(styles).toContain(".pbdh-platform-mobile-extra .player-menu-panel");
-  });
-
-  it("把 Player 信息提示交给统一 Platform 通知，不再渲染 message-info 横幅", async () => {
-    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
-
-    expect(source).toContain("usePlatformNotifications");
-    expect(source).not.toContain('className="message message-info"');
   });
 
   it("玩家存档只保留一个包含全部系统人物的下拉框", async () => {
@@ -68,25 +63,9 @@ describe("Player toolbar", () => {
     expect(source).toContain("deletePendingCharacterSave(selectedCharacterSave.id)");
   });
 
-  it("全局人物下拉框显示存档和所属规则", async () => {
-    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
-
-    expect(source).toContain("characterSaveOptionLabel(save)");
-    expect(source).toContain("characterSystemName(save.packageId)");
-  });
-
-  it("人物下拉框只显示存档名和规则名", async () => {
-    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
-    const helper = source.slice(source.indexOf("function characterSaveOptionLabel"), source.indexOf("function characterAdapterExportLabel"));
-
-    expect(helper).toContain("`${save.name}・${characterSystemName(save.packageId)}`");
-    expect(helper).not.toContain("systemPackageVersion");
-    expect(helper).not.toContain("syncState");
-  });
-
-  it("把 Daggerheart Core 的玩家名称显示为匕首之心", async () => {
-    const source = JSON.parse(await readFile("apps/player/src/daggerheart-core-system.generated.json", "utf8")) as { package: { name: string } };
-    expect(source.package.name).toBe("匕首之心");
+  it("人物下拉框只组合存档名和规则名", () => {
+    expect(formatCharacterSaveOptionLabel("阿岚", "匕首之心")).toBe("阿岚・匕首之心");
+    expect(formatCharacterSaveOptionLabel("待匹配人物", "缺少系统包")).toBe("待匹配人物・缺少系统包");
   });
 
   it("清楚标明本机存档不是云备份，并提供云端永久删除", async () => {

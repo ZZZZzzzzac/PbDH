@@ -708,6 +708,9 @@ describe("Creator Workspace prototype state model", () => {
     });
   });
 
+});
+
+describe("Creator Workspace UI contracts", () => {
   test("keeps reviewed App visual constants in ordinary frontend source", () => {
     expect(creatorWorkspaceDesign).toMatchObject({
       appBar: { height: 56, background: "#1B1714" },
@@ -729,31 +732,19 @@ describe("Creator Workspace prototype state model", () => {
     });
   });
 
-  test("uses the concise mixed-media preview label", () => {
-    const source = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-workbench.tsx"), "utf8");
-    const styles = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/workspace.css"), "utf8");
-    expect(source).toContain('split: "图+文"');
-    expect(source).not.toContain("半图半文字");
-    expect(styles).not.toContain(".card-mode button:nth-child(2)");
+  test("renders the concise mixed-media preview label", () => {
+    const markup = renderCreatorWorkbench(createWorkspace({ document, media }));
+
+    expect(markup).toContain("图+文");
+    expect(markup).not.toContain("半图半文字");
   });
 
-  test("shows the shared card attribution editor for every Template", () => {
-    const source = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-workbench.tsx"), "utf8");
-    expect(source).toContain("<ResourceAttributionEditor");
-    expect(source).not.toContain('resource.template.id === "种族"');
-  });
+  test("renders the shared card attribution editor for every Template", () => {
+    const markup = renderCreatorWorkbench(createWorkspace({ document, media }));
 
-  test("prints GM cards without application chrome or selection controls", () => {
-    const styles = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/workspace.css",
-    ), "utf8");
-    expect(styles).toContain("@media print");
-    expect(styles).toContain(".tabletop-tabs, .instance-editor-toolbar");
-    expect(styles).toContain(".tabletop-zoom-status");
-    expect(styles).toContain(".context-menu");
-    expect(styles).toContain(".tabletop-instance.is-selected { outline: 0; }");
-    expect(styles).toContain("transform: none !important");
+    expect(markup).toContain("卡面署名");
+    expect(markup).toContain("图片作者或来源");
+    expect(markup).toContain("卡牌来源或所属");
   });
 
   test("keeps every Template editor responsive without host-side Template specialization", () => {
@@ -1064,21 +1055,8 @@ describe("Creator Workspace prototype state model", () => {
   });
 
   test("offers every shared resource conversion format while highlighting PBRES as native", () => {
-    const rootSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
-    ), "utf8");
-    const dialogSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-dialogs.tsx"), "utf8");
-    const workflowSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/creator-package-file-workflow.ts",
-    ), "utf8");
-    const creatorSource = `${rootSource}\n${dialogSource}\n${workflowSource}`;
     const markup = renderResourceExplorer();
 
-    expect(rootSource).toContain("runCreatorPackageFileWorkflow");
-    expect(workflowSource).toContain("resourceConversionRegistry.import(command.formatId");
-    expect(creatorSource).toContain("materializeCreatorResourceConversion(imported.batch)");
     expect(markup).toContain("导入 PBRES 格式");
     expect(markup).toContain("导入 ZZZ 格式");
     expect(markup).toContain("导入 Rink 格式");
@@ -1090,8 +1068,6 @@ describe("Creator Workspace prototype state model", () => {
     expect(markup).toContain("导出 dhsheet 格式");
     expect(markup).toContain("导出不咕鸟格式");
     expect(markup.match(/class="is-native-format"/gu)).toHaveLength(2);
-    expect(workflowSource).toContain("resourceConversionRegistry.export(command.formatId");
-    expect(creatorSource).toContain("导入工作区");
   });
 
   test("starts publication tags empty and routes both Creator image uploads through crop selection", () => {

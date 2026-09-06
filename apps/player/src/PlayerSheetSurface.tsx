@@ -882,7 +882,7 @@ export function PlayerSheetSurface({
   }
 
   function characterSaveOptionLabel(save: (typeof allCharacterSaves)[number]): string {
-    return `${save.name}・${characterSystemName(save.packageId)}`;
+    return formatCharacterSaveOptionLabel(save.name, characterSystemName(save.packageId));
   }
 
   function characterAdapterExportLabel(adapter: { ID: string; 名称: string }): string {
@@ -1265,6 +1265,10 @@ export function PlayerSheetSurface({
       ) : null}
     </div>
   );
+}
+
+export function formatCharacterSaveOptionLabel(saveName: string, systemName: string): string {
+  return `${saveName}・${systemName}`;
 }
 
 function remoteDocumentName(remote: RemoteCloudDocument): string {

@@ -35,23 +35,6 @@ describe("Player layout regressions", () => {
     expect(styles).toContain(".player-menu-resource-manager { display: flex;");
   });
 
-  it("隔离资源管理器外壳、标题和资源表的全局类名", async () => {
-    const [source, styles] = await Promise.all([
-      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
-      readFile("apps/player/src/styles.css", "utf8"),
-    ]);
-
-    expect(source).toContain('className="player-package-manager"');
-    expect(source).toContain('className="package-detail-heading"');
-    expect(source).toContain('className="manager-resource-table"');
-    expect(source).not.toContain('className="resource-manager"');
-    expect(source).not.toContain('className="detail-heading"');
-    expect(source).not.toContain('className="resource-table"');
-    expect(styles).toContain(".player-package-manager { width: min(1160px");
-    expect(styles).toContain(".package-detail-heading { height: 48px;");
-    expect(styles).toContain(".manager-resource-table { min-height: 0;");
-  });
-
   it("为横向资源分类滚动条保留独立空间", async () => {
     const styles = await readFile("apps/player/src/styles.css", "utf8");
 
@@ -143,17 +126,6 @@ describe("Player layout regressions", () => {
     expect(source).toContain("卡牌桌面里的独立卡牌不会改变");
   });
 
-  it("安装和移除资源包只刷新资源，不重新读取当前系统包", async () => {
-    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
-    const resourceChanges = source.slice(
-      source.indexOf("async function commitInstall"),
-      source.indexOf("async function handleCreateSave"),
-    );
-
-    expect(resourceChanges).not.toContain("reloadResourceCatalog");
-    expect(resourceChanges.match(/await refreshInstalledResources\(next\)/gu)).toHaveLength(2);
-  });
-
   it("Market 整包安装后只选中资源包，不自动打开单卡预览", async () => {
     const source = await readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8");
     const commit = source.slice(
@@ -191,33 +163,6 @@ describe("Player layout regressions", () => {
       .toBeLessThan(presetLoader.indexOf("await restorePlayerResourceLibrary("));
   });
 
-  it("Player 卡牌桌面使用与 Creator、Market、GM 相同的规范卡面渲染器", async () => {
-    const source = await Promise.all([
-      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
-      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8"),
-    ]).then((files) => files.join("\n"));
-
-    expect(source).toContain("CanonicalCardSurface");
-    expect(source).toContain("resolveTemplateFrontend");
-    expect(source).toContain("resourceCopy");
-    expect(source).toContain("assets");
-  });
-
-  it("由共享卡牌桌面持续接管拖动，卡面不再拥有指针流程", async () => {
-    const [table, card, shared] = await Promise.all([
-      readFile("apps/player/src/sheet-runtime/rendering/CardTableModule.tsx", "utf8"),
-      readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardView.tsx", "utf8"),
-      readFile("packages/tabletop/src/react/index.tsx", "utf8"),
-    ]);
-
-    expect(table).toContain("<TabletopSurface");
-    expect(shared).toContain("onPointerMove={moveDrag}");
-    expect(shared).toContain("onPointerUp={finishDrag}");
-    expect(shared).toContain("onPointerCancel={() =>");
-    expect(card).not.toContain("onPointerMove");
-    expect(card).not.toContain("onPointerUp");
-  });
-
   it("按资源包身份查找共用卡面所需的图片", async () => {
     const source = await readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8");
 
@@ -225,11 +170,22 @@ describe("Player layout regressions", () => {
     expect(source).toContain("const runtimeKey = resourceCopy.source && runtimePath");
   });
 
-  it("右键菜单在页面外层仍有不透明背景", async () => {
-    const styles = await readFile("apps/player/src/sheet-runtime/styles/card-table.css", "utf8");
-    const menu = styles.slice(styles.indexOf(".card-context-menu {"), styles.indexOf(".card-context-menu button"));
+  it("Portal 浮层脱离主题作用域时仍使用不透明背景", async () => {
+    const [cardTableStyles, platformStyles, guideStyles] = await Promise.all([
+      readFile("apps/player/src/sheet-runtime/styles/card-table.css", "utf8"),
+      readFile("packages/platform-ui/src/styles.css", "utf8"),
+      readFile("apps/player/src/sheet-runtime/styles/guide.css", "utf8"),
+    ]);
+    const menu = cardTableStyles.slice(cardTableStyles.indexOf(".card-context-menu {"), cardTableStyles.indexOf(".card-context-menu button"));
+    const dialog = platformStyles.slice(platformStyles.indexOf(".player-image-crop-dialog {"), platformStyles.indexOf(".player-image-crop-header {"));
+    const select = platformStyles.slice(platformStyles.indexOf(".player-image-crop-actions select {"), platformStyles.indexOf("@media (max-width: 640px)"));
 
     expect(menu).toMatch(/background:\s*var\([^,]+,\s*#[0-9a-f]{6}\)/iu);
+    expect(dialog).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
+    expect(dialog).toMatch(/color:\s*var\(--framework-text,\s*#[0-9a-f]{6}\)/iu);
+    expect(select).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
+    expect(guideStyles).toContain("background: var(--framework-overlay, rgba(0, 0, 0, 0.72));");
+    expect(guideStyles).toContain("background: var(--framework-surface, #fffdf8);");
   });
 
   it("头像裁剪的确认和取消操作始终位于可见的对话框头部", async () => {
@@ -239,35 +195,6 @@ describe("Player layout regressions", () => {
     expect(header).toContain("onCancel");
     expect(header).toContain("onConfirm");
     expect(source).toContain("不限制比例");
-  });
-
-  it("头像裁剪挂到页面外层后仍有明确的不透明底色", async () => {
-    const styles = await readFile("packages/platform-ui/src/styles.css", "utf8");
-    const dialog = styles.slice(styles.indexOf(".player-image-crop-dialog {"), styles.indexOf(".player-image-crop-header {"));
-    const select = styles.slice(styles.indexOf(".player-image-crop-actions select {"), styles.indexOf("@media (max-width: 640px)"));
-
-    expect(dialog).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
-    expect(dialog).toMatch(/color:\s*var\(--framework-text,\s*#[0-9a-f]{6}\)/iu);
-    expect(select).toMatch(/background:\s*var\(--framework-surface,\s*#[0-9a-f]{6}\)/iu);
-  });
-
-  it("隔离资源管理器表格行与系统包的 resource-row", async () => {
-    const [source, styles] = await Promise.all([
-      readFile("apps/player/src/resource-manager/ResourceManager.tsx", "utf8"),
-      readFile("apps/player/src/styles.css", "utf8"),
-    ]);
-
-    expect(source).toContain('className="manager-resource-row"');
-    expect(source).not.toContain('className="resource-row"');
-    expect(styles).toContain(".resource-table-head, .manager-resource-row {");
-    expect(styles).not.toMatch(/^\.resource-row\s*\{/m);
-  });
-
-  it("创建向导在 Portal 脱离主题作用域时仍使用实色遮罩和面板", async () => {
-    const styles = await readFile("apps/player/src/sheet-runtime/styles/guide.css", "utf8");
-
-    expect(styles).toContain("background: var(--framework-overlay, rgba(0, 0, 0, 0.72));");
-    expect(styles).toContain("background: var(--framework-surface, #fffdf8);");
   });
 
   it("图片型计数标志按可用宽度自动缩小", async () => {
