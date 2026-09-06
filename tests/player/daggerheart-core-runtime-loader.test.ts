@@ -69,11 +69,13 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
       }
     };
 
+    const progress: Array<{ completed: number; total: number }> = [];
     const loaded = await loadDaggerheartCoreRuntimePackage({
       currentSystem,
       installedPackages: installedPackages as ResourceLibrary,
       baseUrl: "/",
       fetchFile,
+      onProgress: (next) => progress.push(next),
     });
 
     if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues, null, 2));
@@ -95,6 +97,11 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);
+    expect(progress.some(({ completed }) => completed > 0)).toBe(true);
+    expect(progress.at(-1)).toEqual({
+      completed: daggerheartCorePreset.metadataFileCount,
+      total: daggerheartCorePreset.metadataFileCount,
+    });
 
     const armor = loaded.package.resourceLibraries
       ?.find((library) => library.ID === "armor")

@@ -239,7 +239,11 @@ await writeFile(generatedPresetPath, `${JSON.stringify({
   fileCount: runtimeFiles.length,
   metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
   embeddedResourceIndex: [
-    { path: "resources/daggerheart-core.pbres", packageId: coreDocument.package.id },
+    {
+      path: "resources/daggerheart-core.pbres",
+      packageId: coreDocument.package.id,
+      snapshotDigest: coreDocument.snapshotDigest,
+    },
   ],
   loadingPresentation: legacyManifest.加载展示,
 }, null, 2)}\n`, "utf8");

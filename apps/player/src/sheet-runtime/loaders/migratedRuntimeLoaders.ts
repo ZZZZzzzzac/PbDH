@@ -11,6 +11,7 @@ import {
 } from "../adapters/platformResourceLibraries.ts";
 import {
   loadPresetSystemPackage,
+  type PresetLoadProgress,
   type PresetSystemPackage,
 } from "./presetSystemPackageLoader.ts";
 import type { PackageLoadResult } from "./systemPackageLoader.ts";
@@ -47,6 +48,8 @@ function migratedLoader(
     baseUrl?: string;
     fetchFile?: typeof fetch;
     resolveMediaReference?: PlatformMediaReferenceResolver;
+    onProgress?: (progress: PresetLoadProgress) => void;
+    releaseVersion?: string;
   }): Promise<PackageLoadResult> {
     const installedPackages = routeOfficialFreeResourcesByPath(
       input.installedPackages,
@@ -61,10 +64,13 @@ function migratedLoader(
     const resourceLibraries = normalizeResourceLibraries?.(rawResourceLibraries) ?? rawResourceLibraries;
 
     return loadPresetSystemPackage(
-      preset,
+      {
+        ...preset,
+        releaseVersion: input.releaseVersion ?? preset.releaseVersion,
+      },
       input.baseUrl ?? import.meta.env.BASE_URL,
       input.fetchFile ?? fetch,
-      undefined,
+      input.onProgress,
       {
         resourceLibraries,
         packageAssets: buildSheetRuntimeMediaAssets(installedPackages),

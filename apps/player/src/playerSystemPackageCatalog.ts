@@ -22,7 +22,10 @@ import {
   tttriPreset,
   witchyPreset,
 } from "./sheet-runtime/loaders/migratedRuntimeLoaders.ts";
-import type { PresetSystemPackage } from "./sheet-runtime/loaders/presetSystemPackageLoader.ts";
+import type {
+  PresetLoadProgress,
+  PresetSystemPackage,
+} from "./sheet-runtime/loaders/presetSystemPackageLoader.ts";
 import type { PackageLoadResult } from "./sheet-runtime/loaders/systemPackageLoader.ts";
 
 export type PlayerSystemPackageCatalogEntry = {
@@ -33,6 +36,8 @@ export type PlayerSystemPackageCatalogEntry = {
     installedPackages: ResourceLibrary;
     baseUrl?: string;
     fetchFile?: typeof fetch;
+    onProgress?: (progress: PresetLoadProgress) => void;
+    releaseVersion?: string;
   }): Promise<PackageLoadResult>;
 };
 

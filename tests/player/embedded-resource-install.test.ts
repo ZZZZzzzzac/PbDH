@@ -59,7 +59,43 @@ describe("系统包内置 .pbres 安装", () => {
       installedPackageIds: [],
       unchangedPackageIds: preset.embeddedResourceIndex.map((item) => item.packageId),
     });
-    expect(fetchCount).toBe(2);
+    expect(fetchCount).toBe(1);
+  });
+
+  it("读取大型内嵌资源包时持续报告下载进度", async () => {
+    const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
+    const archive = new Uint8Array(await readFile(path.join(packageRoot, preset.embeddedResourceIndex[0]!.path)));
+    const midpoint = Math.floor(archive.byteLength / 2);
+    const progress: Array<{ completed: number; total: number }> = [];
+    let requestedUrl = "";
+    const fetchFile: typeof fetch = async (url) => {
+      requestedUrl = String(url);
+      return new Response(new ReadableStream({
+        start(controller) {
+          controller.enqueue(archive.slice(0, midpoint));
+          controller.enqueue(archive.slice(midpoint));
+          controller.close();
+        },
+      }), {
+        status: 200,
+        headers: { "content-length": String(archive.byteLength) },
+      });
+    };
+
+    await installMissingEmbeddedResourcePackages({
+      systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
+      systemPackageBaseUrl: "https://preset.invalid",
+      repository: new MemoryRepository(),
+      fetchFile,
+      releaseVersion: "0.1.2",
+      onProgress: (next) => progress.push(next),
+    });
+
+    expect(requestedUrl).toBe("https://preset.invalid/resources/daggerheart-core.pbres?v=0.1.2");
+    expect(progress).toContainEqual({ completed: 0.5, total: 1 });
+    expect(progress.at(-1)).toEqual({ completed: 1, total: 1 });
   });
 
   it("内置来源发生变化时直接采用当前归档，不比较预设版本或摘要", async () => {

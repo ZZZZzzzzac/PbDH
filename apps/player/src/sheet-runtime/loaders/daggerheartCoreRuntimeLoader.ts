@@ -9,6 +9,7 @@ import {
 } from "../adapters/platformResourceLibraries.ts";
 import {
   loadPresetSystemPackage,
+  type PresetLoadProgress,
   type PresetSystemPackage,
 } from "./presetSystemPackageLoader.ts";
 import type { PackageLoadResult } from "./systemPackageLoader.ts";
@@ -21,12 +22,17 @@ export async function loadDaggerheartCoreRuntimePackage(input: {
   baseUrl?: string;
   fetchFile?: typeof fetch;
   resolveMediaReference?: PlatformMediaReferenceResolver;
+  onProgress?: (progress: PresetLoadProgress) => void;
+  releaseVersion?: string;
 }): Promise<PackageLoadResult> {
   const loaded = await loadPresetSystemPackage(
-    daggerheartCorePreset,
+    {
+      ...daggerheartCorePreset,
+      releaseVersion: input.releaseVersion ?? daggerheartCorePreset.releaseVersion,
+    },
     input.baseUrl ?? import.meta.env.BASE_URL,
     input.fetchFile ?? fetch,
-    undefined,
+    input.onProgress,
     {
       resourceLibraries: buildSheetResourceLibraryInputs({
         currentSystem: input.currentSystem,

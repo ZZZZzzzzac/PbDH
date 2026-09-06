@@ -35,7 +35,11 @@ async function syncPackage(directory: typeof directories[number]) {
     inventoryPath: runtimeInventoryName,
     fileCount: runtimeFiles.length,
     metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
-    embeddedResourceIndex: existingPreset.embeddedResourceIndex.map(({ path, packageId }) => ({ path, packageId })),
+    embeddedResourceIndex: existingPreset.embeddedResourceIndex.map(({ path, packageId, snapshotDigest }) => ({
+      path,
+      packageId,
+      ...(snapshotDigest ? { snapshotDigest } : {}),
+    })),
   }, null, 2)}\n`;
 
   await syncText(generatedSystemPath, systemJson);

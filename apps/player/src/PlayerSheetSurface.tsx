@@ -370,19 +370,39 @@ export function PlayerSheetSurface({
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
+            const embeddedTotal = entry.preset.embeddedResourceIndex.length;
+            const embeddedWeight = embeddedTotal > 0
+              ? Math.max(entry.preset.metadataFileCount, 1)
+              : 0;
+            const total = embeddedWeight + entry.preset.metadataFileCount;
+            const releaseVersion = document
+              .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
+              ?.content || entry.preset.releaseVersion;
+            onProgress?.({ completed: 0, total });
             await installMissingEmbeddedResourcePackages({
               systemPackage: entry.system,
               embeddedResourceIndex: entry.preset.embeddedResourceIndex,
               systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+              releaseVersion,
               repository: resourceRepository,
+              onProgress: (progress) => {
+                const completed = progress.total > 0
+                  ? (progress.completed / progress.total) * embeddedWeight
+                  : embeddedWeight;
+                onProgress?.({ completed, total });
+              },
             });
             const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
             libraryRef.current = routed;
             setLibrary(routed);
-            onProgress?.({ completed: 0, total: entry.preset.metadataFileCount });
             return entry.load({
               currentSystem: entry.system,
               installedPackages: routed,
+              releaseVersion,
+              onProgress: (progress) => onProgress?.({
+                completed: embeddedWeight + progress.completed,
+                total: embeddedWeight + progress.total,
+              }),
             });
           },
         });
