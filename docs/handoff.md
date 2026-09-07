@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-模板升级功能与本轮验收修复已完成，准备发布 `v0.1.6`。发布与部署结果以 GitHub Release / Deploy Release 工作流为准。
+模板升级功能与本轮验收修复已完成，`v0.1.6` 已发布并部署到 `/pbdh_tools/`。发布提交：`e73c240`。
 
 ## 变更
 
@@ -30,3 +30,10 @@
 ## 发布流程
 
 按 `deploy/README.md` 推送版本标签，由 Release 工作流完整验证并构建不可变制品，再运行 Deploy Release 更新 `/pbdh_tools/`，最后检查公开版本标记、Backend 健康和页面导航。不切换旧站 `/pbdh/`。
+
+## 发布结果
+
+- [Release v0.1.6](https://github.com/ZZZZzzzzac/PbDH/releases/tag/v0.1.6) 构建成功。
+- [Deploy Release](https://github.com/ZZZZzzzzac/PbDH/actions/runs/34128914140) 成功。
+- 公开页面版本标记为 `0.1.6`，Backend `/api/health` 返回 `ok`。
+- 浏览器完成线上工坊加载与资源市场导航，市场目录正常显示。
