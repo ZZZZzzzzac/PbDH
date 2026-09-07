@@ -4,7 +4,7 @@
 
 ## 当前状态
 
-本轮功能及素材整理准备发布为 `v0.1.7`，部署结果待发布流程完成后补充。
+本轮功能及素材整理已提交并部署为 `v0.1.7`。发布提交：`5e60f64`。
 
 ## 变更
 
@@ -20,8 +20,15 @@
 
 - 浏览器验收资源按钮分组、dhcb 文件筛选、重新裁剪取消与确认、长标题缩字、敌人字号、账号云空间与市场时间。
 - 使用原始《九州志异1.5（猫猫头卡包）》导入 180 项资源，零跳过/失败；侠士的三个特性标题及正文显示正常。
-- 完整 npm run verify 通过：109 个 TypeScript 测试文件、895 个测试；Python 152 个测试；类型检查、Contract、依赖边界、渲染测量和构建通过。线上部署结果待补充。
+- 完整 npm run verify 通过：109 个 TypeScript 测试文件、895 个测试；Python 152 个测试；类型检查、Contract、依赖边界、渲染测量和构建通过。GitHub Release 工作流完整验证亦通过。
 
 ## 发布流程
 
 按 deploy/README.md 推送版本标签，Release 工作流完整验证并构建不可变制品，再运行 Deploy Release 更新 `/pbdh_tools/`，检查公开版本标记、Backend 健康和浏览器页面。
+
+## 发布结果
+
+- [Release v0.1.7](https://github.com/ZZZZzzzzac/PbDH/releases/tag/v0.1.7) 发布成功。
+- [Deploy Release](https://github.com/ZZZZzzzzac/PbDH/actions/runs/34139148361) 成功。
+- 公开页面版本为 0.1.7，Backend 健康返回 ok。
+- 浏览器完成线上工坊加载与市场导航，资源目录及真实更新时间显示正常。
