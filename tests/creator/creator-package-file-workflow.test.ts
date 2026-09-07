@@ -42,7 +42,7 @@ describe("Creator package file workflow", () => {
     expect(result.candidate.document.resources).toHaveLength(67);
     expect(new Set(result.candidate.document.resources.map((resource) => (
       `${resource.template.id}@${resource.template.version}`
-    )))).toEqual(new Set(["敌人@1.0.1", "自由@1.0.1"]));
+    )))).toEqual(new Set(["敌人@1.0.1", "自由@1.0.2"]));
   });
 
   test("prepares, validates and writes one export result", async () => {
