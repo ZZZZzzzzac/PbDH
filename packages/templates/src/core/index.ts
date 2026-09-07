@@ -11,6 +11,7 @@ import { subclassTemplate } from "./subclass/1.0.0/capability.ts";
 import { TemplateRegistry } from "./registry.ts";
 import { weaponTemplate } from "./weapon/1.0.0/capability.ts";
 import { adversaryTemplate as adversaryTemplate101 } from "./adversary/1.0.1/capability.ts";
+import { adversaryTemplate as adversaryTemplate102 } from "./adversary/1.0.2/capability.ts";
 import { ancestryTemplate as ancestryTemplate101 } from "./ancestry/1.0.1/capability.ts";
 import { armorTemplate as armorTemplate101 } from "./armor/1.0.1/capability.ts";
 import { communityTemplate as communityTemplate101 } from "./community/1.0.1/capability.ts";
@@ -60,7 +61,7 @@ export type {
 } from "./types.ts";
 
 export const currentTemplates = Object.freeze([
-  adversaryTemplate101,
+  adversaryTemplate102,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,
@@ -74,7 +75,7 @@ export const currentTemplates = Object.freeze([
 ]);
 
 export {
-  adversaryTemplate101 as currentAdversaryTemplate,
+  adversaryTemplate102 as currentAdversaryTemplate,
   ancestryTemplate101 as currentAncestryTemplate,
   armorTemplate101 as currentArmorTemplate,
   communityTemplate101 as currentCommunityTemplate,
@@ -125,6 +126,7 @@ export const supportedTemplates = Object.freeze([
   subclassTemplate,
   weaponTemplate,
   adversaryTemplate101,
+  adversaryTemplate102,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,

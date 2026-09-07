@@ -44,6 +44,7 @@ import {
   WeaponAuthoringEditor,
 } from "../../packages/templates/src/frontend/index.ts";
 import { adversaryRendererRevision as adversaryRendererRevisionV101, adversaryRendererStyles as adversaryRendererStylesV101 } from "../../packages/templates/src/frontend/adversary/1.0.1/renderer.tsx";
+import { adversaryRendererRevision as adversaryRendererRevisionV102, adversaryRendererStyles as adversaryRendererStylesV102 } from "../../packages/templates/src/frontend/adversary/1.0.2/renderer.tsx";
 import { ancestryRendererRevision as ancestryRendererRevisionV101, ancestryRendererStyles as ancestryRendererStylesV101 } from "../../packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx";
 import { armorRendererRevision as armorRendererRevisionV101, armorRendererStyles as armorRendererStylesV101 } from "../../packages/templates/src/frontend/armor/1.0.1/renderer.tsx";
 import { communityRendererRevision as communityRendererRevisionV101, communityRendererStyles as communityRendererStylesV101 } from "../../packages/templates/src/frontend/community/1.0.1/renderer.tsx";
@@ -238,6 +239,28 @@ describe("first-party template capabilities", () => {
     expect(adversaryRendererStylesV101).toContain("text-overflow: ellipsis");
     expect(adversaryRendererStylesV101).toContain('.enemy-feature-toggle::after { content: "+";');
     expect(adversaryRendererStylesV101).toContain('.enemy-feature.is-expanded .enemy-feature-toggle::after { content: "−";');
+  });
+  test("adversary 1.0.2 wraps uninterrupted Latin feature names inside their column", () => {
+    const data = {
+      ...structuredClone(adversaryTemplate.defaultData),
+      特性: [{
+        特性名称: "call.dataLog{X}",
+        特性原文: "",
+        特性类型: "动作",
+        特性描述: "标记1压力点，调取邻近范围内一个目标的数据日志。",
+      }],
+    };
+    const markup = renderToStaticMarkup(adversaryRendererRevisionV102.render({
+      data,
+      state: adversaryRendererRevisionV102.defaultState(data),
+      assets: {},
+      presentation: { mode: "split", fixedRatio: false },
+      attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+
+    expect(markup).toContain('<span class="enemy-feature-name">call.dataLog{X}</span><span class="enemy-feature-type">动作</span>');
+    expect(adversaryRendererStylesV101).not.toMatch(/\.enemy-feature-name\s*\{[^}]*overflow-wrap:\s*anywhere;/u);
+    expect(adversaryRendererStylesV102).toMatch(/\.enemy-feature-name\s*\{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere;/u);
   });
   test("environment 1.0.1 features collapse to one line and omit the English difficulty label", () => {
     const data = {

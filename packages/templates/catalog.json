@@ -16,6 +16,12 @@
       "publication": { "development": true, "production": true }
     },
     {
+      "id": "敌人", "version": "1.0.2", "state": "published",
+      "schema": "src/core/adversary/1.0.2/schema.json",
+      "tabletopReplacements": [{ "id": "alternate-form", "label": "切换形态" }],
+      "publication": { "development": true, "production": true }
+    },
+    {
       "id": "武器",
       "version": "1.0.0",
       "state": "published",

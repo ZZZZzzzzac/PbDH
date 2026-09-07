@@ -20,6 +20,7 @@ export const templateFrontendManifest: readonly TemplateFrontendManifestEntry[] 
   entry("子职业", "1.0.0", () => import("./subclass/1.0.0/renderer.tsx").then((module) => module.subclassRendererRevision), true),
   entry("武器", "1.0.0", () => import("./weapon/1.0.0/renderer.tsx").then((module) => module.weaponRendererRevision)),
   entry("敌人", "1.0.1", () => import("./adversary/1.0.1/renderer.tsx").then((module) => module.adversaryRendererRevision)),
+  entry("敌人", "1.0.2", () => import("./adversary/1.0.2/renderer.tsx").then((module) => module.adversaryRendererRevision)),
   entry("种族", "1.0.1", () => import("./ancestry/1.0.1/renderer.tsx").then((module) => module.ancestryRendererRevision), true),
   entry("护甲", "1.0.1", () => import("./armor/1.0.1/renderer.tsx").then((module) => module.armorRendererRevision)),
   entry("社群", "1.0.1", () => import("./community/1.0.1/renderer.tsx").then((module) => module.communityRendererRevision), true),

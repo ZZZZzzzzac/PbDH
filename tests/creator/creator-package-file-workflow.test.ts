@@ -28,7 +28,7 @@ describe("Creator package file workflow", () => {
     expect(result.type).toBe("import-ready");
     if (result.type !== "import-ready") return;
     expect(result.candidate.document.package.name).toBe("牛头人破坏者测试资源包");
-    expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.1" });
+    expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.2" });
   });
 
   test("imports the repaired Four Sacred Beasts package without dropping resources", async () => {
@@ -42,7 +42,7 @@ describe("Creator package file workflow", () => {
     expect(result.candidate.document.resources).toHaveLength(67);
     expect(new Set(result.candidate.document.resources.map((resource) => (
       `${resource.template.id}@${resource.template.version}`
-    )))).toEqual(new Set(["敌人@1.0.1", "自由@1.0.2"]));
+    )))).toEqual(new Set(["敌人@1.0.2", "自由@1.0.2"]));
   });
 
   test("prepares, validates and writes one export result", async () => {

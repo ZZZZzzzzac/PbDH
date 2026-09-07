@@ -34,7 +34,7 @@ describe("Player third-party resource conversion", () => {
       version: (systemJson as SystemPackageDocument).package.version,
     }]);
     expect(result.candidate?.document.resources[0]).toMatchObject({
-      template: { id: "敌人", version: "1.0.1" },
+      template: { id: "敌人", version: "1.0.2" },
       data: { 名称: "夜巡者" },
       media: {},
     });

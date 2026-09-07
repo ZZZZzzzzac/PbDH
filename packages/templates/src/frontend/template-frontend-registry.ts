@@ -27,6 +27,8 @@ import { weaponAuthoring } from "./weapon/1.0.0/authoring-editor.tsx";
 import { weaponRendererRevision } from "./weapon/1.0.0/renderer.tsx";
 import { adversaryAuthoring as adversaryAuthoring101 } from "./adversary/1.0.1/authoring-editor.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision101 } from "./adversary/1.0.1/renderer.tsx";
+import { adversaryAuthoring as adversaryAuthoring102 } from "./adversary/1.0.2/authoring-editor.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision102 } from "./adversary/1.0.2/renderer.tsx";
 import { ancestryAuthoring as ancestryAuthoring101 } from "./ancestry/1.0.1/authoring-editor.tsx";
 import { ancestryRendererRevision as ancestryRendererRevision101 } from "./ancestry/1.0.1/renderer.tsx";
 import { armorAuthoring as armorAuthoring101 } from "./armor/1.0.1/authoring-editor.tsx";
@@ -75,6 +77,7 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(subclassAuthoring, subclassRendererRevision),
   binding(weaponAuthoring, weaponRendererRevision),
   binding(adversaryAuthoring101, adversaryRendererRevision101),
+  binding(adversaryAuthoring102, adversaryRendererRevision102),
   binding(ancestryAuthoring101, ancestryRendererRevision101),
   binding(armorAuthoring101, armorRendererRevision101),
   binding(communityAuthoring101, communityRendererRevision101),
