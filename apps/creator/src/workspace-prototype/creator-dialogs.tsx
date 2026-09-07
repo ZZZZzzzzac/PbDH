@@ -5,7 +5,7 @@ import type {
   TabletopDocumentCandidate,
 } from "@pbdh/contract-runtime";
 import type { LocalDocumentKind, LocalDocumentSync } from "@pbdh/local-storage";
-import { OperationStatus } from "@pbdh/platform-ui";
+import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 import { ResourcePackageInfoDialog, TemplateUpgradeDialog, type ResourcePackageEditorValue, type SystemPackageOption, type TemplateUpgradeDialogSelection } from "@pbdh/publication-ui";
 import type { ConversionDiagnostic, ResourceFormatId } from "@pbdh/resource-conversion";
 import { currentTemplates, listTemplateUpgradeRows } from "@pbdh/templates/core";
@@ -112,6 +112,7 @@ export function CreatorDialogs({
   if (dialog.kind === "publish" || dialog.kind === "package-metadata") {
     const publishing = dialog.kind === "publish";
     return <ResourcePackageInfoDialog
+      storageDescription={dialog.kind === "package-metadata" ? `包内图片：${formatStorageBytes(snapshot.workspaces.find((item) => item.key === dialog.workspaceKey)?.document.assets.reduce((sum, asset) => sum + Number(asset.byteLength), 0) ?? 0)}；云空间占用请在账号中查看。` : undefined}
       heading={publishing ? "发布到资源市场" : "编辑资源包信息"}
       submitLabel={publishing ? "发布当前版本" : "保存资源包信息"}
       coverUrl={snapshot.publicationCover.url}

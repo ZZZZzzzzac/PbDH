@@ -1519,6 +1519,20 @@ export function CreatorWorkspacePrototype({
     setPendingCreatorImage({ purpose: "resource-image", file, workspaceKey: active.key, resourceId: resource.id });
   }
 
+  function recropPortrait() {
+    if (!active || !resource?.media.portrait || creatorOperation) return;
+    const assetId = resource.media.portrait;
+    const bytes = active.media.get(assetId);
+    if (!bytes) {
+      notify("当前卡图数据不可用，请重新添加图片。");
+      return;
+    }
+    const asset = active.document.assets.find((candidate) => candidate.id === assetId);
+    const file = new File([bytes.slice()], "current-portrait.webp", { type: asset?.mediaType ?? "image/webp" });
+    setImageCropError(null);
+    setPendingCreatorImage({ purpose: "resource-image", file, workspaceKey: active.key, resourceId: resource.id });
+  }
+
   function createResource(template: { id: string; version: string }) {
     if (!active) return;
     const result = addTemplateResource(active, template.id, template.version);
@@ -1543,7 +1557,12 @@ export function CreatorWorkspacePrototype({
       case "import-pbres": importRef.current?.click(); return;
       case "import-third-party":
         conversionFormatRef.current = command.formatId;
-        conversionImportRef.current?.click();
+        if (conversionImportRef.current) {
+          conversionImportRef.current.accept = command.formatId === "dhsheet"
+            ? ".json,.dhcb"
+            : ".json,.dhcb,.png,application/json,image/png";
+          conversionImportRef.current.click();
+        }
         return;
       case "export-third-party": void exportPackage(command.formatId); return;
       case "export-package": void exportPackage(); return;
@@ -1644,6 +1663,7 @@ export function CreatorWorkspacePrototype({
       case "close-resource": closeWorkspaceTab(command.workspaceKey, command.resourceId); return;
       case "request-cloud-edit": requestWorkspaceCloudSyncAfterEditing(); return;
       case "choose-portrait": portraitRef.current?.click(); return;
+      case "recrop-portrait": recropPortrait(); return;
       case "remove-portrait": if (active && resource) replaceActive(removePortrait(active, resource.id)); return;
       case "set-editor-share": setEditorColumnShare(command.value); return;
       case "authoring-value": updateReferenceValue(command.path, command.value); return;

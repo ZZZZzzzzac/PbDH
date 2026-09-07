@@ -115,3 +115,11 @@ body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none
 @media print {
   .pbdh-platform-appbar { display: none !important; }
 }
+
+.pbdh-cloud-storage { margin: 16px 0; border-block: 1px solid #ded8d0; padding: 12px 0; font-size: 13px; }
+.pbdh-cloud-storage header { display: flex; justify-content: space-between; align-items: center; }
+.pbdh-cloud-storage progress { width: 100%; }
+.pbdh-storage-note { color: #756d65; line-height: 1.5; }
+.pbdh-storage-list { max-height: 240px; overflow: auto; }
+.pbdh-storage-list article { display: grid; gap: 5px; padding: 10px 0; border-bottom: 1px solid #e5dfd8; overflow-wrap: anywhere; }
+.pbdh-storage-list small { color: #756d65; }

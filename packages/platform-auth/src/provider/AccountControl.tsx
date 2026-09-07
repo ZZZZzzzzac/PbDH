@@ -7,11 +7,13 @@ export function AccountControl({
   icon,
   manageLabel,
   onManage,
+  accountContent,
 }: {
   className?: string;
   icon?: ReactNode;
   manageLabel?: string;
   onManage?: () => void;
+  accountContent?: ReactNode;
 }) {
   const auth = useAuth();
   const [open, setOpen] = useState(false);
@@ -92,6 +94,7 @@ export function AccountControl({
           {auth.profile.isAdmin && <span>管理员</span>}
         </div>
         <p className="pbdh-account-id">ID：{auth.profile.accountId}</p>
+        {accountContent}
         <div className="pbdh-account-actions">
           {onManage && <button type="button" onClick={() => { setOpen(false); onManage(); }}>{manageLabel ?? "管理"}</button>}
           <button className="primary" type="button" onClick={() => setOpen(false)}>完成</button>

@@ -1,0 +1,2572 @@
+{
+  "components": {
+    "responses": {
+      "ContractError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiErrorResponse"
+            }
+          }
+        },
+        "description": "使用稳定错误代码表示的失败。"
+      }
+    },
+    "schemas": {
+      "ApiError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "items": {
+              "$ref": "#/components/schemas/ApiFieldError"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "ApiErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "schemaVersion": {
+            "const": "1.1.0"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "error"
+        ],
+        "type": "object"
+      },
+      "ApiFieldError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "Body_publish": {
+        "properties": {
+          "archive": {
+            "format": "binary",
+            "title": "Archive",
+            "type": "string"
+          },
+          "metadata": {
+            "title": "Metadata",
+            "type": "string"
+          }
+        },
+        "required": [
+          "archive",
+          "metadata"
+        ],
+        "title": "Body_publish",
+        "type": "object"
+      },
+      "Body_update_publication_information_with_cover": {
+        "properties": {
+          "cover": {
+            "format": "binary",
+            "title": "Cover",
+            "type": "string"
+          },
+          "information": {
+            "title": "Information",
+            "type": "string"
+          }
+        },
+        "required": [
+          "information",
+          "cover"
+        ],
+        "title": "Body_update_publication_information_with_cover",
+        "type": "object"
+      },
+      "DocumentWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "assetIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Assetids",
+            "type": "array"
+          },
+          "baseRevision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baserevision"
+          },
+          "contractFamily": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Contractfamily",
+            "type": "string"
+          },
+          "contractVersion": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Contractversion",
+            "type": "string"
+          },
+          "documentKind": {
+            "enum": [
+              "creator-workspace",
+              "gm-tabletop-document",
+              "character-save"
+            ],
+            "title": "Documentkind",
+            "type": "string"
+          },
+          "force": {
+            "default": false,
+            "title": "Force",
+            "type": "boolean"
+          },
+          "mutationId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Mutationid",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          }
+        },
+        "required": [
+          "mutationId",
+          "documentKind",
+          "contractFamily",
+          "contractVersion",
+          "baseRevision",
+          "assetIds",
+          "payload"
+        ],
+        "title": "DocumentWrite",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LifecycleWrite": {
+        "additionalProperties": false,
+        "properties": {
+          "baseRevision": {
+            "minimum": 1.0,
+            "title": "Baserevision",
+            "type": "integer"
+          },
+          "mutationId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Mutationid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mutationId",
+          "baseRevision"
+        ],
+        "title": "LifecycleWrite",
+        "type": "object"
+      },
+      "SessionClaimRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "currentSessionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currentsessionid"
+          },
+          "replaceExisting": {
+            "default": false,
+            "title": "Replaceexisting",
+            "type": "boolean"
+          }
+        },
+        "title": "SessionClaimRequest",
+        "type": "object"
+      },
+      "StorageEntry": {
+        "properties": {
+          "deleted": {
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "mediaBytes": {
+            "title": "Mediabytes",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ownedBytes": {
+            "title": "Ownedbytes",
+            "type": "integer"
+          },
+          "reclaimableBytes": {
+            "title": "Reclaimablebytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "deleted",
+          "mediaBytes",
+          "ownedBytes",
+          "reclaimableBytes"
+        ],
+        "title": "StorageEntry",
+        "type": "object"
+      },
+      "StorageUsage": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/StorageEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "limitBytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limitbytes"
+          },
+          "unattachedBytes": {
+            "title": "Unattachedbytes",
+            "type": "integer"
+          },
+          "usedBytes": {
+            "title": "Usedbytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "usedBytes",
+          "limitBytes",
+          "unattachedBytes",
+          "entries"
+        ],
+        "title": "StorageUsage",
+        "type": "object"
+      },
+      "UsernameRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "UsernameRequest",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "siteSession": {
+        "in": "header",
+        "name": "X-PbDH-Session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "PbDH Platform 的身份、云文档、托管媒体和资源市场 HTTP 合约。领域 payload 仍由各自 Platform Contract 管理。",
+    "title": "PbDH Platform API",
+    "version": "1.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/config": {
+      "get": {
+        "operationId": "auth_config",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Auth Config",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [],
+        "summary": "Auth Config",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "me",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Me",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Me",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/auth/profile/username": {
+      "put": {
+        "operationId": "set_username",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsernameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Set Username",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Set Username",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/auth/session": {
+      "delete": {
+        "operationId": "release_session",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Release Session",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Release Session",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/auth/session/claim": {
+      "post": {
+        "operationId": "claim_session",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionClaimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Claim Session",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Claim Session",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/auth/session/status": {
+      "get": {
+        "operationId": "session_status",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Session Status",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Session Status",
+        "tags": [
+          "identity"
+        ]
+      }
+    },
+    "/api/cloud/documents": {
+      "get": {
+        "operationId": "list_documents",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "documentKind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "creator-workspace",
+                    "gm-tabletop-document",
+                    "character-save"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Documentkind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "includeDeleted",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Includedeleted",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Documents",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "List Documents",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/cloud/documents/{document_id}": {
+      "delete": {
+        "operationId": "delete_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "baseRevision",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Baserevision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Delete Document",
+        "tags": [
+          "cloud-documents"
+        ]
+      },
+      "get": {
+        "operationId": "get_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Document",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Get Document",
+        "tags": [
+          "cloud-documents"
+        ]
+      },
+      "put": {
+        "operationId": "put_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Put Document",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Put Document",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/cloud/documents/{document_id}/media/{asset_id}": {
+      "get": {
+        "operationId": "get_document_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "WebP 图片字节。"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Get Document Media",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/cloud/documents/{document_id}/restore": {
+      "post": {
+        "operationId": "restore_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Restore Document",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Restore Document",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/cloud/documents/{document_id}/trash": {
+      "post": {
+        "operationId": "trash_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Trash Document",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Trash Document",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/cloud/media/{asset_id}": {
+      "put": {
+        "operationId": "prepare_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "image/webp": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Prepare Media",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Prepare Media",
+        "tags": [
+          "cloud-documents"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [],
+        "summary": "Health",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/publications": {
+      "get": {
+        "operationId": "list_publications",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "templateId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Templateid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "targetSystemPackageId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Targetsystempackageid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "authorAccountId",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authoraccountid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "recent",
+              "enum": [
+                "relevance",
+                "recent",
+                "title"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Pagesize",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Publications",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [],
+        "summary": "List Publications",
+        "tags": [
+          "publications"
+        ]
+      },
+      "post": {
+        "operationId": "publish",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_publish"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Publish",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Publish",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/manageable": {
+      "get": {
+        "operationId": "list_manageable_publications",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Manageable Publications",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "List Manageable Publications",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}": {
+      "delete": {
+        "operationId": "delete_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Delete Publication",
+        "tags": [
+          "publications"
+        ]
+      },
+      "get": {
+        "operationId": "get_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Publication",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [],
+        "summary": "Get Publication",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/download": {
+      "get": {
+        "operationId": "download_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.pbdh.resource-package+zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Resource Package 便携归档。"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {},
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Download Publication",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/information": {
+      "patch": {
+        "operationId": "update_publication_information",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Publication Information",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Update Publication Information",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/information-with-cover": {
+      "patch": {
+        "operationId": "update_publication_information_with_cover",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_update_publication_information_with_cover"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Publication Information With Cover",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Update Publication Information With Cover",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/manage": {
+      "get": {
+        "operationId": "get_manageable_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Manageable Publication",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Get Manageable Publication",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/media/{asset_id}": {
+      "get": {
+        "operationId": "get_publication_media",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "WebP 图片字节。"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {},
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Get Publication Media",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/republish": {
+      "post": {
+        "operationId": "republish_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Republish Publication",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Republish Publication",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/publications/{publication_id}/unpublish": {
+      "post": {
+        "operationId": "unpublish_publication",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publication_id",
+            "required": true,
+            "schema": {
+              "title": "Publication Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Unpublish Publication",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Unpublish Publication",
+        "tags": [
+          "publications"
+        ]
+      }
+    },
+    "/api/storage/usage": {
+      "get": {
+        "operationId": "storage_usage",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-PbDH-Session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Pbdh-Session"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUsage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "$ref": "#/components/responses/ContractError"
+          },
+          "default": {
+            "$ref": "#/components/responses/ContractError"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [],
+            "siteSession": []
+          }
+        ],
+        "summary": "Storage Usage",
+        "tags": [
+          "storage"
+        ]
+      }
+    }
+  },
+  "x-pbdh-contract-family": "backend-api"
+}

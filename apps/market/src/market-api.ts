@@ -43,7 +43,7 @@ type ApiPublication = {
   document?: {
     package?: { name: string; version: string; description: string };
     targets?: Array<{ systemPackageId: string; version: string }>;
-    assets: Array<{ id: string }>;
+    assets: Array<{ id: string; byteLength?: string }>;
     resources: Array<ApiResourceSummary & { data: Record<string, unknown>; presentation: unknown; media: Record<string, string> }>;
   };
 };
@@ -443,6 +443,7 @@ function publicationFromApi(source: ApiPublication): Publication {
       url: mediaUrl(source.publicationId, source.coverAssetId),
       alt: `${source.title}封面`,
     },
+    mediaBytes: source.document?.assets.every((asset) => asset.byteLength !== undefined) ? source.document.assets.reduce((sum, asset) => sum + Number(asset.byteLength), 0) : undefined,
     archiveUrl: `/api/publications/${encodeURIComponent(source.publicationId)}/download`,
     archiveName: pbresArchiveName(source.document?.package?.name ?? source.title),
     resources: mappedResources,

@@ -75,9 +75,25 @@ export function numberedTextList(raw: JsonObject, arrayKey: string, prefix: stri
 export function namedFeature(value: unknown): JsonObject {
   const source = text(value).trim();
   if (!source) return { 名称: "", 描述: "" };
+  const heading = markdownFeatureHeadings(source)[0];
+  if (heading?.index === 0) return {
+    名称: heading[2]!.trim(), 描述: source.slice(heading[0].length).trim(),
+  };
   const match = /^(?::[^\[]+\[)?\*\*(.+?)\*\*\]?[：:]\s*([\s\S]*)$/u.exec(source)
     ?? /^([^\n：:]{1,80})[：:]\s*([\s\S]+)$/u.exec(source);
   return match ? { 名称: match[1]!.trim(), 描述: match[2]!.trim() } : { 名称: "", 描述: source };
+}
+
+function markdownFeatureHeadings(source: string) {
+  // 第三方常把冒号包在强调内，如 *__名称：__*；先消费完整标记再拆分正文。
+  return [...source.matchAll(/^([*_]{1,6})([^\n：:]+?)[：:]([*_]{1,6})/gmu)]
+    .flatMap((match) => {
+      const closing = [...match[1]!].reverse().join("");
+      if (!match[3]!.startsWith(closing)) return [];
+      // 正文可能紧接另一段强调，只消费属于标题的闭合标记。
+      match[0] = match[0].slice(0, match[0].length - match[3]!.length + closing.length);
+      return [match];
+    });
 }
 
 export function namedFeatureGroup(value: unknown): JsonObject {
@@ -107,6 +123,12 @@ export function namedFeatures(value: unknown): JsonObject[] {
   });
   const source = text(value).trim();
   if (!source) return [];
+  const headings = markdownFeatureHeadings(source);
+  if (headings[0]?.index === 0) return headings.map((heading, index) => ({
+    特性名称: heading[2]!.trim(),
+    特性原文: "",
+    特性描述: source.slice(heading.index! + heading[0].length, headings[index + 1]?.index ?? source.length).trim(),
+  }));
   const markers = [...source.matchAll(/:red\[\*\*(.*?)\*\*\]：/gu)];
   if (markers.length > 0) return markers.map((marker, index) => ({
     特性名称: marker[1]!.trim(),

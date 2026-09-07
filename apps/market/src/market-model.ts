@@ -36,6 +36,7 @@ export type Publication = {
   resourceCount: number;
   status: PublicationStatus;
   cover: { assetId: string; url: string; alt: string };
+  mediaBytes?: number;
   archiveUrl: string;
   archiveName: string;
   resources: PublicationResource[];

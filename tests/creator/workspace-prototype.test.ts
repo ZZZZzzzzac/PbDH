@@ -1076,12 +1076,12 @@ describe("Creator Workspace UI contracts", () => {
     expect(markup).toContain("导入 PBRES 格式");
     expect(markup).toContain("导入 ZZZ 格式");
     expect(markup).toContain("导入 Rink 格式");
-    expect(markup).toContain("导入 dhsheet 格式");
+    expect(markup).toContain("导入 dhcb 格式");
     expect(markup).toContain("导入不咕鸟格式");
     expect(markup).toContain("导出 PBRES 格式");
     expect(markup).toContain("导出 ZZZ 格式");
     expect(markup).toContain("导出 Rink 格式");
-    expect(markup).toContain("导出 dhsheet 格式");
+    expect(markup).toContain("导出 dhcb 格式");
     expect(markup).toContain("导出不咕鸟格式");
     expect(markup.match(/class="is-native-format"/gu)).toHaveLength(2);
   });

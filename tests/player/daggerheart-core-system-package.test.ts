@@ -55,7 +55,7 @@ async function loadEmbeddedResource(pathName: string) {
 }
 
 async function loadThirdPartyGmResource() {
-  const archive = new Uint8Array(readFileSync(path.join(root, "docs/third/daggerheart-core-gm.pbres")));
+  const archive = new Uint8Array(readFileSync(path.join(root, "tests/fixtures/resources/daggerheart-core-gm.pbres")));
   const loaded = await loadPbres(archive, validateResourcePackageCandidate);
   expect(loaded.diagnostics).toEqual([]);
   expect(loaded.candidate).toBeDefined();
@@ -210,7 +210,7 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(system.embeddedResources[0]?.path).toBe("resources/daggerheart-core.pbres");
     expect(preset.embeddedResourceIndex).toHaveLength(1);
     expect(existsSync(path.join(packageRoot, "resources/daggerheart-core-gm.pbres"))).toBe(false);
-    expect(existsSync(path.join(root, "docs/third/daggerheart-core-gm.pbres"))).toBe(true);
+    expect(existsSync(path.join(root, "tests/fixtures/resources/daggerheart-core-gm.pbres"))).toBe(true);
 
     const playerCandidate = await loadEmbeddedResource("resources/daggerheart-core.pbres");
     const playerIndex = preset.embeddedResourceIndex[0];

@@ -19,7 +19,7 @@ const root = process.cwd();
 
 describe("Template-owned authoring surfaces", () => {
   test("renders every exact Template through one authoring seam", () => {
-    expect(supportedTemplateFrontends).toHaveLength(28);
+    expect(supportedTemplateFrontends).toHaveLength(29);
 
     for (const frontend of supportedTemplateFrontends) {
       const template = templateRegistry.resolve(frontend.templateId, frontend.templateVersion);

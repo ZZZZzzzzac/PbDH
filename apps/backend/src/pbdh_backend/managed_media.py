@@ -115,6 +115,17 @@ class ManagedMedia:
         ).fetchone()
         return int(row["usage"])
 
+    def storage_usage(self, account_id: str) -> dict[str, object]:
+        from pbdh_backend.storage_usage import summarize_storage
+
+        connection = self._database.connect()
+        try:
+            connection.execute("BEGIN")
+            return summarize_storage(connection, account_id, self._account_quota_bytes)
+        finally:
+            connection.rollback()
+            connection.close()
+
     @staticmethod
     def authorize_document_assets(
         connection: sqlite3.Connection,

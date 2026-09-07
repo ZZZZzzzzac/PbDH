@@ -14,8 +14,10 @@ export function ResourcePackageInfoDialog({
   heading, submitLabel, coverUrl = "", value, systemPackageOptions,
   licenseOptions = [], busy = false, busyLabel = "正在处理…", submitDisabled = false,
   onChange, onChooseCover, onClose, onSubmit,
+  storageDescription,
 }: {
   heading: string;
+  storageDescription?: string;
   submitLabel: string;
   coverUrl?: string;
   value: ResourcePackageEditorValue;
@@ -57,6 +59,7 @@ export function ResourcePackageInfoDialog({
         <div className="pbdh-publication-copy-fields">
           <Field label="名称" value={value.package.name} disabled={busy} onChange={changeName} />
           <Field label="版本" value={value.package.version} disabled={busy} onChange={(version) => changePackage({ ...value.package, version })} />
+          {storageDescription && <p>{storageDescription}</p>}
           <Field multiline label="简介" value={value.package.description} disabled={busy} onChange={changeDescription} />
           <TargetSystemEditor value={value.package.targets} options={systemPackageOptions} disabled={busy} onChange={(targets) => changePackage({ ...value.package, targets })} />
           {publication && <>

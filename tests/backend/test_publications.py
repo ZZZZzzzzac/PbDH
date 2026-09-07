@@ -200,6 +200,11 @@ def test_market_media_is_retained_only_by_the_document_that_acquired_it(tmp_path
         },
     )
     assert acquired.status_code == 200, acquired.text
+    reader_usage = api.get("/api/storage/usage", headers=reader).json()
+    assert reader_usage["usedBytes"] == 0
+    assert reader_usage["entries"][0]["mediaBytes"] == len(media[asset_id])
+    assert reader_usage["entries"][0]["ownedBytes"] == 0
+    assert reader_usage["entries"][0]["reclaimableBytes"] == 0
     assert api.post(
         f"/api/publications/{publication_id}/unpublish",
         headers=author,

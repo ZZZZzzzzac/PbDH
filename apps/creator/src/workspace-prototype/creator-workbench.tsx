@@ -24,7 +24,7 @@ export type CreatorWorkbenchSnapshot = {
 export type CreatorWorkbenchCommand =
   | { type: "activate-resource" | "pin-resource" | "close-resource"; workspaceKey: string; resourceId: string }
   | { type: "reorder-resource-tab"; sourceKey: string; targetKey: string; placement: TabDropPlacement }
-  | { type: "request-cloud-edit" | "choose-portrait" | "remove-portrait" }
+  | { type: "request-cloud-edit" | "choose-portrait" | "recrop-portrait" | "remove-portrait" }
   | { type: "set-editor-share"; value: number }
   | { type: "authoring-value"; path: string; value: unknown }
   | { type: "replace-authoring-data"; data: Record<string, unknown> }
@@ -176,7 +176,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
         {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} frontend={templateFrontend} template={template} /> : null}
-        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
+        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "recrop-portrait" })}>重新裁剪</button> : null}{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
       </aside>
     </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
   </section>;

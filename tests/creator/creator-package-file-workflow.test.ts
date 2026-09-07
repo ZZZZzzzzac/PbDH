@@ -33,7 +33,7 @@ describe("Creator package file workflow", () => {
     if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
 
     expect(listTemplateUpgradeRows(inspected.candidate.document.resources)).toEqual([
-      { templateId: "敌人", currentVersion: "1.0.0", count: 1, targetVersions: ["1.0.1", "1.0.2", "1.0.3", "1.0.4"] },
+      { templateId: "敌人", currentVersion: "1.0.0", count: 1, targetVersions: ["1.0.1", "1.0.2", "1.0.3", "1.0.4", "1.0.5"] },
     ]);
     const upgraded = await upgradePbresTemplateVersions(inspected.candidate, [
       { templateId: "敌人", currentVersion: "1.0.0", targetVersion: "1.0.2" },

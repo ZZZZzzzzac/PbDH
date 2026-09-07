@@ -14,7 +14,7 @@ import { validateResourcePackageCandidate } from "../../apps/creator/src/workspa
 
 describe("Creator third-party resource conversion", () => {
   it("binds every local dhsheet card image to its converted resource", async () => {
-    const sourcePath = path.join(process.cwd(), "docs/third/与龙同行战役框架卡牌包.dhcb");
+    const sourcePath = path.join(process.cwd(), "tests/fixtures/resources/dragon-campaign.dhcb");
     const imported = await resourceConversionRegistry.import("dhsheet", {
       bytes: new Uint8Array(readFileSync(sourcePath)),
       fileName: path.basename(sourcePath),
@@ -208,7 +208,7 @@ describe("Creator third-party resource conversion", () => {
     const converted = await materializeCreatorResourceConversion(imported.batch);
 
     expect(converted.candidate?.document.resources.map((resource) => resource.template)).toEqual([
-      { id: "敌人", version: "1.0.4" },
+      { id: "敌人", version: "1.0.5" },
     ]);
     expect(converted.candidate).not.toBeNull();
     if (!converted.candidate) return;
@@ -216,6 +216,6 @@ describe("Creator third-party resource conversion", () => {
       writePbres(converted.candidate.document, converted.candidate.media),
       validateResourcePackageCandidate,
     );
-    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.4" });
+    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.5" });
   });
 });

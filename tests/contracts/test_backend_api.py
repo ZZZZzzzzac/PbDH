@@ -7,8 +7,8 @@ from pbdh_backend.app import create_app
 
 
 ROOT = Path(__file__).parents[2]
-OPENAPI_PATH = ROOT / "contracts/backend-api/1.0.0/openapi.json"
-CASES_PATH = ROOT / "contracts/conformance/backend-api/1.0.0/cases.json"
+OPENAPI_PATH = ROOT / "contracts/backend-api/1.1.0/openapi.json"
+CASES_PATH = ROOT / "contracts/conformance/backend-api/1.1.0/cases.json"
 
 
 def test_published_openapi_matches_backend_implementation() -> None:

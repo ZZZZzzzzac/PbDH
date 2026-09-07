@@ -147,7 +147,7 @@ export function SingleLineTextFit({
     maxFontSizePx,
     cssVariable,
   });
-  return <h1 ref={headingRef} className={className} data-single-line-text-fit="true">{children}</h1>;
+  return <h1 ref={headingRef} className={className} style={{ whiteSpace: "nowrap" }} data-single-line-text-fit="true">{children}</h1>;
 }
 
 export type CanonicalCardSurfaceProps<TData, TState> = {

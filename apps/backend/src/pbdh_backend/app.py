@@ -24,6 +24,7 @@ from pbdh_backend.publications.repository import PublicationRepository
 from pbdh_backend.publications.router import router as publications_router
 from pbdh_backend.publications.service import PublicationService
 from pbdh_backend.settings import Settings
+from pbdh_backend.storage_usage import router as storage_router
 
 
 def project_root() -> Path:
@@ -68,6 +69,7 @@ def create_app(
     application.add_exception_handler(ApiError, handle_api_error)
     application.add_exception_handler(RequestValidationError, handle_request_validation)
     application.include_router(identity_router)
+    application.include_router(storage_router)
     application.include_router(cloud_documents_router)
     application.include_router(publications_router)
 

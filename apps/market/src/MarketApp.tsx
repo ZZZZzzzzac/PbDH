@@ -8,7 +8,7 @@ import {
 } from "@pbdh/media-admission";
 import { CanonicalCardSurface, CardDisplay, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { useAuth } from "@pbdh/platform-auth/provider";
-import { ImageCropDialog, OperationStatus, usePlatformNotifications } from "@pbdh/platform-ui";
+import { ImageCropDialog, OperationStatus, usePlatformNotifications, formatStorageBytes } from "@pbdh/platform-ui";
 import {
   ResourcePackageInfoDialog,
   TemplateUpgradeDialog,
@@ -23,6 +23,7 @@ import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 import { marketDesign } from "../design.ts";
 import { catalogOptions } from "./catalog-options.ts";
 import { Icon } from "./Icons.tsx";
+import { publicationUpdateLabel } from "./publication-time.ts";
 import {
   deletePublication,
   loadManageablePublication,
@@ -202,6 +203,15 @@ function TemplateBadges({ publication, className }: { publication: Publication; 
   </div>;
 }
 
+function PublicationUpdatedTime({ updatedAt }: { updatedAt: string }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return <time dateTime={updatedAt} title={updatedAt}>{publicationUpdateLabel(updatedAt, now)}</time>;
+}
+
 export function PublicationCard({ publication, query, onOpen, onOpenAuthor, onOpenResource }: { publication: Publication; query: string; onOpen: () => void; onOpenAuthor: () => void; onOpenResource: (resourceId: string) => void }) {
   const resourceMatches = query.trim()
     ? publication.resources.filter((resource) => publication.matchedResourceIds?.includes(resource.id))
@@ -228,7 +238,7 @@ export function PublicationCard({ publication, query, onOpen, onOpenAuthor, onOp
       <p>{publication.summary}</p>
       {resourceMatches.length > 0 && <div className="resource-matches" aria-label="匹配的包内资源">{resourceMatches.slice(0, 3).map((resource) => <button type="button" key={resource.id} onClick={(event) => { event.stopPropagation(); onOpenResource(resource.id); }}>{resource.name}</button>)}</div>}
       <div className="publication-taxonomy"><TemplateBadges publication={publication} className="publication-template-badges" /><div className="publication-tags"><span>{publication.language}</span><span>{publication.systemLabels.join(" / ") || "未指定目标系统"}</span>{publication.tags.map((tag) => <span key={tag}>{tag}</span>)}</div></div>
-      <footer><time dateTime={publication.updatedAt}>2 天前更新</time></footer>
+      <footer><PublicationUpdatedTime updatedAt={publication.updatedAt} /></footer>
     </div>
   </article>;
 }
@@ -433,7 +443,7 @@ export function PublicationDetail({
       <CanonicalPreview publication={publication} resourceId={selectedResourceId} />
       <aside className="detail-side">
         {canAcquire && <section><h2>取得资源包</h2><AcquisitionActions publication={publication} onHandoff={onHandoff} onDownload={onDownload} downloadBusy={downloadBusy} /></section>}
-        <section><h2>当前资源包</h2><dl><dt>状态</dt><dd>{publication.status === "published" ? "已发布" : "未发布"}</dd><dt>版本</dt><dd>{publication.packageVersion}</dd><dt>更新时间</dt><dd>{publication.updatedAt}</dd><dt>资源</dt><dd>{publication.resourceCount} 项</dd><dt>语言</dt><dd>{publication.language}</dd><dt>目标系统</dt><dd>{publication.systemLabels.join(" / ") || "未指定"}</dd><dt>许可</dt><dd>{publication.license}</dd></dl>{canManage && <div className="publication-detail-management" aria-busy={Boolean(busyAction)}><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onEditMetadata}><Icon name="pencil" />编辑资源包信息</button><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onUpgradeTemplates}><Icon name="refresh" />升级模板</button>{publication.status === "published" ? <button type="button" className="danger-button publication-unpublish-button" disabled={Boolean(busyAction)} onClick={onUnpublish}>取消发布</button> : <><button type="button" className="primary-button" disabled={Boolean(busyAction)} onClick={onRepublish}>{busyAction === "republish" ? <MarketBusyContent label="正在重新发布…" /> : "重新发布"}</button><button type="button" className="danger-button" disabled={Boolean(busyAction)} onClick={onDelete}>永久删除</button></>}</div>}</section>
+        <section><h2>当前资源包</h2><dl><dt>状态</dt><dd>{publication.status === "published" ? "已发布" : "未发布"}</dd><dt>版本</dt><dd>{publication.packageVersion}</dd>{publication.mediaBytes !== undefined && <><dt>包内图片大小</dt><dd>{formatStorageBytes(publication.mediaBytes)}</dd></>}<dt>更新时间</dt><dd>{publication.updatedAt}</dd><dt>资源</dt><dd>{publication.resourceCount} 项</dd><dt>语言</dt><dd>{publication.language}</dd><dt>目标系统</dt><dd>{publication.systemLabels.join(" / ") || "未指定"}</dd><dt>许可</dt><dd>{publication.license}</dd></dl>{canManage && <div className="publication-detail-management" aria-busy={Boolean(busyAction)}><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onEditMetadata}><Icon name="pencil" />编辑资源包信息</button><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onUpgradeTemplates}><Icon name="refresh" />升级模板</button>{publication.status === "published" ? <button type="button" className="danger-button publication-unpublish-button" disabled={Boolean(busyAction)} onClick={onUnpublish}>取消发布</button> : <><button type="button" className="primary-button" disabled={Boolean(busyAction)} onClick={onRepublish}>{busyAction === "republish" ? <MarketBusyContent label="正在重新发布…" /> : "重新发布"}</button><button type="button" className="danger-button" disabled={Boolean(busyAction)} onClick={onDelete}>永久删除</button></>}</div>}</section>
       </aside>
     </div>
     {canAcquire && <button className="mobile-acquire" type="button" onClick={() => setMobileActions(true)}>取得资源包</button>}

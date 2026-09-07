@@ -6,6 +6,10 @@
 的转换信封，再由逐 Template 映射器产生候选；转换信封不得写入 Workspace、Resource
 Package、Market 或云存储。
 
+第三方数据映射到当前 Template 时，不支持 Markdown 的字段会去除强调、标题、链接等
+格式标记并保留文字。支持 Markdown 的正文及武器/护甲特性名称保持原样；此处理不修改
+来源 DTO，不作用于原生 PBRES 导入。新增模板映射时需同步核对 `plain-text.ts` 的正文路径。
+
 当前固定的兼容性证据：
 
 - `rinkcx`：`RinkCX/DH_TOOLS@bbf7faa1303c2bbeacfbe8ff339c7ba4cec6e10a`

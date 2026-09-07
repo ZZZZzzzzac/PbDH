@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E6%95%8C%E4%BA%BA/1.0.5/schema.json",
+  "title": "敌人 Template Data",
+  "type": "object",
+  "required": [
+    "名称", "位阶", "种类", "特性", "类型", "简介", "动机与战术",
+    "难度", "重度伤害阈值", "严重伤害阈值", "生命点", "压力点", "攻击命中",
+    "攻击武器", "攻击范围", "攻击伤害", "攻击属性", "经历"
+  ],
+  "properties": {
+    "名称": { "type": "string" },
+    "原文": { "type": "string" },
+    "位阶": { "type": "string" },
+    "种类": { "type": "string" },
+    "特性": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["特性名称", "特性类型", "特性描述"],
+        "properties": {
+          "特性名称": { "type": "string" },
+          "特性原文": { "type": "string" },
+          "特性类型": { "type": "string" },
+          "特性描述": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "类型": { "type": "string" },
+    "简介": { "type": "string" },
+    "动机与战术": { "type": "string" },
+    "难度": { "type": "string" },
+    "重度伤害阈值": { "type": "string" },
+    "严重伤害阈值": { "type": "string" },
+    "生命点": { "type": "string" },
+    "压力点": { "type": "string" },
+    "攻击命中": { "type": "string" },
+    "攻击武器": { "type": "string" },
+    "攻击范围": { "type": "string" },
+    "攻击伤害": { "type": "string" },
+    "攻击属性": { "type": "string" },
+    "经历": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -50,9 +50,9 @@ export type CreatorResourceExplorerCommand =
   | { type: "delete-node"; workspaceKey: string; node: WorkspaceNodeRef };
 
 const thirdPartyFormats: Array<{ id: Exclude<ResourceFormatId, "pbres">; label: string }> = [
+  { id: "dhsheet", label: " dhcb 格式" },
   { id: "zzz", label: " ZZZ 格式" },
   { id: "rinkcx", label: " Rink 格式" },
-  { id: "dhsheet", label: " dhsheet 格式" },
   { id: "kid", label: "不咕鸟格式" },
 ];
 
@@ -145,6 +145,7 @@ export function CreatorResourceExplorer({
       <button className="explorer-new-package" type="button" title="新建资源包" aria-label="新建资源包" disabled={Boolean(snapshot.operation)} onClick={() => execute({ type: "new-package" })}><Icon name="packagePlus" /></button>
       <button type="button" title="新建资源" aria-label="新建资源" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "new-resource" })}><Icon name="filePlus" /></button>
       <button type="button" title="新建文件夹" aria-label="新建文件夹" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "new-folder" })}><Icon name="folderPlus" /></button>
+      <span className="explorer-toolbar-divider" aria-hidden="true" />
       <div className="explorer-import-menu">
         <button type="button" title="导入资源包" aria-label="导入资源包" aria-haspopup="menu" disabled={Boolean(snapshot.operation)}><Icon name="upload" /></button>
         <div className="explorer-import-menu-panel" role="menu">
@@ -159,6 +160,7 @@ export function CreatorResourceExplorer({
           {thirdPartyFormats.map((format) => <button key={format.id} type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: format.id })}>{`导出${format.label}`}</button>)}
         </div>
       </div>
+      <span className="explorer-toolbar-divider" aria-hidden="true" />
       <button className="explorer-publish-package" type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "publish-package" })}><Icon name="store" /></button>
     </div></header>
     {snapshot.operation && snapshot.operationLabel && <div className="creator-operation-strip"><OperationStatus label={snapshot.operationLabel} size="regular" /></div>}

@@ -336,7 +336,7 @@ describe("enemy-card-r1 structure and visual baseline", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("53fba796e32e5ed30df688b1bbad179c5071d181704063f4db6d6a48aa476b49");
+    expect(signature).toBe("d203d2405f65462046269c8c4fea504460ccc855942eb8f89262748d14215053");
   });
 
   test("removes empty English titles instead of reserving their layout space", () => {

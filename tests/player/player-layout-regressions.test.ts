@@ -66,7 +66,7 @@ describe("Player layout regressions", () => {
 
     expect(source).not.toContain("转换第三方资源");
     expect(source).not.toContain("选择来源格式");
-    for (const label of ["导入ZZZ格式", "导入Rink格式", "导入dhsheet格式", "导入不咕鸟格式"]) {
+    for (const label of ["导入ZZZ格式", "导入Rink格式", "导入dhcb格式", "导入不咕鸟格式"]) {
       expect(source).toContain(label);
     }
     expect(source).toContain('aria-label="第三方资源转换报告"');

@@ -13,6 +13,7 @@ import { weaponTemplate } from "./weapon/1.0.0/capability.ts";
 import { adversaryTemplate as adversaryTemplate101 } from "./adversary/1.0.1/capability.ts";
 import { adversaryTemplate as adversaryTemplate102 } from "./adversary/1.0.2/capability.ts";
 import { adversaryTemplate as adversaryTemplate104 } from "./adversary/1.0.4/capability.ts";
+import { adversaryTemplate as adversaryTemplate105 } from "./adversary/1.0.5/capability.ts";
 import { adversaryTemplate as adversaryTemplate103 } from "./adversary/1.0.3/capability.ts";
 import { ancestryTemplate as ancestryTemplate101 } from "./ancestry/1.0.1/capability.ts";
 import { armorTemplate as armorTemplate101 } from "./armor/1.0.1/capability.ts";
@@ -65,7 +66,7 @@ export type {
 } from "./types.ts";
 
 export const currentTemplates = Object.freeze([
-  adversaryTemplate104,
+  adversaryTemplate105,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,
@@ -79,7 +80,7 @@ export const currentTemplates = Object.freeze([
 ]);
 
 export {
-  adversaryTemplate104 as currentAdversaryTemplate,
+  adversaryTemplate105 as currentAdversaryTemplate,
   ancestryTemplate101 as currentAncestryTemplate,
   armorTemplate101 as currentArmorTemplate,
   communityTemplate101 as currentCommunityTemplate,
@@ -174,6 +175,7 @@ export const supportedTemplates = Object.freeze([
   adversaryTemplate102,
   adversaryTemplate103,
   adversaryTemplate104,
+  adversaryTemplate105,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,

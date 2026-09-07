@@ -123,6 +123,7 @@ describe("first-party template capabilities", () => {
         attribution: { artworkCredit: "", sourceLabel: "" },
       }));
       expect(markup).toContain('data-single-line-text-fit="true"');
+      expect(markup).toContain('white-space:nowrap');
     }
     for (const styles of [
       adversaryRendererStyles, ancestryRendererStyles, armorRendererStyles,

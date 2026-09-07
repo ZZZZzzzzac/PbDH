@@ -10,6 +10,8 @@ import {
 } from "react";
 
 import { AccountControl } from "@pbdh/platform-auth/provider";
+import { CloudStoragePanel } from "./CloudStoragePanel.tsx";
+export { formatStorageBytes } from "./CloudStoragePanel.tsx";
 
 import "./styles.css";
 
@@ -261,6 +263,7 @@ export function PlatformAppBar({
         icon={<BarIcon kind="user" />}
         manageLabel={accountManageLabel}
         onManage={onAccountManage}
+        accountContent={<CloudStoragePanel />}
       />
       <button
         className="pbdh-platform-mobile-button"

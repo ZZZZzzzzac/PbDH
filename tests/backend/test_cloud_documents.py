@@ -79,6 +79,35 @@ def document_write(
     }
 
 
+def test_account_storage_deduplicates_packages_and_tracks_recycle_release(tmp_path: Path) -> None:
+    api = client(tmp_path, account_media_quota_bytes=100_000_000)
+    owner = claim(api, "storage-owner")
+    other = claim(api, "storage-other")
+    content = webp()
+    asset_id = f"sha256:{hashlib.sha256(content).hexdigest()}"
+    assert api.put(f"/api/cloud/media/{asset_id}", headers={**owner, "Content-Type": "image/webp"}, content=content).status_code == 200
+    for index in range(2):
+        assert api.put(f"/api/cloud/documents/storage-{index}", headers=owner, json=document_write(
+            f"storage-write-{index}", "creator-workspace", {"document": {"package": {"name": f"包 {index}"}}}, [asset_id], None,
+        )).status_code == 200
+    usage = api.get("/api/storage/usage", headers=owner).json()
+    assert usage["usedBytes"] == len(content)
+    assert usage["limitBytes"] == 100_000_000
+    assert len(usage["entries"]) == 2
+    assert all(entry["ownedBytes"] == len(content) and entry["reclaimableBytes"] == 0 for entry in usage["entries"])
+    assert api.get("/api/storage/usage", headers=other).json()["entries"] == []
+    assert api.get("/api/storage/usage").status_code == 401
+    assert api.post("/api/cloud/documents/storage-0/trash", headers=owner,
+                    json={"mutationId": "storage-trash", "baseRevision": 1}).status_code == 200
+    recycled = api.get("/api/storage/usage", headers=owner).json()
+    assert recycled["usedBytes"] == len(content)
+    assert any(entry["deleted"] for entry in recycled["entries"])
+    assert api.delete("/api/cloud/documents/storage-0?baseRevision=2", headers=owner).status_code == 204
+    remaining = api.get("/api/storage/usage", headers=owner).json()
+    assert remaining["usedBytes"] == len(content)
+    assert remaining["entries"][0]["reclaimableBytes"] == len(content)
+
+
 def test_cloud_document_requires_media_before_atomic_revision_commit(tmp_path: Path) -> None:
     api = client(tmp_path)
     owner = claim(api, "author-one")

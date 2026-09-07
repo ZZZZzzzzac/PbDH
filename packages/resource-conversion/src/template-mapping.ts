@@ -15,6 +15,7 @@ import {
 
 import { isObject, namedFeatureGroup, namedFeatures, text } from "./shared.ts";
 import { validateTemplateData } from "./template-validation.ts";
+import { normalizePlainTextFields } from "./plain-text.ts";
 import type { ConversionDiagnostic, GameResourceCandidate, JsonObject, JsonValue, TemporaryResource } from "./types.ts";
 
 function adversaryFeature(value: JsonValue): JsonObject {
@@ -186,16 +187,22 @@ export function mapTemporaryResourceToCandidate(resource: TemporaryResource): Ga
   const mapped = templateData(resource);
   if (!mapped) return undefined;
   const { template } = mapped;
+  const data = resource.source.formatId === "pbres"
+    ? mapped.data
+    : normalizePlainTextFields(mapped.data, resource.kind);
+  if (resource.source.formatId !== "pbres" && resource.kind === "weapon") {
+    data.距离 = text(data.距离).replaceAll("范围", "").trim();
+  }
   const diagnostics: ConversionDiagnostic[] = validateTemplateData(
     template.id,
     template.version,
-    mapped.data,
+    data,
     template,
   );
   return {
     sourceId: resource.sourceId,
     template: { id: template.id, version: template.version },
-    data: mapped.data,
+    data,
     diagnostics,
   };
 }

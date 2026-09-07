@@ -128,7 +128,7 @@ describe("种族 Template 1.0.0", () => {
     expect(textMarkup).toContain('data-card-footer="true"');
     expect(textMarkup).toContain("Anthony Jones");
     expect(textMarkup).toContain("DH Core 061/270");
-    expect(textMarkup).toContain('<div class="ancestry-title-row"><h1 data-single-line-text-fit="true">龙人</h1><div class="ancestry-kicker">种族</div></div>');
+    expect(textMarkup).toContain('<div class="ancestry-title-row"><h1 style="white-space:nowrap" data-single-line-text-fit="true">龙人</h1><div class="ancestry-kicker">种族</div></div>');
     expect(textMarkup).not.toContain("reference-card");
     expect(splitMarkup).toContain("ancestry-card is-split");
     expect(splitMarkup).toContain("blob:dragonborn");

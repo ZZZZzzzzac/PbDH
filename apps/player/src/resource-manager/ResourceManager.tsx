@@ -15,7 +15,7 @@ import {
 import { CanonicalCardSurface, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
-import { OperationStatus } from "@pbdh/platform-ui";
+import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 
 import {
   type InstalledResourcePackage,
@@ -80,9 +80,9 @@ type ConversionReview = {
 };
 
 const thirdPartyFormats: Array<{ id: Exclude<ResourceFormatId, "pbres">; label: string }> = [
+  { id: "dhsheet", label: "导入dhcb格式" },
   { id: "zzz", label: "导入ZZZ格式" },
   { id: "rinkcx", label: "导入Rink格式" },
-  { id: "dhsheet", label: "导入dhsheet格式" },
   { id: "kid", label: "导入不咕鸟格式" },
 ];
 
@@ -252,7 +252,7 @@ function DialogSurface({
         <div className="license-row"><span>当前系统</span><b>{currentSystem.package.name} v{currentSystem.package.version}</b></div>
         <div className="license-row"><span>资源包目标</span><b>{resourceTargetLabel(document)}</b></div>
         <div className="license-row"><span>快照</span><b>{document.snapshotDigest}</b></div>
-        <div className="license-row"><span>文件检查</span><b>结构与图片完整</b></div>
+        <div className="license-row"><span>包内图片大小</span><b>{formatStorageBytes(document.assets.reduce((sum, asset) => sum + Number(asset.byteLength), 0))}</b></div><div className="license-row"><span>文件检查</span><b>结构与图片完整</b></div>
         <div className="type-summary"><strong>资源类型</strong><div>{routeCounts.map(([label, count]) => <span key={label}><b>{label}</b>{count}</span>)}</div></div>
         <div className="license-row"><span>许可</span><b>{document.license.label}</b></div>
       </div>
@@ -471,7 +471,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
     const action = embeddedResourcePackageAction(installed, embeddedPackageIndex);
     return <div key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`}>
       <button className="package-row-select" type="button" onClick={() => setSelectedId(installed.document.package.id)}>
-        <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version}</small></div>
+        <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version} · 图片 {formatStorageBytes(installed.document.assets.reduce((sum, asset) => sum + Number(asset.byteLength), 0))}</small></div>
         <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span></p>
       </button>
       {action === "remove" ? (
@@ -482,7 +482,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
 
   return <div className="resource-manager-layer" style={style}>
     <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
-      <header className="manager-bar"><h1>资源管理器</h1><span>{operation === "checking" ? <OperationStatus label="正在检查资源包…" /> : operation === "converting" ? <OperationStatus label="正在转换资源…" /> : currentSystem.package.name}</span><div className="manager-import-actions">{thirdPartyFormats.map((format) => <button key={format.id} type="button" disabled={Boolean(operation)} onClick={() => { conversionFormatRef.current = format.id; conversionInputRef.current?.click(); }}>{format.label}</button>)}<button className="install" disabled={Boolean(operation)} onClick={() => inputRef.current?.click()}>导入pbres格式</button></div><button className="close" aria-label="关闭资源管理器" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
+      <header className="manager-bar"><h1>资源管理器</h1><span>{operation === "checking" ? <OperationStatus label="正在检查资源包…" /> : operation === "converting" ? <OperationStatus label="正在转换资源…" /> : currentSystem.package.name}</span><div className="manager-import-actions"><button className="install" disabled={Boolean(operation)} onClick={() => inputRef.current?.click()}>导入pbres格式</button>{thirdPartyFormats.map((format) => <button key={format.id} type="button" disabled={Boolean(operation)} onClick={() => { conversionFormatRef.current = format.id; if (conversionInputRef.current) { conversionInputRef.current.accept = format.id === "dhsheet" ? ".json,.dhcb" : ".json,.dhcb,.png,application/json,image/png"; conversionInputRef.current.click(); } }}>{format.label}</button>)}</div><button className="close" aria-label="关闭资源管理器" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
       <div className="manager-body">
         <aside className="package-list"><div className="list-title"><h2>已安装资源包</h2><span>{packages.length}</span></div>
           <input aria-label="搜索资源包" placeholder="搜索资源包" value={packageQuery} onChange={(event) => setPackageQuery(event.target.value)} />

@@ -31,8 +31,10 @@ import { adversaryAuthoring as adversaryAuthoring102 } from "./adversary/1.0.2/a
 import { adversaryRendererRevision as adversaryRendererRevision102 } from "./adversary/1.0.2/renderer.tsx";
 import { adversaryAuthoring as adversaryAuthoring103 } from "./adversary/1.0.3/authoring-editor.tsx";
 import { adversaryAuthoring as adversaryAuthoring104 } from "./adversary/1.0.4/authoring-editor.tsx";
+import { adversaryAuthoring as adversaryAuthoring105 } from "./adversary/1.0.5/authoring-editor.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision103 } from "./adversary/1.0.3/renderer.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision104 } from "./adversary/1.0.4/renderer.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision105 } from "./adversary/1.0.5/renderer.tsx";
 import { ancestryAuthoring as ancestryAuthoring101 } from "./ancestry/1.0.1/authoring-editor.tsx";
 import { ancestryRendererRevision as ancestryRendererRevision101 } from "./ancestry/1.0.1/renderer.tsx";
 import { armorAuthoring as armorAuthoring101 } from "./armor/1.0.1/authoring-editor.tsx";
@@ -88,6 +90,7 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(adversaryAuthoring102, adversaryRendererRevision102),
   binding(adversaryAuthoring103, adversaryRendererRevision103),
   binding(adversaryAuthoring104, adversaryRendererRevision104),
+  binding(adversaryAuthoring105, adversaryRendererRevision105),
   binding(ancestryAuthoring101, ancestryRendererRevision101),
   binding(armorAuthoring101, armorRendererRevision101),
   binding(communityAuthoring101, communityRendererRevision101),

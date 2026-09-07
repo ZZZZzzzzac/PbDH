@@ -159,7 +159,7 @@ describe("weapon-card-r2 Canonical Surface", () => {
       .update("\0")
       .update(markup)
       .digest("hex");
-    expect(signature).toBe("7099c82a735330967bc7d4de4ce380ed2bf1eeac8ed2325bc5f6ecdd8fda50d8");
+    expect(signature).toBe("15442f9df27656f2dc084ab51d45d0a0f0b78cc170507e9e9f7ff36d08b215e7");
   });
 
   test("Renderer Registry resolves exact immutable Revision without fallback", () => {
