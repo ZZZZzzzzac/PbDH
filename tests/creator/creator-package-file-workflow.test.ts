@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 
 import { loadPbres } from "@pbdh/contract-runtime";
-import { currentTemplates } from "@pbdh/templates/core";
+import { upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
+import { currentTemplates, listTemplateUpgradeRows } from "@pbdh/templates/core";
 import { describe, expect, test } from "vitest";
 
 import { runCreatorPackageFileWorkflow } from "../../apps/creator/src/workspace-prototype/creator-package-file-workflow.ts";
@@ -16,10 +17,6 @@ const archive = new Uint8Array(readFileSync(new URL(
   "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres",
   import.meta.url,
 )));
-const fourSacredBeastsArchive = new Uint8Array(readFileSync(new URL(
-  "../../docs/third/published/《四圣兽》通用敌人数据卡.pbres",
-  import.meta.url,
-)));
 
 describe("Creator package file workflow", () => {
   test("inspects a package archive without mutating workspace state", async () => {
@@ -28,21 +25,23 @@ describe("Creator package file workflow", () => {
     expect(result.type).toBe("import-ready");
     if (result.type !== "import-ready") return;
     expect(result.candidate.document.package.name).toBe("牛头人破坏者测试资源包");
-    expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.2" });
+    expect(result.candidate.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.0" });
   });
 
-  test("imports the repaired Four Sacred Beasts package without dropping resources", async () => {
-    const result = await runCreatorPackageFileWorkflow({
-      type: "inspect-import",
-      bytes: fourSacredBeastsArchive,
-    });
+  test("keeps imported Template versions until the user chooses a reachable upgrade target", async () => {
+    const inspected = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
+    if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
 
-    expect(result.type).toBe("import-ready");
-    if (result.type !== "import-ready") return;
-    expect(result.candidate.document.resources).toHaveLength(67);
-    expect(new Set(result.candidate.document.resources.map((resource) => (
-      `${resource.template.id}@${resource.template.version}`
-    )))).toEqual(new Set(["敌人@1.0.2", "自由@1.0.2"]));
+    expect(listTemplateUpgradeRows(inspected.candidate.document.resources)).toEqual([
+      { templateId: "敌人", currentVersion: "1.0.0", count: 1, targetVersions: ["1.0.1", "1.0.2", "1.0.3"] },
+    ]);
+    const upgraded = await upgradePbresTemplateVersions(inspected.candidate, [
+      { templateId: "敌人", currentVersion: "1.0.0", targetVersion: "1.0.2" },
+    ]);
+
+    expect(upgraded.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.2" });
+    expect(upgraded.candidate?.document.package.version).toBe("1.0.1");
+    expect(inspected.candidate.document.resources[0]?.template.version).toBe("1.0.0");
   });
 
   test("prepares, validates and writes one export result", async () => {

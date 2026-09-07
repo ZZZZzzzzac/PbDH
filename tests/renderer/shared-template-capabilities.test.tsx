@@ -45,11 +45,13 @@ import {
 } from "../../packages/templates/src/frontend/index.ts";
 import { adversaryRendererRevision as adversaryRendererRevisionV101, adversaryRendererStyles as adversaryRendererStylesV101 } from "../../packages/templates/src/frontend/adversary/1.0.1/renderer.tsx";
 import { adversaryRendererRevision as adversaryRendererRevisionV102, adversaryRendererStyles as adversaryRendererStylesV102 } from "../../packages/templates/src/frontend/adversary/1.0.2/renderer.tsx";
+import { adversaryRendererRevision as adversaryRendererRevisionV103, adversaryRendererStyles as adversaryRendererStylesV103 } from "../../packages/templates/src/frontend/adversary/1.0.3/renderer.tsx";
 import { ancestryRendererRevision as ancestryRendererRevisionV101, ancestryRendererStyles as ancestryRendererStylesV101 } from "../../packages/templates/src/frontend/ancestry/1.0.1/renderer.tsx";
 import { armorRendererRevision as armorRendererRevisionV101, armorRendererStyles as armorRendererStylesV101 } from "../../packages/templates/src/frontend/armor/1.0.1/renderer.tsx";
 import { communityRendererRevision as communityRendererRevisionV101, communityRendererStyles as communityRendererStylesV101 } from "../../packages/templates/src/frontend/community/1.0.1/renderer.tsx";
 import { domainRendererRevision as domainRendererRevisionV101, domainRendererStyles as domainRendererStylesV101 } from "../../packages/templates/src/frontend/domain/1.0.1/renderer.tsx";
 import { environmentRendererRevision as environmentRendererRevisionV101, environmentRendererStyles as environmentRendererStylesV101 } from "../../packages/templates/src/frontend/environment/1.0.1/renderer.tsx";
+import { environmentRendererRevision as environmentRendererRevisionV102, environmentRendererStyles as environmentRendererStylesV102 } from "../../packages/templates/src/frontend/environment/1.0.2/renderer.tsx";
 import { freeRendererRevision as freeRendererRevisionV101, freeRendererStyles as freeRendererStylesV101 } from "../../packages/templates/src/frontend/free/1.0.1/renderer.tsx";
 import { itemRendererRevision as itemRendererRevisionV101, itemRendererStyles as itemRendererStylesV101 } from "../../packages/templates/src/frontend/item/1.0.1/renderer.tsx";
 import { professionRendererStyles as professionRendererStylesV101 } from "../../packages/templates/src/frontend/profession/1.0.1/renderer.tsx";
@@ -294,6 +296,30 @@ describe("first-party template capabilities", () => {
     expect(environmentRendererStylesV101).toContain("text-overflow:ellipsis;white-space:nowrap");
     expect(environmentRendererStylesV101).not.toContain(".environment-difficulty small");
   });
+  test("new adversary and environment renderers flow feature fields in one text line", () => {
+    const adversaryData = { ...structuredClone(adversaryTemplate.defaultData), 特性: [{ 特性名称: "猛扑", 特性原文: "Pounce", 特性类型: "动作", 特性描述: "向目标发动攻击。" }] };
+    const adversaryMarkup = renderToStaticMarkup(adversaryRendererRevisionV103.render({
+      data: adversaryData,
+      state: adversaryRendererRevisionV103.defaultState(adversaryData),
+      assets: {}, presentation: { mode: "text", fixedRatio: false }, attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+    const environmentData = { ...structuredClone(environmentTemplate.defaultData), 特性: [{ 特性名称: "浓烟", 特性原文: "Smoke", 特性类型: "被动", 特性描述: "遮蔽视线。", 引导问题: "" }] };
+    const environmentMarkup = renderToStaticMarkup(environmentRendererRevisionV102.render({
+      data: environmentData,
+      state: environmentRendererRevisionV102.defaultState(environmentData),
+      assets: {}, presentation: { mode: "text", fixedRatio: false }, attribution: { artworkCredit: "", sourceLabel: "" },
+    }));
+
+    expect(adversaryMarkup.indexOf("猛扑")).toBeLessThan(adversaryMarkup.indexOf("Pounce"));
+    expect(adversaryMarkup.indexOf("Pounce")).toBeLessThan(adversaryMarkup.indexOf("动作"));
+    expect(adversaryMarkup).toContain('<span class="enemy-feature-separator">：</span><span class="enemy-feature-copy">');
+    expect(environmentMarkup.indexOf("浓烟")).toBeLessThan(environmentMarkup.indexOf("Smoke"));
+    expect(environmentMarkup.indexOf("Smoke")).toBeLessThan(environmentMarkup.indexOf("被动"));
+    expect(environmentMarkup).toContain('<span class="environment-feature-separator">：</span><span class="environment-feature-copy">');
+    expect(adversaryRendererStylesV103).not.toContain("grid-template-columns: 76px minmax(0, 1fr)");
+    expect(environmentRendererStylesV102).not.toContain("grid-template-columns:76px minmax(0,1fr);align-items:start;gap:8px");
+  });
+
   test("item feature box follows its content height", () => {
     expect(itemRendererStylesV101).toContain(".item-card-feature{min-height:0;flex:none;");
     expect(itemRendererStylesV101).not.toContain(".item-card-feature{min-height:0;flex:1;");

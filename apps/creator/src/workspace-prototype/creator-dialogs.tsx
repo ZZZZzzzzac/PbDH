@@ -6,9 +6,9 @@ import type {
 } from "@pbdh/contract-runtime";
 import type { LocalDocumentKind, LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus } from "@pbdh/platform-ui";
-import { ResourcePackageInfoDialog, type ResourcePackageEditorValue, type SystemPackageOption } from "@pbdh/publication-ui";
+import { ResourcePackageInfoDialog, TemplateUpgradeDialog, type ResourcePackageEditorValue, type SystemPackageOption, type TemplateUpgradeDialogSelection } from "@pbdh/publication-ui";
 import type { ConversionDiagnostic, ResourceFormatId } from "@pbdh/resource-conversion";
-import { currentTemplates } from "@pbdh/templates/core";
+import { currentTemplates, listTemplateUpgradeRows } from "@pbdh/templates/core";
 
 import { Field } from "./creator-controls.tsx";
 import { isSemanticVersion } from "./creator-file-actions.ts";
@@ -23,7 +23,7 @@ import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { CreatorWorkspace, WorkspaceNodeRef } from "./workspace-model.ts";
 
 export type CloudDocumentKind = Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">;
-export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "convert-package" | "export-package" | "publication-cover";
+export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "convert-package" | "export-package" | "publication-cover" | "upgrade-templates";
 
 export type CreatorConversionReview = {
   formatId: Exclude<ResourceFormatId, "pbres">;
@@ -37,6 +37,7 @@ export type CreatorConversionReview = {
 export type CreatorDialogState =
   | { kind: "new" }
   | { kind: "package-metadata"; workspaceKey: string }
+  | { kind: "template-upgrade"; workspaceKey: string }
   | { kind: "new-resource" }
   | { kind: "publish" }
   | { kind: "diagnostics"; title: string; diagnostics: ContractDiagnostic[] }
@@ -62,6 +63,7 @@ export type CreatorDialogCommand =
   | { type: "set-package-info"; value: ResourcePackageEditorValue }
   | { type: "create-resource"; template: { id: string; version: string } }
   | { type: "save-package" | "close-workspace"; workspaceKey: string }
+  | { type: "upgrade-templates"; workspaceKey: string; selections: readonly TemplateUpgradeDialogSelection[] }
   | { type: "export-conversion" | "accept-conversion"; review: CreatorConversionReview }
   | { type: "commit-incoming" | "save-aside"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
   | { type: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef }
@@ -94,6 +96,18 @@ export function CreatorDialogs({
   execute(command: CreatorDialogCommand): void;
 }) {
   if (!dialog) return null;
+
+  if (dialog.kind === "template-upgrade") {
+    const workspace = snapshot.workspaces.find((item) => item.key === dialog.workspaceKey);
+    if (!workspace) return null;
+    return <TemplateUpgradeDialog
+      rows={listTemplateUpgradeRows(workspace.document.resources)}
+      packageVersion={workspace.document.package.version}
+      busy={snapshot.creatorOperation === "upgrade-templates"}
+      onClose={() => execute({ type: "close" })}
+      onSubmit={(selections) => execute({ type: "upgrade-templates", workspaceKey: workspace.key, selections })}
+    />;
+  }
 
   if (dialog.kind === "publish" || dialog.kind === "package-metadata") {
     const publishing = dialog.kind === "publish";

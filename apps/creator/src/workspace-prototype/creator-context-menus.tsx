@@ -18,7 +18,7 @@ type TabletopInstance = TabletopDocumentModel["instances"][number];
 
 export type CreatorContextMenuCommand =
   | { type: "close" | "new-package" | "import-package" | "export-package" | "publish-package" | "new-resource" | "new-folder" }
-  | { type: "sync-workspace" | "resolve-workspace-conflict" | "edit-package" | "close-package"; workspaceKey: string }
+  | { type: "sync-workspace" | "resolve-workspace-conflict" | "edit-package" | "upgrade-templates" | "close-package"; workspaceKey: string }
   | { type: "place-selected" | "delete-selected-resources" }
   | { type: "place-resource" | "open-resource" | "open-resource-tab" | "duplicate-resource" | "copy-resource" | "delete-resource"; workspaceKey: string; resourceId: string }
   | { type: "view-instance" | "edit-instance" | "duplicate-instance" | "delete-instances" | "rotate-instance" | "flip-instance" }
@@ -63,6 +63,7 @@ export function CreatorContextMenus({
     <button type="button" role="menuitem" onClick={() => execute({ type: "import-package" })}>导入 .pbres</button>
     <button type="button" role="menuitem" onClick={() => execute({ type: "export-package" })}>导出 .pbres</button>
     <button type="button" role="menuitem" onClick={() => execute({ type: "edit-package", workspaceKey: state.workspaceKey })}>编辑资源包信息</button>
+    <button type="button" role="menuitem" onClick={() => execute({ type: "upgrade-templates", workspaceKey: state.workspaceKey })}>升级模板</button>
     <button type="button" role="menuitem" onClick={() => execute({ type: "publish-package" })}>发布到资源市场</button>
     <i />
     <button type="button" role="menuitem" onClick={() => execute({ type: "new-resource" })}>新建资源</button>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
+import { loadPbres } from "@pbdh/contract-runtime";
 import {
   createBrowserImageAdmission,
   publicationCoverPolicy,
@@ -10,10 +11,13 @@ import { useAuth } from "@pbdh/platform-auth/provider";
 import { ImageCropDialog, OperationStatus, usePlatformNotifications } from "@pbdh/platform-ui";
 import {
   ResourcePackageInfoDialog,
+  TemplateUpgradeDialog,
   type ResourcePackageEditorValue,
   type SystemPackageOption,
 } from "@pbdh/publication-ui";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type SurfaceResource } from "@pbdh/resource-renderer/core";
+import { upgradePbresTemplateVersions, validatePbresConversionCandidate } from "@pbdh/resource-conversion";
+import { listTemplateUpgradeRows } from "@pbdh/templates/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
 
 import { marketDesign } from "../design.ts";
@@ -28,6 +32,7 @@ import {
   loadPublication,
   MarketApiError,
   republishPublication,
+  replacePublicationArchive,
   updatePublicationInformation,
   unpublishLoadedPublication,
 } from "./market-api.ts";
@@ -57,7 +62,7 @@ type ViewState = MarketRoute | {
   resourceId?: string;
 };
 type PublicationOperation = "republish" | "unpublish" | "delete";
-type MarketOperation = PublicationOperation | "metadata" | "download";
+type MarketOperation = PublicationOperation | "metadata" | "download" | "template-upgrade";
 type MarketCoverDraft = {
   assetId: string;
   blob: Blob;
@@ -380,6 +385,7 @@ export function PublicationDetail({
   onHandoff,
   onDownload,
   onEditMetadata,
+  onUpgradeTemplates = () => {},
   onUnpublish,
   onRepublish,
   onDelete,
@@ -396,13 +402,14 @@ export function PublicationDetail({
   onHandoff: (target: HandoffTarget, creatorMode?: "import" | "fork") => void;
   onDownload: () => void;
   onEditMetadata: () => void;
+  onUpgradeTemplates?: () => void;
   onUnpublish: () => void;
   onRepublish: () => void;
   onDelete: () => void;
   onShare: () => void;
   onOpenAuthor: () => void;
   canManage: boolean;
-  busyAction?: PublicationOperation;
+  busyAction?: MarketOperation;
   downloadBusy?: boolean;
 }) {
   const selectedResourceId = resourceId ?? publication.resources[0]!.id;
@@ -426,7 +433,7 @@ export function PublicationDetail({
       <CanonicalPreview publication={publication} resourceId={selectedResourceId} />
       <aside className="detail-side">
         {canAcquire && <section><h2>取得资源包</h2><AcquisitionActions publication={publication} onHandoff={onHandoff} onDownload={onDownload} downloadBusy={downloadBusy} /></section>}
-        <section><h2>当前资源包</h2><dl><dt>状态</dt><dd>{publication.status === "published" ? "已发布" : "未发布"}</dd><dt>版本</dt><dd>{publication.packageVersion}</dd><dt>更新时间</dt><dd>{publication.updatedAt}</dd><dt>资源</dt><dd>{publication.resourceCount} 项</dd><dt>语言</dt><dd>{publication.language}</dd><dt>目标系统</dt><dd>{publication.systemLabels.join(" / ") || "未指定"}</dd><dt>许可</dt><dd>{publication.license}</dd></dl>{canManage && <div className="publication-detail-management" aria-busy={Boolean(busyAction)}><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onEditMetadata}><Icon name="pencil" />编辑资源包信息</button>{publication.status === "published" ? <button type="button" className="danger-button publication-unpublish-button" disabled={Boolean(busyAction)} onClick={onUnpublish}>取消发布</button> : <><button type="button" className="primary-button" disabled={Boolean(busyAction)} onClick={onRepublish}>{busyAction === "republish" ? <MarketBusyContent label="正在重新发布…" /> : "重新发布"}</button><button type="button" className="danger-button" disabled={Boolean(busyAction)} onClick={onDelete}>永久删除</button></>}</div>}</section>
+        <section><h2>当前资源包</h2><dl><dt>状态</dt><dd>{publication.status === "published" ? "已发布" : "未发布"}</dd><dt>版本</dt><dd>{publication.packageVersion}</dd><dt>更新时间</dt><dd>{publication.updatedAt}</dd><dt>资源</dt><dd>{publication.resourceCount} 项</dd><dt>语言</dt><dd>{publication.language}</dd><dt>目标系统</dt><dd>{publication.systemLabels.join(" / ") || "未指定"}</dd><dt>许可</dt><dd>{publication.license}</dd></dl>{canManage && <div className="publication-detail-management" aria-busy={Boolean(busyAction)}><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onEditMetadata}><Icon name="pencil" />编辑资源包信息</button><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onUpgradeTemplates}><Icon name="refresh" />升级模板</button>{publication.status === "published" ? <button type="button" className="danger-button publication-unpublish-button" disabled={Boolean(busyAction)} onClick={onUnpublish}>取消发布</button> : <><button type="button" className="primary-button" disabled={Boolean(busyAction)} onClick={onRepublish}>{busyAction === "republish" ? <MarketBusyContent label="正在重新发布…" /> : "重新发布"}</button><button type="button" className="danger-button" disabled={Boolean(busyAction)} onClick={onDelete}>永久删除</button></>}</div>}</section>
       </aside>
     </div>
     {canAcquire && <button className="mobile-acquire" type="button" onClick={() => setMobileActions(true)}>取得资源包</button>}
@@ -559,6 +566,7 @@ export function MarketApp({
   const [coverDraft, setCoverDraft] = useState<MarketCoverDraft | null>(null);
   const [coverCropWorking, setCoverCropWorking] = useState(false);
   const [coverCropError, setCoverCropError] = useState<string | null>(null);
+  const [templateUpgradePublicationId, setTemplateUpgradePublicationId] = useState<string | null>(null);
   const [unpublishPublicationId, setUnpublishPublicationId] = useState<string | null>(null);
   const [deletePublicationId, setDeletePublicationId] = useState<string | null>(null);
   const [publicationOperation, setPublicationOperation] = useState<{ publicationId: string; action: MarketOperation } | null>(null);
@@ -568,6 +576,7 @@ export function MarketApp({
     ? (detailPublication?.id === view.publicationId ? detailPublication : catalog.find((item) => item.id === view.publicationId))
     : undefined;
   const managedPublication = publication?.id === managedPublicationId ? publication : undefined;
+  const publicationPendingTemplateUpgrade = publication?.id === templateUpgradePublicationId ? publication : undefined;
   const publicationPendingUnpublish = publication?.id === unpublishPublicationId ? publication : undefined;
   const publicationPendingDelete = publication?.id === deletePublicationId ? publication : undefined;
 
@@ -735,6 +744,30 @@ export function MarketApp({
     }
   }
 
+  async function upgradeMarketPublication(selections: Parameters<typeof upgradePbresTemplateVersions>[1]) {
+    if (!publicationPendingTemplateUpgrade || !auth.credentials || publicationOperation) return;
+    setPublicationOperation({ publicationId: publicationPendingTemplateUpgrade.id, action: "template-upgrade" });
+    try {
+      const archive = await loadPublicationArchive(publicationPendingTemplateUpgrade.id, auth.credentials);
+      const loaded = await loadPbres(new Uint8Array(await archive.arrayBuffer()), validatePbresConversionCandidate);
+      if (!loaded.candidate) throw new Error("市场资源包未通过读取校验，原版本没有变化。");
+      const upgraded = await upgradePbresTemplateVersions(loaded.candidate, selections);
+      if (!upgraded.candidate) throw new Error("模板升级后的资源包未通过校验，原版本没有变化。");
+      await replacePublicationArchive(publicationPendingTemplateUpgrade, upgraded.candidate, auth.credentials);
+      const detailed = await loadManageablePublication(publicationPendingTemplateUpgrade.id, auth.credentials);
+      setDetailPublication(detailed);
+      setCatalog((current) => upsertPublication(current, detailed));
+      setManageableCatalog((current) => detailed.status === "unpublished" ? upsertPublication(current, detailed) : current.filter((item) => item.id !== detailed.id));
+      setCatalogRevision((current) => current + 1);
+      setTemplateUpgradePublicationId(null);
+      notify(`模板已升级，资源包版本更新为 ${detailed.packageVersion}`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "无法升级市场资源包");
+    } finally {
+      setPublicationOperation(null);
+    }
+  }
+
   async function confirmUnpublish() {
     if (!publicationPendingUnpublish || !auth.credentials || publicationOperation) return;
     setPublicationOperation({ publicationId: publicationPendingUnpublish.id, action: "unpublish" });
@@ -892,7 +925,7 @@ export function MarketApp({
     {view.page === "missing"
       ? <section className="missing-publication"><Icon name="package" /><h1>{view.resourceId ? "这张资源已经无法公开查看" : "这个资源包已经无法公开查看"}</h1><p>资源包可能已由作者取消公开，或者链接中的编号不存在。</p><button type="button" onClick={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))}>返回资源市场</button></section>
       : publication
-        ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))} onSelectResource={(resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: publication.id, resourceId }, window.location.origin, basePath))} onShare={() => void navigator.clipboard.writeText(locationHref).then(() => notify("链接已复制"), () => notify("无法复制链接"))} onOpenAuthor={() => onLocationNavigate(marketRouteUrl({ page: "author", accountId: publication.ownerAccountId }, window.location.origin, basePath))} onHandoff={openHandoff} onDownload={() => void downloadCurrentPublication()} onEditMetadata={() => { discardCoverDraft(); setManagedPublicationId(publication.id); }} onUnpublish={() => setUnpublishPublicationId(publication.id)} onRepublish={() => void republishManagedPublication(publication)} onDelete={() => setDeletePublicationId(publication.id)} canManage={Boolean(auth.credentials && canManagePublication(publication, auth.credentials.accountId, auth.profile?.isAdmin))} busyAction={publicationOperation?.publicationId === publication.id && (publicationOperation.action === "republish" || publicationOperation.action === "unpublish" || publicationOperation.action === "delete") ? publicationOperation.action : undefined} downloadBusy={publicationOperation?.publicationId === publication.id && publicationOperation.action === "download"} />
+        ? <PublicationDetail publication={publication} resourceId={view.page === "detail" ? view.resourceId : undefined} onBack={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))} onSelectResource={(resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: publication.id, resourceId }, window.location.origin, basePath))} onShare={() => void navigator.clipboard.writeText(locationHref).then(() => notify("链接已复制"), () => notify("无法复制链接"))} onOpenAuthor={() => onLocationNavigate(marketRouteUrl({ page: "author", accountId: publication.ownerAccountId }, window.location.origin, basePath))} onHandoff={openHandoff} onDownload={() => void downloadCurrentPublication()} onEditMetadata={() => { discardCoverDraft(); setManagedPublicationId(publication.id); }} onUpgradeTemplates={() => setTemplateUpgradePublicationId(publication.id)} onUnpublish={() => setUnpublishPublicationId(publication.id)} onRepublish={() => void republishManagedPublication(publication)} onDelete={() => setDeletePublicationId(publication.id)} canManage={Boolean(auth.credentials && canManagePublication(publication, auth.credentials.accountId, auth.profile?.isAdmin))} busyAction={publicationOperation?.publicationId === publication.id && (publicationOperation.action === "republish" || publicationOperation.action === "unpublish" || publicationOperation.action === "delete" || publicationOperation.action === "template-upgrade") ? publicationOperation.action : undefined} downloadBusy={publicationOperation?.publicationId === publication.id && publicationOperation.action === "download"} />
         : <Discovery query={query} filters={filters} results={results} facets={facets} total={total} sort={sort} page={page} hasMore={hasMore} heading={view.page === "author" ? `${results[0]?.author ?? "作者"}分享的资源包` : "资源市场"} onQuery={(value) => { setQuery(value); setPage(1); }} onFilters={(value) => { setFilters(value); setPage(1); }} onSort={(value) => { setSort(value); setPage(1); }} onPage={setPage} onOpen={openPublication} onOpenAuthor={(item) => onLocationNavigate(marketRouteUrl({ page: "author", accountId: item.ownerAccountId }, window.location.origin, basePath))} onOpenResource={(item, resourceId) => onLocationNavigate(marketRouteUrl({ page: "detail", publicationId: item.id, resourceId }, window.location.origin, basePath))} />}
     {handoff && publication && <HandoffDialog intent={handoff} publication={publication} onClose={() => setHandoff(null)} onComplete={completeHandoff} />}
     <input ref={coverInputRef} hidden type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={chooseMarketCover} />
@@ -904,6 +937,13 @@ export function MarketApp({
       processingError={coverCropError}
       onCancel={() => { setPendingCoverFile(null); setCoverCropError(null); }}
       onConfirm={(selection) => void applyMarketCoverCrop(selection)}
+    />}
+    {publicationPendingTemplateUpgrade && <TemplateUpgradeDialog
+      rows={listTemplateUpgradeRows(publicationPendingTemplateUpgrade.resources.flatMap((resource) => isSurfaceResource(resource.source) ? [{ template: resource.source.template }] : []))}
+      packageVersion={publicationPendingTemplateUpgrade.packageVersion}
+      busy={publicationOperation?.publicationId === publicationPendingTemplateUpgrade.id && publicationOperation.action === "template-upgrade"}
+      onClose={() => setTemplateUpgradePublicationId(null)}
+      onSubmit={(selections) => void upgradeMarketPublication(selections)}
     />}
     {managedPublication && <PublicationManagementDialog key={`${managedPublication.id}:${managedPublication.status}`} publication={managedPublication} coverUrl={coverDraft?.url} systemPackageOptions={systemPackageOptions} busy={publicationOperation?.publicationId === managedPublication.id && publicationOperation.action === "metadata"} onChooseCover={() => coverInputRef.current?.click()} onClose={closePublicationManagement} onSave={updateManagedPublication} />}
     {publicationPendingUnpublish && <UnpublishPublicationDialog publication={publicationPendingUnpublish} busy={publicationOperation?.publicationId === publicationPendingUnpublish.id && publicationOperation.action === "unpublish"} onClose={() => setUnpublishPublicationId(null)} onConfirm={confirmUnpublish} />}

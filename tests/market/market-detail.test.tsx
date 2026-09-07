@@ -188,11 +188,10 @@ describe("Market publication detail", () => {
     expect(publishMarkup).toContain('aria-busy="true"');
     expect(publishMarkup).toContain("正在发布整包…");
     expect(publishMarkup).toContain("pbdh-operation-status-spinner");
-    expect(publishMarkup).toContain('<input list=');
-    expect(publishMarkup).toContain('<datalist');
+    expect(publishMarkup).toContain('class="pbdh-license-field"');
+    expect(publishMarkup).toContain('aria-label="展开许可类型选项"');
     expect(publishMarkup).toContain('value="自定义许可"');
-    expect(publishMarkup).toContain('value="DPCGL"');
-    expect(publishMarkup).not.toContain('<select');
+    expect(publishMarkup).not.toContain('<datalist');
     expect(unpublishMarkup).toContain('aria-busy="true"');
     expect(unpublishMarkup).toContain("正在取消发布…");
     expect(unpublishMarkup).toContain("pbdh-operation-status-spinner");

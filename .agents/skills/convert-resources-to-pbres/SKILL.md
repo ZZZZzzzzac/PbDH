@@ -14,6 +14,16 @@ description: 将非标准桌游资源（第三方卡包、Markdown、纯文本�
 3. 阅读 [references/repository-contract.md](references/repository-contract.md)，确认仓库当前 Contract、Template、Adapter、PBRES 和图片入口。不要硬编码本技能编写时的版本号或字段。
 4. 原生文本转换必须阅读 [references/semantic-extraction.md](references/semantic-extraction.md)。进入验收前必须阅读 [references/validation-review.md](references/validation-review.md)。
 
+## 转换前确认与包级元数据约定
+
+读完原始素材、盘点边界与许可之后，正式生成候选或封包之前，必须先与用户确认下列项目，不得擅自选定：
+
+1. **目录层级结构与 `attribution.sourceLabel`**：向用户确认 PBRES 内部资源的目录组织形式（如位阶+种类、扁平到位阶、场景根+敌人/环境，或完全平铺），以及全部资源的来源标签 `sourceLabel`。
+2. **半角括号**：写入 `data` 的文本统一使用半角括号 `()`，尤其是特性名称（如 `无情(2)` 而非 `无情（2）`）。
+3. **License 缺失时留空**：来源没有可确认的许可声明时，`license` 使用“未声明许可”。
+4. **资源包简介格式**：PBRES `package.description` 按如下格式书写，并附原始网页链接（找不到链接时向用户询问）：
+   `《{资源包名称}》作者：{作者} 译者：{译者}\n{原始网页链接}`
+
 ## 不可跳过的六步流程
 
 ### 1. 阅读本体并选择入口

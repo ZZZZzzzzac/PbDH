@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { OperationStatus } from "@pbdh/platform-ui";
 
 import "./styles.css";
@@ -30,7 +30,6 @@ export function ResourcePackageInfoDialog({
   onSubmit: () => void;
 }) {
   const publication = value.publication;
-  const licenseListId = useId();
   const changePackage = (nextPackage: ResourcePackageInfoValue) => onChange({ ...value, package: nextPackage });
   const changePublication = (nextPublication: PublicationFormValue) => onChange({ ...value, publication: nextPublication });
   function submit(event: FormEvent) {
@@ -63,7 +62,7 @@ export function ResourcePackageInfoDialog({
           {publication && <>
             <div className="pbdh-publication-meta-fields">
               <Field label="内容语言" value={publication.language} disabled={busy} onChange={(language) => changePublication({ ...publication, language })} />
-              <label><span>许可类型</span><input list={licenseListId} disabled={busy} value={publication.licenseId} onChange={(event) => changePublication({ ...publication, licenseId: event.target.value })} /><datalist id={licenseListId}>{licenseOptions.map((license) => <option key={license.id} value={license.label} />)}</datalist></label>
+              <LicenseField value={publication.licenseId} options={licenseOptions} disabled={busy} onChange={(licenseId) => changePublication({ ...publication, licenseId })} />
             </div>
             <TagEditor tags={publication.tags} disabled={busy} onChange={(tags) => changePublication({ ...publication, tags })} />
           </>}
@@ -72,6 +71,43 @@ export function ResourcePackageInfoDialog({
       <footer><button type="button" disabled={busy} onClick={onClose}>取消</button><button type="submit" className="primary" disabled={busy || submitDisabled}>{busy ? <OperationStatus label={busyLabel} /> : submitLabel}</button></footer>
     </form>
   </div>;
+}
+
+function LicenseField({ value, options, disabled, onChange }: { value: string; options: readonly PublicationLicenseOption[]; disabled: boolean; onChange: (value: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return <label className="pbdh-license-field"><span>许可类型</span><div><input disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} /><button type="button" disabled={disabled} aria-label="展开许可类型选项" aria-expanded={open} onClick={() => setOpen((current) => !current)}><i aria-hidden="true" /></button>{open && <span role="listbox" aria-label="许可类型预设选项">{options.map((option) => <button type="button" role="option" aria-selected={value === option.label} key={option.id} onClick={() => { onChange(option.label); setOpen(false); }}>{option.label}</button>)}</span>}</div></label>;
+}
+
+export type TemplateUpgradeDialogRow = {
+  templateId: string;
+  currentVersion: string;
+  count: number;
+  targetVersions: readonly string[];
+};
+
+export type TemplateUpgradeDialogSelection = {
+  templateId: string;
+  currentVersion: string;
+  targetVersion: string;
+};
+
+export function TemplateUpgradeDialog({ rows, packageVersion, busy = false, onClose, onSubmit }: {
+  rows: readonly TemplateUpgradeDialogRow[];
+  packageVersion: string;
+  busy?: boolean;
+  onClose: () => void;
+  onSubmit: (selections: readonly TemplateUpgradeDialogSelection[]) => void;
+}) {
+  const [targets, setTargets] = useState(() => Object.fromEntries(rows.map((row) => [
+    `${row.templateId}@${row.currentVersion}`,
+    row.targetVersions.at(-1) ?? row.currentVersion,
+  ])));
+  const selections = rows.map((row) => ({
+    templateId: row.templateId,
+    currentVersion: row.currentVersion,
+    targetVersion: targets[`${row.templateId}@${row.currentVersion}`] ?? row.currentVersion,
+  }));
+  return <div className="pbdh-publication-backdrop" role="presentation" onMouseDown={() => { if (!busy) onClose(); }}><section className="pbdh-template-upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="pbdh-template-upgrade-heading" aria-busy={busy} onMouseDown={(event) => event.stopPropagation()}><header><h2 id="pbdh-template-upgrade-heading">升级模板</h2><button type="button" aria-label="关闭" disabled={busy} onClick={onClose}><CloseIcon /></button></header>{rows.length > 0 ? <><table><thead><tr><th>模板</th><th>当前版本</th><th>目标版本</th></tr></thead><tbody>{rows.map((row) => { const key = `${row.templateId}@${row.currentVersion}`; return <tr key={key}><td><strong>{row.templateId}</strong>{row.count > 1 && <small>${row.count} 项资源</small>}</td><td>{row.currentVersion}</td><td><select disabled={busy} value={targets[key]} onChange={(event) => setTargets((current) => ({ ...current, [key]: event.target.value }))}>{row.targetVersions.map((version) => <option key={version} value={version}>{version}</option>)}</select></td></tr>; })}</tbody></table><p>升级会生成新的资源包快照，并从当前资源包版本 {packageVersion} 自动提升到满足发布规则的最低版本。</p></> : <p className="pbdh-template-upgrade-empty">当前资源包中的模板均为最新版本。</p>}<footer><button type="button" disabled={busy} onClick={onClose}>取消</button><button type="button" className="primary" disabled={busy || rows.length === 0} onClick={() => onSubmit(selections)}>{busy ? <OperationStatus label="正在升级模板…" /> : "升级"}</button></footer></section></div>;
 }
 
 function TargetSystemEditor({ value, options, disabled, onChange }: { value: ResourcePackageTargetValue[]; options: readonly SystemPackageOption[]; disabled: boolean; onChange: (value: ResourcePackageTargetValue[]) => void }) {

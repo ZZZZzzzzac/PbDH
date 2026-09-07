@@ -4,7 +4,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { describe, expect, test } from "vitest";
 
 import { computeResourcePackageSnapshotDigest } from "@pbdh/contract-runtime";
-import { currentTemplates, templateRegistry } from "@pbdh/templates/core";
+import { currentTemplates, listTemplateUpgradeRows, templateRegistry, upgradeTemplateResources } from "@pbdh/templates/core";
 import { resolveTemplateFrontend, supportedTemplateFrontends } from "@pbdh/templates/frontend";
 
 import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
@@ -77,6 +77,20 @@ describe("Resource Template support matrix", () => {
     const validate = new Ajv2020({ allErrors: true, strict: true }).compile(template.schema);
     expect(validate(upgraded), `${key(template)}: ${JSON.stringify(validate.errors)}`).toBe(true);
     expect(upgraded).not.toBe(previous!.defaultData);
+  });
+
+  test("lists every reachable manual upgrade target and upgrades only selected Template versions", () => {
+    const resources = [
+      { id: "enemy", template: { id: "敌人", version: "1.0.1" }, data: templateRegistry.resolve("敌人", "1.0.1")!.defaultData },
+      { id: "environment", template: { id: "环境", version: "1.0.1" }, data: templateRegistry.resolve("环境", "1.0.1")!.defaultData },
+    ];
+    expect(listTemplateUpgradeRows(resources)).toEqual([
+      { templateId: "敌人", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2", "1.0.3"] },
+      { templateId: "环境", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2"] },
+    ]);
+    const upgraded = upgradeTemplateResources(resources, [{ templateId: "敌人", currentVersion: "1.0.1", targetVersion: "1.0.2" }]);
+    expect(upgraded.map((resource) => resource.template.version)).toEqual(["1.0.2", "1.0.1"]);
+    expect(resources.map((resource) => resource.template.version)).toEqual(["1.0.1", "1.0.1"]);
   });
 
   test("字段审阅 JSON 对 published 1.0.0 Templates 各提供一个合法资源", async () => {

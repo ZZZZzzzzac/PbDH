@@ -1,11 +1,6 @@
-import {
-  computeResourcePackageSnapshotDigest,
-  type ContractDiagnostic,
-  type ResourcePackageCandidate,
-} from "@pbdh/contract-runtime";
-import { upgradeTemplateResourceToCurrent } from "@pbdh/templates/core";
-
-import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
+import type { ContractDiagnostic, ResourcePackageCandidate } from "@pbdh/contract-runtime";
+import { upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
+import type { TemplateUpgradeSelection } from "@pbdh/templates/core";
 
 export class CreatorTemplateUpgradeError extends Error {
   constructor(readonly diagnostics: ContractDiagnostic[]) {
@@ -18,19 +13,9 @@ export async function upgradeCreatorTemplateCandidate(
     document: ResourcePackageCandidate["document"];
     media: ReadonlyMap<string, Uint8Array>;
   },
+  selections: readonly TemplateUpgradeSelection[],
 ): Promise<ResourcePackageCandidate> {
-  const document = structuredClone(candidate.document);
-  let changed = false;
-  document.resources = document.resources.map((resource) => {
-    const upgraded = upgradeTemplateResourceToCurrent(resource);
-    changed ||= upgraded.template.version !== resource.template.version;
-    return upgraded;
-  });
-  if (!changed) return { document: candidate.document, media: new Map(candidate.media) };
-  document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, candidate.media);
-  const diagnostics = await validateResourcePackageCandidate(document, candidate.media);
-  if (diagnostics.some((item) => item.severity === "error")) {
-    throw new CreatorTemplateUpgradeError(diagnostics);
-  }
-  return { document, media: new Map(candidate.media) };
+  const result = await upgradePbresTemplateVersions(candidate, selections);
+  if (!result.candidate) throw new CreatorTemplateUpgradeError(result.diagnostics);
+  return result.candidate;
 }

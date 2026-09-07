@@ -7,7 +7,7 @@ import { ResourceConversionRegistry } from "./registry.ts";
 
 export { dhsheetAdapter } from "./adapters/dhsheet.ts";
 export { kidAdapter } from "./adapters/kid.ts";
-export { pbresAdapter, validatePbresConversionCandidate } from "./adapters/pbres.ts";
+export { pbresAdapter, upgradePbresTemplateVersions, validatePbresConversionCandidate } from "./adapters/pbres.ts";
 export { rinkcxAdapter } from "./adapters/rinkcx.ts";
 export { zzzAdapter } from "./adapters/zzz.ts";
 export { ResourceConversionRegistry } from "./registry.ts";

@@ -43,6 +43,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
   const suppressTabClickRef = useRef(false);
   const active = snapshot.activeWorkspace;
   const resource = snapshot.activeResource;
+  const templateUpgradeAvailable = resource ? templateRegistry.upgradeTargets(resource.template.id, resource.template.version).length > 0 : false;
   const templateFrontend = resource
     ? resolveTemplateFrontend(resource.template.id, resource.template.version)
     : undefined;
@@ -160,7 +161,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
         />)}
         <dl className="resource-metadata" aria-label="调试信息">
           <div><dt>模板</dt><dd>{resource.template.id}</dd></div>
-          <div><dt>模板版本</dt><dd>{resource.template.version}</dd></div>
+          <div><dt>模板版本</dt><dd>{resource.template.version}{templateUpgradeAvailable && <b className="resource-template-update">新!</b>}</dd></div>
           <div><dt>渲染器</dt><dd>{template?.rendererRevision ?? "未知"}</dd></div>
           <div><dt>资源包版本</dt><dd>{active.document.package.version}</dd></div>
           <div><dt>合约版本</dt><dd>{active.document.contractVersion}</dd></div>

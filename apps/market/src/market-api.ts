@@ -1,3 +1,5 @@
+import { writePbres, type ResourcePackageCandidate } from "@pbdh/contract-runtime";
+
 import type {
   CatalogPage,
   CatalogQuery,
@@ -217,6 +219,39 @@ export async function loadPublicationArchive(
   const response = await fetcher(`/api/publications/${encodeURIComponent(publicationId)}/download`, { headers });
   if (!response.ok) throw new Error("无法下载该资源包。");
   return response.blob();
+}
+
+export async function replacePublicationArchive(
+  publication: Publication,
+  candidate: ResourcePackageCandidate,
+  credentials: PlatformCredentials,
+  fetcher: typeof fetch = fetch,
+): Promise<Publication> {
+  if (!credentials.canWrite) {
+    throw new MarketApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
+  }
+  const bytes = writePbres(candidate.document, candidate.media);
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  const form = new FormData();
+  form.set("metadata", JSON.stringify({
+    title: publication.packageName ?? publication.title,
+    summary: publication.packageDescription ?? publication.summary,
+    language: publication.language,
+    tags: publication.tags,
+    coverAssetId: publication.cover.assetId,
+  }));
+  form.set("archive", new Blob([buffer], { type: "application/vnd.pbdh.resource-package+zip" }), publication.archiveName);
+  const response = await fetcher("/api/publications", {
+    method: "POST",
+    headers: authenticatedHeaders(credentials),
+    body: form,
+  });
+  const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法升级市场资源包。");
+  const updated = publicationFromApi(payload.publication);
+  if (updated.id !== publication.id) throw new Error("模板升级产生了意外的市场资源包编号。");
+  return updated;
 }
 
 export function unpublishPublication(

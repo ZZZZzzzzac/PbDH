@@ -1,5 +1,8 @@
 import {
+  classifyResourcePackageVersionChange,
+  computeResourcePackageSnapshotDigest,
   ContractRuntime,
+  createResourcePackageVersionBaseline,
   loadPbres,
   validateResourcePackageSemantics,
   writePbres,
@@ -8,6 +11,8 @@ import {
   type ResourcePackageLogicalDocument,
   type ResourcePackageCandidateValidator,
 } from "@pbdh/contract-runtime";
+
+import { upgradeTemplateResources, type TemplateUpgradeSelection } from "@pbdh/templates/core";
 
 import { asJsonObject, exportFailure, isJsonValue, report, text } from "../shared.ts";
 import { validateTemplateData } from "../template-validation.ts";
@@ -67,6 +72,26 @@ export const validatePbresConversionCandidate: ResourcePackageCandidateValidator
       .map((diagnostic) => templateContractDiagnostic(document.contractVersion, index, diagnostic));
   });
 };
+
+export async function upgradePbresTemplateVersions(
+  candidate: { document: ResourcePackageLogicalDocument; media: ReadonlyMap<string, Uint8Array> },
+  selections: readonly TemplateUpgradeSelection[],
+) {
+  const document = structuredClone(candidate.document);
+  const resources = upgradeTemplateResources(document.resources, selections);
+  if (resources.every((resource, index) => resource === document.resources[index])) {
+    return { candidate: { document: candidate.document, media: new Map(candidate.media) }, diagnostics: [] };
+  }
+  const baseline = await createResourcePackageVersionBaseline(document);
+  document.resources = resources;
+  const classification = await classifyResourcePackageVersionChange(baseline, document);
+  document.package.version = classification.minimumVersion;
+  document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, candidate.media);
+  const diagnostics = await validatePbresConversionCandidate(document, candidate.media);
+  return diagnostics.some((item) => item.severity === "error")
+    ? { candidate: null, diagnostics }
+    : { candidate: { document, media: new Map(candidate.media) }, diagnostics };
+}
 
 function kindFor(templateId: string): ResourceKind {
   if (templateId === "敌人") return "adversary";

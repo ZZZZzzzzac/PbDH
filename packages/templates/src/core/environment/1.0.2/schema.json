@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E7%8E%AF%E5%A2%83/1.0.1/schema.json",
+  "title": "环境 Template Data",
+  "type": "object",
+  "required": ["名称", "类型", "位阶", "种类", "简介", "趋向", "难度", "潜在敌人", "特性"],
+  "properties": {
+    "名称": { "type": "string" },
+    "类型": { "type": "string" },
+    "原文": { "type": "string" },
+    "位阶": { "type": "string" },
+    "种类": { "type": "string" },
+    "简介": { "type": "string" },
+    "趋向": { "type": "string" },
+    "难度": { "type": "string" },
+    "潜在敌人": { "type": "string" },
+    "特性": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["特性名称", "特性类型", "特性描述", "引导问题"],
+        "properties": {
+          "特性名称": { "type": "string" },
+          "特性原文": { "type": "string" },
+          "特性类型": { "type": "string" },
+          "特性描述": { "type": "string" },
+          "引导问题": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

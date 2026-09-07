@@ -141,6 +141,7 @@
 .resource-metadata > div { min-width: 0; display: flex; align-items: baseline; gap: 5px; }
 .resource-metadata dt { color: #8a8178; font-weight: 650; }
 .resource-metadata dd { max-width: 220px; overflow: hidden; margin: 0; color: #3b302a; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.resource-template-update { margin-left: 5px; color: #8f3036; font-size: 10px; }
 .authoring-column > [data-template-authoring] { min-height: max-content; flex: none; overflow: visible; }
 .authoring-column > .replacement-editor { flex: none; margin: 0 14px 10px; }
 .resource-attribution-editor { box-sizing: border-box; flex: none; display: grid; gap: 8px; margin: 0 14px 12px; padding: 10px; border: 1px solid #d8cec0; border-radius: 6px; background: #f8f4ed; color: #3b302a; font-family: system-ui, sans-serif; }

@@ -28,6 +28,7 @@ import {
 } from "@pbdh/platform-ui";
 import type { SystemPackageOption } from "@pbdh/publication-ui";
 import {
+  upgradePbresTemplateVersions,
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
@@ -57,7 +58,7 @@ import {
   downloadBytes,
   isSemanticVersion,
 } from "./creator-file-actions.ts";
-import { runCreatorPackageFileWorkflow, upgradeCreatorImportCandidate } from "./creator-package-file-workflow.ts";
+import { runCreatorPackageFileWorkflow } from "./creator-package-file-workflow.ts";
 import {
   CreatorColumnResizeHandle,
   creatorColumnPreferences,
@@ -168,6 +169,7 @@ const creatorOperationLabels: Record<CreatorOperation, string> = {
   "convert-package": "正在转换第三方资源…",
   "export-package": "正在导出资源包…",
   "publication-cover": "正在生成发布封面…",
+  "upgrade-templates": "正在升级模板…",
 };
 
 type PendingCreatorImage =
@@ -465,13 +467,8 @@ export function CreatorWorkspacePrototype({
           });
           return;
         }
-        const upgraded = await upgradeCreatorImportCandidate(result.candidate);
-        if (upgraded.type === "invalid") {
-          setDialog({ kind: "diagnostics", title: upgraded.title, diagnostics: upgraded.diagnostics });
-          return;
-        }
         if (handoff.creatorMode === "fork") {
-          const source = createWorkspace(upgraded.candidate);
+          const source = createWorkspace(result.candidate);
           return forkCurrentWorkspace(source, {
             publicationId: handoff.publicationId,
             packageId: handoff.packageId,
@@ -479,7 +476,7 @@ export function CreatorWorkspacePrototype({
             snapshotDigest: handoff.snapshotDigest,
           }).then((fork) => acceptIncoming({ document: fork.document, media: fork.media }, handoff));
         }
-        acceptIncoming(upgraded.candidate, handoff);
+        acceptIncoming(result.candidate, handoff);
       })
       .catch((error) => setDialog({
         kind: "diagnostics",
@@ -1445,6 +1442,35 @@ export function CreatorWorkspacePrototype({
     notify("已显式创建空白 Workspace");
   }
 
+  async function upgradeWorkspaceTemplates(workspaceKey: string, selections: Parameters<typeof upgradePbresTemplateVersions>[1]) {
+    const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
+    if (!workspace || creatorOperation) return;
+    setCreatorOperation("upgrade-templates");
+    try {
+      const result = await upgradePbresTemplateVersions(workspace, selections);
+      if (!result.candidate) {
+        setDialog({ kind: "diagnostics", title: "模板升级失败 · 零写入", diagnostics: result.diagnostics });
+        return;
+      }
+      const upgradedResourceIds = new Set(selections.flatMap((selection) => workspace.document.resources
+        .filter((resource) => resource.template.id === selection.templateId && resource.template.version === selection.currentVersion)
+        .map((resource) => resource.id)));
+      const upgradedWorkspace = createWorkspace({
+        ...workspace,
+        document: result.candidate.document,
+        media: result.candidate.media,
+      }, true);
+      upgradedWorkspace.dirtyResourceIds = [...new Set([...workspace.dirtyResourceIds, ...upgradedResourceIds])];
+      replaceWorkspace(workspaceKey, upgradedWorkspace);
+      setDialog(null);
+      notify(`模板已升级，资源包版本更新为 ${result.candidate.document.package.version}`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "模板升级失败");
+    } finally {
+      setCreatorOperation(null);
+    }
+  }
+
   async function openPackageMetadataDialog(workspaceKey: string) {
     const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
     if (!workspace || creatorOperation) return;
@@ -1671,6 +1697,7 @@ export function CreatorWorkspacePrototype({
         return;
       }
       case "edit-package": void openPackageMetadataDialog(command.workspaceKey); return;
+      case "upgrade-templates": setTabletopContextMenu(null); setDialog({ kind: "template-upgrade", workspaceKey: command.workspaceKey }); return;
       case "close-package": requestWorkspacePackageClose(command.workspaceKey); return;
       case "place-selected": placeSelectedTabletopResources(); return;
       case "delete-selected-resources": requestSelectedResourceDeletion(); return;
@@ -1725,6 +1752,7 @@ export function CreatorWorkspacePrototype({
       case "choose-publication-cover": publicationCoverRef.current?.click(); return;
       case "publish": void publishWorkspace(); return;
       case "save-package": void savePackageMetadata(command.workspaceKey); return;
+      case "upgrade-templates": void upgradeWorkspaceTemplates(command.workspaceKey, command.selections); return;
       case "export-conversion": void exportConvertedPackage(command.review); return;
       case "accept-conversion": acceptConvertedPackage(command.review); return;
       case "commit-incoming": commitIncoming(command.incoming, command.handoff); return;
