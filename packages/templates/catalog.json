@@ -1,6 +1,8 @@
 {
   "catalogVersion": 1,
   "templates": [
+    {"id":"环境","version":"1.0.3","state":"published","schema":"src/core/environment/1.0.3/schema.json","publication":{"development":true,"production":true}},
+    {"id":"敌人","version":"1.0.4","state":"published","schema":"src/core/adversary/1.0.4/schema.json","tabletopReplacements":[{"id":"alternate-form","label":"切换形态"}],"publication":{"development":true,"production":true}},
     {
       "id": "敌人",
       "version": "1.0.0",

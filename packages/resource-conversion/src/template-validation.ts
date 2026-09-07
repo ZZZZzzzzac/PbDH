@@ -4,7 +4,6 @@ import { supportedTemplates, type TemplateCoreCapability } from "@pbdh/templates
 
 import type { ConversionDiagnostic, JsonObject } from "./types.ts";
 
-const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validators = new Map<string, ValidateFunction>();
 const templates = new Map(
   supportedTemplates.map((template) => [`${template.id}@${template.version}`, template]),
@@ -20,7 +19,8 @@ function validatorFor(
   if (existing) return existing;
   const capability = template ?? templates.get(key);
   if (!capability || capability.id !== id || capability.version !== version) return undefined;
-  const validator = ajv.compile(capability.schema);
+  // 历史模板版本可能复用 Schema ID，按精确模板版本隔离注册空间。
+  const validator = new Ajv2020({ allErrors: true, strict: true }).compile(capability.schema);
   validators.set(key, validator);
   return validator;
 }

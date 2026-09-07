@@ -219,7 +219,7 @@
   .detail-heading p { margin: 8px 0; font-size: 13.5px; }
   .resource-list { width: 100%; height: auto; max-height: 420px; margin-top: 10px; padding: 8px; }
   .canonical-preview { width: 100%; height: min(560px, 72vh); min-height: 440px; margin-top: 10px; }
-  .detail-side { display: none; }
+  .detail-side { display: flex; margin-top: 10px; }
   .mobile-acquire { position: fixed; z-index: 40; inset: auto 12px 12px; width: calc(100% - 24px); height: 44px; display: block; border: 0; border-radius: 6px; color: #fff; background: var(--accent); font-size: 15px; font-weight: 700; box-shadow: 0 8px 20px rgba(88,35,38,.24); }
   .acquisition-sheet .acquisition-actions { align-items: stretch; }
   .acquisition-sheet .acquisition-actions > * { min-height: 42px; justify-content: flex-start; }

@@ -12,12 +12,14 @@ import { TemplateRegistry } from "./registry.ts";
 import { weaponTemplate } from "./weapon/1.0.0/capability.ts";
 import { adversaryTemplate as adversaryTemplate101 } from "./adversary/1.0.1/capability.ts";
 import { adversaryTemplate as adversaryTemplate102 } from "./adversary/1.0.2/capability.ts";
+import { adversaryTemplate as adversaryTemplate104 } from "./adversary/1.0.4/capability.ts";
 import { adversaryTemplate as adversaryTemplate103 } from "./adversary/1.0.3/capability.ts";
 import { ancestryTemplate as ancestryTemplate101 } from "./ancestry/1.0.1/capability.ts";
 import { armorTemplate as armorTemplate101 } from "./armor/1.0.1/capability.ts";
 import { communityTemplate as communityTemplate101 } from "./community/1.0.1/capability.ts";
 import { domainTemplate as domainTemplate101 } from "./domain/1.0.1/capability.ts";
 import { environmentTemplate as environmentTemplate101 } from "./environment/1.0.1/capability.ts";
+import { environmentTemplate as environmentTemplate103 } from "./environment/1.0.3/capability.ts";
 import { environmentTemplate as environmentTemplate102 } from "./environment/1.0.2/capability.ts";
 import { freeTemplate as freeTemplate101 } from "./free/1.0.1/capability.ts";
 import { freeTemplate as freeTemplate102 } from "./free/1.0.2/capability.ts";
@@ -63,12 +65,12 @@ export type {
 } from "./types.ts";
 
 export const currentTemplates = Object.freeze([
-  adversaryTemplate103,
+  adversaryTemplate104,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,
   domainTemplate101,
-  environmentTemplate102,
+  environmentTemplate103,
   freeTemplate102,
   itemTemplate101,
   professionTemplate101,
@@ -77,12 +79,12 @@ export const currentTemplates = Object.freeze([
 ]);
 
 export {
-  adversaryTemplate103 as currentAdversaryTemplate,
+  adversaryTemplate104 as currentAdversaryTemplate,
   ancestryTemplate101 as currentAncestryTemplate,
   armorTemplate101 as currentArmorTemplate,
   communityTemplate101 as currentCommunityTemplate,
   domainTemplate101 as currentDomainTemplate,
-  environmentTemplate102 as currentEnvironmentTemplate,
+  environmentTemplate103 as currentEnvironmentTemplate,
   freeTemplate102 as currentFreeTemplate,
   itemTemplate101 as currentItemTemplate,
   professionTemplate101 as currentProfessionTemplate,
@@ -171,12 +173,14 @@ export const supportedTemplates = Object.freeze([
   adversaryTemplate101,
   adversaryTemplate102,
   adversaryTemplate103,
+  adversaryTemplate104,
   ancestryTemplate101,
   armorTemplate101,
   communityTemplate101,
   domainTemplate101,
   environmentTemplate101,
   environmentTemplate102,
+  environmentTemplate103,
   freeTemplate101,
   freeTemplate102,
   itemTemplate101,

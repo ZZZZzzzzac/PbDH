@@ -85,8 +85,8 @@ describe("Resource Template support matrix", () => {
       { id: "environment", template: { id: "环境", version: "1.0.1" }, data: templateRegistry.resolve("环境", "1.0.1")!.defaultData },
     ];
     expect(listTemplateUpgradeRows(resources)).toEqual([
-      { templateId: "敌人", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2", "1.0.3"] },
-      { templateId: "环境", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2"] },
+      { templateId: "敌人", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2", "1.0.3", "1.0.4"] },
+      { templateId: "环境", currentVersion: "1.0.1", count: 1, targetVersions: ["1.0.2", "1.0.3"] },
     ]);
     const upgraded = upgradeTemplateResources(resources, [{ templateId: "敌人", currentVersion: "1.0.1", targetVersion: "1.0.2" }]);
     expect(upgraded.map((resource) => resource.template.version)).toEqual(["1.0.2", "1.0.1"]);

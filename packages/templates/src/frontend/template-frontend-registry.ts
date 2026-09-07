@@ -30,7 +30,9 @@ import { adversaryRendererRevision as adversaryRendererRevision101 } from "./adv
 import { adversaryAuthoring as adversaryAuthoring102 } from "./adversary/1.0.2/authoring-editor.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision102 } from "./adversary/1.0.2/renderer.tsx";
 import { adversaryAuthoring as adversaryAuthoring103 } from "./adversary/1.0.3/authoring-editor.tsx";
+import { adversaryAuthoring as adversaryAuthoring104 } from "./adversary/1.0.4/authoring-editor.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision103 } from "./adversary/1.0.3/renderer.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision104 } from "./adversary/1.0.4/renderer.tsx";
 import { ancestryAuthoring as ancestryAuthoring101 } from "./ancestry/1.0.1/authoring-editor.tsx";
 import { ancestryRendererRevision as ancestryRendererRevision101 } from "./ancestry/1.0.1/renderer.tsx";
 import { armorAuthoring as armorAuthoring101 } from "./armor/1.0.1/authoring-editor.tsx";
@@ -42,7 +44,9 @@ import { domainRendererRevision as domainRendererRevision101 } from "./domain/1.
 import { environmentAuthoring as environmentAuthoring101 } from "./environment/1.0.1/authoring-editor.tsx";
 import { environmentRendererRevision as environmentRendererRevision101 } from "./environment/1.0.1/renderer.tsx";
 import { environmentAuthoring as environmentAuthoring102 } from "./environment/1.0.2/authoring-editor.tsx";
+import { environmentAuthoring as environmentAuthoring103 } from "./environment/1.0.3/authoring-editor.tsx";
 import { environmentRendererRevision as environmentRendererRevision102 } from "./environment/1.0.2/renderer.tsx";
+import { environmentRendererRevision as environmentRendererRevision103 } from "./environment/1.0.3/renderer.tsx";
 import { freeAuthoring as freeAuthoring101 } from "./free/1.0.1/authoring-editor.tsx";
 import { freeRendererRevision as freeRendererRevision101 } from "./free/1.0.1/renderer.tsx";
 import { freeAuthoring as freeAuthoring102 } from "./free/1.0.2/authoring-editor.tsx";
@@ -83,12 +87,14 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(adversaryAuthoring101, adversaryRendererRevision101),
   binding(adversaryAuthoring102, adversaryRendererRevision102),
   binding(adversaryAuthoring103, adversaryRendererRevision103),
+  binding(adversaryAuthoring104, adversaryRendererRevision104),
   binding(ancestryAuthoring101, ancestryRendererRevision101),
   binding(armorAuthoring101, armorRendererRevision101),
   binding(communityAuthoring101, communityRendererRevision101),
   binding(domainAuthoring101, domainRendererRevision101),
   binding(environmentAuthoring101, environmentRendererRevision101),
   binding(environmentAuthoring102, environmentRendererRevision102),
+  binding(environmentAuthoring103, environmentRendererRevision103),
   binding(freeAuthoring101, freeRendererRevision101),
   binding(itemAuthoring101, itemRendererRevision101),
   binding(professionAuthoring101, professionRendererRevision101),

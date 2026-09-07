@@ -1124,7 +1124,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(imported.ok).toBe(true);
     if (!imported.ok) throw new Error("import failed");
     const candidate = mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0];
-    expect(candidate?.template).toEqual({ id: "环境", version: "1.0.2" });
+    expect(candidate?.template).toEqual({ id: "环境", version: "1.0.3" });
     expect(candidate?.data).toMatchObject(environmentBatch.resources[0]?.fields ?? {});
     expect(candidate?.data.原文).toBe("Burning Library");
     expect((candidate?.data.特性 as Array<Record<string, unknown>>)[0]?.特性原文).toBe("");

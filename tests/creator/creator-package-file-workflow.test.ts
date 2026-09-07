@@ -33,7 +33,7 @@ describe("Creator package file workflow", () => {
     if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
 
     expect(listTemplateUpgradeRows(inspected.candidate.document.resources)).toEqual([
-      { templateId: "敌人", currentVersion: "1.0.0", count: 1, targetVersions: ["1.0.1", "1.0.2", "1.0.3"] },
+      { templateId: "敌人", currentVersion: "1.0.0", count: 1, targetVersions: ["1.0.1", "1.0.2", "1.0.3", "1.0.4"] },
     ]);
     const upgraded = await upgradePbresTemplateVersions(inspected.candidate, [
       { templateId: "敌人", currentVersion: "1.0.0", targetVersion: "1.0.2" },
@@ -42,6 +42,19 @@ describe("Creator package file workflow", () => {
     expect(upgraded.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.2" });
     expect(upgraded.candidate?.document.package.version).toBe("1.0.1");
     expect(inspected.candidate.document.resources[0]?.template.version).toBe("1.0.0");
+
+    if (!upgraded.candidate) throw new Error("upgrade should succeed");
+    const exported = await runCreatorPackageFileWorkflow({
+      type: "export-workspace",
+      workspace: createWorkspace(upgraded.candidate, true),
+    });
+    if (exported.type !== "workspace-export") throw new Error("export should succeed");
+    const reopened = await loadPbres(exported.bytes, validateResourcePackageCandidate);
+    expect(reopened.diagnostics).toEqual([]);
+    expect(reopened.candidate?.document.resources).toMatchObject(upgraded.candidate.document.resources);
+    expect(reopened.candidate?.document.package.version).toBe("1.0.1");
+    expect(reopened.candidate?.document.snapshotDigest).toBe(exported.workspace.document.snapshotDigest);
+    expect(reopened.candidate?.media).toEqual(upgraded.candidate.media);
   });
 
   test("prepares, validates and writes one export result", async () => {
