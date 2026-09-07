@@ -163,6 +163,20 @@ describe("Player layout regressions", () => {
       .toBeLessThan(presetLoader.indexOf("await restorePlayerResourceLibrary("));
   });
 
+  it("导入其他预置系统的人物存档前先安装目标系统内嵌资源", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const preparation = source.slice(
+      source.indexOf("const preparePresetCharacterSave"),
+      source.indexOf("const validatePresetCharacterSave"),
+    );
+
+    expect(preparation).toContain("await installMissingEmbeddedResourcePackages({");
+    expect(preparation.indexOf("await installMissingEmbeddedResourcePackages({"))
+      .toBeLessThan(preparation.indexOf("await restorePlayerResourceLibrary("));
+    expect(preparation.indexOf("await restorePlayerResourceLibrary("))
+      .toBeLessThan(preparation.indexOf("await targetSystem.load({"));
+  });
+
   it("按资源包身份查找共用卡面所需的图片", async () => {
     const source = await readFile("apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx", "utf8");
 

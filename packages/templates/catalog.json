@@ -31,6 +31,7 @@
       "publication": { "development": true, "production": true }
     },
     { "id": "自由", "version": "1.0.1", "state": "published", "schema": "src/core/free/1.0.1/schema.json", "publication": { "development": true, "production": true } },
+    { "id": "自由", "version": "1.0.2", "state": "published", "schema": "src/core/free/1.0.2/schema.json", "publication": { "development": true, "production": true } },
     {
       "id": "护甲",
       "version": "1.0.0",

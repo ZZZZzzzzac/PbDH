@@ -36,8 +36,9 @@ describe("Creator publication API", () => {
     });
   });
 
-  test("fills the computed minimum version from the current Market snapshot", async () => {
+  test("fills the computed minimum version from a current 1.1.0 Market snapshot", async () => {
     const previous = structuredClone(minotaurPackage) as unknown as ResourcePackageLogicalDocument;
+    previous.contractVersion = "1.1.0";
     const current = structuredClone(previous);
     current.package.version = "9.9.9";
     current.package.description = "修改后的说明";

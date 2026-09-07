@@ -39,6 +39,8 @@ import { environmentAuthoring as environmentAuthoring101 } from "./environment/1
 import { environmentRendererRevision as environmentRendererRevision101 } from "./environment/1.0.1/renderer.tsx";
 import { freeAuthoring as freeAuthoring101 } from "./free/1.0.1/authoring-editor.tsx";
 import { freeRendererRevision as freeRendererRevision101 } from "./free/1.0.1/renderer.tsx";
+import { freeAuthoring as freeAuthoring102 } from "./free/1.0.2/authoring-editor.tsx";
+import { freeRendererRevision as freeRendererRevision102 } from "./free/1.0.2/renderer.tsx";
 import { itemAuthoring as itemAuthoring101 } from "./item/1.0.1/authoring-editor.tsx";
 import { itemRendererRevision as itemRendererRevision101 } from "./item/1.0.1/renderer.tsx";
 import { professionAuthoring as professionAuthoring101 } from "./profession/1.0.1/authoring-editor.tsx";
@@ -83,6 +85,7 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(professionAuthoring101, professionRendererRevision101),
   binding(subclassAuthoring101, subclassRendererRevision101),
   binding(weaponAuthoring101, weaponRendererRevision101),
+  binding(freeAuthoring102, freeRendererRevision102),
 ];
 
 const frontendsByKey = new Map(supportedTemplateFrontends.map((frontend) => [

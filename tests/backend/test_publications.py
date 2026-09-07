@@ -617,6 +617,66 @@ def test_repository_enforces_structural_version_minimum_atomically(tmp_path: Pat
     assert repository.publish(account.account_id, major, media, metadata(major)).created is False
 
 
+def test_production_information_update_refreshes_published_market_entry_without_version_bump(
+    tmp_path: Path,
+) -> None:
+    api = client(tmp_path, "production")
+    document, media = candidate()
+    owner = claim(api, "author-one")
+    created = publish(api, owner, document, media)
+    assert created.status_code == 200, created.text
+    publication_id = created.json()["publication"]["publicationId"]
+
+    updated = api.patch(
+        f"/api/publications/{publication_id}/information",
+        headers=owner,
+        json={
+            "package": {
+                "name": "更新后的资源包",
+                "version": document["package"]["version"],
+                "description": "市场简介已更新。",
+            },
+            "targets": document["targets"],
+            "title": "更新后的资源包",
+            "summary": "市场简介已更新。",
+            "language": "zh-CN",
+            "tags": ["已更新"],
+            "coverAssetId": document["assets"][0]["id"],
+        },
+    )
+
+    assert updated.status_code == 200, updated.text
+    visible = api.get(f"/api/publications/{publication_id}")
+    assert visible.status_code == 200, visible.text
+    visible_publication = visible.json()["publication"]
+    assert visible_publication["title"] == "更新后的资源包"
+    assert visible_publication["summary"] == "市场简介已更新。"
+    assert visible_publication["tags"] == ["已更新"]
+
+    target_change = api.patch(
+        f"/api/publications/{publication_id}/information",
+        headers=owner,
+        json={
+            "package": {
+                "name": "更新后的资源包",
+                "version": document["package"]["version"],
+                "description": "市场简介已更新。",
+            },
+            "targets": [{
+                "systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
+                "version": "1.0.0",
+            }],
+            "title": "更新后的资源包",
+            "summary": "市场简介已更新。",
+            "language": "zh-CN",
+            "tags": ["已更新"],
+            "coverAssetId": document["assets"][0]["id"],
+        },
+    )
+    assert target_change.status_code == 409
+    assert target_change.json()["error"]["code"] == "PUBLICATION_VERSION_CONFLICT"
+
+
 def test_publication_lifecycle_is_server_authoritative_and_rejects_unrelated_accounts(tmp_path: Path) -> None:
     api = client(tmp_path)
     document, media = candidate()

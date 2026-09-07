@@ -630,7 +630,7 @@ describe("registered Template mapping and native pbres", () => {
       if (!imported.ok) throw new Error("import failed");
       const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
       expect(mapped.unmapped).toEqual([]);
-      expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.1" });
+      expect(mapped.candidates[0]?.template).toEqual({ id: "自由", version: "1.0.2" });
       expect(mapped.candidates[0]?.data).toMatchObject({ 名称: `自由资源${index}` });
       expect(mapped.candidates[0]?.data.简介).toBe("可见简介");
       expect(mapped.candidates[0]?.data.内容).toEqual(expect.any(Array));
@@ -671,7 +671,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(rinkcx.report.diagnostics).toContainEqual(expect.objectContaining({ code: "rinkcx.kind.unsupported" }));
   });
 
-  test("dhsheet keeps structured free fields as content blocks instead of object strings", async () => {
+  test("dhsheet keeps structured summary metadata as free fields instead of JSON content blocks", async () => {
     const fileName = "【滋孽】基础领域&职业&魂素（种族重构）_2.0版本.json";
     const imported = await resourceConversionRegistry.import("dhsheet", {
       bytes: new Uint8Array(readFileSync(path.join(process.cwd(), "docs/third", fileName))),
@@ -684,10 +684,16 @@ describe("registered Template mapping and native pbres", () => {
     const freeCandidates = mapBatchToRegisteredCandidates(imported.batch.resources).candidates
       .filter((candidate) => candidate.template.id === "自由");
     expect(freeCandidates.length).toBeGreaterThan(0);
+    expect(freeCandidates.some((candidate) => Object.entries(candidate.data)
+      .some(([key, value]) => !["名称", "原文", "类型", "简介", "内容"].includes(key) && value === ""))).toBe(true);
     for (const candidate of freeCandidates) {
-      expect(Object.keys(candidate.data).sort()).toEqual(["内容", "名称", "简介", "类型"]);
       expect(JSON.stringify(candidate.data)).not.toContain("[object Object]");
       expect(candidate.data.内容).toEqual(expect.any(Array));
+      expect(candidate.data.内容).not.toContainEqual(expect.objectContaining({ 名称: "简略信息" }));
+      expect(candidate.data.内容).not.toContainEqual(expect.objectContaining({ 名称: "子类别" }));
+      expect(Object.entries(candidate.data)
+        .filter(([key]) => !["名称", "原文", "类型", "简介", "内容"].includes(key))
+        .every(([, value]) => typeof value === "string")).toBe(true);
       expect(candidate.diagnostics).toEqual([]);
     }
   });
@@ -1213,7 +1219,7 @@ describe("registered Template mapping and native pbres", () => {
     if (!imported.ok) throw new Error("pbres import failed");
     expect(imported.batch.resources[0]?.kind).toBe("free");
     expect(mapBatchToRegisteredCandidates(imported.batch.resources).candidates[0]).toMatchObject({
-      template: { id: "自由", version: "1.0.1" },
+      template: { id: "自由", version: "1.0.2" },
       data: resource.data,
     });
   });

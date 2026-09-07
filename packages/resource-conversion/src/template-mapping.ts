@@ -163,11 +163,15 @@ function templateData(resource: TemporaryResource): {
     return { template: environmentTemplate, data };
   }
   if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
+    const fixedFields = new Set(Object.keys(freeTemplate.defaultData));
+    const customFields = Object.fromEntries(Object.entries(resource.fields)
+      .filter(([key, value]) => !fixedFields.has(key) && typeof value === "string"));
     const data: JsonObject = {
       名称: resource.name,
       ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
       类型: text(resource.fields.类型 || freeTemplate.defaultData.类型),
       简介: text(resource.fields.简介),
+      ...customFields,
       内容: resource.fields.内容.map((value) => {
         const block = isObject(value) ? value : {};
         return { 名称: text(block.名称), 原文: text(block.原文), 描述: text(block.描述) };

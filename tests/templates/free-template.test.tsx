@@ -71,10 +71,10 @@ describe("自由 Template 1.0.0", () => {
   });
 });
 
-describe("自由 Template 1.0.1", () => {
-  const current = templateRegistry.resolve("自由", "1.0.1")!;
+describe("自由 Template 1.0.2", () => {
+  const current = templateRegistry.resolve("自由", "1.0.2")!;
   const validateCurrent = ajv.compile(current.schema as AnySchema);
-  const frontend = resolveTemplateFrontend("自由", "1.0.1")!;
+  const frontend = resolveTemplateFrontend("自由", "1.0.2")!;
   const beastform = {
     名称: "迅捷斥候",
     原文: "AGILE SCOUT",
@@ -85,6 +85,7 @@ describe("自由 Template 1.0.1", () => {
     闪避: "+2",
     武器: "近战 敏捷 d4 物理",
     优势: "欺骗、定位、潜行",
+    圣道骑士: "",
     内容: [{ 名称: "敏捷", 原文: "Agile", 描述: "你的移动悄无声息。" }],
   };
 
@@ -94,6 +95,20 @@ describe("自由 Template 1.0.1", () => {
     expect(validateCurrent({ ...beastform, 内容: [{ 名称: "敏捷", 描述: "文本", extra: "invalid" }] })).toBe(false);
     expect(current.project(beastform).searchText).toContain("位阶 1");
     expect(current.project(beastform).searchText).toContain("近战 敏捷 d4 物理");
+    expect(templateRegistry.upgradeData("自由", "1.0.1", "1.0.2", beastform)).toEqual(beastform);
+  });
+
+  test("keeps the published 1.0.1 renderer behavior unchanged", () => {
+    const legacy = templateRegistry.resolve("自由", "1.0.1")!;
+    const legacyFrontend = resolveTemplateFrontend("自由", "1.0.1")!;
+    const markup = renderToStaticMarkup(legacyFrontend.rendererRevision.render({
+      data: beastform,
+      presentation: legacy.defaultPresentation,
+      assets: {},
+      state: {},
+    }));
+    expect(markup).not.toContain("圣道骑士");
+    expect(legacyFrontend.rendererRevision.revision).toBe("free-card-r4");
   });
 
   test("separates free fields from free features in authoring and rendering", () => {
@@ -118,6 +133,8 @@ describe("自由 Template 1.0.1", () => {
     }));
     expect(rendererMarkup).toContain("free-fields");
     expect(rendererMarkup).toContain("free-field-tag");
+    expect(rendererMarkup).toContain("free-field-tag is-label");
+    expect(rendererMarkup).toContain("<b>圣道骑士</b></span>");
     expect(rendererMarkup).not.toContain("<dl");
     expect(rendererMarkup).toContain("位阶");
     expect(rendererMarkup).toContain("近战 敏捷 d4 物理");

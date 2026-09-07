@@ -16,7 +16,7 @@ For example, if applying `armor-a` wrote `闪避 +1` into Character Data, that v
 
 ## Consequences
 
-- Resource Package version identifies and compares transferable snapshots, but individual Game Resources do not require independent SemVer.
+- Resource Package version identifies and compares transferable behavior snapshots, but individual Game Resources do not require independent SemVer. Market 的显式信息编辑可在目标系统与资源内容均未变化时保留包版本；精确修订仍由新的 Snapshot Digest 区分。
 - Market may announce that an update exists, but cannot install it or alter local data without an explicit user action.
 - A replacement is validated before commit. Failure preserves the previously installed snapshot rather than leaving a partial mixed library.
 - Validation and commit cover every required normalized media blob as well as manifests and Game Resources. A package with missing required assets cannot replace the previous complete local snapshot.

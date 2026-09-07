@@ -65,10 +65,9 @@ describe("Resource Template support matrix", () => {
     }
   });
 
-  test.each(currentTemplates)("$id@$version owns a valid upgrade from 1.0.0", (template) => {
+  test.each(currentTemplates)("$id@$version can upgrade from 1.0.0", (template) => {
     const previous = templateRegistry.resolve(template.id, "1.0.0");
     expect(previous, `${template.id}@1.0.0 缺少旧模板`).toBeDefined();
-    expect(template.upgrades?.map((upgrade) => upgrade.fromVersion)).toContain("1.0.0");
     const upgraded = templateRegistry.upgradeData(
       template.id,
       "1.0.0",

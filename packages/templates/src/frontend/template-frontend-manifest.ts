@@ -30,6 +30,7 @@ export const templateFrontendManifest: readonly TemplateFrontendManifestEntry[] 
   entry("职业", "1.0.1", () => import("./profession/1.0.1/renderer.tsx").then((module) => module.professionRendererRevision), true),
   entry("子职业", "1.0.1", () => import("./subclass/1.0.1/renderer.tsx").then((module) => module.subclassRendererRevision), true),
   entry("武器", "1.0.1", () => import("./weapon/1.0.1/renderer.tsx").then((module) => module.weaponRendererRevision)),
+  entry("自由", "1.0.2", () => import("./free/1.0.2/renderer.tsx").then((module) => module.freeRendererRevision)),
 ];
 
 export function manifestEntryFor(templateId: string, templateVersion: string) {

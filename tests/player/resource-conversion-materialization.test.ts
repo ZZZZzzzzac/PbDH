@@ -74,15 +74,56 @@ describe("Player third-party resource conversion", () => {
       code: "player.resource-conversion.unmapped",
     }));
     expect(result.candidate?.document.resources[0]).toMatchObject({
-      template: { id: "自由", version: "1.0.1" },
+      template: { id: "自由", version: "1.0.2" },
       data: {
         名称: "疯狂机制说明",
         类型: "疯狂",
+        子类别: "规则说明",
+        疯狂规则: "",
         内容: [
           { 名称: "效果", 原文: "", 描述: "承受压力时检定。" },
-          { 名称: "子类别", 原文: "", 描述: "规则说明" },
-          { 名称: "简略信息", 原文: "", 描述: "疯狂规则" },
         ],
+      },
+    });
+  });
+
+  it("把 dhsheet 对象型简略信息转换为自由字段，而不是 JSON 自由特性", async () => {
+    const imported = await resourceConversionRegistry.import("dhsheet", {
+      bytes: new TextEncoder().encode(JSON.stringify({
+        name: "裁决之剑额外卡牌包",
+        variant: [{
+          id: "creed-01",
+          名称: "奉献准则",
+          类型: "圣道准则",
+          效果: "坚守诚实本心。",
+          子类别: "",
+          简略信息: {
+            item1: "圣道骑士",
+            item2: "准则",
+            item3: "",
+            item4: "",
+          },
+        }],
+      })),
+      fileName: "creed.json",
+      container: "json",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+
+    const result = await materializePlayerResourceConversion(
+      imported.batch,
+      systemJson as SystemPackageDocument,
+    );
+
+    expect(result.candidate?.document.resources[0]).toMatchObject({
+      template: { id: "自由", version: "1.0.2" },
+      data: {
+        名称: "奉献准则",
+        类型: "圣道准则",
+        圣道骑士: "",
+        准则: "",
+        内容: [{ 名称: "效果", 原文: "", 描述: "坚守诚实本心。" }],
       },
     });
   });

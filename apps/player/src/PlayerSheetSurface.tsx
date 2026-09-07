@@ -159,6 +159,16 @@ export function PlayerSheetSurface({
   const preparePresetCharacterSave = useCallback(async (candidate: CharacterSaveCandidate): Promise<CharacterSaveCandidate> => {
     const targetSystem = findPlayerSystemPackage(candidate.document.systemPackage.id);
     if (!targetSystem) throw new Error("该人物存档所属的预置系统包不可用。");
+    const releaseVersion = document
+      .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
+      ?.content || targetSystem.preset.releaseVersion;
+    await installMissingEmbeddedResourcePackages({
+      systemPackage: targetSystem.system,
+      embeddedResourceIndex: targetSystem.preset.embeddedResourceIndex,
+      systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${targetSystem.preset.directory}`,
+      releaseVersion,
+      repository: resourceRepository,
+    });
     const targetResources = await restorePlayerResourceLibrary(resourceRepository, targetSystem.system);
     const targetRuntime = await targetSystem.load({
       currentSystem: targetSystem.system,

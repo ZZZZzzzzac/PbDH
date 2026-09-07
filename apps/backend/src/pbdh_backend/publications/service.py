@@ -143,13 +143,21 @@ class PublicationService:
         diagnostics = self._validate_candidate(document, media)
         if diagnostics:
             raise PublicationValidationError(diagnostics)
+        previous_targets = {
+            (target["systemPackageId"], target["version"])
+            for target in previous_document["targets"]
+        }
+        updated_targets = {
+            (target["systemPackageId"], target["version"])
+            for target in document["targets"]
+        }
         return self._repository.update_information(
             publication_id,
             account_id,
             document,
             normalized_information,
             allow_all,
-            allow_same_version_replace=self._mode == "development",
+            allow_same_version_replace=previous_targets == updated_targets,
             cover_media=cover_media,
         )
 

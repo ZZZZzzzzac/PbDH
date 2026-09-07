@@ -142,8 +142,34 @@ function freeFieldBody(value: JsonValue): string {
   return JSON.stringify(value, null, 2);
 }
 
+const freeFixedFields = new Set(["名称", "原文", "类型", "简介", "内容"]);
+
+function addFreeTag(fields: JsonObject, label: string, fallbackName: string): void {
+  if (!label) return;
+  if (!freeFixedFields.has(label) && !Object.hasOwn(fields, label)) fields[label] = "";
+  else fields[fallbackName] = label;
+}
+
+function freeVariantMetadata(raw: JsonObject): JsonObject {
+  const fields: JsonObject = {};
+  const subcategory = text(raw.子类别);
+  if (subcategory) fields.子类别 = subcategory;
+
+  const summary = asJsonObject(raw.简略信息);
+  if (summary) {
+    Object.entries(summary).forEach(([key, value]) => {
+      const body = freeFieldBody(value).trim();
+      const item = /^item(\d+)$/iu.exec(key);
+      addFreeTag(fields, body, item ? `简略信息 ${Number(item[1])}` : `简略信息 ${key}`);
+    });
+  } else {
+    addFreeTag(fields, freeFieldBody(raw.简略信息 ?? null).trim(), "简略信息");
+  }
+  return fields;
+}
+
 function freeVariantFields(raw: JsonObject): JsonObject {
-  const omitted = new Set(["id", "名称", "原文", "类型", "简介", "内容", "imageUrl"]);
+  const omitted = new Set(["id", "名称", "原文", "类型", "简介", "内容", "imageUrl", "子类别", "简略信息"]);
   const looseBlocks = Object.entries(raw)
     .filter(([key, value]) => !omitted.has(key)
       && !(key === "类型" && Array.isArray(raw.内容) && text(value) === "自由"))
@@ -155,6 +181,7 @@ function freeVariantFields(raw: JsonObject): JsonObject {
       ...(raw.原文 === undefined ? {} : { 原文: text(raw.原文) }),
       类型: text(raw.类型 || "自由"),
       简介: text(raw.简介),
+      ...freeVariantMetadata(raw),
       内容: [...looseBlocks, ...raw.内容.map((value) => {
         const block = asJsonObject(value) ?? {};
         return {
@@ -170,6 +197,7 @@ function freeVariantFields(raw: JsonObject): JsonObject {
     ...(raw.原文 === undefined ? {} : { 原文: text(raw.原文) }),
     类型: text(raw.类型 || "自由"),
     简介: text(raw.简介),
+    ...freeVariantMetadata(raw),
     内容: looseBlocks,
   };
 }

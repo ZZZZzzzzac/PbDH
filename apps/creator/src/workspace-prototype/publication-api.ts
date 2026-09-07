@@ -1,6 +1,8 @@
 import {
   classifyResourcePackageVersionChange,
   createResourcePackageVersionBaseline,
+  LEGACY_RESOURCE_PACKAGE_VERSION,
+  RESOURCE_PACKAGE_VERSION,
   writePbres,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
@@ -151,7 +153,8 @@ function publicationResponseError(
 function isLogicalDocument(value: unknown): value is ResourcePackageLogicalDocument {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<ResourcePackageLogicalDocument>;
-  return candidate.contractVersion === "1.0.0"
+  return (candidate.contractVersion === RESOURCE_PACKAGE_VERSION
+      || candidate.contractVersion === LEGACY_RESOURCE_PACKAGE_VERSION)
     && Boolean(candidate.package && typeof candidate.package.id === "string")
     && Array.isArray(candidate.resources)
     && Array.isArray(candidate.targets);

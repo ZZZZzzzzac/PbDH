@@ -17,6 +17,7 @@ import { communityTemplate as communityTemplate101 } from "./community/1.0.1/cap
 import { domainTemplate as domainTemplate101 } from "./domain/1.0.1/capability.ts";
 import { environmentTemplate as environmentTemplate101 } from "./environment/1.0.1/capability.ts";
 import { freeTemplate as freeTemplate101 } from "./free/1.0.1/capability.ts";
+import { freeTemplate as freeTemplate102 } from "./free/1.0.2/capability.ts";
 import { itemTemplate as itemTemplate101 } from "./item/1.0.1/capability.ts";
 import { professionTemplate as professionTemplate101 } from "./profession/1.0.1/capability.ts";
 import { subclassTemplate as subclassTemplate101 } from "./subclass/1.0.1/capability.ts";
@@ -65,7 +66,7 @@ export const currentTemplates = Object.freeze([
   communityTemplate101,
   domainTemplate101,
   environmentTemplate101,
-  freeTemplate101,
+  freeTemplate102,
   itemTemplate101,
   professionTemplate101,
   subclassTemplate101,
@@ -79,7 +80,7 @@ export {
   communityTemplate101 as currentCommunityTemplate,
   domainTemplate101 as currentDomainTemplate,
   environmentTemplate101 as currentEnvironmentTemplate,
-  freeTemplate101 as currentFreeTemplate,
+  freeTemplate102 as currentFreeTemplate,
   itemTemplate101 as currentItemTemplate,
   professionTemplate101 as currentProfessionTemplate,
   subclassTemplate101 as currentSubclassTemplate,
@@ -130,6 +131,7 @@ export const supportedTemplates = Object.freeze([
   domainTemplate101,
   environmentTemplate101,
   freeTemplate101,
+  freeTemplate102,
   itemTemplate101,
   professionTemplate101,
   subclassTemplate101,
