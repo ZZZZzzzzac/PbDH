@@ -12,7 +12,7 @@ import { currentTemplates } from "@pbdh/templates/core";
 
 import { Field } from "./creator-controls.tsx";
 import { isSemanticVersion } from "./creator-file-actions.ts";
-import { publicationLicenses, type PublicationCoverDraft, type PublicationLicenseId } from "./creator-publication.ts";
+import { publicationLicenses, type PublicationCoverDraft } from "./creator-publication.ts";
 import type { WorkspaceResourceSelection } from "./gm-tabletop-session.ts";
 import type { CreatorMarketHandoff } from "./market-handoff.ts";
 import {
@@ -95,32 +95,31 @@ export function CreatorDialogs({
 }) {
   if (!dialog) return null;
 
-  if (dialog.kind === "publish") return <ResourcePackageInfoDialog
-    heading="发布到资源市场"
-    submitLabel="发布当前版本"
-    coverUrl={snapshot.publicationCover.url}
-    systemPackageOptions={snapshot.systemPackageOptions}
-    value={snapshot.packageInfo}
-    licenseOptions={Object.entries(publicationLicenses).map(([id, license]) => ({ id, label: license.label }))}
-    busy={snapshot.publicationBusy || snapshot.creatorOperation === "publication-cover"}
-    submitDisabled={!snapshot.packageInfo.package.name.trim() || !isSemanticVersion(snapshot.packageInfo.package.version)}
-    busyLabel={snapshot.creatorOperation === "publication-cover" ? "正在处理封面…" : "正在发布整包…"}
-    onChange={(value) => execute({ type: "set-package-info", value })}
-    onChooseCover={() => execute({ type: "choose-publication-cover" })}
-    onClose={() => execute({ type: "close" })}
-    onSubmit={() => execute({ type: "publish" })}
-  />;
-
-  if (dialog.kind === "package-metadata") return <ResourcePackageInfoDialog
-    heading="编辑资源包信息"
-    submitLabel="保存"
-    systemPackageOptions={snapshot.systemPackageOptions}
-    value={{ package: snapshot.packageInfo.package }}
-    submitDisabled={!snapshot.packageInfo.package.name.trim() || !isSemanticVersion(snapshot.packageInfo.package.version)}
-    onChange={(value) => execute({ type: "set-package-info", value })}
-    onClose={() => execute({ type: "close" })}
-    onSubmit={() => execute({ type: "save-package", workspaceKey: dialog.workspaceKey })}
-  />;
+  if (dialog.kind === "publish" || dialog.kind === "package-metadata") {
+    const publishing = dialog.kind === "publish";
+    return <ResourcePackageInfoDialog
+      heading={publishing ? "发布到资源市场" : "编辑资源包信息"}
+      submitLabel={publishing ? "发布当前版本" : "保存资源包信息"}
+      coverUrl={snapshot.publicationCover.url}
+      systemPackageOptions={snapshot.systemPackageOptions}
+      value={snapshot.packageInfo}
+      licenseOptions={Object.entries(publicationLicenses).map(([id, license]) => ({ id, label: license.label }))}
+      busy={snapshot.publicationBusy || snapshot.creatorOperation === "publication-cover"}
+      submitDisabled={!snapshot.packageInfo.package.name.trim()
+        || !isSemanticVersion(snapshot.packageInfo.package.version)
+        || !snapshot.packageInfo.publication?.licenseId.trim()
+        || !snapshot.publicationCover.assetId}
+      busyLabel={snapshot.creatorOperation === "publication-cover"
+        ? "正在处理封面…"
+        : publishing ? "正在发布整包…" : "正在保存资源包信息…"}
+      onChange={(value) => execute({ type: "set-package-info", value })}
+      onChooseCover={() => execute({ type: "choose-publication-cover" })}
+      onClose={() => execute({ type: "close" })}
+      onSubmit={() => execute(publishing
+        ? { type: "publish" }
+        : { type: "save-package", workspaceKey: dialog.workspaceKey })}
+    />;
+  }
 
   return <div className="dialog-backdrop" role="presentation"><section className={`dialog dialog-${dialog.kind}`} role="dialog" aria-modal="true">
     {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={snapshot.newName} onChange={(value) => execute({ type: "set-new-name", value })} />

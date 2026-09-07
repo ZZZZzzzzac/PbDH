@@ -36,6 +36,10 @@ export const publicationLicenses = {
     label: "CC BY-SA 4.0",
     declaration: "Creative Commons Attribution-ShareAlike 4.0 International",
   },
+  dpcgl: {
+    label: "DPCGL",
+    declaration: "Darrington Press Community Gaming License (DPCGL)",
+  },
   "all-rights-reserved": {
     label: "保留所有权利",
     declaration: "All rights reserved.",
@@ -44,9 +48,15 @@ export const publicationLicenses = {
 
 export type PublicationLicenseId = keyof typeof publicationLicenses;
 
-export function publicationLicenseId(label: string): PublicationLicenseId {
-  return (Object.entries(publicationLicenses).find(([, license]) => license.label === label)?.[0]
-    ?? "public-domain") as PublicationLicenseId;
+export function publicationLicense(
+  value: string,
+  fallback: ResourcePackageLogicalDocument["license"],
+): ResourcePackageLogicalDocument["license"] {
+  const normalized = value.trim();
+  const known = Object.entries(publicationLicenses).find(([id, license]) => id === normalized || license.label === normalized)?.[1];
+  if (known) return { ...known };
+  if (fallback.label === normalized) return structuredClone(fallback);
+  return { label: normalized, declaration: normalized };
 }
 
 const imageAdmission = createBrowserImageAdmission();

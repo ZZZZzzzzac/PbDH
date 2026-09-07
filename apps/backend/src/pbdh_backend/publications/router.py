@@ -78,9 +78,17 @@ class PublicationCoverAsset(BaseModel):
     height: str = Field(pattern=r"^[1-9][0-9]*$")
 
 
+class PublicationLicenseInformation(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, extra="forbid", populate_by_name=True)
+
+    label: str = Field(min_length=1)
+    declaration: str = Field(min_length=1)
+
+
 class PublicationInformation(PublicationMetadata):
     package: ResourcePackageInformation
     targets: list[ResourcePackageTarget]
+    license: PublicationLicenseInformation | None = None
     cover_asset: PublicationCoverAsset | None = None
 
 

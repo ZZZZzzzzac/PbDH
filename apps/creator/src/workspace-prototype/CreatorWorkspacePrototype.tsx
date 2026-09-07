@@ -44,12 +44,13 @@ import { creatorWorkspaceDesign } from "./design.ts";
 import {
   imageAsset,
   type PublicationCoverDraft,
-  type PublicationLicenseId,
 } from "./creator-publication.ts";
 export { publicationRenderer } from "./creator-publication.ts";
 import {
+  prepareCreatorPackageInformation,
   prepareCreatorPublication,
   publishCreatorWorkspace,
+  saveCreatorPackageInformation,
   type CreatorPublicationDraft,
 } from "./creator-publication-workflow.ts";
 import {
@@ -97,13 +98,16 @@ import {
   type CreatorWorkbenchCommand,
 } from "./creator-workbench.tsx";
 import {
+  creatorActiveResourceTabKey,
   creatorResourceTabOrderKey,
+  gmActiveTabletopTabKey,
   gmTabletopTabOrderKey,
   moveTab,
   readStoredTabOrder,
   reconcileTabOrder,
   resourceTabKey,
   sameTabOrder,
+  writeStoredActiveTab,
   writeStoredTabOrder,
 } from "./tab-order.ts";
 import {
@@ -141,7 +145,6 @@ import {
   updateResourcePresentation,
   updateResourceAttribution,
   updateResourceReplacement,
-  updateWorkspacePackageMetadata,
   updateWorkspaceResourceData,
   type CreatorWorkspace,
   type WorkspaceNodeRef,
@@ -247,7 +250,7 @@ export function CreatorWorkspacePrototype({
   const [publicationSummary, setPublicationSummary] = useState("");
   const [publicationLanguage, setPublicationLanguage] = useState("中文");
   const [publicationTags, setPublicationTags] = useState<string[]>([]);
-  const [publicationLicense, setPublicationLicense] = useState<PublicationLicenseId>("public-domain");
+  const [publicationLicense, setPublicationLicense] = useState("公有领域");
   const [publicationCover, setPublicationCover] = useState<PublicationCoverDraft>({ assetId: "", url: "" });
   useManagedBlobUrl(publicationCover.url);
   const [publicationBusy, setPublicationBusy] = useState(false);
@@ -402,6 +405,19 @@ export function CreatorWorkspacePrototype({
       return sameTabOrder(current, next) ? current : next;
     });
   }, [availableTabletopTabKeys, tabletopStorageReady]);
+
+  useEffect(() => {
+    if (!workspaceStorageReady || !activeKey || !activeResourceId) return;
+    const activeTabKey = resourceTabKey(activeKey, activeResourceId);
+    if (availableResourceTabKeys.includes(activeTabKey)) {
+      writeStoredActiveTab(creatorActiveResourceTabKey, activeTabKey);
+    }
+  }, [activeKey, activeResourceId, availableResourceTabKeys, workspaceStorageReady]);
+
+  useEffect(() => {
+    if (!tabletopStorageReady || !availableTabletopTabKeys.includes(activeTabletopId)) return;
+    writeStoredActiveTab(gmActiveTabletopTabKey, activeTabletopId);
+  }, [activeTabletopId, availableTabletopTabKeys, tabletopStorageReady]);
 
   useEffect(() => {
     const currentKeys = new Set(workspaces.map((workspace) => workspace.key));
@@ -1254,6 +1270,47 @@ export function CreatorWorkspacePrototype({
     }
   }
 
+  function applyPackageInformationDraft(draft: CreatorPublicationDraft) {
+    setPackageNameDraft(draft.package.name);
+    setPackageVersionDraft(draft.package.version);
+    setPackageDescriptionDraft(draft.package.description);
+    setPackageTargetsDraft(draft.package.targets);
+    setPublicationTitle(draft.publication.title);
+    setPublicationSummary(draft.publication.summary);
+    setPublicationLanguage(draft.publication.language);
+    setPublicationTags(draft.publication.tags);
+    setPublicationLicense(draft.publication.licenseId);
+    const coverBuffer = draft.cover.bytes?.buffer.slice(
+      draft.cover.bytes.byteOffset,
+      draft.cover.bytes.byteOffset + draft.cover.bytes.byteLength,
+    ) as ArrayBuffer | undefined;
+    setPublicationCover({
+      ...draft.cover,
+      url: draft.cover.url || (coverBuffer
+        ? URL.createObjectURL(new Blob([coverBuffer], { type: draft.cover.asset?.mediaType ?? "image/webp" }))
+        : ""),
+    });
+  }
+
+  function currentPackageInformationDraft(): CreatorPublicationDraft {
+    return {
+      package: {
+        name: packageNameDraft,
+        version: packageVersionDraft,
+        description: packageDescriptionDraft,
+        targets: packageTargetsDraft,
+      },
+      publication: {
+        title: publicationTitle,
+        summary: publicationSummary,
+        language: publicationLanguage,
+        tags: publicationTags,
+        licenseId: publicationLicense,
+      },
+      cover: publicationCover,
+    };
+  }
+
   async function openPublicationDialog() {
     if (!active || creatorOperation) return;
     setCreatorOperation("publication-cover");
@@ -1263,16 +1320,7 @@ export function CreatorWorkspacePrototype({
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
       }
-      setPackageNameDraft(result.draft.package.name);
-      setPackageVersionDraft(result.draft.package.version);
-      setPackageDescriptionDraft(result.draft.package.description);
-      setPackageTargetsDraft(result.draft.package.targets);
-      setPublicationTitle(result.draft.publication.title);
-      setPublicationSummary(result.draft.publication.summary);
-      setPublicationLanguage(result.draft.publication.language);
-      setPublicationTags(result.draft.publication.tags);
-      setPublicationLicense(result.draft.publication.licenseId);
-      setPublicationCover(result.draft.cover);
+      applyPackageInformationDraft(result.draft);
       setDialog({ kind: "publish" });
     } finally {
       setCreatorOperation(null);
@@ -1371,23 +1419,11 @@ export function CreatorWorkspacePrototype({
     if (!active || publicationBusy) return;
     setPublicationBusy(true);
     try {
-      const draft: CreatorPublicationDraft = {
-        package: {
-          name: packageNameDraft,
-          version: packageVersionDraft,
-          description: packageDescriptionDraft,
-          targets: packageTargetsDraft,
-        },
-        publication: {
-          title: publicationTitle,
-          summary: publicationSummary,
-          language: publicationLanguage,
-          tags: publicationTags,
-          licenseId: publicationLicense,
-        },
-        cover: publicationCover,
-      };
-      const result = await publishCreatorWorkspace(active, draft, auth.credentials);
+      const result = await publishCreatorWorkspace(
+        active,
+        currentPackageInformationDraft(),
+        auth.credentials,
+      );
       if (!result.ok) {
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
@@ -1409,29 +1445,44 @@ export function CreatorWorkspacePrototype({
     notify("已显式创建空白 Workspace");
   }
 
-  function openPackageMetadataDialog(workspaceKey: string) {
+  async function openPackageMetadataDialog(workspaceKey: string) {
     const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
-    if (!workspace) return;
-    setPackageNameDraft(workspace.document.package.name);
-    setPackageVersionDraft(workspace.document.package.version);
-    setPackageDescriptionDraft(workspace.document.package.description);
-    setPackageTargetsDraft(structuredClone(workspace.document.targets));
-    setTabletopContextMenu(null);
-    setDialog({ kind: "package-metadata", workspaceKey });
+    if (!workspace || creatorOperation) return;
+    setCreatorOperation("publication-cover");
+    try {
+      const result = await prepareCreatorPackageInformation(workspace);
+      if (!result.ok) {
+        setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
+        return;
+      }
+      applyPackageInformationDraft(result.draft);
+      setTabletopContextMenu(null);
+      setDialog({ kind: "package-metadata", workspaceKey });
+    } finally {
+      setCreatorOperation(null);
+    }
   }
 
-  function savePackageMetadata(workspaceKey: string) {
-    if (!packageNameDraft.trim() || !isSemanticVersion(packageVersionDraft)) return;
-    setWorkspaces((current) => current.map((workspace) => workspace.key === workspaceKey
-      ? updateWorkspacePackageMetadata(workspace, {
-          name: packageNameDraft,
-          version: packageVersionDraft,
-          description: packageDescriptionDraft,
-          targets: packageTargetsDraft,
-        })
-      : workspace));
-    setDialog(null);
-    notify("资源包信息已保存");
+  async function savePackageMetadata(workspaceKey: string) {
+    if (!packageNameDraft.trim() || !isSemanticVersion(packageVersionDraft) || publicationBusy) return;
+    const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
+    if (!workspace) return;
+    setPublicationBusy(true);
+    try {
+      const result = await saveCreatorPackageInformation(workspace, currentPackageInformationDraft());
+      if (!result.ok) {
+        setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
+        return;
+      }
+      addAssetBytes(result.workspace.media);
+      setWorkspaces((current) => current.map((candidate) => candidate.key === workspaceKey
+        ? result.workspace
+        : candidate));
+      setDialog(null);
+      notify(result.message);
+    } finally {
+      setPublicationBusy(false);
+    }
   }
 
   function replacePortraitFromFile(event: ChangeEvent<HTMLInputElement>) {
@@ -1619,7 +1670,7 @@ export function CreatorWorkspacePrototype({
         setTabletopContextMenu(null);
         return;
       }
-      case "edit-package": openPackageMetadataDialog(command.workspaceKey); return;
+      case "edit-package": void openPackageMetadataDialog(command.workspaceKey); return;
       case "close-package": requestWorkspacePackageClose(command.workspaceKey); return;
       case "place-selected": placeSelectedTabletopResources(); return;
       case "delete-selected-resources": requestSelectedResourceDeletion(); return;
@@ -1666,14 +1717,14 @@ export function CreatorWorkspacePrototype({
           setPublicationSummary(command.value.publication.summary);
           setPublicationLanguage(command.value.publication.language);
           setPublicationTags(command.value.publication.tags);
-          setPublicationLicense(command.value.publication.licenseId as PublicationLicenseId);
+          setPublicationLicense(command.value.publication.licenseId);
         }
         return;
       case "create-workspace": void createWorkspaceFromDialog(); return;
       case "create-resource": createResource(command.template); return;
       case "choose-publication-cover": publicationCoverRef.current?.click(); return;
       case "publish": void publishWorkspace(); return;
-      case "save-package": savePackageMetadata(command.workspaceKey); return;
+      case "save-package": void savePackageMetadata(command.workspaceKey); return;
       case "export-conversion": void exportConvertedPackage(command.review); return;
       case "accept-conversion": acceptConvertedPackage(command.review); return;
       case "commit-incoming": commitIncoming(command.incoming, command.handoff); return;

@@ -5,7 +5,7 @@ import {
   publicationCoverPolicy,
   type ImageCropSelection,
 } from "@pbdh/media-admission";
-import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
+import { CanonicalCardSurface, CardDisplay, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { useAuth } from "@pbdh/platform-auth/provider";
 import { ImageCropDialog, OperationStatus, usePlatformNotifications } from "@pbdh/platform-ui";
 import {
@@ -73,6 +73,23 @@ type MarketCoverDraft = {
 
 const imageAdmission = createBrowserImageAdmission();
 
+const publicationLicenseOptions = [
+  { id: "public-domain", label: "公有领域", declaration: "作者声明该资源属于公有领域。" },
+  { id: "cc0-1.0", label: "CC0 1.0", declaration: "Creative Commons CC0 1.0 Universal" },
+  { id: "cc-by-4.0", label: "CC BY 4.0", declaration: "Creative Commons Attribution 4.0 International" },
+  { id: "cc-by-sa-4.0", label: "CC BY-SA 4.0", declaration: "Creative Commons Attribution-ShareAlike 4.0 International" },
+  { id: "dpcgl", label: "DPCGL", declaration: "Darrington Press Community Gaming License (DPCGL)" },
+  { id: "all-rights-reserved", label: "保留所有权利", declaration: "All rights reserved." },
+] as const;
+
+function marketPublicationLicense(value: string, current: Publication): { label: string; declaration: string } {
+  const label = value.trim();
+  const known = publicationLicenseOptions.find((license) => license.label === label);
+  if (known) return { label: known.label, declaration: known.declaration };
+  if (current.license === label) return { label, declaration: current.licenseDeclaration ?? label };
+  return { label, declaration: label };
+}
+
 function upsertPublication(publications: Publication[], publication: Publication): Publication[] {
   return publications.some((candidate) => candidate.id === publication.id)
     ? publications.map((candidate) => candidate.id === publication.id ? publication : candidate)
@@ -83,7 +100,7 @@ const dimensionLabels: Record<FilterDimension, string> = {
   templateIds: "模板",
   systems: "目标系统",
   languages: "内容语言",
-  categories: "分类",
+  categories: "标签",
 };
 
 const emptyFacets: CatalogFacets = {
@@ -294,28 +311,21 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
   const assets = useMemo(() => new Map(
     Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
   ), [publication.mediaUrls]);
-  useEffect(() => {
-    if (!enlarged) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setEnlarged(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [enlarged]);
-
-  const card = source && renderer ? <CardDisplay
+  const fixedRatio = source ? usesFixedSurfaceRatio(source.presentation) : true;
+  const surface = source && renderer ? <CanonicalCardSurface
+    resource={source}
+    expectedRendererRevision={renderer.revision}
+    renderer={renderer}
+    assets={assets}
+    label={`${resource.name}规范卡面`}
+  /> : null;
+  const card = surface ? <CardDisplay
     designWidth={canonicalCardDesignSize.width}
     designHeight={canonicalCardDesignSize.height}
-    fixedRatio={usesFixedSurfaceRatio(source.presentation)}
+    fixedRatio={fixedRatio}
     displayAspectRatio={63 / 88}
     fit="contain"
-  ><CanonicalCardSurface
-      resource={source}
-      expectedRendererRevision={renderer.revision}
-      renderer={renderer}
-      assets={assets}
-      label={`${resource.name}规范卡面`}
-    /></CardDisplay> : null;
+  >{surface}</CardDisplay> : null;
 
   return <div className="canonical-preview">
     <header><strong>{resource.name}</strong><button type="button" onClick={() => setEnlarged(true)}><Icon name="maximize" />放大</button></header>
@@ -324,12 +334,13 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
         {card ?? (source ? <p>当前版本尚不能预览此模板。</p> : <p>正在读取资源包详情…</p>)}
       </div>
     </div>
-    {card && enlarged && <div className="canonical-enlarge-backdrop" role="presentation" onMouseDown={() => setEnlarged(false)}>
-      <section className="canonical-enlarge-dialog" role="dialog" aria-modal="true" aria-label={`${resource.name}大图`} onMouseDown={(event) => event.stopPropagation()}>
-        <button type="button" className="canonical-enlarge-close" aria-label="关闭大图" onClick={() => setEnlarged(false)}><Icon name="x" /></button>
-        <div className="canonical-enlarge-card">{card}</div>
-      </section>
-    </div>}
+    {surface && enlarged && <CardPreviewDialog
+      designWidth={canonicalCardDesignSize.width}
+      designHeight={canonicalCardDesignSize.height}
+      fixedRatio={fixedRatio}
+      label={`${resource.name}大图`}
+      onClose={() => setEnlarged(false)}
+    >{surface}</CardPreviewDialog>}
   </div>;
 }
 
@@ -475,8 +486,8 @@ function PublicationManagementDialog({
     coverUrl={coverUrl ?? publication.cover.url}
     value={value}
     systemPackageOptions={systemPackageOptions}
-    licenseOptions={[{ id: publication.license, label: publication.license }]}
-    licenseReadOnly
+    licenseOptions={publicationLicenseOptions.map(({ id, label }) => ({ id, label }))}
+    submitDisabled={!value.publication?.licenseId.trim()}
     busy={busy}
     busyLabel="正在保存资源包信息…"
     onChange={setValue}
@@ -701,6 +712,7 @@ export function MarketApp({
         summary: value.publication.summary,
         language: value.publication.language,
         tags: value.publication.tags,
+        license: marketPublicationLicense(value.publication.licenseId, managedPublication),
         coverAssetId: coverDraft?.assetId ?? managedPublication.cover.assetId,
         ...(coverDraft ? { coverAsset: coverDraft.asset } : {}),
       }, auth.credentials, fetch, coverDraft?.blob);

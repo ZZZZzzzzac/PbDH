@@ -191,11 +191,25 @@ const previewStyles = `
   width: min(var(--pbdh-preview-width), calc((100vh - 40px) * var(--pbdh-preview-ratio)), calc(100vw - 84px));
   aspect-ratio: var(--pbdh-preview-ratio);
 }
+[data-pbdh-card-preview-dialog].is-fluid {
+  width: min(var(--pbdh-preview-width), calc(100vw - 84px));
+  max-height: calc(100vh - 40px);
+  aspect-ratio: auto;
+}
 [data-pbdh-card-preview-stage] {
   position: absolute;
   inset: 0;
   display: grid;
   overflow: hidden;
+}
+[data-pbdh-card-preview-dialog].is-fluid [data-pbdh-card-preview-stage] {
+  position: relative;
+  inset: auto;
+  display: block;
+  max-height: calc(100vh - 40px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 [data-pbdh-card-preview-close] {
   position: absolute;
@@ -337,6 +351,7 @@ export function CardPreviewDialog({
     <style>{previewStyles}</style>
     <section
       data-pbdh-card-preview-dialog=""
+      className={fixedRatio ? "" : "is-fluid"}
       role="dialog"
       aria-modal="true"
       aria-label={label}

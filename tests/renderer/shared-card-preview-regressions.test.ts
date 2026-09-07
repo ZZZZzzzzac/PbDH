@@ -126,6 +126,22 @@ describe("共享卡牌详情与 GM 工作区回归", () => {
     }
   });
 
+  it("Market 与共享详情对非固定比例长卡提供纵向滚动", async () => {
+    const [shared, market, marketStyles] = await Promise.all([
+      readFile("packages/resource-renderer/src/react.tsx", "utf8"),
+      readFile("apps/market/src/MarketApp.tsx", "utf8"),
+      readFile("apps/market/src/styles.css", "utf8"),
+    ]);
+
+    expect(shared).toContain('className={fixedRatio ? "" : "is-fluid"}');
+    expect(shared).toMatch(/\[data-pbdh-card-preview-dialog\]\.is-fluid[\s\S]*?max-height:\s*calc\(100vh - 40px\)/);
+    expect(shared).toMatch(/\[data-pbdh-card-preview-dialog\]\.is-fluid \[data-pbdh-card-preview-stage\][\s\S]*?overflow-y:\s*auto/);
+    expect(market).toContain("<CardPreviewDialog");
+    expect(market).not.toContain("canonical-enlarge-backdrop");
+    expect(marketStyles).toMatch(/\.canonical-stage\s*\{[^}]*overflow-y:\s*auto/s);
+    expect(marketStyles).toMatch(/\.canonical-scale\s*\{[^}]*overflow:\s*visible/s);
+  });
+
   it("Creator 预览统一按宽度缩放，长卡通过舞台纵向滚动查看", async () => {
     const [preview, creatorStyles] = await Promise.all([
       readFile("apps/creator/src/workspace-prototype/resource-preview.tsx", "utf8"),

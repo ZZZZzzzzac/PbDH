@@ -116,6 +116,8 @@ class PublicationService:
         document["package"]["version"] = normalized_information["package"]["version"]
         document["package"]["description"] = normalized_information["package"]["description"]
         document["targets"] = copy.deepcopy(normalized_information["targets"])
+        if normalized_information.get("license") is not None:
+            document["license"] = copy.deepcopy(normalized_information["license"])
         if cover_media is not None:
             cover_asset, cover_bytes = cover_media
             old_cover_id = current_publication["coverAssetId"]

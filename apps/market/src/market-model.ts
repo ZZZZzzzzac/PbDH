@@ -31,6 +31,7 @@ export type Publication = {
   categories: string[];
   tags: string[];
   license: string;
+  licenseDeclaration?: string;
   updatedAt: string;
   resourceCount: number;
   status: PublicationStatus;

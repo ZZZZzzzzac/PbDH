@@ -641,6 +641,10 @@ def test_production_information_update_refreshes_published_market_entry_without_
             "summary": "市场简介已更新。",
             "language": "zh-CN",
             "tags": ["已更新"],
+            "license": {
+                "label": "DPCGL",
+                "declaration": "Darrington Press Community Gaming License (DPCGL)",
+            },
             "coverAssetId": document["assets"][0]["id"],
         },
     )
@@ -652,6 +656,16 @@ def test_production_information_update_refreshes_published_market_entry_without_
     assert visible_publication["title"] == "更新后的资源包"
     assert visible_publication["summary"] == "市场简介已更新。"
     assert visible_publication["tags"] == ["已更新"]
+    assert visible_publication["license"] == {
+        "label": "DPCGL",
+        "declaration": "Darrington Press Community Gaming License (DPCGL)",
+    }
+    downloaded = load_pbres(
+        api.get(f"/api/publications/{publication_id}/download").content,
+        validate_resource_package_semantics,
+    )["candidate"]
+    assert downloaded is not None
+    assert downloaded["document"]["license"] == visible_publication["license"]
 
     target_change = api.patch(
         f"/api/publications/{publication_id}/information",

@@ -142,7 +142,7 @@ export function CreatorResourceExplorer({
 
   return <aside className="resource-explorer">
     <header className="explorer-toolbar"><strong>资源管理器</strong><div>
-      <button type="button" title="新建资源包" aria-label="新建资源包" disabled={Boolean(snapshot.operation)} onClick={() => execute({ type: "new-package" })}><Icon name="packagePlus" /></button>
+      <button className="explorer-new-package" type="button" title="新建资源包" aria-label="新建资源包" disabled={Boolean(snapshot.operation)} onClick={() => execute({ type: "new-package" })}><Icon name="packagePlus" /></button>
       <button type="button" title="新建资源" aria-label="新建资源" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "new-resource" })}><Icon name="filePlus" /></button>
       <button type="button" title="新建文件夹" aria-label="新建文件夹" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "new-folder" })}><Icon name="folderPlus" /></button>
       <div className="explorer-import-menu">
@@ -159,7 +159,7 @@ export function CreatorResourceExplorer({
           {thirdPartyFormats.map((format) => <button key={format.id} type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: format.id })}>{`导出${format.label}`}</button>)}
         </div>
       </div>
-      <button type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "publish-package" })}><Icon name="package" /></button>
+      <button className="explorer-publish-package" type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "publish-package" })}><Icon name="store" /></button>
     </div></header>
     {snapshot.operation && snapshot.operationLabel && <div className="creator-operation-strip"><OperationStatus label={snapshot.operationLabel} size="regular" /></div>}
     <div className="explorer-search-row"><div className="explorer-search-composer" onFocus={() => {

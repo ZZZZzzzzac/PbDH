@@ -213,6 +213,7 @@ describe("Market publication API", () => {
       summary: "包含牛头人破坏者。",
       language: "zh-CN",
       tags: ["荒野"],
+      license: { label: "DPCGL", declaration: "Darrington Press Community Gaming License (DPCGL)" },
       coverAssetId: updatedCoverId,
       coverAsset: {
         id: updatedCoverId,
@@ -238,6 +239,7 @@ describe("Market publication API", () => {
     expect(uploadedCover.size).toBe(cover.size);
     expect(JSON.parse(String(body.get("information")))).toMatchObject({
       package: { name: "荒野遭遇集" },
+      license: { label: "DPCGL" },
       coverAssetId: updatedCoverId,
     });
   });

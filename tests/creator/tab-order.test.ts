@@ -1,13 +1,18 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  creatorActiveResourceTabKey,
+  gmActiveTabletopTabKey,
   moveTab,
   orderTabsByKey,
+  readStoredActiveTab,
   readStoredTabOrder,
+  resolveStoredActiveTab,
   reconcileTabOrder,
   resourceTabKey,
   sameTabOrder,
   shouldActivateTabDrag,
+  writeStoredActiveTab,
   writeStoredTabOrder,
 } from "../../apps/creator/src/workspace-prototype/tab-order.ts";
 
@@ -34,6 +39,30 @@ describe("Creator and GM tab ordering", () => {
     const second = { workspaceKey: "package-b", resourceId: "shared" };
     const keyOf = (item: typeof first) => resourceTabKey(item.workspaceKey, item.resourceId);
     expect(orderTabsByKey([first, second], [keyOf(second), keyOf(first)], keyOf)).toEqual([second, first]);
+  });
+
+  test("restores the last active Creator resource and GM tabletop after a page reload", () => {
+    const values = new Map<string, string>();
+    vi.stubGlobal("window", { localStorage: {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    } });
+
+    const resourceKey = resourceTabKey("package-a", "resource-b");
+    writeStoredActiveTab(creatorActiveResourceTabKey, resourceKey);
+    writeStoredActiveTab(gmActiveTabletopTabKey, "tabletop-b");
+
+    expect(resolveStoredActiveTab(
+      readStoredActiveTab(creatorActiveResourceTabKey),
+      [resourceTabKey("package-a", "resource-a"), resourceKey],
+    )).toBe(resourceKey);
+    expect(resolveStoredActiveTab(
+      readStoredActiveTab(gmActiveTabletopTabKey),
+      ["tabletop-a", "tabletop-b"],
+    )).toBe("tabletop-b");
+    expect(resolveStoredActiveTab("closed-tab", ["first-open-tab"], "first-open-tab"))
+      .toBe("first-open-tab");
+    vi.unstubAllGlobals();
   });
 
   test("reads, deduplicates, and writes local UI preferences", () => {

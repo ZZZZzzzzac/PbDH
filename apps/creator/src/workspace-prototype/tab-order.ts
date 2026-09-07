@@ -1,7 +1,9 @@
 export type TabDropPlacement = "before" | "after";
 
 export const creatorResourceTabOrderKey = "pbdh.creator.tabs.resources";
+export const creatorActiveResourceTabKey = "pbdh.creator.tabs.active-resource";
 export const gmTabletopTabOrderKey = "pbdh.creator.tabs.tabletops";
+export const gmActiveTabletopTabKey = "pbdh.creator.tabs.active-tabletop";
 export const tabDragThreshold = 8;
 
 export function shouldActivateTabDrag(startX: number, currentX: number): boolean {
@@ -27,6 +29,25 @@ export function readStoredTabOrder(key: string): string[] {
 export function writeStoredTabOrder(key: string, order: readonly string[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(key, JSON.stringify(order));
+}
+
+export function readStoredActiveTab(key: string): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(key)?.trim() ?? "";
+}
+
+export function writeStoredActiveTab(key: string, tabKey: string): void {
+  if (typeof window === "undefined" || !tabKey) return;
+  window.localStorage.setItem(key, tabKey);
+}
+
+export function resolveStoredActiveTab(
+  storedKey: string,
+  availableKeys: readonly string[],
+  fallbackKey = availableKeys[0] ?? "",
+): string {
+  if (storedKey && availableKeys.includes(storedKey)) return storedKey;
+  return availableKeys.includes(fallbackKey) ? fallbackKey : availableKeys[0] ?? "";
 }
 
 export function reconcileTabOrder(order: readonly string[], availableKeys: readonly string[]): string[] {

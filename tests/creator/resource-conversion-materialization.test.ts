@@ -9,6 +9,7 @@ import type { ResourceMediaNormalizer } from "@pbdh/resource-conversion";
 import { trustedAuthoringFor, trustedRendererFor } from "@pbdh/templates/frontend";
 
 import { materializeCreatorResourceConversion } from "../../apps/creator/src/workspace-prototype/materialize-resource-conversion.ts";
+import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-core.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 
 describe("Creator third-party resource conversion", () => {
@@ -109,6 +110,49 @@ describe("Creator third-party resource conversion", () => {
       validateResourcePackageCandidate,
     );
     expect(roundTrip.candidate?.document.package.id).toBe(converted.candidate.document.package.id);
+  });
+
+  it("groups dhsheet domain cards by domain and subclasses by main class", async () => {
+    const imported = await resourceConversionRegistry.import("dhsheet", {
+      bytes: new TextEncoder().encode(JSON.stringify({
+        name: "分类测试包",
+        profession: [],
+        ancestry: [],
+        community: [],
+        subclass: [
+          { id: "subclass-1", 名称: "奉献", 主职: "守护者", 等级: "基础", 描述: "守护特性" },
+          { id: "subclass-2", 名称: "追猎", 主职: "游侠", 等级: "基础", 描述: "追猎特性" },
+        ],
+        domain: [
+          { id: "domain-1", 名称: "坚定", 领域: "英勇", 等级: 1, 属性: "能力", 回想: 1, 描述: "坚定效果" },
+          { id: "domain-2", 名称: "修复", 领域: "奥术", 等级: 1, 属性: "法术", 回想: 1, 描述: "修复效果" },
+        ],
+        variant: [],
+      })),
+      fileName: "grouped-cards.json",
+      container: "json",
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+
+    const converted = await materializeCreatorResourceConversion(imported.batch);
+    const paths = converted.candidate?.document.resources.map((resource) => resource.path) ?? [];
+
+    expect(paths).toEqual(expect.arrayContaining([
+      expect.stringMatching(/^子职业\/守护者\/\d{4}-奉献\.json$/u),
+      expect.stringMatching(/^子职业\/游侠\/\d{4}-追猎\.json$/u),
+      expect.stringMatching(/^领域卡\/英勇\/\d{4}-坚定\.json$/u),
+      expect.stringMatching(/^领域卡\/奥术\/\d{4}-修复\.json$/u),
+    ]));
+    expect(converted.candidate).not.toBeNull();
+    if (!converted.candidate) return;
+    const workspace = createWorkspace(converted.candidate);
+    const domainFolder = workspace.folders.find((folder) => folder.name === "领域卡" && folder.parentId === null);
+    const subclassFolder = workspace.folders.find((folder) => folder.name === "子职业" && folder.parentId === null);
+    expect(workspace.folders.filter((folder) => folder.parentId === domainFolder?.id).map((folder) => folder.name))
+      .toEqual(["英勇", "奥术"]);
+    expect(workspace.folders.filter((folder) => folder.parentId === subclassFolder?.id).map((folder) => folder.name))
+      .toEqual(["守护者", "游侠"]);
   });
 
   it("materializes imported weapons with matching editing and rendering support", async () => {

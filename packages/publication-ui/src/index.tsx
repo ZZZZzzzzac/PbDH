@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { OperationStatus } from "@pbdh/platform-ui";
 
 import "./styles.css";
@@ -12,7 +12,7 @@ export type PublicationLicenseOption = { id: string; label: string };
 
 export function ResourcePackageInfoDialog({
   heading, submitLabel, coverUrl = "", value, systemPackageOptions,
-  licenseOptions = [], licenseReadOnly = false, busy = false, busyLabel = "正在处理…", submitDisabled = false,
+  licenseOptions = [], busy = false, busyLabel = "正在处理…", submitDisabled = false,
   onChange, onChooseCover, onClose, onSubmit,
 }: {
   heading: string;
@@ -21,7 +21,6 @@ export function ResourcePackageInfoDialog({
   value: ResourcePackageEditorValue;
   systemPackageOptions: readonly SystemPackageOption[];
   licenseOptions?: PublicationLicenseOption[];
-  licenseReadOnly?: boolean;
   busy?: boolean;
   busyLabel?: string;
   submitDisabled?: boolean;
@@ -31,6 +30,7 @@ export function ResourcePackageInfoDialog({
   onSubmit: () => void;
 }) {
   const publication = value.publication;
+  const licenseListId = useId();
   const changePackage = (nextPackage: ResourcePackageInfoValue) => onChange({ ...value, package: nextPackage });
   const changePublication = (nextPublication: PublicationFormValue) => onChange({ ...value, publication: nextPublication });
   function submit(event: FormEvent) {
@@ -63,7 +63,7 @@ export function ResourcePackageInfoDialog({
           {publication && <>
             <div className="pbdh-publication-meta-fields">
               <Field label="内容语言" value={publication.language} disabled={busy} onChange={(language) => changePublication({ ...publication, language })} />
-              <label><span>许可类型</span><select disabled={busy || licenseReadOnly} value={publication.licenseId} onChange={(event) => changePublication({ ...publication, licenseId: event.target.value })}>{licenseOptions.map((license) => <option key={license.id} value={license.id}>{license.label}</option>)}</select></label>
+              <label><span>许可类型</span><input list={licenseListId} disabled={busy} value={publication.licenseId} onChange={(event) => changePublication({ ...publication, licenseId: event.target.value })} /><datalist id={licenseListId}>{licenseOptions.map((license) => <option key={license.id} value={license.label} />)}</datalist></label>
             </div>
             <TagEditor tags={publication.tags} disabled={busy} onChange={(tags) => changePublication({ ...publication, tags })} />
           </>}

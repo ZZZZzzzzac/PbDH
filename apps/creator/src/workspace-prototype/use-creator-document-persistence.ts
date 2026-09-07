@@ -9,6 +9,13 @@ import { isCreatorAuthoringInputFocused } from "./creator-controls.tsx";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
 import { containGmTabletopInstances } from "./gm-tabletop-geometry.ts";
 import { TabletopDocumentRepository } from "./tabletop-document-repository.ts";
+import {
+  creatorActiveResourceTabKey,
+  gmActiveTabletopTabKey,
+  readStoredActiveTab,
+  resolveStoredActiveTab,
+  resourceTabKey,
+} from "./tab-order.ts";
 import type { CreatorWorkspace } from "./workspace-model.ts";
 
 const LOCAL_SAVE_DELAY_MS = 400;
@@ -94,10 +101,20 @@ export function useCreatorDocumentPersistence({
       const visible = stored.filter((item) => item.sync.scope === "local-only" || item.sync.accountId === credentials?.accountId);
       if (cancelled) return;
       const restored = visible.map((item) => item.workspace);
+      const openResources = restored.flatMap((workspace) => workspace.openResourceIds.map((resourceId) => ({
+        workspaceKey: workspace.key,
+        resourceId,
+        tabKey: resourceTabKey(workspace.key, resourceId),
+      })));
+      const activeTabKey = resolveStoredActiveTab(
+        readStoredActiveTab(creatorActiveResourceTabKey),
+        openResources.map((item) => item.tabKey),
+      );
+      const activeResource = openResources.find((item) => item.tabKey === activeTabKey);
       setWorkspaces(restored);
       setWorkspaceSync(new Map(visible.map((item) => [item.workspace.key, item.sync])));
-      setActiveWorkspaceKey(restored[0]?.key ?? "");
-      setActiveResourceId(restored[0]?.openResourceIds[0] ?? "");
+      setActiveWorkspaceKey(activeResource?.workspaceKey ?? restored[0]?.key ?? "");
+      setActiveResourceId(activeResource?.resourceId ?? "");
       addAssetBytes(restored.flatMap((workspace) => [...workspace.media]));
     }).catch((error) => notify(error instanceof Error ? error.message : "工作区恢复失败"))
       .finally(() => { if (!cancelled) setWorkspaceStorageReady(true); });
@@ -111,9 +128,13 @@ export function useCreatorDocumentPersistence({
       if (cancelled) return;
       const models = visible.map((item) => item.model);
       const media = new Map(visible.flatMap((item) => [...item.media]));
+      const activeTabletopId = resolveStoredActiveTab(
+        readStoredActiveTab(gmActiveTabletopTabKey),
+        models.map((item) => item.id),
+      );
       setTabletops(models);
       setTabletopSync(new Map(visible.map((item) => [item.model.id, item.sync])));
-      setActiveTabletopId(models[0]?.id ?? "");
+      setActiveTabletopId(activeTabletopId);
       setSelectedInstanceId("");
       setSelectedInstanceIds([]);
       setTabletopMedia(media);

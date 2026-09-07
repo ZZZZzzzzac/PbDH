@@ -40,6 +40,13 @@ function response(body: unknown) {
 }
 
 describe("Market publication detail", () => {
+  it("names publication tag facets as tags instead of categories", () => {
+    const source = readFileSync(fileURLToPath(new URL("../../apps/market/src/MarketApp.tsx", import.meta.url)), "utf8");
+
+    expect(source).toContain('categories: "标签"');
+    expect(source).not.toContain('categories: "分类"');
+  });
+
   it("goes directly to Player and leaves the only confirmation to package installation", () => {
     const source = readFileSync(fileURLToPath(new URL("../../apps/market/src/MarketApp.tsx", import.meta.url)), "utf8");
     const handoff = source.slice(
@@ -165,8 +172,8 @@ describe("Market publication detail", () => {
       busyLabel="正在发布整包…"
       coverUrl=""
       systemPackageOptions={[]}
-      value={{ package: { name: "大型资源包", version: "1.0.0", description: "", targets: [] }, publication: { title: "大型资源包", summary: "", language: "中文", tags: [], licenseId: "CC0" } }}
-      licenseOptions={[{ id: "CC0", label: "CC0" }]}
+      value={{ package: { name: "大型资源包", version: "1.0.0", description: "", targets: [] }, publication: { title: "大型资源包", summary: "", language: "中文", tags: [], licenseId: "自定义许可" } }}
+      licenseOptions={[{ id: "cc0", label: "CC0" }, { id: "dpcgl", label: "DPCGL" }]}
       onChange={() => undefined}
       onClose={() => undefined}
       onSubmit={() => undefined}
@@ -181,6 +188,11 @@ describe("Market publication detail", () => {
     expect(publishMarkup).toContain('aria-busy="true"');
     expect(publishMarkup).toContain("正在发布整包…");
     expect(publishMarkup).toContain("pbdh-operation-status-spinner");
+    expect(publishMarkup).toContain('<input list=');
+    expect(publishMarkup).toContain('<datalist');
+    expect(publishMarkup).toContain('value="自定义许可"');
+    expect(publishMarkup).toContain('value="DPCGL"');
+    expect(publishMarkup).not.toContain('<select');
     expect(unpublishMarkup).toContain('aria-busy="true"');
     expect(unpublishMarkup).toContain("正在取消发布…");
     expect(unpublishMarkup).toContain("pbdh-operation-status-spinner");

@@ -17,7 +17,7 @@ const archive = new Uint8Array(readFileSync(new URL(
   import.meta.url,
 )));
 const fourSacredBeastsArchive = new Uint8Array(readFileSync(new URL(
-  "../../docs/third/《四圣兽》通用敌人数据卡.pbres",
+  "../../docs/third/published/《四圣兽》通用敌人数据卡.pbres",
   import.meta.url,
 )));
 

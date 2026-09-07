@@ -5,7 +5,12 @@ import {
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
 import { mapBatchToRegisteredCandidates } from "./template-mapping.ts";
-import type { ConversionDiagnostic, ResourceMediaNormalizer, TemporaryResourceBatch } from "./types.ts";
+import type {
+  ConversionDiagnostic,
+  ResourceFormatId,
+  ResourceMediaNormalizer,
+  TemporaryResourceBatch,
+} from "./types.ts";
 
 export type ResourceConversionMaterialization = {
   candidate: ResourcePackageCandidate | null;
@@ -143,7 +148,12 @@ export async function materializeResourceConversion(input: {
       if (!template) throw new Error(`可信资源模板不可用：${item.template.id}@${item.template.version}`);
       return {
         id: uuidV7(),
-        path: `${safePathSegment(item.template.id)}/${String(index + 1).padStart(4, "0")}-${safePathSegment(resourceName(item.data))}.json`,
+        path: materializedResourcePath(
+          input.batch.sourceDocument.formatId,
+          item.template.id,
+          item.data,
+          index,
+        ),
         template: item.template,
         presentation: {
           ...structuredClone(template.defaultPresentation),
@@ -167,6 +177,31 @@ export async function materializeResourceConversion(input: {
     converted: mapped.candidates.length,
     skipped: mapped.unmapped.length,
   };
+}
+
+function materializedResourcePath(
+  formatId: ResourceFormatId,
+  templateId: string,
+  data: Record<string, unknown>,
+  index: number,
+): string {
+  const semanticFolder = formatId === "dhsheet"
+    ? templateId === "领域卡"
+      ? textField(data, "领域")
+      : templateId === "子职业"
+        ? textField(data, "主职")
+        : ""
+    : "";
+  return [
+    safePathSegment(templateId),
+    ...(semanticFolder ? [safePathSegment(semanticFolder)] : []),
+    `${String(index + 1).padStart(4, "0")}-${safePathSegment(resourceName(data))}.json`,
+  ].join("/");
+}
+
+function textField(data: Record<string, unknown>, field: string): string {
+  const value = data[field];
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function resourceName(data: Record<string, unknown>): string {

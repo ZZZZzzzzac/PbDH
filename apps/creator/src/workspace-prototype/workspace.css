@@ -25,6 +25,9 @@
 .explorer-toolbar button, .package-root > button:last-child { width: 32px; height: 34px; display: grid; flex: none; place-items: center; padding: 0; border: 0; border-radius: 4px; color: #766f66; background: transparent; }
 .explorer-toolbar button:hover, .package-root > button:last-child:hover { background: #e8e3db; }
 .explorer-toolbar .icon { width: 17px; height: 17px; }
+.explorer-toolbar .explorer-new-package .icon { width: 19px; height: 19px; }
+.explorer-new-package .icon path:nth-child(n + 4) { stroke: currentColor; stroke-width: 2.4; }
+.explorer-toolbar button:disabled { cursor: default; opacity: .42; }
 .package-root > button:last-child .icon { width: 14px; height: 14px; }
 .explorer-import-menu { position: relative; }
 .explorer-import-menu::after { content: ""; position: absolute; z-index: 169; top: 100%; left: 0; width: 190px; height: 5px; }
@@ -35,7 +38,7 @@
 .explorer-toolbar .explorer-import-menu-panel > button.is-native-format { color: #fffdf8; background: #8b2d31; }
 .explorer-toolbar .explorer-import-menu-panel > button.is-native-format:hover, .explorer-toolbar .explorer-import-menu-panel > button.is-native-format:focus-visible { background: #6f2024; }
 .explorer-search-row { display: flex; align-items: center; gap: 5px; padding: 4px 7px; }
-.explorer-search-composer { position: relative; z-index: 150; min-width: 0; flex: 1; }
+.explorer-search-composer { position: relative; z-index: 1; min-width: 0; flex: 1; }
 .explorer-search { height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 8px; border: 1px solid #c8c0b5; border-radius: 3px; background: #fbfaf7; transition: border-color 120ms ease, box-shadow 120ms ease; }
 .explorer-search-composer:focus-within .explorer-search { border-color: #8b2d31; box-shadow: 0 0 0 2px #8b2d3118; }
 .explorer-search .icon { width: 13px; height: 13px; flex: none; color: #766f66; }

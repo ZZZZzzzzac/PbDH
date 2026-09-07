@@ -6,10 +6,8 @@ import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
 
 import {
   generatedPublicationCover,
-  publicationLicenseId,
-  publicationLicenses,
+  publicationLicense,
   type PublicationCoverDraft,
-  type PublicationLicenseId,
 } from "./creator-publication.ts";
 import {
   preparePublicationCandidate,
@@ -42,7 +40,7 @@ export type CreatorPublicationDraft = {
     summary: string;
     language: string;
     tags: string[];
-    licenseId: PublicationLicenseId;
+    licenseId: string;
   };
   cover: PublicationCoverDraft;
 };
@@ -79,6 +77,72 @@ const browserPublicationPort: CreatorPublicationPort = {
   publish: publishCandidate,
 };
 
+function embeddedPublicationCover(workspace: CreatorWorkspace): PublicationCoverDraft | null {
+  const assetId = workspace.document.publication?.coverAssetId;
+  if (!assetId) return null;
+  const asset = workspace.document.assets.find((candidate) => candidate.id === assetId);
+  const bytes = workspace.media.get(assetId);
+  if (!asset || !bytes) return null;
+  return {
+    assetId,
+    url: "",
+    asset: structuredClone(asset),
+    bytes: bytes.slice(),
+  };
+}
+
+async function creatorPublicationDraft(
+  workspace: CreatorWorkspace,
+  version: string,
+  port: CreatorPublicationPort,
+  allowEmptyCover = false,
+): Promise<CreatorPublicationDraft> {
+  const publication = workspace.document.publication;
+  let cover = embeddedPublicationCover(workspace);
+  if (!cover) {
+    try {
+      cover = await port.generateCover(workspace);
+    } catch (error) {
+      if (!allowEmptyCover) throw error;
+      cover = { assetId: "", url: "" };
+    }
+  }
+  return {
+    package: {
+      name: workspace.document.package.name,
+      version,
+      description: workspace.document.package.description,
+      targets: structuredClone(workspace.document.targets),
+    },
+    publication: {
+      title: workspace.document.package.name,
+      summary: workspace.document.package.description,
+      language: publication?.language ?? "中文",
+      tags: [...(publication?.tags ?? [])],
+      licenseId: workspace.document.license.label,
+    },
+    cover,
+  };
+}
+
+export async function prepareCreatorPackageInformation(
+  workspace: CreatorWorkspace,
+  port: CreatorPublicationPort = browserPublicationPort,
+): Promise<CreatorPublicationPreparation> {
+  try {
+    return {
+      ok: true,
+      draft: await creatorPublicationDraft(workspace, workspace.document.package.version, port, true),
+    };
+  } catch {
+    return {
+      ok: false,
+      title: "无法准备资源包信息",
+      diagnostics: [diagnostic("creator.publication-cover.render-failed", "/publication/cover")],
+    };
+  }
+}
+
 export async function prepareCreatorPublication(
   workspace: CreatorWorkspace,
   credentials: PlatformCredentials | null,
@@ -87,25 +151,9 @@ export async function prepareCreatorPublication(
   if (!credentials) return authRequiredFailure();
   try {
     const version = await port.suggestVersion(workspace.document, credentials);
-    const cover = await port.generateCover(workspace);
     return {
       ok: true,
-      draft: {
-        package: {
-          name: workspace.document.package.name,
-          version,
-          description: workspace.document.package.description,
-          targets: structuredClone(workspace.document.targets),
-        },
-        publication: {
-          title: workspace.document.package.name,
-          summary: workspace.document.package.description,
-          language: "中文",
-          tags: [],
-          licenseId: publicationLicenseId(workspace.document.license.label),
-        },
-        cover,
-      },
+      draft: await creatorPublicationDraft(workspace, version, port),
     };
   } catch (error) {
     const apiFailure = error instanceof PublicationApiError;
@@ -124,14 +172,12 @@ export async function prepareCreatorPublication(
   }
 }
 
-export async function publishCreatorWorkspace(
+async function prepareCreatorCandidate(
   workspace: CreatorWorkspace,
   draft: CreatorPublicationDraft,
-  credentials: PlatformCredentials | null,
-  port: CreatorPublicationPort = browserPublicationPort,
-): Promise<CreatorPublicationResult> {
+) {
   const editedWorkspace = updateWorkspacePackageMetadata(workspace, draft.package);
-  const prepared = await preparePublicationCandidate(editedWorkspace, {
+  return preparePublicationCandidate(editedWorkspace, {
     title: draft.publication.title,
     summary: draft.publication.summary,
     language: draft.publication.language,
@@ -139,7 +185,36 @@ export async function publishCreatorWorkspace(
     coverAssetId: draft.cover.assetId,
   }, draft.cover.asset && draft.cover.bytes
     ? { asset: draft.cover.asset, bytes: draft.cover.bytes }
-    : undefined, publicationLicenses[draft.publication.licenseId]);
+    : undefined, publicationLicense(draft.publication.licenseId, workspace.document.license));
+}
+
+export async function saveCreatorPackageInformation(
+  workspace: CreatorWorkspace,
+  draft: CreatorPublicationDraft,
+): Promise<CreatorPublicationResult> {
+  const prepared = await prepareCreatorCandidate(workspace, draft);
+  if (!prepared.ok) {
+    return { ok: false, title: "资源包信息未保存", diagnostics: prepared.diagnostics };
+  }
+  return {
+    ok: true,
+    workspace: {
+      ...workspace,
+      document: prepared.candidate.document,
+      media: prepared.candidate.media,
+      dirty: true,
+    },
+    message: "资源包信息已保存",
+  };
+}
+
+export async function publishCreatorWorkspace(
+  workspace: CreatorWorkspace,
+  draft: CreatorPublicationDraft,
+  credentials: PlatformCredentials | null,
+  port: CreatorPublicationPort = browserPublicationPort,
+): Promise<CreatorPublicationResult> {
+  const prepared = await prepareCreatorCandidate(workspace, draft);
   if (!prepared.ok) {
     return { ok: false, title: "发布门禁未通过", diagnostics: prepared.diagnostics };
   }

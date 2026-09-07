@@ -890,6 +890,14 @@ describe("Creator Workspace UI contracts", () => {
 
   test("removes sorting, places multi-select beside search, and orders the enlarged toolbar actions", () => {
     const markup = renderResourceExplorer();
+    const explorerSource = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/creator-resource-explorer.tsx",
+    ), "utf8");
+    const styles = readFileSync(path.join(
+      root,
+      "apps/creator/src/workspace-prototype/workspace.css",
+    ), "utf8");
     const actions = ["新建资源包", "新建资源", "新建文件夹", "导入资源包", "导出资源包", "发布到资源市场"];
     const actionOffsets = actions.map((label) => markup.indexOf(`aria-label="${label}"`));
 
@@ -898,6 +906,11 @@ describe("Creator Workspace UI contracts", () => {
     expect(markup).toContain('class="explorer-multi-select"');
     expect(actionOffsets.every((offset) => offset >= 0)).toBe(true);
     expect(actionOffsets).toEqual([...actionOffsets].sort((left, right) => left - right));
+    expect(markup).toContain('class="explorer-new-package"');
+    expect(explorerSource).toContain('<Icon name="store" />');
+    expect(explorerSource).not.toContain('<Icon name="cloudUpload" />');
+    expect(styles).toContain(".explorer-new-package .icon path:nth-child(n + 4)");
+    expect(styles).toContain("stroke: currentColor; stroke-width: 2.4");
   });
 
   test("lets users resize both Creator column boundaries and remembers their choices", () => {
@@ -975,6 +988,7 @@ describe("Creator Workspace UI contracts", () => {
 
   test("keeps Creator dialogs above workspace explorer overlays", () => {
     const creatorStyles = readFileSync(path.join(root, "apps/creator/src/styles.css"), "utf8");
+    const platformStyles = readFileSync(path.join(root, "packages/platform-ui/src/styles.css"), "utf8");
     const workspaceStyles = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/workspace.css",
@@ -988,10 +1002,12 @@ describe("Creator Workspace UI contracts", () => {
     };
 
     const dialogLayer = zIndex(creatorStyles, ".dialog-backdrop");
+    const platformAppBarLayer = zIndex(platformStyles, ".pbdh-platform-appbar");
+    const searchComposerLayer = zIndex(workspaceStyles, ".explorer-search-composer");
     const workspaceLayers = [...workspaceStyles.matchAll(/z-index:\s*(\d+)/gu)]
       .map((match) => Number(match[1]));
-    expect(workspaceLayers).toContain(150);
     expect(dialogLayer).toBeGreaterThan(Math.max(...workspaceLayers));
+    expect(searchComposerLayer).toBeLessThan(platformAppBarLayer);
   });
 
   test("makes the GM tabletop bounds visible against the surrounding viewport", () => {
@@ -1089,9 +1105,14 @@ describe("Creator Workspace UI contracts", () => {
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
     const contextMenuSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-context-menus.tsx"), "utf8");
+    const dialogsSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-dialogs.tsx"), "utf8");
+    const workflowSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-publication-workflow.ts"), "utf8");
     const creatorSource = `${rootSource}\n${contextMenuSource}`;
 
     expect(creatorSource).toContain("编辑资源包信息");
-    expect(creatorSource).toContain("updateWorkspacePackageMetadata");
+    expect(rootSource).toContain("saveCreatorPackageInformation");
+    expect(workflowSource).toContain("prepareCreatorCandidate(workspace, draft)");
+    expect(dialogsSource.match(/<ResourcePackageInfoDialog/g)).toHaveLength(1);
+    expect(dialogsSource).toContain('dialog.kind === "publish" || dialog.kind === "package-metadata"');
   });
 });

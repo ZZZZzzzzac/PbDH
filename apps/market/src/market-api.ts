@@ -77,6 +77,7 @@ export type PublicationMetadataInput = {
 export type PublicationInformationInput = PublicationMetadataInput & {
   package: { name: string; version: string; description: string };
   targets: Array<{ systemPackageId: string; version: string }>;
+  license: { label: string; declaration: string };
   coverAsset?: {
     id: string;
     mediaType: "image/webp";
@@ -398,6 +399,7 @@ function publicationFromApi(source: ApiPublication): Publication {
     categories: source.tags,
     tags: source.tags,
     license: source.license.label,
+    licenseDeclaration: source.license.declaration,
     updatedAt: source.updatedAt,
     resourceCount: source.resourceCount,
     status: source.status,
