@@ -63,6 +63,13 @@
 - 可重放生成入口：`npx tsx scripts/sync-tttri-sheet-update.ts D:/Fish/TRPG/PbDH_sheet`，之后运行 `npx tsx scripts/sync-bundled-system-package-metadata.ts`。脚本只读固定 Git 提交，不依赖源仓库工作区，也不复制其发布配置。
 - 结果：新增 40 项、更新 17 项；568 个资源、281 个媒体，归档 25,149,368 bytes。全量前端 111 文件/911 测试、类型检查、内置包一致性和构建通过。真实本地 Player 显示 TTTRI 1.1.0，子职选择器 280 项，排陷手包含五个阶段。完整 `verify` 被既有 `.pytest-native` 目录权限错误阻断，未记为通过；尚未人工确认真实旧人物升级。
 
+## HTML 与 PDF 输出
+
+- HTML 快照保留规范卡面的 Declarative Shadow DOM、模板样式和内嵌图片，不依赖浏览器临时 Object URL。
+- PDF 使用 A4 页面、三列 63mm 卡牌。浏览器直接打印嵌套缩放的规范卡面时曾在每页第三行漏绘图片；打印前将当前卡面 DOM 固化为约 305 DPI 的 JPEG，保留模板的当前排版结果。人物表仍使用浏览器原生打印，卡牌区域的文字成为图像。
+- 打印图像是临时输出制品，不写入人物存档或资源包。内容摘要缓存最多保留 32 项，卡面变化会重新生成；相同卡面复用渲染和解码结果，退出打印后释放 Object URL。
+- `tests/player/html-snapshot.test.ts` 验证 Shadow DOM、内嵌媒体、当前表单值和打印 SVG 的自包含性。实际分页绘制需使用浏览器打印成品验证；19 张卡的人工复现采用 9 / 9 / 1 页内卡数检查，不用 DOM 单元测试代替这一检查。
+
 ## 阶段验收清单
 
 1. Daggerheart Core 通过迁移后的加载器、Validator 和 SheetRenderer 显示完整人物卡。

@@ -223,7 +223,7 @@
     "条件": { "类型": "always" },
     "动作": [{
       "类型": "fillText", "目标模块ID": "class-feature", "写入方式": "追加", "追加分隔符": "\n\n",
-      "内容": { "类型": "selectedResourceTemplate", "格式": "【{{名称}}】\n{{职业特性}}" }
+      "内容": { "类型": "selectedResourceTemplate", "格式": "【{{主职}}】\n{{职业特性}}" }
     }]
   },
   {

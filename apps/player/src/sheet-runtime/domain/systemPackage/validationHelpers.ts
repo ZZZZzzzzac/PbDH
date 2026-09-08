@@ -45,8 +45,12 @@ export function validateSelectedResourceField(
 ): void {
   if (sourceModule?.类型 === "resourcePicker") {
     for (const link of getResourcePickerLinks(sourceModule)) {
+      const library = findResourceLibrary(systemPackage, link.ID);
+      // 尚未安装对应资源时，使用选择器显式声明的字段校验，避免空库阻断系统包加载。
+      if (library?.entries.length === 0 && library.fields.length === 0
+        && link.字段模板?.some((candidate) => candidate.键 === field)) continue;
       validateResourceLibraryField(
-        findResourceLibrary(systemPackage, link.ID),
+        library,
         field,
         path,
         dependencyId,

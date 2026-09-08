@@ -73,7 +73,7 @@ function padCards(cards, prefix) {
 function addUniqueCard(cards, libraryId, entry) {
   if (entry && !cards.some((card) => card.id === entry.ID)) cards.push(cardFromEntry(libraryId, entry));
 }
-function splitReversible(value, label, diagnostics) {
+  function splitReversible(value, label, diagnostics) {
   const source = string(value).trim();
   if (!source) return ["", "", ""];
   const parts = source.split("｜").map((part) => part.trim());
@@ -82,8 +82,21 @@ function splitReversible(value, label, diagnostics) {
     level: "warning", code: "TTTRI_DHSHEET_EQUIPMENT_NOT_REVERSIBLE",
     text: `${label}「${source}」不是适配器生成的可逆格式；完整文字已保存在名称字段，未猜测其他属性。`,
   });
-  return [source, "", ""];
-}
+    return [source, "", ""];
+  }
+  function splitWeapon(value, label, diagnostics) {
+    const source = string(value).trim();
+    // 原生子职武器原型：名称 距离/持握 骰式/伤害类型。
+    const match = source.match(/^(.+?)\s+(近战|近距离|中距离|远距离|极远距离)\s*\/\s*(单手|双手)\s+(\d*d\d+(?:[+-]\d+)?)\s*\/\s*(物理|法术|魔法)$/u);
+    if (match) return [match[1].trim(), `${match[5]}/${match[3]}/${match[2]}`, match[4]];
+    return splitReversible(value, label, diagnostics);
+  }
+  function splitArmor(value, diagnostics) {
+    // 原生护甲摘要与导入摘要的字段顺序不同，必须先按标签解析。
+    const match = string(value).trim().match(/^(.+?)\s*[|｜]\s*阈值\s*([^|｜]+?)\s*[|｜]\s*护甲值\s*([^|｜]+)$/u);
+    if (match) return [match[1].trim().replace(/^\*\*(.*)\*\*$/u, "$1"), match[3].trim(), match[2].trim()];
+    return splitReversible(value, "护甲", diagnostics);
+  }
 function exportUpgrades(values, diagnostics) {
   const upgrades = { tier1: {}, tier2: {}, tier3: {} };
   const common = [["traits-1", 0, 0], ["traits-2", 0, 1], ["traits-3", 0, 2], ["hp-1", 1, 0], ["hp-2", 1, 1], ["stress-1", 2, 0], ["stress-2", 2, 1], ["experiences", 3, 0], ["domain-card", 4, 0], ["evasion", 5, 0]];
@@ -136,7 +149,7 @@ module.exports = async function (input) {
     if (instance.tableModuleId !== "character-card-table") continue;
     const found = entryFor(instance, libraries, data);
     if (!found || !["ancestries", "communities", "domain-cards"].includes(found.libraryId) || !["配置", "宝库"].includes(instance.state)) {
-      diagnostics.push({ level: "warning", code: "DHSHEET_CARD_UNSUPPORTED", text: `卡牌 ${instance.instanceId} 没有已确认的 dhsheet 映射，未导出。` });
+      diagnostics.push({ level: "warning", code: "DHSHEET_CARD_UNSUPPORTED", text: `卡牌 「${string(found && field(found.entry, "名称")).trim() || "未命名卡牌"}」 没有已确认的 dhsheet 映射，未导出。` });
       continue;
     }
     represented.add(found.libraryId);
@@ -151,13 +164,13 @@ module.exports = async function (input) {
   if (slots[0].name) { slots[0].description = string(values["class-feature"]); slots[0].professionSpecial["希望特性"] = string(values["class-hope-feature"]); }
   if (slots[1].name) slots[1].description = string(values["subclass-current"]);
 
-  const primary = splitReversible(values["weapon-summary"], "武器", diagnostics);
-  const armor = splitReversible(values["armor-summary"], "护甲", diagnostics);
+  const primary = splitWeapon(values["weapon-summary"], "武器", diagnostics);
+  const armor = splitArmor(values["armor-summary"], diagnostics);
   const inventoryLines = string(values.inventory).split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
   const secondarySummaryIndex = inventoryLines.findIndex((line) => line.startsWith("副武器："));
   const secondaryFeatureIndex = inventoryLines.findIndex((line) => line.startsWith("副武器特性："));
   const secondary = secondarySummaryIndex >= 0
-    ? splitReversible(inventoryLines[secondarySummaryIndex].slice("副武器：".length), "副武器", diagnostics)
+    ? splitWeapon(inventoryLines[secondarySummaryIndex].slice("副武器：".length), "副武器", diagnostics)
     : ["", "", ""];
   const secondaryFeature = secondaryFeatureIndex >= 0 ? inventoryLines[secondaryFeatureIndex].slice("副武器特性：".length) : "";
   const inventory = inventoryLines.filter((_, index) => index !== secondarySummaryIndex && index !== secondaryFeatureIndex);

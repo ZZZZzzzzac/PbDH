@@ -162,3 +162,14 @@ body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none
   .pbdh-storage-table-scroll table { min-width: 580px; }
   .pbdh-storage-surface footer { padding: 10px 12px; }
 }
+
+.pbdh-tutorial-dialog { width: min(460px, calc(100vw - 32px)); box-sizing: border-box; padding: 28px; border: 1px solid #d6d1c8; border-radius: 12px; background: #fffdf8; color: #29251f; box-shadow: 0 18px 70px #0004; font: 15px/1.65 system-ui, sans-serif; }
+.pbdh-tutorial-dialog::backdrop { background: #15110dcc; }
+.pbdh-tutorial-dialog h2 { margin: 0 0 12px; font-size: 24px; }
+.pbdh-tutorial-dialog p { margin: 0 0 20px; }
+.pbdh-tutorial-link { display: block; padding: 12px 16px; border-radius: 6px; background: #365b4b; color: white; text-align: center; text-decoration: none; font-weight: 600; }
+.pbdh-tutorial-dialog .pbdh-tutorial-hint { margin: 16px 0 24px; color: #726b62; font-size: 13px; }
+.pbdh-tutorial-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pbdh-tutorial-dialog label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.pbdh-tutorial-dialog input { accent-color: #365b4b; }
+.pbdh-tutorial-dialog button { padding: 7px 16px; border: 1px solid #c9c1b5; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }

@@ -2,6 +2,8 @@ import { exportCharacterData, parseCharacterDataJson, type CharacterData, type C
 import type { SystemPackage } from "../domain/systemPackage";
 
 const embeddedCharacterDataId = "pbdh-character-data";
+const printCardImageCache = new Map<string, Blob>();
+const printCardImageCacheLimit = 32;
 
 export async function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: Element, title?: string): Promise<string> {
   const jsonText = exportCharacterData(data);
@@ -67,7 +69,7 @@ export function extractEmbeddedCharacterJson(text: string): { ok: true; text: st
 }
 
 export async function waitForVisibleImages(root: ParentNode, timeoutMs = 2000): Promise<void> {
-  const images = [...root.querySelectorAll("img")].filter(isVisibleImage);
+  const images = queryIncludingShadowRoots<HTMLImageElement>(root, "img").filter(isVisibleImage);
   if (images.length === 0) {
     return;
   }
@@ -125,20 +127,50 @@ function formatSnapshotValue(value: unknown): string {
 
 async function serializePrintableRoot(root: Element): Promise<string> {
   const clone = root.cloneNode(true) as Element;
+  // 车卡外壳上的继承变量在独立文档中也必须保留。
+  const computed = getComputedStyle(root);
+  for (const property of Array.from(computed)) {
+    if (property.startsWith("--")) (clone as HTMLElement).style.setProperty(property, computed.getPropertyValue(property));
+  }
   syncFormControls(root, clone);
   await embedImages(root, clone);
+  await serializeShadowRoots(root, clone);
   clone.querySelectorAll("[data-output-exclude]").forEach((element) => element.remove());
   stripInteractiveRuntimeState(clone);
   return clone.outerHTML;
 }
 
-async function embedImages(sourceRoot: Element, cloneRoot: Element): Promise<void> {
+function queryIncludingShadowRoots<T extends Element>(root: ParentNode, selector: string): T[] {
+  const matches = [...root.querySelectorAll<T>(selector)];
+  for (const element of root.querySelectorAll("*")) {
+    if (element.shadowRoot) matches.push(...queryIncludingShadowRoots<T>(element.shadowRoot, selector));
+  }
+  return matches;
+}
+
+async function serializeShadowRoots(source: ParentNode, clone: ParentNode): Promise<void> {
+  const originals = [...source.querySelectorAll("*")];
+  const copies = [...clone.querySelectorAll("*")];
+  await Promise.all(originals.map(async (element, index) => {
+    if (!element.shadowRoot) return;
+    const template = document.createElement("template");
+    template.setAttribute("shadowrootmode", "open");
+    for (const child of element.shadowRoot.childNodes) template.content.append(child.cloneNode(true));
+    syncFormControls(element.shadowRoot, template.content);
+    await embedImages(element.shadowRoot, template.content);
+    await serializeShadowRoots(element.shadowRoot, template.content);
+    stripInteractiveRuntimeState(template.content);
+    copies[index].prepend(template);
+  }));
+}
+
+async function embedImages(sourceRoot: ParentNode, cloneRoot: ParentNode, requireInline = false): Promise<void> {
   const sourceImages = sourceRoot.querySelectorAll("img");
   const cloneImages = cloneRoot.querySelectorAll("img");
 
   await Promise.all([...sourceImages].map(async (sourceImage, index) => {
     const source = sourceImage.currentSrc || sourceImage.src;
-    if (!shouldInlineImageUrl(source)) {
+    if (source.startsWith("data:") || (!requireInline && !shouldInlineImageUrl(source))) {
       return;
     }
 
@@ -156,13 +188,106 @@ async function embedImages(sourceRoot: Element, cloneRoot: Element): Promise<voi
       const mimeType = response.headers.get("Content-Type")?.split(";", 1)[0] || "application/octet-stream";
       const bytes = new Uint8Array(await response.arrayBuffer());
       cloneImage.setAttribute("src", `data:${mimeType};base64,${bytesToBase64(bytes)}`);
+      cloneImage.removeAttribute("srcset");
     } catch (error) {
-      if (source.startsWith("blob:")) {
+      if (requireInline || source.startsWith("blob:")) {
         throw error;
       }
       // 静态资源（如预制包的相对路径卡图）内联失败时保留原 URL，避免阻断整个导出。
     }
   }));
+}
+
+/** 固化已经显示的规范卡面，不重新解释模板数据或改变卡牌存档。 */
+export async function buildCardPrintSvg(host: HTMLElement): Promise<{ svg: string; width: number; height: number }> {
+  if (!host.shadowRoot) throw new Error("卡面尚未加载完成，请稍后重试打印。");
+  const width = host.offsetWidth;
+  const height = host.offsetHeight;
+  if (width <= 0 || height <= 0) throw new Error("卡面尺寸尚未就绪，请稍后重试打印。");
+  const clone = host.cloneNode(false) as HTMLElement;
+  clone.setAttribute("data-print-card-root", "");
+  clone.style.width = `${width}px`;
+  clone.style.height = `${height}px`;
+  const computed = getComputedStyle(host);
+  for (const property of Array.from(computed)) {
+    if (property.startsWith("--")) clone.style.setProperty(property, computed.getPropertyValue(property));
+  }
+  for (const node of host.shadowRoot.childNodes) clone.append(node.cloneNode(true));
+  syncFormControls(host.shadowRoot, clone);
+  await embedImages(host.shadowRoot, clone, true);
+  stripInteractiveRuntimeState(clone);
+  clone.querySelectorAll("style").forEach((style) => {
+    style.textContent = style.textContent?.replaceAll(":host", "[data-print-card-root]") ?? "";
+  });
+  const markup = new XMLSerializer().serializeToString(clone);
+  return {
+    width, height,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="${width}" height="${height}">${markup}</foreignObject></svg>`,
+  };
+}
+
+export async function prepareCardImagesForPrint(root: ParentNode): Promise<() => void> {
+  const generated: HTMLImageElement[] = [];
+  const urls = new Map<string, string>();
+  const dispose = () => {
+    for (const image of generated) {
+      image.parentElement?.removeAttribute("data-print-card-ready");
+      image.remove();
+    }
+    for (const url of urls.values()) URL.revokeObjectURL(url);
+    urls.clear();
+  };
+  try {
+    for (const frame of root.querySelectorAll<HTMLElement>(".play-card > [data-pbdh-card-display]")) {
+      const host = frame.querySelector<HTMLElement>("[data-pbdh-canonical-surface]");
+      if (!host) continue;
+      const snapshot = await buildCardPrintSvg(host);
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(snapshot.svg));
+      const key = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+      let blob = printCardImageCache.get(key);
+      if (!blob) {
+        const source = new Image();
+        source.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(snapshot.svg)}`;
+        await source.decode();
+        const canvas = document.createElement("canvas");
+        // 63 个设计坐标打印为 63mm；每坐标 12px，约 305 DPI。
+        const scale = Math.min(12, 8192 / Math.max(snapshot.width, snapshot.height));
+        canvas.width = Math.ceil(snapshot.width * scale);
+        canvas.height = Math.ceil(snapshot.height * scale);
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("浏览器无法生成卡面打印图像。");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(source, 0, 0, canvas.width, canvas.height);
+        blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+          (result) => result ? resolve(result) : reject(new Error("卡面打印图像编码失败。")),
+          "image/jpeg", 0.94,
+        ));
+      }
+      printCardImageCache.delete(key);
+      printCardImageCache.set(key, blob);
+      while (printCardImageCache.size > printCardImageCacheLimit) {
+        printCardImageCache.delete(printCardImageCache.keys().next().value!);
+      }
+      const image = new Image();
+      image.className = "player-card-print-image";
+      image.alt = host.getAttribute("aria-label") ?? "卡牌";
+      let url = urls.get(key);
+      if (!url) {
+        url = URL.createObjectURL(blob);
+        urls.set(key, url);
+      }
+      image.src = url;
+      generated.push(image);
+      await image.decode();
+      frame.append(image);
+      frame.setAttribute("data-print-card-ready", "true");
+    }
+    return dispose;
+  } catch (error) {
+    dispose();
+    throw error;
+  }
 }
 
 // 导出后仍可用的 URL 无需内联：data: 已内联，跨域外部图保留原样（离线时才可能失效）。
@@ -192,7 +317,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function syncFormControls(sourceRoot: Element, cloneRoot: Element) {
+function syncFormControls(sourceRoot: ParentNode, cloneRoot: ParentNode) {
   const sourceControls = sourceRoot.querySelectorAll("input, textarea, select");
   const cloneControls = cloneRoot.querySelectorAll("input, textarea, select");
 
@@ -227,7 +352,7 @@ function syncFormControls(sourceRoot: Element, cloneRoot: Element) {
   });
 }
 
-function stripInteractiveRuntimeState(clone: Element) {
+function stripInteractiveRuntimeState(clone: ParentNode) {
   clone.querySelectorAll("[data-markdown-editor]").forEach((element) => {
     if (element.getAttribute("data-markdown-empty") !== "true") {
       element.remove();

@@ -198,6 +198,9 @@ function importDhSheet(document, libraries) {
     output.values["companion-upgrades"] = Object.fromEntries(Object.entries(mapping).flatMap(([source, ids]) => ids.map((id, index) => [id, document.trainingOptions[source]?.[index] === true])));
   }
   const profession = Array.isArray(document.cards) ? document.cards.find((card) => card && card.type === "profession" && card.id === document.profession) : undefined;
+  put(output.values, "class-name", profession && (profession.class || profession.name));
+  const selectedSubclass = allCards.find((card) => card?.type === "subclass" && card.id === (document.subclassRef?.id || document.subclass));
+  if (selectedSubclass) put(output.values, "subclass-name", subclassName(selectedSubclass.headerDisplay || selectedSubclass.name));
   put(output.values, "class-feature", profession && profession.description);
   if (Array.isArray(document.cards)) {
     const additional = document.cards.filter((card) => card && card.type === "profession" && card.name && card !== profession);
@@ -235,7 +238,9 @@ function importDhSheet(document, libraries) {
     for (const card of cards) {
       if (!card || !card.name || card.type === "unknown") continue;
       if (card.type === "profession" || ancestryCards.includes(card)) continue;
-      addCards(output, [card], state, types[card.type] ? [types[card.type]] : [], libraries, rules);
+      const pool = card.type === "variant" && card.variantSpecial?.realType === "野兽形态" ? libraries.filter((library) => library.entries.some((entry) => field(entry, "类型") === "野兽形态")).map((library) => library.ID) : types[card.type] ? [types[card.type]] : [];
+      const cardRules = card.type === "variant" ? [(source, entry) => field(entry, "类型") === "野兽形态" && normalized(source.name === "神话混种生物" ? "神话混血种" : source.name) === normalized(field(entry, "名称")) && Number(source.level) === Number(field(entry, "位阶"))] : rules;
+      addCards(output, [card], state, pool, libraries, cardRules);
     }
   }
   return output;

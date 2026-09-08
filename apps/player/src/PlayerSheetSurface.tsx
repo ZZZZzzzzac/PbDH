@@ -93,7 +93,6 @@ import { CharacterImportDialogs } from "./sheet-runtime/rendering/CharacterImpor
 import { CharacterExportDialog } from "./sheet-runtime/rendering/CharacterExportDialog.tsx";
 import { openQuestionnaireHost, type QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";
 import {
-  PackageIssuePanel,
   ValidationIssueDialog,
 } from "./sheet-runtime/rendering/app/AppDiagnostics.tsx";
 import { PackageLoadingSurface } from "./sheet-runtime/rendering/app/PackageLoadingSurface.tsx";
@@ -127,16 +126,27 @@ export async function restorePlayerResourceLibrary(
 export function PlayerSheetSurface({
   handoffUrl = window.location.href,
   onHandoffConsumed,
+  requestedSystemPackage,
 }: {
   handoffUrl?: string;
+  requestedSystemPackage?: string;
   onHandoffConsumed?(cleanedUrl: URL): void;
 } = {}) {
   const auth = useAuth();
   const { notify } = usePlatformNotifications();
+  const requestedSystemRef = useRef(requestedSystemPackage);
+  requestedSystemRef.current = requestedSystemPackage;
+  const appliedSystemRouteRef = useRef<string | undefined>(undefined);
+  const [runtimeInitialized, setRuntimeInitialized] = useState(false);
   const importedSystemsRef = useRef(new Map<string, SystemPackageDocument>());
   const importedEmbeddedPackageIdsRef = useRef(new Map<string, Set<string>>());
   const importedEmbeddedPackagesRef = useRef(new Map<string, ReadonlyMap<string, ResourcePackageCandidate>>());
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
+  const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
+  const frameworkColorSchemePreference = useRuntimeStore((state) => state.frameworkColorSchemePreference);
+  const frameworkColorScheme = frameworkColorSchemePreference === "follow-skin"
+    ? currentPackage?.skins?.find((skin) => skin.ID === selectedSkinId)?.推荐框架配色 ?? "light"
+    : frameworkColorSchemePreference;
   const currentCatalogEntry = findPlayerSystemPackage(currentPackage?.manifest.ID)
     ?? null;
   const currentSystem = currentCatalogEntry?.system
@@ -436,16 +446,23 @@ export function PlayerSheetSurface({
         await initialize(playerSystemPackageCatalog.map((entry) => entry.preset));
         if (cancelled) return;
         const state = useRuntimeStore.getState();
-        if (!state.authorPreviewActive) {
-          const preferred = findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
+        const requested = playerSystemPackageCatalog.find((entry) => entry.preset.directory === requestedSystemRef.current);
+        if (requested || !state.authorPreviewActive) {
+          const preferred = requested ?? findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
             ?? defaultPlayerSystemPackage;
           const importedWasRestored = cachedMetadata?.source === "imported"
             && cachedMetadata.systemDocument?.package.id === state.currentPackage?.manifest.ID;
-          if (!importedWasRestored) {
+          if (requested || !importedWasRestored) {
+            if (requested && state.authorPreviewActive) exitAuthorPreview();
             await switchToPresetSystemPackage(preferred.preset, true);
+            if (requested && useRuntimeStore.getState().currentPackage?.manifest.ID === requested.system.package.id) {
+              localStorage.setItem(preferredSystemPackageKey, requested.system.package.id);
+            }
           }
         }
         runtimeReadyRef.current = true;
+        appliedSystemRouteRef.current = requested?.preset.directory;
+        setRuntimeInitialized(true);
       } catch (error) {
         if (!cancelled) setSurfaceError(error instanceof Error ? error.message : "Player 初始化失败");
       }
@@ -551,6 +568,28 @@ export function PlayerSheetSurface({
   }, [importNotice, notify]);
 
   useEffect(() => {
+    if (!importError) return;
+    notify(importError);
+    useRuntimeStore.setState({ importError: null });
+  }, [importError, notify]);
+
+  useEffect(() => {
+    if (!surfaceError) return;
+    notify(surfaceError);
+    setSurfaceError(undefined);
+  }, [surfaceError, notify]);
+
+  const reportedPackageIssues = useRef(new Set<string>());
+  useEffect(() => {
+    const messages = packageIssues.map((issue) =>
+      `系统包${issue.level === "warning" ? "提示" : "检查"}：${issue.text}\n${[issue.code, issue.location?.file, issue.path].filter(Boolean).join(" · ")}`);
+    for (const message of messages) {
+      if (!reportedPackageIssues.current.has(message)) notify(message);
+    }
+    reportedPackageIssues.current = new Set(messages);
+  }, [packageIssues, notify]);
+
+  useEffect(() => {
     if (!cloudNotice) return;
     notify(cloudNotice);
     setCloudNotice(undefined);
@@ -646,6 +685,15 @@ export function PlayerSheetSurface({
       setCloudNotice(error instanceof Error ? error.message : "系统包切换失败");
     }
   }
+
+  useEffect(() => {
+    if (!runtimeInitialized || appliedSystemRouteRef.current === requestedSystemPackage) return;
+    appliedSystemRouteRef.current = requestedSystemPackage;
+    if (!requestedSystemPackage) return;
+    const entry = playerSystemPackageCatalog.find((candidate) => candidate.preset.directory === requestedSystemPackage);
+    if (entry) void handleSwitchSystem(entry);
+    else setCloudNotice(`未找到系统包：${requestedSystemPackage}`);
+  }, [requestedSystemPackage, runtimeInitialized]);
 
   async function handlePackageFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -896,13 +944,13 @@ export function PlayerSheetSurface({
   }
 
   function characterAdapterExportLabel(adapter: { ID: string; 名称: string }): string {
-    if (adapter.ID === "zzz-character-json") return "导出为ZZZ格式";
-    if (adapter.ID === "dhsheet-character") return "导出为dhsheet格式";
+    if (adapter.ID === "zzz-character-json") return "导出 ZZZ 存档";
+    if (adapter.ID === "dhsheet-character") return "导出 dhsheet 存档";
     return `导出为${adapter.名称}格式`;
   }
 
   function characterTextExportLabel(definition: { ID: string; 名称: string }): string {
-    if (definition.ID === "sealdice") return "导出为海豹骰";
+    if (definition.ID === "sealdice") return "导出 海豹骰";
     return `导出为${definition.名称}`;
   }
 
@@ -1105,16 +1153,17 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>导入导出</span>{playerOperation === "character-import" ? <OperationStatus label="正在导入人物…" /> : playerOperation === "character-export" ? <OperationStatus label="正在导出人物…" /> : outputOperation === "export" ? <OperationStatus label="正在生成导出文件…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
-          <button type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => characterFileInputRef.current?.click()}>导入人物</button>
-          <button type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void exportActiveCharacter()}>导出人物</button>
-          {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
+          <button className="player-menu-primary" type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => characterFileInputRef.current?.click()}>导入存档（任意格式）</button>
+          <button className="player-menu-primary" type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void exportActiveCharacter()}>导出 pbcha 存档</button>
+          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("html")}>导出 HTML</button>
+          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("print")}>导出 PDF</button>
+          <hr role="separator" />
+          {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).sort((a, b) => Number(b.ID === "dhsheet-character") - Number(a.ID === "dhsheet-character")).map((adapter) => (
             <button key={adapter.ID} type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void exportWithCharacterAdapter(adapter.ID)}>{characterAdapterExportLabel(adapter)}</button>
           ))}
           {currentPackage?.characterTextExports?.map((definition) => (
             <button key={definition.ID} type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void exportCharacterText(definition.ID)}>{characterTextExportLabel(definition)}</button>
           ))}
-          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("html")}>导出HTML</button>
-          <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("print")}>导出PDF</button>
         </div>
       </div>
 
@@ -1147,14 +1196,12 @@ export function PlayerSheetSurface({
     : null;
 
   return (
-    <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme="light">
+    <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme={frameworkColorScheme}>
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,.json,.html,application/zip,application/json,text/html" onChange={(event) => void handleCharacterFile(event)} />
       <input ref={packageFileInputRef} hidden type="file" accept=".pbsys,application/zip" onChange={(event) => void handlePackageFile(event)} />
       {bootStatus === "loading"
         ? <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
         : null}
-      {surfaceError || importError ? <div className="message message-error" role="alert">{surfaceError ?? importError}</div> : null}
-      {packageIssues.length ? <PackageIssuePanel issues={packageIssues} /> : null}
       <ValidationIssueDialog
         issues={validationIssues}
         open={validationDialogOpen}

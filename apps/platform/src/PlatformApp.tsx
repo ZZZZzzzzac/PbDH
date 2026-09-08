@@ -50,10 +50,9 @@ export function PlatformApp() {
       window.location.pathname === platformBasePath
       || window.location.pathname === platformBasePath.slice(0, -1)
     ) {
-      commitLocation(
-        platformPageUrl("creator", window.location.origin, platformBasePath),
-        true,
-      );
+      const defaultUrl = platformPageUrl("player", window.location.origin, platformBasePath);
+      defaultUrl.pathname += "/daggerheart-core";
+      commitLocation(defaultUrl, true);
     }
     const restoreLocation = () => setLocation(readPlatformLocation(
       window.location.href,
@@ -67,6 +66,7 @@ export function PlatformApp() {
     <div className="pbdh-platform-surfaces">
       <section className="pbdh-platform-surface" hidden={location.page !== "player"}>
         <PlayerAppSurface
+          requestedSystemPackage={location.playerSystemPackage}
           handoffUrl={location.href}
           onHandoffConsumed={consumeHandoff}
         />

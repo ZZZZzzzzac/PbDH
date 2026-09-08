@@ -1,0 +1,41 @@
+name: Manage public routes
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "只读查看线上路由配置"
+        required: true
+        default: inspect
+        type: choice
+        options: [inspect]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pbdh-platform-preview
+  cancel-in-progress: false
+
+jobs:
+  routes:
+    runs-on: ubuntu-latest
+    environment: production-preview
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+      - name: Manage routes
+        env:
+          TARGET: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          test "$MODE" = inspect
+          ssh "$TARGET" 'sudo /usr/local/sbin/switch-pbdh-route status; readlink -f /var/www/pbdh/current; cat /var/www/pbdh/current/index.html; sudo nginx -T'

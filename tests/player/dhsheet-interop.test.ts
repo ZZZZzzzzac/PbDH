@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { loadPbres, loadPbcha, writePbcha } from "@pbdh/contract-runtime";
 import { beforeAll, describe, expect, it } from "vitest";
 import { playerSystemPackageCatalog } from "../../apps/player/src/playerSystemPackageCatalog.ts";
@@ -56,6 +57,15 @@ async function exportSheet(system: SystemPackage, data: CharacterData) {
   return result;
 }
 
+function processInDhSheet(document: Record<string, unknown>): Record<string, unknown> {
+  if (!process.env.PBDH_DHSHEET_BRIDGE) return document;
+  const result = JSON.parse(execFileSync(process.execPath, [process.env.PBDH_DHSHEET_BRIDGE], {
+    input: JSON.stringify(document), encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+  }));
+  expect(result.valid, result.error).toBe(true);
+  return result.data;
+}
+
 // 依据 dhsheet 的 SheetData / StandardCard 建样本，不调用待测导出脚本生成输入。
 function sourceDocument(cards: unknown[] = []) {
   return {
@@ -85,6 +95,139 @@ function domainCard(system: SystemPackage) {
 describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) => {
   let context: Awaited<ReturnType<typeof loadSystem>>;
   beforeAll(async () => { context = await loadSystem(directory); }, 60000);
+
+  if (directory === "daggerheart-core") it("纯血种族导入及 PBCHA 重开继承原生卡图，默认物品合并为一行", async () => {
+    const { system, catalog, installed } = context;
+    expect(String(createEmptyCharacterData(system).character.values.inventory).split("\n")[0]).toBe("一支火把、50 英尺长的绳索、基本补给品。");
+    const entry = system.resourceLibraries!.find((library) => library.ID === "ancestries")!.entries.find((entry) => entry.fields.名称 === "孢菌人")!;
+    const features = entry.resourceCopy!.data.特性 as Array<{ 特性名称: string; 特性描述: string }>;
+    const cards = features.map((feature, index) => ({ standarized: true, id: `fungril-${index}`, name: feature.特性名称, description: feature.特性描述, type: "ancestry", class: "孢菌人", level: index + 1 }));
+    const imported = await importSheet(system, sourceDocument(cards));
+    const definition = resolveResourceDefinition(system, imported.data, imported.data.cards.instances[0]!.definitionRef)!;
+    expect(definition.resourceCopy).toEqual(entry.resourceCopy);
+    expect(definition.resourceCopy!.presentation.mode).toBe("image");
+    expect(definition.resourceCopy!.media.portrait).toBeTruthy();
+    const candidate = await sheetCharacterToSave({ name: "纯血导入", data: imported.data, currentSystem: { ...catalog.system.package, resourceCompatibility: catalog.system.resourceCompatibility }, sheetSystemPackage: system, installedPackages: installed });
+    const reopened = await loadPbcha(writePbcha(candidate.document, candidate.media), validateCharacterSaveCandidate);
+    expect(reopened.diagnostics).toEqual([]);
+    const restored = characterSaveToSheet({ candidate: reopened.candidate!, currentSystem: catalog.system, sheetSystemPackage: system, mediaUrl: (id) => id });
+    expect(resolveResourceDefinition(system, restored, restored.cards.instances[0]!.definitionRef)?.resourceCopy?.presentation.mode).toBe("image");
+    const script = await readFile("apps/player/public/system-packages/daggerheart-core/checks/character-consistency.js", "utf8");
+    for (const data of [imported.data, restored]) {
+      const issues = await executePackageScriptInWorker(script, { characterData: data, resourceLibraries: system.resourceLibraries }, "ancestry check") as Array<{ code: string }>;
+      expect(issues.some((issue) => issue.code === "ANCESTRY_CARD_COUNT_MISMATCH")).toBe(false);
+    }
+  });
+
+  if (directory === "daggerheart-core") it("核心卡含野兽形态导出为原生身份，自定义同名卡不冒充内置", async () => {
+    const { system } = context;
+    const failures: string[] = [];
+    const nativeIds = new Set<string>();
+    const upstreamCards: Array<Record<string, unknown>> = process.env.PBDH_DHSHEET_NATIVE_CARDS ? JSON.parse(await readFile(process.env.PBDH_DHSHEET_NATIVE_CARDS, "utf8")) : [];
+    for (const id of ["classes", "subclasses", "ancestries", "communities", "domain-cards", "beastforms"]) {
+      const library = system.resourceLibraries!.find((library) => library.ID === id)!;
+      expect(library, id).toBeDefined();
+      for (const entry of library.entries) {
+        const data = createEmptyCharacterData(system);
+        data.cards.instances = [{ instanceId: "native-card", tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: id, entryId: entry.ID }, state: "宝库", xPct: 0, yPct: 0, zIndex: 0, face: "front", rotation: 0, scale: 1 }];
+        const exported = await exportSheet(system, data);
+        const cards = (exported.document.inventory_cards as Array<Record<string, unknown>>).filter((card) => card.name);
+        const extraClass = ["刺客", "格斗家", "灵巫", "邪术师"].includes(String(entry.fields.主职 || entry.fields.名称));
+        const extraResource = ["潮裔", "地裔", "烬裔", "空裔", "天辉族", "侏儒", "炉火之民", "沙丘之民", "失乡之民", "霜雪之民", "战乱之民", "自由之民"].includes(String(entry.fields.名称)) || entry.fields.领域 === "恐怖";
+        for (const card of cards) {
+          if (extraClass || extraResource) { expect(card.source).toBeUndefined(); continue; }
+          if (card.source !== "builtin" || card.batchId !== "SYSTEM_BUILTIN_CARDS") failures.push(`${id}/${entry.fields.名称}/${entry.fields.等级 || ""}`);
+          nativeIds.add(String(card.id));
+          if (upstreamCards.length) {
+            const native = upstreamCards.find((native) => native.id === card.id);
+            expect(native, String(card.name)).toBeDefined();
+            for (const key of ["id", "name", "type", "class", "level", "headerDisplay", "cardSelectDisplay", "variantSpecial", "ruleset", "batchId", "source"]) expect(card[key], `${card.name}/${key}`).toEqual(native![key]);
+          }
+        }
+        if (id === "beastforms") {
+          const imported = await importSheet(system, sourceDocument(cards));
+          expect(imported.report.skippedCards).toBe(0);
+          expect(imported.data.cards.instances[0]!.definitionRef).toMatchObject({ libraryId: id, entryId: entry.ID });
+        }
+        expect(exported.report.skippedCards).toBe(0);
+      }
+    }
+    expect(failures).toEqual([]);
+    expect(nativeIds.size).toBe(321);
+    expect(nativeIds.has("Wizard")).toBe(true);
+    expect(nativeIds.has("breast-transform-013")).toBe(true);
+    const custom = structuredClone(system.resourceLibraries!.find((library) => library.ID === "domain-cards")!.entries[0]!);
+    custom.resourceCopy!.source!.packageId = "custom-package";
+    const data = createEmptyCharacterData(system);
+    data.embeddedResourceEntries.custom = { libraryId: "domain-cards", entry: custom };
+    data.cards.instances = [{ instanceId: "custom", tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "custom" }, state: "配置", xPct: 0, yPct: 0, zIndex: 0, face: "front", rotation: 0, scale: 1 }];
+    const exported = await exportSheet(system, data);
+    expect((exported.document.cards as Array<Record<string, unknown>>).find((card) => card.name === custom.fields.名称)?.source).toBeUndefined();
+  }, 30000);
+
+  if (directory === "daggerheart-core" && process.env.PBDH_DHSHEET_REFERENCE) it("原生存档对照：每张卡与对方身份及来源元数据完全一致", async () => {
+    const native = JSON.parse(await readFile(process.env.PBDH_DHSHEET_REFERENCE!, "utf8"));
+    const imported = await importSheet(context.system, native);
+    expect(imported.report.skippedCards).toBe(0);
+    expect(imported.data.character.values["class-name"]).toBe("法师");
+    expect(imported.data.character.values["subclass-name"]).toBe("知识学派");
+    const exported = await exportSheet(context.system, imported.data);
+    const identityKeys = ["id", "name", "type", "class", "level", "headerDisplay", "cardSelectDisplay", "variantSpecial", "ruleset", "batchId", "source"];
+    const identity = (card: Record<string, unknown>) => Object.fromEntries(identityKeys.filter((key) => card[key] !== undefined).map((key) => [key, card[key]]));
+    const cards = (exported.document.cards as Array<Record<string, unknown>>).filter((card) => card.name);
+    expect(cards.map((card) => card.id).sort()).toEqual(native.cards.filter((card: Record<string, unknown>) => card.name).map((card: Record<string, unknown>) => card.id).sort());
+    for (const card of cards) expect(identity(card)).toEqual(identity(native.cards.find((item: Record<string, unknown>) => item.id === card.id)));
+    const sourceLabels = (cards: Array<Record<string, unknown>>): string[][] => JSON.parse(execFileSync(process.execPath, [process.env.PBDH_DHSHEET_SOURCE_LABELS!], { input: JSON.stringify(cards), encoding: "utf8" }));
+    for (const labels of sourceLabels(cards)) expect(labels).toEqual(cards.map(() => "内置卡包"));
+    // 即使省略显式来源，真实显示函数也应通过原生 ID 查到内置卡。
+    for (const labels of sourceLabels(cards.map(({ source: _source, ...card }) => card))) expect(labels).toEqual(cards.map(() => "内置卡包"));
+    const again = await importSheet(context.system, processInDhSheet(exported.document));
+    expect(again.report.skippedCards).toBe(0);
+    await writeFile(path.resolve(".scratch/dhsheet-interop/native-reference.reexport.json"), JSON.stringify(exported.document, null, 2));
+    if (process.env.PBDH_DHSHEET_ORIGINAL) {
+      const original = JSON.parse(await readFile(process.env.PBDH_DHSHEET_ORIGINAL, "utf8"));
+      const originalCards = original.cards.filter((card: Record<string, unknown>) => card.name);
+      for (const labels of sourceLabels(originalCards)) expect(labels).toEqual(originalCards.map(() => "未知来源"));
+      const importedOriginal = await importSheet(context.system, original);
+      expect(importedOriginal.report.skippedCards).toBe(0);
+      const repaired = await exportSheet(context.system, importedOriginal.data);
+      for (const card of (repaired.document.cards as Array<Record<string, unknown>>).filter((card) => card.name)) expect(card.source, String(card.name)).toBe("builtin");
+      await writeFile(path.resolve(".scratch/dhsheet-interop/user-export.native-ids.json"), JSON.stringify(repaired.document, null, 2));
+    }
+  });
+
+  if (directory === "daggerheart-core" && process.env.PBDH_INTEROP_CHARACTER) it("用户 PBCHA 经对方真实导入流程再回导", async () => {
+    const { system, catalog, installed } = context;
+    const loaded = await loadPbcha(new Uint8Array(await readFile(process.env.PBDH_INTEROP_CHARACTER!)), validateCharacterSaveCandidate);
+    expect(loaded.diagnostics).toEqual([]);
+    const data = characterSaveToSheet({ candidate: loaded.candidate!, currentSystem: catalog.system, sheetSystemPackage: system, mediaUrl: (id) => id });
+    const exported = await exportSheet(system, data);
+    const normalized = processInDhSheet(exported.document);
+    const imported = await importSheet(system, normalized);
+    expect(imported.report.skippedCards).toBe(0);
+    const roundtrip = await sheetCharacterToSave({ name: "互通回导副本", data: imported.data, currentSystem: { ...catalog.system.package, resourceCompatibility: catalog.system.resourceCompatibility }, sheetSystemPackage: system, installedPackages: installed });
+    const archive = writePbcha(roundtrip.document, roundtrip.media);
+    expect((await loadPbcha(archive, validateCharacterSaveCandidate)).diagnostics).toEqual([]);
+    for (const key of ["character-name", "level", "agility", "knowledge", "hp", "stress", "hope"]) expect(imported.data.character.values[key]).toEqual(data.character.values[key]);
+    const prefix = path.resolve(".scratch/dhsheet-interop/user-character");
+    await writeFile(`${prefix}.dhsheet.json`, JSON.stringify(exported.document, null, 2));
+    await writeFile(`${prefix}.normalized.json`, JSON.stringify(normalized, null, 2));
+    await writeFile(`${prefix}.roundtrip.pbcha`, archive);
+    await writeFile(`${prefix}.report.json`, JSON.stringify({ export: exported.report, import: imported.report }, null, 2));
+  });
+
+  it("不支持的卡牌报告名称，缺少名称使用可读占位", async () => {
+    const data = createEmptyCharacterData(context.system);
+    const entry = context.system.resourceLibraries!.find((library) => library.ID === "domain-cards")!.entries[0]!;
+    data.embeddedResourceEntries.test = { libraryId: "其他", entry: { ...entry, ID: "test", fields: { ...entry.fields, 名称: "巨型捕食者" } } };
+    data.cards.instances = [{ instanceId: "opaque-instance-id", tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: "其他", entryId: "test" }, state: "配置", xPct: 0, yPct: 0, zIndex: 0, face: "front", rotation: 0, scale: 1 }];
+    let exported = await exportSheet(context.system, data);
+    expect(exported.report.diagnostics.find((item) => item.code === "DHSHEET_CARD_UNSUPPORTED")?.text).toContain("巨型捕食者");
+    expect(JSON.stringify(exported.report)).not.toContain("opaque-instance-id");
+    data.embeddedResourceEntries.test!.entry.fields.名称 = "";
+    exported = await exportSheet(context.system, data);
+    expect(exported.report.diagnostics.find((item) => item.code === "DHSHEET_CARD_UNSUPPORTED")?.text).toContain("未命名卡牌");
+  });
 
   if (directory === "tttri") it.each(["x", "y"])("所有核心子职的 T4%s 按最终特性往返，不依赖外部样本", async (selectedModule) => {
     const { system, catalog, installed } = context;
@@ -224,14 +367,17 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
       expect(surface.presentation.fixedRatio).toBe(false);
       expect(entry.resourceCopy!.presentation.fixedRatio).toBe(false);
     }
-    const [primary, secondary] = classes;
+    const primary = classes.find((entry) => entry.fields.名称 === "法师")!;
+    const secondary = classes.find((entry) => entry.fields.名称 === "德鲁伊")!;
     let data = applyResourceSelectionToDraft(createEmptyCharacterData(system), system, "pick-class", "classes", [primary!]).characterData;
     expect(data.cards.instances).toHaveLength(0);
+    const primarySubclass = system.resourceLibraries!.find((library) => library.ID === "subclasses")!.entries.find((entry) => entry.fields.主职 === primary.fields.名称 && entry.fields.等级 === "基础")!;
+    data = applyResourceSelectionToDraft(data, system, "pick-subclass", "subclasses", [primarySubclass]).characterData;
     const before = structuredClone(data.character.values);
-    data = applyResourceSelectionToDraft(data, system, "pick-multiclass", "classes", [secondary!]).characterData;
-    expect(data.cards.instances).toHaveLength(0);
     const subclass = system.resourceLibraries!.find((library) => library.ID === "subclasses")!.entries.find((entry) => entry.fields.主职 === secondary!.fields.名称)!;
-    data = applyResourceSelectionToDraft(data, system, "pick-subclass", "subclasses", [subclass]).characterData;
+    data = applyResourceSelectionToDraft(data, system, "pick-multiclass", "subclasses", [subclass]).characterData;
+    expect(data.cards.instances).toHaveLength(2);
+    expect(data.cards.instances[1]!.definitionRef).toMatchObject({ libraryId: "subclasses", entryId: subclass.ID });
     for (const key of ["class-name", "hp", "evasion", "class-hope-feature", "background-question-1"]) expect(data.character.values[key]).toEqual(before[key]);
     expect(data.character.values["class-feature"]).toBe(`${before["class-feature"]}\n\n【${secondary!.fields.名称}】\n${secondary!.fields.职业特性}`);
     const candidate = await sheetCharacterToSave({ name: "兼职角色", data, currentSystem: { ...catalog.system.package, resourceCompatibility: catalog.system.resourceCompatibility }, sheetSystemPackage: system, installedPackages: installed });
@@ -242,10 +388,10 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     const cards = (exported.document.cards as Array<{ type: string; name: string; description: string }>).filter((card) => card.type === "profession");
     expect(cards.map((card) => card.name)).toEqual([primary!.fields.名称, secondary!.fields.名称]);
     expect(cards.map((card) => card.description)).toEqual([primary!.fields.职业特性, secondary!.fields.职业特性]);
-    expect(exported.report.exportedCards).toBe(3);
-    const imported = await importSheet(system, exported.document);
+    expect(exported.report.exportedCards).toBe(4);
+    const imported = await importSheet(system, processInDhSheet(exported.document));
     expect(imported.report.skippedCards).toBe(0);
-    expect(imported.data.cards.instances).toHaveLength(1);
+    expect(imported.data.cards.instances).toHaveLength(2);
     expect(imported.data.character.values["class-feature"]).toEqual(data.character.values["class-feature"]);
     const script = await readFile(path.resolve("apps/player/public/system-packages/daggerheart-core/checks/character-consistency.js"), "utf8");
     const check = async () => await executePackageScriptInWorker(script, { characterData: restored, resourceLibraries: system.resourceLibraries }, "multiclass check") as Array<{ code: string }>;
@@ -288,6 +434,32 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     });
     const exported = await exportSheet(context.system, data);
     expect(exported.document).toMatchObject({ primaryWeaponName: "短弓", primaryWeaponTrait: "物理/双手/远距离", primaryWeaponDamage: "敏捷: d6+3", armorName: "皮甲", armorBaseScore: "3", armorThreshold: "5/11", armorValue: "3", minorThreshold: "7", majorThreshold: "13" });
+  });
+
+  if (directory === "tttri") it("原生武器原型与护甲选择摘要按 dhsheet 字段导出并往返", async () => {
+    for (const [summary, name, trait, damage] of [
+      ["战术召唤物 远距离/单手 d6/物理", "战术召唤物", "物理/单手/远距离", "d6"],
+      ["战术召唤物 远距离/单手 d6+9/物理", "战术召唤物", "物理/单手/远距离", "d6+9"],
+      ["重剑 近距离/双手 d20-3/物理", "重剑", "物理/双手/近距离", "d20-3"],
+      ["召唤型施术单元 中距离/双手 d4+3/法术", "召唤型施术单元", "法术/双手/中距离", "d4+3"],
+    ]) {
+      const data = createEmptyCharacterData(context.system);
+      Object.assign(data.character.values, {
+        "weapon-summary": summary, "weapon-feature": "自定义武器特性",
+        "armor-summary": "尖刺阻拒套装 | 阈值 10/25 | 护甲值 5", "armor-feature": "锋利：每当你成功进行近战攻击时，伤害骰加 1d4",
+      });
+      const exported = await exportSheet(context.system, data);
+      const expected = { primaryWeaponName: name, primaryWeaponTrait: trait, primaryWeaponDamage: damage, primaryWeaponFeature: "自定义武器特性", armorName: "尖刺阻拒套装", armorBaseScore: "5", armorThreshold: "10/25", armorFeature: data.character.values["armor-feature"] };
+      expect(exported.document).toMatchObject(expected);
+      expect(JSON.stringify(exported.report)).not.toContain("TTTRI_DHSHEET_EQUIPMENT_NOT_REVERSIBLE");
+      const imported = await importSheet(context.system, exported.document);
+      expect((await exportSheet(context.system, imported.data)).document).toMatchObject(expected);
+    }
+    const data = createEmptyCharacterData(context.system);
+    data.character.values["weapon-summary"] = "玩家自由填写的装备说明";
+    const custom = await exportSheet(context.system, data);
+    expect(custom.document.primaryWeaponName).toBe("玩家自由填写的装备说明");
+    expect(JSON.stringify(custom.report)).toContain("TTTRI_DHSHEET_EQUIPMENT_NOT_REVERSIBLE");
   });
 
   it("保留配置与宝库中的重复卡实例", async () => {
@@ -364,6 +536,7 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     const { system, installed, catalog } = context;
     const data = createEmptyCharacterData(system);
     data.character.values["character-name"] = `${directory}-level-${level}`;
+    data.character.values["class-name"] = system.resourceLibraries!.find((library) => library.ID === "classes")!.entries[0]!.fields.名称!;
     data.character.values.level = String(level);
     data.character.values.agility = String(level - 3);
     data.character.values.hope = { current: level % 6, max: 6 };
@@ -377,7 +550,7 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     restored.character.values.agility = "9";
     restored.cards.instances[0]!.state = "宝库";
     const exported = await exportSheet(system, restored);
-    const imported = await importSheet(system, exported.document);
+    const imported = await importSheet(system, processInDhSheet(exported.document));
     expect(imported.data.character.values.agility).toBe("9");
     expect(imported.data.cards.instances.map((item) => item.state).sort()).toEqual(restored.cards.instances.map((item) => item.state).sort());
     expect(imported.report.skippedCards).toBe(0);

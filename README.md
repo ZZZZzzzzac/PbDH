@@ -31,6 +31,12 @@ npm run verify
 沿用 systemd 且仅绑定宿主回环地址。配置、备份、发布和一键切换步骤见
 [deploy/README.md](deploy/README.md)。
 
+Player 支持 `/player/<系统包目录名>` 直达，例如预览部署的
+`https://daggerheart.cn/pbdh_tools/player/tttri`。可用目录名为
+`daggerheart-core`、`heart-of-hopefind`、`witchy`、`hows-my-driving`、`tttri`。
+链接指定的系统包优先于本机首选包，加载该系统已有存档；普通 `/player`
+继续使用原来的首选包。该路由同样支持根目录与 `/pbdh/` 部署。
+
 ## 目录
 
 - `apps/`：Player、Creator、Market 与 Platform Backend 组合根。

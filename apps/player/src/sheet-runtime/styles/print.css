@@ -9,6 +9,73 @@
   white-space: nowrap;
   border: 0;
 }
+.player-card-print-image { display: none; }
+@media print {
+  [data-print-card-ready] > [data-pbdh-card-display-inner] { display: none !important; }
+  [data-print-card-ready] > .player-card-print-image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* 输出以纸张为边界，不继承屏幕分栏和自由桌面的定位。 */
+.print-mode .sheet-tool {
+  width: 210mm !important;
+  min-width: 0 !important;
+  margin: 0 auto;
+}
+.print-mode .sheet-tool :has(.sheet-page, [data-print-page="true"]):not(.sheet-page, [data-print-page="true"]) {
+  display: contents !important;
+}
+.print-mode [data-print-page="true"] {
+  display: block !important;
+}
+.print-mode .card-table-module,
+.print-mode .card-table-surface {
+  display: block !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+.print-mode .player-tabletop-surface {
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 63mm);
+  gap: 3mm;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+.print-mode .player-tabletop-surface .tabletop-instance,
+.print-mode .player-tabletop-surface .play-card {
+  position: relative !important;
+  inset: auto !important;
+  width: 63mm !important;
+  transform: none !important;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+@media print {
+  body:has(.print-mode) :is(#root, .app-shell, .player-runtime-layout, .player-runtime-sheet) {
+    display: block !important;
+    width: 210mm !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body:has(.print-mode) .pbdh-platform-appbar,
+  body:has(.print-mode) .pbdh-tutorial-dialog { display: none !important; }
+  .print-mode .sheet-page,
+  .print-mode [data-print-page="true"] {
+    break-before: page !important;
+  }
+}
 
 .long-screenshot-exit {
   position: fixed;
@@ -132,7 +199,7 @@ body:has(.app-shell.print-mode) > .player-image-crop-backdrop {
 }
 
 .print-mode .card-table-surface {
-  display: grid;
+  display: block;
   grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
   align-items: start;
   align-content: start;
@@ -345,7 +412,7 @@ body:has(.app-shell.print-mode) > .player-image-crop-backdrop {
   }
 
   .card-table-surface {
-    display: grid;
+    display: block;
     grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
     align-items: start;
     align-content: start;

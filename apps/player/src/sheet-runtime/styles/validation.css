@@ -130,3 +130,25 @@
   display: block;
   color: var(--framework-text-muted);
 }
+
+.validation-dialog { border-radius: 12px; overflow: hidden; color: var(--framework-text); font: 14px/1.6 "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+.validation-dialog-header { padding: 18px 22px; background: var(--framework-surface-subtle); }
+.validation-dialog-header h2 { margin: 0; font-size: 18px; font-weight: 650; }
+.validation-dialog-body { padding: 20px 22px; }
+.validation-dialog-body ul { padding: 0; list-style: none; gap: 12px; }
+.validation-issue { padding: 14px 16px; border: 1px solid var(--framework-border-subtle); border-radius: 8px; color: var(--framework-text); background: var(--framework-surface-subtle); }
+.validation-issue p { margin: 6px 0; line-height: 1.7; }
+.validation-severity { display: inline-block; font-size: 12px; font-weight: 650; }
+.validation-warning .validation-severity { color: var(--framework-warning); }
+.validation-error .validation-severity { color: var(--framework-danger-strong); }
+.validation-source { margin: 6px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.validation-source summary { cursor: pointer; }
+.validation-source code { display: block; margin-top: 8px; }
+:is(.validation-dialog, .resource-dialog) :is(button, input, select) { font-family: inherit; font-size: 14px; }
+:is(.validation-dialog, .resource-dialog) .icon-button { min-height: 36px; padding: 7px 14px; border-radius: 6px; }
+:is(.validation-dialog, .resource-dialog) :is(button, input, select):focus-visible { outline: 2px solid var(--framework-focus); outline-offset: 2px; }
+.resource-dialog { border-radius: 12px; overflow: hidden; font: 14px/1.6 "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+.resource-dialog-header, .resource-dialog-footer { padding: 16px 20px; background: var(--framework-surface-subtle); }
+.resource-dialog-header h2 { font-size: 18px; }
+.resource-dialog :is(input, select) { border-radius: 6px; }
+@media (max-width: 600px) { .validation-dialog-header, .validation-dialog-body { padding: 14px; } .resource-dialog-header { flex-wrap: wrap; } .resource-header-search { flex-basis: 100%; } }

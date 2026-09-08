@@ -1,7 +1,7 @@
 .player-sheet-runtime {
-  --framework-canvas: #eef1f2;
-  --framework-surface: #ffffff;
-  --framework-surface-subtle: #f8faf9;
+  --framework-canvas: #f2eee6;
+  --framework-surface: #fffdf8;
+  --framework-surface-subtle: #f7f3eb;
   --framework-surface-muted: #edf6f1;
   --framework-text: #202426;
   --framework-text-strong: #243438;
@@ -37,7 +37,7 @@
   --restricted-markdown-gray: #667074;
   color: var(--framework-text);
   background: var(--framework-canvas);
-  font-family: "Aptos", "Segoe UI", sans-serif;
+  font-family: "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }

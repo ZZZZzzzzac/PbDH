@@ -3,6 +3,7 @@ import type { PlatformPage } from "@pbdh/platform-ui";
 export type PlatformLocation = {
   page: PlatformPage;
   href: string;
+  playerSystemPackage?: string;
 };
 
 const platformPages = new Set<PlatformPage>(["player", "creator", "gm", "market"]);
@@ -24,11 +25,15 @@ export function readPlatformLocation(
     : url.pathname.startsWith(normalizedBase)
       ? `/${url.pathname.slice(normalizedBase.length)}`
       : url.pathname;
-  const segment = applicationPath.split("/").filter(Boolean)[0];
+  const segments = applicationPath.split("/").filter(Boolean);
+  const segment = segments[0];
+  if (segments.length === 0) return { page: "player", href: url.href, playerSystemPackage: "daggerheart-core" };
   const page = platformPages.has(segment as PlatformPage)
     ? segment as PlatformPage
     : "creator";
-  return { page, href: url.href };
+  return { page, href: url.href,
+    ...(page === "player" && segments.length === 2 ? { playerSystemPackage: segments[1] } : {}),
+  };
 }
 
 export function platformPageUrl(

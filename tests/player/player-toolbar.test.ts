@@ -91,7 +91,7 @@ describe("Player toolbar", () => {
   it("恢复 Author Preview 后不再用首选预制包覆盖它", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
 
-    expect(source).toContain("if (!state.authorPreviewActive)");
+    expect(source).toContain("if (requested || !state.authorPreviewActive)");
     expect(source).toContain("loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load()");
     expect(source).toContain("savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle)");
   });
@@ -113,7 +113,7 @@ describe("Player toolbar", () => {
     expect(importExport).not.toContain("运行检查");
     expect(importExport).toContain("characterAdapterExportLabel(adapter)");
     expect(importExport).toContain("characterTextExportLabel(definition)");
-    for (const label of ["导出PDF", "导出HTML", "导出为ZZZ格式", "导出为dhsheet格式", "导出为海豹骰"]) {
+    for (const label of ["导入存档（任意格式）", "导出 pbcha 存档", "导出 PDF", "导出 HTML", "导出 ZZZ 存档", "导出 dhsheet 存档", "导出 海豹骰"]) {
       expect(source).toContain(label);
     }
   });

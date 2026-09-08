@@ -16,6 +16,42 @@ const execute = (script: string, input: unknown) => {
 };
 
 describe("TTTRI September rules migrated from Sheet fe1de3f", () => {
+  function auditCards(level: number, choices: Record<string, unknown>, domains: Array<[string, number]>) {
+    const entries = [
+      { libraryId: "ancestries", entry: { ID: "saved-ancestry", fields: { 名称: "乌萨斯" } } },
+      { libraryId: "communities", entry: { ID: "saved-community", fields: { 名称: "高城之民" } } },
+      ...domains.map(([domain, cardLevel], index) => ({ libraryId: "domain-cards", entry: { ID: `saved-domain-${index}`, fields: { 名称: `领域卡${index}`, 领域: domain, 等级: String(cardLevel) } } })),
+    ];
+    const characterData = {
+      character: { values: { level: String(level), "primary-domain": "迅攻", "secondary-domain": "心界", ...choices } },
+      cards: { instances: entries.map(({ libraryId, entry }) => ({ definitionRef: { type: "resourceLibrary", libraryId, entryId: entry.ID }, state: "配置" })) },
+      embeddedResourceEntries: Object.fromEntries(entries.map((entry) => [entry.entry.ID, entry])),
+    };
+    return (execute(read("checks/character-consistency.js"), { characterData, resourceLibraries: [] }) as Array<{ code: string }>).map(issue => issue.code);
+  }
+
+  test("审核存档内种族、社群和领域卡副本，不依赖原资源库", () => {
+    const codes = auditCards(1, {}, [["迅攻", 1], ["心界", 1]]);
+    for (const code of ["ANCESTRY_CARD_COUNT_MISMATCH", "COMMUNITY_CARD_COUNT_MISMATCH", "DOMAIN_CARD_COUNT_MISMATCH", "DOMAIN_CARD_AFFILIATION_MISMATCH"]) expect(codes).not.toContain(code);
+    expect(auditCards(1, {}, [["迅攻", 1]])).toContain("DOMAIN_CARD_COUNT_MISMATCH");
+    expect(auditCards(1, {}, [["迅攻", 1]])).not.toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+  });
+
+  test("技艺交流必须勾两格且按 T2/T3/T4 的 2/4/5 级限额匹配外领域卡", () => {
+    const normal: Array<[string, number]> = Array.from({ length: 11 }, () => ["迅攻", 1]);
+    for (const [tier, cap] of [[2, 2], [3, 4], [4, 5]]) {
+      const choice = { [`advancement-tier-${tier}`]: { "multiclass-1": true, "multiclass-2": true } };
+      expect(auditCards(10, choice, [...normal, ["工业", cap]])).not.toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+      expect(auditCards(10, choice, [...normal, ["工业", cap + 1]])).toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+      expect(auditCards(10, choice, [...normal, ["迅攻", 1]])).toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+      expect(auditCards(10, { [`advancement-tier-${tier}`]: { "multiclass-1": true } }, [...normal, ["工业", 1]])).toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+    }
+    const allChoices = Object.fromEntries([2, 3, 4].map(tier => [`advancement-tier-${tier}`, { "multiclass-1": true, "multiclass-2": true }]));
+    expect(auditCards(10, allChoices, [...normal, ["工业", 5], ["秘行", 2], ["奇迹", 4]])).not.toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+    const fourNormal: Array<[string, number]> = Array.from({ length: 4 }, () => ["迅攻", 1]);
+    expect(auditCards(3, allChoices, [...fourNormal, ["工业", 2]])).toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+  });
+
   test("declares native character upgrade and free stage rewards with double-slot multiclass", () => {
     expect(system.package.version).toBe("1.1.0");
     expect(system.runtime.characterDataVersion).toBe("1.1.0");

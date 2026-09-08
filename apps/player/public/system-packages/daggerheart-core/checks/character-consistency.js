@@ -62,7 +62,8 @@ function checkWeaponLoadout(issues, context) {
 }
 
 function checkRequiredCardCounts(issues, context) {
-  const ancestryCount = context.cards.filter((card) => card.libraryId === "composite" && field(card.entry, "种族A名称") && field(card.entry, "种族B名称")).length;
+  const ancestryCount = context.cards.filter((card) => card.libraryId === "ancestries"
+    || (card.libraryId === "composite" && field(card.entry, "种族A名称") && field(card.entry, "种族B名称"))).length;
   const communityCount = context.cards.filter((card) => card.libraryId === "communities").length;
   const subclassCount = context.cards.filter((card) => card.libraryId === "subclasses").length;
 
@@ -554,7 +555,12 @@ function classDomains(entry) {
 
 function hasAncestrySlot(context, slot, name) {
   const key = `种族${slot}名称`;
-  return context.cards.some((card) => card.libraryId === "composite" && field(card.entry, key) === name);
+  return context.cards.some((card) => {
+    if (card.libraryId === "composite") return field(card.entry, key) === name;
+    if (card.libraryId !== "ancestries") return false;
+    const names = field(card.entry, "名称").split(" / ");
+    return names[names.length === 1 ? 0 : slot === "A" ? 0 : 1] === name;
+  });
 }
 
 function hasSubclass(context, name, stage) {

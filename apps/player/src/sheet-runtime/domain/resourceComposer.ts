@@ -18,6 +18,14 @@ export function materializeImportedComposite(
   const base = entries.find((entry) => entry.resourceCopy?.template.id === "种族")?.resourceCopy;
   if (!base || !("特性A" in fields) || !("特性B" in fields)) return composite;
   const names = [fields.种族A名称 ?? "", fields.种族B名称 ?? ""];
+  if (names[0] && names[0] === names[1]) {
+    const matches = entries.filter((entry) => entry.fields.名称 === names[0] && entry.resourceCopy?.template.id === "种族");
+    if (matches.length === 1) {
+      composite.resourceCopy = structuredClone(matches[0]!.resourceCopy!);
+      if (module.选择关系输出) composite.fields[module.选择关系输出.字段] = module.选择关系输出.全部相同时;
+      return composite;
+    }
+  }
   const originals: string[] = [];
   const features = ["A", "B"].map((slot, index) => {
     const matches = entries.filter((entry) => entry.fields.名称 === names[index]);

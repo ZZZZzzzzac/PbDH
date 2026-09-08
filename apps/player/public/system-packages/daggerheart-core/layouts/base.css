@@ -101,13 +101,37 @@
 }
 
 .advancement-controls {
-  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  grid-template-rows: repeat(8, auto) [multiclass] auto;
+  gap: 0.075rem 0.35rem;
+  padding: 0.15rem 0.25rem;
 }
 
-[data-template-page-id="character-story"] .multiclass-action {
-  position: absolute;
-  left: 1.35rem;
-  bottom: -0.3rem;
+.advancement-controls > [data-module-slot-type="checkboxResource"],
+.advancement-controls [data-module-type="checkboxResource"],
+.advancement-controls [data-part="options"] {
+  display: contents;
+}
+
+.advancement-controls :is([data-part="option"], [data-part="option-group"]) {
+  grid-column: 1 / -1;
+}
+
+.advancement-controls [data-option-group="multiclass"] {
+  grid-row: multiclass;
+  min-height: 2.75rem;
+}
+
+.multiclass-action {
+  grid-column: 1;
+  grid-row: multiclass;
+  align-self: start;
+  justify-self: end;
+  z-index: 1;
+  display: flex;
+  width: max-content;
+  margin: 1.2rem 0.15rem 0 0;
 }
 
 .multiclass-action [data-module-type="resourcePicker"] [data-part="button"] {

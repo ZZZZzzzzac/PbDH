@@ -104,6 +104,17 @@ export function buildSheetResourceLibraryInputs(input: {
         route.resource,
         input.resolveMediaReference,
       );
+      // 子职选择可读取所属职业的特性；同包优先，跨包只接受唯一匹配。
+      if (route.resource.template.id === "子职业" && isRecord(route.resource.data)) {
+        const profession = route.resource.data.主职;
+        const matches = installed.flatMap((item) => item.document.resources
+          .filter((resource) => resource.template.id === "职业" && isRecord(resource.data) && resource.data.名称 === profession)
+          .map((resource) => ({ packageId: item.document.package.id, resource })));
+        const local = matches.filter((item) => item.packageId === resourcePackage.document.package.id);
+        const candidates = local.length ? local : matches;
+        entry.职业特性 = candidates.length === 1 && isRecord(candidates[0]!.resource.data)
+          ? structuredFeatures(candidates[0]!.resource.data.特性) : "";
+      }
       if (route.destination === "other-resources") {
         otherEntries.push(entry);
         continue;

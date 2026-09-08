@@ -145,7 +145,7 @@ describe("Player layout regressions", () => {
       source.indexOf("runtimeReadyRef.current = true"),
     );
 
-    expect(startup).toContain("if (!importedWasRestored) {");
+    expect(startup).toContain("if (requested || !importedWasRestored) {");
     expect(startup).toContain("await switchToPresetSystemPackage(preferred.preset, true)");
     expect(startup).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
   });

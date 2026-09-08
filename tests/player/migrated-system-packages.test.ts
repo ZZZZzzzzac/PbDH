@@ -12,12 +12,16 @@ import { routeResourcePackage } from "../../apps/player/src/resources/route-reso
 import { replacePlatformResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
 import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import { resolveCardDisplayMode } from "../../apps/player/src/sheet-runtime/rendering/cardTable/cardDefinition.ts";
+import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
+import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
+import { validateSelectedResourceField } from "../../apps/player/src/sheet-runtime/domain/systemPackage/validationHelpers.ts";
+import type { PackageIssue } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 
 const root = path.resolve("apps/player/public/system-packages");
 const migrated = [
   { directory: "witchy", name: "巫趣 Witchy", resources: 12, assets: 0 },
   { directory: "hows-my-driving", name: "我的车技如何？", resources: 39, assets: 0 },
-  { directory: "tttri", name: "罗德岛旅记", resources: 573, assets: 286 },
+  { directory: "tttri", name: "罗德岛旅记", resources: 607, assets: 286 },
 ] as const;
 
 function hasStructuredSubclassFeatures(data: unknown): boolean {
@@ -86,7 +90,14 @@ describe("additional migrated System Packages", () => {
         expect(domainCards).toHaveLength(236);
         expect(domainCards.every((resource) => /^领域卡\/[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
         const armor = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "护甲") ?? [];
-        expect(armor).toHaveLength(0);
+        expect(armor).toHaveLength(34);
+        expect(armor.filter((resource) => (resource.data as Record<string, unknown>).位阶 === "1")).toHaveLength(4);
+        expect(armor.find((resource) => resource.id === "护甲:基础轻型制式装备")?.data).toMatchObject({
+          名称: "基础轻型制式装备", 重度伤害阈值: "5", 严重伤害阈值: "11", 护甲值: "3", 特性名称: "灵活", 特性描述: "闪避值+1",
+        });
+        expect(armor.find((resource) => resource.id === "护甲:身负重任套装")?.data).toMatchObject({
+          重度伤害阈值: "18", 严重伤害阈值: "48", 护甲值: "8", 特性名称: "困难", 特性描述: "所有角色属性以及闪避值-1",
+        });
         const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
         expect(subclasses).toHaveLength(280);
         for (const name of ["排陷手", "破术者", "收割者", "卫盟者", "回环射手", "塑灵术师", "游击手", "行商"]) {
@@ -152,6 +163,31 @@ describe("additional migrated System Packages", () => {
       .toBe(item.resources);
     expect(loaded.package.validationChecks?.length ?? 0).toBeGreaterThan(0);
     if (item.directory === "tttri") {
+      const picker = loaded.package.modules.find((module) => module.ID === "pick-armor");
+      expect(picker?.类型).toBe("resourcePicker");
+      for (const layout of ["layouts/character-main.html", "skins/rhodes-island/character-main.html", "skins/terra-portal/character-main.html"]) {
+        expect(await readFile(path.join(root, "tttri", layout), "utf8")).toContain('<pb-module id="pick-armor"></pb-module>');
+      }
+      const empty = createEmptyCharacterData(loaded.package);
+      expect(String(empty.character.values.inventory).split("\n")).toHaveLength(3);
+      expect(String(empty.character.values.inventory).split("\n")[0]).toBe("一根照明棒、一捆工业弹力绳、作战食品包。");
+      const issues: PackageIssue[] = [];
+      validateSelectedResourceField(loaded.package, picker, "不存在的护甲字段", "test", "fill-armor", issues);
+      expect(issues.map((issue) => issue.code)).toEqual(["MISSING_RESOURCE_FIELD_REFERENCE"]);
+      const armorLibrary = loaded.package.resourceLibraries!.find((library) => library.ID === "armor")!;
+      expect(armorLibrary.entries).toHaveLength(34);
+      const armor = armorLibrary.entries.find((entry) => entry.fields.名称 === "基础轻型制式装备")!;
+      expect(armor).toBeDefined();
+      const selected = applyResourceSelectionToDraft(empty, loaded.package, "pick-armor", "armor", [armor]).characterData;
+      expect(selected.character.values).toMatchObject({
+        "armor-summary": `基础轻型制式装备 | 阈值 ${armor.fields.重度阈值}/${armor.fields.严重阈值} | 护甲值 ${armor.fields.护甲值}`,
+        "armor-feature": armor.fields.特性,
+        "armor-value": armor.fields.护甲值,
+        "major-threshold": armor.fields.重度阈值,
+        "severe-threshold": armor.fields.严重阈值,
+        "armor-slots": { max: Number(armor.fields.护甲值) },
+        inventory: empty.character.values.inventory,
+      });
       const ancestries = loaded.package.resourceLibraries?.find((library) => library.ID === "ancestries");
       const communities = loaded.package.resourceLibraries?.find((library) => library.ID === "communities");
       const professions = loaded.package.resourceLibraries?.find((library) => library.ID === "classes");

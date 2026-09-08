@@ -11,6 +11,7 @@ import {
 
 import { AccountControl } from "@pbdh/platform-auth/provider";
 import { CloudStoragePanel } from "./CloudStoragePanel.tsx";
+import { TutorialEntry } from "./TutorialDialog.tsx";
 export { formatStorageBytes } from "./CloudStoragePanel.tsx";
 
 import "./styles.css";
@@ -232,6 +233,7 @@ export function PlatformAppBar({
     </nav>
     <div className="pbdh-platform-extra">{extraActions}</div>
     <div className="pbdh-platform-actions">
+      <TutorialEntry />
       <button type="button" aria-label="回收站" onClick={() => setTrashOpen(true)}><BarIcon kind="trash" /></button>
       <div className="pbdh-platform-notification-menu" onMouseLeave={() => setNotificationsOpen(false)}>
         <button

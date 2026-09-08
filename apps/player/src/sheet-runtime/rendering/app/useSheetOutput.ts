@@ -59,6 +59,7 @@ export function useSheetOutput({
   const [outputOperation, setOutputOperation] = useState<"validation" | "export" | null>(null);
   const cardLayoutSnapshotRef = useRef<Array<{ tableModuleId: string; cards: CardLayoutSnapshotEntry[] }> | null>(null);
   const titleBeforePrintRef = useRef<string | null>(null);
+  const disposePrintImagesRef = useRef<(() => void) | null>(null);
 
   const restoreDocumentTitle = () => {
     if (titleBeforePrintRef.current === null) return;
@@ -68,12 +69,15 @@ export function useSheetOutput({
 
   useEffect(() => {
     const finishPrinting = () => {
+      disposePrintImagesRef.current?.();
+      disposePrintImagesRef.current = null;
       restoreDocumentTitle();
       setPreparedOutputMode((current) => current === "print" ? null : current);
     };
     window.addEventListener("afterprint", finishPrinting);
     return () => {
       window.removeEventListener("afterprint", finishPrinting);
+      disposePrintImagesRef.current?.();
       restoreDocumentTitle();
     };
   }, []);
@@ -131,6 +135,7 @@ export function useSheetOutput({
       }
     }
     await nextFrame();
+    await document.fonts.ready;
     await waitForTextFits(document.querySelector(".sheet-tool") ?? document);
     return true;
   };
@@ -164,12 +169,16 @@ export function useSheetOutput({
       return;
     }
     try {
-      const { waitForVisibleImages } = await import("../../export/output");
+      const { waitForVisibleImages, prepareCardImagesForPrint } = await import("../../export/output");
       await waitForVisibleImages(printableRoot);
+      disposePrintImagesRef.current?.();
+      disposePrintImagesRef.current = await prepareCardImagesForPrint(printableRoot);
       titleBeforePrintRef.current ??= document.title;
       document.title = baseName;
       window.print();
     } catch (error) {
+      disposePrintImagesRef.current?.();
+      disposePrintImagesRef.current = null;
       restoreDocumentTitle();
       setPreparedOutputMode(null);
       throw error;
@@ -196,6 +205,9 @@ export function useSheetOutput({
       return;
     }
     await performOutput(kind, printableContentPrepared);
+    } catch (error) {
+      setPreparedOutputMode(null);
+      useRuntimeStore.setState({ importError: error instanceof Error ? error.message : "人物导出失败。" });
     } finally {
       setOutputOperation(null);
     }
@@ -220,6 +232,8 @@ export function useSheetOutput({
       return;
     }
     downloadText(`${JSON.stringify(result.document, null, 2)}\n`, fileName, "application/json");
+    } catch (error) {
+      useRuntimeStore.setState({ importError: error instanceof Error ? error.message : "人物格式转换失败。" });
     } finally {
       setOutputOperation(null);
     }
@@ -254,6 +268,9 @@ export function useSheetOutput({
     await runValidationChecks();
     useRuntimeStore.setState({ validationIssues: [...frameworkIssues, ...useRuntimeStore.getState().validationIssues] });
     setValidationDialogOpen(true);
+    } catch (error) {
+      setPreparedOutputMode(null);
+      useRuntimeStore.setState({ importError: error instanceof Error ? error.message : "人物检查失败。" });
     } finally {
       setOutputOperation(null);
     }
@@ -272,7 +289,12 @@ export function useSheetOutput({
         setPendingOutput(null);
         setValidationDialogOpen(false);
         setOutputOperation("export");
-        void performOutput(output, output !== "json").finally(() => setOutputOperation(null));
+        void performOutput(output, output !== "json")
+          .catch((error) => {
+            setPreparedOutputMode(null);
+            useRuntimeStore.setState({ importError: error instanceof Error ? error.message : "人物导出失败。" });
+          })
+          .finally(() => setOutputOperation(null));
       }
     : undefined;
 

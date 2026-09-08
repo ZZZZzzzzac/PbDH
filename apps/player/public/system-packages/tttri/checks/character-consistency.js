@@ -36,7 +36,7 @@ function createContext(characterData, resourceLibraries) {
   const communityEntry = findEntryByName(libraries.get("communities"), text(values["community-name"]));
   const armorEntry = findArmorEntry(libraries.get("armor"), text(values["armor-summary"]));
   const cards = (characterData?.cards?.instances ?? [])
-    .map((instance) => resolveCard(instance, libraries, characterData?.compositeResources ?? {}))
+    .map((instance) => resolveCard(instance, libraries, characterData?.compositeResources ?? {}, characterData?.embeddedResourceEntries ?? {}))
     .filter(Boolean);
   const advancementStates = TIER_IDS.map((id) => checkboxState(values[id]));
 
@@ -211,7 +211,9 @@ function checkDomainCards(issues, context) {
   const normalCaps = [1, 1];
   for (let level = 2; level <= context.level; level += 1) normalCaps.push(level);
   normalCaps.push(...extraUpgradeCaps);
-  const multiclassCaps = Array(context.multiclassCount).fill(Math.floor(context.level / 2));
+  const multiclassCaps = context.advancementStates.flatMap((state, index) =>
+    multiclassSelected(state) && context.level >= [2, 5, 8][index]
+      ? [Math.min(Math.floor(context.level / 2), [2, 4, 5][index])] : []);
   const expectedCount = normalCaps.length + multiclassCaps.length;
   if (domainCards.length !== expectedCount) {
     warn(issues, "DOMAIN_CARD_COUNT_MISMATCH", "cards.instances", `领域卡总数应为 ${expectedCount} 张，当前为 ${domainCards.length} 张。`);
@@ -223,28 +225,28 @@ function checkDomainCards(issues, context) {
   } else {
     const capSources = [...normalCaps, ...multiclassCaps].map((cap) => ({ cap, anyDomain: true }));
     if (!hasLegalDomainCardAllocation(cardsWithLevels, capSources, [])) {
-      warn(issues, "DOMAIN_CARD_LEVEL_MISMATCH", "cards.instances", "领域卡等级分布超过了初始、逐级升级、额外领域卡或兼职（角色等级一半）允许的上限。");
+      warn(issues, "DOMAIN_CARD_LEVEL_MISMATCH", "cards.instances", "领域卡等级分布超过了初始、逐级升级、额外领域卡或技艺交流（角色等级一半，T2/T3/T4 最高 2/4/5 级）允许的上限。");
     }
 
     const allowedDomains = [text(context.values["primary-domain"]), text(context.values["secondary-domain"])].filter(Boolean);
     if (allowedDomains.length === 2) {
       const domainSources = [
         ...normalCaps.map((cap) => ({ cap, anyDomain: false })),
-        ...multiclassCaps.map((cap) => ({ cap, anyDomain: true })),
+        ...multiclassCaps.map((cap) => ({ cap, outsideDomain: true })),
       ];
       if (!hasLegalDomainCardAllocation(cardsWithLevels, domainSources, allowedDomains)) {
         const invalidDomains = [...new Set(domainCards
           .map((card) => field(card.entry, "领域"))
           .filter((domain) => domain && !allowedDomains.includes(domain)))];
         const detail = invalidDomains.length > 0 ? `：${invalidDomains.join("、")}` : "";
-        warn(issues, "DOMAIN_CARD_AFFILIATION_MISMATCH", "cards.instances", `领域卡无法分配至主领域、次领域及已选择的兼职领域卡名额${detail}。`);
+        warn(issues, "DOMAIN_CARD_AFFILIATION_MISMATCH", "cards.instances", `领域卡无法分配至主领域、次领域及已勾选两格的技艺交流名额${detail}。技艺交流只能选择未拥有领域的卡，等级不超过角色等级一半，且 T2/T3/T4 分别最高 2/4/5 级。`);
       }
     }
   }
 }
 
 function hasLegalDomainCardAllocation(cards, sources, allowedDomains) {
-  if (cards.length !== sources.length) return false;
+  if (cards.length > sources.length) return false;
   const sourceMatches = Array(sources.length).fill(-1);
   const orderedCards = cards
     .map((card, index) => ({ card, index }))
@@ -271,7 +273,9 @@ function hasLegalDomainCardAllocation(cards, sources, allowedDomains) {
 
   function sourceAcceptsCard(source, card) {
     return card.level <= source.cap
-      && (source.anyDomain || allowedDomains.includes(field(card.entry, "领域")));
+      && (source.anyDomain || (source.outsideDomain
+        ? Boolean(field(card.entry, "领域")) && !allowedDomains.includes(field(card.entry, "领域"))
+        : allowedDomains.includes(field(card.entry, "领域"))));
   }
 }
 
@@ -432,7 +436,7 @@ function masksWithBits(size, count) {
   return result;
 }
 
-function resolveCard(instance, libraries, compositeResources) {
+function resolveCard(instance, libraries, compositeResources, embeddedEntries) {
   const ref = instance.definitionRef
     ?? (instance.libraryId && instance.definitionId
       ? { type: "resourceLibrary", libraryId: instance.libraryId, entryId: instance.definitionId }
@@ -444,7 +448,8 @@ function resolveCard(instance, libraries, compositeResources) {
     return composite ? { instance, libraryId: "composite", entry: { ID: composite.ID, fields: composite.fields } } : undefined;
   }
   const library = libraries.get(ref.libraryId);
-  const entry = library?.entries.find((candidate) => candidate.ID === ref.entryId);
+  const embedded = embeddedEntries[ref.entryId];
+  const entry = embedded?.libraryId === ref.libraryId ? embedded.entry : library?.entries.find((candidate) => candidate.ID === ref.entryId);
   return entry ? { instance, libraryId: ref.libraryId, entry } : undefined;
 }
 

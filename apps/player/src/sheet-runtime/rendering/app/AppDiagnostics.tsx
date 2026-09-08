@@ -1,30 +1,4 @@
-import type { PackageIssue } from "../../domain/systemPackage";
 import type { ValidationIssue } from "../../domain/validationRunner";
-
-export function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
-  const blocking = issues.some((issue) => issue.level === "fatal" || issue.level === "error");
-  return (
-    <section className="error-panel" role={blocking ? "alert" : "status"} aria-label={blocking ? "System Package error" : "System Package warnings"}>
-      <h2>{blocking ? "System Package 错误" : "System Package 警告"}</h2>
-      <ul>
-        {issues.map((issue) => (
-          <li key={`${issue.code}-${issue.path ?? issue.text}`}>
-            <strong>{issue.code}</strong>
-            {issue.location?.file ? ` ${issue.location.file}` : ""}
-            {issue.path ? ` ${issue.path}: ` : " "}
-            {issue.text}
-            {(issue.entities?.length || issue.evidence?.length) ? (
-              <details>
-                <summary>诊断上下文</summary>
-                <pre>{JSON.stringify({ location: issue.location, entities: issue.entities, evidence: issue.evidence }, null, 2)}</pre>
-              </details>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
 
 export function ValidationIssueDialog({
   issues,
@@ -62,10 +36,13 @@ export function ValidationIssueDialog({
             <ul>
               {issues.map((issue, index) => (
                 <li className={`validation-issue validation-${issue.level}`} key={`${issue.source}-${issue.code ?? issue.text}-${index}`}>
-                  <strong>{issue.level}</strong>
-                  {issue.code ? ` ${issue.code}` : ""} {issue.path ? `${issue.path}: ` : ""}
-                  {issue.text}
-                  <span className="validation-source">{issue.source}</span>
+                  <span className="validation-severity">{{ error: "错误", warning: "待核对", info: "提示" }[issue.level]}</span>
+                  <p>{issue.text}</p>
+                  <details className="validation-source"><summary>检查详情</summary>
+                    {issue.code && <code>{issue.code}</code>}
+                    {issue.path && <div>{issue.path}</div>}
+                    <div>{issue.source}</div>
+                  </details>
                 </li>
               ))}
             </ul>
