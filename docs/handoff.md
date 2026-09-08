@@ -1,5 +1,18 @@
 # 开发交接
 
+## 2026-09-09：0.1.9 与主入口切换
+
+- 应用提交 `7a24605`，双入口运维脚本提交 `302ac31`；全部已推送。
+- Release `v0.1.9` 完整验证成功：971 项 TypeScript、153 项 Python；新增路由变换测试 2 项单独通过。
+- Release run `34253358247`、Deploy run `34253717573`、路由切换 run `34253848911` 均成功。
+- `/pbdh/` 提供 Platform 0.1.9，默认跳转 `/pbdh/player/daggerheart-core`；浏览器确认匕首心人物卡、教程与工具栏正常。
+- `/pbdh_tools/` 提供旧 Sheet 2.3.0，浏览器确认既有卡图和 `/pbdh_tools/tttri` 正常。旧制品保持不动，独立部署副本仅调整资源基路径。
+- 两个公开入口及 `/api/health` HTTP 200；Environment `PUBLIC_URL` 已更新为 `/pbdh/`，后续部署检查新主入口。回退使用 routes.yml 的 rollback 模式，详见 deploy/README.md。
+- 待修：当前浏览器已有新版 TTTRI 存档版本为 1.0.6，切换到 1.1.0 提示缺少升级链；未修改或删除该存档。新版 TTTRI 路由返回 0.1.9，但这份历史存档阻断浏览器验收，不应记为 TTTRI 全部通过。
+- PDF 每页末行已通过真实保存文件验收；卡多时预览仍卡顿，用户要求暂缓优化。
+
+## 以下为 0.1.7 历史交接
+
 日期：2026-09-07
 
 ## 当前状态
@@ -24,7 +37,7 @@
 
 ## 发布流程
 
-按 deploy/README.md 推送版本标签，Release 工作流完整验证并构建不可变制品，再运行 Deploy Release 更新 `/pbdh_tools/`，检查公开版本标记、Backend 健康和浏览器页面。
+按 deploy/README.md 推送版本标签，Release 工作流完整验证并构建不可变制品，再运行 Deploy Release 更新当前 Platform 入口，检查公开版本标记、Backend 健康和浏览器页面。
 
 ## 发布结果
 
