@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "只读查看线上路由配置"
+        description: "inspect 只读检查；new 切换两个入口；rollback 恢复原入口"
         required: true
         default: inspect
         type: choice
-        options: [inspect]
+        options: [inspect, new, rollback]
 
 permissions:
   contents: read
@@ -37,5 +37,8 @@ jobs:
           TARGET: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
           MODE: ${{ inputs.mode }}
         run: |
-          test "$MODE" = inspect
-          ssh "$TARGET" 'sudo /usr/local/sbin/switch-pbdh-route status; readlink -f /var/www/pbdh/current; cat /var/www/pbdh/current/index.html; sudo nginx -T'
+          if [ "$MODE" = inspect ]; then
+            ssh "$TARGET" 'readlink -f /var/www/pbdh/current; cat /var/www/pbdh/current/index.html; sudo nginx -T'
+          else
+            ssh "$TARGET" sudo python3 - "$MODE" < deploy/promote-primary.py
+          fi

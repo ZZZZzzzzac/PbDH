@@ -5,16 +5,18 @@ Release 目录。前端由宿主 Nginx 直接提供；FastAPI 沿用 systemd 管
 只监听 `127.0.0.1:8001`。SQLite/WAL 位于宿主
 `/var/lib/pbdh-platform`，因此部署目录和容器都不是数据的唯一副本。
 
-## 双轨地址
+## 公开地址（0.1.9 主入口切换后）
 
-- `/pbdh/`：默认仍指向旧 `PbDH_Sheet`。
-- `/pbdh_tools/`：始终指向本仓库最新部署的 Release。
+- `/pbdh/`：综合应用，默认打开 Player 与匕首心系统包。
+- `/pbdh_tools/`：旧 `PbDH_Sheet 2.3.0` 的独立部署副本。
 - `/api/`：反向代理到新 Platform Backend；旧站不使用这个路径。
 
-每个 Release 同时构建 `/pbdh_tools/` 和 `/pbdh/` 两份前端。稳定后在
-服务器执行 `sudo /usr/local/sbin/switch-pbdh-route new`，即可原子地把
-`/pbdh/` 切到本仓库；执行 `... legacy` 可立即切回旧站。切换不重建
-前端、不移动数据库。
+每个 Release 仍构建两个基路径版本。首次切换通过 `Manage public routes`
+工作流的 `new` 模式完成：复制旧站到 `/var/www/pbdh-legacy-tools`，只调整
+部署副本中的资源基路径，保留原 Release；保存 Nginx 配置后一次重载切换
+两个入口。配置检查或重载失败自动恢复。`rollback` 模式恢复切换前的两个
+入口，备份位于 `/var/www/pbdh-route/promotion-backup`。切换不移动数据库。
+旧 `switch-pbdh-route` 只管单入口，双入口切换后不再用它回退。
 
 ## 首次安装
 
@@ -28,7 +30,7 @@ Release 目录。前端由宿主 Nginx 直接提供；FastAPI 沿用 systemd 管
    `switch-pbdh-route`，先执行一次 `switch-pbdh-route legacy`。
 5. 在 GitHub `production-preview` Environment 配置：
    `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PATH=/var/www/pbdh-platform`、
-   `PUBLIC_URL=https://daggerheart.cn/pbdh_tools/`，以及
+   `PUBLIC_URL=https://daggerheart.cn/pbdh/`，以及
    `DEPLOY_SSH_KEY`、`DEPLOY_KNOWN_HOSTS`。
 
 部署账号需要能够无交互执行发布脚本中的有限 `sudo` 操作。不要把
@@ -43,21 +45,22 @@ Release 目录。前端由宿主 Nginx 直接提供；FastAPI 沿用 systemd 管
 部署工作流会校验 Release 摘要、上传到版本化 staging 目录、备份 SQLite、
 使用 Release 内置的 `python-packages` 启动单 worker Backend、等待健康
 检查通过，再原子切换
-`/var/www/pbdh-platform/current`。它只更新 `/pbdh_tools/`，不会自动
-替换 `/pbdh/`。
+`/var/www/pbdh-platform/current`。主入口切换后它更新 `/pbdh/`，不会改动
+旧 Sheet 副本。工作流通过 Environment 的 `PUBLIC_URL` 核对部署版本。
 
 ## 验证与回滚
 
 ```bash
+curl --fail https://daggerheart.cn/pbdh/
 curl --fail https://daggerheart.cn/pbdh_tools/
 curl --fail https://daggerheart.cn/api/health
 sudo systemctl status pbdh-platform --no-pager
 ```
 
-重新部署旧 Release 即可回滚应用版本。主入口切换错误时执行：
+重新部署旧 Release 即可回滚应用版本。双入口切换错误时执行：
 
 ```bash
-sudo /usr/local/sbin/switch-pbdh-route legacy
+gh workflow run routes.yml -f mode=rollback
 ```
 
 Backend 日志使用 `journalctl -u pbdh-platform` 查看。数据库备份位于
