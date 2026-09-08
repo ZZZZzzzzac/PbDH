@@ -5,6 +5,7 @@ import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
 import { CreatorCloudDocumentService, type CreatorCloudRecovery } from "./cloud-document-service.ts";
+import { scheduleCreatorCloudSync } from "./cloud-sync-timing.ts";
 import { isCreatorAuthoringInputFocused } from "./creator-controls.tsx";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
 import { containGmTabletopInstances } from "./gm-tabletop-geometry.ts";
@@ -19,7 +20,6 @@ import {
 import type { CreatorWorkspace } from "./workspace-model.ts";
 
 const LOCAL_SAVE_DELAY_MS = 400;
-const CLOUD_SYNC_DELAY_MS = 1600;
 
 export function useCreatorDocumentPersistence({
   credentials,
@@ -182,7 +182,8 @@ export function useCreatorDocumentPersistence({
 
   useEffect(() => {
     if (!workspaceStorageReady || !credentials || isCreatorAuthoringInputFocused()) return;
-    const timeout = window.setTimeout(() => {
+    return scheduleCreatorCloudSync(() => {
+      if (isCreatorAuthoringInputFocused()) return;
       const pendingLocalWrites = workspaceWriteQueueRef.current;
       const write = pendingLocalWrites.then(async () => {
         const snapshot = await cloudDocumentService.flush("creator-workspace", credentials);
@@ -190,13 +191,13 @@ export function useCreatorDocumentPersistence({
       });
       workspaceWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "工作区同步失败"));
-    }, CLOUD_SYNC_DELAY_MS);
-    return () => window.clearTimeout(timeout);
+    });
   }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, workspaceCloudSyncRequest, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     if (!tabletopStorageReady || !credentials || isCreatorAuthoringInputFocused()) return;
-    const timeout = window.setTimeout(() => {
+    return scheduleCreatorCloudSync(() => {
+      if (isCreatorAuthoringInputFocused()) return;
       const pendingLocalWrites = tabletopWriteQueueRef.current;
       const write = pendingLocalWrites.then(async () => {
         const snapshot = await cloudDocumentService.flush("gm-tabletop-document", credentials);
@@ -204,8 +205,7 @@ export function useCreatorDocumentPersistence({
       });
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "桌面同步失败"));
-    }, CLOUD_SYNC_DELAY_MS);
-    return () => window.clearTimeout(timeout);
+    });
   }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, tabletopCloudSyncRequest, tabletopStorageReady, tabletops]);
 
   useEffect(() => {

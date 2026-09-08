@@ -23,6 +23,13 @@ const credentials: CloudCredentials = {
 };
 
 describe("Cloud Document browser transport", () => {
+  test("preserves the server's missing media list", async () => {
+    const api = new HttpCloudDocumentApi(vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: {
+      code: "CLOUD_MEDIA_NOT_READY", message: "missing",
+      fieldErrors: [{ path: "/assetIds", code: "CLOUD_MEDIA_NOT_READY", message: "sha256:new" }],
+    } }), { status: 422 })));
+    await expect(api.putDocument(envelope(), "mutation", credentials)).rejects.toMatchObject({ missingAssetIds: ["sha256:new"] });
+  });
   test("calls the browser fetch implementation with the global receiver", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = function (this: unknown) {
@@ -143,9 +150,63 @@ function api(put = vi.fn<CloudDocumentApi["putDocument"]>()): CloudDocumentApi &
 }
 
 describe("Cloud Document durable outbox", () => {
-  test("requires an explicit enable action, then prepares media before the first revision", async () => {
+  test("uploads only missing references and deduplicates the server list", async () => {
+    const store = new FakeStore();
+    const local = envelope();
+    local.assetIds.push("sha256:new");
+    store.documents.set(local.documentId, local);
+    store.media.set("sha256:new", new Uint8Array([4]));
+    const put = vi.fn<CloudDocumentApi["putDocument"]>()
+      .mockRejectedValueOnce(new CloudApiError(422, "CLOUD_MEDIA_NOT_READY", "missing", ["sha256:new", "sha256:new"]))
+      .mockImplementation(async (value) => remote(value, 1));
+    const cloud = api(put);
+    const coordinator = new CloudDocumentCoordinator(store, cloud);
+    await coordinator.enableCloud("creator-workspace", local.documentId, credentials);
+    expect(await coordinator.flush("creator-workspace", credentials)).toEqual({ synced: 1, pending: 0, conflicts: 0 });
+    expect(cloud.calls).toEqual(["media:sha256:new"]);
+  });
+
+  test("does not upload on conflict or upload an unrelated server-requested asset", async () => {
+    for (const error of [
+      new CloudApiError(409, "CLOUD_DOCUMENT_REVISION_CONFLICT", "conflict"),
+      new CloudApiError(422, "CLOUD_MEDIA_NOT_READY", "missing", ["sha256:unrelated"]),
+    ]) {
+      const store = new FakeStore();
+      store.documents.set("workspace-1", envelope());
+      const cloud = api(vi.fn<CloudDocumentApi["putDocument"]>().mockRejectedValue(error));
+      const coordinator = new CloudDocumentCoordinator(store, cloud);
+      await coordinator.enableCloud("creator-workspace", "workspace-1", credentials);
+      await coordinator.flush("creator-workspace", credentials);
+      expect(cloud.calls).toEqual([]);
+    }
+  });
+
+  test("forced overwrite also skips already authorized media", async () => {
+    const store = new FakeStore();
+    store.documents.set("workspace-1", envelope());
+    const cloud = api();
+    const coordinator = new CloudDocumentCoordinator(store, cloud);
+    await coordinator.enableCloud("creator-workspace", "workspace-1", credentials);
+    await coordinator.overwriteWithLocal("creator-workspace", "workspace-1", credentials);
+    expect(cloud.calls).toEqual(["document:workspace-1"]);
+  });
+  test("does not read or upload local images when the server already accepts their references", async () => {
     const store = new FakeStore();
     const cloud = api();
+    const readMedia = vi.spyOn(store, "getMedia");
+    store.documents.set("workspace-1", envelope());
+    const coordinator = new CloudDocumentCoordinator(store, cloud);
+    await coordinator.enableCloud("creator-workspace", "workspace-1", credentials);
+    expect(await coordinator.flush("creator-workspace", credentials)).toEqual({ synced: 1, pending: 0, conflicts: 0 });
+    expect(readMedia).not.toHaveBeenCalled();
+    expect(cloud.calls).toEqual(["document:workspace-1"]);
+  });
+  test("requires an explicit enable action, then prepares media before the first revision", async () => {
+    const store = new FakeStore();
+    const put = vi.fn<CloudDocumentApi["putDocument"]>()
+      .mockRejectedValueOnce(new CloudApiError(422, "CLOUD_MEDIA_NOT_READY", "missing", ["sha256:asset"]))
+      .mockImplementation(async (local) => remote(local, 1));
+    const cloud = api(put);
     store.documents.set("workspace-1", envelope());
     const coordinator = new CloudDocumentCoordinator(store, cloud, () => "mutation-1");
 
@@ -161,7 +222,8 @@ describe("Cloud Document durable outbox", () => {
     const result = await coordinator.flush("creator-workspace", credentials);
 
     expect(result).toEqual({ synced: 1, pending: 0, conflicts: 0 });
-    expect(cloud.calls).toEqual(["media:sha256:asset", "document:workspace-1"]);
+    expect(cloud.calls).toEqual(["media:sha256:asset"]);
+    expect(put.mock.calls.map(([, id]) => id)).toEqual(["mutation-1", "mutation-1"]);
     expect((await store.get("creator-workspace", "workspace-1"))?.sync).toMatchObject({
       scope: "cloud",
       state: "clean",
@@ -278,6 +340,7 @@ describe("Cloud Document durable outbox", () => {
   test("explicit local overwrite uploads media and resolves a conflict with the new revision", async () => {
     const store = new FakeStore();
     const put = vi.fn<CloudDocumentApi["putDocument"]>()
+      .mockRejectedValueOnce(new CloudApiError(422, "CLOUD_MEDIA_NOT_READY", "missing", ["sha256:asset"]))
       .mockImplementation(async (local, _mutationId, _credentials, force) => {
         expect(force).toBe(true);
         return remote(local, 7);

@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "contracts" / "backend-api" / "1.1.0" / "openapi.json"
+OUTPUT = ROOT / "contracts" / "backend-api" / "1.2.0" / "openapi.json"
 sys.path.insert(0, str(ROOT / "apps" / "backend" / "src"))
 
 from pbdh_backend.app import create_app

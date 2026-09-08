@@ -20,12 +20,14 @@ class StorageEntry(BaseModel):
     mediaBytes: int
     ownedBytes: int
     reclaimableBytes: int
+    dataBytes: int
 
 
 class StorageUsage(BaseModel):
     usedBytes: int
     limitBytes: int | None
     unattachedBytes: int
+    dataBytes: int
     entries: list[StorageEntry]
 
 
@@ -60,6 +62,7 @@ def summarize_storage(connection, account_id: str, limit: int | None) -> dict[st
         references.update(owned)
         entries.append({"id": row["document_id"], "name": title, "kind": row["document_kind"],
                         "deleted": row["deleted_at"] is not None,
+                        "dataBytes": len(row["payload_json"].encode("utf-8")),
                         "mediaBytes": sum(int(r["byte_length"]) for r in assets), "owned": owned})
     for row in connection.execute(
         "SELECT p.* FROM publications p JOIN package_ownership o ON o.package_id = p.package_id "
@@ -72,11 +75,13 @@ def summarize_storage(connection, account_id: str, limit: int | None) -> dict[st
         owned = {r["asset_id"] for r in assets if r["asset_id"] in sizes}
         references.update(owned)
         entries.append({"id": row["publication_id"], "name": row["title"], "kind": "publication",
-                        "deleted": False, "mediaBytes": sum(int(r["byte_length"]) for r in assets), "owned": owned})
+                        "deleted": False, "dataBytes": len(row["logical_document_json"].encode("utf-8")),
+                        "mediaBytes": sum(int(r["byte_length"]) for r in assets), "owned": owned})
     for entry in entries:
         owned = entry.pop("owned")
         entry["ownedBytes"] = sum(sizes[a] for a in owned)
         entry["reclaimableBytes"] = sum(sizes[a] for a in owned if references[a] == 1)
     return {"usedBytes": sum(sizes.values()), "limitBytes": limit,
+            "dataBytes": sum(entry["dataBytes"] for entry in entries),
             "unattachedBytes": sum(size for asset, size in sizes.items() if not references[asset]),
             "entries": sorted(entries, key=lambda e: (e["deleted"], e["kind"], e["name"]))}

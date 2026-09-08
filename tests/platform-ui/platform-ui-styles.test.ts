@@ -89,4 +89,11 @@ describe("Platform App Bar style isolation", () => {
 
     for (const source of sources) expect(source).toContain("OperationStatus");
   });
+
+  test("opens license options above the field", () => {
+    const css = readFileSync(fileURLToPath(new URL("../../packages/publication-ui/src/styles.css", import.meta.url)), "utf8");
+    const menu = css.match(/\.pbdh-license-field > div > span \{([^}]+)\}/)?.[1];
+    expect(menu).toContain("bottom: calc(100% + 4px)");
+    expect(menu).not.toMatch(/(?:^|;)\s*top:/);
+  });
 });

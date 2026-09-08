@@ -32,6 +32,7 @@ export class CloudApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
+    public readonly missingAssetIds: readonly string[] = [],
   ) {
     super(message);
   }
@@ -174,13 +175,7 @@ export class CloudDocumentCoordinator {
       throw new Error("当前账号不能覆盖该云文档。");
     }
     const mutationId = this.#mutationId();
-    const media = await this.#store.getMedia(local.assetIds);
-    for (const assetId of local.assetIds) {
-      const bytes = media.get(assetId);
-      if (!bytes) throw new Error(`Missing local media: ${assetId}`);
-      await this.#api.prepareMedia(assetId, bytes, credentials);
-    }
-    const remote = await this.#api.putDocument(local, mutationId, credentials, true);
+    const remote = await this.#putWithMissingMedia(local, mutationId, credentials, true);
     const latest = await this.#store.get(documentKind, documentId);
     if (latest) {
       latest.sync = {
@@ -206,13 +201,7 @@ export class CloudDocumentCoordinator {
       await this.#store.put(document);
     }
     try {
-      const media = await this.#store.getMedia(document.assetIds);
-      for (const assetId of document.assetIds) {
-        const bytes = media.get(assetId);
-        if (!bytes) throw new Error(`Missing local media: ${assetId}`);
-        await this.#api.prepareMedia(assetId, bytes, credentials);
-      }
-      const remote = await this.#api.putDocument(document, mutationId, credentials);
+      const remote = await this.#putWithMissingMedia(document, mutationId, credentials);
       const latest = await this.#store.get(document.documentKind, document.documentId);
       if (!latest) return "synced";
       latest.sync = latest.sync.mutationId === mutationId
@@ -246,10 +235,32 @@ export class CloudDocumentCoordinator {
       return "pending";
     }
   }
+  async #putWithMissingMedia(
+    document: LocalDocumentEnvelope,
+    mutationId: string,
+    credentials: CloudCredentials,
+    force = false,
+  ): Promise<RemoteCloudDocument> {
+    try {
+      return await this.#api.putDocument(document, mutationId, credentials, force);
+    } catch (error) {
+      if (!(error instanceof CloudApiError) || error.code !== "CLOUD_MEDIA_NOT_READY") throw error;
+      const missing = [...new Set(error.missingAssetIds)];
+      if (!missing.length || missing.some((id) => !document.assetIds.includes(id))) throw error;
+      // 由服务端判断已有所有权和市场引用权限；只补传本次明确缺少的图片。
+      const media = await this.#store.getMedia(missing);
+      for (const assetId of missing) {
+        const bytes = media.get(assetId);
+        if (!bytes) throw new Error(`Missing local media: ${assetId}`);
+        await this.#api.prepareMedia(assetId, bytes, credentials);
+      }
+      return this.#api.putDocument(document, mutationId, credentials, force);
+    }
+  }
 }
 
 type ApiErrorPayload = {
-  error?: { code?: string; message?: string };
+  error?: { code?: string; message?: string; fieldErrors?: Array<{ path?: string; code?: string; message?: string }> };
 };
 
 export class HttpCloudDocumentApi implements CloudDocumentApi {
@@ -434,5 +445,8 @@ function responseError(response: Response, payload: ApiErrorPayload, fallback: s
     response.status,
     payload.error?.code ?? "CLOUD_REQUEST_FAILED",
     payload.error?.message ?? fallback,
+    payload.error?.code === "CLOUD_MEDIA_NOT_READY"
+      ? (payload.error.fieldErrors ?? []).flatMap((field) => field.path === "/assetIds" && field.code === "CLOUD_MEDIA_NOT_READY" && typeof field.message === "string" ? [field.message] : [])
+      : [],
   );
 }

@@ -120,6 +120,40 @@ body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none
 .pbdh-cloud-storage header { display: flex; justify-content: space-between; align-items: center; }
 .pbdh-cloud-storage progress { width: 100%; }
 .pbdh-storage-note { color: #756d65; line-height: 1.5; }
-.pbdh-storage-list { max-height: 240px; overflow: auto; }
-.pbdh-storage-list article { display: grid; gap: 5px; padding: 10px 0; border-bottom: 1px solid #e5dfd8; overflow-wrap: anywhere; }
-.pbdh-storage-list small { color: #756d65; }
+.pbdh-storage-dialog { width: min(1120px, calc(100vw - 48px)); max-width: none; max-height: none; padding: 0; border: 1px solid #b7c1bd; border-radius: 8px; background: #fff; color: #202925; box-shadow: 0 24px 80px #0005; }
+.pbdh-storage-dialog::backdrop { background: #15251f80; }
+.pbdh-storage-surface { display: flex; flex-direction: column; min-width: 0; overflow: hidden; height: min(820px, calc(100dvh - 64px)); font: 14px/1.45 system-ui, sans-serif; }
+.pbdh-storage-surface > header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #dbe2df; }
+.pbdh-storage-surface > header > div { display: flex; align-items: baseline; gap: 12px; }
+.pbdh-storage-surface h2 { margin: 0; font-size: 20px; letter-spacing: 0; }
+.pbdh-storage-surface > header button { width: 44px; height: 44px; background: transparent; border: 0; font-size: 26px; cursor: pointer; color: inherit; }
+.pbdh-storage-totals { display: flex; flex-wrap: wrap; gap: 20px 48px; margin: 0; padding: 18px 20px; background: #f2f6f4; }
+.pbdh-storage-totals dt { color: #516159; }
+.pbdh-storage-totals dd { margin: 4px 0 0; font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.pbdh-storage-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 12px 20px; }
+.pbdh-storage-toolbar label { display: grid; gap: 4px; min-width: 0; }
+.pbdh-storage-toolbar label:first-child { flex: 1; }
+.pbdh-storage-toolbar input, .pbdh-storage-toolbar select { box-sizing: border-box; min-width: 0; width: 100%; height: 36px; padding: 0 8px; border: 1px solid #aebcb5; border-radius: 4px; background: #fff; color: inherit; font: inherit; }
+.pbdh-storage-toolbar > span { padding-bottom: 8px; color: #516159; white-space: nowrap; }
+.pbdh-storage-table-scroll { min-height: 0; flex: 1; overflow: auto; border-block: 1px solid #dbe2df; }
+.pbdh-storage-table-scroll table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.pbdh-storage-table-scroll th, .pbdh-storage-table-scroll td { padding: 8px 12px; border-bottom: 1px solid #e4e9e6; text-align: right; overflow-wrap: anywhere; }
+.pbdh-storage-table-scroll thead th { position: sticky; top: 0; background: #edf2ef; color: #43594c; z-index: 1; font-weight: 600; }
+.pbdh-storage-table-scroll th:first-child { width: 38%; text-align: left; padding-left: 20px; }
+.pbdh-storage-table-scroll th:nth-child(2), .pbdh-storage-table-scroll td:nth-child(2) { text-align: left; width: 17%; }
+.pbdh-storage-table-scroll tbody th { font-weight: 500; }
+.pbdh-storage-table-scroll tbody tr:hover { background: #f3f8f5; }
+.pbdh-storage-table-scroll small { display: inline-block; margin-left: 8px; color: #8a4131; font-size: 12px; }
+.pbdh-storage-surface footer { padding: 12px 20px; color: #516159; font-size: 12px; }
+.pbdh-storage-empty { padding: 24px; text-align: center; }
+@media (max-width: 600px) {
+  .pbdh-storage-dialog { box-sizing: border-box; width: 100%; max-width: 100%; height: 100dvh; margin: 0; border: 0; border-radius: 0; overflow: hidden; }
+  .pbdh-storage-surface { height: 100dvh; }
+  .pbdh-storage-totals { gap: 12px 20px; padding: 12px; }
+  .pbdh-storage-totals dd { font-size: 18px; }
+  .pbdh-storage-toolbar { padding: 12px; gap: 8px; }
+  .pbdh-storage-toolbar label:first-child { flex-basis: 100%; }
+  .pbdh-storage-toolbar input, .pbdh-storage-toolbar select { height: 44px; }
+  .pbdh-storage-table-scroll table { min-width: 580px; }
+  .pbdh-storage-surface footer { padding: 10px 12px; }
+}

@@ -79,6 +79,18 @@ def document_write(
     }
 
 
+def test_text_only_storage_is_counted_without_consuming_media_quota(tmp_path: Path) -> None:
+    api = client(tmp_path, account_media_quota_bytes=1)
+    owner = claim(api, "text-owner")
+    assert api.put("/api/cloud/documents/text-only", headers=owner, json=document_write(
+        "text-write", "creator-workspace", {"name": "纯文字", "text": "长文本" * 1000}, [], None,
+    )).status_code == 200
+    usage = api.get("/api/storage/usage", headers=owner).json()
+    assert usage["usedBytes"] == 0
+    assert usage["dataBytes"] > 9000
+    assert usage["entries"][0]["dataBytes"] == usage["dataBytes"]
+
+
 def test_account_storage_deduplicates_packages_and_tracks_recycle_release(tmp_path: Path) -> None:
     api = client(tmp_path, account_media_quota_bytes=100_000_000)
     owner = claim(api, "storage-owner")
@@ -94,6 +106,9 @@ def test_account_storage_deduplicates_packages_and_tracks_recycle_release(tmp_pa
     assert usage["usedBytes"] == len(content)
     assert usage["limitBytes"] == 100_000_000
     assert len(usage["entries"]) == 2
+    expected_data_bytes = len('{"document":{"package":{"name":"包 0"}}}'.encode("utf-8"))
+    assert usage["dataBytes"] == 2 * expected_data_bytes
+    assert all(entry["dataBytes"] == expected_data_bytes for entry in usage["entries"])
     assert all(entry["ownedBytes"] == len(content) and entry["reclaimableBytes"] == 0 for entry in usage["entries"])
     assert api.get("/api/storage/usage", headers=other).json()["entries"] == []
     assert api.get("/api/storage/usage").status_code == 401
@@ -101,10 +116,12 @@ def test_account_storage_deduplicates_packages_and_tracks_recycle_release(tmp_pa
                     json={"mutationId": "storage-trash", "baseRevision": 1}).status_code == 200
     recycled = api.get("/api/storage/usage", headers=owner).json()
     assert recycled["usedBytes"] == len(content)
+    assert recycled["dataBytes"] == usage["dataBytes"]
     assert any(entry["deleted"] for entry in recycled["entries"])
     assert api.delete("/api/cloud/documents/storage-0?baseRevision=2", headers=owner).status_code == 204
     remaining = api.get("/api/storage/usage", headers=owner).json()
     assert remaining["usedBytes"] == len(content)
+    assert remaining["dataBytes"] == expected_data_bytes
     assert remaining["entries"][0]["reclaimableBytes"] == len(content)
 
 
@@ -391,4 +408,3 @@ def test_expired_cloud_trash_is_purged_when_recycle_bin_is_read(tmp_path: Path) 
     assert recycle_bin.status_code == 200
     assert recycle_bin.json() == {"documents": []}
     assert api.get("/api/cloud/documents/tabletop-expired", headers=owner).status_code == 404
-

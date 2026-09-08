@@ -861,7 +861,7 @@ describe("Creator Workspace UI contracts", () => {
     expect(styles).toContain(".compact-field-control > input { box-sizing: border-box; width: 100%; }");
     expect(styles).toContain(".compact-field > .compact-field-control { position: relative; min-width: 0; display: flex; flex: 1 1 0; }");
     expect(persistenceSource).toContain("LOCAL_SAVE_DELAY_MS");
-    expect(persistenceSource).toContain("CLOUD_SYNC_DELAY_MS");
+    expect(persistenceSource.match(/return scheduleCreatorCloudSync\(/g)).toHaveLength(2);
     expect(workbenchSource).toContain('onFocusCapture={() => execute({ type: "request-cloud-edit" })}');
     expect(workbenchSource).toContain('onBlurCapture={() => execute({ type: "request-cloud-edit" })}');
     expect(creatorSource).toContain("isCreatorAuthoringInputFocused()");

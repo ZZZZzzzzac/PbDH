@@ -7,17 +7,21 @@ from pbdh_backend.app import create_app
 
 
 ROOT = Path(__file__).parents[2]
-OPENAPI_PATH = ROOT / "contracts/backend-api/1.1.0/openapi.json"
-CASES_PATH = ROOT / "contracts/conformance/backend-api/1.1.0/cases.json"
+OPENAPI_PATH = ROOT / "contracts/backend-api/1.2.0/openapi.json"
+CASES_PATH = ROOT / "contracts/conformance/backend-api/1.2.0/cases.json"
 
 
-def test_published_openapi_matches_backend_implementation() -> None:
+def test_current_openapi_matches_backend_implementation() -> None:
     assert json.loads(OPENAPI_PATH.read_text(encoding="utf-8")) == create_app().openapi()
 
 
 def test_backend_api_operations_security_and_errors_match_conformance() -> None:
     contract = json.loads(OPENAPI_PATH.read_text(encoding="utf-8"))
     cases = json.loads(CASES_PATH.read_text(encoding="utf-8"))
+    for name in cases["storageDataSchemas"]:
+        schema = contract["components"]["schemas"][name]
+        assert schema["properties"]["dataBytes"]["type"] == "integer"
+        assert "dataBytes" in schema["required"]
     operations = {
         (method.upper(), path, operation["operationId"])
         for path, path_item in contract["paths"].items()

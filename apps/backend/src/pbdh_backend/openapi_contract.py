@@ -7,7 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 
 
-BACKEND_API_VERSION = "1.1.0"
+BACKEND_API_VERSION = "1.2.0"
 
 
 def stable_operation_id(route: APIRoute) -> str:
