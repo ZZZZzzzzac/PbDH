@@ -83,6 +83,12 @@ export const characterAdapterImportImageSchema = z.object({
 export const characterAdapterImportOutputSchema = z.object({
   values: z.record(z.string().min(1), z.unknown()),
   cards: z.array(characterAdapterImportCardSchema).optional(),
+  composedCards: z.array(z.object({
+    composerModuleId: z.string().min(1),
+    tableModuleId: z.string().min(1),
+    state: z.string(),
+    fields: z.record(z.string().min(1), z.string()),
+  })).optional(),
   images: z.array(characterAdapterImportImageSchema).optional(),
   suggestedSaveName: z.string().optional(),
   skippedFields: nonNegativeIntegerSchema.optional(),

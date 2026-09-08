@@ -52,7 +52,18 @@
 - Daggerheart Core 的 34 份护甲以及剩余 399 份种族、社群、职业、子职业、物品和领域卡已从固定来源迁移到各自可信 `1.0.0` Template；资源 ID、路径、字段文本和媒体保持不变，内嵌 Resource Package 提升到 `1.0.7`。开发期版本已移除，不再读取或升级。
 - 六类稳定化证据固定为 `PbDH_sheet@0e44fa69b12209c172e4189e273615ba3a4d07a6`，原路径分别为 `public/system-packages/daggerheart-core/resources/ancestries.json`、`communities.json`、`classes.json`、`subclasses.json`、`loot.json` 与 `domain-cards.json`。迁移来源继续由旧仓库和固定 commit 保存；本仓库只保留已迁移完成的 System Package 与 `.pbres`，不再提交第二套旧格式资源和卡图。
 
-## 阶段验收
+## 2026-09-08 增量同步
+
+- 来源：`PbDH_sheet@fe1de3f`（2.3.0），比较基线仍为 `0e44fa69b12209c172e4189e273615ba3a4d07a6`；旧仓库只读。
+- `public/system-packages/tttri/` 下的升级模块、检查、引导、布局、问卷及 `adapters/scripts/character-{import,export}.js` 迁入本项目同名系统包目录；保留当前资源选择器与平台适配。
+- `resources/subclasses.json` 按稳定 ID 增量更新至 `resources/tttri.pbres`：新增 40 项；既有资源只更新上游变化字段及对应结构化特性，保留其他卡面、媒体和 ID。系统包与原生资源包独立升版。
+- `src/domain/characterData.ts` 的勾选项兼容行为迁入 `apps/player/src/sheet-runtime/domain/characterData.ts`：导入时丢弃无效旧选项并警告，保留有效勾选；不建立旧 Sheet 存档直接读取通道，不修改数据库 schema。
+- 平台原生 TTTRI Character Data 从 `1.0.0` 升至 `1.1.0`，通过已有版本升级流程执行包内 `adapters/scripts/upgrade-advancement.js`；只移除废弃领取选项、给第二格技艺交流补默认未选中值，不改其他升级、特性、数值。系统包 `1.1.0`，资源包 `2.1.0`。
+- 验证覆盖新增分支、晋升奖励、两格技艺交流、规则勘误、原生资源加载及旧勾选保留。旧源测试 `src/test/tttri{Package,Validation,CharacterFormatAdapter}.test.ts` 作为行为证据，在当前 Player 测试中重建断言。
+- 可重放生成入口：`npx tsx scripts/sync-tttri-sheet-update.ts D:/Fish/TRPG/PbDH_sheet`，之后运行 `npx tsx scripts/sync-bundled-system-package-metadata.ts`。脚本只读固定 Git 提交，不依赖源仓库工作区，也不复制其发布配置。
+- 结果：新增 40 项、更新 17 项；568 个资源、281 个媒体，归档 25,149,368 bytes。全量前端 111 文件/911 测试、类型检查、内置包一致性和构建通过。真实本地 Player 显示 TTTRI 1.1.0，子职选择器 280 项，排陷手包含五个阶段。完整 `verify` 被既有 `.pytest-native` 目录权限错误阻断，未记为通过；尚未人工确认真实旧人物升级。
+
+## 阶段验收清单
 
 1. Daggerheart Core 通过迁移后的加载器、Validator 和 SheetRenderer 显示完整人物卡。
 2. 系统包菜单与资源管理器恢复旧 Sheet 的功能分工，并挂载到统一 Platform App Bar。

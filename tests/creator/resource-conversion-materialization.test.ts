@@ -187,7 +187,7 @@ describe("Creator third-party resource conversion", () => {
     const converted = await materializeCreatorResourceConversion(imported.batch);
     const weapon = converted.candidate?.document.resources[0];
 
-    expect(weapon?.template).toEqual({ id: "武器", version: "1.0.1" });
+    expect(weapon?.template).toEqual({ id: "武器", version: "1.1.0" });
     expect(trustedAuthoringFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
     expect(trustedRendererFor(weapon!.template.id, weapon!.template.version)).toBeDefined();
   });
@@ -208,7 +208,7 @@ describe("Creator third-party resource conversion", () => {
     const converted = await materializeCreatorResourceConversion(imported.batch);
 
     expect(converted.candidate?.document.resources.map((resource) => resource.template)).toEqual([
-      { id: "敌人", version: "1.0.5" },
+      { id: "敌人", version: "1.1.0" },
     ]);
     expect(converted.candidate).not.toBeNull();
     if (!converted.candidate) return;
@@ -216,6 +216,6 @@ describe("Creator third-party resource conversion", () => {
       writePbres(converted.candidate.document, converted.candidate.media),
       validateResourcePackageCandidate,
     );
-    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.5" });
+    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.1.0" });
   });
 });

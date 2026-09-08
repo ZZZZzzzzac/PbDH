@@ -63,6 +63,29 @@ import { weaponAuthoring as weaponAuthoring101 } from "./weapon/1.0.1/authoring-
 import { weaponRendererRevision as weaponRendererRevision101 } from "./weapon/1.0.1/renderer.tsx";
 import { manifestEntryFor } from "./template-frontend-manifest.ts";
 
+import { adversaryAuthoring as adversaryAuthoring110 } from "./adversary/1.1.0/authoring-editor.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision110 } from "./adversary/1.1.0/renderer.tsx";
+import { ancestryAuthoring as ancestryAuthoring110 } from "./ancestry/1.1.0/authoring-editor.tsx";
+import { ancestryRendererRevision as ancestryRendererRevision110 } from "./ancestry/1.1.0/renderer.tsx";
+import { armorAuthoring as armorAuthoring110 } from "./armor/1.1.0/authoring-editor.tsx";
+import { armorRendererRevision as armorRendererRevision110 } from "./armor/1.1.0/renderer.tsx";
+import { communityAuthoring as communityAuthoring110 } from "./community/1.1.0/authoring-editor.tsx";
+import { communityRendererRevision as communityRendererRevision110 } from "./community/1.1.0/renderer.tsx";
+import { domainAuthoring as domainAuthoring110 } from "./domain/1.1.0/authoring-editor.tsx";
+import { domainRendererRevision as domainRendererRevision110 } from "./domain/1.1.0/renderer.tsx";
+import { environmentAuthoring as environmentAuthoring110 } from "./environment/1.1.0/authoring-editor.tsx";
+import { environmentRendererRevision as environmentRendererRevision110 } from "./environment/1.1.0/renderer.tsx";
+import { freeAuthoring as freeAuthoring110 } from "./free/1.1.0/authoring-editor.tsx";
+import { freeRendererRevision as freeRendererRevision110 } from "./free/1.1.0/renderer.tsx";
+import { itemAuthoring as itemAuthoring110 } from "./item/1.1.0/authoring-editor.tsx";
+import { itemRendererRevision as itemRendererRevision110 } from "./item/1.1.0/renderer.tsx";
+import { professionAuthoring as professionAuthoring110 } from "./profession/1.1.0/authoring-editor.tsx";
+import { professionRendererRevision as professionRendererRevision110 } from "./profession/1.1.0/renderer.tsx";
+import { subclassAuthoring as subclassAuthoring110 } from "./subclass/1.1.0/authoring-editor.tsx";
+import { subclassRendererRevision as subclassRendererRevision110 } from "./subclass/1.1.0/renderer.tsx";
+import { weaponAuthoring as weaponAuthoring110 } from "./weapon/1.1.0/authoring-editor.tsx";
+import { weaponRendererRevision as weaponRendererRevision110 } from "./weapon/1.1.0/renderer.tsx";
+
 export type TrustedTemplateRenderer = RendererRevisionCapability<any, any, ReactNode>;
 
 export type TemplateFrontendCapability = {
@@ -75,6 +98,17 @@ export type TemplateFrontendCapability = {
 };
 
 export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] = [
+  binding(adversaryAuthoring110, adversaryRendererRevision110),
+  binding(ancestryAuthoring110, ancestryRendererRevision110),
+  binding(armorAuthoring110, armorRendererRevision110),
+  binding(communityAuthoring110, communityRendererRevision110),
+  binding(domainAuthoring110, domainRendererRevision110),
+  binding(environmentAuthoring110, environmentRendererRevision110),
+  binding(freeAuthoring110, freeRendererRevision110),
+  binding(itemAuthoring110, itemRendererRevision110),
+  binding(professionAuthoring110, professionRendererRevision110),
+  binding(subclassAuthoring110, subclassRendererRevision110),
+  binding(weaponAuthoring110, weaponRendererRevision110),
   binding(adversaryAuthoring, adversaryRendererRevision),
   binding(ancestryAuthoring, ancestryRendererRevision),
   binding(armorAuthoring, armorRendererRevision),

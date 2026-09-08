@@ -386,6 +386,14 @@ body::before{
 <script>
 // ===== 子职业数据 =====
 const subclasses = [
+  {name:'排陷手',cls:'先锋',desc:'使用探测器械排查陷阱和隐藏敌人，以反应能力保护队友避开危险。',tags:{range:'近战',dmg:'物理',role:'支援增益',complex:'中等',mobility:'中',team:'团队核心',weapon:'特殊装置',pace:'稳健防守'}},
+  {name:'破术者',cls:'先锋',desc:'使用对抗型施术单元，消耗希望和配置中的领域卡中断敌方法术。',tags:{range:'中距离',dmg:'法术',role:'控制削弱',complex:'复杂',mobility:'中',team:'团队核心',weapon:'法术单元',pace:'稳健防守'}},
+  {name:'收割者',cls:'近卫',desc:'挥舞战镰孤立自身，同时攻击多个敌人并从命中中恢复压力或进行回想。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'中等',mobility:'中',team:'独立作战',weapon:'刀剑',pace:'快节奏激进'}},
+  {name:'卫盟者',cls:'重装',desc:'持有旗帜型施术单元的盾牌，不受孤立影响，保护盟友并传递希望。',tags:{range:'近战',dmg:'法术',role:'前排坦克',complex:'中等',mobility:'低',team:'团队核心',weapon:'盾牌',pace:'稳健防守'}},
+  {name:'回环射手',cls:'狙击',desc:'投掷回旋武器，在敌人聚焦时驱动武器攻击并收回，掌控往返路径。',tags:{range:'灵活',dmg:'物理',role:'远程输出',complex:'复杂',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
+  {name:'塑灵术师',cls:'术师',desc:'积累灵源指示物，驱使塑灵魔物协助行动、攻击和承受伤害。',tags:{range:'中距离',dmg:'法术',role:'支援增益',complex:'复杂',mobility:'中',team:'混合',weapon:'法术单元',pace:'灵活切换'}},
+  {name:'游击手',cls:'辅助',desc:'使用弓弩和延迟触发标识，把领域特性的效果推迟到聚焦结束时执行。',tags:{range:'远距离',dmg:'物理',role:'支援增益',complex:'复杂',mobility:'中',team:'团队核心',weapon:'铳械弩',pace:'灵活切换'}},
+  {name:'行商',cls:'特种',desc:'与自愿盟友共享希望，在敌人攻击失误时隐藏自己并削弱对手。',tags:{range:'近战',dmg:'物理',role:'控制削弱',complex:'复杂',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
   {name:'冲锋手',cls:'先锋',desc:'持长枪冲锋陷阵的前线战士，以压制性攻击使敌人陷入脆弱。你总是冲在最前方，为团队撕开突破口。',tags:{range:'近战',dmg:'物理',role:'近战输出',complex:'中等',mobility:'高',team:'混合',weapon:'刀剑',pace:'快节奏激进'}},
   {name:'情报官',cls:'先锋',desc:'使用可投掷短刃的侦察专家，擅长获取敌人情报。你靠洞察力来寻找敌人阵线最薄弱的位置。',tags:{range:'灵活',dmg:'物理',role:'控制削弱',complex:'中等',mobility:'中',team:'混合',weapon:'特殊装置',pace:'灵活切换'}},
   {name:'执旗手',cls:'先锋',desc:'高举旗帜鼓舞全军的战场核心。你的存在本身就是一种力量——让友方从希望中汲取更多力量。',tags:{range:'灵活',dmg:'物理',role:'支援增益',complex:'中等',mobility:'中',team:'团队核心',weapon:'特殊装置',pace:'灵活切换'}},

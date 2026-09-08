@@ -27,6 +27,7 @@ export function RestrictedMarkdownRenderer({ value, inline = false }: {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkDirective, restrictedColorDirectives, stripEmphasisBoundaries, preserveLineBreaks]}
+      rehypePlugins={[removeGeneratedBreakWhitespace]}
       allowedElements={inline ? inlineElements : blockElements}
       unwrapDisallowed
       components={{ img: ({ alt }) => <span>{alt}</span> }}
@@ -71,6 +72,26 @@ function stripBoundaryFromNode(node: Node): void {
 interface MarkdownNode extends Node {
   children?: MarkdownNode[];
   value?: string;
+  tagName?: string;
+}
+
+function removeGeneratedBreakWhitespace() {
+  return (tree: MarkdownNode) => {
+    const visit = (node: MarkdownNode): void => {
+      if (!node.children || node.tagName === "pre" || node.tagName === "code") return;
+      const children = node.children;
+      node.children = children.flatMap((child, index) => {
+        // 源换行已由 br 表示，移除 HTML 转换器附加的排版换行，避免 pre-wrap 重复显示。
+        if (child.type === "text" && children[index - 1]?.tagName === "br" && child.value?.startsWith("\n")) {
+          child.value = child.value.slice(1);
+        }
+        if (child.type === "text" && (!child.value || /^\n+$/.test(child.value))) return [];
+        visit(child);
+        return [child];
+      });
+    };
+    visit(tree);
+  };
 }
 
 function preserveLineBreaks() {

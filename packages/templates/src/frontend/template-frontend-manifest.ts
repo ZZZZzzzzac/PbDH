@@ -8,6 +8,17 @@ export type TemplateFrontendManifestEntry = {
 };
 
 export const templateFrontendManifest: readonly TemplateFrontendManifestEntry[] = [
+  entry("敌人", "1.1.0", () => import("./adversary/1.1.0/renderer.tsx").then((module) => module.adversaryRendererRevision)),
+  entry("种族", "1.1.0", () => import("./ancestry/1.1.0/renderer.tsx").then((module) => module.ancestryRendererRevision), true),
+  entry("护甲", "1.1.0", () => import("./armor/1.1.0/renderer.tsx").then((module) => module.armorRendererRevision)),
+  entry("社群", "1.1.0", () => import("./community/1.1.0/renderer.tsx").then((module) => module.communityRendererRevision), true),
+  entry("领域卡", "1.1.0", () => import("./domain/1.1.0/renderer.tsx").then((module) => module.domainRendererRevision), true),
+  entry("环境", "1.1.0", () => import("./environment/1.1.0/renderer.tsx").then((module) => module.environmentRendererRevision)),
+  entry("自由", "1.1.0", () => import("./free/1.1.0/renderer.tsx").then((module) => module.freeRendererRevision)),
+  entry("物品", "1.1.0", () => import("./item/1.1.0/renderer.tsx").then((module) => module.itemRendererRevision), true),
+  entry("职业", "1.1.0", () => import("./profession/1.1.0/renderer.tsx").then((module) => module.professionRendererRevision), true),
+  entry("子职业", "1.1.0", () => import("./subclass/1.1.0/renderer.tsx").then((module) => module.subclassRendererRevision), true),
+  entry("武器", "1.1.0", () => import("./weapon/1.1.0/renderer.tsx").then((module) => module.weaponRendererRevision)),
   entry("敌人", "1.0.0", () => import("./adversary/1.0.0/renderer.tsx").then((module) => module.adversaryRendererRevision)),
   entry("种族", "1.0.0", () => import("./ancestry/1.0.0/renderer.tsx").then((module) => module.ancestryRendererRevision), true),
   entry("护甲", "1.0.0", () => import("./armor/1.0.0/renderer.tsx").then((module) => module.armorRendererRevision)),

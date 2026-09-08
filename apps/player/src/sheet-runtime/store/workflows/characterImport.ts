@@ -11,6 +11,7 @@ export async function persistImportedCharacter(
   notice: string,
   set: RuntimeSet,
   get: RuntimeGet,
+  arrangeCards = false,
 ): Promise<void> {
   const currentPackage = get().currentPackage;
   if (!currentPackage) return;
@@ -19,6 +20,7 @@ export async function persistImportedCharacter(
     activeCharacterSaveId: data.character.id,
     ...emptyDerivedState(),
     ...rebuildDependencyRuntimeState(data, currentPackage),
+    ...(arrangeCards ? { pendingCardTablePlacements: Object.fromEntries(currentPackage.modules.filter((module) => module.类型 === "cardTable").map((module) => [module.ID, data.cards.instances.filter((card) => card.tableModuleId === module.ID).map((card) => card.instanceId)])) } : {}),
     importError: null,
     importNotice: notice,
     pendingCharacterConversion: null,

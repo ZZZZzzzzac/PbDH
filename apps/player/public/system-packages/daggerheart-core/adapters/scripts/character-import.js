@@ -13,6 +13,9 @@ function countable(current, max) {
 function checkedCount(value) {
   return Array.isArray(value) ? value.filter(Boolean).length : 0;
 }
+function equipment(values) {
+  return values.some((value) => text(value)) ? values.map((value) => text(value) || "").join("｜") : undefined;
+}
 function triState(value) {
   const items = Array.isArray(value) ? value : [];
   return countable(items.filter((item) => item === 1 || item === "1").length, items.filter((item) => item !== 2 && item !== "2").length);
@@ -47,6 +50,10 @@ function dhAdvancement(upgrades, tier, includeTierSpecific) {
 }
 function normalized(value) {
   return typeof value === "string" || typeof value === "number" ? String(value).normalize("NFKC").trim().replace(/\s+/gu, " ") : "";
+}
+function subclassName(value) {
+  const name = normalized(value);
+  return /^野兽羁绊(?:基石|专精|大师)?$/u.test(name) ? "驯兽大师" : name;
 }
 function stem(value) {
   if (typeof value !== "string") return "";
@@ -152,28 +159,62 @@ function importDhSheet(document, libraries) {
     agility: document.agility && document.agility.value, strength: document.strength && document.strength.value, finesse: document.finesse && document.finesse.value,
     instinct: document.instinct && document.instinct.value, presence: document.presence && document.presence.value, knowledge: document.knowledge && document.knowledge.value,
     "major-threshold": document.minorThreshold, "severe-threshold": document.majorThreshold,
-    "primary-weapon-name": join([document.primaryWeaponName, document.primaryWeaponTrait, document.primaryWeaponDamage]), "primary-weapon-description": document.primaryWeaponFeature,
-    "secondary-weapon-name": join([document.secondaryWeaponName, document.secondaryWeaponTrait, document.secondaryWeaponDamage]), "secondary-weapon-description": document.secondaryWeaponFeature,
-    "backup-weapon-1-name": document.inventoryWeapon1Name, "backup-weapon-1-description": document.inventoryWeapon1Feature,
-    "backup-weapon-2-name": document.inventoryWeapon2Name, "backup-weapon-2-description": document.inventoryWeapon2Feature,
-    "armor-name": join([document.armorName, document.armorBaseScore, document.armorThreshold]), "armor-value": document.armorValue, "armor-description": document.armorFeature,
+    "primary-weapon-name": equipment([document.primaryWeaponName, document.primaryWeaponTrait, document.primaryWeaponDamage]), "primary-weapon-description": document.primaryWeaponFeature,
+    "secondary-weapon-name": equipment([document.secondaryWeaponName, document.secondaryWeaponTrait, document.secondaryWeaponDamage]), "secondary-weapon-description": document.secondaryWeaponFeature,
+    "backup-weapon-1-name": equipment([document.inventoryWeapon1Name, document.inventoryWeapon1Trait, document.inventoryWeapon1Damage]), "backup-weapon-1-description": document.inventoryWeapon1Feature,
+    "backup-weapon-2-name": equipment([document.inventoryWeapon2Name, document.inventoryWeapon2Trait, document.inventoryWeapon2Damage]), "backup-weapon-2-description": document.inventoryWeapon2Feature,
+    "armor-name": equipment([document.armorName, document.armorBaseScore, document.armorThreshold]), "armor-value": document.armorValue, "armor-description": document.armorFeature,
     "background-story": document.characterBackground, inventory: Array.isArray(document.inventory) ? document.inventory.filter((item) => text(item) && text(item).trim()).join("\n") : undefined,
     "event-log": document.characterMotivation, "companion-name": document.companionName, "companion-evasion": document.companionEvasion, "companion-attack-range": document.companionRange,
   };
   Object.entries(pairs).forEach(([id, value]) => put(output.values, id, value));
+  const allCards = [...(Array.isArray(document.cards) ? document.cards : []), ...(Array.isArray(document.inventory_cards) ? document.inventory_cards : [])];
+  if (output.values["subclass-name"]) output.values["subclass-name"] = subclassName(output.values["subclass-name"]);
+  const ancestryCards = [1, 2].map((slot) => allCards.find((card) => card && card.type === "ancestry" && card.id === (document[`ancestry${slot}Ref`]?.id || document[`ancestry${slot}`])) || (Array.isArray(document.cards) ? document.cards.find((card) => card && card.type === "ancestry" && Number(card.level) === slot) : undefined));
+  if (ancestryCards.some(Boolean)) {
+    const entries = libraries.find((library) => library.ID === "ancestries")?.entries || [];
+    const fields = {};
+    ancestryCards.forEach((card, index) => {
+      const slot = index === 0 ? "A" : "B";
+      const matches = card ? entries.filter((entry) => {
+        const feature = entry.resourceCopy?.data?.特性?.[index];
+        return feature && normalized(feature.特性名称) === normalized(card.name);
+      }) : [];
+      const legacyNames = [{ 坚韧: "巨人" }, { 坚定不移: "费尔博格" }];
+      fields[`种族${slot}名称`] = matches.length === 1 ? text(field(matches[0], "名称")) : card ? legacyNames[index][card.name] || "" : "";
+      fields[`特性${slot}`] = card ? `${card.name || ""}：${card.description || ""}` : "";
+    });
+    output.values["ancestry-name"] = `${fields.种族A名称} / ${fields.种族B名称}`;
+    output.composedCards = [{ composerModuleId: "pick-ancestry", tableModuleId: "character-card-table", state: "配置", fields }];
+  }
+  if (["d6", "d8", "d10", "d12"].includes(document.companionWeapon)) {
+    output.values["companion-attack-die"] = Object.fromEntries(["d6", "d8", "d10", "d12"].map((die) => [die, die === document.companionWeapon]));
+  } else if (document.companionWeapon) {
+    output.skippedFields += 1;
+    output.diagnostics.push({ level: "warning", code: "DHSHEET_COMPANION_DIE_UNSUPPORTED", text: "伙伴攻击方式不是 d6/d8/d10/d12，未猜测伤害骰。" });
+  }
+  if (document.trainingOptions) {
+    const mapping = { intelligent: ["wise-1", "wise-2", "wise-3"], radiantInDarkness: ["light-in-dark"], creatureComfort: ["creature-comfort"], armored: ["armored"], vicious: ["trained-1", "trained-2", "trained-3"], resilient: ["resilient-1", "resilient-2", "resilient-3"], bonded: ["protective"], aware: ["aware-1", "aware-2", "aware-3"] };
+    output.values["companion-upgrades"] = Object.fromEntries(Object.entries(mapping).flatMap(([source, ids]) => ids.map((id, index) => [id, document.trainingOptions[source]?.[index] === true])));
+  }
   const profession = Array.isArray(document.cards) ? document.cards.find((card) => card && card.type === "profession" && card.id === document.profession) : undefined;
   put(output.values, "class-feature", profession && profession.description);
+  if (Array.isArray(document.cards)) {
+    const additional = document.cards.filter((card) => card && card.type === "profession" && card.name && card !== profession);
+    if (additional.length) output.values["class-feature"] = [profession && profession.description, ...additional.map((card) => `【${card.class || card.name}】\n${card.description || ""}`)].filter(Boolean).join("\n\n");
+  }
   put(output.values, "class-hope-feature", profession && profession.professionSpecial && profession.professionSpecial["希望特性"]);
   for (let index = 0; index < 5; index += 1) { put(output.values, `experience-${index + 1}`, document.experience && document.experience[index]); put(output.values, `experience-modifier-${index + 1}`, document.experienceValues && document.experienceValues[index]); }
+  for (let index = 0; index < 5; index += 1) { put(output.values, `companion-experience-${index + 1}`, document.companionExperience && document.companionExperience[index]); put(output.values, `companion-experience-modifier-${index + 1}`, document.companionExperienceValue && document.companionExperienceValue[index]); }
   output.values.hp = countable(checkedCount(document.hp), document.hpMax);
   output.values.stress = countable(checkedCount(document.stress), document.stressMax);
   output.values.hope = countable(document.hope, document.hopeMax);
   output.values["armor-slots"] = countable(checkedCount(document.armorBoxes), document.armorMax);
-  output.values.proficiency = countable(checkedCount(document.proficiency), Array.isArray(document.proficiency) ? document.proficiency.length : 0);
+  output.values.proficiency = countable(Array.isArray(document.proficiency) ? checkedCount(document.proficiency) : document.proficiency, 6);
   const gold = Array.isArray(document.gold) ? document.gold : [];
   output.values["handful-gold"] = countable(checkedCount(gold.slice(0, 9)), 9);
   output.values["bag-gold"] = countable(checkedCount(gold.slice(9, 18)), 9);
-  output.values["chest-gold"] = countable(checkedCount(gold.slice(18, 20)), null);
+  output.values["chest-gold"] = countable(checkedCount(gold.slice(18)), null);
   output.values["companion-stress"] = countable(checkedCount(document.companionStress), document.companionStressMax);
   output.values["advancement-tier-2"] = dhAdvancement(document.checkedUpgrades, "tier1", false);
   output.values["advancement-tier-3"] = dhAdvancement(document.checkedUpgrades, "tier2", true);
@@ -181,13 +222,22 @@ function importDhSheet(document, libraries) {
   if (typeof document.characterImage === "string" && document.characterImage) output.images.push({ moduleId: "character-avatar", name: "dhSheet character image", dataUrl: document.characterImage });
   if (typeof document.companionImage === "string" && document.companionImage) output.images.push({ moduleId: "companion-portrait", name: "dhSheet companion image", dataUrl: document.companionImage });
   const rules = [
-    (source, entry) => normalized(source && source.id) !== "" && normalized(source.id) === normalized(field(entry, "原名")),
+    (source, entry) => normalized(source && source.id) !== "" && normalized(source.id) === normalized(entry.ID),
+    (source, entry) => source.type === "subclass" && normalized(source.class) === normalized(field(entry, "主职")) && Number(source.level) === ({ 基础: 1, 进阶: 2, 精通: 3 })[field(entry, "等级")] && [source.name, source.headerDisplay].some((name) => subclassName(name) !== "" && subclassName(name) === normalized(field(entry, "名称"))),
+    (source, entry) => source.type !== "subclass" && normalized(source && source.id) !== "" && normalized(source.id) === normalized(field(entry, "原名")),
     (source, entry) => normalized(source && source.name) !== "" && normalized(source.name) === normalized(field(entry, "名称")) && normalized(source.class) !== "" && normalized(source.class) === normalized(field(entry, "领域")),
-    (source, entry) => normalized(source && source.name) !== "" && normalized(source.name) === normalized(field(entry, "名称")),
+    (source, entry) => source.type !== "subclass" && normalized(source && source.name) !== "" && normalized(source.name) === normalized(field(entry, "名称")),
     (source, entry) => normalized(source && source.description) !== "" && normalized(source.description) === normalized(field(entry, "描述")),
   ];
-  addCards(output, document.cards, "配置", ["communities", "subclasses", "domain-cards"], libraries, rules);
-  addCards(output, document.inventory_cards, "宝库", ["communities", "subclasses", "domain-cards"], libraries, rules);
+  const types = { profession: "classes", community: "communities", subclass: "subclasses", domain: "domain-cards" };
+  for (const [cards, state] of [[document.cards, "配置"], [document.inventory_cards, "宝库"]]) {
+    if (!Array.isArray(cards)) continue;
+    for (const card of cards) {
+      if (!card || !card.name || card.type === "unknown") continue;
+      if (card.type === "profession" || ancestryCards.includes(card)) continue;
+      addCards(output, [card], state, types[card.type] ? [types[card.type]] : [], libraries, rules);
+    }
+  }
   return output;
 }
 

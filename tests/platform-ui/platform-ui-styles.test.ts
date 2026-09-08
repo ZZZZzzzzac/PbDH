@@ -64,6 +64,10 @@ describe("Platform App Bar style isolation", () => {
     expect(source).toContain("内容保留 30 天");
     expect(source).toContain('item.location === "cloud" ? "云端" : "本机"');
     expect(stylesheet).toContain(".pbdh-platform-trash-dialog");
+    expect(source).toContain("永久删除回收站中的全部 ${items.length} 项（包含本机和云端内容）？删除后不能恢复。");
+    expect(source).toContain("onClick={() => void deleteAll()}");
+    expect(source).toContain('if (operation || status !== "ready" || error || !items.length) return;');
+    expect(stylesheet).toContain(".pbdh-platform-trash-footer");
   });
 
   test("provides one reusable operation status with caller-owned wording", () => {

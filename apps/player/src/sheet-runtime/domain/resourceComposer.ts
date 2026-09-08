@@ -1,5 +1,5 @@
 import type { TabletopResourceCopy } from "@pbdh/contract-runtime";
-import type { ResourceLibraryEntry } from "./resourceLibrary";
+import type { ResourceLibraryEntry, ResourceLibrary } from "./resourceLibrary";
 import type { ResourceComposerModule } from "./systemPackage";
 
 export interface CompositeResource extends ResourceLibraryEntry {
@@ -7,6 +7,40 @@ export interface CompositeResource extends ResourceLibraryEntry {
 }
 
 export type ResourceComposerSelections = Record<string, ResourceLibraryEntry>;
+
+export function materializeImportedComposite(
+  module: ResourceComposerModule,
+  fields: Record<string, string>,
+  libraries: ResourceLibrary[],
+): CompositeResource {
+  const composite: CompositeResource = { ID: fields.ID!, composerModuleId: module.ID, fields };
+  const entries = libraries.find((library) => library.ID === module.来源槽位[0]?.资源库ID)?.entries ?? [];
+  const base = entries.find((entry) => entry.resourceCopy?.template.id === "种族")?.resourceCopy;
+  if (!base || !("特性A" in fields) || !("特性B" in fields)) return composite;
+  const names = [fields.种族A名称 ?? "", fields.种族B名称 ?? ""];
+  const originals: string[] = [];
+  const features = ["A", "B"].map((slot, index) => {
+    const matches = entries.filter((entry) => entry.fields.名称 === names[index]);
+    const source = matches.length === 1 ? matches[0]?.resourceCopy : undefined;
+    originals.push(text(source?.data.原文));
+    const feature = Array.isArray(source?.data.特性) ? source.data.特性[index] : undefined;
+    const value = fields[`特性${slot}`] ?? "";
+    const separator = value.search(/[：:]/u);
+    return {
+      特性名称: separator < 0 ? value : value.slice(0, separator),
+      特性原文: isRecord(feature) ? text(feature.特性原文) : "",
+      特性描述: separator < 0 ? "" : value.slice(separator + 1),
+    };
+  });
+  composite.resourceCopy = {
+    source: null,
+    template: structuredClone(base.template),
+    presentation: { ...structuredClone(base.presentation), mode: "text" },
+    data: { 名称: names.filter(Boolean).join(" / "), 原文: originals.filter(Boolean).join(" / "), 类型: "种族", 简介: "", 特性: features },
+    labels: [], replacements: [], media: {},
+  };
+  return composite;
+}
 
 export function composeResource(module: ResourceComposerModule, selections: ResourceComposerSelections): CompositeResource | null {
   if (module.来源槽位.some((slot) => !selections[slot.ID])) return null;

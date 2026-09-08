@@ -105,21 +105,27 @@ function checkNamedSelection(issues, rawName, entry, config) {
 }
 
 function checkSubclassProgression(issues, context) {
-  const [t2, t3, t4] = context.advancementStates;
   const stage = text(context.values["subclass-stage"]);
   const isElite = ELITE_STAGES.includes(stage);
-
-  if (selected(t2, "subclass") && !["正式", "资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选提升武器原型，但当前子职仍是预备等级。");
+  if (context.tier === 2 && stage !== "正式") {
+    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "2-4 级的阶段奖励应使用正式干员武器原型，不消耗升级格。");
   }
-  if (selected(t3, "subclass") && !["资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选提升武器原型，但当前子职尚未达到资深等级。");
+  if (context.tier === 3 && stage !== "资深") {
+    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "5-7 级的阶段奖励应使用资深干员武器原型，不消耗升级格。");
   }
-  if (selected(t4, "subclass-elite") && !isElite) {
-    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "已在 T4 勾选提升武器原型，应选择精英X或精英Y的子职。");
-  } else if (!selected(t4, "subclass-elite") && isElite) {
-    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未在 T4 选择提升武器原型，不应提前选择精英X或精英Y。");
+  if (context.tier === 4 && !isElite) {
+    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "8-10 级的阶段奖励应选择精英X或精英Y的子职，不消耗升级格。");
+  } else if (context.tier !== undefined && context.tier < 4 && isElite) {
+    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未达到 8 级，不应提前选择精英X或精英Y。");
   }
+  if (context.tier === 1 && ALL_STAGES.includes(stage) && stage !== "预备") {
+    warn(issues, "SUBCLASS_BEFORE_T2", "character.values.subclass-stage", "1 级应使用预备干员武器原型。");
+  }
+  context.advancementStates.forEach((state, index) => {
+    if (selected(state, "multiclass-1") !== selected(state, "multiclass-2")) {
+      warn(issues, "MULTICLASS_UPGRADE_INCOMPLETE", `character.values.${TIER_IDS[index]}`, "技艺交流需要标记两个升级格；请核对旧角色的升级额度后补齐或撤销，不会自动重新分配。");
+    }
+  });
 }
 
 function checkTraits(issues, context) {
@@ -512,7 +518,7 @@ function selected(state, id) {
 }
 
 function multiclassSelected(state) {
-  return selected(state, "multiclass-1") || selected(state, "multiclass-2");
+  return selected(state, "multiclass-1") && selected(state, "multiclass-2");
 }
 
 function countSelectedPrefix(state, prefix) {

@@ -148,6 +148,7 @@ function toSheetResourceEntry(
       presentation: structuredClone(resource.presentation),
       data: structuredClone(data),
       labels: [],
+      replacements: structuredClone(resource.replacements ?? []),
       media: structuredClone(resource.media),
     } satisfies TabletopResourceCopy,
     ...data,

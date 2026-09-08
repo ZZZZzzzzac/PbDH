@@ -13,6 +13,16 @@ import {
 } from "../../packages/templates/src/frontend/index.ts";
 
 describe("shared Restricted Markdown", () => {
+  test("emits one visual break per editor newline under pre-wrap", () => {
+    const markup = renderToStaticMarkup(<RestrictedMarkdownRenderer value={"普通换行\n1123"} />);
+    expect(markup).toBe("<p>普通换行<br/>1123</p>");
+  });
+  test("preserves intentional blank lines and breaks beside emphasis", () => {
+    expect(renderToStaticMarkup(<RestrictedMarkdownRenderer value={"第一行\n\n第三行"} />))
+      .toBe("<p>第一行</p><br/><p>第三行</p>");
+    expect(renderToStaticMarkup(<RestrictedMarkdownRenderer value={"**第一行**\n第二行"} />))
+      .toBe("<p><strong>第一行</strong><br/>第二行</p>");
+  });
   test("renders emphasis, lists, line breaks, and the seven safe colors", () => {
     const colors = ["red", "orange", "yellow", "green", "blue", "purple", "gray"];
     const value = [

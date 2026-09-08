@@ -1,5 +1,6 @@
 import { createEmptyCharacterData, createCharacterId, type CharacterConversionReport, type CharacterData, type PlayerImageData, type SheetValue } from "./characterData";
 import type { CardInstance } from "./cardEngine";
+import { materializeImportedComposite } from "./resourceComposer";
 import { carrierMatches, stableAdapterId, type CharacterFormatAdapter, type FormatCarrier, type FormatDiagnostic } from "./formatAdapter";
 import { executePackageScriptInWorker } from "./packageScriptRunner";
 import {
@@ -119,22 +120,30 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
   }
 
   const cards: CardInstance[] = [];
-  const seen = new Map<string, string>();
   let skippedCards = nonNegativeInt(result.skippedCards);
   for (const [index, card] of (result.cards ?? []).entries()) {
     if (modules.get(card.tableModuleId)?.类型 !== "cardTable") return { error: invalidOutput(adapter, `cards.${index} 无效。`) };
     const entry = systemPackage.resourceLibraries?.find((library) => library.ID === card.libraryId)?.entries.find((item) => item.ID === card.entryId);
     if (!entry) return { error: invalidOutput(adapter, `cards.${index} 引用了不存在的 Resource Entry ${card.libraryId}/${card.entryId}。`) };
-    const key = `${card.tableModuleId}\u001f${card.libraryId}\u001f${card.entryId}`;
-    const previousState = seen.get(key);
-    if (previousState !== undefined) {
-      skippedCards += 1;
-      if (previousState !== card.state) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT", text: `Card「${entry.fields.名称 ?? entry.ID}」同时声明了冲突状态，后续状态已跳过。` });
-      continue;
-    }
-    seen.set(key, card.state);
     const siblingIndex = cards.filter((item) => item.tableModuleId === card.tableModuleId).length;
     cards.push({ instanceId: crypto.randomUUID(), tableModuleId: card.tableModuleId, definitionRef: { type: "resourceLibrary", libraryId: card.libraryId, entryId: card.entryId }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
+  }
+  for (const [index, card] of (result.composedCards ?? []).entries()) {
+    const composer = modules.get(card.composerModuleId);
+    const table = modules.get(card.tableModuleId);
+    if (composer?.类型 !== "resourceComposer" || table?.类型 !== "cardTable"
+      || !table.资源来源.some((source) => source.类型 === "resourceComposer" && source.ID === composer.ID)
+      || (table.状态选项?.length && !table.状态选项.includes(card.state))) return { error: invalidOutput(adapter, `composedCards.${index} 的组合器、桌面或状态无效。`) };
+    const allowedFields = new Set(composer.输出字段.map((field) => field.字段));
+    if (Object.keys(card.fields).some((field) => !allowedFields.has(field))) return { error: invalidOutput(adapter, `composedCards.${index} 包含未声明的输出字段。`) };
+    const id = `composite:${composer.ID}`;
+    if (data.compositeResources[id]) return { error: invalidOutput(adapter, `composedCards.${index} 重复使用同一组合器。`) };
+    const fields = Object.fromEntries([...allowedFields].map((field) => [field, card.fields[field] ?? ""]));
+    fields.ID = id;
+    if (composer.选择关系输出) fields[composer.选择关系输出.字段] = composer.选择关系输出.不全相同时;
+    data.compositeResources[id] = materializeImportedComposite(composer, fields, systemPackage.resourceLibraries ?? []);
+    const siblingIndex = cards.length;
+    cards.push({ instanceId: crypto.randomUUID(), tableModuleId: table.ID, definitionRef: { type: "compositeResource", compositeResourceId: id }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
   }
   return {
     adapter,

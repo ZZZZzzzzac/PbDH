@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E5%AD%90%E8%81%8C%E4%B8%9A/1.1.0/schema.json",
+  "title": "子职业 Template Data",
+  "type": "object",
+  "required": [
+    "名称",
+    "类型",
+    "主职",
+    "等级",
+    "施法属性",
+    "特性",
+    "简介"
+  ],
+  "properties": {
+    "名称": {
+      "type": "string"
+    },
+    "原文": {
+      "type": "string"
+    },
+    "类型": {
+      "type": "string"
+    },
+    "主职": {
+      "type": "string"
+    },
+    "等级": {
+      "type": "string"
+    },
+    "施法属性": {
+      "type": "string"
+    },
+    "阶段": {
+      "type": "string"
+    },
+    "推荐次领域": {
+      "type": "string"
+    },
+    "武器原型": {
+      "type": "string"
+    },
+    "子职提升": {
+      "type": "string"
+    },
+    "子职特性": {
+      "type": "string"
+    },
+    "职业特性": {
+      "type": "string"
+    },
+    "希望特性": {
+      "type": "string"
+    },
+    "特性": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "特性名称",
+          "特性描述"
+        ],
+        "properties": {
+          "特性名称": {
+            "type": "string"
+          },
+          "特性原文": {
+            "type": "string"
+          },
+          "特性描述": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "简介": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

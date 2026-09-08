@@ -333,6 +333,29 @@ function PlatformTrashDialog({
       setOperation(null);
     }
   };
+  const deleteAll = async () => {
+    if (operation || status !== "ready" || error || !items.length) return;
+    if (!window.confirm(`永久删除回收站中的全部 ${items.length} 项（包含本机和云端内容）？删除后不能恢复。`)) return;
+    setOperation({ key: "all", action: "delete" });
+    let failure = "";
+    try {
+      for (const item of items) {
+        const source = sources.find((candidate) => candidate.id === item.sourceId);
+        if (!source) throw new Error(`无法删除“${item.name}”：来源不可用。`);
+        try {
+          await source.deletePermanently(item.id);
+        } catch (reason) {
+          throw new Error(`删除“${item.name}”失败：${reason instanceof Error ? reason.message : "请重试"}`);
+        }
+      }
+    } catch (reason) {
+      failure = reason instanceof Error ? reason.message : "全部删除失败";
+    } finally {
+      await refresh(false);
+      if (failure) setError(failure);
+      setOperation(null);
+    }
+  };
   return <div className="pbdh-platform-trash-backdrop" role="presentation">
     <section className="pbdh-platform-trash-dialog" role="dialog" aria-modal="true" aria-label="回收站">
       <header><div><strong>回收站</strong><small>内容保留 30 天，之后自动永久删除</small></div><button type="button" aria-label="关闭回收站" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
@@ -343,6 +366,7 @@ function PlatformTrashDialog({
           <div><strong>{item.name}</strong><small>{item.documentType} · {item.location === "cloud" ? "云端" : "本机"}{remainingDays(item.purgeAfter)}</small></div>
           <div><button type="button" disabled={Boolean(operation)} onClick={() => void act(item, "restore")}>{operation?.key === `${item.sourceId}:${item.id}` && operation.action === "restore" ? <OperationStatus label="正在恢复…" /> : "恢复"}</button><button type="button" className="danger" disabled={Boolean(operation)} onClick={() => void act(item, "delete")}>{operation?.key === `${item.sourceId}:${item.id}` && operation.action === "delete" ? <OperationStatus label="正在删除…" /> : "永久删除"}</button></div>
         </li>)}</ol>}
+      <footer className="pbdh-platform-trash-footer"><span>{items.length} 项</span><button type="button" className="danger" disabled={status !== "ready" || !items.length || Boolean(operation) || Boolean(error)} onClick={() => void deleteAll()}>{operation?.key === "all" ? <OperationStatus label="正在全部删除…" /> : <><BarIcon kind="trash" />全部删除</>}</button>{error && <button type="button" disabled={Boolean(operation)} onClick={() => void refresh()}>刷新</button>}</footer>
     </section>
   </div>;
 }

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E7%A4%BE%E7%BE%A4/1.1.0/schema.json",
+  "title": "社群 Template Data",
+  "type": "object",
+  "required": [
+    "名称",
+    "类型",
+    "简介",
+    "性格",
+    "特性"
+  ],
+  "properties": {
+    "名称": {
+      "type": "string"
+    },
+    "原文": {
+      "type": "string"
+    },
+    "类型": {
+      "type": "string"
+    },
+    "简介": {
+      "type": "string"
+    },
+    "性格": {
+      "type": "string"
+    },
+    "特性": {
+      "type": "object",
+      "required": [
+        "特性名称",
+        "特性描述"
+      ],
+      "properties": {
+        "特性名称": {
+          "type": "string"
+        },
+        "特性原文": {
+          "type": "string"
+        },
+        "特性描述": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

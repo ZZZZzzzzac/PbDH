@@ -238,14 +238,10 @@
     "资源来源": [
       {
         "类型": "resourceComposer",
-        "ID": "pick-ancestry",
-        "卡牌展示": {
-          "名称模板": "{{种族A名称}} / {{种族B名称}}",
-          "描述模板": "{{特性A}}\n{{特性B}}",
-          "标签字段": []
-        }
+        "ID": "pick-ancestry"
       },
       { "类型": "resourceLibrary", "ID": "communities" },
+      { "类型": "resourceLibrary", "ID": "classes" },
       {
         "类型": "resourceLibrary",
         "ID": "subclasses",
@@ -280,7 +276,7 @@
   {
     "ID": "pick-class",
     "类型": "resourcePicker",
-    "按钮文本": "职业",
+    "按钮文本": "主职",
     "资源库": [
       {
         "ID": "classes",
@@ -293,6 +289,16 @@
         ]
       }
     ]
+  },
+  {
+    "ID": "pick-multiclass",
+    "类型": "resourcePicker",
+    "按钮文本": "兼",
+    "资源库": [{ "ID": "classes", "字段模板": [
+      { "键": "名称", "列宽": "normal" },
+      { "键": "领域", "列宽": "normal" },
+      { "键": "特性", "列宽": "fill" }
+    ] }]
   },
   {
     "ID": "pick-subclass",

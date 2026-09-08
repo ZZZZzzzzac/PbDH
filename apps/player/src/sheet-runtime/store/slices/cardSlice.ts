@@ -14,6 +14,7 @@ import {
   updateCardInstanceState,
 } from "../../domain/cardEngine";
 import type { CharacterData } from "../../domain/characterData";
+import { replacePlayerCard } from "../../domain/cardReplacement";
 import { generateId } from "../../utils";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
 import type { CardSlice, RuntimeGet, RuntimeSet, RuntimeSlice } from "../runtimeTypes";
@@ -43,6 +44,16 @@ export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<C
     flipCardInstance(instanceId) {
       updateCardAndAutosave(environment, get, set, (data) =>
         flipCardInstance(data, instanceId));
+    },
+
+    replaceCardInstance(instanceId, replacementId) {
+      const system = get().currentPackage;
+      if (!system) return;
+      try {
+        updateCardAndAutosave(environment, get, set, (data) => replacePlayerCard(data, system, instanceId, replacementId, crypto.randomUUID()));
+      } catch (error) {
+        set({ importError: error instanceof Error ? error.message : "卡牌替换失败，当前卡牌未改变。" });
+      }
     },
 
     rotateCardInstance(instanceId, quarterTurns) {

@@ -375,6 +375,7 @@
 }
 
 .advancement-grid [data-part="group-inputs"] { width: 2.5rem; justify-self: end; justify-content: flex-end; gap: 0.05rem; }
+.advancement-grid [data-option-group="multiclass"] [data-part="group-inputs"],
 .advancement-grid [data-option-group="proficiency"] [data-part="group-inputs"] {
   width: fit-content;
   align-items: center;

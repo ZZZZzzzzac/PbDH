@@ -6,6 +6,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   checkRequiredCardCounts(issues, context);
   checkWeaponLoadout(issues, context);
   checkAdvancement(issues, context);
+  checkProfessionCards(issues, context);
   checkDomainCards(issues, context);
   checkDerivedValues(issues, context);
 
@@ -20,7 +21,7 @@ const TIER_CAPS = [4, 7, 10];
 function createContext(characterData, resourceLibraries) {
   const values = characterData.character.values;
   const libraries = new Map(resourceLibraries.map((library) => [library.ID, library]));
-  const cards = (characterData.cards?.instances ?? []).map((instance) => resolveCard(instance, libraries, characterData.compositeResources ?? {})).filter(Boolean);
+  const cards = (characterData.cards?.instances ?? []).map((instance) => resolveCard(instance, libraries, characterData.compositeResources ?? {}, characterData.embeddedResourceEntries ?? {})).filter(Boolean);
   const level = integer(values.level);
   const tier = level === undefined ? undefined : level >= 8 ? 4 : level >= 5 ? 3 : level >= 2 ? 2 : 1;
   const classEntry = findEntryByName(libraries.get("classes"), text(values["class-name"]));
@@ -520,7 +521,15 @@ function masksWithBits(size, count) {
   return result;
 }
 
-function resolveCard(instance, libraries, compositeResources) {
+function checkProfessionCards(issues, context) {
+  const primaryName = text(context.values["class-name"]);
+  const extraNames = [...new Set(context.cards.filter((card) => card.libraryId === "subclasses").map((card) => field(card.entry, "主职")).filter((name) => name && name !== primaryName))];
+  const selectedMulticlass = TIER_IDS.some((id) => pairSelected(checkboxState(context.values[id]), "multiclass"));
+  if (extraNames.length > 1) warn(issues, "MULTICLASS_PROFESSION_MISMATCH", "cards.instances", "子职卡来自多个兼职职业，请核对。");
+  if (selectedMulticlass !== (extraNames.length === 1)) warn(issues, "MULTICLASS_SUBCLASS_MISMATCH", "cards.instances", "兼职升级双格与兼职子职卡不一致，请核对；不会自动修改角色。");
+}
+
+function resolveCard(instance, libraries, compositeResources, embeddedEntries) {
   const ref = instance.definitionRef ?? (instance.libraryId && instance.definitionId ? { type: "resourceLibrary", libraryId: instance.libraryId, entryId: instance.definitionId } : undefined);
   if (!ref) return undefined;
   if (ref.type === "compositeResource") {
@@ -529,7 +538,8 @@ function resolveCard(instance, libraries, compositeResources) {
     return composite ? { instance, libraryId: "composite", entry: { ID: composite.ID, fields: composite.fields } } : undefined;
   }
   const library = libraries.get(ref.libraryId);
-  const entry = library?.entries.find((candidate) => candidate.ID === ref.entryId);
+  const embedded = embeddedEntries[ref.entryId];
+  const entry = embedded?.libraryId === ref.libraryId ? embedded.entry : library?.entries.find((candidate) => candidate.ID === ref.entryId);
   return entry ? { instance, libraryId: ref.libraryId, entry } : undefined;
 }
 

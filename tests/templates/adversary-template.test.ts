@@ -159,7 +159,7 @@ describe("敌人 Template Authoring 与支持清单", () => {
     expect(source).toContain('["近战", "邻近", "近距离", "远距离", "极远"]');
     expect(source).toContain('["动作", "被动", "反应"]');
     expect(source).not.toContain("labelWidth");
-    expect(supportedTemplateFrontends.find((candidate) => candidate.templateId === "敌人")?.authoring).toBe(adversaryAuthoring);
+    expect(supportedTemplateFrontends.find((candidate) => candidate.templateId === "敌人" && candidate.templateVersion === "1.0.0")?.authoring).toBe(adversaryAuthoring);
   });
 
   test("support manifest comes from exact bundled Core, Authoring, and Renderer capability", () => {

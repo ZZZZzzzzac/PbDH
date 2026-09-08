@@ -2,12 +2,12 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a05400-0000-7000-8000-000000000201",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "name": "罗德岛旅记",
     "description": "由 Sheet Runtime 驱动的《共赴明日：罗德岛旅记》系统包。"
   },
   "runtime": {
-    "characterDataVersion": "1.0.6",
+    "characterDataVersion": "1.1.0",
     "loadingPresentation": {
       "tagline": "正在连接PRTS...",
       "accentColor": "#63bfd1"
@@ -76,6 +76,13 @@
       {
         "id": "tttri-character-consistency",
         "script": "checks/character-consistency.js"
+      }
+    ],
+    "characterDataMigrations": [
+      {
+        "fromVersion": "1.0.0",
+        "toVersion": "1.1.0",
+        "script": "adapters/scripts/upgrade-advancement.js"
       }
     ]
   },

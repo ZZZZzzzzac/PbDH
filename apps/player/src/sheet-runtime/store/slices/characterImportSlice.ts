@@ -37,6 +37,7 @@ export function createCharacterImportSlice(
         pending.successNotice,
         set,
         get,
+        pending.sourceName !== "PbDH Character Data",
       );
     },
 

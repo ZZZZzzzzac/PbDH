@@ -9,6 +9,7 @@ import type { CardTableModule } from "../../domain/systemPackage";
 import { useRuntimeStore } from "../../store/runtimeStore";
 import { CardFace, CardStateBadge } from "./CardFace";
 import { definitionReferenceId, resolveRenderedCardPresentation } from "./cardDefinition";
+import { cardReplacementOptions } from "../../domain/cardReplacement";
 
 export function CardContextMenu({
   instance,
@@ -33,9 +34,13 @@ export function CardContextMenu({
   const setCardInstanceUpright = useRuntimeStore((state) => state.setCardInstanceUpright);
   const addCardIndicator = useRuntimeStore((state) => state.addCardIndicator);
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
+  const replaceCardInstance = useRuntimeStore((state) => state.replaceCardInstance);
+  const characterData = useRuntimeStore((state) => state.characterData);
+  const system = useRuntimeStore((state) => state.currentPackage);
 
   if (!instance) return null;
   const nextState = nextCardState(stateOptions, instance.state);
+  const replacements = characterData && system ? cardReplacementOptions(characterData, system, instance.instanceId) : [];
 
   return (
     <TabletopContextMenu className="card-context-menu" x={x} y={y} estimatedWidth={148} estimatedHeight={280} onClose={onClose}>
@@ -46,6 +51,7 @@ export function CardContextMenu({
           翻至{instance.face === "front" ? "背面" : "正面"}
         </button>
       ) : null}
+      {replacements.map((replacement) => <button key={replacement.id} type="button" role="menuitem" disabled={!replacement.target} onClick={() => { replaceCardInstance(instance.instanceId, replacement.id); onClose(); }}>切换为{replacement.name}{replacement.target ? "" : "（资源缺失）"}</button>)}
       <button type="button" role="menuitem" onClick={() => { rotateCardInstance(instance.instanceId, 1); onClose(); }}>顺时针旋转 90°</button>
       {instance.rotation !== 0 ? (
         <button type="button" role="menuitem" onClick={() => { setCardInstanceUpright(instance.instanceId); onClose(); }}>恢复竖置</button>

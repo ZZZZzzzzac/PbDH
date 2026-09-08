@@ -1,8 +1,15 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import {
   admitResourceImageBytes,
   centerCrop,
+  createBrowserImageAdmission,
+  cropSelectionFromLayout,
+  initialCropLayout,
+  moveCrop,
+  resizeFreeCrop,
+  resizeFixedCrop,
+  zoomCrop,
   type ImageAdmissionWorkflow,
   maxAdmittedImageBytes,
   outputDimensions,
@@ -12,6 +19,54 @@ import {
 } from "@pbdh/media-admission";
 
 describe("shared image admission contract", () => {
+  test("allows moving and resizing beyond the source image", () => {
+    const layout = initialCropLayout(400, 800);
+    expect(cropSelectionFromLayout(moveCrop(layout, 0, 0)).x).toBeLessThan(0);
+    const expanded = resizeFreeCrop(layout, "nw", 0, 0);
+    expect(cropSelectionFromLayout(expanded).x).toBeLessThan(0);
+    const fixed = resizeFixedCrop(initialCropLayout(400, 800, 1), "nw", 0, 0, 1);
+    expect(fixed.cropWidth / fixed.cropHeight).toBeCloseTo(1);
+    expect(cropSelectionFromLayout(fixed).x).toBeLessThan(0);
+  });
+
+  test("zooms the source down without moving the crop frame", () => {
+    const layout = initialCropLayout(800, 600);
+    const zoomed = zoomCrop(layout, 360, 270, 2000);
+    expect(zoomed.cropWidth).toBe(layout.cropWidth);
+    expect(zoomed.cropX).toBe(layout.cropX);
+    expect(zoomed.imageWidth).toBeLessThan(layout.imageWidth);
+    const selection = cropSelectionFromLayout(zoomed);
+    expect(selection.x).toBeLessThan(0);
+    expect(selection.y).toBeLessThan(0);
+    expect(selection.width).toBeGreaterThan(800);
+  });
+
+  test("encodes out-of-bounds crops over a black background and rejects nonfinite coordinates", async () => {
+    const close = vi.fn();
+    const fillRect = vi.fn();
+    const drawImage = vi.fn();
+    const context = { fillStyle: "", fillRect, drawImage };
+    vi.stubGlobal("createImageBitmap", async () => ({ width: 100, height: 100, close }));
+    vi.stubGlobal("document", { createElement: () => ({
+      getContext: () => context,
+      toBlob: (callback: (blob: Blob) => void) => callback(new Blob(["webp"], { type: "image/webp" })),
+    }) });
+    try {
+      const file = new File(["image"], "image.png");
+      const workflow = createBrowserImageAdmission();
+      const crop = { x: -50, y: -50, width: 200, height: 200 };
+      const result = await workflow.admit(file, resourceImagePolicy, { crop });
+      expect(result.width).toBe(630);
+      expect(context.fillStyle).toBe("#000");
+      expect(fillRect).toHaveBeenCalledWith(0, 0, 630, 630);
+      expect(fillRect.mock.invocationCallOrder[0]).toBeLessThan(drawImage.mock.invocationCallOrder[0]!);
+      expect(drawImage.mock.calls[0]!.slice(1)).toEqual([-50, -50, 200, 200, 0, 0, 630, 630]);
+      await expect(workflow.admit(file, resourceImagePolicy, { crop: { ...crop, x: NaN } })).rejects.toThrow("裁剪区域尺寸无效");
+      expect(close).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   test("routes imported resource bytes through the same 630px WebP admission policy", async () => {
     const OriginalFile = globalThis.File;
     class TestFile extends Blob {

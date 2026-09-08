@@ -17,7 +17,7 @@ const root = path.resolve("apps/player/public/system-packages");
 const migrated = [
   { directory: "witchy", name: "巫趣 Witchy", resources: 12, assets: 0 },
   { directory: "hows-my-driving", name: "我的车技如何？", resources: 39, assets: 0 },
-  { directory: "tttri", name: "罗德岛旅记", resources: 528, assets: 281 },
+  { directory: "tttri", name: "罗德岛旅记", resources: 573, assets: 286 },
 ] as const;
 
 function hasStructuredSubclassFeatures(data: unknown): boolean {
@@ -83,12 +83,19 @@ describe("additional migrated System Packages", () => {
       }
       if (item.directory === "tttri") {
         const domainCards = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "领域卡") ?? [];
-        expect(domainCards).toHaveLength(231);
+        expect(domainCards).toHaveLength(236);
         expect(domainCards.every((resource) => /^领域卡\/[^/]+\/[^/]+\.json$/u.test(resource.path))).toBe(true);
         const armor = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "护甲") ?? [];
         expect(armor).toHaveLength(0);
         const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
-        expect(subclasses).toHaveLength(240);
+        expect(subclasses).toHaveLength(280);
+        for (const name of ["排陷手", "破术者", "收割者", "卫盟者", "回环射手", "塑灵术师", "游击手", "行商"]) {
+          expect(subclasses.filter((resource) => (resource.data as Record<string, unknown>).名称 === name)).toHaveLength(5);
+        }
+        const hook = subclasses.find((resource) => resource.id === "子职:特种:钩索师:T4Y");
+        expect(hook?.data).toMatchObject({ 特性: [{ 特性名称: "外置捕网", 特性描述: expect.stringContaining("敏捷反应掷骰（17）") }] });
+        const guard = subclasses.find((resource) => resource.id === "子职:近卫:无畏者:T4Y");
+        expect(guard?.data).toMatchObject({ 特性: [{ 特性名称: "无畏之心" }], 职业特性: expect.stringContaining("并中断该目标正在持续的动作") });
         expect(subclasses.every((resource) => hasStructuredSubclassFeatures(resource.data))).toBe(true);
         const professions = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "职业") ?? [];
         expect(professions).toHaveLength(7);

@@ -96,6 +96,11 @@
 .pbdh-platform-trash-dialog li button { min-height: 32px; padding: 0 11px; border: 1px solid #cfc2b6; border-radius: 5px; color: #45342b; background: #fff; cursor: pointer; }
 .pbdh-platform-trash-dialog li button.danger { border-color: #b76464; color: #8c2020; }
 .pbdh-platform-trash-dialog button:disabled { cursor: wait; opacity: .58; }
+.pbdh-platform-trash-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 18px; border-top: 1px solid #e1d8cf; }
+.pbdh-platform-trash-footer > span { margin-right: auto; }
+.pbdh-platform-trash-footer button { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #cfc2b6; border-radius: 5px; background: #fff; cursor: pointer; }
+.pbdh-platform-trash-footer button.danger { border-color: #b76464; color: #8c2020; }
+.pbdh-platform-trash-footer svg { width: 16px; height: 16px; }
 .pbdh-platform-trash-empty { min-height: 230px; display: grid; place-items: center; margin: 0; color: #806e62; }
 .pbdh-platform-trash-error { margin: 0; padding: 10px 18px; color: #851f1f; background: #fff0ef; }
 .pbdh-platform-mobile-button { display: none !important; }

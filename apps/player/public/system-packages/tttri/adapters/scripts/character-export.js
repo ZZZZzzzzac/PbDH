@@ -27,8 +27,10 @@ function entryByName(libraries, libraryId, name, extra) {
     expected && normalized(field(entry, "名称")) === expected && (!extra || extra(entry)));
   return matches.length === 1 ? matches[0] : undefined;
 }
-function entryFor(card, libraries) {
+function entryFor(card, libraries, data) {
   if (!card.definitionRef || card.definitionRef.type !== "resourceLibrary") return undefined;
+  const embedded = data.embeddedResourceEntries && data.embeddedResourceEntries[card.definitionRef.entryId];
+  if (embedded && embedded.libraryId === card.definitionRef.libraryId) return embedded;
   const source = library(libraries, card.definitionRef.libraryId);
   const entry = source && source.entries.find((candidate) => candidate.ID === card.definitionRef.entryId);
   return entry ? { libraryId: source.ID, entry } : undefined;
@@ -47,9 +49,9 @@ function cardFromEntry(libraryId, entry) {
     name: string(field(entry, "名称")),
     type,
     class: string(field(entry, "领域") || field(entry, "主职") || field(entry, "名称")),
-    level: type === "subclass" ? string(({ T1: 1, T2: 2, T3: 3, T4X: 4, T4Y: 4 })[field(entry, "阶段")] || "") : string(field(entry, "等级")).replace(/级$/u, ""),
+    level: type === "subclass" ? ({ T1: 1, T2: 2, T3: 3, T4X: 4, T4Y: 4 })[field(entry, "阶段")] || 0 : Number.parseInt(string(field(entry, "等级")), 10) || 0,
     description: string(description),
-    cardSelectDisplay: {},
+    cardSelectDisplay: type === "domain" ? { item1: string(field(entry, "领域")), item2: string(field(entry, "属性")), item3: `RC.${string(field(entry, "回想") || 0)}`, item4: `LV.${string(field(entry, "等级"))}` } : {},
   };
   if (type === "profession") {
     card.professionSpecial = {
@@ -65,7 +67,8 @@ function emptyCard(prefix, index) {
   return { standarized: true, id: `${prefix}-${index + 1}`, name: "", type: "unknown", class: "", level: "", description: "", cardSelectDisplay: {} };
 }
 function padCards(cards, prefix) {
-  return cards.concat(Array.from({ length: Math.max(0, 20 - cards.length) }, (_, index) => emptyCard(prefix, index))).slice(0, 20);
+  if (cards.length > 20) throw new Error("dhsheet 每组只显示 20 个槽位；当前卡牌超出容量，已停止导出，未截断卡牌。");
+  return cards.concat(Array.from({ length: Math.max(0, 20 - cards.length) }, (_, index) => emptyCard(prefix, index)));
 }
 function addUniqueCard(cards, libraryId, entry) {
   if (entry && !cards.some((card) => card.id === entry.ID)) cards.push(cardFromEntry(libraryId, entry));
@@ -90,10 +93,11 @@ function exportUpgrades(values, diagnostics) {
       if (state[option] === true) upgrades[`${dhTier}-${optionIndex}-${boxIndex}`] = { [optionIndex]: true };
     }
     if (baseTier === 3 || baseTier === 4) {
-      const subclassId = baseTier === 4 ? "subclass-elite" : "subclass";
-      if (state[subclassId] === true) upgrades[`${dhTier}-6-0`] = { 6: true };
       if (state["proficiency-1"] === true || state["proficiency-2"] === true) upgrades[`${dhTier}-7`] = { 7: true };
-      if (state["multiclass-1"] === true || state["multiclass-2"] === true) upgrades[`${dhTier}-8`] = { 8: true };
+      if (state["multiclass-1"] === true && state["multiclass-2"] === true) upgrades[`${dhTier}-8`] = { 8: true };
+    }
+    if (state.subclass || state["subclass-elite"] || (state["multiclass-1"] === true) !== (state["multiclass-2"] === true)) {
+      diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT", text: `TTTRI T${baseTier} 的阶段奖励领取记录或未完成的双格技艺交流没有等价升级选项，导出时未猜测映射。` });
     }
   }
   const t2 = values["advancement-tier-2"] || {};
@@ -106,7 +110,13 @@ function exportUpgrades(values, diagnostics) {
   return upgrades;
 }
 
-module.exports = function (input) {
+async function nativeId(kind, value) {
+  const bytes = new TextEncoder().encode(`${kind}:${value}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return `ri-${kind}-${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 12)}`;
+}
+
+module.exports = async function (input) {
   const data = input.characterData;
   const libraries = input.resourceLibraries || [];
   const values = data.character.values;
@@ -121,14 +131,25 @@ module.exports = function (input) {
   const vaultCards = [];
   addUniqueCard(activeCards, "classes", classEntry);
   addUniqueCard(activeCards, "subclasses", subclassEntry);
-  addUniqueCard(activeCards, "ancestries", ancestryEntry);
-  addUniqueCard(activeCards, "communities", communityEntry);
+  const represented = new Set();
   for (const instance of data.cards.instances || []) {
     if (instance.tableModuleId !== "character-card-table") continue;
-    const found = entryFor(instance, libraries);
-    if (!found || !["ancestries", "communities", "domain-cards"].includes(found.libraryId)) continue;
-    addUniqueCard(instance.state === "宝库" ? vaultCards : activeCards, found.libraryId, found.entry);
+    const found = entryFor(instance, libraries, data);
+    if (!found || !["ancestries", "communities", "domain-cards"].includes(found.libraryId) || !["配置", "宝库"].includes(instance.state)) {
+      diagnostics.push({ level: "warning", code: "DHSHEET_CARD_UNSUPPORTED", text: `卡牌 ${instance.instanceId} 没有已确认的 dhsheet 映射，未导出。` });
+      continue;
+    }
+    represented.add(found.libraryId);
+    (instance.state === "宝库" ? vaultCards : activeCards).push(cardFromEntry(found.libraryId, found.entry));
   }
+  if (!represented.has("ancestries")) addUniqueCard(activeCards, "ancestries", ancestryEntry);
+  if (!represented.has("communities")) addUniqueCard(activeCards, "communities", communityEntry);
+  const exportedCards = activeCards.length + vaultCards.length;
+  const remaining = [...activeCards];
+  const take = (type) => { const index = remaining.findIndex((card) => card.type === type); return index < 0 ? emptyCard(`empty-${type}`, 0) : remaining.splice(index, 1)[0]; };
+  const slots = [take("profession"), take("subclass"), take("ancestry"), emptyCard("empty-ancestry2", 0), take("community")];
+  if (slots[0].name) { slots[0].description = string(values["class-feature"]); slots[0].professionSpecial["希望特性"] = string(values["class-hope-feature"]); }
+  if (slots[1].name) slots[1].description = string(values["subclass-current"]);
 
   const primary = splitReversible(values["weapon-summary"], "武器", diagnostics);
   const armor = splitReversible(values["armor-summary"], "护甲", diagnostics);
@@ -140,6 +161,7 @@ module.exports = function (input) {
     : ["", "", ""];
   const secondaryFeature = secondaryFeatureIndex >= 0 ? inventoryLines[secondaryFeatureIndex].slice("副武器特性：".length) : "";
   const inventory = inventoryLines.filter((_, index) => index !== secondarySummaryIndex && index !== secondaryFeatureIndex);
+  if (inventory.length > 5) diagnostics.push({ level: "warning", code: "DHSHEET_INVENTORY_OVERFLOW", text: "物品栏超过 dhsheet 的 5 行，仅导出前 5 行。" });
   const hp = resource(values, "hp");
   const stress = resource(values, "stress");
   const hope = resource(values, "hope");
@@ -150,6 +172,7 @@ module.exports = function (input) {
   const chest = resource(values, "chest-gold");
   const ref = (entry, name) => ({ id: entry ? string(entry.ID) : "", name: string(name) });
   const document = {
+    ...(subclassEntry && ["T4X", "T4Y"].includes(field(subclassEntry, "阶段")) ? { selectedModule: field(subclassEntry, "阶段") === "T4X" ? "x" : "y" } : {}),
     ruleSetId: "rhodes-island", name: string(values["character-name"]), characterImage: image(data, "character-avatar"), level: string(values.level || "1"),
     proficiency: booleanSlots(proficiency, 6),
     profession: classEntry ? string(classEntry.ID) : "", professionRef: ref(classEntry, values["class-name"]),
@@ -167,7 +190,7 @@ module.exports = function (input) {
     minorThreshold: string(values["major-threshold"]), majorThreshold: string(values["severe-threshold"]), minorThresholdManualModifier: "0", majorThresholdManualModifier: "0",
     inventory: inventory.concat(["", "", "", "", ""]).slice(0, 5),
     characterBackground: string(values["background-story"]), characterAppearance: "", characterMotivation: string(values.notes),
-    cards: padCards(activeCards, "empty-card"), inventory_cards: padCards(vaultCards, "empty-inventory-card"), checkedUpgrades: exportUpgrades(values, diagnostics),
+    cards: padCards(slots.concat(remaining), "empty-card"), inventory_cards: padCards(vaultCards, "empty-inventory-card"), checkedUpgrades: exportUpgrades(values, diagnostics),
     primaryWeaponName: primary[0], primaryWeaponSelection: "", primaryWeaponTrait: primary[1], primaryWeaponDamage: primary[2], primaryWeaponFeature: string(values["weapon-feature"]),
     secondaryWeaponName: secondary[0], secondaryWeaponSelection: "", secondaryWeaponTrait: secondary[1], secondaryWeaponDamage: secondary[2], secondaryWeaponFeature: secondaryFeature,
     armorName: armor[0], armorSelection: "", armorBaseScore: armor[1], armorThreshold: armor[2], armorFeature: string(values["armor-feature"]),
@@ -178,16 +201,23 @@ module.exports = function (input) {
     includePageThreeInExport: true, pageVisibility: { rangerCompanion: false, armorTemplate: false, adventureNotes: false },
     armorTemplate: { weaponName: "", description: "", upgradeSlots: Array.from({ length: 5 }, () => ({ checked: false, text: "" })), upgrades: { basic: {}, tier2: {}, tier3: {}, tier4: {} }, scrapMaterials: { fragments: [0, 0, 0, 0, 0, 0], metals: [0, 0, 0, 0, 0, 0], components: [0, 0, 0, 0, 0, 0], relics: ["", "", "", "", ""] }, electronicCoins: 0 },
     adventureNotes: { characterProfile: {}, playerInfo: {}, backstory: "", milestones: "", adventureLog: Array.from({ length: 8 }, () => ({ name: "", levelRange: "", trauma: "", date: "" })) },
-    notebook: { pages: [{ id: "page-1", lines: [] }], currentPageIndex: 0, isOpen: false }, presetEquipmentCalcVersion: 1, domainCardAutomation: {}, branchUpgradeCount: {}, rulesetAutomationVersions: {},
+    notebook: { pages: [{ id: "page-1", lines: [] }], currentPageIndex: 0, isOpen: false }, presetEquipmentCalcVersion: 1, domainCardAutomation: {}, branchUpgradeCount: subclassEntry ? ({ T1: 0, T2: 1, T3: 2, T4X: 2, T4Y: 2 })[field(subclassEntry, "阶段")] ?? 0 : 0, rulesetAutomationVersions: {},
   };
   for (const id of ["agility", "strength", "finesse", "instinct", "presence", "knowledge"]) {
     document[id] = { checked: false, value: string(values[id]), spellcasting: false };
   }
+  for (const [index, key, kind] of [[0, "profession", "profession"], [1, "subclass", "branch"], [2, "ancestry1", "ancestry"], [4, "community", "community"]]) {
+    const card = slots[index];
+    if (!card.name) continue;
+    card.id = await nativeId(kind, kind === "branch" ? `${card.class}/${card.name}` : card.name);
+    document[key] = card.id;
+    document[`${key}Ref`] = { id: card.id, name: card.name };
+  }
   return {
     document,
     exportedFields: Object.keys(document).length,
-    exportedCards: activeCards.length + vaultCards.length,
+    exportedCards,
     exportedImages: document.characterImage ? 1 : 0,
-    skippedFields: 0, skippedCards: 0, skippedImages: 0, diagnostics,
+    skippedFields: 0, skippedCards: diagnostics.filter((item) => item.code === "DHSHEET_CARD_UNSUPPORTED").length, skippedImages: 0, diagnostics,
   };
 };

@@ -245,6 +245,7 @@ function snapshotCard(
         presentation: structuredClone(resource.presentation),
         data: structuredClone(resource.data),
         labels: [],
+        replacements: structuredClone(resource.replacements ?? []),
         media: structuredClone(resource.media),
       },
     };

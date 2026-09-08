@@ -81,7 +81,47 @@
 }
 
 .class-field {
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) repeat(2, auto);
+}
+
+.class-field [data-module-type="resourcePicker"] [data-part="button"] {
+  width: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.class-field [data-module-type="resourcePicker"] [data-part="button"] svg {
+  display: none;
+}
+
+.advancement-options {
+  flex: 1 1 auto;
+}
+
+.advancement-controls {
+  position: relative;
+}
+
+[data-template-page-id="character-story"] .multiclass-action {
+  position: absolute;
+  left: 1.35rem;
+  bottom: -0.3rem;
+}
+
+.multiclass-action [data-module-type="resourcePicker"] [data-part="button"] {
+  width: 1.25rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  height: 1.25rem;
+  line-height: 1;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+.multiclass-action [data-part="button"] svg {
+  display: none;
 }
 
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {

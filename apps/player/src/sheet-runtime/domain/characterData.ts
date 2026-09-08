@@ -366,6 +366,24 @@ function projectCharacterData(
       convertedImages += 1;
       continue;
     }
+    if (module.类型 === "checkboxResource" && isRecord(value)) {
+      const optionIds = new Set(module.选项.map((option) => option.ID));
+      const valid = Object.entries(value).filter(([id, selected]) => optionIds.has(id) && typeof selected === "boolean");
+      const invalid = Object.keys(value).filter((id) => !optionIds.has(id) || typeof value[id] !== "boolean");
+      if (invalid.length > 0 && valid.length > 0) {
+        values[moduleId] = {
+          ...Object.fromEntries(module.选项.map((option) => [option.ID, option.默认选中 ?? false])),
+          ...Object.fromEntries(valid.map(([id, selected]) => [id, selected === true])),
+        };
+        convertedFields += 1;
+        diagnostics.push(importWarning(
+          "CHARACTER_DATA_CHECKBOX_OPTIONS_SKIPPED",
+          `Module「${moduleId}」的选项「${invalid.join("、")}」已移除或值无效，已跳过；其余勾选已保留。`,
+          `character.values.${moduleId}`,
+        ));
+        continue;
+      }
+    }
     if (!valueMatchesCurrentModule(value, module)) {
       skippedFields += 1;
       diagnostics.push(importWarning(

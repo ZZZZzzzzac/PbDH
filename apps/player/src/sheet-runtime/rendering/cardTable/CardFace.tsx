@@ -76,6 +76,10 @@ export function CardFace({
       /></CardDisplay>;
   }
 
+  if (resourceCopy?.template.id === "种族" || (definition?.fields && "特性A" in definition.fields && "特性B" in definition.fields)) {
+    return <div role="alert">种族卡规范渲染器不可用，请检查系统包与模板版本。</div>;
+  }
+
   if (showArt && displayMode === "image") {
     return <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} />;
   }

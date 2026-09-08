@@ -208,6 +208,8 @@ function drawCropper(canvas: HTMLCanvasElement, image: HTMLImageElement, layout:
   context.beginPath();
   context.rect(layout.cropX, layout.cropY, layout.cropWidth, layout.cropHeight);
   context.clip();
+  context.fillStyle = "#000";
+  context.fillRect(layout.cropX, layout.cropY, layout.cropWidth, layout.cropHeight);
   context.drawImage(image, layout.imageX, layout.imageY, layout.imageWidth, layout.imageHeight);
   context.restore();
   context.strokeStyle = "#67e8f9";

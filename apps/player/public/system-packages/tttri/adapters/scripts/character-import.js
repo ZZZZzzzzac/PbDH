@@ -8,9 +8,12 @@ function normalized(value) {
     : "";
 }
 
+function cardName(value) {
+  return normalized(value).replace(/^[“”"「」]+|[“”"「」]+$/gu, "");
+}
+
 function joined(values) {
-  const parts = values.map(text).filter((value) => value !== undefined).map((value) => value.trim()).filter(Boolean);
-  return parts.length ? parts.join("｜") : undefined;
+  return values.some((value) => text(value)) ? values.map((value) => text(value) || "").join("｜") : undefined;
 }
 
 function put(values, id, value) {
@@ -50,16 +53,15 @@ function advancement(upgrades, sourceTier, targetTier) {
     evasion: upgradeSelected(upgrades, sourceTier, 5, 0, false),
   };
   if (targetTier === 2) {
-    result.subclass = false;
     result["multiclass-1"] = false;
+    result["multiclass-2"] = false;
   } else {
-    const subclass = upgradeSelected(upgrades, sourceTier, 6, 0, false);
-    result[targetTier === 4 ? "subclass-elite" : "subclass"] = subclass;
     const proficiency = upgradeSelected(upgrades, sourceTier, 7, 0, true);
     const multiclass = upgradeSelected(upgrades, sourceTier, 8, 0, true);
     result["proficiency-1"] = proficiency;
     result["proficiency-2"] = proficiency;
     result["multiclass-1"] = multiclass;
+    result["multiclass-2"] = multiclass;
   }
   return result;
 }
@@ -107,10 +109,13 @@ module.exports = function (input) {
   const ancestryName = document.ancestry1Ref && document.ancestry1Ref.name;
   const communityName = document.communityRef && document.communityRef.name;
   const selectedClass = byName(input, "classes", professionName);
-  const selectedSubclass = uniqueEntry(input, "subclasses", (entry) =>
+  const selectedSubclassCard = Array.isArray(document.cards) ? document.cards.find((card) => card && card.type === "subclass" && card.id === (document.subclassRef?.id || document.subclass)) : undefined;
+  const level = Number.parseInt(document.level, 10) || 1;
+  const stage = level >= 8 && ["x", "y"].includes(document.selectedModule) ? `T4${document.selectedModule.toUpperCase()}` : level >= 5 ? "T3" : level >= 2 ? "T2" : "T1";
+  const selectedSubclass = uniqueEntry(input, "subclasses", (entry) => selectedSubclassCard && entry.ID === selectedSubclassCard.id) || uniqueEntry(input, "subclasses", (entry) =>
     normalized(field(entry, "主职")) === normalized(professionName)
       && normalized(field(entry, "名称")) === normalized(subclassName)
-      && normalized(field(entry, "阶段")) === "T1");
+      && normalized(field(entry, "阶段")) === stage);
 
   const scalarPairs = {
     "character-name": document.name, level: document.level, "class-name": professionName, "subclass-name": subclassName,
@@ -136,7 +141,7 @@ module.exports = function (input) {
   output.values.stress = countable(checkedCount(document.stress), document.stressMax);
   output.values.hope = countable(document.hope, document.hopeMax);
   output.values["armor-slots"] = countable(checkedCount(document.armorBoxes), document.armorMax);
-  output.values.proficiency = countable(checkedCount(document.proficiency), Array.isArray(document.proficiency) ? document.proficiency.length : undefined);
+  output.values.proficiency = countable(Array.isArray(document.proficiency) ? checkedCount(document.proficiency) : document.proficiency, 6);
   const gold = Array.isArray(document.gold) ? document.gold : [];
   output.values["handful-gold"] = countable(checkedCount(gold.slice(0, 9)), 9);
   output.values["bag-gold"] = countable(checkedCount(gold.slice(9, 18)), 9);
@@ -144,6 +149,9 @@ module.exports = function (input) {
   output.values["advancement-tier-2"] = advancement(document.checkedUpgrades, "tier1", 2);
   output.values["advancement-tier-3"] = advancement(document.checkedUpgrades, "tier2", 3);
   output.values["advancement-tier-4"] = advancement(document.checkedUpgrades, "tier3", 4);
+  if (["tier2", "tier3"].some((tier) => upgradeSelected(document.checkedUpgrades, tier, 6, 0, false))) {
+    output.diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT", text: "dhSheet 的子职升级选项不等价于 TTTRI 1.1.0 的阶段奖励，未转换为升级消耗或领取记录；请按角色等级核对武器原型。" });
+  }
   if (selectedClass) {
     output.values["primary-domain"] = text(field(selectedClass, "主领域"));
     output.values["class-hope-feature"] = text(field(selectedClass, "希望特性"));
@@ -151,6 +159,11 @@ module.exports = function (input) {
   } else if (normalized(professionName)) {
     output.skippedFields += 1;
     output.diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_CLASS_NOT_FOUND", text: `职业「${normalized(professionName)}」没有匹配的 TTTRI Resource Entry。` });
+  }
+  const professionCard = Array.isArray(document.cards) ? document.cards.find((card) => card && card.type === "profession" && card.id === document.profession) : undefined;
+  if (professionCard) {
+    put(output.values, "class-feature", professionCard.description);
+    put(output.values, "class-hope-feature", professionCard.professionSpecial && professionCard.professionSpecial["希望特性"]);
   }
   if (selectedSubclass) {
     output.values["subclass-stage"] = text(field(selectedSubclass, "等级"));
@@ -160,6 +173,7 @@ module.exports = function (input) {
     output.skippedFields += 1;
     output.diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_SUBCLASS_NOT_FOUND", text: `子职「${normalized(subclassName)}」没有匹配的 TTTRI Resource Entry。` });
   }
+  if (selectedSubclassCard && typeof selectedSubclassCard.description === "string") put(output.values, "subclass-current", selectedSubclassCard.description);
   if (joined([document.primaryWeaponName, document.primaryWeaponTrait, document.primaryWeaponDamage])) {
     output.values["weapon-summary"] = joined([document.primaryWeaponName, document.primaryWeaponTrait, document.primaryWeaponDamage]);
   }
@@ -184,21 +198,27 @@ module.exports = function (input) {
 
   const ancestryEntry = byName(input, "ancestries", ancestryName);
   const communityEntry = byName(input, "communities", communityName);
-  pushCard(output, ancestryEntry, "ancestries", "配置");
-  pushCard(output, communityEntry, "communities", "配置");
+  const allSourceCards = [...(Array.isArray(document.cards) ? document.cards : []), ...(Array.isArray(document.inventory_cards) ? document.inventory_cards : [])];
+  if (!allSourceCards.some((card) => card && card.type === "ancestry")) pushCard(output, ancestryEntry, "ancestries", "配置");
+  if (!allSourceCards.some((card) => card && card.type === "community")) pushCard(output, communityEntry, "communities", "配置");
   if (normalized(ancestryName) && !ancestryEntry) reportMissingCard(output, ancestryName);
   if (normalized(communityName) && !communityEntry) reportMissingCard(output, communityName);
   const addSourceCards = (cards, state) => {
     if (!Array.isArray(cards)) return;
-    cards.filter((card) => card && card.type === "domain").forEach((card, index) => {
+    cards.forEach((card, index) => {
+      if (!card || !card.name || card.type === "unknown") return;
+      if (state === "配置" && ((card.type === "profession" && card.id === document.profession) || (card.type === "subclass" && card.id === document.subclass && selectedSubclass))) return;
+      const libraryId = ({ ancestry: "ancestries", community: "communities", domain: "domain-cards" })[card.type];
+      if (!libraryId) { reportMissingCard(output, card.name); return; }
       const domain = normalized(card.class);
-      const name = normalized(card.name);
-      const entries = (library(input, "domain-cards") || {}).entries || [];
+      const name = cardName(card.name);
+      const entries = (library(input, libraryId) || {}).entries || [];
+      const exact = entries.filter((candidate) => candidate.ID === card.id);
       const qualified = entries.filter((candidate) =>
-        normalized(field(candidate, "领域")) === domain && normalized(field(candidate, "名称")) === name);
-      const candidates = qualified.length ? qualified : entries.filter((candidate) => normalized(field(candidate, "名称")) === name);
+        normalized(field(candidate, "领域")) === domain && cardName(field(candidate, "名称")) === name);
+      const candidates = exact.length ? exact : qualified.length ? qualified : entries.filter((candidate) => cardName(field(candidate, "名称")) === name);
       if (candidates.length === 1) {
-        pushCard(output, candidates[0], "domain-cards", state);
+        pushCard(output, candidates[0], libraryId, state);
         return;
       }
       output.skippedCards += 1;

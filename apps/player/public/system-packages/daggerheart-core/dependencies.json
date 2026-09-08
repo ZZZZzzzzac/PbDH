@@ -216,6 +216,17 @@
     ]
   },
   {
+    "ID": "append-multiclass-feature",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-multiclass" }],
+    "targets": [{ "类型": "module", "模块ID": "class-feature" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-multiclass" },
+    "条件": { "类型": "always" },
+    "动作": [{
+      "类型": "fillText", "目标模块ID": "class-feature", "写入方式": "追加", "追加分隔符": "\n\n",
+      "内容": { "类型": "selectedResourceTemplate", "格式": "【{{名称}}】\n{{职业特性}}" }
+    }]
+  },
+  {
     "ID": "append-selected-class-item",
     "sources": [
       {
