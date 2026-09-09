@@ -69,8 +69,10 @@ while (pending.length > 0) {
   pending.push(...(chunksByName.get(name)?.imports ?? []));
 }
 const initialChunks = chunks.filter((chunk) => initialNames.has(chunk.fileName));
-function templateModules(selected: Rollup.OutputChunk[], component: string): string[] {
-  const pattern = new RegExp(`/templates/src/frontend/([^/]+)/([^/]+)/${component}\\.tsx(?:\\?|$)`);
+function templateModules(selected: Rollup.OutputChunk[], component: "renderer" | "authoring-editor" | "capability"): string[] {
+  const directory = component === "capability" ? "core" : "frontend";
+  const extension = component === "capability" ? "ts" : "tsx";
+  const pattern = new RegExp(`/templates/src/${directory}/([^/]+)/([^/]+)/${component}\\.${extension}(?:\\?|$)`);
   return [...new Set(selected.flatMap((chunk) => Object.keys(chunk.modules).flatMap((id) => {
     const match = id.replaceAll("\\", "/").match(pattern);
     return match ? [`${match[1]}@${match[2]}`] : [];
@@ -89,13 +91,16 @@ const metrics = {
     initialJavaScriptGzipBytes: initialChunks.reduce((total, chunk) => total + gzipSync(Buffer.from(chunk.code)).byteLength, 0),
     initialRendererVersions: templateModules(initialChunks, "renderer"),
     initialEditorVersions: templateModules(initialChunks, "authoring-editor"),
+    initialCoreVersions: templateModules(initialChunks, "capability"),
     allRendererVersions: templateModules(chunks, "renderer"),
     allEditorVersions: templateModules(chunks, "authoring-editor"),
+    allCoreVersions: templateModules(chunks, "capability"),
   },
   fixtureMediaFileBytes: assetBytes.byteLength,
 };
 
-if (metrics.productionBuild.allRendererVersions.length === 0 || initialChunks.length === 0) {
+if (metrics.productionBuild.allRendererVersions.length === 0
+  || metrics.productionBuild.allCoreVersions.length === 0 || initialChunks.length === 0) {
   throw new Error("Platform production bundle measurement is empty");
 }
 if (!Number.isFinite(metrics.ssr.singleSurfaceRenderMsP95) || metrics.ssr.singleSurfaceRenderMsP95 < 0) {
