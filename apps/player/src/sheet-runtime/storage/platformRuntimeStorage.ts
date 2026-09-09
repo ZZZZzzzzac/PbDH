@@ -3,6 +3,7 @@ import { createBrowserImageAdmission, playerAvatarPolicy } from "@pbdh/media-adm
 
 import type {
   CharacterSaveRepository,
+  CharacterSaveMetadata,
   StoredCharacterSave,
 } from "../../character-saves/character-save-repository.ts";
 import type { ResourceLibrary as PlatformResourceLibrary } from "../../resources/resource-library.ts";
@@ -31,14 +32,14 @@ import type {
 
 type CharacterSaveStore = Pick<
   CharacterSaveRepository,
-  "list" | "save" | "remove"
+  "listMetadata" | "get" | "save" | "remove"
 >;
 
 export type PlatformRuntimeStorageOptions = {
   currentSystem: SystemPackageDocument | ((packageId: string) => SystemPackageDocument | undefined);
   characterSaves: CharacterSaveStore;
   installedPackages: () => Promise<PlatformResourceLibrary>;
-  visibleCharacterSaves?: () => Promise<StoredCharacterSave[]>;
+  visibleCharacterSaves?: () => Promise<CharacterSaveMetadata[]>;
   cloudAccountId?: () => string | null;
   onCharacterSaved?: (saved: StoredCharacterSave) => Promise<void>;
   removeCharacterSave?: (stored: StoredCharacterSave) => Promise<void>;
@@ -59,7 +60,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   readonly #resolveSystem: (packageId: string) => SystemPackageDocument | undefined;
   readonly #characterSaves: CharacterSaveStore;
   readonly #installedPackages: () => Promise<PlatformResourceLibrary>;
-  readonly #visibleCharacterSaves: () => Promise<StoredCharacterSave[]>;
+  readonly #visibleCharacterSaves: () => Promise<CharacterSaveMetadata[]>;
   readonly #cloudAccountId: () => string | null;
   readonly #onCharacterSaved?: (saved: StoredCharacterSave) => Promise<void>;
   readonly #removeCharacterSave?: (stored: StoredCharacterSave) => Promise<void>;
@@ -80,7 +81,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
       : (packageId) => currentSystem.package.id === packageId ? currentSystem : undefined;
     this.#characterSaves = options.characterSaves;
     this.#installedPackages = options.installedPackages;
-    this.#visibleCharacterSaves = options.visibleCharacterSaves ?? (() => this.#characterSaves.list());
+    this.#visibleCharacterSaves = options.visibleCharacterSaves ?? (() => this.#characterSaves.listMetadata());
     this.#cloudAccountId = options.cloudAccountId ?? (() => null);
     this.#onCharacterSaved = options.onCharacterSaved;
     this.#removeCharacterSave = options.removeCharacterSave;
@@ -144,14 +145,14 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   async saveCurrentCharacterData(data: CharacterSaveRecord["data"]): Promise<void> {
     const packageId = data.systemPackage.id;
     const saveId = await this.loadActiveCharacterSaveId(packageId) ?? data.character.id;
-    const summary = (await this.listCharacterSaves(packageId)).find((item) => item.id === saveId);
-    await this.saveCharacterSave({
+    const existing = await this.#findSave(packageId, saveId);
+    await this.#saveCharacterSave({
       id: saveId,
       packageId,
-      name: summary?.name ?? "未命名角色",
+      name: existing?.document.name ?? "未命名角色",
       updatedAt: data.updatedAt,
       data: { ...data, character: { ...data.character, id: saveId } },
-    });
+    }, existing);
     await this.setActiveCharacterSaveId(packageId, saveId);
   }
 
@@ -283,11 +284,14 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   }
 
   async saveCharacterSave(record: CharacterSaveRecord): Promise<void> {
+    await this.#saveCharacterSave(record, await this.#findSave(record.packageId, record.id));
+  }
+
+  async #saveCharacterSave(record: CharacterSaveRecord, existing: StoredCharacterSave | undefined): Promise<void> {
     const currentSystem = this.#resolveSystemDocument(record.packageId);
     if (!currentSystem) return;
     const sheetSystemPackage = this.#requireSheetSystemPackage();
     if (sheetSystemPackage.manifest.ID !== currentSystem.package.id) return;
-    const existing = await this.#findSave(record.packageId, record.id);
     const data = record.data.character.id === record.id
       ? record.data
       : { ...record.data, character: { ...record.data.character, id: record.id } };
@@ -398,9 +402,10 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   }
 
   async #findSave(packageId: string, saveId: string): Promise<StoredCharacterSave | undefined> {
-    return (await this.#visibleCharacterSaves()).find((candidate) =>
-      candidate.document.documentId === saveId
-      && candidate.document.systemPackage.id === packageId);
+    const candidate = await this.#characterSaves.get(saveId);
+    return candidate?.document.systemPackage.id === packageId
+      && (candidate.sync.scope === "local-only" || candidate.sync.accountId === this.#cloudAccountId())
+      ? candidate : undefined;
   }
 
   #requireSheetSystemPackage(packageId?: string): SystemPackage {
@@ -430,7 +435,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   }
 }
 
-function toSummary(candidate: StoredCharacterSave): CharacterSaveSummary {
+function toSummary(candidate: CharacterSaveMetadata): CharacterSaveSummary {
   return {
     id: candidate.document.documentId,
     packageId: candidate.document.systemPackage.id,

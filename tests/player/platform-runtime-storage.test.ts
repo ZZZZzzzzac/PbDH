@@ -15,6 +15,29 @@ import { configureRuntimeEnvironment, createRuntimeEnvironment } from "../../app
 import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 
 describe("Platform Runtime Storage", () => {
+  it("保存当前角色不读取无关角色的完整存档", async () => {
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem, characterSaves: repository,
+      installedPackages: async () => new Map(), localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(sheetSystemPackage, []);
+    const data = createEmptyCharacterData(sheetSystemPackage, "current");
+    await storage.saveCharacterSave({ id: "current", packageId: currentSystem.package.id,
+      name: "当前角色", updatedAt: data.updatedAt, data });
+    await storage.setActiveCharacterSaveId(currentSystem.package.id, "current");
+    const fullScan = vi.spyOn(repository, "list").mockRejectedValue(new Error("无关角色媒体损坏"));
+    const lookup = vi.spyOn(repository, "get");
+    data.character.values.name = "只修改当前角色";
+    await storage.saveCurrentCharacterData(data);
+    expect(fullScan).not.toHaveBeenCalled();
+    expect(lookup).toHaveBeenCalledExactlyOnceWith("current");
+    expect((await storage.loadCharacterSave(currentSystem.package.id, "current"))?.character.values.name)
+      .toBe("只修改当前角色");
+  });
+
   it.each([false, true])("保存失败时保留编辑并允许重试切换（定时器已触发：%s）", async (timerFired) => {
     vi.useFakeTimers();
     const repository = new MemoryCharacterSaveStore();
@@ -547,6 +570,18 @@ class MemoryCharacterSaveStore {
 
   async list(): Promise<StoredCharacterSave[]> {
     return [...this.saves.values()];
+  }
+
+  async listMetadata() {
+    return [...this.saves.values()].map(({ document, sync }) => {
+      const { characterData: _characterData, ...metadata } = document;
+      return { document: metadata, sync };
+    });
+  }
+
+  async get(id: string) {
+    const value = this.saves.get(id);
+    return value ? structuredClone(value) : undefined;
   }
 
   async save(

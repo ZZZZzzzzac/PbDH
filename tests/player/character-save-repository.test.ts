@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { CharacterSaveDocument, ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
@@ -30,6 +30,29 @@ afterEach(async () => {
 });
 
 describe("CharacterSaveRepository", () => {
+  test("摘要不读取图片，按 ID 读取不受其他存档损坏影响", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    const current = structuredClone(fixtureJson) as CharacterSaveDocument;
+    await repository.save(current, new Map());
+    const otherId = crypto.randomUUID();
+    const badAssetId = `sha256:${"0".repeat(64)}`;
+    await store.put({
+      documentId: otherId, documentKind: "character-save", contractFamily: "character-save", contractVersion: "1.0.0",
+      createdAt: current.createdAt, updatedAt: current.updatedAt,
+      assetIds: [badAssetId], sync: { scope: "local-only", state: "clean", baseRevision: null },
+      payload: { ...current, documentId: otherId, characterData: { portrait: { assetId: badAssetId } } },
+    }, [{ assetId: badAssetId, mediaType: "image/webp", byteLength: "3", bytes: new Uint8Array([1, 2, 3]) }]);
+    const mediaReads = vi.spyOn(store, "getMedia");
+    const summaries = await repository.listMetadata();
+    expect(summaries).toHaveLength(2);
+    expect(summaries.every((item) => !("characterData" in item.document))).toBe(true);
+    expect(mediaReads).not.toHaveBeenCalled();
+    expect((await repository.get(current.documentId))?.document.documentId).toBe(current.documentId);
+    expect(mediaReads).toHaveBeenCalledExactlyOnceWith([]);
+    await expect(repository.get(otherId)).rejects.toThrow("Invalid stored Character Save");
+  });
+
   test("正式入口拒绝不受支持的旧 Character Save Contract", async () => {
     const diagnostics = await validateCharacterSaveCandidate({ contractVersion: "0.9.0" } as never, new Map());
     expect(diagnostics[0]?.code).toBe("contract.version.unsupported");

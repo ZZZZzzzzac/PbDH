@@ -10,6 +10,7 @@ import type { CharacterSaveCandidate } from "@pbdh/contract-runtime";
 
 import {
   CharacterSaveRepository,
+  type CharacterSaveMetadata,
   type StoredCharacterSave,
 } from "./character-save-repository.ts";
 
@@ -65,15 +66,21 @@ export class PlayerCloudDocumentService {
       : save.sync.scope === "local-only");
   }
 
+  async localMetadata(accountId?: string): Promise<CharacterSaveMetadata[]> {
+    const saves = await this.#repository.listMetadata();
+    return saves.filter((save) => accountId
+      ? save.sync.scope === "local-only" || save.sync.accountId === accountId
+      : save.sync.scope === "local-only");
+  }
+
   async enable(documentId: string, credentials: CloudCredentials): Promise<StoredCharacterSave[]> {
     await this.#coordinator.enableCloud("character-save", documentId, credentials);
     await this.#coordinator.flush("character-save", credentials);
     return this.localSnapshot(credentials.accountId);
   }
 
-  async flush(credentials: CloudCredentials): Promise<StoredCharacterSave[]> {
+  async flush(credentials: CloudCredentials): Promise<void> {
     await this.#coordinator.flush("character-save", credentials);
-    return this.localSnapshot(credentials.accountId);
   }
 
   async overwriteWithLocal(

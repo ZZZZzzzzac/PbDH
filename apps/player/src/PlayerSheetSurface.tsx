@@ -227,16 +227,17 @@ export function PlayerSheetSurface({
       ?? importedSystemsRef.current.get(packageId),
     characterSaves: characterSaveRepository,
     installedPackages: async () => libraryRef.current,
-    visibleCharacterSaves: () => cloudDocumentService.localSnapshot(credentialsRef.current?.accountId),
+    visibleCharacterSaves: () => cloudDocumentService.localMetadata(credentialsRef.current?.accountId),
     cloudAccountId: () => credentialsRef.current?.accountId ?? null,
     onCharacterSaved: async (saved) => {
       const credentials = credentialsRef.current;
       if (credentials && saved.sync.scope === "cloud") await cloudDocumentService.flush(credentials);
       const storage = runtimeStorageRef.current;
       if (storage) {
+        const allCharacterSaves = await storage.listAllCharacterSaves();
         useRuntimeStore.setState({
-          characterSaves: await storage.listCharacterSaves(saved.document.systemPackage.id),
-          allCharacterSaves: await storage.listAllCharacterSaves(),
+          characterSaves: allCharacterSaves.filter((save) => save.packageId === saved.document.systemPackage.id),
+          allCharacterSaves,
         });
       }
     },

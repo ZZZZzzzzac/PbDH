@@ -22,6 +22,11 @@ export type StoredCharacterSave = CharacterSaveCandidate & {
   sync: LocalDocumentSync;
 };
 
+export type CharacterSaveMetadata = {
+  document: Omit<CharacterSaveDocument, "characterData">;
+  sync: LocalDocumentSync;
+};
+
 export type TrashedCharacterSave = StoredCharacterSave & {
   deletedAt: string;
   purgeAfter: string | null;
@@ -77,6 +82,22 @@ export class CharacterSaveRepository {
     this.#now = now;
   }
 
+  async listMetadata(): Promise<CharacterSaveMetadata[]> {
+    const envelopes = await this.#store.list<CharacterSaveDocument>("character-save");
+    return envelopes.map(({ payload, sync }) => {
+      const { characterData: _characterData, ...document } = payload;
+      return { document, sync };
+    });
+  }
+
+  async get(documentId: string): Promise<StoredCharacterSave | undefined> {
+    const envelope = await this.#store.get<CharacterSaveDocument>("character-save", documentId);
+    if (!envelope) return undefined;
+    const media = await this.#store.getMedia(envelope.assetIds);
+    const candidate = await normalizeValid(envelope.payload, media, "Invalid stored Character Save");
+    return { ...candidate, sync: envelope.sync };
+  }
+
   async list(): Promise<StoredCharacterSave[]> {
     const envelopes = await this.#store.list<CharacterSaveDocument>("character-save");
     const results: StoredCharacterSave[] = [];
@@ -130,7 +151,7 @@ export class CharacterSaveRepository {
   async planImport(candidate: CharacterSaveCandidate): Promise<CharacterSaveImportPlan> {
     const playerMedia = selectCharacterSavePlayerMedia(candidate.document, candidate.media);
     await assertValid(candidate.document, playerMedia, "Invalid Character Save import");
-    const existing = (await this.list()).find((save) => save.document.documentId === candidate.document.documentId);
+    const existing = await this.get(candidate.document.documentId);
     const normalized = { document: structuredClone(candidate.document), media: playerMedia };
     if (!existing) return { kind: "new", candidate: normalized };
     if (sameCharacterSaveArchive(existing, normalized)) return { kind: "duplicate", existing };
