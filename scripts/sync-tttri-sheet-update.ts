@@ -76,7 +76,7 @@ const systemFile = path.join(root, "system.json");
 const system = JSON.parse(await readFile(systemFile, "utf8"));
 system.package.version = "1.1.0";
 system.runtime.characterDataVersion = "1.1.0";
-system.runtime.characterDataMigrations = [{ fromVersion: "1.0.0", toVersion: "1.1.0", script: "adapters/scripts/upgrade-advancement.js" }];
+system.runtime.characterDataMigrations = [{ fromVersion: "1.0.6", toVersion: "1.1.0", script: "adapters/scripts/upgrade-advancement.js" }];
 for (const target of document.targets) if (target.systemPackageId === system.package.id) target.version = "1.1.0";
 document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, media);
 const diagnostics = await validateResourcePackageCandidate(document, media);

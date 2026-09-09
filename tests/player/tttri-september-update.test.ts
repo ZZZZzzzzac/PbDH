@@ -63,7 +63,7 @@ describe("TTTRI September rules migrated from Sheet fe1de3f", () => {
     }
   });
 
-  test("upgrades native saves without changing valid choices or authored feature text", async () => {
+  test("upgrades native 1.0.6 saves without changing valid choices or authored feature text", async () => {
     const original = {
       "subclass-current": "手工修改的特性",
       "advancement-tier-2": { subclass: true, "traits-1": true, "multiclass-1": true },
@@ -71,7 +71,7 @@ describe("TTTRI September rules migrated from Sheet fe1de3f", () => {
       "advancement-tier-4": { "subclass-elite": true, "proficiency-1": true },
     };
     const result = await prepareCharacterDataMigration({
-      fromVersion: "1.0.0", toVersion: "1.1.0", characterData: original,
+      fromVersion: "1.0.6", toVersion: "1.1.0", characterData: original,
       migrations: system.runtime.characterDataMigrations.map((step: { script: string }) => ({ ...step, scriptContent: read(step.script) })),
       execute: async (script, input) => execute(script, input),
     });

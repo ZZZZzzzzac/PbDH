@@ -1,12 +1,13 @@
 import {
   ContractRuntime,
   validateTabletopDocumentSemantics,
+  validateTabletopDocumentReferences,
   type ContractCatalog,
   type ContractDiagnostic,
   type TabletopDocument,
   type TabletopDocumentCandidateValidator,
 } from "@pbdh/contract-runtime";
-import { loadTemplateCore } from "@pbdh/templates/core/lazy";
+import { templateValidationMetadata } from "@pbdh/templates/core/validation";
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
@@ -45,12 +46,12 @@ function templateDiagnostic(
   };
 }
 
-async function validateTemplateStateAndReplacements(document: TabletopDocument): Promise<ContractDiagnostic[]> {
+function validateTemplateStateAndReplacements(document: TabletopDocument): ContractDiagnostic[] {
   if (document.contractVersion !== "1.0.0") return [];
   const diagnostics: ContractDiagnostic[] = [];
   for (const [instanceIndex, instance] of document.instances.entries()) {
     const reference = instance.resourceCopy.template;
-    const template = await loadTemplateCore(reference.id, reference.version);
+    const template = templateValidationMetadata(reference.id, reference.version);
     if (!template) {
       diagnostics.push(templateDiagnostic(
         document,
@@ -109,6 +110,12 @@ async function validateTemplateStateAndReplacements(document: TabletopDocument):
     || left.code.localeCompare(right.code));
 }
 
+export async function validateTabletopDocumentUpdate(document: TabletopDocument, assetIds: ReadonlySet<string>) {
+  const diagnostics = runtime.validate({ family: "tabletop-document", version: document.contractVersion, mode: "production", candidate: document });
+  if (diagnostics.length) return diagnostics;
+  return [...validateTabletopDocumentReferences(document, assetIds), ...validateTemplateStateAndReplacements(document)];
+}
+
 export const validateTabletopDocumentCandidate: TabletopDocumentCandidateValidator = async (
   document,
   media,
@@ -122,6 +129,6 @@ export const validateTabletopDocumentCandidate: TabletopDocumentCandidateValidat
   if (schemaDiagnostics.length > 0) return schemaDiagnostics;
   return [
     ...await validateTabletopDocumentSemantics(document, media),
-    ...await validateTemplateStateAndReplacements(document),
+    ...validateTemplateStateAndReplacements(document),
   ];
 };

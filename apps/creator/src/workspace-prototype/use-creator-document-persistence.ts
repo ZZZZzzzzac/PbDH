@@ -4,7 +4,7 @@ import { DexieLocalDocumentStore, type LocalDocumentSync } from "@pbdh/local-sto
 import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
-import { CreatorCloudDocumentService, type CreatorCloudRecovery } from "./cloud-document-service.ts";
+import { CreatorCloudDocumentService, type CreatorCloudRecovery, type CreatorCloudSyncSnapshot } from "./cloud-document-service.ts";
 import { scheduleCreatorCloudSync } from "./cloud-sync-timing.ts";
 import { isCreatorAuthoringInputFocused } from "./creator-controls.tsx";
 import { CreatorWorkspaceRepository } from "./creator-workspace-repository.ts";
@@ -64,6 +64,7 @@ export function useCreatorDocumentPersistence({
   const [tabletopSync, setTabletopSync] = useState<Map<string, LocalDocumentSync>>(() => new Map());
   const [workspaceStorageReady, setWorkspaceStorageReady] = useState(false);
   const [tabletopStorageReady, setTabletopStorageReady] = useState(false);
+  const [restoreStarted, setRestoreStarted] = useState(surfaceKey !== "hidden");
   const [workspaceSaving, setWorkspaceSaving] = useState(false);
   const [tabletopSaving, setTabletopSaving] = useState(false);
   const [tabletopMedia, setTabletopMedia] = useState<Map<string, Uint8Array>>(() => new Map());
@@ -80,12 +81,21 @@ export function useCreatorDocumentPersistence({
     accountId: string | null;
   }>());
 
+  const applyCloudSync = useCallback((snapshot: CreatorCloudSyncSnapshot) => {
+    setWorkspaceSync(new Map(snapshot.workspaceSync));
+    setTabletopSync(new Map(snapshot.tabletopSync));
+  }, []);
+
   const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean) => {
     const restoredWorkspaces = snapshot.workspaces.map((item) => item.workspace);
     const restoredTabletops = snapshot.tabletops.map((item) => containGmTabletopInstances(item.model));
     setWorkspaceSync(new Map(snapshot.workspaces.map((item) => [item.workspace.key, item.sync])));
     setTabletopSync(new Map(snapshot.tabletops.map((item) => [item.model.id, item.sync])));
     if (!replaceDocuments) return;
+    snapshot.tabletops.forEach((item) => savedTabletopsRef.current.set(item.model.id, {
+      model: item.model, media: item.model.assets.map((asset) => item.media.get(asset.id)),
+      accountId: credentials?.accountId ?? null,
+    }));
     setWorkspaces(restoredWorkspaces);
     setTabletops(restoredTabletops);
     setActiveWorkspaceKey((current) => restoredWorkspaces.some((item) => item.key === current) ? current : restoredWorkspaces[0]?.key ?? "");
@@ -96,13 +106,18 @@ export function useCreatorDocumentPersistence({
     setTabletopMedia(media);
     addAssetBytes(restoredWorkspaces.flatMap((workspace) => [...workspace.media]));
     addAssetBytes(media);
-  }, [addAssetBytes, setActiveResourceId, setActiveTabletopId, setActiveWorkspaceKey, setTabletops, setWorkspaces]);
+  }, [addAssetBytes, credentials?.accountId, setActiveResourceId, setActiveTabletopId, setActiveWorkspaceKey, setTabletops, setWorkspaces]);
 
   useEffect(() => {
     retainAssetUrls([...workspaces.flatMap((workspace) => [...workspace.media.keys()]), ...tabletopMedia.keys()]);
   }, [retainAssetUrls, tabletopMedia, workspaces]);
 
   useEffect(() => {
+    if (surfaceKey !== "hidden") setRestoreStarted(true);
+  }, [surfaceKey]);
+
+  useEffect(() => {
+    if (!restoreStarted) return;
     let cancelled = false;
     workspaceRepository.listStored().then((stored) => {
       const visible = stored.filter((item) => item.sync.scope === "local-only" || item.sync.accountId === credentials?.accountId);
@@ -126,14 +141,18 @@ export function useCreatorDocumentPersistence({
     }).catch((error) => notify(error instanceof Error ? error.message : "工作区恢复失败"))
       .finally(() => { if (!cancelled) setWorkspaceStorageReady(true); });
     return () => { cancelled = true; };
-  }, [addAssetBytes, credentials?.accountId, notify, setActiveResourceId, setActiveWorkspaceKey, setWorkspaces, workspaceRepository]);
+  }, [addAssetBytes, credentials?.accountId, notify, restoreStarted, setActiveResourceId, setActiveWorkspaceKey, setWorkspaces, workspaceRepository]);
 
   useEffect(() => {
+    if (!restoreStarted) return;
     let cancelled = false;
     tabletopRepository.list().then((stored) => {
       const visible = stored.filter((item) => item.sync.scope === "local-only" || item.sync.accountId === credentials?.accountId);
       if (cancelled) return;
       const models = visible.map((item) => item.model);
+      visible.forEach((item) => savedTabletopsRef.current.set(item.model.id, {
+        model: item.model, media: item.model.assets.map((asset) => item.media.get(asset.id)), accountId: credentials?.accountId ?? null,
+      }));
       const media = new Map(visible.flatMap((item) => [...item.media]));
       const activeTabletopId = resolveStoredActiveTab(
         readStoredActiveTab(gmActiveTabletopTabKey),
@@ -149,7 +168,7 @@ export function useCreatorDocumentPersistence({
     }).catch((error) => notify(error instanceof Error ? error.message : "桌面恢复失败"))
       .finally(() => { if (!cancelled) setTabletopStorageReady(true); });
     return () => { cancelled = true; };
-  }, [addAssetBytes, credentials?.accountId, notify, setActiveTabletopId, setSelectedInstanceId, setSelectedInstanceIds, setTabletops, tabletopRepository]);
+  }, [addAssetBytes, credentials?.accountId, notify, restoreStarted, setActiveTabletopId, setSelectedInstanceId, setSelectedInstanceIds, setTabletops, tabletopRepository]);
 
   useEffect(() => {
     if (!workspaceStorageReady) return;
@@ -187,7 +206,12 @@ export function useCreatorDocumentPersistence({
           if (saved?.model === tabletop && saved.accountId === accountId
             && saved.media.length === media.length
             && media.every((bytes, index) => bytes === saved.media[index])) return;
-          await tabletopRepository.save(tabletop, tabletopMedia, accountId);
+          const previousMedia = new Map(saved?.model.assets.map((asset, index) => [asset.id, saved.media[index]]) ?? []);
+          const updates = new Map(tabletop.assets.flatMap((asset) => {
+            const bytes = tabletopMedia.get(asset.id);
+            return bytes && previousMedia.get(asset.id) !== bytes ? [[asset.id, bytes] as const] : [];
+          }));
+          await tabletopRepository.saveUpdate(tabletop, updates, accountId);
           savedTabletopsRef.current.set(tabletop.id, { model: tabletop, media, accountId });
         }));
       });
@@ -208,12 +232,12 @@ export function useCreatorDocumentPersistence({
       const pendingLocalWrites = workspaceWriteQueueRef.current;
       const write = pendingLocalWrites.then(async () => {
         const snapshot = await cloudDocumentService.flush("creator-workspace", credentials);
-        applyCloudSnapshot(snapshot, false);
+        applyCloudSync(snapshot);
       });
       workspaceWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "工作区同步失败"));
     });
-  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, surfaceKey, workspaceCloudSyncRequest, workspaceStorageReady, workspaces]);
+  }, [applyCloudSync, cloudDocumentService, credentials, notify, surfaceKey, workspaceCloudSyncRequest, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     if (!tabletopStorageReady || !credentials || isCreatorAuthoringInputFocused()) return;
@@ -222,12 +246,12 @@ export function useCreatorDocumentPersistence({
       const pendingLocalWrites = tabletopWriteQueueRef.current;
       const write = pendingLocalWrites.then(async () => {
         const snapshot = await cloudDocumentService.flush("gm-tabletop-document", credentials);
-        applyCloudSnapshot(snapshot, false);
+        applyCloudSync(snapshot);
       });
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "桌面同步失败"));
     });
-  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, surfaceKey, tabletopCloudSyncRequest, tabletopStorageReady, tabletops]);
+  }, [applyCloudSync, cloudDocumentService, credentials, notify, surfaceKey, tabletopCloudSyncRequest, tabletopStorageReady, tabletops]);
 
   useEffect(() => {
     if (!credentials) { cloudRecoveryAccountRef.current = null; return; }
@@ -256,5 +280,6 @@ export function useCreatorDocumentPersistence({
       tabletop: () => setTabletopCloudSyncRequest((current) => current + 1),
     },
     applyCloudSnapshot,
+    applyCloudSync,
   };
 }

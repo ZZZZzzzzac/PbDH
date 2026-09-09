@@ -4,7 +4,7 @@ import {
   type ContractCatalog,
   type ResourcePackageCandidateValidator,
 } from "@pbdh/contract-runtime";
-import { loadTemplateCore } from "@pbdh/templates/core/lazy";
+import { templateValidationMetadata } from "@pbdh/templates/core/validation";
 
 import catalogJson from "../../../../contracts/catalog.json";
 import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0/schema.json";
@@ -42,7 +42,7 @@ export const validateResourcePackageCandidate: ResourcePackageCandidateValidator
   const diagnostics = await validateResourcePackageSemantics(document, media);
   if (diagnostics.length) return diagnostics;
   for (const [resourceIndex, resource] of document.resources.entries()) {
-    const template = await loadTemplateCore(
+    const template = templateValidationMetadata(
       resource.template.id,
       resource.template.version,
     );

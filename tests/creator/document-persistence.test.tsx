@@ -38,6 +38,41 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
+test("隐藏的 Creator 首次不恢复文档，进入后只恢复一次并保留状态", async () => {
+  const empty = { workspaces: [], tabletops: [] };
+  const workspaceRead = vi.spyOn(CreatorWorkspaceRepository.prototype, "listStored").mockResolvedValue([]);
+  const tabletopRead = vi.spyOn(TabletopDocumentRepository.prototype, "list").mockResolvedValue([]);
+  const recover = vi.spyOn(CreatorCloudDocumentService.prototype, "recover").mockResolvedValue(empty);
+  vi.spyOn(CreatorCloudDocumentService.prototype, "flush").mockResolvedValue({ workspaceSync: new Map(), tabletopSync: new Map() });
+  function Probe({ surfaceKey }: { surfaceKey: "creator" | "gm" | "hidden" }) {
+    const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
+    const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
+    const persistence = useCreatorDocumentPersistence({
+      credentials, surfaceKey, workspaces, setWorkspaces, tabletops, setTabletops,
+      setActiveWorkspaceKey: noop, setActiveResourceId: noop, setActiveTabletopId: noop,
+      setSelectedInstanceId: noop, setSelectedInstanceIds: noop, addAssetBytes: noop, retainAssetUrls: noop, notify: noop,
+    });
+    return <output>{String(persistence.storageReady.workspace)}:{String(persistence.storageReady.tabletop)}</output>;
+  }
+  await act(async () => root.render(<Probe surfaceKey="hidden" />));
+  await act(async () => vi.advanceTimersByTimeAsync(2000));
+  expect(workspaceRead).not.toHaveBeenCalled();
+  expect(tabletopRead).not.toHaveBeenCalled();
+  expect(recover).not.toHaveBeenCalled();
+  expect(container.textContent).toBe("false:false");
+  await act(async () => root.render(<Probe surfaceKey="creator" />));
+  expect(workspaceRead).toHaveBeenCalledOnce();
+  expect(tabletopRead).toHaveBeenCalledOnce();
+  expect(recover).toHaveBeenCalledOnce();
+  expect(container.textContent).toBe("true:true");
+  await act(async () => root.render(<Probe surfaceKey="hidden" />));
+  await act(async () => root.render(<Probe surfaceKey="gm" />));
+  expect(workspaceRead).toHaveBeenCalledOnce();
+  expect(tabletopRead).toHaveBeenCalledOnce();
+  expect(recover).toHaveBeenCalledOnce();
+  expect(container.textContent).toBe("true:true");
+});
+
 async function mountEditor(tabletopIds: string[] = []) {
   await loadTrustedAuthoring("敌人", "1.0.0");
   const workspace = createWorkspace({ document: document as ResourcePackageLogicalDocument, media: new Map() });
@@ -53,13 +88,12 @@ async function mountEditor(tabletopIds: string[] = []) {
   const recovery = { workspaces: [{ workspace, sync }], tabletops: tabletopDocuments };
   vi.spyOn(CreatorWorkspaceRepository.prototype, "listStored").mockResolvedValue(recovery.workspaces);
   vi.spyOn(TabletopDocumentRepository.prototype, "list").mockResolvedValue(tabletopDocuments);
-  const tabletopSave = vi.spyOn(TabletopDocumentRepository.prototype, "save").mockImplementation(async (model) => ({
-    document: { ...tabletopDocuments[0]!.document, documentId: model.id, name: model.name, canvas: model.canvas },
-    media: new Map(),
-  }));
+  const tabletopSave = vi.spyOn(TabletopDocumentRepository.prototype, "saveUpdate").mockResolvedValue(undefined);
   vi.spyOn(CreatorCloudDocumentService.prototype, "recover").mockResolvedValue(recovery);
   const save = vi.spyOn(CreatorWorkspaceRepository.prototype, "save").mockResolvedValue(sync);
-  const flush = vi.spyOn(CreatorCloudDocumentService.prototype, "flush").mockResolvedValue(recovery);
+  const flush = vi.spyOn(CreatorCloudDocumentService.prototype, "flush").mockResolvedValue({
+    workspaceSync: new Map([[workspace.key, sync]]), tabletopSync: new Map(tabletopDocuments.map((item) => [item.model.id, item.sync])),
+  });
   function Editor() {
     const [surfaceVisible, setSurfaceVisible] = useState(true);
     const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);

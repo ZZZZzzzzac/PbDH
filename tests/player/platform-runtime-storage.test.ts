@@ -584,6 +584,18 @@ class MemoryCharacterSaveStore {
     return value ? structuredClone(value) : undefined;
   }
 
+  async getDocument(id: string) {
+    const value = await this.get(id);
+    return value ? { document: value.document, sync: value.sync } : undefined;
+  }
+
+  async saveUpdate(document: CharacterSaveDocument, updates: ReadonlyMap<string, Uint8Array>, accountId: string | null = null) {
+    const media = new Map(this.saves.get(document.documentId)?.media);
+    updates.forEach((bytes, id) => media.set(id, bytes));
+    const stored = await this.save(document, media, accountId);
+    return { document: stored.document, sync: stored.sync };
+  }
+
   async save(
     document: CharacterSaveDocument,
     media: ReadonlyMap<string, Uint8Array>,

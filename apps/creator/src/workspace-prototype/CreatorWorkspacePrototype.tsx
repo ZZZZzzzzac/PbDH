@@ -554,7 +554,7 @@ export function CreatorWorkspacePrototype({
     setCreatorOperation("cloud-sync");
     try {
       const snapshot = await cloudDocumentService.enable(documentKind, documentId, credentials);
-      applyCloudSnapshot(snapshot, false);
+      persistence.applyCloudSync(snapshot);
       setDialog(null);
       notify("已同步到云端");
     } catch (error) {
@@ -1858,6 +1858,9 @@ export function CreatorWorkspacePrototype({
   }
 
   if (!surfaceVisible) return null;
+  if (!workspaceStorageReady || !tabletopStorageReady) {
+    return <main className="creator-prototype" style={designStyle}><OperationStatus label="正在恢复资源包与桌面…" /></main>;
+  }
   return (
     <main className={`creator-prototype${appMode === "gm" ? " is-gm-mode" : ""}${appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open" : ""}`} style={designStyle}>
       <div className="creator-workspace">

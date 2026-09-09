@@ -5,6 +5,7 @@ import { validateCharacterSaveCandidate } from "../../apps/player/src/character-
 import {
   characterSaveToSheet,
   sheetCharacterToSave,
+  prepareCharacterSaveUpdate,
 } from "../../apps/player/src/sheet-runtime/storage/characterSaveAdapter.ts";
 import type { CharacterData as SheetCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import type { SystemPackage as SheetSystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
@@ -16,6 +17,31 @@ const standardCardId = "00000000-0000-7000-8000-000000000030";
 const compositeCardId = "00000000-0000-7000-8000-000000000031";
 
 describe("Sheet Runtime Character Save adapter", () => {
+  it("未变头像只保留引用，替换头像会准入新图片", async () => {
+    const oldId = `sha256:${"a".repeat(64)}`;
+    const newId = `sha256:${"b".repeat(64)}`;
+    const data = sheetCharacterData();
+    data.cards.instances = [];
+    data.character.values.avatar = { kind: "player-image", imageId: oldId };
+    data.playerImages[oldId] = { id: oldId, mimeType: "image/webp", dataUrl: "blob:old-image" };
+    const base = await sheetCharacterToSave({
+      name: "测试", data, sheetSystemPackage: sheetSystemPackage(), installedPackages: installedPackages(),
+      currentSystem: { id: systemPackageId, version: "1.0.0", resourceCompatibility: [] },
+      admitPlayerImage: async () => ({ asset: { id: oldId, mediaType: "image/webp", byteLength: "1", width: "1", height: "1" }, bytes: new Uint8Array([1]) }),
+    });
+    const admit = vi.fn(async () => ({ asset: { id: newId, mediaType: "image/webp" as const, byteLength: "1", width: "1", height: "1" }, bytes: new Uint8Array([2]) }));
+    const input = { name: "测试", data, sheetSystemPackage: sheetSystemPackage(), installedPackages: installedPackages(),
+      currentSystem: { id: systemPackageId, version: "1.0.0", resourceCompatibility: [] },
+      existing: { document: base.document, assetIds: new Set([oldId]) }, admitPlayerImage: admit };
+    expect((await prepareCharacterSaveUpdate(input)).mediaUpdates.size).toBe(0);
+    expect(admit).not.toHaveBeenCalled();
+    data.character.values.avatar = { kind: "player-image", imageId: "new-image" };
+    data.playerImages["new-image"] = { id: "new-image", mimeType: "image/webp", dataUrl: "blob:new-image" };
+    const update = await prepareCharacterSaveUpdate(input);
+    expect(update.document.characterData.avatar).toEqual({ assetId: newId });
+    expect([...update.mediaUpdates.keys()]).toEqual([newId]);
+    expect(admit).toHaveBeenCalledOnce();
+  });
   it("旧组合卡只加载声明版本，失败保留输入且可重试", async () => {
     const entry = templateCoreLoaders.find((item) => item.id === "种族" && item.version === "1.0.1")!;
     const load = vi.spyOn(entry, "load").mockRejectedValueOnce(new Error("network unavailable"));

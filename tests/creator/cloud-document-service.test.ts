@@ -3,7 +3,7 @@ import "fake-indexeddb/auto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type {
   CloudCredentials,
@@ -82,6 +82,27 @@ class RecoveryApi implements CloudDocumentApi {
     throw new Error("unexpected delete");
   }
 }
+
+test("同步回执只刷新同步状态，不重读文档媒体或重新恢复文档", async () => {
+  const store = new DexieLocalDocumentStore(database());
+  const workspaceRepository = new CreatorWorkspaceRepository(store);
+  const tabletopRepository = new TabletopDocumentRepository(store);
+  const service = new CreatorCloudDocumentService(store, workspaceRepository, tabletopRepository, new RecoveryApi([], new Map()));
+  const id = crypto.randomUUID();
+  await store.put({ documentId: id, documentKind: "gm-tabletop-document", contractFamily: "tabletop-document", contractVersion: "1.0.0",
+    createdAt: "2026-09-09T00:00:00.000Z", updatedAt: "2026-09-09T00:00:00.000Z", assetIds: [],
+    sync: { scope: "cloud", state: "clean", baseRevision: "1", accountId: credentials.accountId }, payload: { unread: true } });
+  const workspaces = vi.spyOn(workspaceRepository, "listStored");
+  const tabletops = vi.spyOn(tabletopRepository, "list");
+  const media = vi.spyOn(store, "getMedia");
+  try {
+    const snapshot = await service.flush("creator-workspace", credentials);
+    expect(snapshot.tabletopSync.get(id)?.baseRevision).toBe("1");
+    expect(workspaces).not.toHaveBeenCalled();
+    expect(tabletops).not.toHaveBeenCalled();
+    expect(media).not.toHaveBeenCalled();
+  } finally { vi.restoreAllMocks(); }
+});
 
 describe("Creator and GM cloud recovery", () => {
   test("closes a signed-in workspace locally when its first cloud upload has not succeeded", async () => {

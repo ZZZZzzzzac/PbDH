@@ -1,6 +1,8 @@
 import {
   ContractRuntime,
   validateCharacterSaveSemantics,
+  validateCharacterSaveReferences,
+  type CharacterSaveDocument,
   type CharacterSaveCandidateValidator,
   type ContractCatalog,
 } from "@pbdh/contract-runtime";
@@ -21,6 +23,11 @@ const catalog: ContractCatalog = {
 const runtime = new ContractRuntime(catalog, {
   "character-save/1.0.0/schema.json": characterSaveSchema,
 });
+
+export function validateCharacterSaveDocument(document: CharacterSaveDocument, assetIds: ReadonlySet<string>) {
+  const diagnostics = runtime.validate({ family: "character-save", version: document.contractVersion, mode: "production", candidate: document });
+  return diagnostics.length ? diagnostics : validateCharacterSaveReferences(document, assetIds);
+}
 
 export const validateCharacterSaveCandidate: CharacterSaveCandidateValidator = async (
   document,

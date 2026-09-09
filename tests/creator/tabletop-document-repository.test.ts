@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { TabletopDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
@@ -34,6 +34,35 @@ afterEach(async () => {
 });
 
 describe("GM Tabletop Document Repository", () => {
+  test("字段更新复用旧媒体引用，媒体或描述变更仍校验", async () => {
+    const db = database();
+    const store = new DexieLocalDocumentStore(db);
+    const repository = new TabletopDocumentRepository(store);
+    const bytes = new Uint8Array([1, 2, 3]);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    const assetId = `sha256:${Array.from(new Uint8Array(hash), (value) => value.toString(16).padStart(2, "0")).join("")}`;
+    const model = createTabletopDocument(crypto.randomUUID(), "原桌面");
+    model.assets = [{ id: assetId, mediaType: "image/webp", byteLength: "3", width: "1", height: "1" }];
+    await repository.save(model, new Map([[assetId, bytes]]));
+    const reads = vi.spyOn(store, "getMedia");
+    const digest = vi.spyOn(crypto.subtle, "digest");
+    let byteReads = 0;
+    db.mediaAssets.hook("reading", (record) => { byteReads += 1; return record; });
+    try {
+      await repository.saveUpdate({ ...model, name: "改名称" }, new Map());
+      expect(reads).not.toHaveBeenCalled();
+      expect(byteReads).toBe(0);
+      expect(digest).not.toHaveBeenCalled();
+      await expect(repository.saveUpdate({ ...model, name: "不应写入" }, new Map([[assetId, new Uint8Array([9, 9, 9])]])))
+        .rejects.toThrow("tabletop-document.media.digest-mismatch");
+      expect(digest).toHaveBeenCalledOnce();
+      await expect(repository.saveUpdate({ ...model, assets: [{ ...model.assets[0]!, byteLength: "99" }] }, new Map()))
+        .rejects.toThrow("tabletop-document.media.byte-length-mismatch");
+      expect(reads).toHaveBeenCalledExactlyOnceWith([assetId]);
+      expect((await store.get<TabletopDocument>("gm-tabletop-document", model.id))!.payload.name).toBe("改名称");
+    } finally { vi.restoreAllMocks(); }
+  });
+
   test("正式入口拒绝不受支持的旧 Contract", async () => {
     const diagnostics = await validateTabletopDocumentCandidate(
       { contractVersion: "0.9.0" } as unknown as TabletopDocument,

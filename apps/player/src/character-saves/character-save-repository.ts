@@ -1,6 +1,8 @@
 import {
   CHARACTER_SAVE_VERSION,
   selectCharacterSavePlayerMedia,
+  characterSavePlayerAssetIds,
+  validateCharacterSaveMedia,
   type CharacterData,
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
@@ -16,11 +18,12 @@ import {
   type LocalMediaAssetRecord,
 } from "@pbdh/local-storage";
 
-import { validateCharacterSaveCandidate } from "./character-save-validator.ts";
+import { validateCharacterSaveCandidate, validateCharacterSaveDocument } from "./character-save-validator.ts";
 
 export type StoredCharacterSave = CharacterSaveCandidate & {
   sync: LocalDocumentSync;
 };
+export type StoredCharacterSaveDocument = Pick<StoredCharacterSave, "document" | "sync">;
 
 export type CharacterSaveMetadata = {
   document: Omit<CharacterSaveDocument, "characterData">;
@@ -96,6 +99,39 @@ export class CharacterSaveRepository {
     const media = await this.#store.getMedia(envelope.assetIds);
     const candidate = await normalizeValid(envelope.payload, media, "Invalid stored Character Save");
     return { ...candidate, sync: envelope.sync };
+  }
+
+  async getDocument(documentId: string): Promise<StoredCharacterSaveDocument | undefined> {
+    const envelope = await this.#store.get<CharacterSaveDocument>("character-save", documentId);
+    if (!envelope) return undefined;
+    const diagnostics = validateCharacterSaveDocument(envelope.payload, new Set(envelope.assetIds));
+    if (diagnostics.length) throw new Error(`Invalid stored Character Save: ${diagnostics[0]!.code}`);
+    return { document: envelope.payload, sync: envelope.sync };
+  }
+
+  async saveUpdate(document: CharacterSaveDocument, mediaUpdates: ReadonlyMap<string, Uint8Array>, cloudAccountId: string | null = null): Promise<StoredCharacterSaveDocument> {
+    const existing = await this.#store.get<CharacterSaveDocument>("character-save", document.documentId);
+    const candidate = structuredClone(document);
+    candidate.createdAt = existing?.payload.createdAt ?? candidate.createdAt;
+    candidate.updatedAt = this.#now();
+    const media = new Map([...selectCharacterSavePlayerMedia(candidate, mediaUpdates)].map(([id, bytes]) => [id, new Uint8Array(bytes)]));
+    const assetIds = [...characterSavePlayerAssetIds(candidate)];
+    const available = new Set([...(existing?.assetIds ?? []), ...media.keys()]);
+    const diagnostics = [
+      ...validateCharacterSaveDocument(candidate, new Set(assetIds.filter((id) => available.has(id)))),
+      ...await validateCharacterSaveMedia(media),
+    ];
+    if (diagnostics.length) throw new Error(`Invalid Character Save: ${diagnostics[0]!.code}`);
+    if (existing && sameCharacterSaveContent(existing.payload, candidate)) {
+      if (media.size) await this.#put(existing.payload, media, existing.sync, assetIds);
+      return { document: existing.payload, sync: existing.sync };
+    }
+    const initialSync: LocalDocumentSync = cloudAccountId
+      ? { scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId }
+      : { scope: "local-only", state: "clean", baseRevision: null };
+    const sync = pendingSync(existing?.sync ?? initialSync);
+    await this.#put(candidate, media, sync, assetIds);
+    return { document: candidate, sync };
   }
 
   async list(): Promise<StoredCharacterSave[]> {
@@ -248,6 +284,7 @@ export class CharacterSaveRepository {
     document: CharacterSaveDocument,
     media: ReadonlyMap<string, Uint8Array>,
     sync: LocalDocumentSync,
+    assetIds: readonly string[] = [...media.keys()],
   ): Promise<void> {
     const envelope: LocalDocumentEnvelope<CharacterSaveDocument> = {
       documentId: document.documentId,
@@ -256,7 +293,7 @@ export class CharacterSaveRepository {
       contractVersion: document.contractVersion,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
-      assetIds: [...media.keys()].sort((left, right) => left.localeCompare(right)),
+      assetIds: [...assetIds].sort((left, right) => left.localeCompare(right)),
       sync,
       payload: structuredClone(document),
     };

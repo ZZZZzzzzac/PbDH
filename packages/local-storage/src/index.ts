@@ -287,8 +287,8 @@ export class DexieLocalDocumentStore {
           throw new Error("同编号文档仍在回收站，请先恢复或永久删除。");
         }
         if (media.length > 0) await this.#database.mediaAssets.bulkPut(media.map(copyMedia));
-        const stored = await this.#database.mediaAssets.bulkGet(envelope.assetIds);
-        const missing = envelope.assetIds.filter((_, index) => !stored[index]);
+        const stored = new Set(await this.#database.mediaAssets.where("assetId").anyOf(envelope.assetIds).primaryKeys());
+        const missing = envelope.assetIds.filter((id) => !stored.has(id));
         if (missing.length > 0) throw new Error(`Missing local media: ${missing.join(", ")}`);
         await this.#database.localDocuments.put(structuredClone(envelope));
       },
@@ -379,8 +379,8 @@ export class DexieLocalDocumentStore {
         if (!current || current.documentKind !== currentKind) {
           throw new Error(`Local document not found: ${currentDocumentId}`);
         }
-        const stored = await this.#database.mediaAssets.bulkGet(replacement.assetIds);
-        const missing = replacement.assetIds.filter((_, index) => !stored[index]);
+        const stored = new Set(await this.#database.mediaAssets.where("assetId").anyOf(replacement.assetIds).primaryKeys());
+        const missing = replacement.assetIds.filter((id) => !stored.has(id));
         if (missing.length > 0) throw new Error(`Missing local media: ${missing.join(", ")}`);
         await this.#database.localDocuments.delete(currentDocumentId);
         await this.#database.localDocuments.put(structuredClone(replacement));

@@ -30,6 +30,36 @@ afterEach(async () => {
 });
 
 describe("CharacterSaveRepository", () => {
+  test("字段更新不读取或重新哈希旧媒体，新字节仍完整验证", async () => {
+    const db = database();
+    const store = new DexieLocalDocumentStore(db);
+    const repository = new CharacterSaveRepository(store);
+    const bytes = new Uint8Array([1, 2, 3]);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    const assetId = `sha256:${Array.from(new Uint8Array(hash), (value) => value.toString(16).padStart(2, "0")).join("")}`;
+    const original = { ...structuredClone(fixtureJson), characterData: { portrait: { assetId } } } as CharacterSaveDocument;
+    await repository.save(original, new Map([[assetId, bytes]]));
+    const mediaReads = vi.spyOn(store, "getMedia");
+    const digest = vi.spyOn(crypto.subtle, "digest");
+    let mediaRecordReads = 0;
+    db.mediaAssets.hook("reading", (record) => { mediaRecordReads += 1; return record; });
+    try {
+      const loaded = await repository.getDocument(original.documentId);
+      const saved = await repository.saveUpdate({ ...loaded!.document, name: "只改名称" }, new Map());
+      expect(saved.document.name).toBe("只改名称");
+      expect(mediaReads).not.toHaveBeenCalled();
+      expect(mediaRecordReads).toBe(0);
+      expect(digest).not.toHaveBeenCalled();
+      await expect(repository.saveUpdate({ ...saved.document, name: "不应写入" }, new Map([[assetId, new Uint8Array([9])]])))
+        .rejects.toThrow("character-save.media.digest-mismatch");
+      expect(digest).toHaveBeenCalledOnce();
+      expect((await repository.getDocument(original.documentId))!.document.name).toBe("只改名称");
+      const missing = `sha256:${"f".repeat(64)}`;
+      await expect(repository.saveUpdate({ ...saved.document, characterData: { portrait: { assetId: missing } } }, new Map()))
+        .rejects.toThrow("character-save.media.missing");
+    } finally { vi.restoreAllMocks(); }
+  });
+
   test("摘要不读取图片，按 ID 读取不受其他存档损坏影响", async () => {
     const store = new DexieLocalDocumentStore(database());
     const repository = new CharacterSaveRepository(store);

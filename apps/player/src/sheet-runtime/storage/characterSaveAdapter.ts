@@ -1,5 +1,6 @@
 import {
   CHARACTER_SAVE_VERSION,
+  selectCharacterSavePlayerMedia,
   type CharacterSaveCandidate,
   type CharacterSaveDocument,
   type CharacterTabletopInstance,
@@ -23,7 +24,7 @@ export type NormalizedPlayerImage = {
   bytes: Uint8Array;
 };
 
-export async function sheetCharacterToSave(input: {
+type CharacterSaveInput = {
   name: string;
   data: SheetCharacterData;
   currentSystem: CharacterSaveDocument["systemPackage"] & {
@@ -38,7 +39,19 @@ export async function sheetCharacterToSave(input: {
   existing?: CharacterSaveCandidate;
   admitPlayerImage?: (image: PlayerImageData) => Promise<NormalizedPlayerImage>;
   nameCreatedAt?: string;
-}): Promise<CharacterSaveCandidate> {
+};
+
+export async function sheetCharacterToSave(input: CharacterSaveInput): Promise<CharacterSaveCandidate> {
+  const update = await prepareCharacterSaveUpdate({ ...input, existing: input.existing
+    ? { document: input.existing.document, assetIds: new Set(input.existing.media.keys()) } : undefined });
+  const media = new Map(input.existing?.media);
+  update.mediaUpdates.forEach((bytes, id) => media.set(id, bytes));
+  return { document: update.document, media: selectCharacterSavePlayerMedia(update.document, media) };
+}
+
+export async function prepareCharacterSaveUpdate(input: Omit<CharacterSaveInput, "existing"> & {
+  existing?: { document: CharacterSaveDocument; assetIds: ReadonlySet<string> };
+}): Promise<{ document: CharacterSaveDocument; mediaUpdates: Map<string, Uint8Array> }> {
   const media = new Map<string, Uint8Array>();
   const characterData: Record<string, unknown> = {};
   for (const module of input.sheetSystemPackage.modules) {
@@ -59,10 +72,11 @@ export async function sheetCharacterToSave(input: {
       continue;
     }
     const existingAssetId = imageAssetId(input.existing?.document.characterData[moduleId]);
-    const existingBytes = existingAssetId ? input.existing?.media.get(existingAssetId) : undefined;
-    const normalized = existingAssetId && existingBytes
-      ? { asset: { id: existingAssetId }, bytes: existingBytes }
-      : await requirePlayerImageAdmission(input.admitPlayerImage, image);
+    if (existingAssetId === value.imageId && input.existing?.assetIds.has(existingAssetId)) {
+      characterData[moduleId] = { assetId: existingAssetId };
+      continue;
+    }
+    const normalized = await requirePlayerImageAdmission(input.admitPlayerImage, image);
     media.set(normalized.asset.id, new Uint8Array(normalized.bytes));
     characterData[moduleId] = { assetId: normalized.asset.id };
   }
@@ -110,7 +124,7 @@ export async function sheetCharacterToSave(input: {
   };
   const diagnostics = validateCharacterDataForSystemPackage(document, input.sheetSystemPackage);
   if (diagnostics.length > 0) throw new Error(`Character Save Module 状态无效：${diagnostics.join("；")}`);
-  return { document, media };
+  return { document, mediaUpdates: media };
 }
 
 export function characterSaveToSheet(input: {
@@ -222,7 +236,7 @@ export function characterSaveToSheet(input: {
 
 async function snapshotCard(
   card: CardInstance,
-  input: Parameters<typeof sheetCharacterToSave>[0],
+  input: Parameters<typeof prepareCharacterSaveUpdate>[0],
 ): Promise<{ resourceCopy: TabletopResourceCopy }> {
   if (card.definitionRef.type === "resourceLibrary") {
     const embedded = input.data.embeddedResourceEntries[card.definitionRef.entryId];

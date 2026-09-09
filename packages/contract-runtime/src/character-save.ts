@@ -53,10 +53,10 @@ async function sha256AssetId(bytes: Uint8Array): Promise<string> {
     value.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export async function validateCharacterSaveSemantics(
+export function validateCharacterSaveReferences(
   document: CharacterSaveDocument,
-  media: CharacterSaveMedia,
-): Promise<ContractDiagnostic[]> {
+  media: ReadonlySet<string>,
+): ContractDiagnostic[] {
   const diagnostics: ContractDiagnostic[] = [];
   const createdAt = timestampMillis(document.createdAt);
   const updatedAt = timestampMillis(document.updatedAt);
@@ -95,6 +95,11 @@ export async function validateCharacterSaveSemantics(
       { assetId },
     ));
   }
+  return diagnostics;
+}
+
+export async function validateCharacterSaveMedia(media: CharacterSaveMedia): Promise<ContractDiagnostic[]> {
+  const diagnostics: ContractDiagnostic[] = [];
   for (const [assetId, bytes] of media) {
     const actual = await sha256AssetId(bytes);
     if (actual !== assetId) {
@@ -105,6 +110,11 @@ export async function validateCharacterSaveSemantics(
       ));
     }
   }
+  return diagnostics;
+}
+
+export async function validateCharacterSaveSemantics(document: CharacterSaveDocument, media: CharacterSaveMedia): Promise<ContractDiagnostic[]> {
+  const diagnostics = [...validateCharacterSaveReferences(document, new Set(media.keys())), ...await validateCharacterSaveMedia(media)];
   return diagnostics.sort((left, right) => left.location.localeCompare(right.location)
     || left.code.localeCompare(right.code));
 }

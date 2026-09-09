@@ -85,10 +85,10 @@ async function sha256AssetId(bytes: Uint8Array): Promise<string> {
     value.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export async function validateTabletopDocumentSemantics(
+export function validateTabletopDocumentReferences(
   document: TabletopDocument,
-  media: TabletopMedia,
-): Promise<ContractDiagnostic[]> {
+  media: ReadonlySet<string>,
+): ContractDiagnostic[] {
   const diagnostics: ContractDiagnostic[] = [];
   const instanceIds = new Set<string>();
   document.instances.forEach((instance, index) => {
@@ -127,15 +127,22 @@ export async function validateTabletopDocumentSemantics(
   }
 
   for (const [index, asset] of document.assets.entries()) {
-    const bytes = media.get(asset.id);
-    if (!bytes) {
+    if (!media.has(asset.id)) {
       diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.media.missing",
         `/assets/${index}`,
         { assetId: asset.id },
       ));
-      continue;
     }
+  }
+  return diagnostics;
+}
+
+export async function validateTabletopMedia(document: TabletopDocument, media: TabletopMedia): Promise<ContractDiagnostic[]> {
+  const diagnostics: ContractDiagnostic[] = [];
+  for (const [index, asset] of document.assets.entries()) {
+    const bytes = media.get(asset.id);
+    if (!bytes) continue;
     if (String(bytes.byteLength) !== asset.byteLength) {
       diagnostics.push(diagnostic(document.contractVersion,
         "tabletop-document.media.byte-length-mismatch",
@@ -153,6 +160,11 @@ export async function validateTabletopDocumentSemantics(
       ));
     }
   }
+  return diagnostics;
+}
+
+export async function validateTabletopDocumentSemantics(document: TabletopDocument, media: TabletopMedia): Promise<ContractDiagnostic[]> {
+  const diagnostics = [...validateTabletopDocumentReferences(document, new Set(media.keys())), ...await validateTabletopMedia(document, media)];
   return diagnostics.sort((left, right) => left.location.localeCompare(right.location)
     || left.code.localeCompare(right.code));
 }

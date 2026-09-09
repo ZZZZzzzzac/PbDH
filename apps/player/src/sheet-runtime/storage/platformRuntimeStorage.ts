@@ -1,10 +1,11 @@
-import type { SystemPackageDocument } from "@pbdh/contract-runtime";
+import { characterSavePlayerAssetIds, type SystemPackageDocument } from "@pbdh/contract-runtime";
 import { createBrowserImageAdmission, playerAvatarPolicy } from "@pbdh/media-admission";
 
 import type {
   CharacterSaveRepository,
   CharacterSaveMetadata,
   StoredCharacterSave,
+  StoredCharacterSaveDocument,
 } from "../../character-saves/character-save-repository.ts";
 import type { ResourceLibrary as PlatformResourceLibrary } from "../../resources/resource-library.ts";
 import type { PlayerImageData } from "../domain/characterData.ts";
@@ -15,7 +16,7 @@ import type { RuntimePackageAsset } from "../loaders/assetResolver.ts";
 import {
   characterSaveToSheet,
   completeCharacterDataForSystemPackage,
-  sheetCharacterToSave,
+  prepareCharacterSaveUpdate,
   validateCharacterDataForSystemPackage,
   type NormalizedPlayerImage,
 } from "./characterSaveAdapter.ts";
@@ -32,7 +33,7 @@ import type {
 
 type CharacterSaveStore = Pick<
   CharacterSaveRepository,
-  "listMetadata" | "get" | "save" | "remove"
+  "listMetadata" | "get" | "getDocument" | "save" | "saveUpdate" | "remove"
 >;
 
 export type PlatformRuntimeStorageOptions = {
@@ -41,7 +42,7 @@ export type PlatformRuntimeStorageOptions = {
   installedPackages: () => Promise<PlatformResourceLibrary>;
   visibleCharacterSaves?: () => Promise<CharacterSaveMetadata[]>;
   cloudAccountId?: () => string | null;
-  onCharacterSaved?: (saved: StoredCharacterSave) => Promise<void>;
+  onCharacterSaved?: (saved: StoredCharacterSaveDocument) => Promise<void>;
   removeCharacterSave?: (stored: StoredCharacterSave) => Promise<void>;
   localStorage?: Storage;
   createMediaUrl?: (assetId: string, bytes: Uint8Array, mediaType: string) => string;
@@ -62,7 +63,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   readonly #installedPackages: () => Promise<PlatformResourceLibrary>;
   readonly #visibleCharacterSaves: () => Promise<CharacterSaveMetadata[]>;
   readonly #cloudAccountId: () => string | null;
-  readonly #onCharacterSaved?: (saved: StoredCharacterSave) => Promise<void>;
+  readonly #onCharacterSaved?: (saved: StoredCharacterSaveDocument) => Promise<void>;
   readonly #removeCharacterSave?: (stored: StoredCharacterSave) => Promise<void>;
   readonly #localStorage?: Storage;
   readonly #createMediaUrl: PlatformRuntimeStorageOptions["createMediaUrl"];
@@ -145,7 +146,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   async saveCurrentCharacterData(data: CharacterSaveRecord["data"]): Promise<void> {
     const packageId = data.systemPackage.id;
     const saveId = await this.loadActiveCharacterSaveId(packageId) ?? data.character.id;
-    const existing = await this.#findSave(packageId, saveId);
+    const existing = await this.#findSaveDocument(packageId, saveId);
     await this.#saveCharacterSave({
       id: saveId,
       packageId,
@@ -284,10 +285,10 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
   }
 
   async saveCharacterSave(record: CharacterSaveRecord): Promise<void> {
-    await this.#saveCharacterSave(record, await this.#findSave(record.packageId, record.id));
+    await this.#saveCharacterSave(record, await this.#findSaveDocument(record.packageId, record.id));
   }
 
-  async #saveCharacterSave(record: CharacterSaveRecord, existing: StoredCharacterSave | undefined): Promise<void> {
+  async #saveCharacterSave(record: CharacterSaveRecord, existing: StoredCharacterSaveDocument | undefined): Promise<void> {
     const currentSystem = this.#resolveSystemDocument(record.packageId);
     if (!currentSystem) return;
     const sheetSystemPackage = this.#requireSheetSystemPackage();
@@ -295,7 +296,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
     const data = record.data.character.id === record.id
       ? record.data
       : { ...record.data, character: { ...record.data.character, id: record.id } };
-    const candidate = await sheetCharacterToSave({
+    const candidate = await prepareCharacterSaveUpdate({
       name: record.name,
       data,
       currentSystem: {
@@ -305,23 +306,23 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
       },
       sheetSystemPackage,
       installedPackages: await this.#installedPackages(),
-      existing,
+      existing: existing ? { document: existing.document, assetIds: characterSavePlayerAssetIds(existing.document) } : undefined,
       admitPlayerImage: this.#admitPlayerImage,
     });
-    const saved = await this.#characterSaves.save(
+    const saved = await this.#characterSaves.saveUpdate(
       candidate.document,
-      candidate.media,
+      candidate.mediaUpdates,
       this.#cloudAccountId(),
     );
     await this.#onCharacterSaved?.(saved);
   }
 
   async renameCharacterSave(packageId: string, saveId: string, name: string): Promise<void> {
-    const stored = await this.#findSave(packageId, saveId);
+    const stored = await this.#findSaveDocument(packageId, saveId);
     if (!stored) return;
-    const saved = await this.#characterSaves.save(
+    const saved = await this.#characterSaves.saveUpdate(
       { ...stored.document, name },
-      stored.media,
+      new Map(),
       this.#cloudAccountId(),
     );
     await this.#onCharacterSaved?.(saved);
@@ -399,6 +400,13 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
 
   async deleteResourceExtension(): Promise<void> {
     throw new Error("Player 使用原生 .pbres 资源包，不支持旧 Sheet Resource Extension。");
+  }
+
+  async #findSaveDocument(packageId: string, saveId: string): Promise<StoredCharacterSaveDocument | undefined> {
+    const candidate = await this.#characterSaves.getDocument(saveId);
+    return candidate?.document.systemPackage.id === packageId
+      && (candidate.sync.scope === "local-only" || candidate.sync.accountId === this.#cloudAccountId())
+      ? candidate : undefined;
   }
 
   async #findSave(packageId: string, saveId: string): Promise<StoredCharacterSave | undefined> {

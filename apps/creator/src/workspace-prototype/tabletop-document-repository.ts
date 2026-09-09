@@ -1,5 +1,6 @@
 import {
   TABLETOP_DOCUMENT_VERSION,
+  validateTabletopMedia,
   type TabletopDocument,
   type TabletopDocumentCandidate,
 } from "@pbdh/contract-runtime";
@@ -15,7 +16,7 @@ import {
 } from "@pbdh/local-storage";
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 
-import { validateTabletopDocumentCandidate } from "./tabletop-document-validator.ts";
+import { validateTabletopDocumentCandidate, validateTabletopDocumentUpdate } from "./tabletop-document-validator.ts";
 import { gmTabletopBaseCardWidth } from "./gm-tabletop-geometry.ts";
 
 function toContract(
@@ -179,6 +180,34 @@ export class TabletopDocumentRepository {
       : { scope: "local-only", state: "clean", baseRevision: null };
     await this.#put(document, media, pendingSync(existing?.sync ?? initialSync));
     return { document, media: new Map(media) };
+  }
+
+  async saveUpdate(model: TabletopDocumentModel, mediaUpdates: ReadonlyMap<string, Uint8Array>, cloudAccountId: string | null = null): Promise<void> {
+    const existing = await this.#store.get<TabletopDocument>("gm-tabletop-document", model.id);
+    const now = this.#now();
+    const document = toContract(model, existing?.createdAt ?? now, now);
+    const media = new Map(document.assets.flatMap((asset) => {
+      const bytes = mediaUpdates.get(asset.id);
+      return bytes ? [[asset.id, new Uint8Array(bytes)] as const] : [];
+    }));
+    const priorAssets = new Map(existing?.payload.assets.map((asset) => [asset.id, asset]));
+    const changedMetadata = document.assets.filter((asset) => priorAssets.has(asset.id)
+      && stableJson(priorAssets.get(asset.id)) !== stableJson(asset) && !media.has(asset.id));
+    if (changedMetadata.length) {
+      const stored = await this.#store.getMedia(changedMetadata.map((asset) => asset.id));
+      stored.forEach((bytes, id) => media.set(id, new Uint8Array(bytes)));
+    }
+    const available = new Set([...(existing?.assetIds ?? []), ...media.keys()]);
+    const diagnostics = [...await validateTabletopDocumentUpdate(document, available), ...await validateTabletopMedia(document, media)];
+    if (diagnostics.length) throw new Error(`Invalid Tabletop Document: ${diagnostics[0]!.code}`);
+    if (existing && sameTabletopContent(existing.payload, document)) {
+      if (media.size) await this.#put(existing.payload, media, existing.sync);
+      return;
+    }
+    const initialSync: LocalDocumentSync = cloudAccountId
+      ? { scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId }
+      : { scope: "local-only", state: "clean", baseRevision: null };
+    await this.#put(document, media, pendingSync(existing?.sync ?? initialSync));
   }
 
   async import(

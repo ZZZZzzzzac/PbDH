@@ -8,6 +8,7 @@ import {
 import {
   DexieLocalDocumentStore,
   type LocalDocumentKind,
+  type LocalDocumentSync,
 } from "@pbdh/local-storage";
 
 import {
@@ -22,6 +23,11 @@ import {
 export type CreatorCloudRecovery = {
   workspaces: StoredCreatorWorkspace[];
   tabletops: StoredTabletopDocument[];
+};
+
+export type CreatorCloudSyncSnapshot = {
+  workspaceSync: Map<string, LocalDocumentSync>;
+  tabletopSync: Map<string, LocalDocumentSync>;
 };
 
 export class CreatorCloudDocumentService {
@@ -71,18 +77,28 @@ export class CreatorCloudDocumentService {
     documentKind: Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">,
     documentId: string,
     credentials: CloudCredentials,
-  ): Promise<CreatorCloudRecovery> {
+  ): Promise<CreatorCloudSyncSnapshot> {
     await this.#coordinator.enableCloud(documentKind, documentId, credentials);
     await this.#coordinator.flush(documentKind, credentials);
-    return this.localSnapshot(credentials.accountId);
+    return this.syncSnapshot(credentials.accountId);
   }
 
   async flush(
     documentKind: Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">,
     credentials: CloudCredentials,
-  ): Promise<CreatorCloudRecovery> {
+  ): Promise<CreatorCloudSyncSnapshot> {
     await this.#coordinator.flush(documentKind, credentials);
-    return this.localSnapshot(credentials.accountId);
+    return this.syncSnapshot(credentials.accountId);
+  }
+
+  async syncSnapshot(accountId: string): Promise<CreatorCloudSyncSnapshot> {
+    const [workspaces, tabletops] = await Promise.all([
+      this.#store.list("creator-workspace"), this.#store.list("gm-tabletop-document"),
+    ]);
+    return {
+      workspaceSync: new Map(workspaces.filter((item) => visibleToAccount(item.sync, accountId)).map((item) => [item.documentId, item.sync])),
+      tabletopSync: new Map(tabletops.filter((item) => visibleToAccount(item.sync, accountId)).map((item) => [item.documentId, item.sync])),
+    };
   }
 
   async overwriteWithLocal(

@@ -34,6 +34,8 @@ export {
 export {
   TABLETOP_DOCUMENT_VERSION,
   validateTabletopDocumentSemantics,
+  validateTabletopDocumentReferences,
+  validateTabletopMedia,
 } from "./tabletop-document.ts";
 export type {
   CharacterTabletopInstance,
@@ -52,6 +54,9 @@ export {
   CHARACTER_SAVE_VERSION,
   selectCharacterSavePlayerMedia,
   validateCharacterSaveSemantics,
+  validateCharacterSaveReferences,
+  validateCharacterSaveMedia,
+  characterSavePlayerAssetIds,
 } from "./character-save.ts";
 export { loadPbcha, writePbcha } from "./character-archive.ts";
 export type { PbchaLoadResult } from "./character-archive.ts";
