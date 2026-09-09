@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pbdh-platform-preview
+  group: pbdh-platform-bandwagon
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
-      name: production-preview
+      name: bandwagon-preview
       url: ${{ vars.PUBLIC_URL }}
     env:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
@@ -91,4 +91,4 @@ jobs:
           HTML="$(curl --fail --silent --show-error --retry 5 --retry-delay 2 "$PUBLIC_URL?deploy=${GITHUB_RUN_ID}")"
           grep -Fq "<meta name=\"pbdh-version\" content=\"$VERSION\">" <<< "$HTML"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
-            "https://daggerheart.cn/api/health"
+            "${PUBLIC_URL%%/pbdh/*}/api/health"

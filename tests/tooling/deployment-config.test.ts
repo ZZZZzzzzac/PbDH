@@ -21,7 +21,7 @@ describe("production deployment", () => {
   test("bundles pinned Linux dependencies without a server-side install", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("python-version: \"3.10\"");
+    expect(workflow).toContain("python-version: \"3.11\"");
     expect(workflow).toContain("--target artifact/python-packages");
     expect(workflow).toContain("requirements-prod.txt");
     expect(workflow).not.toContain("artifact/wheelhouse");

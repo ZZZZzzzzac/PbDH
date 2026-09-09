@@ -1,5 +1,33 @@
 # 服务器部署
 
+## 当前目标：搬瓦工测试部署
+
+从 v0.1.10 起，`Deploy Release` 使用独立 GitHub Environment
+`bandwagon-preview`，部署到 `192.243.116.94`（AlmaLinux 9.7 x86_64）。
+Release 使用 Python 3.11 的 Linux 二进制依赖，新机通过
+`/usr/bin/python3.11` 运行；切换前会实际导入二进制依赖检查兼容性。
+Python 3.10 的旧制品不能直接作为新机回滚版本。
+
+- `DEPLOY_HOST=192.243.116.94`，`DEPLOY_USER=root`。
+- `DEPLOY_PATH=/var/www/pbdh-platform`。
+- `PUBLIC_URL=http://192.243.116.94/pbdh/`。
+- SSH key 与 known hosts 只存该 Environment 的 Secrets。
+- `deploy/bandwagon-preview.conf` 管理 IP HTTP 测试入口，保留既有 SRD 路径。
+- 新机数据位于 `/var/lib/pbdh-platform`，账号配置留空，不迁移旧数据库。
+- 公网 HTTP 用于访问速度测试，仅开放 API health；不是完整登录/云同步验收入口。
+- 正式域名、旧服务器及 `production-preview` Environment 保持原状。
+  `Manage public routes` 仍属于旧机维护，不用于新机切流。
+
+切域名与生产数据最终同步留待用户测试网络后另行安排。新机的早期
+`pbdh-preview` 服务及 `/srv/bandwagon-preview/pbdh` 保留供回退，部署新版时
+停止旧预览服务，避免争用 8001。正式服务为 `pbdh-platform`。
+
+本机可用 SSH 私钥路径为
+`D:/Game/Daggerheart/Daggerheart_VPS/.ssh/ssh-key-2026-03-20.key`，
+不要提交私钥。网络节点可能影响 SSH 连接；认证前断连不代表公钥错误。
+
+## 旧服务器部署记录
+
 生产部署沿用 `Daggerheart_VPS` 的 Nginx、Let's Encrypt 和不可变 GitHub
 Release 目录。前端由宿主 Nginx 直接提供；FastAPI 沿用 systemd 管理，
 只监听 `127.0.0.1:8001`。SQLite/WAL 位于宿主

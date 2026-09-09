@@ -45,6 +45,9 @@ activate_link() {
 
 prepare_backend() {
   [[ -f "$environment_file" ]] || fail "$environment_file is missing"
+  # 在切换链接或触碰数据库前确认新机可加载制品中的二进制依赖。
+  PYTHONPATH="$release_path/python-packages:$release_path/apps/backend/src" \
+    /usr/bin/python3.11 -c 'import PIL._imaging, pydantic_core, uvicorn, pbdh_backend.app'
   if ! id -u pbdh-platform >/dev/null 2>&1; then
     useradd --system --home-dir "$data_root" --shell /usr/sbin/nologin pbdh-platform
   fi
@@ -52,7 +55,7 @@ prepare_backend() {
 
   if systemctl is-active --quiet pbdh-platform && [[ -f "$data_root/pbdh.sqlite3" ]]; then
     runuser -u pbdh-platform -- \
-      /usr/bin/python3 \
+      /usr/bin/python3.11 \
       /var/www/pbdh-platform/current/deploy/backup_sqlite.py \
       "$data_root/pbdh.sqlite3" "$data_root/backups"
   fi

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - name: Checkout tag
@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -72,6 +72,7 @@ jobs:
           cp deploy/backup_sqlite.py deploy/pbdh-platform.service artifact/deploy/
           cp requirements-prod.txt artifact/
           python -m pip install \
+            --only-binary=:all: \
             --target artifact/python-packages \
             -r requirements-prod.txt
           tar -C artifact -czf "$ARCHIVE" .
