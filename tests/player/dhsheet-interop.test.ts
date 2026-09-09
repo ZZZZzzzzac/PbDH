@@ -16,8 +16,12 @@ import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/s
 import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
 import { executePackageScriptInWorker } from "../../apps/player/src/sheet-runtime/domain/packageScriptRunner.ts";
 import { canonicalCardResource } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
-import { cardReplacementOptions, replacePlayerCard } from "../../apps/player/src/sheet-runtime/domain/cardReplacement.ts";
+import { cardReplacementOptions as replacementOptionsWithTemplates, replacePlayerCard as replaceWithTemplates } from "../../apps/player/src/sheet-runtime/domain/cardReplacement.ts";
+import { templateRegistry } from "@pbdh/templates/core";
 import { resolveResourceDefinition } from "../../apps/player/src/sheet-runtime/domain/resourceDefinition.ts";
+
+const cardReplacementOptions = replacementOptionsWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
+const replacePlayerCard = replaceWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 
 async function loadSystem(directory: string) {
   const catalog = playerSystemPackageCatalog.find((entry) => entry.preset.directory === directory)!;

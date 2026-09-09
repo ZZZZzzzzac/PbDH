@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { templateCoreLoaders } from "@pbdh/templates/core/lazy";
 
 import { validateCharacterSaveCandidate } from "../../apps/player/src/character-saves/character-save-validator.ts";
 import {
@@ -15,6 +16,27 @@ const standardCardId = "00000000-0000-7000-8000-000000000030";
 const compositeCardId = "00000000-0000-7000-8000-000000000031";
 
 describe("Sheet Runtime Character Save adapter", () => {
+  it("旧组合卡只加载声明版本，失败保留输入且可重试", async () => {
+    const entry = templateCoreLoaders.find((item) => item.id === "种族" && item.version === "1.0.1")!;
+    const load = vi.spyOn(entry, "load").mockRejectedValueOnce(new Error("network unavailable"));
+    const input = {
+      name: "测试角色", data: sheetCharacterData(), sheetSystemPackage: sheetSystemPackage(), installedPackages: installedPackages(),
+      currentSystem: { id: systemPackageId, version: "1.0.0", resourceCompatibility: [
+        { templateId: "种族", versionRange: { minimumInclusive: "1.0.1" }, nativeEntry: { id: "ancestries" } },
+        { templateId: "社群", versionRange: { minimumInclusive: "1.0.0" }, nativeEntry: { id: "communities" } },
+      ] },
+    };
+    const original = structuredClone(input.data);
+    try {
+      await expect(sheetCharacterToSave(input)).rejects.toThrow("network unavailable");
+      expect(input.data).toEqual(original);
+      const saved = await sheetCharacterToSave(input);
+      expect(saved.document.characterData["character-card-table"]).toMatchObject({ instances: expect.arrayContaining([
+        expect.objectContaining({ resourceCopy: expect.objectContaining({ template: { id: "种族", version: "1.0.1" } }) }),
+      ]) });
+      expect(load).toHaveBeenCalledTimes(2);
+    } finally { vi.restoreAllMocks(); }
+  });
   it("保存最终字段和自包含桌面副本，不保存资源选择快照", async () => {
     const data = sheetCharacterData();
     const candidate = await sheetCharacterToSave({

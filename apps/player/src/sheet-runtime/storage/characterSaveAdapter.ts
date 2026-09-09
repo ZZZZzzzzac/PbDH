@@ -6,7 +6,7 @@ import {
   type TabletopAsset,
   type TabletopResourceCopy,
 } from "@pbdh/contract-runtime";
-import { templateRegistry } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 
 import type { ResourceLibrary as PlatformResourceLibrary } from "../../resources/resource-library.ts";
 import { buildSheetEmbeddedResourceEntry } from "../adapters/platformResourceLibraries.ts";
@@ -71,7 +71,7 @@ export async function sheetCharacterToSave(input: {
     const existingInstance = findSavedCardInstance(input.existing?.document, card.instanceId);
     const snapshot = existingInstance
       ? { resourceCopy: structuredClone(existingInstance.resourceCopy) }
-      : snapshotCard(card, input);
+      : await snapshotCard(card, input);
     const instance: CharacterTabletopInstance = {
       instanceId: card.instanceId,
       resourceCopy: snapshot.resourceCopy,
@@ -220,10 +220,10 @@ export function characterSaveToSheet(input: {
   };
 }
 
-function snapshotCard(
+async function snapshotCard(
   card: CardInstance,
   input: Parameters<typeof sheetCharacterToSave>[0],
-): { resourceCopy: TabletopResourceCopy } {
+): Promise<{ resourceCopy: TabletopResourceCopy }> {
   if (card.definitionRef.type === "resourceLibrary") {
     const embedded = input.data.embeddedResourceEntries[card.definitionRef.entryId];
     if (embedded?.resourceCopy) {
@@ -266,7 +266,7 @@ function snapshotCard(
   const compatibility = input.currentSystem.resourceCompatibility.find((candidate) =>
     candidate.nativeEntry.id === nativeEntryId);
   if (!compatibility) throw new Error(`组合桌面卡没有模板映射：${composite.composerModuleId}`);
-  const template = templateRegistry.resolve(
+  const template = await loadTemplateCore(
     compatibility.templateId,
     compatibility.versionRange.minimumInclusive,
   );

@@ -9,7 +9,9 @@ import type { CardTableModule } from "../../domain/systemPackage";
 import { useRuntimeStore } from "../../store/runtimeStore";
 import { CardFace, CardStateBadge } from "./CardFace";
 import { definitionReferenceId, resolveRenderedCardPresentation } from "./cardDefinition";
-import { cardReplacementOptions } from "../../domain/cardReplacement";
+import { cardReplacementOptions, cardReplacementTemplate } from "../../domain/cardReplacement";
+import { readLoadedTemplateCore } from "@pbdh/templates/core/lazy";
+import { useTemplateCore, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
 
 export function CardContextMenu({
   instance,
@@ -37,10 +39,12 @@ export function CardContextMenu({
   const replaceCardInstance = useRuntimeStore((state) => state.replaceCardInstance);
   const characterData = useRuntimeStore((state) => state.characterData);
   const system = useRuntimeStore((state) => state.currentPackage);
+  const reference = characterData && system && instance ? cardReplacementTemplate(characterData, system, instance.instanceId) : undefined;
+  const core = useTemplateCore(reference?.id, reference?.version);
 
   if (!instance) return null;
   const nextState = nextCardState(stateOptions, instance.state);
-  const replacements = characterData && system ? cardReplacementOptions(characterData, system, instance.instanceId) : [];
+  const replacements = characterData && system && core.value ? cardReplacementOptions(readLoadedTemplateCore, characterData, system, instance.instanceId) : [];
 
   return (
     <TabletopContextMenu className="card-context-menu" x={x} y={y} estimatedWidth={148} estimatedHeight={280} onClose={onClose}>
@@ -51,6 +55,7 @@ export function CardContextMenu({
           翻至{instance.face === "front" ? "背面" : "正面"}
         </button>
       ) : null}
+      {reference && !core.value && <TemplateLoadStatus state={core} />}
       {replacements.map((replacement) => <button key={replacement.id} type="button" role="menuitem" disabled={!replacement.target} onClick={() => { replaceCardInstance(instance.instanceId, replacement.id); onClose(); }}>切换为{replacement.name}{replacement.target ? "" : "（资源缺失）"}</button>)}
       <button type="button" role="menuitem" onClick={() => { rotateCardInstance(instance.instanceId, 1); onClose(); }}>顺时针旋转 90°</button>
       {instance.rotation !== 0 ? (

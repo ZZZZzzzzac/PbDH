@@ -1,7 +1,7 @@
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
 import { TabletopContextMenu } from "@pbdh/tabletop/react";
-import { templateRegistry } from "@pbdh/templates/core";
+import { useTemplateCore, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
 
 import type { CreatorAppMode } from "./creator-layout.tsx";
 import type { WorkspaceResourceSelection } from "./gm-tabletop-session.ts";
@@ -46,6 +46,9 @@ export function CreatorContextMenus({
   };
   execute(command: CreatorContextMenuCommand): void;
 }) {
+  const reference = state?.kind === "instance" && snapshot.selectedInstance?.resource.replacements.length
+    ? snapshot.selectedInstance.resource.template : undefined;
+  const core = useTemplateCore(reference?.id, reference?.version);
   if (!state) return null;
 
   if (state.kind === "workspace") return <TabletopContextMenu
@@ -106,10 +109,10 @@ export function CreatorContextMenus({
   >
     <button type="button" role="menuitem" onClick={() => execute({ type: "view-instance" })}>查看详情</button>
     {snapshot.selectedInstanceEditable && <button type="button" role="menuitem" onClick={() => execute({ type: "edit-instance" })}>编辑卡牌</button>}
+    {reference && !core.value && <TemplateLoadStatus state={core} />}
     {snapshot.selectedInstance?.resource.replacements.map((replacement) => {
-      const label = templateRegistry.resolve(snapshot.selectedInstance!.resource.template.id, snapshot.selectedInstance!.resource.template.version)
-        ?.tabletop.replacements.find((candidate) => candidate.id === replacement.replacementId)?.label ?? "切换形态";
-      return <button type="button" role="menuitem" key={replacement.replacementId} onClick={() => execute({ type: "replace-instance", replacementId: replacement.replacementId })}>{label}</button>;
+      const label = core.value?.tabletop.replacements.find((candidate) => candidate.id === replacement.replacementId)?.label ?? "切换形态";
+      return <button type="button" role="menuitem" disabled={!core.value} key={replacement.replacementId} onClick={() => execute({ type: "replace-instance", replacementId: replacement.replacementId })}>{label}</button>;
     })}
     <button type="button" role="menuitem" onClick={() => execute({ type: "rotate-instance" })}>顺时针旋转 90°</button>
     {snapshot.selectedInstance?.resource.media.back && <button type="button" role="menuitem" onClick={() => execute({ type: "flip-instance" })}>{snapshot.selectedInstance.flipped ? "翻至正面" : "翻至背面"}</button>}

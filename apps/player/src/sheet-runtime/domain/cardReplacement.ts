@@ -1,17 +1,31 @@
 import { executeTabletopCommand, type TabletopDocumentModel } from "@pbdh/tabletop/core";
-import { templateRegistry } from "@pbdh/templates/core";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
 import type { CharacterData } from "./characterData";
 import type { SystemPackage } from "./systemPackage";
 
-export function cardReplacementOptions(data: CharacterData, system: SystemPackage, instanceId: string) {
+type TemplateResolver = (id: string, version: string) => TemplateCoreCapability<any> | undefined;
+
+function replacementSource(data: CharacterData, system: SystemPackage, instanceId: string) {
   const instance = data.cards.instances.find((item) => item.instanceId === instanceId);
   const ref = instance?.definitionRef;
-  if (ref?.type !== "resourceLibrary") return [];
+  if (ref?.type !== "resourceLibrary") return undefined;
   const embedded = data.embeddedResourceEntries[ref.entryId];
   const source = embedded?.libraryId === ref.libraryId ? embedded.entry : system.resourceLibraries?.find((library) => library.ID === ref.libraryId)?.entries.find((entry) => entry.ID === ref.entryId);
   const copy = source?.resourceCopy;
-  if (!copy?.source) return [];
-  const supported = templateRegistry.resolve(copy.template.id, copy.template.version)?.tabletop.replacements ?? [];
+  if (!copy?.source) return undefined;
+  return { instance: instance!, copy };
+}
+
+export function cardReplacementTemplate(data: CharacterData, system: SystemPackage, instanceId: string) {
+  const source = replacementSource(data, system, instanceId);
+  return source?.copy.replacements?.length ? source.copy.template : undefined;
+}
+
+export function cardReplacementOptions(resolveTemplate: TemplateResolver, data: CharacterData, system: SystemPackage, instanceId: string) {
+  const source = replacementSource(data, system, instanceId);
+  if (!source) return [];
+  const { instance, copy } = source;
+  const supported = resolveTemplate(copy.template.id, copy.template.version)?.tabletop.replacements ?? [];
   return (copy.replacements ?? []).filter((replacement) => supported.some((item) => item.id === replacement.replacementId)).map((replacement) => {
     const candidates = (system.resourceLibraries ?? []).flatMap((library) => library.entries.filter((entry) => entry.resourceCopy?.source?.packageId === copy.source!.packageId && entry.resourceCopy.source.resourceId === replacement.targetResourceId).map((entry) => ({ libraryId: library.ID, entry })));
     const target = candidates.length === 1 ? candidates[0] : undefined;
@@ -19,8 +33,10 @@ export function cardReplacementOptions(data: CharacterData, system: SystemPackag
   });
 }
 
-export function replacePlayerCard(data: CharacterData, system: SystemPackage, instanceId: string, replacementId: string, newInstanceId: string): CharacterData {
-  const option = cardReplacementOptions(data, system, instanceId).find((item) => item.id === replacementId);
+export function replacePlayerCard(resolveTemplate: TemplateResolver, data: CharacterData, system: SystemPackage, instanceId: string, replacementId: string, newInstanceId: string): CharacterData {
+  const reference = cardReplacementTemplate(data, system, instanceId);
+  if (reference && !resolveTemplate(reference.id, reference.version)) throw new Error("卡牌模板尚未加载完成，请稍后重试。");
+  const option = cardReplacementOptions(resolveTemplate, data, system, instanceId).find((item) => item.id === replacementId);
   const target = option?.target;
   if (!option || !target?.entry.resourceCopy) throw new Error("替换目标未安装或不唯一，当前卡牌未改变。");
   const table = system.modules.find((module) => module.ID === option.instance.tableModuleId);
