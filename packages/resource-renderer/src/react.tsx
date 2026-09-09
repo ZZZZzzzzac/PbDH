@@ -461,6 +461,10 @@ class RendererBoundary extends Component<{
   }
 }
 
+function RendererContent({ render }: { render: () => ReactNode }) {
+  return render();
+}
+
 export function CanonicalCardSurface<TData, TState>(
   props: CanonicalCardSurfaceProps<TData, TState>,
 ) {
@@ -480,7 +484,7 @@ export function CanonicalCardSurface<TData, TState>(
     props.state,
   ]);
   const content = prepared.status === "ready"
-    ? prepared.renderer.render(prepared.renderInput)
+    ? <RendererContent render={() => prepared.renderer.render(prepared.renderInput)} />
     : (
       <div className="pbdh-surface-status" role="status">
         <span>{prepared.status === "loading" ? "媒体加载中" : "无法呈现卡面"}</span>
