@@ -1,5 +1,8 @@
 import hashlib
+import json
 import sqlite3
+import subprocess
+import sys
 from io import BytesIO
 from pathlib import Path
 
@@ -283,11 +286,85 @@ def test_cloud_document_mutations_are_idempotent_and_conflicts_are_explicit(tmp_
     overwritten = api.put(
         f"/api/cloud/documents/{document_id}",
         headers=owner,
-        json=document_write("mutation-4", "creator-workspace", {"value": 4}, [], 1, True),
+        json=document_write("mutation-4", "creator-workspace", {"value": 4}, [], 2, True),
     )
     assert overwritten.status_code == 200
     assert overwritten.json()["document"]["revision"] == 3
     assert overwritten.json()["document"]["payload"] == {"value": 4}
+
+
+def test_compact_receipts_bound_growth_and_preserve_retry_results(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    repository = api.app.state.cloud_document_repository
+    first = document_write("first", "creator-workspace", {"text": "x" * 100_000}, [], None)
+    initial = api.put("/api/cloud/documents/compact", headers=owner, json=first)
+    assert initial.status_code == 200
+    for revision in range(1, repository.RECEIPT_LIMIT + 2):
+        response = api.put("/api/cloud/documents/compact", headers=owner,
+            json=document_write(f"edit-{revision}", "creator-workspace", {"text": "y" * 100_000}, [], revision))
+        assert response.status_code == 200
+    with sqlite3.connect(tmp_path / "pbdh.sqlite3") as connection:
+        count, size = connection.execute("SELECT count(*), sum(length(result_json)) FROM cloud_document_mutations").fetchone()
+    assert count == repository.RECEIPT_LIMIT
+    assert size < repository.RECEIPT_LIMIT * 1024
+    # 数量淘汰后的旧请求走 revision 冲突；包括 force，不能回滚当前文档。
+    first["force"] = True
+    assert api.put("/api/cloud/documents/compact", headers=owner, json=first).status_code == 409
+    assert api.get("/api/cloud/documents/compact", headers=owner).json()["document"] == response.json()["document"]
+    latest_revision = response.json()["document"]["revision"]
+    latest_write = document_write("retained", "creator-workspace", {"text": "retained"}, [], latest_revision)
+    retained = api.put("/api/cloud/documents/compact", headers=owner, json=latest_write)
+    newer = api.put("/api/cloud/documents/compact", headers=owner,
+        json=document_write("newer", "creator-workspace", {"text": "newer"}, [], latest_revision + 1))
+    assert api.put("/api/cloud/documents/compact", headers=owner, json=latest_write).json() == retained.json()
+    latest_write["payload"] = {"text": "different request"}
+    assert api.put("/api/cloud/documents/compact", headers=owner, json=latest_write).status_code == 409
+    with sqlite3.connect(tmp_path / "pbdh.sqlite3") as connection:
+        connection.execute("UPDATE cloud_document_mutations SET created_at = '2000-01-01T00:00:00.000Z'")
+    latest_write["force"] = True
+    assert api.put("/api/cloud/documents/compact", headers=owner, json=latest_write).status_code == 409
+    assert api.get("/api/cloud/documents/compact", headers=owner).json() == newer.json()
+
+
+def test_compact_lifecycle_retries_do_not_reapply_old_deletion(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    api.put("/api/cloud/documents/lifecycle", headers=owner,
+        json=document_write("create", "creator-workspace", {"value": 1}, [], None))
+    trash = {"mutationId": "trash", "baseRevision": 1}
+    deleted = api.post("/api/cloud/documents/lifecycle/trash", headers=owner, json=trash)
+    assert api.post("/api/cloud/documents/lifecycle/trash", headers=owner, json=trash).json() == deleted.json()
+    restore = {"mutationId": "restore", "baseRevision": 2}
+    restored = api.post("/api/cloud/documents/lifecycle/restore", headers=owner, json=restore)
+    assert api.post("/api/cloud/documents/lifecycle/restore", headers=owner, json=restore).json() == restored.json()
+    assert api.post("/api/cloud/documents/lifecycle/trash", headers=owner, json=trash).status_code == 409
+    assert api.get("/api/cloud/documents/lifecycle", headers=owner).json() == restored.json()
+
+
+def test_legacy_receipt_maintenance_is_read_only_until_apply_and_keeps_backup(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    owner = claim(api, "author-one")
+    write = document_write("legacy", "creator-workspace", {"text": "x" * 100_000}, [], None)
+    response = api.put("/api/cloud/documents/legacy", headers=owner, json=write)
+    original = json.dumps(response.json()["document"])
+    database = tmp_path / "pbdh.sqlite3"
+    with sqlite3.connect(database) as connection:
+        connection.execute("UPDATE cloud_document_mutations SET result_json = ?", (original,))
+    command = [sys.executable, str(ROOT / "scripts/compact-cloud-receipts.py"), "--database", str(database)]
+    preview = json.loads(subprocess.check_output(command, text=True))
+    assert preview["applied"] is False
+    assert preview["legacyRecords"] == 1
+    assert preview["receiptBytesAfter"] < 1024
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT result_json FROM cloud_document_mutations").fetchone()[0] == original
+    backup = tmp_path / "before.sqlite3"
+    result = json.loads(subprocess.check_output([*command, "--apply", "--backup", str(backup)], text=True))
+    assert result["applied"] is True
+    with sqlite3.connect(backup) as connection:
+        assert connection.execute("SELECT result_json FROM cloud_document_mutations").fetchone()[0] == original
+    assert api.put("/api/cloud/documents/legacy", headers=owner, json=write).json() == response.json()
+    assert api.get("/api/cloud/documents/legacy", headers=owner).json() == response.json()
 
 
 def test_cloud_documents_keep_kinds_revisions_and_recycle_bin_independent(tmp_path: Path) -> None:

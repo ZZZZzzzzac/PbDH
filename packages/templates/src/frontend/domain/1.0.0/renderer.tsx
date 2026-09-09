@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, TextFitContainer } from "@pbdh/resource-renderer/react";
 import { type ReactNode } from "react";
 
-import { domainTemplate, type DomainData } from "../../../core/index.ts";
+import { domainTemplate, type DomainData } from "../../../core/domain/1.0.0/capability.ts";
 
 function formatLevel(value: string): string {
   const level = value.trim();

@@ -15,6 +15,17 @@ export async function persistImportedCharacter(
 ): Promise<void> {
   const currentPackage = get().currentPackage;
   if (!currentPackage) return;
+  await environment.dependencies.storage.saveCharacterSave({
+    id: data.character.id,
+    packageId: data.systemPackage.id,
+    name: saveName,
+    updatedAt: data.updatedAt,
+    data,
+  });
+  // 导入只恢复一次规范存档，让图片引用使用准入后的内容地址。
+  data = await environment.dependencies.storage.loadCharacterSave(data.systemPackage.id, data.character.id) ?? data;
+  await environment.dependencies.storage
+    .setActiveCharacterSaveId(data.systemPackage.id, data.character.id);
   set({
     characterData: data,
     activeCharacterSaveId: data.character.id,
@@ -30,15 +41,6 @@ export async function persistImportedCharacter(
       ? collectStaleResourceReferenceIssues(data, get().resourceCatalog!)
       : [],
   });
-  await environment.dependencies.storage.saveCharacterSave({
-    id: data.character.id,
-    packageId: data.systemPackage.id,
-    name: saveName,
-    updatedAt: data.updatedAt,
-    data,
-  });
-  await environment.dependencies.storage
-    .setActiveCharacterSaveId(data.systemPackage.id, data.character.id);
   set({
     characterSaves: await environment.dependencies.storage.listCharacterSaves(data.systemPackage.id),
     allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),

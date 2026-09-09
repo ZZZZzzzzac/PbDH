@@ -2,7 +2,7 @@ import type { RendererRevisionCapability, SurfaceAttribution, SurfacePresentatio
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, useContainerTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { freeTemplate, type FreeData } from "../../../core/index.ts";
+import { freeTemplate, type FreeData } from "../../../core/free/1.0.0/capability.ts";
 
 export type FreeRuntimeState = Record<string, never>;
 

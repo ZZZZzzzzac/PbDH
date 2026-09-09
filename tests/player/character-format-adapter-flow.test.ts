@@ -4,7 +4,7 @@ import { characterFormatAdapterSchema, characterFormatAdapterSourceSchema } from
 import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import { createRuntimeEnvironment, configureRuntimeEnvironment } from "../../apps/player/src/sheet-runtime/store/runtimeEnvironment.ts";
 import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
-import { unconfiguredRuntimeStorage } from "../../apps/player/src/sheet-runtime/storage/runtimeStorage.ts";
+import { unconfiguredRuntimeStorage, type CharacterSaveRecord } from "../../apps/player/src/sheet-runtime/storage/runtimeStorage.ts";
 
 const carrier = { 类型: "json" as const, 检测: [{ 路径: ["format"], 等于: "external" }] };
 
@@ -17,11 +17,13 @@ describe("Character Format Adapter directions and confirmation", () => {
   });
 
   it("外部人物导入总是先形成候选，确认前不写存档", async () => {
-    const saveCharacterSave = vi.fn(async () => undefined);
+    let saved: CharacterSaveRecord | undefined;
+    const saveCharacterSave = vi.fn(async (record: CharacterSaveRecord) => { saved = record; });
     const environment = createRuntimeEnvironment();
     configureRuntimeEnvironment(environment, { storage: {
       ...unconfiguredRuntimeStorage,
       saveCharacterSave,
+      loadCharacterSave: async () => saved?.data ?? null,
       setActiveCharacterSaveId: vi.fn(async () => undefined),
       listCharacterSaves: vi.fn(async () => []),
       listAllCharacterSaves: vi.fn(async () => []),

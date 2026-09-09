@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, TextFitContainer } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { armorTemplate, type ArmorData } from "../../../core/index.ts";
+import { armorTemplate, type ArmorData } from "../../../core/armor/1.0.0/capability.ts";
 
 export type ArmorRuntimeState = Record<string, never>;
 

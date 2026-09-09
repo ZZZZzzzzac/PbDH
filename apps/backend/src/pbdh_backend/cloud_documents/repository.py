@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sqlite3
 from dataclasses import dataclass
 from typing import Any
@@ -35,6 +36,9 @@ class CloudMediaInvalid(Exception):
 
 
 class CloudDocumentRepository:
+    RECEIPT_LIMIT = 256
+    RECEIPT_DAYS = 30
+
     def __init__(self, database: Database, managed_media: ManagedMedia | None = None) -> None:
         self._database = database
         self._managed_media = managed_media or ManagedMedia(database)
@@ -99,7 +103,7 @@ class CloudDocumentRepository:
         connection = self._database.connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
-            replay = self._mutation_result(connection, account_id, mutation_id)
+            replay = self._mutation_result(connection, account_id, mutation_id, document_id, payload, asset_ids)
             if replay is not None:
                 connection.commit()
                 return replay
@@ -112,7 +116,8 @@ class CloudDocumentRepository:
             if current is not None and current["deleted_at"] is not None:
                 raise CloudDocumentStateConflict(document_id)
             current_revision = None if current is None else int(current["revision"])
-            if not force and base_revision != current_revision:
+            # 显式覆盖也必须携带刚读取的 revision，过期重试不能重新覆盖较新文档。
+            if base_revision != current_revision:
                 raise CloudDocumentRevisionConflict(document_id)
             if current is not None and current["document_kind"] != document_kind:
                 raise CloudDocumentStateConflict(document_id)
@@ -256,7 +261,7 @@ class CloudDocumentRepository:
         connection = self._database.connect()
         try:
             connection.execute("BEGIN IMMEDIATE")
-            replay = self._mutation_result(connection, account_id, mutation_id)
+            replay = self._mutation_result(connection, account_id, mutation_id, document_id)
             if replay is not None:
                 connection.commit()
                 return replay
@@ -324,18 +329,56 @@ class CloudDocumentRepository:
     def _json(value: object) -> str:
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
-    @staticmethod
     def _mutation_result(
+        self,
         connection: sqlite3.Connection,
         account_id: str,
         mutation_id: str,
+        document_id: str,
+        payload: dict[str, Any] | None = None,
+        asset_ids: list[str] | None = None,
     ) -> dict[str, Any] | None:
         row = connection.execute(
-            "SELECT result_json FROM cloud_document_mutations "
+            "SELECT result_json, created_at FROM cloud_document_mutations "
             "WHERE account_id = ? AND mutation_id = ?",
             (account_id, mutation_id),
         ).fetchone()
-        return None if row is None else json.loads(row["result_json"])
+        if row is None:
+            return None
+        receipt = json.loads(row["result_json"])
+        if receipt.get("receiptVersion") != 1:
+            # 既有完整回执继续可读，历史数据仅由单独批准的维护操作处理。
+            if receipt["documentId"] != document_id:
+                raise CloudDocumentStateConflict(document_id)
+            return receipt
+        metadata = receipt["response"]
+        if metadata["documentId"] != document_id:
+            raise CloudDocumentStateConflict(document_id)
+        expired = connection.execute(
+            "SELECT ? <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?)",
+            (row["created_at"], f"-{self.RECEIPT_DAYS} days"),
+        ).fetchone()[0]
+        if expired:
+            return None
+        if payload is None:
+            current = self._required_document(connection, account_id, document_id)
+            if current["revision"] != metadata["revision"]:
+                raise CloudDocumentRevisionConflict(document_id)
+            payload, asset_ids = current["payload"], current["assetIds"]
+        content = {"payload": payload, "assetIds": sorted(set(asset_ids or []))}
+        if self._content_digest(content) != receipt["contentDigest"]:
+            raise CloudDocumentStateConflict(document_id)
+        return {**metadata, **content}
+
+    def _content_digest(self, content: dict[str, Any]) -> str:
+        return hashlib.sha256(self._json(content).encode("utf-8")).hexdigest()
+
+    def compact_receipt(self, result: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "receiptVersion": 1,
+            "response": {key: value for key, value in result.items() if key not in ("payload", "assetIds")},
+            "contentDigest": self._content_digest({"payload": result["payload"], "assetIds": result["assetIds"]}),
+        }
 
     def _record_mutation(
         self,
@@ -349,7 +392,17 @@ class CloudDocumentRepository:
             "INSERT INTO cloud_document_mutations("
             "account_id, mutation_id, document_id, result_json, created_at"
             ") VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
-            (account_id, mutation_id, document_id, self._json(result)),
+            (account_id, mutation_id, document_id, self._json(self.compact_receipt(result))),
+        )
+        # 只清理新格式回执，不自动迁移或删除旧格式历史。
+        connection.execute(
+            "DELETE FROM cloud_document_mutations WHERE account_id = ? AND document_id = ? "
+            "AND json_extract(result_json, '$.receiptVersion') = 1 AND ("
+            "created_at <= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?) OR mutation_id IN ("
+            "SELECT mutation_id FROM cloud_document_mutations WHERE account_id = ? AND document_id = ? "
+            "AND json_extract(result_json, '$.receiptVersion') = 1 "
+            "ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ?))",
+            (account_id, document_id, f"-{self.RECEIPT_DAYS} days", account_id, document_id, self.RECEIPT_LIMIT),
         )
 
     def _required_document(

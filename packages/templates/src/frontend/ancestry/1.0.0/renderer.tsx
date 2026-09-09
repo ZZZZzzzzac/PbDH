@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, useContainerTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { ancestryTemplate, type AncestryData } from "../../../core/index.ts";
+import { ancestryTemplate, type AncestryData } from "../../../core/ancestry/1.0.0/capability.ts";
 
 type AncestryRuntimeState = Record<string, string>;
 

@@ -69,6 +69,17 @@ while (pending.length > 0) {
   pending.push(...(chunksByName.get(name)?.imports ?? []));
 }
 const initialChunks = chunks.filter((chunk) => initialNames.has(chunk.fileName));
+function staticClosure(entry: Rollup.OutputChunk): Rollup.OutputChunk[] {
+  const visited = new Set<string>();
+  const queue = [entry.fileName];
+  while (queue.length) {
+    const name = queue.pop()!;
+    if (visited.has(name)) continue;
+    visited.add(name);
+    queue.push(...(chunksByName.get(name)?.imports ?? []));
+  }
+  return chunks.filter((chunk) => visited.has(chunk.fileName));
+}
 function templateModules(selected: Rollup.OutputChunk[], component: "renderer" | "authoring-editor" | "capability"): string[] {
   const directory = component === "capability" ? "core" : "frontend";
   const extension = component === "capability" ? "ts" : "tsx";
@@ -78,6 +89,17 @@ function templateModules(selected: Rollup.OutputChunk[], component: "renderer" |
     return match ? [`${match[1]}@${match[2]}`] : [];
   })))].sort();
 }
+// 首屏之外，每张历史卡面的静态闭包也不能带入无关模板的 Core。
+const rendererCoreClosures = chunks.flatMap((chunk) => {
+  const renderers = templateModules([chunk], "renderer");
+  if (!renderers.length) return [];
+  const cores = templateModules(staticClosure(chunk), "capability");
+  const allowed = new Set(renderers.map((version) => version.split("@")[0]));
+  if (cores.some((version) => !allowed.has(version.split("@")[0]))) {
+    throw new Error(`Renderer loads unrelated Template cores: ${JSON.stringify({ renderers, cores })}`);
+  }
+  return [{ renderers, cores }];
+});
 const metrics = {
   environment: { node: process.version, platform: process.platform, arch: process.arch },
   ssr: {
@@ -95,6 +117,7 @@ const metrics = {
     allRendererVersions: templateModules(chunks, "renderer"),
     allEditorVersions: templateModules(chunks, "authoring-editor"),
     allCoreVersions: templateModules(chunks, "capability"),
+    rendererCoreClosures,
   },
   fixtureMediaFileBytes: assetBytes.byteLength,
 };

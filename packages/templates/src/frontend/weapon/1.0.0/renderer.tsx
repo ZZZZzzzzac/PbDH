@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import {
   weaponTemplate,
   type WeaponData,
-} from "../../../core/index.ts";
+} from "../../../core/weapon/1.0.0/capability.ts";
 import { weaponMarkdownStyles } from "../markdown.ts";
 
 export type WeaponRuntimeState = Record<string, never>;

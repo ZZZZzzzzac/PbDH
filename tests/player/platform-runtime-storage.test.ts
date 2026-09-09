@@ -13,8 +13,43 @@ import type { SystemPackageCacheSnapshot } from "../../apps/player/src/sheet-run
 import { sheetCharacterToSave } from "../../apps/player/src/sheet-runtime/storage/characterSaveAdapter.ts";
 import { configureRuntimeEnvironment, createRuntimeEnvironment } from "../../apps/player/src/sheet-runtime/store/runtimeEnvironment.ts";
 import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
+import { persistImportedCharacter } from "../../apps/player/src/sheet-runtime/store/workflows/characterImport.ts";
 
 describe("Platform Runtime Storage", () => {
+  it("导入图片后连续编辑复用内容地址，保存失败不替换当前角色", async () => {
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    sheetSystemPackage.modules.push({ ID: "avatar", 类型: "imageField", 标签: "头像" });
+    const assetId = `sha256:${"a".repeat(64)}`;
+    const admit = vi.fn(async () => ({ asset: { id: assetId, mediaType: "image/webp" as const,
+      byteLength: "1", width: "1", height: "1" }, bytes: new Uint8Array([1]) }));
+    const storage = new PlatformRuntimeStorage({ currentSystem, characterSaves: repository,
+      installedPackages: async () => new Map(), localStorage: new MemoryStorage(),
+      admitPlayerImage: admit, createMediaUrl: () => "blob:normalized" });
+    await storage.saveCurrentSystemPackage(sheetSystemPackage);
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage });
+    const runtime = createRuntimeStore(environment);
+    runtime.setState({ currentPackage: sheetSystemPackage });
+    const data = createEmptyCharacterData(sheetSystemPackage);
+    data.character.values.avatar = { kind: "player-image", imageId: "player-image-import" };
+    data.playerImages["player-image-import"] = { id: "player-image-import", mimeType: "image/png", dataUrl: "data:image/png;base64,AA==" };
+    await persistImportedCharacter(environment, data, "导入角色", "导入成功", runtime.setState, runtime.getState);
+    const imported = runtime.getState().characterData!;
+    expect(imported.character.values.avatar).toEqual({ kind: "player-image", imageId: assetId });
+    const save = vi.spyOn(repository, "saveUpdate");
+    for (const name of ["第一次编辑", "第二次编辑"]) {
+      await storage.saveCurrentCharacterData({ ...imported, character: { ...imported.character,
+        values: { ...imported.character.values, name } } });
+    }
+    expect(admit).toHaveBeenCalledOnce();
+    expect(save.mock.calls.every((call) => call[1].size === 0)).toBe(true);
+    save.mockRejectedValueOnce(new Error("storage unavailable"));
+    await expect(persistImportedCharacter(environment, createEmptyCharacterData(sheetSystemPackage),
+      "失败导入", "", runtime.setState, runtime.getState)).rejects.toThrow("storage unavailable");
+    expect(runtime.getState().characterData).toBe(imported);
+  });
   it("保存当前角色不读取无关角色的完整存档", async () => {
     const repository = new MemoryCharacterSaveStore();
     const currentSystem = systemJson as SystemPackageDocument;

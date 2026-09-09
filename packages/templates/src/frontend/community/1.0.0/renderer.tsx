@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, TextFitContainer } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { communityTemplate, type CommunityData } from "../../../core/index.ts";
+import { communityTemplate, type CommunityData } from "../../../core/community/1.0.0/capability.ts";
 
 const scale = .175;
 const fixedHeight = 502.857;

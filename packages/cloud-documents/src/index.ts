@@ -184,7 +184,9 @@ export class CloudDocumentCoordinator {
       throw new Error("当前账号不能覆盖该云文档。");
     }
     const mutationId = this.#mutationId();
-    const remote = await this.#putWithMissingMedia(local, mutationId, credentials, true);
+    const current = await this.#api.getDocument(documentId, credentials);
+    const candidate = { ...local, sync: { ...local.sync, baseRevision: String(current.revision) } };
+    const remote = await this.#putWithMissingMedia(candidate, mutationId, credentials, true);
     await this.#acknowledge(local, remote, credentials);
     return remote;
   }

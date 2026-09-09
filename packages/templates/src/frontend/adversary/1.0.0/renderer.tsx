@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit, TextFitContainer } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { adversaryTemplate, type AdversaryData } from "../../../core/index.ts";
+import { adversaryTemplate, type AdversaryData } from "../../../core/adversary/1.0.0/capability.ts";
 
 export type AdversaryRuntimeState = {
   currentHp: string;

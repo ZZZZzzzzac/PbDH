@@ -2,7 +2,7 @@ import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 import { CardFooter, RestrictedMarkdown, SingleLineTextFit } from "@pbdh/resource-renderer/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
-import { professionTemplate, type ProfessionData } from "../../../core/index.ts";
+import { professionTemplate, type ProfessionData } from "../../../core/profession/1.0.0/capability.ts";
 
 const scale = .175;
 
