@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { freeAuthoring, trustedRendererFor } from "@pbdh/templates/frontend";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
 import { describe, expect, test } from "vitest";
 
 import stableMinotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
@@ -586,7 +587,8 @@ describe("Creator Workspace prototype state model", () => {
     expect(renderCreatorWorkbench(removePortrait(workspace))).not.toContain("删除卡图");
   });
 
-  test("shows compact debug metadata at the bottom of the authoring area", () => {
+  test("shows compact debug metadata at the bottom of the authoring area", async () => {
+    await loadTrustedRenderer("敌人", "1.0.0");
     const html = renderCreatorWorkbench(createWorkspace({ document, media }));
     expect(html).toContain("模板版本");
     expect(html).toContain("1.0.0");

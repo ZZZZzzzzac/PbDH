@@ -25,6 +25,10 @@ export function useTemplateAuthoring(id?: string, version?: string) {
   return useTemplateVersion(authoringLoader, id, version);
 }
 
+export function useTemplateCore(id?: string, version?: string) {
+  return useTemplateVersion(coreLoader, id, version);
+}
+
 export function TemplateLoadStatus({ state }: { state: { status: string; retry(): void } }) {
   if (state.status === "error") return <div role="alert">模板加载失败 <button type="button" onClick={state.retry}>重试</button></div>;
   return <div role="status">{state.status === "ready" ? "模板版本不可用" : "模板加载中…"}</div>;

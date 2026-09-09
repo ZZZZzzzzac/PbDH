@@ -2,7 +2,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, test, vi } from "vitest";
-import { CanonicalCardSurface, loadTrustedRenderer, loadTrustedAuthoring } from "@pbdh/templates/frontend/lazy";
+import { CanonicalCardSurface, loadTrustedRenderer, loadTrustedAuthoring, useTemplateCore } from "@pbdh/templates/frontend/lazy";
 import { templateRegistry } from "@pbdh/templates/core";
 import { manifestEntryFor } from "../../packages/templates/src/frontend/template-frontend-manifest.ts";
 import { templateCoreLoaders } from "@pbdh/templates/core/lazy";
@@ -112,6 +112,39 @@ test("Core 下载失败阻止渲染，重试只加载卡面引用的能力版本
     expect(otherLoad).not.toHaveBeenCalled();
   } finally {
     await act(async () => root.unmount());
+    container.remove();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  }
+});
+
+test("切换模板后，旧 Core 加载结果不能覆盖新选择", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const oldTemplate = templateRegistry.resolve("种族", "1.0.0")!;
+  const nextTemplate = templateRegistry.resolve("社群", "1.0.0")!;
+  let releaseOld!: (value: typeof oldTemplate) => void;
+  let releaseNext!: (value: typeof nextTemplate) => void;
+  const oldPending = new Promise<typeof oldTemplate>((resolve) => { releaseOld = resolve; });
+  const nextPending = new Promise<typeof nextTemplate>((resolve) => { releaseNext = resolve; });
+  vi.spyOn(templateCoreLoaders.find((entry) => entry.id === "种族" && entry.version === "1.0.0")!, "load").mockReturnValue(oldPending);
+  vi.spyOn(templateCoreLoaders.find((entry) => entry.id === "社群" && entry.version === "1.0.0")!, "load").mockReturnValue(nextPending);
+  function Probe({ id }: { id: string }) {
+    const state = useTemplateCore(id, "1.0.0");
+    return <output>{state.value?.id ?? state.status}</output>;
+  }
+  try {
+    await act(async () => root.render(<Probe id="种族" />));
+    expect(container.textContent).toBe("loading");
+    await act(async () => root.render(<Probe id="社群" />));
+    await act(async () => { releaseNext(nextTemplate); await nextPending; });
+    expect(container.textContent).toBe("社群");
+    await act(async () => { releaseOld(oldTemplate); await oldPending; });
+    expect(container.textContent).toBe("社群");
+  } finally {
+    await act(async () => { releaseNext(nextTemplate); releaseOld(oldTemplate); await Promise.all([oldPending, nextPending]); root.unmount(); });
     container.remove();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();

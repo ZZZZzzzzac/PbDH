@@ -1,8 +1,8 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { RESOURCE_PACKAGE_VERSION } from "@pbdh/contract-runtime";
-import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
-import { templateRegistry } from "@pbdh/templates/core";
+import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, useTemplateCore, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
+import { templateUpgradeTargets } from "@pbdh/templates/core/lazy";
 
 import { Icon } from "./creator-controls.tsx";
 import { CreatorColumnResizeHandle, creatorColumnPreferences } from "./creator-layout.tsx";
@@ -44,13 +44,12 @@ export function CreatorWorkbench({ snapshot, execute }: {
   const active = snapshot.activeWorkspace;
   const resource = snapshot.activeResource;
   const authoring = useTemplateAuthoring(resource?.template.id, resource?.template.version);
-  const templateUpgradeAvailable = resource ? templateRegistry.upgradeTargets(resource.template.id, resource.template.version).length > 0 : false;
+  const core = useTemplateCore(resource?.template.id, resource?.template.version);
+  const templateUpgradeAvailable = resource ? templateUpgradeTargets(resource.template.id, resource.template.version).length > 0 : false;
   const templateFrontend = resource
     ? resolveTemplateFrontend(resource.template.id, resource.template.version)
     : undefined;
-  const template = resource
-    ? templateRegistry.resolve(resource.template.id, resource.template.version)
-    : undefined;
+  const template = core.value;
   const previewAssets = new Map(resource ? Object.values(resource.media).flatMap((id) => {
     const url = snapshot.assetUrls.get(id);
     return url ? [[id, { status: "ready" as const, url }] as const] : [];
@@ -176,7 +175,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
           <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "图+文", image: "纯图片" }[mode]}</button>)}</div>
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
-        {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} template={template} /> : null}
+        {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} template={template} /> : <TemplateLoadStatus state={core} />}
         <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "recrop-portrait" })}>重新裁剪</button> : null}{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
       </aside>
     </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
