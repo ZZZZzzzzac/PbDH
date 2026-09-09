@@ -20,6 +20,7 @@ import {
   addTemplateResource,
   closeWorkspaceResourceTab,
   copyWorkspaceResourceToPackage,
+  copyWorkspaceResourcesToPackage,
   createBlankWorkspace,
   createWorkspaceFolder,
   createWorkspace,
@@ -520,6 +521,42 @@ describe("Creator Workspace prototype state model", () => {
     expect(copied.workspace.media.get(asset.id)).not.toBe(source.media.get(asset.id));
     expect(copiedSource.attribution).toEqual(source.document.resources[0]?.attribution);
     expect(copied.workspace.openResourceIds).toContain(copied.resourceId);
+  });
+
+  test("copies all selected resources once and rewires shared forms", async () => {
+    let source = createWorkspace({ document: structuredClone(stableMinotaurPackage) as ResourcePackageLogicalDocument, media });
+    const firstId = source.document.resources[0]!.id;
+    const second = addTemplateResource(source, adversaryTemplate);
+    source = updateResourceReplacement(second.workspace, firstId, "alternate-form", second.resourceId);
+    const before = structuredClone(source.document);
+    const target = await createBlankWorkspace("批量目标");
+    const result = copyWorkspaceResourcesToPackage(source, target, [firstId, second.resourceId, firstId]);
+    expect(result.copiedResourceIds).toHaveLength(2);
+    expect(result.workspace.document.resources[0]!.replacements![0]!.targetResourceId).toBe(result.copiedResourceIds[1]);
+    expect(source.document).toEqual(before);
+    expect(target.document.resources).toHaveLength(0);
+    expect(result.workspace.media.get(asset.id)).toEqual(source.media.get(asset.id));
+  });
+
+  test("copies a whole folder including nested and empty folders without unrelated resources", async () => {
+    let source = createWorkspace({ document: structuredClone(stableMinotaurPackage) as ResourcePackageLogicalDocument, media });
+    const unrelatedId = source.document.resources[0]!.id;
+    source = createWorkspaceFolder(source, null, "章节");
+    const rootId = source.currentFolderId!;
+    const first = addTemplateResource(source, adversaryTemplate);
+    source = createWorkspaceFolder(first.workspace, rootId, "子目录");
+    const second = addTemplateResource(source, adversaryTemplate);
+    source = createWorkspaceFolder(second.workspace, rootId, "空目录");
+    const target = await createBlankWorkspace("文件夹目标");
+    const result = copyWorkspaceResourcesToPackage(source, target, [], rootId);
+    expect(result.copiedResourceIds).toHaveLength(2);
+    expect(result.workspace.folders.map((folder) => folder.name).sort()).toEqual(["子目录", "章节", "空目录"].sort());
+    expect(result.workspace.document.resources.every((resource) => resource.path.includes("章节/"))).toBe(true);
+    expect(result.workspace.document.resources.some((resource) => resource.path.includes("章节/子目录/"))).toBe(true);
+    expect(result.workspace.document.resources.some((resource) => resource.id === unrelatedId)).toBe(false);
+    const repeated = copyWorkspaceResourcesToPackage(source, result.workspace, [], rootId);
+    expect(repeated.workspace.folders.some((folder) => folder.name === "章节 2")).toBe(true);
+    expect(new Set(repeated.workspace.document.resources.map((resource) => resource.path)).size).toBe(4);
   });
 
   test("replaces a temporary tab in place and selects the resource folder", () => {

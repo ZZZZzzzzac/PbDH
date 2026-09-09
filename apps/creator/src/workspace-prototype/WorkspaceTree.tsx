@@ -35,6 +35,7 @@ export function WorkspaceTree({
   onDeleteNode,
   onResourceContextMenu,
   onRootContextMenu,
+  onCopyFolder,
   resourceTitle,
   renderResourceIcon,
 }: {
@@ -52,6 +53,7 @@ export function WorkspaceTree({
   onDeleteNode: (node: WorkspaceNodeRef) => void;
   onResourceContextMenu: (resourceId: string, x: number, y: number) => void;
   onRootContextMenu: (x: number, y: number) => void;
+  onCopyFolder?: (folderId: string) => void;
   resourceTitle: (resource: WorkspaceResource) => string;
   renderResourceIcon: (resource: WorkspaceResource) => ReactNode;
 }) {
@@ -94,7 +96,7 @@ export function WorkspaceTree({
     setMenu({
       node,
       x: Math.max(8, Math.min(event.clientX, window.innerWidth - 180)),
-      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 100)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 140)),
     });
   };
 
@@ -205,6 +207,7 @@ export function WorkspaceTree({
     {renderLevel(null, 0)}
     {menu && <div ref={menuRef} className="context-menu workspace-node-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
       {menu.node.kind === "folder" && <button type="button" role="menuitem" onClick={() => beginRename(menu.node.id)}>重命名</button>}
+      {menu.node.kind === "folder" && onCopyFolder && <button type="button" role="menuitem" onClick={() => { onCopyFolder(menu.node.id); setMenu(null); }}>复制到资源包…</button>}
       <button type="button" role="menuitem" className="delete" onClick={() => { onDeleteNode(menu.node); setMenu(null); }}>删除</button>
     </div>}
   </>;

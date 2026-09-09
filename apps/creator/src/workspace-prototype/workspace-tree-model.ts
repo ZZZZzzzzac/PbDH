@@ -236,10 +236,26 @@ export function copyWorkspaceResourceToPackage(
   targetWorkspace: CreatorWorkspace,
   resourceId: string,
 ): { workspace: CreatorWorkspace; resourceId: string; copiedResourceIds: string[] } {
-  workspaceResource(sourceWorkspace, resourceId);
+  return copyWorkspaceResourcesToPackage(sourceWorkspace, targetWorkspace, [resourceId]);
+}
+
+export type WorkspaceCopySource = { workspaceKey: string; resourceIds: string[]; folderId?: string };
+
+export function copyWorkspaceResourcesToPackage(
+  sourceWorkspace: CreatorWorkspace,
+  targetWorkspace: CreatorWorkspace,
+  resourceIds: readonly string[],
+  folderId?: string,
+): { workspace: CreatorWorkspace; resourceId: string; copiedResourceIds: string[] } {
+  resourceIds.forEach((id) => workspaceResource(sourceWorkspace, id));
+  const folderIds = folderId ? [folderId, ...descendantWorkspaceFolderIds(sourceWorkspace, folderId)] : [];
+  if (folderId) requireWorkspaceFolder(sourceWorkspace, folderId);
+  const selectedIds = folderId
+    ? sourceWorkspace.resourceLocations.filter((location) => folderIds.includes(location.parentId ?? "")).map((location) => location.resourceId)
+    : [...resourceIds];
   const sourceById = new Map(sourceWorkspace.document.resources.map((resource) => [resource.id, resource]));
   const resourcesToCopy: WorkspaceResource[] = [];
-  const queued = [resourceId];
+  const queued = [...selectedIds];
   const visited = new Set<string>();
   while (queued.length > 0) {
     const currentId = queued.shift()!;
@@ -251,7 +267,20 @@ export function copyWorkspaceResourceToPackage(
     for (const replacement of current.replacements ?? []) queued.push(replacement.targetResourceId);
   }
 
-  const next = createWorkspace(targetWorkspace, true);
+  let next = createWorkspace(targetWorkspace, true);
+  const destinationFolderId = targetWorkspace.currentFolderId;
+  const copiedFolderIds = new Map<string, string>();
+  const copyFolder = (id: string): string => {
+    const existing = copiedFolderIds.get(id);
+    if (existing) return existing;
+    const folder = requireWorkspaceFolder(sourceWorkspace, id);
+    const parentId = id === folderId ? destinationFolderId : copyFolder(folder.parentId!);
+    next = createWorkspaceFolder(next, parentId, folder.name);
+    copiedFolderIds.set(id, next.currentFolderId!);
+    return next.currentFolderId!;
+  };
+  folderIds.forEach(copyFolder);
+  next.currentFolderId = destinationFolderId;
   const copiedIdBySourceId = new Map<string, string>();
   for (const source of resourcesToCopy) {
     let copiedId = `resource-${uuidV7()}`;
@@ -263,17 +292,19 @@ export function copyWorkspaceResourceToPackage(
   const copiedResourceIds: string[] = [];
   for (const source of resourcesToCopy) {
     const copiedId = copiedIdBySourceId.get(source.id)!;
+    const sourceParentId = requireResourceLocation(sourceWorkspace, source.id).parentId;
+    const parentId = copiedFolderIds.get(sourceParentId ?? "") ?? destinationFolderId;
     const filename = source.path.split("/").at(-1) ?? `${source.id}.json`;
     const extensionIndex = filename.lastIndexOf(".");
     const stem = extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename;
     const extension = extensionIndex > 0 ? filename.slice(extensionIndex) : ".json";
     let copiedFilename = filename;
     let sequence = 1;
-    while (occupiedPaths.has(workspacePath(next, next.currentFolderId, copiedFilename))) {
+    while (occupiedPaths.has(workspacePath(next, parentId, copiedFilename))) {
       sequence += 1;
       copiedFilename = `${stem}-copy-${sequence}${extension}`;
     }
-    const copiedPath = workspacePath(next, next.currentFolderId, copiedFilename);
+    const copiedPath = workspacePath(next, parentId, copiedFilename);
     occupiedPaths.add(copiedPath);
     const copied = structuredClone(source);
     copied.id = copiedId;
@@ -284,8 +315,8 @@ export function copyWorkspaceResourceToPackage(
     next.document.resources.push(copied);
     next.resourceLocations.push({
       resourceId: copiedId,
-      parentId: next.currentFolderId,
-      order: treeItemsInFolder(next, next.currentFolderId).length,
+      parentId,
+      order: treeItemsInFolder(next, parentId).length,
     });
     copiedResourceIds.push(copiedId);
     markResourceDirty(next, copiedId);
@@ -302,11 +333,12 @@ export function copyWorkspaceResourceToPackage(
   }
 
   normalizeDeterministicOrders(next.document, next.folders, next.resourceLocations);
+  const resourceId = copiedIdBySourceId.get(selectedIds[0] ?? "") ?? "";
   next.openResourceIds = [
     ...next.openResourceIds.filter((id) => id !== next.previewResourceId),
-    copiedIdBySourceId.get(resourceId)!,
+    ...(resourceId ? [resourceId] : []),
   ];
   next.previewResourceId = null;
   syncEmptyDirectories(next);
-  return { workspace: next, resourceId: copiedIdBySourceId.get(resourceId)!, copiedResourceIds };
+  return { workspace: next, resourceId, copiedResourceIds };
 }

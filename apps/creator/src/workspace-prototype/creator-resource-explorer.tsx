@@ -44,6 +44,7 @@ export type CreatorResourceExplorerCommand =
   | { type: "toggle-package"; workspaceKey: string }
   | { type: "open-workspace-context"; workspaceKey: string; x: number; y: number }
   | { type: "select-folder"; workspaceKey: string; folderId: string | null }
+  | { type: "copy-folder"; workspaceKey: string; folderId: string }
   | { type: "toggle-folder"; workspaceKey: string; folderId: string }
   | { type: "rename-folder"; workspaceKey: string; folderId: string; name: string }
   | { type: "move-node"; workspaceKey: string; node: WorkspaceNodeRef; parentId: string | null }
@@ -264,6 +265,7 @@ export function CreatorResourceExplorer({
               onToggleFolder={(folderId) => execute({ type: "toggle-folder", workspaceKey: workspace.key, folderId })}
               onRenameFolder={(folderId, name) => execute({ type: "rename-folder", workspaceKey: workspace.key, folderId, name }) ?? null}
               onMoveNode={(node, parentId) => execute({ type: "move-node", workspaceKey: workspace.key, node, parentId }) ?? null}
+              onCopyFolder={(folderId) => execute({ type: "copy-folder", workspaceKey: workspace.key, folderId })}
               onDeleteNode={(node) => execute({ type: "delete-node", workspaceKey: workspace.key, node })}
               onResourceContextMenu={(resourceId, x, y) => execute({ type: "open-resource-context", workspaceKey: workspace.key, resourceId, x, y })}
               onRootContextMenu={(x, y) => execute({ type: "open-workspace-context", workspaceKey: workspace.key, x, y })}

@@ -129,7 +129,8 @@ import {
 import {
   addTemplateResource,
   closeWorkspaceResourceTab,
-  copyWorkspaceResourceToPackage,
+  copyWorkspaceResourcesToPackage,
+  type WorkspaceCopySource,
   createBlankWorkspace,
   createWorkspace,
   createWorkspaceFolder,
@@ -965,44 +966,61 @@ export function CreatorWorkspacePrototype({
   }
 
   function requestResourcePackageCopy(resourceId: string, workspaceKey = active?.key) {
-    const owner = workspaces.find((workspace) => workspace.key === workspaceKey);
-    if (!owner) return;
-    const source = owner.document.resources.find((candidate) => candidate.id === resourceId);
-    if (!source) return;
-    setCopyPackageName(`${resourceTitle(source)}资源包`);
+    const selections = resourceMultiSelect && selectedWorkspaceResources.length > 0
+      ? selectedWorkspaceResources : [{ workspaceKey: workspaceKey ?? "", resourceId }];
+    const sources: WorkspaceCopySource[] = [];
+    for (const selection of selections) {
+      const existing = sources.find((source) => source.workspaceKey === selection.workspaceKey);
+      if (existing) existing.resourceIds.push(selection.resourceId);
+      else sources.push({ workspaceKey: selection.workspaceKey, resourceIds: [selection.resourceId] });
+    }
+    requestPackageCopy(sources, selections.length > 1 ? `已选 ${selections.length} 个资源` : "选中资源");
+  }
+
+  function requestPackageCopy(sources: WorkspaceCopySource[], name: string) {
+    setCopyPackageName(`${name}资源包`);
     setTabletopContextMenu(null);
-    setDialog({
-      kind: "copy-resource-to-package",
-      sourceWorkspaceKey: owner.key,
-      resourceId,
-      name: resourceTitle(source),
-    });
+    setDialog({ kind: "copy-resource-to-package", sources, name });
   }
 
-  function copyResourceIntoWorkspace(sourceWorkspaceKey: string, resourceId: string, targetWorkspaceKey: string) {
-    const source = workspaces.find((workspace) => workspace.key === sourceWorkspaceKey);
+  function copyIntoTarget(sources: WorkspaceCopySource[], target: CreatorWorkspace) {
+    let workspace = target;
+    let resourceId = "";
+    let count = 0;
+    for (const request of sources) {
+      const source = workspaces.find((item) => item.key === request.workspaceKey);
+      if (!source) throw new Error("源资源包已关闭，请重新选择资源");
+      const result = copyWorkspaceResourcesToPackage(source, workspace, request.resourceIds, request.folderId);
+      workspace = result.workspace;
+      resourceId = result.resourceId || resourceId;
+      count += result.copiedResourceIds.length;
+    }
+    return { workspace, resourceId, count };
+  }
+
+  function copyResourceIntoWorkspace(sources: WorkspaceCopySource[], targetWorkspaceKey: string) {
     const target = workspaces.find((workspace) => workspace.key === targetWorkspaceKey);
-    if (!source || !target) return;
-    const result = copyWorkspaceResourceToPackage(source, target, resourceId);
-    setWorkspaces((current) => current.map((workspace) => workspace.key === target.key ? result.workspace : workspace));
-    setActiveKey(target.key);
-    setActiveResourceId(result.resourceId);
-    setDialog(null);
-    notify(result.copiedResourceIds.length > 1
-      ? `已复制到“${target.document.package.name}”，并带上 ${result.copiedResourceIds.length - 1} 个切换形态`
-      : `已复制到“${target.document.package.name}”`);
+    if (!target) return;
+    try {
+      const result = copyIntoTarget(sources, target);
+      setWorkspaces((current) => current.map((workspace) => workspace.key === target.key ? result.workspace : workspace));
+      setActiveKey(target.key);
+      setActiveResourceId(result.resourceId);
+      setDialog(null);
+      notify(`已复制 ${result.count} 个资源到“${target.document.package.name}”`);
+    } catch (error) { notify(error instanceof Error ? error.message : "复制失败"); }
   }
 
-  async function copyResourceIntoNewWorkspace(sourceWorkspaceKey: string, resourceId: string) {
-    const source = workspaces.find((workspace) => workspace.key === sourceWorkspaceKey);
-    if (!source) return;
-    const target = await createBlankWorkspace(copyPackageName);
-    const result = copyWorkspaceResourceToPackage(source, target, resourceId);
-    setWorkspaces((current) => [...current, result.workspace]);
-    setActiveKey(result.workspace.key);
-    setActiveResourceId(result.resourceId);
-    setDialog(null);
-    notify(`已新建“${result.workspace.document.package.name}”并复制资源`);
+  async function copyResourceIntoNewWorkspace(sources: WorkspaceCopySource[]) {
+    try {
+      const target = await createBlankWorkspace(copyPackageName);
+      const result = copyIntoTarget(sources, target);
+      setWorkspaces((current) => [...current, result.workspace]);
+      setActiveKey(result.workspace.key);
+      setActiveResourceId(result.resourceId);
+      setDialog(null);
+      notify(`已新建“${result.workspace.document.package.name}”并复制 ${result.count} 个资源`);
+    } catch (error) { notify(error instanceof Error ? error.message : "复制失败"); }
   }
 
   function requestTabletopCreation() {
@@ -1668,6 +1686,12 @@ export function CreatorWorkspacePrototype({
       }
       case "rename-folder": return renameWorkspaceTreeFolder(command.workspaceKey, command.folderId, command.name);
       case "move-node": return moveWorkspaceTreeNode(command.workspaceKey, command.node, command.parentId);
+      case "copy-folder": {
+        const owner = workspaces.find((workspace) => workspace.key === command.workspaceKey);
+        const folder = owner?.folders.find((folder) => folder.id === command.folderId);
+        if (folder) requestPackageCopy([{ workspaceKey: command.workspaceKey, resourceIds: [], folderId: folder.id }], folder.name);
+        return;
+      }
       case "delete-node": requestWorkspaceNodeDeletion(command.node, command.workspaceKey); return;
     }
   }
@@ -1845,8 +1869,8 @@ export function CreatorWorkspacePrototype({
       case "save-aside": void saveAsideThenImport(command.incoming, command.handoff); return;
       case "delete-workspace-node": confirmWorkspaceNodeDeletion(command.workspaceKey, command.node); return;
       case "delete-selected-resources": confirmSelectedResourceDeletion(command.selections); return;
-      case "copy-resource": copyResourceIntoWorkspace(command.sourceWorkspaceKey, command.resourceId, command.targetWorkspaceKey); return;
-      case "copy-resource-to-new-package": void copyResourceIntoNewWorkspace(command.sourceWorkspaceKey, command.resourceId); return;
+      case "copy-resource": copyResourceIntoWorkspace(command.sources, command.targetWorkspaceKey); return;
+      case "copy-resource-to-new-package": void copyResourceIntoNewWorkspace(command.sources); return;
       case "close-workspace": void closeWorkspacePackage(command.workspaceKey); return;
       case "create-tabletop": createTabletopFromDialog(); return;
       case "rename-tabletop": renameTabletopFromDialog(command.tabletopId); return;

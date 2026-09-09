@@ -1,3 +1,4 @@
+import type { WorkspaceCopySource } from "./workspace-tree-model.ts";
 import { useEffect, useRef, useState } from "react";
 import type {
   ContractDiagnostic,
@@ -49,7 +50,7 @@ export type CreatorDialogState =
   | { kind: "conflict"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
   | { kind: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef; name: string }
   | { kind: "delete-selected-resources"; selections: WorkspaceResourceSelection[] }
-  | { kind: "copy-resource-to-package"; sourceWorkspaceKey: string; resourceId: string; name: string }
+  | { kind: "copy-resource-to-package"; sources: WorkspaceCopySource[]; name: string }
   | { kind: "close-workspace"; workspaceKey: string; name: string }
   | { kind: "new-tabletop" }
   | { kind: "rename-tabletop"; tabletopId: string }
@@ -70,8 +71,8 @@ export type CreatorDialogCommand =
   | { type: "commit-incoming" | "save-aside"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
   | { type: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef }
   | { type: "delete-selected-resources"; selections: WorkspaceResourceSelection[] }
-  | { type: "copy-resource"; sourceWorkspaceKey: string; resourceId: string; targetWorkspaceKey: string }
-  | { type: "copy-resource-to-new-package"; sourceWorkspaceKey: string; resourceId: string }
+  | { type: "copy-resource"; sources: WorkspaceCopySource[]; targetWorkspaceKey: string }
+  | { type: "copy-resource-to-new-package"; sources: WorkspaceCopySource[] }
   | { type: "rename-tabletop" | "delete-tabletop"; tabletopId: string }
   | { type: "commit-tabletop-import"; incoming: TabletopDocumentCandidate; resolution: "copy" | "replace" }
   | { type: "confirm-cloud-sync"; documentKind: CloudDocumentKind; documentId: string }
@@ -187,8 +188,8 @@ export function CreatorDialogs({
     {dialog.kind === "conflict" && <><h2>dirty 同 ID 冲突</h2><p>当前 Workspace 有本地修改，禁止自动合并。</p><div className="conflict-choices"><button type="button" onClick={() => execute({ type: "close" })}>取消（零写入）</button><button type="button" onClick={() => execute({ type: "save-aside", incoming: dialog.incoming, handoff: dialog.handoff })}>另存 · 新 Package ID / 1.0.0</button><button type="button" className="danger" onClick={() => execute({ type: "commit-incoming", incoming: dialog.incoming, handoff: dialog.handoff })}>覆盖 · 丢弃本地修改</button></div></>}
     {dialog.kind === "delete-workspace-node" && <><h2>删除{dialog.node.kind === "folder" ? "文件夹" : "资源"}</h2><p>删除“{dialog.name}”？{dialog.node.kind === "folder" ? "文件夹内的资源也会一并删除。" : ""}</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-workspace-node", workspaceKey: dialog.workspaceKey, node: dialog.node })}>删除</button></div></>}
     {dialog.kind === "delete-selected-resources" && <><h2>批量删除资源</h2><p>删除已选的 {dialog.selections.length} 个资源？此操作会从对应资源包中移除它们。</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-selected-resources", selections: dialog.selections })}>删除</button></div></>}
-    {dialog.kind === "copy-resource-to-package" && <><h2>复制“{dialog.name}”到资源包</h2><p>复制后是独立资源，修改副本不会影响原资源。有关联的切换形态时会一起复制。</p><div className="conflict-choices">{snapshot.workspaces.filter((workspace) => workspace.key !== dialog.sourceWorkspaceKey).map((workspace) => <button type="button" key={workspace.key} onClick={() => execute({ type: "copy-resource", sourceWorkspaceKey: dialog.sourceWorkspaceKey, resourceId: dialog.resourceId, targetWorkspaceKey: workspace.key })}>{workspace.document.package.name}</button>)}</div>
-      {snapshot.workspaces.length <= 1 && <p>当前没有其他资源包，可以在下面直接新建。</p>}<Field className="dialog-field" label="新资源包名称" value={snapshot.copyPackageName} onChange={(value) => execute({ type: "set-copy-package-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.copyPackageName.trim()} onClick={() => execute({ type: "copy-resource-to-new-package", sourceWorkspaceKey: dialog.sourceWorkspaceKey, resourceId: dialog.resourceId })}>新建并复制</button></div></>}
+    {dialog.kind === "copy-resource-to-package" && <><h2>复制“{dialog.name}”到资源包</h2><p>复制后是独立资源，修改副本不会影响原资源。有关联的切换形态时会一起复制。</p><div className="conflict-choices">{snapshot.workspaces.filter((workspace) => !dialog.sources.some((source) => source.workspaceKey === workspace.key)).map((workspace) => <button type="button" key={workspace.key} onClick={() => execute({ type: "copy-resource", sources: dialog.sources, targetWorkspaceKey: workspace.key })}>{workspace.document.package.name}</button>)}</div>
+      {snapshot.workspaces.length <= 1 && <p>可以在下面直接新建资源包。</p>}<Field className="dialog-field" label="新资源包名称" value={snapshot.copyPackageName} onChange={(value) => execute({ type: "set-copy-package-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.copyPackageName.trim()} onClick={() => execute({ type: "copy-resource-to-new-package", sources: dialog.sources })}>新建并复制</button></div></>}
     {dialog.kind === "close-workspace" && <><h2>移到回收站</h2><p>{dialog.name}</p><div className="dialog-actions"><button type="button" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close-workspace", workspaceKey: dialog.workspaceKey })}>{snapshot.creatorOperation === "trash-workspace" ? <OperationStatus label="正在移到回收站…" /> : "移到回收站"}</button></div></>}
     {dialog.kind === "new-tabletop" && <><h2>新建桌面</h2><Field className="dialog-field" label="名称" value={snapshot.tabletopName} onChange={(value) => execute({ type: "set-tabletop-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.tabletopName.trim()} onClick={() => execute({ type: "create-tabletop" })}>创建</button></div></>}
     {dialog.kind === "rename-tabletop" && <><h2>重命名桌面</h2><Field className="dialog-field" label="名称" value={snapshot.tabletopName} onChange={(value) => execute({ type: "set-tabletop-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.tabletopName.trim()} onClick={() => execute({ type: "rename-tabletop", tabletopId: dialog.tabletopId })}>保存</button></div></>}
