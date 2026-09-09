@@ -3,17 +3,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 
-import react from "@vitejs/plugin-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { build, type Rollup } from "vite";
 
 import { prepareCanonicalSurface, type ManagedAsset } from "../packages/resource-renderer/src/core.ts";
 import type { AdversaryData } from "../packages/templates/src/core/index.ts";
 import { adversaryRendererFor } from "../packages/templates/src/frontend/index.ts";
-import {
-  listLazyRendererBindings,
-  loadTrustedRenderer,
-} from "../packages/templates/src/frontend/lazy-renderer-registry.ts";
 
 const root = process.cwd();
 const fixture = JSON.parse(readFileSync(path.join(
@@ -53,58 +48,56 @@ const renderDurations = Array.from({ length: 60 }, () => {
 }).sort((left, right) => left - right);
 
 const bundleResult = await build({
-  configFile: false,
+  root: path.join(root, "apps/platform"),
+  configFile: path.join(root, "apps/platform/vite.config.ts"),
   logLevel: "silent",
-  plugins: [react()],
   build: {
     write: false,
     minify: true,
-    lib: {
-      entry: path.join(root, "packages/templates/src/frontend/lazy-renderer-registry.ts"),
-      formats: ["es"],
-      fileName: "lazy-renderer-registry",
-    },
   },
 });
 const rollupOutputs = (Array.isArray(bundleResult) ? bundleResult : [bundleResult]) as Rollup.RollupOutput[];
 const chunks = rollupOutputs.flatMap((output) => output.output)
   .filter((item): item is Rollup.OutputChunk => item.type === "chunk");
-const rendererChunks = chunks.filter((chunk) => Object.keys(chunk.modules)
-  .some((moduleId) => /[\\/]renderer\.tsx(?:\?|$)/.test(moduleId)));
-const bundleBytes = rendererChunks.reduce((total, chunk) => total + Buffer.byteLength(chunk.code), 0);
-const bundleGzipBytes = rendererChunks.reduce(
-  (total, chunk) => total + gzipSync(Buffer.from(chunk.code)).byteLength,
-  0,
-);
-
-const loadedRenderers = (await Promise.all(listLazyRendererBindings().map(async (binding) => {
-  const separator = binding.lastIndexOf("@");
-  return loadTrustedRenderer(binding.slice(0, separator), binding.slice(separator + 1));
-}))).filter((candidate) => candidate !== undefined);
-const revisionCount = new Set(loadedRenderers.map((candidate) => candidate.revision)).size;
-const catalogResourceCount = 1000;
-const mountedSurfaceCount = 4;
+const chunksByName = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+const initialNames = new Set<string>();
+const pending = chunks.filter((chunk) => chunk.isEntry).map((chunk) => chunk.fileName);
+while (pending.length > 0) {
+  const name = pending.pop()!;
+  if (initialNames.has(name)) continue;
+  initialNames.add(name);
+  pending.push(...(chunksByName.get(name)?.imports ?? []));
+}
+const initialChunks = chunks.filter((chunk) => initialNames.has(chunk.fileName));
+function templateModules(selected: Rollup.OutputChunk[], component: string): string[] {
+  const pattern = new RegExp(`/templates/src/frontend/([^/]+)/([^/]+)/${component}\\.tsx(?:\\?|$)`);
+  return [...new Set(selected.flatMap((chunk) => Object.keys(chunk.modules).flatMap((id) => {
+    const match = id.replaceAll("\\", "/").match(pattern);
+    return match ? [`${match[1]}@${match[2]}`] : [];
+  })))].sort();
+}
 const metrics = {
-  revisionCount,
-  revisionBundleBytes: bundleBytes,
-  revisionBundleGzipBytes: bundleGzipBytes,
-  onDemandRendererChunkCount: rendererChunks.filter((chunk) => chunk.isDynamicEntry).length,
-  catalogResourceCount,
-  mountedSurfaceCount,
-  uniqueAssetMemoryBytes: assetBytes.byteLength,
-  singleSurfaceRenderMsP95: Number(renderDurations[Math.floor(renderDurations.length * 0.95)]!.toFixed(3)),
+  environment: { node: process.version, platform: process.platform, arch: process.arch },
+  ssr: {
+    template: resource.template,
+    samples: renderDurations.length,
+    warmups: 1,
+    singleSurfaceRenderMsP95: Number(renderDurations[Math.floor(renderDurations.length * 0.95)]!.toFixed(3)),
+  },
+  productionBuild: {
+    initialJavaScriptBytes: initialChunks.reduce((total, chunk) => total + Buffer.byteLength(chunk.code), 0),
+    initialJavaScriptGzipBytes: initialChunks.reduce((total, chunk) => total + gzipSync(Buffer.from(chunk.code)).byteLength, 0),
+    initialRendererVersions: templateModules(initialChunks, "renderer"),
+    initialEditorVersions: templateModules(initialChunks, "authoring-editor"),
+    allRendererVersions: templateModules(chunks, "renderer"),
+  },
+  fixtureMediaFileBytes: assetBytes.byteLength,
 };
 
-if (metrics.revisionCount === 0 || metrics.revisionBundleBytes === 0) {
-  throw new Error("Renderer Revision bundle measurement is empty");
+if (metrics.productionBuild.allRendererVersions.length === 0 || initialChunks.length === 0) {
+  throw new Error("Platform production bundle measurement is empty");
 }
-if (metrics.onDemandRendererChunkCount === 0) {
-  throw new Error("Renderer Revisions were not emitted as on-demand chunks");
-}
-if (metrics.mountedSurfaceCount >= metrics.catalogResourceCount) {
-  throw new Error("Mounted Surface count must be measured separately from catalog resources");
-}
-if (!Number.isFinite(metrics.singleSurfaceRenderMsP95) || metrics.singleSurfaceRenderMsP95 < 0) {
+if (!Number.isFinite(metrics.ssr.singleSurfaceRenderMsP95) || metrics.ssr.singleSurfaceRenderMsP95 < 0) {
   throw new Error("Single Surface render measurement is invalid");
 }
 
