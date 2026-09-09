@@ -5,6 +5,8 @@ import { expect, test, vi } from "vitest";
 import { CanonicalCardSurface, loadTrustedRenderer, loadTrustedAuthoring } from "@pbdh/templates/frontend/lazy";
 import { templateRegistry } from "@pbdh/templates/core";
 import { manifestEntryFor } from "../../packages/templates/src/frontend/template-frontend-manifest.ts";
+import { templateCoreLoaders } from "@pbdh/templates/core/lazy";
+import { rendererLoader } from "../../packages/templates/src/frontend/template-loaders.ts";
 
 test("同版本并发请求只加载一次，查看卡面不加载编辑器或其他版本", async () => {
   const entry = manifestEntryFor("敌人", "1.0.4")!;
@@ -77,6 +79,38 @@ test("一次重试恢复同版本的所有卡面，切换版本时不显示旧�
     expect(surfaces()[0]?.shadowRoot?.textContent).not.toContain("old-version");
   } finally {
     release(nextRenderer);
+    await act(async () => root.unmount());
+    container.remove();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  }
+});
+
+test("Core 下载失败阻止渲染，重试只加载卡面引用的能力版本", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const template = templateRegistry.resolve("武器", "1.0.1")!;
+  const entry = templateCoreLoaders.find((item) => item.id === template.id && item.version === template.version)!;
+  const unrelated = templateCoreLoaders.find((item) => item.id === "武器" && item.version === "1.1.0")!;
+  const load = vi.spyOn(entry, "load").mockRejectedValueOnce(new Error("Core download failed")).mockResolvedValue(template);
+  const otherLoad = vi.spyOn(unrelated, "load");
+  try {
+    await act(async () => root.render(<CanonicalCardSurface resource={{
+      template: { id: template.id, version: template.version }, data: template.defaultData,
+      presentation: template.defaultPresentation, media: {},
+    }} assets={new Map()} />));
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("模板加载失败");
+    expect(container.querySelector("[data-pbdh-canonical-surface]")).toBeNull();
+    await act(async () => {
+      container.querySelector("button")!.click();
+      await vi.waitFor(() => expect(rendererLoader.read(template.id, template.version).status).toBe("ready"));
+    });
+    expect(container.querySelector("[data-pbdh-canonical-surface]")).not.toBeNull();
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(otherLoad).not.toHaveBeenCalled();
+  } finally {
     await act(async () => root.unmount());
     container.remove();
     vi.restoreAllMocks();

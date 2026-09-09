@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { CanonicalCardSurface, type CanonicalCardSurfaceProps } from "@pbdh/resource-renderer/react";
 import { usesFixedSurfaceRatio } from "@pbdh/resource-renderer/core";
-import { templateRegistry } from "../core/index.ts";
-import { authoringLoader, rendererLoader, type TemplateLoadSnapshot } from "./template-loaders.ts";
+import { authoringLoader, coreLoader, rendererLoader, type TemplateLoadSnapshot } from "./template-loaders.ts";
 
 type VersionLoader<T> = {
   read(id: string, version: string): TemplateLoadSnapshot<T>;
@@ -37,6 +36,7 @@ export function LazyCanonicalCardSurface<TData, TState>(props: Omit<CanonicalCar
   if (!state.value) return <div aria-label={props.label} style={{ width: "100%", aspectRatio: usesFixedSurfaceRatio(props.resource.presentation) ? "63 / 88" : undefined }}>
     <TemplateLoadStatus state={state} />
   </div>;
+  const core = coreLoader.read(id, version);
   return <CanonicalCardSurface {...props} renderer={state.value}
-    expectedRendererRevision={templateRegistry.resolve(id, version)?.rendererRevision ?? ""} />;
+    expectedRendererRevision={core.status === "ready" ? core.value?.rendererRevision ?? "" : ""} />;
 }

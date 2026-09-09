@@ -1,13 +1,15 @@
 import { manifestEntryFor } from "./template-frontend-manifest.ts";
 import type { TrustedTemplateRenderer } from "./template-frontend-registry.ts";
 import type { TemplateAuthoringCapability } from "./types.ts";
+import { loadTemplateCore } from "../core/lazy.ts";
+import type { TemplateCoreCapability } from "../core/types.ts";
 
 export type TemplateLoadSnapshot<T> =
   | { status: "idle" | "loading" }
   | { status: "ready"; value: T | undefined }
   | { status: "error"; error: unknown };
 
-function createVersionLoader<T>(resolve: (id: string, version: string) => (() => Promise<T>) | undefined) {
+function createVersionLoader<T>(resolve: (id: string, version: string) => (() => Promise<T | undefined>) | undefined) {
   const idle: TemplateLoadSnapshot<T> = { status: "idle" };
   const records = new Map<string, { snapshot: TemplateLoadSnapshot<T>; promise?: Promise<T | undefined> }>();
   const listeners = new Map<string, Set<() => void>>();
@@ -47,7 +49,15 @@ function createVersionLoader<T>(resolve: (id: string, version: string) => (() =>
   };
 }
 
-export const rendererLoader = createVersionLoader<TrustedTemplateRenderer>((id, version) => manifestEntryFor(id, version)?.loadRenderer);
+export const coreLoader = createVersionLoader<TemplateCoreCapability<any>>((id, version) => () => loadTemplateCore(id, version));
+export const rendererLoader = createVersionLoader<TrustedTemplateRenderer>((id, version) => {
+  const entry = manifestEntryFor(id, version);
+  if (!entry) return undefined;
+  return async () => {
+    const [renderer] = await Promise.all([entry.loadRenderer(), coreLoader.load(id, version)]);
+    return renderer;
+  };
+});
 export const authoringLoader = createVersionLoader<TemplateAuthoringCapability>((id, version) => manifestEntryFor(id, version)?.loadAuthoring);
 export const loadTrustedRenderer = rendererLoader.load;
 export const loadTrustedAuthoring = authoringLoader.load;
