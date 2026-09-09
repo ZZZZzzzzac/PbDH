@@ -1,11 +1,13 @@
 import copy
 import hashlib
 import json
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 from fastapi.testclient import TestClient
 import pytest
+from PIL import Image
 
 from pbdh_backend.api_errors import ApiError
 from pbdh_backend.app import create_app
@@ -74,6 +76,20 @@ def candidate() -> tuple[dict[str, Any], dict[str, bytes]]:
         ).read_bytes()
         for asset in document["assets"]
     }
+    for asset in document["assets"]:
+        old_id = asset["id"]
+        with Image.open(BytesIO(media.pop(old_id))) as image, BytesIO() as output:
+            with image.resize((630, 880)) as normalized:
+                normalized.save(output, format="WEBP", lossless=True)
+            content = output.getvalue()
+        asset.update({
+            "id": "sha256:" + hashlib.sha256(content).hexdigest(),
+            "byteLength": str(len(content)), "width": "630", "height": "880",
+        })
+        media[asset["id"]] = content
+        for resource in document["resources"]:
+            resource["media"] = {slot: asset["id"] if value == old_id else value for slot, value in resource["media"].items()}
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
     return document, media
 
 
@@ -120,6 +136,44 @@ def publish(
             )
         },
     )
+
+
+@pytest.mark.parametrize("bad_media", ["not-image", "header-only", "wrong-dimensions", "wrong-width", "wrong-cover-ratio"])
+def test_publish_rejects_invalid_image_with_correct_hashes(tmp_path: Path, bad_media: str) -> None:
+    api = client(tmp_path)
+    headers = claim(api, "author-one")
+    document, media = candidate()
+    asset = document["assets"][0]
+    old_id = asset["id"]
+    content = media.pop(old_id)
+    if bad_media == "not-image":
+        content = b"This is not an image"
+    elif bad_media == "header-only":
+        bits = 629 | (879 << 14)
+        chunk = b"\x2f" + bits.to_bytes(4, "little")
+        payload = b"WEBPVP8L" + len(chunk).to_bytes(4, "little") + chunk + b"\x00"
+        content = b"RIFF" + len(payload).to_bytes(4, "little") + payload
+    elif bad_media == "wrong-dimensions":
+        asset["height"] = str(int(asset["height"]) + 1)
+    else:
+        dimensions = (420, 880) if bad_media == "wrong-width" else (630, 1200)
+        with BytesIO() as output, Image.new("RGB", dimensions, "white") as image:
+            image.save(output, format="WEBP", lossless=True)
+            content = output.getvalue()
+        asset["width"], asset["height"] = map(str, dimensions)
+    asset["id"] = "sha256:" + hashlib.sha256(content).hexdigest()
+    asset["byteLength"] = str(len(content))
+    media[asset["id"]] = content
+    for resource in document["resources"]:
+        resource["media"] = {slot: asset["id"] if value == old_id else value for slot, value in resource["media"].items()}
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+    response = publish(api, headers, document, media)
+
+    assert response.status_code == 422, response.text
+    assert api.get("/api/publications").json()["publications"] == []
+    with Database(settings(tmp_path).database_path, ROOT / "apps/backend/migrations").connect() as connection:
+        assert connection.execute("SELECT count(*) FROM media_blobs").fetchone()[0] == 0
 
 
 def test_authenticated_development_publish_is_anonymously_discoverable_and_downloadable(tmp_path: Path) -> None:
@@ -540,21 +594,15 @@ def test_invalid_archive_and_unpublishable_template_leave_zero_rows(tmp_path: Pa
     assert invalid.status_code == 422
     assert invalid.json()["error"]["code"] == "PUBLICATION_CANDIDATE_INVALID"
 
-    unsupported_root = ROOT / "contracts/conformance/resource-package/1.0.0"
-    unsupported_document = read_json(unsupported_root / "valid/minotaur-wrecker.json")
+    unsupported_document = copy.deepcopy(document)
     unsupported_document["resources"][0]["template"]["version"] = "0.9.0"
     unsupported_document["snapshotDigest"] = compute_resource_package_snapshot_digest(
         unsupported_document,
         media,
     )
-    unsupported_media = {
-        asset["id"]: (
-            unsupported_root / f"media/{asset['id'].removeprefix('sha256:')}.webp"
-        ).read_bytes()
-        for asset in unsupported_document["assets"]
-    }
-    unpublishable = publish(api, headers, unsupported_document, unsupported_media)
+    unpublishable = publish(api, headers, unsupported_document, media)
     assert unpublishable.status_code == 422
+    assert any(error["code"] == "template.version.unsupported" for error in unpublishable.json()["error"]["fieldErrors"])
     assert api.get("/api/publications").json()["publications"] == []
 
 

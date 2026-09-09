@@ -15,6 +15,7 @@ from pbdh_backend.contracts import (
     validate_resource_package_semantics,
     write_pbres,
 )
+from pbdh_backend.media import InvalidWebP, validate_normalized_webp
 from pbdh_backend.publications.repository import PublicationNotFound, PublicationRepository
 
 
@@ -222,6 +223,24 @@ class PublicationService:
         if diagnostics:
             return diagnostics
         diagnostics = validate_resource_package_semantics(document, media)
+        if diagnostics:
+            return diagnostics
+        for index, asset in enumerate(document["assets"]):
+            try:
+                dimensions = validate_normalized_webp(media[asset["id"]])
+                if dimensions != (int(asset["width"]), int(asset["height"])):
+                    raise InvalidWebP("image dimensions do not match the asset declaration")
+                if document.get("publication", {}).get("coverAssetId") == asset["id"] and dimensions != (630, 880):
+                    raise InvalidWebP("publication cover must be 630 by 880 pixels")
+            except InvalidWebP as error:
+                diagnostics.append({
+                    "code": "publication.media.invalid",
+                    "severity": "error",
+                    "family": "resource-package",
+                    "version": version,
+                    "location": f"/assets/{index}",
+                    "params": {"assetId": asset["id"], "message": str(error)},
+                })
         if diagnostics:
             return diagnostics
         for index, resource in enumerate(document["resources"]):

@@ -1,6 +1,9 @@
 import hashlib
 import sqlite3
+from io import BytesIO
 from pathlib import Path
+
+from PIL import Image
 
 from fastapi.testclient import TestClient
 
@@ -22,10 +25,10 @@ def webp(marker: int = 0) -> bytes:
 
 
 def minimal_webp(width: int, height: int) -> bytes:
-    bits = (width - 1) | ((height - 1) << 14)
-    chunk = b"\x2f" + bits.to_bytes(4, "little")
-    payload = b"WEBP" + b"VP8L" + len(chunk).to_bytes(4, "little") + chunk + b"\x00"
-    return b"RIFF" + len(payload).to_bytes(4, "little") + payload
+    with BytesIO() as output:
+        with Image.new("RGB", (width, height), "white") as image:
+            image.save(output, format="WEBP", lossless=True)
+        return output.getvalue()
 
 
 class FakeTokenVerifier:

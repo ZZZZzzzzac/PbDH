@@ -1,4 +1,5 @@
 fastapi==0.116.1
+Pillow==12.3.0
 jsonschema==4.25.1
 PyJWT[crypto]==2.10.1
 python-multipart==0.0.20
