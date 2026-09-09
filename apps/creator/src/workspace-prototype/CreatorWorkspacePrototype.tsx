@@ -29,6 +29,7 @@ import {
 import type { SystemPackageOption } from "@pbdh/publication-ui";
 import {
   upgradePbresTemplateVersions,
+  createPbresCandidateValidator,
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
@@ -39,7 +40,8 @@ import {
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
-import { templateRegistry } from "@pbdh/templates/core";
+import { templateRegistry, upgradeTemplateResources } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 
 import { creatorWorkspaceDesign } from "./design.ts";
 import {
@@ -1454,7 +1456,9 @@ export function CreatorWorkspacePrototype({
     if (!workspace || creatorOperation) return;
     setCreatorOperation("upgrade-templates");
     try {
-      const result = await upgradePbresTemplateVersions(workspace, selections);
+      const result = await upgradePbresTemplateVersions(workspace, selections, {
+        upgradeResources: upgradeTemplateResources, validate: createPbresCandidateValidator(loadTemplateCore),
+      });
       if (!result.candidate) {
         setDialog({ kind: "diagnostics", title: "模板升级失败 · 零写入", diagnostics: result.diagnostics });
         return;

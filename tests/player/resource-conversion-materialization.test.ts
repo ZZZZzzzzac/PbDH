@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { resourceConversionRegistry } from "@pbdh/resource-conversion";
+import { createResourceConversionRegistry, createPbresCandidateValidator } from "@pbdh/resource-conversion";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import type { SystemPackageDocument } from "@pbdh/contract-runtime";
 
 import systemJson from "../../apps/player/src/daggerheart-core-system.generated.json";
@@ -8,6 +9,7 @@ import { materializePlayerResourceConversion } from "../../apps/player/src/resou
 import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
 
 describe("Player third-party resource conversion", () => {
+  const resourceConversionRegistry = createResourceConversionRegistry(createPbresCandidateValidator(loadTemplateCore));
   it("先保留逐记录报告，再生成可验证、可安装和可导出的标准资源包", async () => {
     const imported = await resourceConversionRegistry.import("rinkcx", {
       bytes: new TextEncoder().encode(JSON.stringify({

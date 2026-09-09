@@ -7,7 +7,8 @@ import {
   writePbres,
 } from "@pbdh/contract-runtime";
 import {
-  resourceConversionRegistry,
+  createResourceConversionRegistry,
+  createPbresCandidateValidator,
   type ConversionDiagnostic,
   type ResourceContainer,
   type ResourceFormatId,
@@ -15,6 +16,7 @@ import {
 import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 
 import {
@@ -79,6 +81,7 @@ type ConversionReview = {
   diagnostics: ConversionDiagnostic[];
 };
 
+const resourceConversionRegistry = createResourceConversionRegistry(createPbresCandidateValidator(loadTemplateCore));
 const thirdPartyFormats: Array<{ id: Exclude<ResourceFormatId, "pbres">; label: string }> = [
   { id: "dhsheet", label: "导入dhcb格式" },
   { id: "zzz", label: "导入ZZZ格式" },

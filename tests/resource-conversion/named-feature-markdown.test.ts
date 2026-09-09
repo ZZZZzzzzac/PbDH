@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { currentTemplates } from "@pbdh/templates/core";
 import { describe, expect, it } from "vitest";
-import { mapBatchToRegisteredCandidates, resourceConversionRegistry } from "../../packages/resource-conversion/src/index.ts";
+import { mapBatchToRegisteredCandidates, createResourceConversionRegistry, createPbresCandidateValidator } from "../../packages/resource-conversion/src/index.ts";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { namedFeature, namedFeatures } from "../../packages/resource-conversion/src/shared.ts";
 
 describe("Markdown headings inside third-party feature strings", () => {
+  const resourceConversionRegistry = createResourceConversionRegistry(createPbresCandidateValidator(loadTemplateCore));
   it.each(["*__名称：__*", "**名称：**", "***名称：***", "__名称：__"])("consumes the entire %s heading", (heading) => {
     expect(namedFeature(`${heading}**正文**`)).toEqual({ 名称: "名称", 描述: "**正文**" });
   });

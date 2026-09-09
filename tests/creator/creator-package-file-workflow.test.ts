@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 
 import { loadPbres } from "@pbdh/contract-runtime";
-import { upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
-import { currentTemplates, listTemplateUpgradeRows } from "@pbdh/templates/core";
+import { createPbresCandidateValidator, upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
+import { currentTemplates, listTemplateUpgradeRows, upgradeTemplateResources } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { describe, expect, test } from "vitest";
 
 import { runCreatorPackageFileWorkflow } from "../../apps/creator/src/workspace-prototype/creator-package-file-workflow.ts";
@@ -37,7 +38,7 @@ describe("Creator package file workflow", () => {
     ]);
     const upgraded = await upgradePbresTemplateVersions(inspected.candidate, [
       { templateId: "敌人", currentVersion: "1.0.0", targetVersion: "1.0.2" },
-    ]);
+    ], { upgradeResources: upgradeTemplateResources, validate: createPbresCandidateValidator(loadTemplateCore) });
 
     expect(upgraded.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.0.2" });
     expect(upgraded.candidate?.document.package.version).toBe("1.0.1");

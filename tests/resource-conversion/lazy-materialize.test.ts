@@ -1,6 +1,9 @@
 import { expect, test, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { loadPbres } from "@pbdh/contract-runtime";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { currentTemplates } from "@pbdh/templates/core";
-import { materializeResourceConversion, type TemporaryResourceBatch } from "@pbdh/resource-conversion";
+import { createPbresCandidateValidator, materializeResourceConversion, type TemporaryResourceBatch } from "@pbdh/resource-conversion";
 
 function batch(kind: "armor" | "opaque"): TemporaryResourceBatch {
   return {
@@ -12,6 +15,16 @@ function batch(kind: "armor" | "opaque"): TemporaryResourceBatch {
     })),
   };
 }
+
+test("PBRES 旧包校验只请求引用的精确版本，加载失败不放行", async () => {
+  const archive = new Uint8Array(readFileSync("contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.pbres"));
+  const resolve = vi.fn(loadTemplateCore);
+  const result = await loadPbres(archive, createPbresCandidateValidator(resolve));
+  expect(result.candidate).not.toBeNull();
+  expect(resolve).toHaveBeenCalledExactlyOnceWith("敌人", "1.0.0");
+  await expect(loadPbres(archive, createPbresCandidateValidator(vi.fn().mockRejectedValue(new Error("network unavailable")))))
+    .rejects.toThrow("network unavailable");
+});
 
 test("转换只请求出现的模板类型，同类资源复用一次请求", async () => {
   const loadTemplate = vi.fn(async (id: string) => currentTemplates.find((template) => template.id === id));

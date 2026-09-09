@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { currentTemplates } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 
 import { describe, expect, test } from "vitest";
 
@@ -11,8 +12,8 @@ import {
 } from "../../packages/contract-runtime/src/index.ts";
 import {
   mapBatchToRegisteredCandidates as mapBatchWithTemplates,
-  resourceConversionRegistry,
-  validatePbresConversionCandidate,
+  createResourceConversionRegistry,
+  createPbresCandidateValidator,
 } from "../../packages/resource-conversion/src/index.ts";
 import type {
   JsonValue,
@@ -28,6 +29,8 @@ import {
 } from "./upstream-engines.ts";
 
 const encoder = new TextEncoder();
+const validatePbresConversionCandidate = createPbresCandidateValidator(loadTemplateCore);
+const resourceConversionRegistry = createResourceConversionRegistry(validatePbresConversionCandidate);
 const mapBatchToRegisteredCandidates = (resources: TemporaryResourceBatch["resources"]) => mapBatchWithTemplates(resources, currentTemplates);
 
 function input(value: JsonValue, fileName = "fixture.json") {

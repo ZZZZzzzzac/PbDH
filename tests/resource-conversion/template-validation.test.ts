@@ -14,3 +14,10 @@ test("同一会话按旧版到新版校验敌人模板时不重复注册 Schema"
       ]));
   }
 });
+
+test("缓存不能代替本次显式传入的模板身份", () => {
+  const data = structuredClone(v101.defaultData);
+  expect(validateTemplateData(v101.id, v101.version, data, v101)).toEqual([]);
+  expect(validateTemplateData(v101.id, v101.version, data, undefined)).toMatchObject([{ code: "conversion.template.unsupported" }]);
+  expect(validateTemplateData(v101.id, v101.version, data, v102)).toMatchObject([{ code: "conversion.template.unsupported" }]);
+});

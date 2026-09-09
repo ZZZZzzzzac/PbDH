@@ -4,7 +4,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { loadPbres, writePbres } from "@pbdh/contract-runtime";
-import { resourceConversionRegistry } from "@pbdh/resource-conversion";
+import { createResourceConversionRegistry, createPbresCandidateValidator } from "@pbdh/resource-conversion";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import type { ResourceMediaNormalizer } from "@pbdh/resource-conversion";
 import { trustedAuthoringFor, trustedRendererFor } from "@pbdh/templates/frontend";
 
@@ -13,6 +14,7 @@ import { createWorkspace } from "../../apps/creator/src/workspace-prototype/work
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 
 describe("Creator third-party resource conversion", () => {
+  const resourceConversionRegistry = createResourceConversionRegistry(createPbresCandidateValidator(loadTemplateCore));
   it("binds every local dhsheet card image to its converted resource", async () => {
     const sourcePath = path.join(process.cwd(), "tests/fixtures/resources/dragon-campaign.dhcb");
     const imported = await resourceConversionRegistry.import("dhsheet", {

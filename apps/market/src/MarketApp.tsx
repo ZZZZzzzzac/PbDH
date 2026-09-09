@@ -16,8 +16,9 @@ import {
   type SystemPackageOption,
 } from "@pbdh/publication-ui";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { upgradePbresTemplateVersions, validatePbresConversionCandidate } from "@pbdh/resource-conversion";
-import { listTemplateUpgradeRows } from "@pbdh/templates/core";
+import { upgradePbresTemplateVersions, createPbresCandidateValidator } from "@pbdh/resource-conversion";
+import { listTemplateUpgradeRows, upgradeTemplateResources } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 
 import { marketDesign } from "../design.ts";
@@ -78,6 +79,7 @@ type MarketCoverDraft = {
 };
 
 const imageAdmission = createBrowserImageAdmission();
+const validatePbresConversionCandidate = createPbresCandidateValidator(loadTemplateCore);
 
 const publicationLicenseOptions = [
   { id: "public-domain", label: "公有领域", declaration: "作者声明该资源属于公有领域。" },
@@ -761,7 +763,9 @@ export function MarketApp({
       const archive = await loadPublicationArchive(publicationPendingTemplateUpgrade.id, auth.credentials);
       const loaded = await loadPbres(new Uint8Array(await archive.arrayBuffer()), validatePbresConversionCandidate);
       if (!loaded.candidate) throw new Error("市场资源包未通过读取校验，原版本没有变化。");
-      const upgraded = await upgradePbresTemplateVersions(loaded.candidate, selections);
+      const upgraded = await upgradePbresTemplateVersions(loaded.candidate, selections, {
+        upgradeResources: upgradeTemplateResources, validate: validatePbresConversionCandidate,
+      });
       if (!upgraded.candidate) throw new Error("模板升级后的资源包未通过校验，原版本没有变化。");
       await replacePublicationArchive(publicationPendingTemplateUpgrade, upgraded.candidate, auth.credentials);
       const detailed = await loadManageablePublication(publicationPendingTemplateUpgrade.id, auth.credentials);

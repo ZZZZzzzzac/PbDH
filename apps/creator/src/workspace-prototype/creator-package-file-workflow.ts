@@ -5,7 +5,8 @@ import {
   type ResourcePackageCandidate,
 } from "@pbdh/contract-runtime";
 import {
-  resourceConversionRegistry,
+  createResourceConversionRegistry,
+  createPbresCandidateValidator,
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
 
@@ -14,6 +15,9 @@ import { safeFileName, resourceContainer } from "./creator-file-actions.ts";
 import { materializeCreatorResourceConversion } from "./materialize-resource-conversion.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
 import { prepareWorkspaceExport, type CreatorWorkspace } from "./workspace-model.ts";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
+
+const resourceConversionRegistry = createResourceConversionRegistry(createPbresCandidateValidator(loadTemplateCore));
 
 export type CreatorPackageFileCommand =
   | { type: "inspect-import"; bytes: Uint8Array }

@@ -12,7 +12,7 @@ import {
   type ResourcePackageCandidateValidator,
 } from "@pbdh/contract-runtime";
 
-import { upgradeTemplateResources, type TemplateUpgradeSelection } from "@pbdh/templates/core";
+import type { TemplateCoreCapability, upgradeTemplateResources, TemplateUpgradeSelection } from "@pbdh/templates/core";
 
 import { asJsonObject, exportFailure, isJsonValue, report, text } from "../shared.ts";
 import { validateTemplateData } from "../template-validation.ts";
@@ -51,7 +51,9 @@ function templateContractDiagnostic(
   };
 }
 
-export const validatePbresConversionCandidate: ResourcePackageCandidateValidator = async (document, media) => {
+export const createPbresCandidateValidator = (
+  loadTemplate: (id: string, version: string) => Promise<TemplateCoreCapability<any> | undefined>,
+): ResourcePackageCandidateValidator => async (document, media) => {
   const schemaDiagnostics = contractRuntime.validate({
     family: "resource-package",
     version: document.contractVersion,
@@ -61,24 +63,26 @@ export const validatePbresConversionCandidate: ResourcePackageCandidateValidator
   if (schemaDiagnostics.length > 0) return schemaDiagnostics;
   const semanticDiagnostics = await validateResourcePackageSemantics(document, media);
   if (semanticDiagnostics.length > 0) return semanticDiagnostics;
-  return document.resources.flatMap((resource, index) => {
+  return (await Promise.all(document.resources.map(async (resource, index) => {
     const data = asJsonObject(resource.data);
     if (!data) return [templateContractDiagnostic(document.contractVersion, index, {
       code: "conversion.template-data.invalid",
       severity: "error",
       message: "Template data 必须是对象。",
     })];
-    return validateTemplateData(resource.template.id, resource.template.version, data)
+    const template = await loadTemplate(resource.template.id, resource.template.version);
+    return validateTemplateData(resource.template.id, resource.template.version, data, template)
       .map((diagnostic) => templateContractDiagnostic(document.contractVersion, index, diagnostic));
-  });
+  }))).flat();
 };
 
 export async function upgradePbresTemplateVersions(
   candidate: { document: ResourcePackageLogicalDocument; media: ReadonlyMap<string, Uint8Array> },
   selections: readonly TemplateUpgradeSelection[],
+  operations: { upgradeResources: typeof upgradeTemplateResources; validate: ResourcePackageCandidateValidator },
 ) {
   const document = structuredClone(candidate.document);
-  const resources = upgradeTemplateResources(document.resources, selections);
+  const resources = operations.upgradeResources(document.resources, selections);
   if (resources.every((resource, index) => resource === document.resources[index])) {
     return { candidate: { document: candidate.document, media: new Map(candidate.media) }, diagnostics: [] };
   }
@@ -87,7 +91,7 @@ export async function upgradePbresTemplateVersions(
   const classification = await classifyResourcePackageVersionChange(baseline, document);
   document.package.version = classification.minimumVersion;
   document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, candidate.media);
-  const diagnostics = await validatePbresConversionCandidate(document, candidate.media);
+  const diagnostics = await operations.validate(document, candidate.media);
   return diagnostics.some((item) => item.severity === "error")
     ? { candidate: null, diagnostics }
     : { candidate: { document, media: new Map(candidate.media) }, diagnostics };
@@ -108,11 +112,11 @@ function kindFor(templateId: string): ResourceKind {
   return "free";
 }
 
-export const pbresAdapter: ResourceFormatAdapter = {
+export const createPbresAdapter = (validate: ResourcePackageCandidateValidator): ResourceFormatAdapter => ({
   id: "pbres",
   upstreamRevision,
   async import(input) {
-    const loaded = await loadPbres(input.bytes, validatePbresConversionCandidate);
+    const loaded = await loadPbres(input.bytes, validate);
     if (!loaded.candidate) {
       return {
         ok: false,
@@ -176,4 +180,4 @@ export const pbresAdapter: ResourceFormatAdapter = {
       report: report("pbres", "export", batch.resources.length),
     };
   },
-};
+});
