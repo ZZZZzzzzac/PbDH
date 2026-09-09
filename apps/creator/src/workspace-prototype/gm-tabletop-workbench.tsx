@@ -5,7 +5,8 @@ import { canonicalCardDesignSize, usesFixedSurfaceRatio } from "@pbdh/resource-r
 import { CardDisplay } from "@pbdh/resource-renderer/react";
 import type { TabletopCommand, TabletopDocumentModel } from "@pbdh/tabletop/core";
 import { TabletopSurface } from "@pbdh/tabletop/react";
-import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, useTemplateCore, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
+import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
+import { templateResourceTitle } from "@pbdh/templates/core/lazy";
 
 import { CloudSyncIndicator, Icon } from "./creator-controls.tsx";
 import { gmTabletopCapabilities } from "./gm-tabletop-session.ts";
@@ -74,11 +75,6 @@ export function GmTabletopWorkbench({
     snapshot.view === "instance-editor" ? selectedInstance?.resource.template.id : undefined,
     snapshot.view === "instance-editor" ? selectedInstance?.resource.template.version : undefined,
   );
-  const core = useTemplateCore(
-    snapshot.view === "instance-editor" ? selectedInstance?.resource.template.id : undefined,
-    snapshot.view === "instance-editor" ? selectedInstance?.resource.template.version : undefined,
-  );
-  const selectedTemplate = core.value;
   const selectedFrontend = selectedInstance
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
@@ -283,7 +279,7 @@ export function GmTabletopWorkbench({
     </div>}
 
     {snapshot.view === "instance-editor" && selectedInstance && <>
-      <div className="instance-editor-toolbar"><button type="button" onClick={() => execute({ type: "set-view", view: "canvas" })}>← 返回桌面</button><strong><ResourceIcon resource={selectedInstance.resource} />{selectedTemplate?.project(selectedInstance.resource.data).title ?? selectedInstance.id} · 实例</strong></div>
+      <div className="instance-editor-toolbar"><button type="button" onClick={() => execute({ type: "set-view", view: "canvas" })}>← 返回桌面</button><strong><ResourceIcon resource={selectedInstance.resource} />{templateResourceTitle(selectedInstance.resource.template.id, selectedInstance.resource.template.version, selectedInstance.resource.data) ?? selectedInstance.id} · 实例</strong></div>
       <div className="workbench-body instance-editor-body" onFocusCapture={() => execute({ type: "request-cloud-edit" })} onBlurCapture={() => execute({ type: "request-cloud-edit" })}>
         {selectedFrontend && (authoring.value ? <TemplateAuthoringSurface authoring={authoring.value} data={selectedInstance.resource.data} onValue={(path, value) => execute({ type: "edit-instance-data", path: path.split("."), value })} onData={(data) => execute({ type: "replace-instance-data", data })} /> : <TemplateLoadStatus state={authoring} />)}
         <aside className="preview-panel"><header><h1>实例预览</h1><span className="instance-edit-note">修改只作用于桌面上的这张卡</span></header><AutoFitPreview><GmTabletopCard instance={selectedInstance} assetUrls={snapshot.assetUrls} onCommand={(command) => execute({ type: "tabletop-command", command })} /></AutoFitPreview><footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{selectedInstance.resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" disabled><Icon name="image" />替换</button></footer></aside>

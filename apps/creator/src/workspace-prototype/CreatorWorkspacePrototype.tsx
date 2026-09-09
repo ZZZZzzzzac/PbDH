@@ -40,7 +40,6 @@ import {
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
-import { templateRegistry } from "@pbdh/templates/core";
 import { loadTemplateCore, upgradeTemplateResources } from "@pbdh/templates/core/lazy";
 
 import { creatorWorkspaceDesign } from "./design.ts";
@@ -383,9 +382,6 @@ export function CreatorWorkspacePrototype({
   const tabletopViewportRef = tabletopViewport.refs.viewport;
   const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
   const detailTabletopInstance = activeTabletop?.instances.find((instance) => instance.id === detailTabletopInstanceId);
-  const selectedInstanceTemplate = selectedInstance
-    ? templateRegistry.resolve(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
-    : undefined;
   const selectedInstanceFrontend = selectedInstance
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;

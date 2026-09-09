@@ -88,6 +88,17 @@ export function loadCurrentTemplateCore(id: string) {
   return reference ? loadTemplateCore(reference.id, reference.version) : Promise.resolve(undefined);
 }
 
+const knownTemplateVersions = new Set(templateCoreLoaders.map((entry) => `${entry.id}@${entry.version}`));
+
+export function templateResourceTitle(id: string, version: string, data: unknown): string | undefined {
+  if (!knownTemplateVersions.has(`${id}@${version}`)) return undefined;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return undefined;
+  const fields = data as Record<string, unknown>;
+  const value = fields.名称 || (id === "敌人" ? fields.原文 : undefined)
+    || `未命名${id === "自由" ? "自由资源" : id}`;
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
+}
+
 export function templateUpgradeTargets(id: string, fromVersion: string): readonly string[] {
   const targets: string[] = [];
   const visited = new Set<string>();

@@ -3,7 +3,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CanonicalCardSurface } from "@pbdh/templates/frontend/lazy";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
 import { executeTemplateStateCommand } from "@pbdh/tabletop/core";
-import { templateRegistry, type TemplateCoreCapability } from "@pbdh/templates/core";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
+import { templateResourceTitle } from "@pbdh/templates/core/lazy";
 
 import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { WorkspaceResource } from "./workspace-model.ts";
@@ -12,8 +13,7 @@ import { resolveResourceAttribution } from "./workspace-model.ts";
 type TemplateBoundResource = { template: { id: string; version: string } };
 
 export function resourceTitle(resource: WorkspaceResource): string {
-  const template = templateRegistry.resolve(resource.template.id, resource.template.version);
-  return template?.project(resource.data).title ?? resource.id;
+  return templateResourceTitle(resource.template.id, resource.template.version, resource.data) ?? resource.id;
 }
 
 export function ResourceIcon({ resource }: { resource: TemplateBoundResource }) {
