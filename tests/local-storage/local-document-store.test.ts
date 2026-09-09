@@ -45,6 +45,25 @@ afterEach(async () => {
 });
 
 describe("shared local document store", () => {
+  test("同步字段更新在事务中读取最新内容，不重写正文或复活回收站记录", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const original = envelope("sync-update", "creator-workspace");
+    await store.put(original);
+    const edited = { ...original, payload: { name: "新内容" } };
+    const saving = store.put(edited);
+    const acknowledging = store.updateSync("creator-workspace", original.documentId, (latest) => {
+      expect(latest.payload).toEqual(edited.payload);
+      return { ...latest.sync, baseRevision: "2" };
+    });
+    await Promise.all([saving, acknowledging]);
+    expect(await store.get("creator-workspace", original.documentId)).toMatchObject({
+      payload: edited.payload, sync: { baseRevision: "2" },
+    });
+    await store.trash("creator-workspace", original.documentId);
+    expect(await store.updateSync("creator-workspace", original.documentId, () => original.sync)).toBeUndefined();
+    expect(await store.get("creator-workspace", original.documentId)).toBeUndefined();
+  });
+
   test("isolates each document kind and survives reopening", async () => {
     const firstDatabase = database();
     const name = firstDatabase.name;

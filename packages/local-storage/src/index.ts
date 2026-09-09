@@ -237,6 +237,21 @@ export class DexieLocalDocumentStore {
     return structuredClone(record) as LocalDocumentEnvelope<T>;
   }
 
+  async updateSync(
+    documentKind: LocalDocumentKind,
+    documentId: string,
+    update: (current: LocalDocumentEnvelope) => LocalDocumentSync | undefined,
+  ): Promise<LocalDocumentEnvelope | undefined> {
+    return this.#database.transaction("rw", this.#database.localDocuments, async () => {
+      const current = await this.#database.localDocuments.get(documentId);
+      if (!current || current.documentKind !== documentKind || current.deletedAt) return undefined;
+      const sync = update(structuredClone(current));
+      if (!sync) return undefined;
+      await this.#database.localDocuments.update(documentId, { sync: structuredClone(sync) });
+      return structuredClone({ ...current, sync });
+    });
+  }
+
   async listTrash<T>(documentKind: LocalDocumentKind): Promise<Array<LocalDocumentEnvelope<T>>> {
     await this.purgeExpiredTrash();
     const records = await this.#database.localDocuments

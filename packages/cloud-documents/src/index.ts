@@ -85,7 +85,7 @@ export interface CloudDocumentApi {
 
 type LocalDocumentStore = Pick<
   DexieLocalDocumentStore,
-  "list" | "get" | "put" | "getMedia"
+  "list" | "get" | "put" | "updateSync" | "getMedia"
 >;
 
 export type FlushResult = {
@@ -96,7 +96,7 @@ export type FlushResult = {
 
 export function pendingSync(
   current: LocalDocumentSync,
-  mutationId = crypto.randomUUID(),
+  mutationId: string = crypto.randomUUID(),
 ): LocalDocumentSync {
   if (current.scope === "local-only" || current.state === "conflict") return current;
   return {
@@ -107,6 +107,14 @@ export function pendingSync(
     mutationId,
     lastError: null,
   };
+}
+
+function sameUploadedContent(left: LocalDocumentEnvelope, right: LocalDocumentEnvelope): boolean {
+  return left.sync.mutationId === right.sync.mutationId
+    && left.contractFamily === right.contractFamily
+    && left.contractVersion === right.contractVersion
+    && JSON.stringify(left.assetIds) === JSON.stringify(right.assetIds)
+    && JSON.stringify(left.payload) === JSON.stringify(right.payload);
 }
 
 export class CloudDocumentCoordinator {
@@ -176,19 +184,28 @@ export class CloudDocumentCoordinator {
     }
     const mutationId = this.#mutationId();
     const remote = await this.#putWithMissingMedia(local, mutationId, credentials, true);
-    const latest = await this.#store.get(documentKind, documentId);
-    if (latest) {
-      latest.sync = {
-        scope: "cloud",
-        state: "clean",
+    await this.#acknowledge(local, remote, credentials);
+    return remote;
+  }
+
+  async #acknowledge(
+    uploaded: LocalDocumentEnvelope,
+    remote: RemoteCloudDocument,
+    credentials: CloudCredentials,
+  ): Promise<void> {
+    await this.#store.updateSync(uploaded.documentKind, uploaded.documentId, (latest) => {
+      if (latest.sync.scope !== "cloud" || latest.sync.accountId !== credentials.accountId
+        || Number(latest.sync.baseRevision) > remote.revision) return undefined;
+      const unchanged = sameUploadedContent(latest, uploaded);
+      return {
+        ...latest.sync,
+        state: unchanged ? "clean" : "pending",
         baseRevision: String(remote.revision),
-        accountId: credentials.accountId,
-        mutationId: null,
+        mutationId: unchanged ? null : latest.sync.mutationId !== uploaded.sync.mutationId
+          ? latest.sync.mutationId ?? this.#mutationId() : this.#mutationId(),
         lastError: null,
       };
-      await this.#store.put(latest);
-    }
-    return remote;
+    });
   }
 
   async #flushOne(
@@ -197,42 +214,29 @@ export class CloudDocumentCoordinator {
   ): Promise<keyof FlushResult> {
     const mutationId = document.sync.mutationId ?? this.#mutationId();
     if (!document.sync.mutationId) {
-      document.sync = { ...document.sync, mutationId, lastError: null };
-      await this.#store.put(document);
+      const prepared = await this.#store.updateSync(document.documentKind, document.documentId, (latest) =>
+        latest.sync.scope === "cloud" && latest.sync.accountId === credentials.accountId
+          && sameUploadedContent(latest, document)
+          ? { ...latest.sync, mutationId, lastError: null } : undefined);
+      if (!prepared) return "pending";
+      document = prepared;
     }
     try {
       const remote = await this.#putWithMissingMedia(document, mutationId, credentials);
-      const latest = await this.#store.get(document.documentKind, document.documentId);
-      if (!latest) return "synced";
-      latest.sync = latest.sync.mutationId === mutationId
-        ? {
-            scope: "cloud",
-            state: "clean",
-            baseRevision: String(remote.revision),
-            accountId: credentials.accountId,
-            mutationId: null,
-            lastError: null,
-          }
-        : {
-            ...latest.sync,
-            baseRevision: String(remote.revision),
-          };
-      await this.#store.put(latest);
+      await this.#acknowledge(document, remote, credentials);
       return "synced";
     } catch (error) {
-      const latest = await this.#store.get(document.documentKind, document.documentId);
-      if (latest?.sync.mutationId === mutationId) {
-        const conflict = error instanceof CloudApiError
-          && error.code === "CLOUD_DOCUMENT_REVISION_CONFLICT";
-        latest.sync = {
-          ...latest.sync,
-          state: conflict ? "conflict" : "pending",
-          lastError: error instanceof Error ? error.message : "云同步失败",
-        };
-        await this.#store.put(latest);
-        return conflict ? "conflicts" : "pending";
-      }
-      return "pending";
+      const conflict = error instanceof CloudApiError
+        && error.code === "CLOUD_DOCUMENT_REVISION_CONFLICT";
+      const updated = await this.#store.updateSync(document.documentKind, document.documentId, (latest) =>
+        latest.sync.scope === "cloud" && latest.sync.accountId === credentials.accountId
+          && sameUploadedContent(latest, document)
+          ? {
+              ...latest.sync,
+              state: conflict ? "conflict" : "pending",
+              lastError: error instanceof Error ? error.message : "云同步失败",
+            } : undefined);
+      return updated && conflict ? "conflicts" : "pending";
     }
   }
   async #putWithMissingMedia(

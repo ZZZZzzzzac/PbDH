@@ -1,9 +1,12 @@
+import "fake-indexeddb/auto";
 import { describe, expect, test, vi } from "vitest";
+import { DexieLocalDocumentStore, PbDHLocalDatabase } from "../../packages/local-storage/src/index.ts";
 
 import {
   CloudApiError,
   CloudDocumentCoordinator,
   HttpCloudDocumentApi,
+  pendingSync,
   type CloudCredentials,
   type CloudDocumentApi,
   type RemoteCloudDocument,
@@ -12,6 +15,7 @@ import type {
   LocalDocumentEnvelope,
   LocalDocumentKind,
   LocalMediaAssetRecord,
+  LocalDocumentSync,
 } from "../../packages/local-storage/src/index.ts";
 
 
@@ -21,6 +25,81 @@ const credentials: CloudCredentials = {
   accountId: "account-1",
   canWrite: true,
 };
+
+describe("Cloud sync acknowledgement during editing", () => {
+  test.each((["character-save", "creator-workspace", "gm-tabletop-document"] as const)
+    .flatMap((kind) => [false, true].map((force) => ({ kind, force }))))(
+    "$kind 的回执不确认上传期间的新编辑（强制覆盖：$force）", async ({ kind, force }) => {
+      const database = new PbDHLocalDatabase(`sync-ack-${crypto.randomUUID()}`);
+      const store = new DexieLocalDocumentStore(database);
+      const original = envelope("editing", kind);
+      original.assetIds = [];
+      original.sync = { scope: "cloud", state: force ? "conflict" : "pending", baseRevision: "1", accountId: credentials.accountId, mutationId: "original" };
+      const put = vi.fn<CloudDocumentApi["putDocument"]>().mockImplementation(async (uploaded) => {
+        const edited = structuredClone(original);
+        edited.payload.name = "请求期间的新编辑";
+        edited.sync = pendingSync(edited.sync, "edited");
+        await store.put(edited);
+        return remote(uploaded, 2);
+      });
+      try {
+        await store.put(original);
+        const coordinator = new CloudDocumentCoordinator(store, api(put));
+        if (force) await coordinator.overwriteWithLocal(kind, original.documentId, credentials);
+        else await coordinator.flush(kind, credentials);
+        const latest = await store.get<{ name: string }>(kind, original.documentId);
+        expect(latest?.payload.name).toBe("请求期间的新编辑");
+        expect(latest?.sync).toMatchObject({ state: "pending", baseRevision: "2" });
+        expect(latest?.sync.mutationId).toBeTruthy();
+      } finally {
+        database.close();
+        await database.delete();
+      }
+    },
+  );
+
+  test.each(["deleted", "newer-revision", "other-account", "failed"] as const)(
+    "迟到的同步结果不覆盖 %s 状态", async (change) => {
+      const database = new PbDHLocalDatabase(`sync-late-${crypto.randomUUID()}`);
+      const store = new DexieLocalDocumentStore(database);
+      const original = envelope();
+      original.assetIds = [];
+      original.sync = { scope: "cloud", state: "pending", baseRevision: "1", accountId: credentials.accountId, mutationId: "original" };
+      const put = vi.fn<CloudDocumentApi["putDocument"]>().mockImplementation(async (uploaded) => {
+        if (change === "deleted") await store.trash(original.documentKind, original.documentId);
+        else {
+          const edited = structuredClone(original);
+          edited.payload.name = "新编辑";
+          edited.sync = pendingSync(edited.sync, "edited");
+          if (change === "newer-revision") edited.sync.baseRevision = "3";
+          if (change === "other-account") edited.sync.accountId = "account-2";
+          await store.put(edited);
+        }
+        if (change === "failed") throw new CloudApiError(409, "CLOUD_DOCUMENT_REVISION_CONFLICT", "conflict");
+        return remote(uploaded, 2);
+      });
+      try {
+        await store.put(original);
+        await new CloudDocumentCoordinator(store, api(put)).flush(original.documentKind, credentials);
+        const latest = await store.get(original.documentKind, original.documentId);
+        if (change === "deleted") {
+          expect(latest).toBeUndefined();
+          expect(await store.getTrash(original.documentKind, original.documentId)).toBeDefined();
+        } else {
+          expect(latest?.payload).toEqual({ name: "新编辑" });
+          expect(latest?.sync).toMatchObject({
+            state: "pending", mutationId: "edited",
+            baseRevision: change === "newer-revision" ? "3" : "1",
+            accountId: change === "other-account" ? "account-2" : credentials.accountId,
+          });
+        }
+      } finally {
+        database.close();
+        await database.delete();
+      }
+    },
+  );
+});
 
 describe("Cloud Document browser transport", () => {
   test("preserves the server's missing media list", async () => {
@@ -88,6 +167,16 @@ class FakeStore {
   async put<T>(value: LocalDocumentEnvelope<T>, media: readonly LocalMediaAssetRecord[] = []): Promise<void> {
     this.documents.set(value.documentId, structuredClone(value) as LocalDocumentEnvelope);
     for (const asset of media) this.media.set(asset.assetId, new Uint8Array(asset.bytes));
+  }
+
+  async updateSync(kind: LocalDocumentKind, id: string, update: (current: LocalDocumentEnvelope) => LocalDocumentSync | undefined) {
+    const current = this.documents.get(id);
+    if (!current || current.documentKind !== kind || current.deletedAt) return undefined;
+    const sync = update(structuredClone(current));
+    if (!sync) return undefined;
+    const next = structuredClone({ ...current, sync });
+    this.documents.set(id, next);
+    return structuredClone(next);
   }
 
   async getMedia(assetIds: readonly string[]): Promise<Map<string, Uint8Array>> {
