@@ -192,18 +192,23 @@ export async function saveCreatorPackageInformation(
   workspace: CreatorWorkspace,
   draft: CreatorPublicationDraft,
 ): Promise<CreatorPublicationResult> {
-  const prepared = await prepareCreatorCandidate(workspace, draft);
-  if (!prepared.ok) {
-    return { ok: false, title: "资源包信息未保存", diagnostics: prepared.diagnostics };
+  const edited = updateWorkspacePackageMetadata(workspace, draft.package);
+  edited.document.license = publicationLicense(draft.publication.licenseId, workspace.document.license);
+  edited.document.publication = {
+    language: draft.publication.language,
+    tags: [...draft.publication.tags],
+    coverAssetId: draft.cover.assetId,
+  };
+  if (draft.cover.asset && draft.cover.bytes) {
+    const asset = structuredClone(draft.cover.asset);
+    const index = edited.document.assets.findIndex((candidate) => candidate.id === asset.id);
+    if (index >= 0) edited.document.assets[index] = asset;
+    else edited.document.assets.push(asset);
+    edited.media.set(asset.id, new Uint8Array(draft.cover.bytes));
   }
   return {
     ok: true,
-    workspace: {
-      ...workspace,
-      document: prepared.candidate.document,
-      media: prepared.candidate.media,
-      dirty: true,
-    },
+    workspace: edited,
     message: "资源包信息已保存",
   };
 }

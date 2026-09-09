@@ -1,4 +1,7 @@
+import "fake-indexeddb/auto";
 import { readFileSync } from "node:fs";
+import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
+import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
 
 import { loadPbres, writePbres, type ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import type { PlatformCredentials } from "@pbdh/platform-auth/provider";
@@ -15,7 +18,7 @@ import {
 } from "../../apps/creator/src/workspace-prototype/creator-publication-workflow.ts";
 import { PublicationApiError } from "../../apps/creator/src/workspace-prototype/publication-api.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
-import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import { createBlankWorkspace, createWorkspace, prepareWorkspaceExport } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 
 const credentials: PlatformCredentials = {
   accountId: "account",
@@ -67,6 +70,45 @@ function draft(): CreatorPublicationDraft {
 }
 
 describe("Creator publication workflow", () => {
+  test.each(["empty", "unfinished"])("允许 %s 草稿保存资料，但拒绝发布", async (state) => {
+    const source = state === "empty" ? await createBlankWorkspace("草稿") : createWorkspace(workspace);
+    if (state === "unfinished") source.document.resources[0]!.path = "";
+    const adapter = port({ generateCover: vi.fn().mockRejectedValue(new Error("no cover")) });
+    const prepared = await prepareCreatorPackageInformation(source, adapter);
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) throw new Error("Draft preparation failed");
+    prepared.draft.package.name = "已修改的草稿";
+    prepared.draft.publication.title = "已修改的草稿";
+    prepared.draft.publication.language = "English";
+    prepared.draft.publication.tags = ["draft"];
+    const saved = await saveCreatorPackageInformation(source, prepared.draft);
+    expect(saved).toMatchObject({ ok: true, workspace: { dirty: true, document: {
+      package: { name: "已修改的草稿" },
+      publication: { language: "English", tags: ["draft"] },
+    } } });
+    if (!saved.ok) throw new Error("Draft save failed");
+    const database = new PbDHLocalDatabase(`creator-draft-${crypto.randomUUID()}`);
+    try {
+      const repository = new CreatorWorkspaceRepository(new DexieLocalDocumentStore(database));
+      await repository.save(saved.workspace);
+      const restored = (await repository.list())[0]!;
+      const reopened = await prepareCreatorPackageInformation(restored, adapter);
+      expect(reopened).toMatchObject({ ok: true, draft: {
+        package: { name: "已修改的草稿" }, publication: { language: "English", tags: ["draft"] },
+      } });
+      const exported = await prepareWorkspaceExport(restored);
+      expect((await validateResourcePackageCandidate(exported.document, exported.media))
+        .some((diagnostic) => diagnostic.severity === "error")).toBe(true);
+    } finally {
+      database.close();
+      await database.delete();
+    }
+    const publication = await publishCreatorWorkspace(saved.workspace, prepared.draft, credentials, adapter)
+      .catch(() => ({ ok: false }));
+    expect(publication.ok).toBe(false);
+    expect(adapter.publish).not.toHaveBeenCalled();
+  });
+
   test("rejects signed-out preparation before invoking remote or rendering adapters", async () => {
     const adapter = port();
     const result = await prepareCreatorPublication(workspace, null, adapter);
@@ -170,8 +212,9 @@ describe("Creator publication workflow", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    const exported = await prepareWorkspaceExport(result.workspace);
     const roundTrip = await loadPbres(
-      writePbres(result.workspace.document, result.workspace.media),
+      writePbres(exported.document, exported.media),
       validateResourcePackageCandidate,
     );
     expect(roundTrip.diagnostics).toEqual([]);
