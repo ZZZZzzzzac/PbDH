@@ -72,6 +72,11 @@ export function useCreatorDocumentPersistence({
   const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const workspaceSaveSequenceRef = useRef(0);
   const tabletopSaveSequenceRef = useRef(0);
+  const savedTabletopsRef = useRef(new Map<string, {
+    model: TabletopDocumentModel;
+    media: Array<Uint8Array | undefined>;
+    accountId: string | null;
+  }>());
 
   const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean) => {
     const restoredWorkspaces = snapshot.workspaces.map((item) => item.workspace);
@@ -168,7 +173,21 @@ export function useCreatorDocumentPersistence({
       const sequence = ++tabletopSaveSequenceRef.current;
       setTabletopSaving(true);
       const write = tabletopWriteQueueRef.current.then(async () => {
-        await Promise.all(tabletops.map((tabletop) => tabletopRepository.save(tabletop, tabletopMedia, credentials?.accountId ?? null)));
+        const ids = new Set(tabletops.map((tabletop) => tabletop.id));
+        for (const id of savedTabletopsRef.current.keys()) {
+          if (!ids.has(id)) savedTabletopsRef.current.delete(id);
+        }
+        await Promise.all(tabletops.map(async (tabletop) => {
+          const media = tabletop.assets.map((asset) => tabletopMedia.get(asset.id));
+          const accountId = credentials?.accountId ?? null;
+          const saved = savedTabletopsRef.current.get(tabletop.id);
+          // 只复用成功保存过的不可变 UI 快照；对应媒体被替换时也必须重新保存。
+          if (saved?.model === tabletop && saved.accountId === accountId
+            && saved.media.length === media.length
+            && media.every((bytes, index) => bytes === saved.media[index])) return;
+          await tabletopRepository.save(tabletop, tabletopMedia, accountId);
+          savedTabletopsRef.current.set(tabletop.id, { model: tabletop, media, accountId });
+        }));
       });
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "桌面保存失败"));

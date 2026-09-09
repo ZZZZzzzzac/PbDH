@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
-import type { TabletopDocumentModel } from "@pbdh/tabletop/core";
+import { createTabletopDocument, type TabletopDocumentModel } from "@pbdh/tabletop/core";
 
 import document from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import { CreatorCloudDocumentService } from "../../apps/creator/src/workspace-prototype/cloud-document-service.ts";
@@ -17,6 +17,7 @@ import { createWorkspace, updateWorkspacePackageMetadata, type CreatorWorkspace 
 const credentials = { accessToken: "test-token", accountId: "test-account", siteSessionId: "test-session", canWrite: true };
 const sync: LocalDocumentSync = { scope: "cloud", state: "clean", baseRevision: "1", accountId: credentials.accountId };
 const noop = () => undefined;
+const tabletopAssetId = `sha256:${"a".repeat(64)}`;
 let root: Root;
 let container: HTMLDivElement;
 
@@ -36,11 +37,24 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-async function mountEditor() {
+async function mountEditor(tabletopIds: string[] = []) {
   const workspace = createWorkspace({ document: document as ResourcePackageLogicalDocument, media: new Map() });
-  const recovery = { workspaces: [{ workspace, sync }], tabletops: [] };
+  const tabletopDocuments = tabletopIds.map((id) => {
+    const model = createTabletopDocument(id, id);
+    if (id === tabletopIds[0]) model.assets = [{ id: tabletopAssetId, mediaType: "image/webp", byteLength: "1", width: "630", height: "880" }];
+    return { model, sync, media: new Map<string, Uint8Array>(model.assets.map((asset) => [asset.id, new Uint8Array([1])])), document: {
+      contractVersion: "1.0.0" as const, documentId: id, name: id,
+      canvas: model.canvas, instances: [], assets: model.assets,
+      createdAt: "2026-09-09T00:00:00.000Z", updatedAt: "2026-09-09T00:00:00.000Z",
+    } };
+  });
+  const recovery = { workspaces: [{ workspace, sync }], tabletops: tabletopDocuments };
   vi.spyOn(CreatorWorkspaceRepository.prototype, "listStored").mockResolvedValue(recovery.workspaces);
-  vi.spyOn(TabletopDocumentRepository.prototype, "list").mockResolvedValue([]);
+  vi.spyOn(TabletopDocumentRepository.prototype, "list").mockResolvedValue(tabletopDocuments);
+  const tabletopSave = vi.spyOn(TabletopDocumentRepository.prototype, "save").mockImplementation(async (model) => ({
+    document: { ...tabletopDocuments[0]!.document, documentId: model.id, name: model.name, canvas: model.canvas },
+    media: new Map(),
+  }));
   vi.spyOn(CreatorCloudDocumentService.prototype, "recover").mockResolvedValue(recovery);
   const save = vi.spyOn(CreatorWorkspaceRepository.prototype, "save").mockResolvedValue(sync);
   const flush = vi.spyOn(CreatorCloudDocumentService.prototype, "flush").mockResolvedValue(recovery);
@@ -58,6 +72,15 @@ async function mountEditor() {
       <button onClick={() => setWorkspaces((current) => current.map((item) => updateWorkspacePackageMetadata(item, {
         ...item.document.package, name: "修改后的名称",
       })))}>编辑资料</button>
+      <button data-edit-tabletop onClick={() => setTabletops((current) => current.map((model, index) =>
+        index === 0 ? { ...model, name: `${model.name} edited` } : model))}>修改第一张桌面</button>
+      <button data-unused-media onClick={() => persistence.media.setTabletop((current) => new Map([
+        ...current, ["unused", new Uint8Array([1])],
+      ]))}>加入无关媒体</button>
+      <button data-referenced-media onClick={() => persistence.media.setTabletop((current) => new Map([
+        ...current, [tabletopAssetId, new Uint8Array([2])],
+      ]))}>替换引用媒体</button>
+      <button data-retry-tabletop onClick={() => setTabletops((current) => [...current])}>重试保存桌面</button>
       <CreatorWorkbench snapshot={{ workspaces, activeWorkspace: active, activeResource: active?.document.resources[0],
         activeResourceId: active?.document.resources[0]?.id ?? "", editorColumnShare: 0.5, assetUrls: new Map() }}
         execute={(command) => { if (command.type === "request-cloud-edit") persistence.requestCloudSyncAfterEditing.workspace(); }} />
@@ -66,8 +89,31 @@ async function mountEditor() {
   await act(async () => root.render(<Editor />));
   await act(async () => vi.advanceTimersByTimeAsync(400));
   flush.mockClear();
-  return { save, flush };
+  tabletopSave.mockClear();
+  return { save, flush, tabletopSave };
 }
+
+test("修改一张桌面只保存该桌面，失败记录可重试，无关媒体不触发保存", async () => {
+  const { tabletopSave } = await mountEditor(["first", "second"]);
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-edit-tabletop]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(400));
+  expect(tabletopSave.mock.calls.map(([model]) => model.id)).toEqual(["first"]);
+  tabletopSave.mockClear();
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-unused-media]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(400));
+  expect(tabletopSave).not.toHaveBeenCalled();
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-referenced-media]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(400));
+  expect(tabletopSave.mock.calls.map(([model]) => model.id)).toEqual(["first"]);
+  tabletopSave.mockClear();
+  tabletopSave.mockRejectedValueOnce(new Error("storage unavailable"));
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-edit-tabletop]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(400));
+  tabletopSave.mockClear();
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-retry-tabletop]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(400));
+  expect(tabletopSave.mock.calls.map(([model]) => model.id)).toEqual(["first"]);
+});
 
 test("云同步等待本地写入结束，不能越过仍在保存的编辑", async () => {
   const { save, flush } = await mountEditor();
