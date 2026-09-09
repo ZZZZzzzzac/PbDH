@@ -36,7 +36,7 @@ export function ResourcePackageInfoDialog({
   const changePublication = (nextPublication: PublicationFormValue) => onChange({ ...value, publication: nextPublication });
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (!busy) onSubmit();
+    if (!busy && !submitDisabled) onSubmit();
   }
   function changeName(name: string) {
     onChange({

@@ -123,7 +123,7 @@ export function CreatorDialogs({
       submitDisabled={!snapshot.packageInfo.package.name.trim()
         || !isSemanticVersion(snapshot.packageInfo.package.version)
         || !snapshot.packageInfo.publication?.licenseId.trim()
-        || !snapshot.publicationCover.assetId}
+        || (publishing && !snapshot.publicationCover.assetId)}
       busyLabel={snapshot.creatorOperation === "publication-cover"
         ? "正在处理封面…"
         : publishing ? "正在发布整包…" : "正在保存资源包信息…"}
