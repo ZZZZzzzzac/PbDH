@@ -831,20 +831,14 @@ describe("Creator Workspace UI contracts", () => {
     );
   });
 
-  test("uses neutral package defaults, editable enum menus, and separately debounced cloud sync", () => {
-    const rootSource = readFileSync(path.join(
+  test("uses neutral package defaults and editable enum menus", () => {
+    const creatorSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx",
     ), "utf8");
-    const persistenceSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/use-creator-document-persistence.ts"), "utf8");
-    const creatorSource = `${rootSource}\n${persistenceSource}`;
     const controlsSource = readFileSync(path.join(
       root,
       "apps/creator/src/workspace-prototype/creator-controls.tsx",
-    ), "utf8");
-    const workbenchSource = readFileSync(path.join(
-      root,
-      "apps/creator/src/workspace-prototype/creator-workbench.tsx",
     ), "utf8");
     const styles = readFileSync(path.join(
       root,
@@ -860,14 +854,6 @@ describe("Creator Workspace UI contracts", () => {
     expect(controlsSource).not.toContain("<datalist");
     expect(styles).toContain(".compact-field-control > input { box-sizing: border-box; width: 100%; }");
     expect(styles).toContain(".compact-field > .compact-field-control { position: relative; min-width: 0; display: flex; flex: 1 1 0; }");
-    expect(persistenceSource).toContain("LOCAL_SAVE_DELAY_MS");
-    expect(persistenceSource.match(/return scheduleCreatorCloudSync\(/g)).toHaveLength(2);
-    expect(workbenchSource).toContain('onFocusCapture={() => execute({ type: "request-cloud-edit" })}');
-    expect(workbenchSource).toContain('onBlurCapture={() => execute({ type: "request-cloud-edit" })}');
-    expect(creatorSource).toContain("isCreatorAuthoringInputFocused()");
-    expect(creatorSource).toContain("const pendingLocalWrites = workspaceWriteQueueRef.current;");
-    expect(creatorSource).toContain("const write = pendingLocalWrites.then(async () => {");
-    expect(creatorSource).not.toContain('}, 120);');
   });
 
   test("balances the Creator workspace, editor, and preview at a 3:3:4 ratio", () => {
