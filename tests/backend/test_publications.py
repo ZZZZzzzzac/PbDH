@@ -23,6 +23,8 @@ from pbdh_backend.publications.repository import (
     PublicationVersionConflict,
 )
 from pbdh_backend.settings import Settings
+from pbdh_backend.contracts import resource_package as resource_package_module
+from pbdh_backend.publications import service as publication_service_module
 
 
 ROOT = Path(__file__).parents[2]
@@ -174,6 +176,30 @@ def test_publish_rejects_invalid_image_with_correct_hashes(tmp_path: Path, bad_m
     assert api.get("/api/publications").json()["publications"] == []
     with Database(settings(tmp_path).database_path, ROOT / "apps/backend/migrations").connect() as connection:
         assert connection.execute("SELECT count(*) FROM media_blobs").fetchone()[0] == 0
+
+
+def test_publish_validates_media_once_and_hashes_input_and_final_snapshot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    api = client(tmp_path)
+    headers = claim(api, "author-one")
+    document, media = candidate()
+    counts = {"snapshot": 0, "decode": 0}
+    original_digest = resource_package_module.compute_resource_package_snapshot_digest
+    original_decode = publication_service_module.validate_normalized_webp
+
+    def digest(document, media):
+        counts["snapshot"] += 1
+        return original_digest(document, media)
+
+    def decode(content):
+        counts["decode"] += 1
+        return original_decode(content)
+
+    monkeypatch.setattr(resource_package_module, "compute_resource_package_snapshot_digest", digest)
+    monkeypatch.setattr(publication_service_module, "compute_resource_package_snapshot_digest", digest)
+    monkeypatch.setattr(publication_service_module, "validate_normalized_webp", decode)
+    response = publish(api, headers, document, media)
+    assert response.status_code == 200, response.text
+    assert counts == {"snapshot": 2, "decode": len(media)}
 
 
 def test_authenticated_development_publish_is_anonymously_discoverable_and_downloadable(tmp_path: Path) -> None:

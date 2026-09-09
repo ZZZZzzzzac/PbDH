@@ -1,5 +1,7 @@
 import copy
 import json
+import hashlib
+import tracemalloc
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +36,27 @@ SCHEMAS = {
     for version in family["versions"]
 }
 RUNTIME = ContractRuntime(CATALOG, SCHEMAS)
+
+
+def test_snapshot_digest_does_not_copy_all_media_into_one_buffer() -> None:
+    document = read_json(FIXTURE_ROOTS[0] / "valid/minotaur-wrecker.json")
+    media = {}
+    for index in range(8):
+        content = bytes([index]) * (1024 * 1024)
+        media["sha256:" + hashlib.sha256(content).hexdigest()] = content
+    asset = document["assets"][0]
+    document["assets"] = [{**asset, "id": asset_id, "byteLength": str(len(content))} for asset_id, content in media.items()]
+    for resource in document["resources"]:
+        resource["media"] = {"portrait": next(iter(media))}
+    tracemalloc.start()
+    try:
+        digest = compute_resource_package_snapshot_digest(document, media)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert digest.startswith("sha256:") and len(digest) == 71
+    print(f"snapshot media bytes: {sum(map(len, media.values()))}; additional Python peak bytes: {peak}")
+    assert peak < 1024 * 1024, f"8 MiB media required {peak} bytes of additional Python allocations"
 
 
 def load_media(fixture_root: Path, fixtures: list[dict[str, str]]) -> dict[str, bytes]:

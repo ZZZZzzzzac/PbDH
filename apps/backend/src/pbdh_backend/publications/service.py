@@ -59,23 +59,40 @@ class PublicationService:
             "tags": copy.deepcopy(metadata["tags"]),
             "coverAssetId": metadata["coverAssetId"],
         }
-        document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
-        diagnostics = self._validate_candidate(document, media)
+        # 入口已验证媒体字节、尺寸和资源；这里没有修改它们，只重验更新后的元数据。
+        diagnostics = self._contract_runtime.validate({
+            "family": "resource-package",
+            "version": document["contractVersion"],
+            "mode": self._mode,
+            "candidate": document,
+        })
         if diagnostics:
             raise PublicationValidationError(diagnostics)
         fork_diagnostics = self._validate_fork_source(document)
         if fork_diagnostics:
             raise PublicationValidationError(fork_diagnostics)
         cover_asset_id = metadata["coverAssetId"]
-        if cover_asset_id not in {asset["id"] for asset in document["assets"]}:
+        cover_index = next((index for index, asset in enumerate(document["assets"]) if asset["id"] == cover_asset_id), None)
+        if cover_index is None:
             raise PublicationValidationError([{
-                "code": "publication.cover.asset-undeclared",
+                "code": "resource-package.publication-cover.asset-undeclared",
                 "severity": "error",
                 "family": "resource-package",
                 "version": document["contractVersion"],
-                "location": "/metadata/coverAssetId",
+                "location": "/publication/coverAssetId",
                 "params": {"assetId": cover_asset_id},
             }])
+        cover = document["assets"][cover_index]
+        if (int(cover["width"]), int(cover["height"])) != (630, 880):
+            raise PublicationValidationError([{
+                "code": "publication.media.invalid",
+                "severity": "error",
+                "family": "resource-package",
+                "version": document["contractVersion"],
+                "location": f"/assets/{cover_index}",
+                "params": {"assetId": cover_asset_id, "message": "publication cover must be 630 by 880 pixels"},
+            }])
+        document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
         write = self._repository.publish(
             account_id,
             document,

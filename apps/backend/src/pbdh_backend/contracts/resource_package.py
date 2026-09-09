@@ -50,34 +50,28 @@ def _normalized_document(document: Mapping[str, Any]) -> dict[str, Any]:
     return content
 
 
-def _frame(frame_type: str, payload: bytes) -> bytes:
-    type_bytes = frame_type.encode("utf-8")
-    return (
-        struct.pack(">I", len(type_bytes))
-        + type_bytes
-        + struct.pack(">Q", len(payload))
-        + payload
-    )
-
-
 def compute_resource_package_snapshot_digest(
     document: Mapping[str, Any],
     media: Mapping[str, bytes],
 ) -> str:
-    parts = [
-        _frame("domain", DIGEST_DOMAIN.encode("utf-8")),
-        _frame(
-            "logical-document",
-            _canonicalize(_normalized_document(document)).encode("utf-8"),
-        ),
-    ]
+    digest = hashlib.sha256()
+
+    def frame(frame_type: str, payload: bytes) -> None:
+        type_bytes = frame_type.encode("utf-8")
+        digest.update(struct.pack(">I", len(type_bytes)))
+        digest.update(type_bytes)
+        digest.update(struct.pack(">Q", len(payload)))
+        digest.update(payload)
+
+    frame("domain", DIGEST_DOMAIN.encode("utf-8"))
+    frame("logical-document", _canonicalize(_normalized_document(document)).encode("utf-8"))
     for asset in sorted(document["assets"], key=lambda item: item["id"]):
         asset_id = asset["id"]
         if asset_id not in media:
             raise ValueError(f"Missing media bytes: {asset_id}")
-        parts.append(_frame("asset-id", asset_id.encode("utf-8")))
-        parts.append(_frame("asset-bytes", media[asset_id]))
-    return f"sha256:{hashlib.sha256(b''.join(parts)).hexdigest()}"
+        frame("asset-id", asset_id.encode("utf-8"))
+        frame("asset-bytes", media[asset_id])
+    return f"sha256:{digest.hexdigest()}"
 
 
 def _diagnostic(
