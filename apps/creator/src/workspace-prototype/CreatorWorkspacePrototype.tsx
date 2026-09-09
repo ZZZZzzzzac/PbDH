@@ -40,7 +40,7 @@ import {
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
-import { loadTemplateCore, upgradeTemplateResources } from "@pbdh/templates/core/lazy";
+import { loadTemplateCore, readLoadedTemplateCore, upgradeTemplateResources } from "@pbdh/templates/core/lazy";
 
 import { creatorWorkspaceDesign } from "./design.ts";
 import {
@@ -786,7 +786,15 @@ export function CreatorWorkspacePrototype({
 
   function applyTabletopCommand(command: TabletopCommand) {
     if (!activeTabletop) return;
-    const result = executeGmTabletopCommand(activeTabletop, command);
+    if (command.type === "template-state") {
+      const instance = activeTabletop.instances.find((item) => item.id === command.instanceId);
+      if (instance && !readLoadedTemplateCore(instance.resource.template.id, instance.resource.template.version)) {
+        notify("模板尚未加载完成，请稍后重试。");
+        return;
+      }
+    }
+    const result = executeGmTabletopCommand(activeTabletop, command, (instance) =>
+      readLoadedTemplateCore(instance.resource.template.id, instance.resource.template.version)?.tabletop.commands ?? []);
     if (!result.ok) {
       notify(result.error);
       return;

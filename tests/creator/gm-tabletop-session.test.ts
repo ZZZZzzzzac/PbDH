@@ -2,11 +2,12 @@ import { readFileSync } from "node:fs";
 
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { createTabletopDocument } from "@pbdh/tabletop/core";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
   arrangeGmTabletop,
+  executeGmTabletopCommand,
   placeWorkspaceResourcesOnTabletop,
   selectTabletopInstances,
 } from "../../apps/creator/src/workspace-prototype/gm-tabletop-session.ts";
@@ -21,6 +22,22 @@ const bytes = new Uint8Array(readFileSync(new URL(
 const workspace = createWorkspace({ document, media: new Map([[asset.id, bytes]]) });
 
 describe("GM Tabletop session", () => {
+  test("几何命令不读取模板能力，状态命令只使用显式注入的定义", () => {
+    const empty = createTabletopDocument("00000000-0000-7000-8000-000000000001", "测试桌面");
+    const placed = placeWorkspaceResourcesOnTabletop(empty, [workspace], [{ workspaceKey: workspace.key, resourceId: document.resources[0]!.id }]);
+    if (!placed.ok) throw new Error(placed.error);
+    const instanceId = placed.tabletop.instances[0]!.id;
+    const definitions = vi.fn(() => [{ id: "test", capability: "set-string" as const, field: "value", values: ["测试"] }]);
+    expect(executeGmTabletopCommand(placed.tabletop, { type: "move", instanceId, position: { x: 100, y: 100 } }, definitions).ok).toBe(true);
+    expect(definitions).not.toHaveBeenCalled();
+    const command = { type: "template-state" as const, instanceId, commandId: "test", value: "测试" };
+    expect(executeGmTabletopCommand(placed.tabletop, command).ok).toBe(false);
+    const result = executeGmTabletopCommand(placed.tabletop, command, definitions);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.tabletop.instances[0]!.state.value).toBe("测试");
+    expect(definitions).toHaveBeenCalledOnce();
+    expect(placed.tabletop.instances[0]!.state.value).not.toBe("测试");
+  });
   test("keeps multi-selection rules behind one deterministic interface", () => {
     expect(selectTabletopInstances(["a"], "b", "replace")).toEqual(["b"]);
     expect(selectTabletopInstances(["a"], "b", "add")).toEqual(["a", "b"]);

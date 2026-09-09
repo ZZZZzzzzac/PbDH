@@ -5,6 +5,7 @@ import {
   type TabletopCapability,
   type TabletopCommand,
   type TabletopDocumentModel,
+  type ExecuteTabletopCommandOptions,
 } from "@pbdh/tabletop/core";
 import { templateRegistry } from "@pbdh/templates/core";
 
@@ -49,13 +50,11 @@ export const gmTabletopCapabilities = new Set<TabletopCapability>([
 export function executeGmTabletopCommand(
   tabletop: TabletopDocumentModel,
   command: TabletopCommand,
+  templateCommands?: ExecuteTabletopCommandOptions["templateCommands"],
 ): GmTabletopSessionResult {
   const result = executeTabletopCommand(tabletop, command, {
     capabilities: gmTabletopCapabilities,
-    templateCommands: (instance) => templateRegistry.resolve(
-      instance.resource.template.id,
-      instance.resource.template.version,
-    )?.tabletop.commands ?? [],
+    templateCommands,
   });
   if (result.diagnostics.length > 0) return { ok: false, error: result.diagnostics[0]!.code };
   return { ok: true, tabletop: containGmTabletopInstances(result.document) };

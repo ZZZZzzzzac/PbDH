@@ -55,12 +55,13 @@ export const templateCoreLoaders: readonly TemplateCoreLoaderEntry[] = [
 export function createTemplateCoreLoader(entries: readonly TemplateCoreLoaderEntry[]) {
   const loaders = new Map<string, TemplateCoreLoaderEntry>();
   const pending = new Map<string, Promise<TemplateCoreCapability<any>>>();
+  const loaded = new Map<string, TemplateCoreCapability<any>>();
   for (const entry of entries) {
     const key = `${entry.id}@${entry.version}`;
     if (loaders.has(key)) throw new Error(`Duplicate Template version: ${key}`);
     loaders.set(key, entry);
   }
-  return (id: string, version: string): Promise<TemplateCoreCapability<any> | undefined> => {
+  const load = (id: string, version: string): Promise<TemplateCoreCapability<any> | undefined> => {
     const key = `${id}@${version}`;
     const entry = loaders.get(key);
     if (!entry) return Promise.resolve(undefined);
@@ -68,6 +69,7 @@ export function createTemplateCoreLoader(entries: readonly TemplateCoreLoaderEnt
     if (existing) return existing;
     const result = Promise.resolve().then(entry.load).then((template) => {
       if (template.id !== id || template.version !== version) throw new Error(`Template identity mismatch: ${key}`);
+      loaded.set(key, template);
       return template;
     }).catch((error: unknown) => {
       pending.delete(key);
@@ -76,9 +78,12 @@ export function createTemplateCoreLoader(entries: readonly TemplateCoreLoaderEnt
     pending.set(key, result);
     return result;
   };
+  return { load, read: (id: string, version: string) => loaded.get(`${id}@${version}`) };
 }
 
-export const loadTemplateCore = createTemplateCoreLoader(templateCoreLoaders);
+const coreLoader = createTemplateCoreLoader(templateCoreLoaders);
+export const loadTemplateCore = coreLoader.load;
+export const readLoadedTemplateCore = coreLoader.read;
 
 export const currentTemplateReferences = ["敌人", "种族", "护甲", "社群", "领域卡", "环境", "自由", "物品", "职业", "子职业", "武器"]
   .map((id) => ({ id, version: "1.1.0" }));

@@ -16,13 +16,16 @@ test("只加载所选版本，并发和后续调用复用成功结果", async ()
   const current = templateRegistry.resolve("护甲", "1.0.0")!;
   const selected = vi.fn().mockResolvedValue(current);
   const unrelated = vi.fn();
-  const load = createTemplateCoreLoader([
+  const { load, read } = createTemplateCoreLoader([
     { id: "护甲", version: "1.0.0", load: selected },
     { id: "护甲", version: "1.1.0", load: unrelated },
   ]);
   expect(selected).not.toHaveBeenCalled();
+  expect(read("护甲", "1.0.0")).toBeUndefined();
   await Promise.all([load("护甲", "1.0.0"), load("护甲", "1.0.0")]);
   expect(await load("护甲", "1.0.0")).toBe(current);
+  expect(read("护甲", "1.0.0")).toBe(current);
+  expect(read("护甲", "1.1.0")).toBeUndefined();
   expect(selected).toHaveBeenCalledOnce();
   expect(unrelated).not.toHaveBeenCalled();
 });
@@ -30,8 +33,9 @@ test("只加载所选版本，并发和后续调用复用成功结果", async ()
 test("加载失败不被当作缺少版本，下一次请求可重试", async () => {
   const current = templateRegistry.resolve("护甲", "1.0.0")!;
   const selected = vi.fn().mockRejectedValueOnce(new Error("network unavailable")).mockResolvedValue(current);
-  const load = createTemplateCoreLoader([{ id: "护甲", version: "1.0.0", load: selected }]);
+  const { load, read } = createTemplateCoreLoader([{ id: "护甲", version: "1.0.0", load: selected }]);
   await expect(load("护甲", "1.0.0")).rejects.toThrow("network unavailable");
+  expect(read("护甲", "1.0.0")).toBeUndefined();
   expect(await load("护甲", "1.0.0")).toBe(current);
   expect(selected).toHaveBeenCalledTimes(2);
 });
@@ -39,5 +43,5 @@ test("加载失败不被当作缺少版本，下一次请求可重试", async ()
 test("拒绝重复目录和返回错误版本的实现", async () => {
   const entry = { id: "护甲", version: "1.0.0", load: async () => templateRegistry.resolve("护甲", "1.1.0")! };
   expect(() => createTemplateCoreLoader([entry, entry])).toThrow("Duplicate Template version");
-  await expect(createTemplateCoreLoader([entry])("护甲", "1.0.0")).rejects.toThrow("Template identity mismatch");
+  await expect(createTemplateCoreLoader([entry]).load("护甲", "1.0.0")).rejects.toThrow("Template identity mismatch");
 });
