@@ -4,9 +4,7 @@ import {
   type ResourcePresentation,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
-import {
-  templateRegistry,
-} from "@pbdh/templates/core";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
 
 import {
   createWorkspace,
@@ -107,11 +105,8 @@ export function updateResourceReplacement(
 
 export function addTemplateResource(
   workspace: CreatorWorkspace,
-  templateId: string,
-  templateVersion: string,
+  template: TemplateCoreCapability<any>,
 ): { workspace: CreatorWorkspace; resourceId: string } {
-  const template = templateRegistry.resolve(templateId, templateVersion);
-  if (!template) throw new Error(`Unsupported Template: ${templateId}@${templateVersion}`);
   const next = createWorkspace(workspace, true);
   if (next.document.contractVersion !== RESOURCE_PACKAGE_VERSION) {
     next.document.contractVersion = RESOURCE_PACKAGE_VERSION;

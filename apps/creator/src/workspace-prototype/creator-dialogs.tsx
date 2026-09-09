@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type {
   ContractDiagnostic,
   ResourcePackageCandidate,
@@ -8,8 +9,8 @@ import type { LocalDocumentKind, LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 import { ResourcePackageInfoDialog, TemplateUpgradeDialog, type ResourcePackageEditorValue, type SystemPackageOption, type TemplateUpgradeDialogSelection } from "@pbdh/publication-ui";
 import type { ConversionDiagnostic, ResourceFormatId } from "@pbdh/resource-conversion";
-import { currentTemplates } from "@pbdh/templates/core";
-import { listTemplateUpgradeRows } from "@pbdh/templates/core/lazy";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
+import { currentTemplateReferences, listTemplateUpgradeRows, loadTemplateCore } from "@pbdh/templates/core/lazy";
 
 import { Field } from "./creator-controls.tsx";
 import { isSemanticVersion } from "./creator-file-actions.ts";
@@ -39,7 +40,7 @@ export type CreatorDialogState =
   | { kind: "new" }
   | { kind: "package-metadata"; workspaceKey: string }
   | { kind: "template-upgrade"; workspaceKey: string }
-  | { kind: "new-resource" }
+  | { kind: "new-resource"; workspaceKey: string }
   | { kind: "publish" }
   | { kind: "diagnostics"; title: string; diagnostics: ContractDiagnostic[] }
   | { kind: "conversion"; review: CreatorConversionReview }
@@ -62,7 +63,7 @@ export type CreatorDialogCommand =
   | { type: "close" | "create-workspace" | "choose-publication-cover" | "publish" | "create-tabletop" }
   | { type: "set-new-name" | "set-copy-package-name" | "set-tabletop-name"; value: string }
   | { type: "set-package-info"; value: ResourcePackageEditorValue }
-  | { type: "create-resource"; template: { id: string; version: string } }
+  | { type: "create-resource"; template: TemplateCoreCapability<any>; workspaceKey: string }
   | { type: "save-package" | "close-workspace"; workspaceKey: string }
   | { type: "upgrade-templates"; workspaceKey: string; selections: readonly TemplateUpgradeDialogSelection[] }
   | { type: "export-conversion" | "accept-conversion"; review: CreatorConversionReview }
@@ -75,6 +76,40 @@ export type CreatorDialogCommand =
   | { type: "commit-tabletop-import"; incoming: TabletopDocumentCandidate; resolution: "copy" | "replace" }
   | { type: "confirm-cloud-sync"; documentKind: CloudDocumentKind; documentId: string }
   | { type: "resolve-cloud-conflict"; documentKind: CloudDocumentKind; documentId: string; resolution: "cloud" | "aside" | "local" };
+
+function NewResourceChoices({ workspaceKey, execute }: { workspaceKey: string; execute(command: CreatorDialogCommand): void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(false);
+  const pending = useRef(false);
+  const executeRef = useRef(execute);
+  executeRef.current = execute;
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  async function choose(reference: { id: string; version: string }) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError(null);
+    try {
+      const template = await loadTemplateCore(reference.id, reference.version);
+      if (!template) throw new Error(`模板版本不可用：${reference.id}@${reference.version}`);
+      if (mounted.current) executeRef.current({ type: "create-resource", template, workspaceKey });
+    } catch (error) {
+      if (mounted.current) setError(error instanceof Error ? error.message : "模板加载失败，请重试。");
+    } finally {
+      pending.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  }
+  return <>
+    <div className="resource-type-choices">{currentTemplateReferences.map((reference) =>
+      <button type="button" key={`${reference.id}@${reference.version}`} disabled={busy} onClick={() => void choose(reference)}>
+        <TemplateIcon templateId={reference.id} />{reference.id}
+      </button>)}</div>
+    {busy && <div role="status">模板加载中…</div>}
+    {error && <div role="alert">{error}</div>}
+  </>;
+}
 
 export function CreatorDialogs({
   dialog,
@@ -140,9 +175,7 @@ export function CreatorDialogs({
   return <div className="dialog-backdrop" role="presentation"><section className={`dialog dialog-${dialog.kind}`} role="dialog" aria-modal="true">
     {dialog.kind === "new" && <><h2>新建资源包</h2><Field className="dialog-field" label="名称" value={snapshot.newName} onChange={(value) => execute({ type: "set-new-name", value })} />
       <div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" onClick={() => execute({ type: "create-workspace" })}>创建</button></div></>}
-    {dialog.kind === "new-resource" && <><h2>新建资源</h2><div className="resource-type-choices">
-      {currentTemplates.map((template) => <button type="button" key={`${template.id}@${template.version}`} onClick={() => execute({ type: "create-resource", template })}><TemplateIcon templateId={template.id} />{template.id}</button>)}
-    </div>
+    {dialog.kind === "new-resource" && <><h2>新建资源</h2><NewResourceChoices key={dialog.workspaceKey} workspaceKey={dialog.workspaceKey} execute={execute} />
       <div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button></div></>}
     {dialog.kind === "diagnostics" && <><h2>{dialog.title}</h2><ul className="diagnostics">{collapseCreatorDiagnostics(dialog.diagnostics).map((item) => <li key={`${item.code}:${item.location}`}><b>{creatorDiagnosticMessage(item.code, typeof item.params.message === "string" ? item.params.message : undefined)}{typeof item.params.count === "number" && item.params.count > 1 ? `（共 ${item.params.count} 处）` : ""}</b></li>)}</ul>
       <div className="dialog-actions"><button type="button" className="primary" onClick={() => execute({ type: "close" })}>保留现状</button></div></>}

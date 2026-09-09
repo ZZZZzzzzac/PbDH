@@ -1544,9 +1544,9 @@ export function CreatorWorkspacePrototype({
     setPendingCreatorImage({ purpose: "resource-image", file, workspaceKey: active.key, resourceId: resource.id });
   }
 
-  function createResource(template: { id: string; version: string }) {
-    if (!active) return;
-    const result = addTemplateResource(active, template.id, template.version);
+  function createResource(template: Parameters<typeof addTemplateResource>[1], workspaceKey: string) {
+    if (!active || active.key !== workspaceKey) return;
+    const result = addTemplateResource(active, template);
     replaceActive(result.workspace);
     setActiveResourceId(result.resourceId);
     setDialog(null);
@@ -1578,7 +1578,7 @@ export function CreatorWorkspacePrototype({
       case "export-third-party": void exportPackage(command.formatId); return;
       case "export-package": void exportPackage(); return;
       case "publish-package": void openPublicationDialog(); return;
-      case "new-resource": setDialog({ kind: "new-resource" }); return;
+      case "new-resource": if (active) setDialog({ kind: "new-resource", workspaceKey: active.key }); return;
       case "new-folder": if (active) replaceActive(createWorkspaceFolder(active)); return;
       case "set-search": setResourceSearch(command.value); return;
       case "toggle-multi-select": toggleResourceMultiSelect(); return;
@@ -1714,7 +1714,7 @@ export function CreatorWorkspacePrototype({
       case "import-package": setTabletopContextMenu(null); importRef.current?.click(); return;
       case "export-package": setTabletopContextMenu(null); void exportPackage(); return;
       case "publish-package": setTabletopContextMenu(null); void openPublicationDialog(); return;
-      case "new-resource": setTabletopContextMenu(null); setDialog({ kind: "new-resource" }); return;
+      case "new-resource": setTabletopContextMenu(null); if (active) setDialog({ kind: "new-resource", workspaceKey: active.key }); return;
       case "new-folder": if (active) replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); return;
       case "sync-workspace": {
         const workspace = workspaces.find((item) => item.key === command.workspaceKey);
@@ -1780,7 +1780,7 @@ export function CreatorWorkspacePrototype({
         }
         return;
       case "create-workspace": void createWorkspaceFromDialog(); return;
-      case "create-resource": createResource(command.template); return;
+      case "create-resource": createResource(command.template, command.workspaceKey); return;
       case "choose-publication-cover": publicationCoverRef.current?.click(); return;
       case "publish": void publishWorkspace(); return;
       case "save-package": void savePackageMetadata(command.workspaceKey); return;

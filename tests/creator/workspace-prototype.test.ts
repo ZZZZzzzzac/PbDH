@@ -164,7 +164,7 @@ describe("Creator Workspace prototype state model", () => {
       document: structuredClone(stableMinotaurPackage) as ResourcePackageLogicalDocument,
       media,
     });
-    const added = addTemplateResource(workspace, adversaryTemplate.id, adversaryTemplate.version);
+    const added = addTemplateResource(workspace, adversaryTemplate);
     const targetId = workspace.document.resources[0]!.id;
     const linked = updateResourceReplacement(
       added.workspace,
@@ -189,7 +189,7 @@ describe("Creator Workspace prototype state model", () => {
 
   test("creates a blank weapon from the registered Template and edits every authoring field", () => {
     const source = createWorkspace({ document, media });
-    const created = addTemplateResource(source, weaponTemplate.id, weaponTemplate.version);
+    const created = addTemplateResource(source, weaponTemplate);
     expect(created.workspace.document.resources).toHaveLength(2);
     expect(created.workspace.document.resources.map((resource) => resource.template.id)).toEqual(["敌人", "武器"]);
     expect(resourceData<WeaponData>(created.workspace, created.resourceId)).toEqual(weaponTemplate.defaultData);
@@ -217,7 +217,7 @@ describe("Creator Workspace prototype state model", () => {
 
   test("creates and edits a complete armor resource without changing another resource", () => {
     const source = createWorkspace({ document, media });
-    const created = addTemplateResource(source, armorTemplate.id, armorTemplate.version);
+    const created = addTemplateResource(source, armorTemplate);
     expect(resourceData<ArmorData>(created.workspace, created.resourceId)).toEqual(armorTemplate.defaultData);
 
     const values = {
@@ -243,7 +243,7 @@ describe("Creator Workspace prototype state model", () => {
     "creates and generically edits stable %s resources",
     (template) => {
       const source = createWorkspace({ document, media });
-      const created = addTemplateResource(source, template.id, template.version);
+      const created = addTemplateResource(source, template);
       const edited = updateWorkspaceResourceData(created.workspace, (data) => { data.名称 = `测试${template.id}`; }, created.resourceId);
       const resource = edited.document.resources.find((candidate) => candidate.id === created.resourceId)!;
       expect(resource.template).toEqual({ id: template.id, version: "1.0.0" });
@@ -255,7 +255,7 @@ describe("Creator Workspace prototype state model", () => {
 
   test("exports and reloads a stable environment through the formal .pbres boundary", async () => {
     const source = createWorkspace({ document, media });
-    const created = addTemplateResource(source, environmentTemplate.id, environmentTemplate.version);
+    const created = addTemplateResource(source, environmentTemplate);
     const edited = updateWorkspaceResourceData(created.workspace, (data) => {
       Object.assign(data, {
         名称: "荒废林地",
@@ -280,7 +280,7 @@ describe("Creator Workspace prototype state model", () => {
     const folderWorkspace = createWorkspaceFolder(source, null, "第一幕");
     const folderId = folderWorkspace.folders.find((folder) => folder.name === "第一幕")!.id;
     const selected = selectWorkspaceFolder(folderWorkspace, folderId);
-    const created = addTemplateResource(selected, weaponTemplate.id, weaponTemplate.version);
+    const created = addTemplateResource(selected, weaponTemplate);
 
     expect(created.workspace.resourceLocations.find((item) => item.resourceId === created.resourceId)).toMatchObject({ parentId: folderId });
     expect(created.workspace.document.resources.find((item) => item.id === created.resourceId)?.path).toBe("第一幕/resource-2.json");
@@ -336,7 +336,7 @@ describe("Creator Workspace prototype state model", () => {
       sourceLabel: legacy.document.package.name,
     });
 
-    const ancestry = addTemplateResource(legacy, ancestryTemplate.id, ancestryTemplate.version);
+    const ancestry = addTemplateResource(legacy, ancestryTemplate);
     const ancestryResource = ancestry.workspace.document.resources.find((resource) => resource.id === ancestry.resourceId)!;
     expect(ancestry.workspace.document.contractVersion).toBe("1.1.0");
     expect(ancestryResource.attribution).toEqual({ artworkCredit: "", sourceLabel: document.package.name });
@@ -433,7 +433,7 @@ describe("Creator Workspace prototype state model", () => {
     let workspace = createWorkspaceFolder(createWorkspace({ document, media }), null, "旧名称");
     const folderId = workspace.currentFolderId!;
     workspace = selectWorkspaceFolder(workspace, folderId);
-    const created = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    const created = addTemplateResource(workspace, weaponTemplate);
     workspace = renameWorkspaceFolder(created.workspace, folderId, "新名称");
 
     expect(workspace.document.resources.find((item) => item.id === created.resourceId)?.path).toBe("新名称/resource-2.json");
@@ -441,7 +441,7 @@ describe("Creator Workspace prototype state model", () => {
 
   test("uses temporary tabs, pins them, and chooses an adjacent tab when closing", () => {
     const source = createWorkspace({ document, media });
-    const created = addTemplateResource(source, weaponTemplate.id, weaponTemplate.version);
+    const created = addTemplateResource(source, weaponTemplate);
     const firstId = source.document.resources[0]!.id;
     const secondId = created.resourceId;
     let workspace = closeWorkspaceResourceTab(created.workspace, firstId).workspace;
@@ -502,7 +502,7 @@ describe("Creator Workspace prototype state model", () => {
       media,
     });
     const sourceId = source.document.resources[0]!.id;
-    const linked = addTemplateResource(source, adversaryTemplate.id, adversaryTemplate.version);
+    const linked = addTemplateResource(source, adversaryTemplate);
     source = updateResourceReplacement(linked.workspace, sourceId, "alternate-form", linked.resourceId);
     const target = await createBlankWorkspace("组合资源包");
 
@@ -523,11 +523,11 @@ describe("Creator Workspace prototype state model", () => {
 
   test("replaces a temporary tab in place and selects the resource folder", () => {
     let workspace = createWorkspace({ document, media });
-    const second = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    const second = addTemplateResource(workspace, weaponTemplate);
     workspace = closeWorkspaceResourceTab(second.workspace, second.resourceId).workspace;
     workspace = createWorkspaceFolder(workspace, null, "第二幕");
     const folderId = workspace.currentFolderId!;
-    const third = addTemplateResource(workspace, weaponTemplate.id, weaponTemplate.version);
+    const third = addTemplateResource(workspace, weaponTemplate);
     workspace = closeWorkspaceResourceTab(third.workspace, third.resourceId).workspace;
 
     workspace = previewWorkspaceResource(workspace, second.resourceId);
@@ -665,8 +665,7 @@ describe("Creator Workspace prototype state model", () => {
   test("round-trips a mixed adversary and weapon package without changing package exchange semantics", async () => {
     const created = addTemplateResource(
       createWorkspace({ document, media }),
-      weaponTemplate.id,
-      weaponTemplate.version,
+      weaponTemplate,
     );
     const edited = updateResourceData<WeaponData>(created.workspace, (data) => {
       data.名称 = "巡林短剑";

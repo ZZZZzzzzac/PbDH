@@ -95,7 +95,7 @@ describe("Creator package file workflow", () => {
 
   test.each(currentTemplates)("exports a default $id resource created inside a new anonymous workspace", async (template) => {
     const blank = await createBlankWorkspace("匿名资源包");
-    const created = addTemplateResource(blank, template.id, template.version);
+    const created = addTemplateResource(blank, template);
 
     const result = await runCreatorPackageFileWorkflow({
       type: "export-workspace",
@@ -112,7 +112,7 @@ describe("Creator package file workflow", () => {
   test("repairs an existing local workspace whose license fields were left blank", async () => {
     const blank = await createBlankWorkspace("旧匿名资源包");
     blank.document.license = { label: "", declaration: "" };
-    const created = addTemplateResource(blank, currentTemplates[0]!.id, currentTemplates[0]!.version);
+    const created = addTemplateResource(blank, currentTemplates[0]!);
 
     const result = await runCreatorPackageFileWorkflow({
       type: "export-workspace",
