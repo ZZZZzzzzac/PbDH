@@ -7,7 +7,11 @@ export type ResourcePackageTargetValue = { systemPackageId: string; version: str
 export type ResourcePackageInfoValue = { name: string; version: string; description: string; targets: ResourcePackageTargetValue[] };
 export type SystemPackageOption = { id: string; name: string; version: string };
 export type PublicationFormValue = { title: string; summary: string; language: string; tags: string[]; licenseId: string };
-export type ResourcePackageEditorValue = { package: ResourcePackageInfoValue; publication?: PublicationFormValue };
+export type ResourcePackageEditorValue = {
+  package: ResourcePackageInfoValue;
+  publication?: PublicationFormValue;
+  versionSuggestion?: { version: string; summary: string; automatic: boolean };
+};
 export type PublicationLicenseOption = { id: string; label: string };
 
 export function ResourcePackageInfoDialog({
@@ -40,12 +44,14 @@ export function ResourcePackageInfoDialog({
   }
   function changeName(name: string) {
     onChange({
+      ...value,
       package: { ...value.package, name },
       ...(publication ? { publication: { ...publication, title: name } } : {}),
     });
   }
   function changeDescription(description: string) {
     onChange({
+      ...value,
       package: { ...value.package, description },
       ...(publication ? { publication: { ...publication, summary: description } } : {}),
     });
@@ -58,7 +64,18 @@ export function ResourcePackageInfoDialog({
         {publication && <div className="pbdh-publication-cover-field"><strong>封面</strong><div className="pbdh-publication-cover-preview">{coverUrl ? <img src={coverUrl} alt="资源包封面" /> : <ImageIcon />}</div><button type="button" disabled={busy || !onChooseCover} onClick={onChooseCover}><UploadIcon />上传</button></div>}
         <div className="pbdh-publication-copy-fields">
           <Field label="名称" value={value.package.name} disabled={busy} onChange={changeName} />
-          <Field label="版本" value={value.package.version} disabled={busy} onChange={(version) => changePackage({ ...value.package, version })} />
+          <div className="pbdh-version-field">
+            <Field label="版本" value={value.package.version} disabled={busy} readOnly={value.versionSuggestion?.automatic}
+              onChange={(version) => changePackage({ ...value.package, version })} />
+            {value.versionSuggestion && <>
+              <button type="button" disabled={busy} onClick={() => onChange({
+                ...value,
+                package: { ...value.package, version: value.versionSuggestion!.automatic ? value.package.version : value.versionSuggestion!.version },
+                versionSuggestion: { ...value.versionSuggestion!, automatic: !value.versionSuggestion!.automatic },
+              })}>{value.versionSuggestion.automatic ? "手动指定" : "恢复自动"}</button>
+              <small>{value.versionSuggestion.summary}</small>
+            </>}
+          </div>
           {storageDescription && <p>{storageDescription}</p>}
           <Field multiline label="简介" value={value.package.description} disabled={busy} onChange={changeDescription} />
           <TargetSystemEditor value={value.package.targets} options={systemPackageOptions} disabled={busy} onChange={(targets) => changePackage({ ...value.package, targets })} />
@@ -127,10 +144,10 @@ function TargetSystemEditor({ value, options, disabled, onChange }: { value: Res
   </div><small>可选择多个；未选择时会在市场显示“未指定目标系统”。</small></fieldset>;
 }
 
-function Field({ label, value, multiline = false, disabled = false, onChange }: { label: string; value: string; multiline?: boolean; disabled?: boolean; onChange: (value: string) => void }) {
+function Field({ label, value, multiline = false, disabled = false, readOnly = false, onChange }: { label: string; value: string; multiline?: boolean; disabled?: boolean; readOnly?: boolean; onChange: (value: string) => void }) {
   return <label className={multiline ? "multiline" : undefined}><span>{label}</span>{multiline
     ? <textarea value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
-    : <input value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} />}</label>;
+    : <input value={value} disabled={disabled} readOnly={readOnly} onChange={(event) => onChange(event.target.value)} />}</label>;
 }
 
 function TagEditor({ tags, disabled = false, onChange }: { tags: string[]; disabled?: boolean; onChange: (tags: string[]) => void }) {

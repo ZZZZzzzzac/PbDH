@@ -36,7 +36,7 @@ const workspace = createWorkspace({ document, media: new Map([[asset.id, bytes]]
 
 function port(overrides: Partial<CreatorPublicationPort> = {}): CreatorPublicationPort {
   return {
-    suggestVersion: vi.fn().mockResolvedValue("2.1.0"),
+    suggestVersion: vi.fn().mockResolvedValue({ version: "2.1.0", summary: "新增资源或关联" }),
     generateCover: vi.fn().mockResolvedValue({ assetId: asset.id, asset, bytes, url: "blob:cover" }),
     publish: vi.fn().mockResolvedValue({
       publication: {
@@ -70,6 +70,31 @@ function draft(): CreatorPublicationDraft {
 }
 
 describe("Creator publication workflow", () => {
+  test.each([true, false])("发布时复核自动版本，手动版本不被替换（自动：%s）", async (automatic) => {
+    const selected = draft();
+    selected.package.version = "9.0.0";
+    selected.package.description = "窗口中最终修改的说明";
+    selected.publication.summary = selected.package.description;
+    selected.versionSuggestion = { version: "2.1.0", summary: "原建议", automatic };
+    const adapter = port({
+      suggestVersion: vi.fn().mockResolvedValue({ version: "3.0.0", summary: "资源结构或目标声明发生变化" }),
+      publish: vi.fn().mockImplementation(async (candidate) => ({ publication: {
+        publicationId: "publication", packageVersion: candidate.document.package.version, created: false, idempotent: false,
+      } })),
+    });
+    const result = await publishCreatorWorkspace(workspace, selected, credentials, adapter);
+    expect(result).toMatchObject({ ok: true, workspace: { document: { package: {
+      version: automatic ? "3.0.0" : "9.0.0", description: selected.package.description,
+    } } } });
+    if (automatic) expect(adapter.suggestVersion).toHaveBeenCalledWith(expect.objectContaining({
+      package: expect.objectContaining({ description: selected.package.description }),
+    }), credentials);
+    else expect(adapter.suggestVersion).not.toHaveBeenCalled();
+    if (!result.ok) throw new Error("Publication failed");
+    expect(await validateResourcePackageCandidate(result.workspace.document, result.workspace.media)).toEqual([]);
+    expect(workspace.document.package.version).toBe("1.0.0");
+  });
+
   test.each(["empty", "unfinished"])("允许 %s 草稿保存资料，但拒绝发布", async (state) => {
     const source = state === "empty" ? await createBlankWorkspace("草稿") : createWorkspace(workspace);
     if (state === "unfinished") source.document.resources[0]!.path = "";
@@ -125,6 +150,7 @@ describe("Creator publication workflow", () => {
       ok: true,
       draft: {
         package: { name: document.package.name, version: "2.1.0" },
+        versionSuggestion: { version: "2.1.0", summary: "新增资源或关联", automatic: true },
         publication: { title: document.package.name, language: "中文", tags: [] },
         cover: { assetId: asset.id },
       },

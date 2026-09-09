@@ -17,6 +17,10 @@
 .pbdh-publication-cover-field > button:disabled { opacity: .45; cursor: default; }
 .pbdh-publication-cover-field > button svg { width: 14px; height: 14px; }
 .pbdh-publication-copy-fields { display: flex; flex-direction: column; gap: 8px; }
+.pbdh-version-field > label { width: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; }
+.pbdh-version-field:has(> button) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 6px; }
+.pbdh-version-field > button { min-height: 34px; padding: 0 8px; border: 1px solid #c8beb3; border-radius: 5px; color: #3b302a; background: #fffdf8; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.pbdh-version-field > small { grid-column: 1 / -1; margin-left: 84px; color: #746a62; font-size: 12px; line-height: 1.5; }
 .pbdh-publication-copy-fields > label, .pbdh-publication-tag-field { width: 100%; display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: start; gap: 8px; }
 .pbdh-publication-copy-fields label > span { padding-top: 8px; font-size: 14px; font-weight: 700; }
 .pbdh-publication-copy-fields input, .pbdh-publication-copy-fields textarea, .pbdh-publication-copy-fields select { width: 100%; min-width: 0; height: 34px; padding: 0 9px; border: 1px solid #c8beb3; border-radius: 5px; outline: 0; color: #3b302a; background: #fffdf8; font-family: inherit; font-size: 14px; font-weight: 550; }

@@ -247,6 +247,7 @@ export function CreatorWorkspacePrototype({
   const [newName, setNewName] = useState("新资源包");
   const [packageNameDraft, setPackageNameDraft] = useState("");
   const [packageVersionDraft, setPackageVersionDraft] = useState("");
+  const [publicationVersionSuggestion, setPublicationVersionSuggestion] = useState<CreatorPublicationDraft["versionSuggestion"]>();
   const [packageDescriptionDraft, setPackageDescriptionDraft] = useState("");
   const [packageTargetsDraft, setPackageTargetsDraft] = useState<ResourcePackageLogicalDocument["targets"]>([]);
   const [copyPackageName, setCopyPackageName] = useState("新资源包");
@@ -1271,6 +1272,7 @@ export function CreatorWorkspacePrototype({
   }
 
   function applyPackageInformationDraft(draft: CreatorPublicationDraft) {
+    setPublicationVersionSuggestion(draft.versionSuggestion);
     setPackageNameDraft(draft.package.name);
     setPackageVersionDraft(draft.package.version);
     setPackageDescriptionDraft(draft.package.description);
@@ -1294,6 +1296,7 @@ export function CreatorWorkspacePrototype({
 
   function currentPackageInformationDraft(): CreatorPublicationDraft {
     return {
+      versionSuggestion: publicationVersionSuggestion,
       package: {
         name: packageNameDraft,
         version: packageVersionDraft,
@@ -1758,6 +1761,7 @@ export function CreatorWorkspacePrototype({
       case "set-copy-package-name": setCopyPackageName(command.value); return;
       case "set-tabletop-name": setTabletopNameDraft(command.value); return;
       case "set-package-info":
+        setPublicationVersionSuggestion(command.value.versionSuggestion);
         setPackageNameDraft(command.value.package.name);
         setPackageVersionDraft(command.value.package.version);
         setPackageDescriptionDraft(command.value.package.description);
@@ -1907,6 +1911,7 @@ export function CreatorWorkspacePrototype({
         snapshot={{
           systemPackageOptions,
           packageInfo: {
+            versionSuggestion: publicationVersionSuggestion,
             package: {
               name: packageNameDraft,
               version: packageVersionDraft,

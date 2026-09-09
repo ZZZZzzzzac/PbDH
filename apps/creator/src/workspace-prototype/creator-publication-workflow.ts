@@ -18,6 +18,7 @@ import {
   publishCandidate,
   suggestPublishVersion,
   type PublishedPublication,
+  type PublishVersionSuggestion,
 } from "./publication-api.ts";
 import {
   collapsePublicationFieldErrors,
@@ -29,6 +30,7 @@ import {
 } from "./workspace-model.ts";
 
 export type CreatorPublicationDraft = {
+  versionSuggestion?: PublishVersionSuggestion & { automatic: boolean };
   package: {
     name: string;
     version: string;
@@ -63,7 +65,7 @@ export type CreatorPublicationPort = {
   suggestVersion(
     document: ResourcePackageLogicalDocument,
     credentials: PlatformCredentials,
-  ): Promise<string>;
+  ): Promise<PublishVersionSuggestion>;
   generateCover(workspace: CreatorWorkspace): Promise<PublicationCoverDraft>;
   publish(
     candidate: PublicationCandidate,
@@ -150,10 +152,13 @@ export async function prepareCreatorPublication(
 ): Promise<CreatorPublicationPreparation> {
   if (!credentials) return authRequiredFailure();
   try {
-    const version = await port.suggestVersion(workspace.document, credentials);
+    const suggestion = await port.suggestVersion(workspace.document, credentials);
     return {
       ok: true,
-      draft: await creatorPublicationDraft(workspace, version, port),
+      draft: {
+        ...await creatorPublicationDraft(workspace, suggestion.version, port),
+        versionSuggestion: { ...suggestion, automatic: true },
+      },
     };
   } catch (error) {
     const apiFailure = error instanceof PublicationApiError;
@@ -219,13 +224,18 @@ export async function publishCreatorWorkspace(
   credentials: PlatformCredentials | null,
   port: CreatorPublicationPort = browserPublicationPort,
 ): Promise<CreatorPublicationResult> {
-  const prepared = await prepareCreatorCandidate(workspace, draft);
-  if (!prepared.ok) {
-    return { ok: false, title: "发布门禁未通过", diagnostics: prepared.diagnostics };
-  }
   if (!credentials) return authRequiredFailure();
 
   try {
+    let selectedDraft = draft;
+    if (draft.versionSuggestion?.automatic) {
+      const edited = await saveCreatorPackageInformation(workspace, draft);
+      if (!edited.ok) return edited;
+      const suggestion = await port.suggestVersion(edited.workspace.document, credentials);
+      selectedDraft = { ...draft, package: { ...draft.package, version: suggestion.version } };
+    }
+    const prepared = await prepareCreatorCandidate(workspace, selectedDraft);
+    if (!prepared.ok) return { ok: false, title: "发布门禁未通过", diagnostics: prepared.diagnostics };
     const published = await port.publish(prepared.candidate, credentials);
     return {
       ok: true,

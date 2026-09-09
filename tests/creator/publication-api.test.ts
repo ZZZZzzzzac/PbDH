@@ -27,13 +27,19 @@ describe("Creator publication API", () => {
       minotaurPackage as unknown as ResourcePackageLogicalDocument,
       credentials,
       fetcher,
-    )).resolves.toBe("1.0.0");
+    )).resolves.toEqual({ version: "1.0.0", summary: "首次发布" });
     expect(fetcher).toHaveBeenCalledWith("/api/publications/manageable", {
       headers: {
         Authorization: "Bearer token",
         "X-PbDH-Session": "session",
       },
     });
+  });
+
+  test("invalid catalog responses are not treated as a first publication", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response("{}", { status: 200 }));
+    await expect(suggestPublishVersion(minotaurPackage as unknown as ResourcePackageLogicalDocument, credentials, fetcher))
+      .rejects.toMatchObject({ code: "PUBLICATION_CATALOG_INVALID" });
   });
 
   test("fills the computed minimum version from a current 1.1.0 Market snapshot", async () => {
@@ -50,7 +56,7 @@ describe("Creator publication API", () => {
         publication: { document: previous },
       }), { status: 200, headers: { "content-type": "application/json" } }));
 
-    await expect(suggestPublishVersion(current, credentials, fetcher)).resolves.toBe("1.0.1");
+    await expect(suggestPublishVersion(current, credentials, fetcher)).resolves.toEqual({ version: "1.0.1", summary: "更新现有内容" });
     expect(fetcher).toHaveBeenLastCalledWith("/api/publications/publication-1/manage", {
       headers: {
         Authorization: "Bearer token",

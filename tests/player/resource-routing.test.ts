@@ -30,6 +30,19 @@ function routeWithTargets(targets: ResourcePackageLogicalDocument["targets"]) {
 }
 
 describe("Player Resource Compatibility routing", () => {
+  test("包版本与文字变更不改变原生路由，删除资源和换模板按实际内容处理", () => {
+    const changed = structuredClone(resourcePackage);
+    changed.package.version = "9.0.0";
+    changed.resources[0]!.data = { ...(changed.resources[0]!.data as Record<string, string>), 名称: "修改后的名称" };
+    expect(routeResourcePackage({ currentSystem: system, resourcePackage: changed })[0]?.destination).toBe("native");
+    const templateChanged = structuredClone(changed);
+    templateChanged.resources[0]!.template.id = "尚未声明兼容的模板";
+    expect(routeResourcePackage({ currentSystem: system, resourcePackage: templateChanged })[0])
+      .toMatchObject({ destination: "other-resources", reason: "template-incompatible" });
+    expect(routeResourcePackage({ currentSystem: system, resourcePackage: { ...changed, resources: [] } })).toEqual([]);
+    expect(resourcePackage.resources).toHaveLength(1);
+  });
+
   test("routes a compatible Template to its native entry", () => {
     expect(routeWithTargets(resourcePackage.targets)).toMatchObject([
       {

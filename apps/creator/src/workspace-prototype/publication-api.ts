@@ -33,11 +33,13 @@ type ManageablePublication = {
   packageId: string;
 };
 
+export type PublishVersionSuggestion = { version: string; summary: string };
+
 export async function suggestPublishVersion(
   document: ResourcePackageLogicalDocument,
   credentials: PlatformCredentials,
   fetcher: typeof fetch = fetch,
-): Promise<string> {
+): Promise<PublishVersionSuggestion> {
   if (!credentials.canWrite) {
     throw new PublicationApiError("当前设备已失去云端写入权，请重新接管账号会话。", "AUTH_SESSION_REPLACED", 401);
   }
@@ -48,11 +50,12 @@ export async function suggestPublishVersion(
   const listResponse = await fetcher("/api/publications/manageable", { headers });
   const listPayload = await readJson(listResponse);
   if (!listResponse.ok) throw publicationResponseError(listResponse, listPayload);
-  const publications = Array.isArray(listPayload.publications)
-    ? listPayload.publications as ManageablePublication[]
-    : [];
+  if (!Array.isArray(listPayload.publications)) {
+    throw new PublicationApiError("已有资源包列表无效，无法生成版本建议。", "PUBLICATION_CATALOG_INVALID", 502);
+  }
+  const publications = listPayload.publications as ManageablePublication[];
   const current = publications.find((publication) => publication.packageId === document.package.id);
-  if (!current) return "1.0.0";
+  if (!current) return { version: "1.0.0", summary: "首次发布" };
 
   const detailResponse = await fetcher(
     `/api/publications/${encodeURIComponent(current.publicationId)}/manage`,
@@ -66,7 +69,15 @@ export async function suggestPublishVersion(
     await createResourcePackageVersionBaseline(detailPayload.publication.document),
     document,
   );
-  return classification.minimumVersion;
+  return {
+    version: classification.minimumVersion,
+    summary: {
+      none: "与市场版本内容一致",
+      patch: "更新现有内容",
+      minor: "新增资源或关联",
+      major: "资源结构或目标声明发生变化",
+    }[classification.level],
+  };
 }
 
 export async function publishCandidate(

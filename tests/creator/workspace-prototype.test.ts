@@ -1092,12 +1092,10 @@ describe("Creator Workspace UI contracts", () => {
     ), "utf8");
     const contextMenuSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-context-menus.tsx"), "utf8");
     const dialogsSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-dialogs.tsx"), "utf8");
-    const workflowSource = readFileSync(path.join(root, "apps/creator/src/workspace-prototype/creator-publication-workflow.ts"), "utf8");
     const creatorSource = `${rootSource}\n${contextMenuSource}`;
 
     expect(creatorSource).toContain("编辑资源包信息");
     expect(rootSource).toContain("saveCreatorPackageInformation");
-    expect(workflowSource).toContain("prepareCreatorCandidate(workspace, draft)");
     expect(dialogsSource.match(/<ResourcePackageInfoDialog/g)).toHaveLength(1);
     expect(dialogsSource).toContain('dialog.kind === "publish" || dialog.kind === "package-metadata"');
   });
