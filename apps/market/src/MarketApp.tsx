@@ -17,8 +17,7 @@ import {
 } from "@pbdh/publication-ui";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { upgradePbresTemplateVersions, createPbresCandidateValidator } from "@pbdh/resource-conversion";
-import { listTemplateUpgradeRows, upgradeTemplateResources } from "@pbdh/templates/core";
-import { loadTemplateCore } from "@pbdh/templates/core/lazy";
+import { listTemplateUpgradeRows, upgradeTemplateResources, loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 
 import { marketDesign } from "../design.ts";

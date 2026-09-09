@@ -12,7 +12,7 @@ import {
   type ResourcePackageCandidateValidator,
 } from "@pbdh/contract-runtime";
 
-import type { TemplateCoreCapability, upgradeTemplateResources, TemplateUpgradeSelection } from "@pbdh/templates/core";
+import type { TemplateCoreCapability, TemplateUpgradeSelection } from "@pbdh/templates/core";
 
 import { asJsonObject, exportFailure, isJsonValue, report, text } from "../shared.ts";
 import { validateTemplateData } from "../template-validation.ts";
@@ -79,10 +79,14 @@ export const createPbresCandidateValidator = (
 export async function upgradePbresTemplateVersions(
   candidate: { document: ResourcePackageLogicalDocument; media: ReadonlyMap<string, Uint8Array> },
   selections: readonly TemplateUpgradeSelection[],
-  operations: { upgradeResources: typeof upgradeTemplateResources; validate: ResourcePackageCandidateValidator },
+  operations: {
+    upgradeResources: (resources: ResourcePackageLogicalDocument["resources"], selections: readonly TemplateUpgradeSelection[]) =>
+      ResourcePackageLogicalDocument["resources"] | Promise<ResourcePackageLogicalDocument["resources"]>;
+    validate: ResourcePackageCandidateValidator;
+  },
 ) {
   const document = structuredClone(candidate.document);
-  const resources = operations.upgradeResources(document.resources, selections);
+  const resources = await operations.upgradeResources(document.resources, selections);
   if (resources.every((resource, index) => resource === document.resources[index])) {
     return { candidate: { document: candidate.document, media: new Map(candidate.media) }, diagnostics: [] };
   }

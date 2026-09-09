@@ -8,7 +8,8 @@ import type { LocalDocumentKind, LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 import { ResourcePackageInfoDialog, TemplateUpgradeDialog, type ResourcePackageEditorValue, type SystemPackageOption, type TemplateUpgradeDialogSelection } from "@pbdh/publication-ui";
 import type { ConversionDiagnostic, ResourceFormatId } from "@pbdh/resource-conversion";
-import { currentTemplates, listTemplateUpgradeRows } from "@pbdh/templates/core";
+import { currentTemplates } from "@pbdh/templates/core";
+import { listTemplateUpgradeRows } from "@pbdh/templates/core/lazy";
 
 import { Field } from "./creator-controls.tsx";
 import { isSemanticVersion } from "./creator-file-actions.ts";

@@ -40,8 +40,8 @@ import {
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
 import { resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
-import { templateRegistry, upgradeTemplateResources } from "@pbdh/templates/core";
-import { loadTemplateCore } from "@pbdh/templates/core/lazy";
+import { templateRegistry } from "@pbdh/templates/core";
+import { loadTemplateCore, upgradeTemplateResources } from "@pbdh/templates/core/lazy";
 
 import { creatorWorkspaceDesign } from "./design.ts";
 import {
