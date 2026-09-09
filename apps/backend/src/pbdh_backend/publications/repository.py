@@ -23,7 +23,10 @@ class PackageOwnershipConflict(Exception):
 
 
 class PublicationVersionConflict(Exception):
-    pass
+    def __init__(self, package_id: str, minimum_version: str | None = None, reasons: list[str] | None = None) -> None:
+        super().__init__(package_id)
+        self.minimum_version = minimum_version
+        self.reasons = reasons or []
 
 
 class PublicationNotFound(Exception):
@@ -302,20 +305,17 @@ class PublicationRepository:
             version_order = _compare_semver(
                 document["package"]["version"], current["package_version"]
             )
-            if version_order < 0:
-                raise PublicationVersionConflict(document["package"]["id"])
             classification = classify_resource_package_version_change(
                 previous_document, document
             )
-            if (
-                classification["level"] != "none"
-                and not allow_same_version_replace
-                and not resource_package_version_meets_minimum(
-                    document["package"]["version"],
-                    classification["minimumVersion"],
-                )
+            minimum_version = current["package_version"] if allow_same_version_replace else classification["minimumVersion"]
+            if version_order < 0 or not resource_package_version_meets_minimum(
+                document["package"]["version"], minimum_version,
             ):
-                raise PublicationVersionConflict(document["package"]["id"])
+                raise PublicationVersionConflict(
+                    document["package"]["id"], minimum_version,
+                    [] if allow_same_version_replace else [reason["code"] for reason in classification["reasons"]],
+                )
             cover_exists = connection.execute(
                 "SELECT 1 FROM publication_media WHERE publication_id = ? AND asset_id = ?",
                 (publication_id, metadata["coverAssetId"]),

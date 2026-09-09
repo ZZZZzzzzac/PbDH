@@ -209,6 +209,19 @@ describe("Market publication API", () => {
     ]);
   });
 
+  it("preserves the minimum-version guidance for the market notification", async () => {
+    const message = "新增目标系统，版本号至少需要 1.1.0。请修改版本号后重试。";
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
+      error: { code: "PUBLICATION_VERSION_CONFLICT", message },
+    }), { status: 409, headers: { "Content-Type": "application/json" } }));
+    await expect(updatePublicationInformation(apiPublication.publicationId, {
+      package: { name: "荒野遭遇集", version: "1.0.3", description: "" },
+      targets: [], title: "荒野遭遇集", summary: "", language: "zh-CN", tags: [],
+      license: { label: "DPCGL", declaration: "DPCGL" },
+      coverAssetId: apiPublication.coverAssetId,
+    }, credentials, fetcher)).rejects.toThrow(message);
+  });
+
   it("uploads a cropped market cover together with the unified package information", async () => {
     const updatedCoverId = `sha256:${"a".repeat(64)}`;
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({

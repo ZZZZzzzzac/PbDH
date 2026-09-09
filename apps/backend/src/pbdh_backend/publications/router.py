@@ -273,7 +273,18 @@ def _commit_publication_information(
     except PublicationCoverInvalid as error:
         raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面不存在或不可用。") from error
     except PublicationVersionConflict as error:
-        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", "资源包内容有变化时需要提高版本号。") from error
+        reasons = {
+            "resource-package.version.target-added": "新增目标系统",
+            "resource-package.version.target-removed": "移除或更换目标系统",
+            "resource-package.version.target-major-changed": "目标系统跨主版本变更",
+            "resource-package.version.target-compatible-changed": "目标系统版本变更",
+        }
+        reason = next((reasons[code] for code in error.reasons if code in reasons), "资源包版本不符合发布要求")
+        message = (
+            f"{reason}，版本号至少需要 {error.minimum_version}。请修改版本号后重试。"
+            if error.minimum_version else "资源包身份与已发布版本不一致，请刷新后重试。"
+        )
+        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", message) from error
     except PublicationValidationError as error:
         raise ApiError(422, "PUBLICATION_CANDIDATE_INVALID", "资源包信息未通过校验。", [
             {"path": item["location"], "code": item["code"], "message": item["code"]}

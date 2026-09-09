@@ -1134,3 +1134,36 @@ def test_production_mode_rejects_unsupported_old_contract(tmp_path: Path) -> Non
     field_errors = response.json()["error"]["fieldErrors"]
     assert field_errors[0]["code"] == "contract.version.unsupported"
     assert api.get("/api/publications").json()["publications"] == []
+
+
+@pytest.mark.parametrize(("previous_targets", "minimum", "reason"), [
+    ([], "1.1.0", "新增目标系统"),
+    ([{"systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660002", "version": "1.0.0"}], "2.0.0", "移除或更换目标系统"),
+])
+def test_information_target_addition_reports_minimum_version_and_accepts_it(
+    tmp_path: Path, previous_targets: list[dict[str, str]], minimum: str, reason: str,
+) -> None:
+    api = client(tmp_path, "production")
+    document, media = candidate()
+    document["targets"] = previous_targets
+    document["package"]["version"] = "1.0.0"
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+    owner = claim(api, "author-one")
+    created = publish(api, owner, document, media)
+    assert created.status_code == 200, created.text
+    publication_id = created.json()["publication"]["publicationId"]
+    payload = {
+        **metadata(document),
+        "package": {key: document["package"][key] for key in ("name", "version", "description")},
+        "targets": [{"systemPackageId": "01a0132c-4eef-7703-94ac-ec8d1a660001", "version": "1.0.0"}],
+    }
+    for version in ("1.0.0", "1.0.1", "1.0.3"):
+        payload["package"]["version"] = version
+        rejected = api.patch(f"/api/publications/{publication_id}/information", headers=owner, json=payload)
+        assert rejected.status_code == 409, rejected.text
+        assert f"至少需要 {minimum}" in rejected.json()["error"]["message"]
+        assert reason in rejected.json()["error"]["message"]
+        assert api.get(f"/api/publications/{publication_id}").json()["publication"]["packageVersion"] == "1.0.0"
+    payload["package"]["version"] = minimum
+    accepted = api.patch(f"/api/publications/{publication_id}/information", headers=owner, json=payload)
+    assert accepted.status_code == 200, accepted.text
