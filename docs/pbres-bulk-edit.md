@@ -32,7 +32,7 @@ npm run pbres:pack -- .scratch/witchy-edit .scratch/witchy-updated.pbres
 
 可通过 `--bump minor`、`--bump major` 或 `--bump none` 改变版本策略。输出文件已存在时默认拒绝覆盖；确认目标后增加 `--force`。
 
-图片不适合直接覆盖原有哈希文件。若媒体发生变化，优先在卡片工坊中更换图片；直接修改图片字节会因 asset SHA-256 不匹配而被封包工具拒绝。
+图片不适合直接覆盖原有哈希文件。若媒体发生变化，优先在卡牌工坊中更换图片；直接修改图片字节会因 asset SHA-256 不匹配而被封包工具拒绝。
 
 ## 替换内置包
 

@@ -183,6 +183,8 @@
 .player-tabletop-surface {
   position: absolute;
   inset: 0;
+  /* 卡牌层级只在桌面内部排序，不能盖住兄弟工具栏。 */
+  z-index: 0;
 }
 
 .player-tabletop-surface .tabletop-instance {

@@ -22,7 +22,7 @@ export type PlatformPage = "player" | "creator" | "gm" | "market";
 
 const pages: Array<{ id: PlatformPage; label: string }> = [
   { id: "player", label: "玩家车卡器" },
-  { id: "creator", label: "卡片工坊" },
+  { id: "creator", label: "卡牌工坊" },
   { id: "gm", label: "GM 桌面" },
   { id: "market", label: "资源市场" },
 ];

@@ -72,7 +72,7 @@ export function CreatorContextMenus({
     <button type="button" role="menuitem" onClick={() => execute({ type: "new-resource" })}>新建资源</button>
     <button type="button" role="menuitem" onClick={() => execute({ type: "new-folder" })}>新建文件夹</button>
     <i />
-    <button type="button" role="menuitem" onClick={() => execute({ type: "close-package", workspaceKey: state.workspaceKey })}>关闭资源包</button>
+    <button type="button" role="menuitem" onClick={() => execute({ type: "close-package", workspaceKey: state.workspaceKey })}>删除资源包</button>
   </TabletopContextMenu>;
 
   if (state.kind === "resource") return <TabletopContextMenu

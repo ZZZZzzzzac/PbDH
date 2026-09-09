@@ -127,12 +127,12 @@ const routeLabels: Record<HandoffIntent["targetRoute"], string> = {
   loot: "匕首之心 / 物品与消耗品",
   "domain-cards": "匕首之心 / 领域卡",
   "other-resources": "其他资源",
-  "creator-ingress": "卡片工坊 / 资源包导入",
+  "creator-ingress": "卡牌工坊 / 资源包导入",
 };
 
 const targetLabels: Record<HandoffTarget, string> = {
   player: "玩家车卡器",
-  creator: "卡片工坊",
+  creator: "卡牌工坊",
   gm: "GM 桌面",
 };
 
@@ -380,7 +380,7 @@ function AcquisitionActions({
   return <div className="acquisition-actions">
     {includeDownload && <button type="button" className="primary-button" disabled={downloadBusy} onClick={onDownload}>{downloadBusy ? <OperationStatus label="正在下载整包…" /> : <><Icon name="download" />下载 .pbres</>}</button>}
     <button type="button" onClick={() => onHandoff("player")}><Icon name="user" />安装到玩家</button>
-    <button type="button" onClick={() => onHandoff("creator")}><Icon name="cards" />导入卡片工坊</button>
+    <button type="button" onClick={() => onHandoff("creator")}><Icon name="cards" />导入卡牌工坊</button>
     <button type="button" onClick={() => onHandoff("creator", "fork")}><Icon name="cards" />创建 Fork 草稿</button>
     <button type="button" onClick={() => onHandoff("gm")}><Icon name="grid" />发送到桌面…</button>
   </div>;
