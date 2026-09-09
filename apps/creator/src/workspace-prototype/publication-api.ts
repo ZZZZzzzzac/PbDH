@@ -49,7 +49,7 @@ export async function suggestPublishVersion(
   };
   const listResponse = await fetcher("/api/publications/manageable", { headers });
   const listPayload = await readJson(listResponse);
-  if (!listResponse.ok) throw publicationResponseError(listResponse, listPayload);
+  if (!listResponse.ok) throw publicationResponseError(listResponse, listPayload, credentials);
   if (!Array.isArray(listPayload.publications)) {
     throw new PublicationApiError("已有资源包列表无效，无法生成版本建议。", "PUBLICATION_CATALOG_INVALID", 502);
   }
@@ -63,7 +63,7 @@ export async function suggestPublishVersion(
   );
   const detailPayload = await readJson(detailResponse);
   if (!detailResponse.ok || !isLogicalDocument(detailPayload.publication?.document)) {
-    throw publicationResponseError(detailResponse, detailPayload);
+    throw publicationResponseError(detailResponse, detailPayload, credentials);
   }
   const classification = await classifyResourcePackageVersionChange(
     await createResourcePackageVersionBaseline(detailPayload.publication.document),
@@ -117,6 +117,7 @@ export async function publishCandidate(
     };
   };
   if (!response.ok || !payload.publication) {
+    if (payload.error?.code === "AUTH_SESSION_REPLACED") credentials.onSessionReplaced?.();
     throw new PublicationApiError(
       payload.error?.message ?? "发布失败。",
       payload.error?.code ?? "PUBLICATION_REQUEST_FAILED",
@@ -148,7 +149,9 @@ async function readJson(response: Response): Promise<PublicationResponsePayload>
 function publicationResponseError(
   response: Response,
   payload: PublicationResponsePayload,
+  credentials: PlatformCredentials,
 ): PublicationApiError {
+  if (payload.error?.code === "AUTH_SESSION_REPLACED") credentials.onSessionReplaced?.();
   return new PublicationApiError(
     payload.error?.message ?? "无法读取资源包的已发布版本。",
     payload.error?.code ?? "PUBLICATION_BASELINE_REQUEST_FAILED",

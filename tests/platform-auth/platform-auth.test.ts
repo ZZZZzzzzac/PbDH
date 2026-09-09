@@ -50,6 +50,13 @@ describe("platform session resolution", () => {
     expect(resolveSessionStatus(remote, "session_stale")).toBe("replaced");
   });
 
+  it("requires explicit intent before a known invalid session can reclaim", () => {
+    const stale = { profile, currentSessionActive: false, replacementRequired: false };
+    expect(resolveSessionStatus(stale, "old-session")).toBe("replaced");
+    expect(resolveSessionStatus(stale, "old-session", true)).toBe("claim");
+    expect(resolveSessionStatus({ ...stale, replacementRequired: true }, null, true)).toBe("claim");
+  });
+
   it("serializes duplicate auth restoration callbacks", async () => {
     const enqueue = createAuthSessionResolutionQueue();
     const calls: string[] = [];

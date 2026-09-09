@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useAuth, platformRequestHeaders } from "@pbdh/platform-auth/provider";
+import { useAuth, platformRequestHeaders, reportPlatformSessionFailure } from "@pbdh/platform-auth/provider";
 
 type Usage = {
   usedBytes: number;
@@ -36,6 +36,7 @@ export function CloudStoragePanel() {
     setError("");
     void fetch("/api/storage/usage", { headers: platformRequestHeaders(credentials), signal: controller.signal })
       .then(async (response) => {
+        await reportPlatformSessionFailure(response, credentials);
         if (!response.ok) throw new Error("云空间统计暂时不可用，请重试。");
         return await response.json() as Usage;
       })

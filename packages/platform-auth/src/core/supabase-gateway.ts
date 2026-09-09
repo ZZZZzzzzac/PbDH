@@ -18,7 +18,7 @@ export const createSupabaseGateway: AuthGatewayFactory = ({ supabaseUrl, supabas
       return mapSession(data.session);
     },
     onAuthStateChange(callback) {
-      const { data } = client.auth.onAuthStateChange((_event, session) => callback(mapSession(session)));
+      const { data } = client.auth.onAuthStateChange((event, session) => callback(mapSession(session), event));
       return () => data.subscription.unsubscribe();
     },
     async signIn(email, password) {

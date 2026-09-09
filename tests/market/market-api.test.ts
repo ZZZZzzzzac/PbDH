@@ -58,6 +58,16 @@ function binaryResponse(body = "media") {
   return new Response(new Blob([body], { type: "image/webp" }), { status: 200 });
 }
 
+it("管理列表与归档下载将明确的会话替换回报账号状态", async () => {
+  const onSessionReplaced = vi.fn();
+  const session = { ...credentials, onSessionReplaced };
+  const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => jsonResponse({ error: { code: "AUTH_SESSION_REPLACED" } }, 401));
+  await expect(loadManageablePublications(session, fetcher)).rejects.toMatchObject({ code: "AUTH_SESSION_REPLACED" });
+  expect(onSessionReplaced).toHaveBeenCalledOnce();
+  await expect(loadPublicationArchive("publication-123", session, fetcher)).rejects.toThrow("无法下载");
+  expect(onSessionReplaced).toHaveBeenCalledTimes(2);
+});
+
 function catalogResponse(publications: unknown[]) {
   return {
     publications,

@@ -19,7 +19,7 @@ import {
   resourceImagePolicy,
   type ImageCropSelection,
 } from "@pbdh/media-admission";
-import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
+import { platformRequestHeaders, reportPlatformSessionFailure, useAuth } from "@pbdh/platform-auth/provider";
 import {
   ImageCropDialog,
   OperationStatus,
@@ -446,6 +446,7 @@ export function CreatorWorkspacePrototype({
       ? { headers: platformRequestHeaders(auth.credentials) }
       : undefined)
       .then(async (response) => {
+        await reportPlatformSessionFailure(response, auth.credentials);
         if (!response.ok) throw new Error("无法取得市场资源包");
         return new Uint8Array(await response.arrayBuffer());
       })

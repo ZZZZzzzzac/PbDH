@@ -10,6 +10,7 @@ import type {
 import type { AuthStatus } from "@pbdh/platform-auth/core";
 import {
   platformRequestHeaders,
+  reportPlatformSessionFailure,
   type PlatformCredentials,
 } from "@pbdh/platform-auth/provider";
 import { systemPackageLabel } from "./system-package-labels.ts";
@@ -163,7 +164,7 @@ export async function loadManageablePublications(
     headers: authenticatedHeaders(credentials),
   });
   const payload = await response.json() as ApiErrorPayload & { publications?: ApiPublication[] };
-  if (!response.ok || !payload.publications) throw apiError(response, payload, "无法读取可管理的资源包。");
+  if (!response.ok || !payload.publications) throw apiError(response, payload, "无法读取可管理的资源包。", credentials);
   return Promise.all(payload.publications.map((publication) =>
     publicationFromManageableApi(publication, credentials, fetcher, createObjectUrl)
   ));
@@ -179,7 +180,7 @@ export async function loadManageablePublication(
     headers: authenticatedHeaders(credentials),
   });
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法打开该资源包。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法打开该资源包。", credentials);
   return publicationFromManageableApi(payload.publication, credentials, fetcher, createObjectUrl);
 }
 
@@ -217,6 +218,7 @@ export async function loadPublicationArchive(
     ? platformRequestHeaders(credentials, { Accept: "application/vnd.pbdh.resource-package+zip" })
     : new Headers({ Accept: "application/vnd.pbdh.resource-package+zip" });
   const response = await fetcher(`/api/publications/${encodeURIComponent(publicationId)}/download`, { headers });
+  await reportPlatformSessionFailure(response, credentials);
   if (!response.ok) throw new Error("无法下载该资源包。");
   return response.blob();
 }
@@ -248,7 +250,7 @@ export async function replacePublicationArchive(
     body: form,
   });
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法升级市场资源包。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法升级市场资源包。", credentials);
   const updated = publicationFromApi(payload.publication);
   if (updated.id !== publication.id) throw new Error("模板升级产生了意外的市场资源包编号。");
   return updated;
@@ -312,7 +314,7 @@ async function updatePublicationInformationWithCover(
     { method: "PATCH", headers: authenticatedHeaders(credentials), body },
   );
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包封面。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包封面。", credentials);
   return publicationFromApi(payload.publication);
 }
 
@@ -330,7 +332,7 @@ export async function deletePublication(
   });
   if (response.ok) return;
   const payload = await response.json() as ApiErrorPayload;
-  throw apiError(response, payload, "无法永久删除该资源包。");
+  throw apiError(response, payload, "无法永久删除该资源包。", credentials);
 }
 
 async function mutatePublication(
@@ -353,7 +355,7 @@ async function mutatePublication(
     },
   );
   const payload = await response.json() as ApiErrorPayload & { publication?: ApiPublication };
-  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包。");
+  if (!response.ok || !payload.publication) throw apiError(response, payload, "无法更新资源包。", credentials);
   return publicationFromApi(payload.publication);
 }
 
@@ -375,6 +377,7 @@ async function publicationFromManageableApi(
     const response = await fetcher(mediaUrl(source.publicationId, assetId), {
       headers: platformRequestHeaders(credentials, { Accept: "image/webp,image/*" }),
     });
+    await reportPlatformSessionFailure(response, credentials);
     if (!response.ok) throw new Error("无法读取资源包媒体。");
     return [assetId, createObjectUrl(await response.blob())] as const;
   }));
@@ -386,7 +389,8 @@ async function publicationFromManageableApi(
   };
 }
 
-function apiError(response: Response, payload: ApiErrorPayload, fallback: string): MarketApiError {
+function apiError(response: Response, payload: ApiErrorPayload, fallback: string, credentials?: PlatformCredentials): MarketApiError {
+  if (payload.error?.code === "AUTH_SESSION_REPLACED") credentials?.onSessionReplaced?.();
   return new MarketApiError(
     payload.error?.message ?? fallback,
     payload.error?.code ?? "MARKET_REQUEST_FAILED",

@@ -9,8 +9,11 @@ export function isAuthConfigured(
 export function resolveSessionStatus(
   status: SessionStatus,
   currentSessionId: string | null,
+  allowTakeover = false,
 ): SessionResolution {
   if (status.currentSessionActive && currentSessionId) return "acceptCurrent";
+  if (allowTakeover) return "claim";
+  if (currentSessionId) return "replaced";
   if (!status.replacementRequired) return "claim";
   return currentSessionId ? "replaced" : "replacementRequired";
 }

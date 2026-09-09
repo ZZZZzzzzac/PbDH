@@ -42,6 +42,14 @@ describe("Creator publication API", () => {
       .rejects.toMatchObject({ code: "PUBLICATION_CATALOG_INVALID" });
   });
 
+  test("版本建议请求将明确的会话失效回报账号状态", async () => {
+    const onSessionReplaced = vi.fn();
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ error: { code: "AUTH_SESSION_REPLACED" } }), { status: 401 }));
+    await expect(suggestPublishVersion(minotaurPackage as unknown as ResourcePackageLogicalDocument, { ...credentials, onSessionReplaced }, fetcher))
+      .rejects.toMatchObject({ code: "AUTH_SESSION_REPLACED" });
+    expect(onSessionReplaced).toHaveBeenCalledOnce();
+  });
+
   test("fills the computed minimum version from a current 1.1.0 Market snapshot", async () => {
     const previous = structuredClone(minotaurPackage) as unknown as ResourcePackageLogicalDocument;
     previous.contractVersion = "1.1.0";

@@ -14,3 +14,4 @@ Frontend authentication recovery serializes Supabase state callbacks with the ex
 - An active writer continues to refresh `last_seen_at` through authenticated requests and retains account-wide exclusion.
 - An abandoned session cannot block the same user's next login indefinitely.
 - A replaced client cannot silently reclaim while the replacement remains active; it continues to receive the replacement state required by ADR-0034.
+- Under the revised ADR-0034, a client with a known invalid local session also waits for explicit user takeover when the competing claim is stale. The server still supports abandoned-claim recovery, but stale status is not permission for background reclaim by an already replaced client.

@@ -11,6 +11,7 @@ export type CloudCredentials = {
   siteSessionId: string;
   accountId: string;
   canWrite: boolean;
+  onSessionReplaced?(): void;
 };
 
 export type RemoteCloudDocument<T = unknown> = {
@@ -287,7 +288,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       headers: requestHeaders(credentials),
     });
     const payload = await jsonPayload<ApiErrorPayload & { documents?: RemoteCloudDocument[] }>(response);
-    if (!response.ok || !payload.documents) throw responseError(response, payload, "云文档列表读取失败。");
+    if (!response.ok || !payload.documents) throw responseError(response, payload, "云文档列表读取失败。", credentials);
     return payload.documents;
   }
 
@@ -299,7 +300,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       headers: requestHeaders(credentials),
     });
     const payload = await jsonPayload<ApiErrorPayload & { document?: RemoteCloudDocument }>(response);
-    if (!response.ok || !payload.document) throw responseError(response, payload, "云文档读取失败。");
+    if (!response.ok || !payload.document) throw responseError(response, payload, "云文档读取失败。", credentials);
     return payload.document;
   }
 
@@ -312,7 +313,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       `/api/cloud/documents/${encodeURIComponent(documentId)}/media/${encodeURIComponent(assetId)}`,
       { headers: requestHeaders(credentials) },
     );
-    if (!response.ok) await throwApiError(response, "云文档媒体读取失败。");
+    if (!response.ok) await throwApiError(response, "云文档媒体读取失败。", credentials);
     return new Uint8Array(await response.arrayBuffer());
   }
 
@@ -328,7 +329,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       headers: requestHeaders(credentials, { "Content-Type": "image/webp" }),
       body,
     });
-    if (!response.ok) await throwApiError(response, "媒体同步失败。");
+    if (!response.ok) await throwApiError(response, "媒体同步失败。", credentials);
   }
 
   async putDocument(
@@ -355,7 +356,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       },
     );
     const payload = await response.json() as ApiErrorPayload & { document?: RemoteCloudDocument };
-    if (!response.ok || !payload.document) throw responseError(response, payload, "文档同步失败。");
+    if (!response.ok || !payload.document) throw responseError(response, payload, "文档同步失败。", credentials);
     return payload.document;
   }
 
@@ -387,7 +388,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       `/api/cloud/documents/${encodeURIComponent(documentId)}?${query}`,
       { method: "DELETE", headers: requestHeaders(credentials) },
     );
-    if (!response.ok) await throwApiError(response, "云文档永久删除失败。");
+    if (!response.ok) await throwApiError(response, "云文档永久删除失败。", credentials);
   }
 
   async #lifecycle(
@@ -406,7 +407,7 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
       },
     );
     const payload = await jsonPayload<ApiErrorPayload & { document?: RemoteCloudDocument }>(response);
-    if (!response.ok || !payload.document) throw responseError(response, payload, "云文档状态更新失败。");
+    if (!response.ok || !payload.document) throw responseError(response, payload, "云文档状态更新失败。", credentials);
     return payload.document;
   }
 }
@@ -434,17 +435,18 @@ function requestHeaders(credentials: CloudCredentials, initial?: HeadersInit): H
   return headers;
 }
 
-async function throwApiError(response: Response, fallback: string): Promise<never> {
+async function throwApiError(response: Response, fallback: string, credentials: CloudCredentials): Promise<never> {
   let payload: ApiErrorPayload = {};
   try {
     payload = await response.json() as ApiErrorPayload;
   } catch {
     // 非 JSON 错误仍保留 HTTP 状态和稳定的本地提示。
   }
-  throw responseError(response, payload, fallback);
+  throw responseError(response, payload, fallback, credentials);
 }
 
-function responseError(response: Response, payload: ApiErrorPayload, fallback: string): CloudApiError {
+function responseError(response: Response, payload: ApiErrorPayload, fallback: string, credentials: CloudCredentials): CloudApiError {
+  if (payload.error?.code === "AUTH_SESSION_REPLACED") credentials.onSessionReplaced?.();
   return new CloudApiError(
     response.status,
     payload.error?.code ?? "CLOUD_REQUEST_FAILED",

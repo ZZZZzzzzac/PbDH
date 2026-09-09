@@ -14,7 +14,7 @@ export type AccountProfile = {
 
 export interface AuthGateway {
   getSession(): Promise<AuthSession | null>;
-  onAuthStateChange(callback: (session: AuthSession | null) => void): () => void;
+  onAuthStateChange(callback: (session: AuthSession | null, event?: string) => void): () => void;
   signIn(email: string, password: string): Promise<AuthSession>;
   signUp(email: string, password: string): Promise<AuthSession | null>;
   signOut(): Promise<void>;

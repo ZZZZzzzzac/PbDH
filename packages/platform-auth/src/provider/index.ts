@@ -2,6 +2,7 @@ export { AccountControl } from "./AccountControl.tsx";
 export {
   AuthProvider,
   platformRequestHeaders,
+  reportPlatformSessionFailure,
   useAuth,
   useOptionalAuth,
   type AuthContextValue,

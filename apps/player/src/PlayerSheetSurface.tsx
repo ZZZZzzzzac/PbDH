@@ -20,7 +20,7 @@ import {
   DexieLocalDocumentStore,
   DexieRuntimeCacheStore,
 } from "@pbdh/local-storage";
-import { platformRequestHeaders, useAuth } from "@pbdh/platform-auth/provider";
+import { platformRequestHeaders, reportPlatformSessionFailure, useAuth } from "@pbdh/platform-auth/provider";
 import {
   OperationStatus,
   usePlatformAppBarActions,
@@ -612,6 +612,7 @@ export function PlayerSheetSurface({
       ? { headers: platformRequestHeaders(auth.credentials) }
       : undefined)
       .then(async (response) => {
+        await reportPlatformSessionFailure(response, auth.credentials);
         if (!response.ok) throw new Error("无法取得市场资源包");
         return new Uint8Array(await response.arrayBuffer());
       })
