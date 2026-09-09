@@ -7,11 +7,11 @@ import {
   type TabletopDocumentModel,
   type ExecuteTabletopCommandOptions,
 } from "@pbdh/tabletop/core";
-import { templateRegistry } from "@pbdh/templates/core";
 
 import {
   prepareWorkspaceReplacement,
   snapshotWorkspaceResourceForTabletop,
+  type TabletopTemplateResolver,
 } from "./tabletop-placement.ts";
 import {
   containGmTabletopInstances,
@@ -73,6 +73,7 @@ export function selectTabletopInstances(
 }
 
 export function placeWorkspaceResourcesOnTabletop(
+  resolveTemplate: TabletopTemplateResolver,
   tabletop: TabletopDocumentModel,
   workspaces: readonly CreatorWorkspace[],
   selections: readonly WorkspaceResourceSelection[],
@@ -88,7 +89,7 @@ export function placeWorkspaceResourcesOnTabletop(
       const workspace = workspaces.find((item) => item.key === selection.workspaceKey);
       const source = workspace?.document.resources.find((item) => item.id === selection.resourceId);
       if (!workspace || !source) throw new Error("找不到要放置的资源");
-      const template = templateRegistry.resolve(source.template.id, source.template.version);
+      const template = resolveTemplate(source.template.id, source.template.version);
       if (!template) throw new Error("找不到卡牌类型");
       const snapshot = snapshotWorkspaceResourceForTabletop(workspace, source.id);
       const instanceId = createId();
@@ -122,6 +123,7 @@ export function placeWorkspaceResourcesOnTabletop(
 }
 
 export function replaceTabletopInstanceFromWorkspace(
+  resolveTemplate: TabletopTemplateResolver,
   tabletop: TabletopDocumentModel,
   workspaces: readonly CreatorWorkspace[],
   instanceId: string,
@@ -131,7 +133,7 @@ export function replaceTabletopInstanceFromWorkspace(
   const instance = tabletop.instances.find((candidate) => candidate.id === instanceId);
   if (!instance) return { ok: false, error: "tabletop.instance.not-found" };
   try {
-    const prepared = prepareWorkspaceReplacement(workspaces, instance, replacementId, createId());
+    const prepared = prepareWorkspaceReplacement(resolveTemplate, workspaces, instance, replacementId, createId());
     const replaced = executeTabletopCommand(tabletop, prepared.command, {
       capabilities: gmTabletopCapabilities,
     });

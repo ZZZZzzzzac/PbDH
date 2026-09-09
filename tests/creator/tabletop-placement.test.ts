@@ -14,7 +14,7 @@ import {
   executeTabletopCommand,
   type TabletopCapability,
 } from "@pbdh/tabletop/core";
-import { adversaryTemplate } from "@pbdh/templates/core";
+import { adversaryTemplate, templateRegistry } from "@pbdh/templates/core";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
@@ -23,13 +23,14 @@ import {
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-prototype/market-handoff.ts";
 import {
-  prepareWorkspaceReplacement,
+  prepareWorkspaceReplacement as prepareWithTemplates,
   snapshotWorkspaceResourceForTabletop,
 } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 import { containGmTabletopInstances } from "../../apps/creator/src/workspace-prototype/gm-tabletop-geometry.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 
 const databases: PbDHLocalDatabase[] = [];
+const prepareWorkspaceReplacement = prepareWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 const capabilities = new Set<TabletopCapability>([
   "place",
   "move",

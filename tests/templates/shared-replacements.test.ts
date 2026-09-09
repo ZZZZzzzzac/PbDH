@@ -8,9 +8,10 @@ import { sharedTabletopReplacements } from "../../packages/templates/src/core/sh
 import templateCatalog from "../../packages/templates/catalog.json";
 import { createBlankWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-lifecycle.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
-import { prepareWorkspaceReplacement, snapshotWorkspaceResourceForTabletop } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
+import { prepareWorkspaceReplacement as prepareWithTemplates, snapshotWorkspaceResourceForTabletop } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 
 const capabilities = new Set<TabletopCapability>(["place", "replace", "uniform-scale"]);
+const prepareWorkspaceReplacement = prepareWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 
 describe("all current Templates share explicit one-step replacements", () => {
   test.each(currentTemplates)("$id supports reciprocal replacement without recursion", async (template) => {

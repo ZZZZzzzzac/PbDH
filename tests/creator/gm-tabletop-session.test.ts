@@ -2,18 +2,21 @@ import { readFileSync } from "node:fs";
 
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { createTabletopDocument } from "@pbdh/tabletop/core";
+import { templateRegistry } from "@pbdh/templates/core";
 import { describe, expect, test, vi } from "vitest";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
   arrangeGmTabletop,
   executeGmTabletopCommand,
-  placeWorkspaceResourcesOnTabletop,
+  placeWorkspaceResourcesOnTabletop as placeWithTemplates,
   selectTabletopInstances,
 } from "../../apps/creator/src/workspace-prototype/gm-tabletop-session.ts";
 import { createWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import { loadTabletopTemplates } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 
 const document = minotaurPackage as unknown as ResourcePackageLogicalDocument;
+const placeWorkspaceResourcesOnTabletop = placeWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 const asset = document.assets[0]!;
 const bytes = new Uint8Array(readFileSync(new URL(
   `../../contracts/conformance/resource-package/1.0.0/media/${asset.id.replace("sha256:", "")}.webp`,
@@ -22,6 +25,32 @@ const bytes = new Uint8Array(readFileSync(new URL(
 const workspace = createWorkspace({ document, media: new Map([[asset.id, bytes]]) });
 
 describe("GM Tabletop session", () => {
+  test("慢加载只准备所需能力，随后放置使用最新桌面和资源数据", async () => {
+    const template = templateRegistry.resolve("敌人", "1.0.0")!;
+    let release!: (value: typeof template) => void;
+    const pending = new Promise<typeof template>((resolve) => { release = resolve; });
+    const load = vi.fn().mockReturnValue(pending);
+    const preparing = loadTabletopTemplates([template, template], load);
+    const board = createTabletopDocument("00000000-0000-7000-8000-000000000001", "加载前");
+    const latestBoard = { ...board, name: "加载期间修改" };
+    const latestWorkspace = createWorkspace(workspace);
+    latestWorkspace.document.resources[0]!.data = { ...template.defaultData, 名称: "加载期间编辑" };
+    expect(board.instances).toEqual([]);
+    release(template);
+    const resolveTemplate = await preparing;
+    const placed = placeWithTemplates(resolveTemplate, latestBoard, [latestWorkspace], [{ workspaceKey: latestWorkspace.key, resourceId: document.resources[0]!.id }]);
+    if (!placed.ok) throw new Error(placed.error);
+    expect(placed.tabletop.name).toBe("加载期间修改");
+    expect(placed.tabletop.instances[0]!.resource.data.名称).toBe("加载期间编辑");
+    expect(load).toHaveBeenCalledExactlyOnceWith("敌人", "1.0.0");
+    expect(resolveTemplate("敌人", "1.1.0")).toBeUndefined();
+    expect(board.instances).toEqual([]);
+  });
+
+  test("模板加载失败不会返回可提交的半批能力", async () => {
+    const load = vi.fn().mockRejectedValue(new Error("network unavailable"));
+    await expect(loadTabletopTemplates([{ id: "敌人", version: "1.0.0" }], load)).rejects.toThrow("network unavailable");
+  });
   test("几何命令不读取模板能力，状态命令只使用显式注入的定义", () => {
     const empty = createTabletopDocument("00000000-0000-7000-8000-000000000001", "测试桌面");
     const placed = placeWorkspaceResourcesOnTabletop(empty, [workspace], [{ workspaceKey: workspace.key, resourceId: document.resources[0]!.id }]);

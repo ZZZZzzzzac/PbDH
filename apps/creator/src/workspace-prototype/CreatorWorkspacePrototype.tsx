@@ -86,6 +86,7 @@ import {
   type WorkspaceResourceSelection,
 } from "./gm-tabletop-session.ts";
 import { useGmTabletopViewport } from "./use-gm-tabletop-viewport.ts";
+import { loadTabletopTemplates, workspaceReplacementTemplate, type TabletopTemplateResolver } from "./tabletop-placement.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
 import {
   GmTabletopWorkbench,
@@ -171,6 +172,7 @@ const creatorOperationLabels: Record<CreatorOperation, string> = {
   "export-package": "正在导出资源包…",
   "publication-cover": "正在生成发布封面…",
   "upgrade-templates": "正在升级模板…",
+  "prepare-tabletop": "正在加载桌面模板…",
 };
 
 type PendingCreatorImage =
@@ -381,6 +383,11 @@ export function CreatorWorkspacePrototype({
   const tabletopSurfaceRef = tabletopViewport.refs.surface;
   const tabletopViewportRef = tabletopViewport.refs.viewport;
   const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
+  const pendingTabletopTemplateOperation = useRef(false);
+  const tabletopOperationMounted = useRef(false);
+  const latestTabletopCommits = useRef({ place: commitWorkspacePlacement, replace: commitInstanceReplacement });
+  latestTabletopCommits.current = { place: commitWorkspacePlacement, replace: commitInstanceReplacement };
+  useEffect(() => { tabletopOperationMounted.current = true; return () => { tabletopOperationMounted.current = false; }; }, []);
   const detailTabletopInstance = activeTabletop?.instances.find((instance) => instance.id === detailTabletopInstanceId);
   const selectedInstanceFrontend = selectedInstance
     ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
@@ -837,12 +844,35 @@ export function CreatorWorkspacePrototype({
     setSelectedInstanceId("");
   }
 
-  function placeWorkspaceResources(
+  async function placeWorkspaceResources(
     selections: WorkspaceResourceSelection[],
     firstPosition?: { x: number; y: number },
   ) {
     if (!activeTabletop || selections.length === 0) return;
-    const result = placeWorkspaceResourcesOnTabletop(activeTabletop, workspaces, selections, firstPosition);
+    if (creatorOperation || pendingTabletopTemplateOperation.current) { notify("当前操作尚未完成，请稍后重试。"); return; }
+    pendingTabletopTemplateOperation.current = true;
+    setCreatorOperation("prepare-tabletop");
+    const tabletopId = activeTabletop.id;
+    try {
+      const references = selections.map((selection) => {
+        const workspace = workspaces.find((item) => item.key === selection.workspaceKey);
+        const source = workspace?.document.resources.find((item) => item.id === selection.resourceId);
+        if (!source) throw new Error("找不到要放置的资源");
+        return source.template;
+      });
+      const resolveTemplate = await loadTabletopTemplates(references);
+      if (tabletopOperationMounted.current) latestTabletopCommits.current.place(tabletopId, resolveTemplate, selections, firstPosition);
+    } catch (error) {
+      if (tabletopOperationMounted.current) notify(error instanceof Error ? error.message : "模板加载失败，请重试。");
+    } finally {
+      pendingTabletopTemplateOperation.current = false;
+      if (tabletopOperationMounted.current) setCreatorOperation((current) => current === "prepare-tabletop" ? null : current);
+    }
+  }
+
+  function commitWorkspacePlacement(tabletopId: string, resolveTemplate: TabletopTemplateResolver, selections: WorkspaceResourceSelection[], firstPosition?: { x: number; y: number }) {
+    if (!activeTabletop || activeTabletop.id !== tabletopId) { notify("目标桌面已关闭或切换，未放置资源。"); return; }
+    const result = placeWorkspaceResourcesOnTabletop(resolveTemplate, activeTabletop, workspaces, selections, firstPosition);
     if (!result.ok) {
       notify(result.error);
       return;
@@ -882,12 +912,32 @@ export function CreatorWorkspacePrototype({
     setResourceMultiSelect(false);
   }
 
-  function replaceSelectedInstanceForm(replacementId: string) {
+  async function replaceSelectedInstanceForm(replacementId: string) {
     if (!activeTabletop || !selectedInstance) return;
+    if (creatorOperation || pendingTabletopTemplateOperation.current) { notify("当前操作尚未完成，请稍后重试。"); return; }
+    pendingTabletopTemplateOperation.current = true;
+    setCreatorOperation("prepare-tabletop");
+    const tabletopId = activeTabletop.id;
+    const instanceId = selectedInstance.id;
+    try {
+      const reference = workspaceReplacementTemplate(workspaces, selectedInstance, replacementId);
+      const resolveTemplate = await loadTabletopTemplates([reference]);
+      if (tabletopOperationMounted.current) latestTabletopCommits.current.replace(tabletopId, instanceId, replacementId, resolveTemplate);
+    } catch (error) {
+      if (tabletopOperationMounted.current) notify(error instanceof Error ? error.message : "模板加载失败，请重试。");
+    } finally {
+      pendingTabletopTemplateOperation.current = false;
+      if (tabletopOperationMounted.current) setCreatorOperation((current) => current === "prepare-tabletop" ? null : current);
+    }
+  }
+
+  function commitInstanceReplacement(tabletopId: string, instanceId: string, replacementId: string, resolveTemplate: TabletopTemplateResolver) {
+    if (!activeTabletop || activeTabletop.id !== tabletopId) { notify("目标桌面已关闭或切换，未替换资源。"); return; }
     const result = replaceTabletopInstanceFromWorkspace(
+      resolveTemplate,
       activeTabletop,
       workspaces,
-      selectedInstance.id,
+      instanceId,
       replacementId,
     );
     if (!result.ok) {
