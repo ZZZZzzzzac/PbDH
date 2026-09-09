@@ -58,6 +58,37 @@ describe("CharacterSaveRepository", () => {
     expect(diagnostics[0]?.code).toBe("contract.version.unsupported");
   });
 
+  test("恢复只读取目标角色，其他损坏的回收站媒体不阻断它", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    const current = structuredClone(fixtureJson) as CharacterSaveDocument;
+    await repository.save(current, new Map());
+    await repository.trash(current.documentId);
+    const otherId = crypto.randomUUID();
+    const badAssetId = `sha256:${"0".repeat(64)}`;
+    await store.put({
+      documentId: otherId, documentKind: "character-save", contractFamily: "character-save", contractVersion: "1.0.0",
+      createdAt: current.createdAt, updatedAt: current.updatedAt,
+      assetIds: [badAssetId], sync: { scope: "local-only", state: "clean", baseRevision: null },
+      payload: { ...current, documentId: otherId, characterData: { portrait: { assetId: badAssetId } } },
+    }, [{ assetId: badAssetId, mediaType: "image/webp", byteLength: "3", bytes: new Uint8Array([1, 2, 3]) }]);
+    await repository.trash(otherId);
+    const mediaReads = vi.spyOn(store, "getMedia");
+    const trashReads = vi.spyOn(store, "listTrash");
+    const metadata = await repository.listTrashMetadata();
+    expect(metadata).toHaveLength(2);
+    expect(metadata.every((item) => !("characterData" in item.document) && !("media" in item))).toBe(true);
+    expect(mediaReads).not.toHaveBeenCalled();
+    trashReads.mockClear();
+    expect((await repository.restore(current.documentId)).document.documentId).toBe(current.documentId);
+    expect(trashReads).not.toHaveBeenCalled();
+    expect(mediaReads).toHaveBeenCalledExactlyOnceWith([]);
+    await expect(repository.restore(otherId)).rejects.toThrow("Invalid trashed Character Save");
+    expect(await store.getTrash("character-save", otherId)).toBeDefined();
+    expect(await store.get("character-save", otherId)).toBeUndefined();
+    await expect(repository.restore(crypto.randomUUID())).rejects.toThrow("回收站里找不到这个人物存档");
+  });
+
   test("restores final weapon fields and a self-contained tabletop after a local restart", async () => {
     const store = new DexieLocalDocumentStore(database());
     const source = new CharacterSaveRepository(store, () => "2026-08-26T08:06:00.000Z");
@@ -154,7 +185,7 @@ describe("CharacterSaveRepository", () => {
 
     await repository.trash(document.documentId);
     expect(await repository.list()).toEqual([]);
-    expect(await repository.listTrash()).toMatchObject([{
+    expect(await repository.listTrashMetadata()).toMatchObject([{
       document: { documentId: document.documentId },
       deletedAt: "2026-08-27T10:00:00.000Z",
       purgeAfter: "2026-09-26T10:00:00.000Z",

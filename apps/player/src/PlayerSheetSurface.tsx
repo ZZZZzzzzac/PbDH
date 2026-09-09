@@ -862,7 +862,7 @@ export function PlayerSheetSurface({
   const playerTrashSource = useMemo<PlatformTrashSource>(() => ({
     id: "player-character-saves",
     async list() {
-      const local = (await characterSaveRepository.listTrash()).map((item) => ({
+      const local = (await characterSaveRepository.listTrashMetadata()).map((item) => ({
         id: `local:${item.document.documentId}`,
         name: item.document.name || "未命名角色",
         documentType: "人物存档" as const,

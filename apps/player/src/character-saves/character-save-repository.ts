@@ -27,7 +27,7 @@ export type CharacterSaveMetadata = {
   sync: LocalDocumentSync;
 };
 
-export type TrashedCharacterSave = StoredCharacterSave & {
+export type TrashedCharacterSaveMetadata = CharacterSaveMetadata & {
   deletedAt: string;
   purgeAfter: string | null;
 };
@@ -218,31 +218,26 @@ export class CharacterSaveRepository {
     await this.#store.trash("character-save", documentId, this.#now());
   }
 
-  async listTrash(): Promise<TrashedCharacterSave[]> {
+  async listTrashMetadata(): Promise<TrashedCharacterSaveMetadata[]> {
     const envelopes = await this.#store.listTrash<CharacterSaveDocument>("character-save");
-    const results: TrashedCharacterSave[] = [];
-    for (const envelope of envelopes) {
-      const media = await this.#store.getMedia(envelope.assetIds);
-      const candidate = await normalizeValid(
-        envelope.payload,
-        media,
-        "Invalid trashed Character Save",
-      );
-      results.push({
-        ...candidate,
+    return envelopes.map((envelope) => {
+      const { characterData: _characterData, ...document } = envelope.payload;
+      return {
+        document,
         sync: envelope.sync,
         deletedAt: envelope.deletedAt!,
         purgeAfter: envelope.purgeAfter ?? null,
-      });
-    }
-    return results;
+      };
+    });
   }
 
   async restore(documentId: string): Promise<StoredCharacterSave> {
-    const trashed = (await this.listTrash()).find((item) => item.document.documentId === documentId);
+    const trashed = await this.#store.getTrash<CharacterSaveDocument>("character-save", documentId);
     if (!trashed) throw new Error("回收站里找不到这个人物存档。");
+    const media = await this.#store.getMedia(trashed.assetIds);
+    const candidate = await normalizeValid(trashed.payload, media, "Invalid trashed Character Save");
     await this.#store.restore("character-save", documentId);
-    return trashed;
+    return { ...candidate, sync: trashed.sync };
   }
 
   async deleteFromTrash(documentId: string): Promise<void> {

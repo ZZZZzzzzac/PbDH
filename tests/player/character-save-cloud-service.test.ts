@@ -91,7 +91,7 @@ describe("Player Character Save cloud recovery", () => {
     await service.trash(document.documentId, credentials);
 
     expect(await repository.list()).toEqual([]);
-    expect(await repository.listTrash()).toMatchObject([{
+    expect(await repository.listTrashMetadata()).toMatchObject([{
       document: { documentId: document.documentId },
       sync: { scope: "cloud", state: "pending", baseRevision: null },
     }]);
