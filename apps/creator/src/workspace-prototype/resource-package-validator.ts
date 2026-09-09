@@ -4,7 +4,7 @@ import {
   type ContractCatalog,
   type ResourcePackageCandidateValidator,
 } from "@pbdh/contract-runtime";
-import { templateRegistry } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 
 import catalogJson from "../../../../contracts/catalog.json";
 import resourcePackageSchema from "../../../../contracts/resource-package/1.0.0/schema.json";
@@ -41,11 +41,12 @@ export const validateResourcePackageCandidate: ResourcePackageCandidateValidator
   if (schemaDiagnostics.length) return schemaDiagnostics;
   const diagnostics = await validateResourcePackageSemantics(document, media);
   if (diagnostics.length) return diagnostics;
-  document.resources.forEach((resource, resourceIndex) => {
-    const allowed = new Set(templateRegistry.resolve(
+  for (const [resourceIndex, resource] of document.resources.entries()) {
+    const template = await loadTemplateCore(
       resource.template.id,
       resource.template.version,
-    )?.tabletop.replacements.map((replacement) => replacement.id) ?? []);
+    );
+    const allowed = new Set(template?.tabletop.replacements.map((replacement) => replacement.id) ?? []);
     (resource.replacements ?? []).forEach((replacement, replacementIndex) => {
       if (!allowed.has(replacement.replacementId)) diagnostics.push({
         code: "template.replacement.unsupported",
@@ -56,6 +57,6 @@ export const validateResourcePackageCandidate: ResourcePackageCandidateValidator
         params: { replacementId: replacement.replacementId },
       });
     });
-  });
+  }
   return diagnostics;
 };

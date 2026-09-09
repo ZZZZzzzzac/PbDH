@@ -6,7 +6,7 @@ import {
   type TabletopDocument,
   type TabletopDocumentCandidateValidator,
 } from "@pbdh/contract-runtime";
-import { templateRegistry } from "@pbdh/templates/core";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import type { AnySchema, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
@@ -45,12 +45,12 @@ function templateDiagnostic(
   };
 }
 
-function validateTemplateStateAndReplacements(document: TabletopDocument): ContractDiagnostic[] {
+async function validateTemplateStateAndReplacements(document: TabletopDocument): Promise<ContractDiagnostic[]> {
   if (document.contractVersion !== "1.0.0") return [];
   const diagnostics: ContractDiagnostic[] = [];
-  document.instances.forEach((instance, instanceIndex) => {
+  for (const [instanceIndex, instance] of document.instances.entries()) {
     const reference = instance.resourceCopy.template;
-    const template = templateRegistry.resolve(reference.id, reference.version);
+    const template = await loadTemplateCore(reference.id, reference.version);
     if (!template) {
       diagnostics.push(templateDiagnostic(
         document,
@@ -58,7 +58,7 @@ function validateTemplateStateAndReplacements(document: TabletopDocument): Contr
         `/instances/${instanceIndex}/resourceCopy/template`,
         { templateId: reference.id, templateVersion: reference.version },
       ));
-      return;
+      continue;
     }
 
     const templateKey = `${template.id}@${template.version}`;
@@ -104,7 +104,7 @@ function validateTemplateStateAndReplacements(document: TabletopDocument): Contr
       }
       boundReplacementIds.add(replacement.replacementId);
     }
-  });
+  }
   return diagnostics.sort((left, right) => left.location.localeCompare(right.location)
     || left.code.localeCompare(right.code));
 }
@@ -122,6 +122,6 @@ export const validateTabletopDocumentCandidate: TabletopDocumentCandidateValidat
   if (schemaDiagnostics.length > 0) return schemaDiagnostics;
   return [
     ...await validateTabletopDocumentSemantics(document, media),
-    ...validateTemplateStateAndReplacements(document),
+    ...await validateTemplateStateAndReplacements(document),
   ];
 };

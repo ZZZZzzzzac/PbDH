@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./core": "./src/core/index.ts",
+    "./core/lazy": "./src/core/lazy.ts",
     "./frontend": "./src/frontend/index.ts",
     "./frontend/lazy": "./src/frontend/lazy-renderer-registry.ts"
   },
