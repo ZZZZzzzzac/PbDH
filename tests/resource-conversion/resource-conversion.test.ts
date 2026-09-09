@@ -312,8 +312,8 @@ describe("third-party resource source engines", () => {
     const dhcb = await resourceConversionRegistry.export("dhsheet", imported.batch, { container: "dhcb" });
     expect(json.ok && dhcb.ok).toBe(true);
     if (!json.ok || !dhcb.ok) throw new Error("export failed");
-    expect(dhsheetEngineRead(json.artifact.bytes, false).variant).toEqual(dhsheetPack.variant);
-    expect(dhsheetEngineRead(dhcb.artifact.bytes, true).variant).toEqual(dhsheetPack.variant);
+    expect(dhsheetEngineRead(json.artifact.bytes, false).variant).toEqual(dhsheetPack.variant.map((card) => ({ ...card, 效果: "沉重" })));
+    expect(dhsheetEngineRead(dhcb.artifact.bytes, true).variant).toEqual(dhsheetPack.variant.map((card) => ({ ...card, 效果: "沉重" })));
     const reimported = await resourceConversionRegistry.import("dhsheet", {
       bytes: dhcb.artifact.bytes,
       fileName: dhcb.artifact.fileName,
@@ -321,7 +321,9 @@ describe("third-party resource source engines", () => {
     });
     expect(reimported.ok).toBe(true);
     if (!reimported.ok) throw new Error("dhcb re-import failed");
-    expect(reimported.batch.resources).toEqual(imported.batch.resources);
+    expect(reimported.batch.resources).toEqual(imported.batch.resources.map((card) => ({
+      ...card, source: { ...card.source, raw: { ...card.source.raw as object, 效果: "沉重" } },
+    })));
   });
 
   test("dhsheet imports its explicit equipment-pack variant", async () => {
@@ -951,6 +953,32 @@ describe("registered Template mapping and native pbres", () => {
     expect(partial.ok).toBe(true);
     if (!partial.ok) throw new Error("partial export failed");
     expect(kidEngineRead(partial.artifact.bytes)).toMatchObject({ feature2Name: "", feature2Desc: "" });
+  });
+
+  test.each(["json", "dhcb"] as const)("dhsheet %s declares extension names and fills strict required fields", async (container) => {
+    const batch: TemporaryResourceBatch = {
+      ...professionBatch,
+      resources: [
+        ...professionBatch.resources.map((card) => ({ ...card, name: "扩展职业", fields: { ...card.fields, 名称: "扩展职业", 领域: ["扩展领域", "典籍"] } })),
+        ...subclassBatch.resources.map((card) => ({ ...card, fields: { ...card.fields, 主职: "扩展职业", 施法属性: "" } })),
+        ...ancestryBatch.resources, ...communityBatch.resources, ...domainBatch.resources, ...armorBatch.resources,
+        ...weaponBatch.resources.map((card) => ({ ...card, fields: { ...card.fields, 特性名称: "", 特性描述: "", 简介: "" } })),
+        { sourceId: "free:beast", kind: "free", name: "野兽", fields: { 名称: "野兽", 类型: "野兽形态", 内容: [{ 名称: "追踪", 描述: "追踪时具有优势。" }] }, source: { formatId: "pbres", upstreamRevision: "test", path: "/beast", raw: {} } },
+      ],
+    };
+    const before = structuredClone(batch.resources);
+    const exported = await resourceConversionRegistry.export("dhsheet", batch, { container });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) throw new Error("export failed");
+    const target = dhsheetEngineImport(exported.artifact.bytes, container === "dhcb");
+    expect(target.customFieldDefinitions).toMatchObject({ professions: ["扩展职业"], ancestries: ["龙人"], communities: ["高城之民"], domains: ["扩展领域", "典籍", "奥术"] });
+    expect(target.subclass).toEqual(expect.arrayContaining([expect.objectContaining({ 主职: "扩展职业", 施法: "不可施法" })]));
+    expect(target.variant).toEqual(expect.arrayContaining([
+      expect.objectContaining({ 名称: "填充布甲", 效果: expect.stringContaining("闪避值+1。") }),
+      expect.objectContaining({ 名称: "月刃", 效果: "无额外效果。" }),
+      expect.objectContaining({ 名称: "野兽", 效果: expect.stringContaining("追踪时具有优势。") }),
+    ]));
+    expect(batch.resources).toEqual(before);
   });
 
   test("dhsheet merges and restores its paired ancestry cards", async () => {

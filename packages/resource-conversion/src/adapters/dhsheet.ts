@@ -168,8 +168,14 @@ function freeVariantMetadata(raw: JsonObject): JsonObject {
   return fields;
 }
 
+function variantEffectFallback(card: JsonObject): string {
+  return [text(card.简介), formatNamedFeatures(card.内容), text(card.特性描述), text(card.描述)].filter(Boolean).join("\n\n") || "无额外效果。";
+}
+
 function freeVariantFields(raw: JsonObject): JsonObject {
   const omitted = new Set(["id", "名称", "原文", "类型", "简介", "内容", "imageUrl", "子类别", "简略信息"]);
+  // 回读本工具补齐的摘要时不重复添加正文；外部独立效果仍保留。
+  if (Array.isArray(raw.内容) && raw.效果 === variantEffectFallback(raw)) omitted.add("效果");
   const looseBlocks = Object.entries(raw)
     .filter(([key, value]) => !omitted.has(key)
       && !(key === "类型" && Array.isArray(raw.内容) && text(value) === "自由"))
@@ -541,6 +547,22 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
       else (output[group] as JsonValue[]).push(sourceRaw(resource, "dhsheet") ?? crossFormatRecord(resource, group));
       converted += 1;
     }
+    // dhsheet 的严格导入先校验名称声明，再读取卡牌；每个包必须自包含这些声明。
+    const definitions = output.customFieldDefinitions as JsonObject;
+    const declare = (category: string, values: unknown[]) => {
+      const names = [...new Set(values.map(text).map((value) => value.trim()).filter(Boolean))];
+      if (names.length > 0) definitions[category] = names;
+    };
+    const records = (group: Group) => output[group] as JsonObject[];
+    declare("professions", [...records("profession").map((card) => card.名称), ...records("subclass").map((card) => card.主职)]);
+    declare("ancestries", records("ancestry").map((card) => card.种族));
+    declare("communities", records("community").map((card) => card.名称));
+    declare("domains", [...records("profession").flatMap((card) => [card.领域1, card.领域2]), ...records("domain").map((card) => card.领域)]);
+    output.subclass = records("subclass").map((card) => ({ ...card, 施法: text(card.施法).trim() || "不可施法" }));
+    output.variant = records("variant").map((card) => ({
+      ...card,
+      效果: text(card.效果).trim() || variantEffectFallback(card),
+    }));
     if (diagnostics.some((item) => item.severity === "error")) return exportFailure("dhsheet", diagnostics, converted);
     const container = options.container ?? "json";
     if (container === "json") return {
