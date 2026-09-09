@@ -2,6 +2,7 @@
 
 ## 2026-09-10：dhsheet 资源包严格导入兼容
 
+- v0.1.14（bdd755f）已部署；本地完整 verify 通过（1,058 项 TS、167 项 Python），Release run 34376707799、Deploy run 34377035761 成功。正式 current 指向 releases/0.1.14，服务 active、HTTPS health 正常。
 - 导出时声明职业、种族、社群及领域名称（含子职业和职业的引用）；空施法值输出“不可施法”，变体卡从现有正文补齐效果，无额外规则时明确标注。自由卡重新导入不重复添加生成的摘要。
 - JSON/dhcb 回归覆盖声明、施法、护甲/自由卡正文、空武器效果及源数据不变。
 - 用户玩家资源包重新导出至 `.scratch/匕首之心玩家资源-dhsheet修正版.json`，未修改源文件。使用本机 DaggerHeart-CharacterSheet de4c1e5 的 CardTypeValidator strict 校验，1,004 张卡全部通过，零错误、零警告。
