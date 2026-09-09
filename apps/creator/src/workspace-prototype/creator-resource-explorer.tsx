@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { readWorkspaceNodeDrag, workspaceNodeDataType } from "./workspace-node-drag.ts";
+import { useMemo, useRef, useState, type KeyboardEvent, type DragEvent } from "react";
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import { OperationStatus } from "@pbdh/platform-ui";
 import type { ResourceFormatId } from "@pbdh/resource-conversion";
@@ -141,6 +142,17 @@ export function CreatorResourceExplorer({
     }
   };
 
+  const dropAtRoot = (event: DragEvent, targetWorkspaceKey?: string) => {
+    const dragged = readWorkspaceNodeDrag(event.dataTransfer);
+    if (!dragged || (targetWorkspaceKey && targetWorkspaceKey !== dragged.workspaceKey)) return;
+    if (!snapshot.workspaces.some((workspace) => workspace.key === dragged.workspaceKey)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    execute({ type: "move-node", workspaceKey: dragged.workspaceKey, node: { kind: dragged.kind, id: dragged.id }, parentId: null });
+  };
+  const allowNodeDrop = (event: DragEvent) => {
+    if (event.dataTransfer.types.includes(workspaceNodeDataType)) event.preventDefault();
+  };
   return <aside className="resource-explorer">
     <header className="explorer-toolbar"><strong>资源管理器</strong><div>
       <button className="explorer-new-package" type="button" title="新建资源包" aria-label="新建资源包" disabled={Boolean(snapshot.operation)} onClick={() => execute({ type: "new-package" })}><Icon name="packagePlus" /></button>
@@ -235,11 +247,14 @@ export function CreatorResourceExplorer({
       })}
       {snapshot.filteredResources.length === 0 && <p>没有符合条件的资源</p>}
     </div>}
-    <div className={`workspace-package-list${filtering ? " is-filtering" : ""}`}>
+    <div className={`workspace-package-list${filtering ? " is-filtering" : ""}`} onDragOver={allowNodeDrop} onDrop={(event) => {
+      if (event.target instanceof Element && event.target.closest('[role="treeitem"], .package-root')) return;
+      dropAtRoot(event);
+    }}>
       {snapshot.workspaces.map((workspace) => {
         const expanded = snapshot.expandedWorkspaceKeys.has(workspace.key);
         return <section className={`workspace-package${workspace.key === active?.key ? " is-current" : ""}${expanded ? " is-expanded" : ""}`} key={workspace.key}>
-          <div className={`package-root${workspace.key === active?.key ? " is-current" : ""}`} onContextMenu={(event) => {
+          <div className={`package-root${workspace.key === active?.key ? " is-current" : ""}`} onDragOver={allowNodeDrop} onDrop={(event) => dropAtRoot(event, workspace.key)} onContextMenu={(event) => {
             event.preventDefault();
             execute({ type: "open-workspace-context", workspaceKey: workspace.key, x: event.clientX, y: event.clientY });
           }}>

@@ -18,7 +18,7 @@ import {
 } from "./workspace-model.ts";
 import { templateMarkClassName } from "./TemplateIcon.tsx";
 
-const workspaceNodeDataType = "application/x-pbdh-workspace-node";
+import { readWorkspaceNodeDrag, workspaceNodeDataType } from "./workspace-node-drag.ts";
 
 export function WorkspaceTree({
   workspace,
@@ -138,9 +138,10 @@ export function WorkspaceTree({
       onRootContextMenu(event.clientX, event.clientY);
     } : undefined} onDragOver={parentId === null ? (event) => event.preventDefault() : undefined} onDrop={parentId === null ? (event) => {
       if (event.target !== event.currentTarget) return;
-      const node = readDraggedNode(event);
+      const node = readDraggedNode(event, workspace.key);
       if (!node) return;
       event.preventDefault();
+      event.stopPropagation();
       move(node, null);
     } : undefined}>
       {(treeItemsByParent.get(parentId) ?? []).map((item) => {
@@ -155,11 +156,11 @@ export function WorkspaceTree({
               role="treeitem"
               aria-expanded={!folder.collapsed}
               draggable
-              onDragStart={(event) => writeDraggedNode(event, node)}
+              onDragStart={(event) => writeDraggedNode(event, node, workspace.key)}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.stopPropagation();
-                const dragged = readDraggedNode(event);
+                const dragged = readDraggedNode(event, workspace.key);
                 if (!dragged) return;
                 event.preventDefault();
                 move(dragged, folder.id);
@@ -189,7 +190,7 @@ export function WorkspaceTree({
             role="treeitem"
             aria-selected={selectionMode ? selected : resource.id === activeResourceId}
             draggable
-            onDragStart={(event) => writeDraggedNode(event, node)}
+            onDragStart={(event) => writeDraggedNode(event, node, workspace.key)}
             onContextMenu={(event) => openMenu(event, node)}
           >
             <i />
@@ -223,17 +224,13 @@ function TreeIcon({ name }: { name: keyof typeof treeIconPaths }) {
   return <svg className="icon" viewBox="0 0 24 24" aria-hidden="true"><path d={treeIconPaths[name]} /></svg>;
 }
 
-function writeDraggedNode(event: DragEvent, node: WorkspaceNodeRef): void {
+function writeDraggedNode(event: DragEvent, node: WorkspaceNodeRef, workspaceKey: string): void {
   event.dataTransfer.effectAllowed = "copyMove";
-  event.dataTransfer.setData(workspaceNodeDataType, JSON.stringify(node));
+  event.dataTransfer.setData(workspaceNodeDataType, JSON.stringify({ ...node, workspaceKey }));
   if (node.kind === "resource") event.dataTransfer.setData("application/x-pbdh-resource", node.id);
 }
 
-function readDraggedNode(event: DragEvent): WorkspaceNodeRef | null {
-  try {
-    const node = JSON.parse(event.dataTransfer.getData(workspaceNodeDataType)) as WorkspaceNodeRef;
-    return node?.id && (node.kind === "folder" || node.kind === "resource") ? node : null;
-  } catch {
-    return null;
-  }
+function readDraggedNode(event: DragEvent, workspaceKey: string): WorkspaceNodeRef | null {
+  const dragged = readWorkspaceNodeDrag(event.dataTransfer);
+  return dragged?.workspaceKey === workspaceKey ? { kind: dragged.kind, id: dragged.id } : null;
 }
