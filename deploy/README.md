@@ -10,11 +10,13 @@ Python 3.10 的旧制品不能直接作为新机回滚版本。
 
 - `DEPLOY_HOST=192.243.116.94`，`DEPLOY_USER=root`。
 - `DEPLOY_PATH=/var/www/pbdh-platform`。
-- `PUBLIC_URL=http://192.243.116.94/pbdh/`。
+- `PUBLIC_URL=https://pbdh-preview.192.243.116.94.sslip.io/pbdh/`。
 - SSH key 与 known hosts 只存该 Environment 的 Secrets。
 - `deploy/bandwagon-preview.conf` 管理 IP HTTP 测试入口，保留既有 SRD 路径。
-- 新机数据位于 `/var/lib/pbdh-platform`，账号配置留空，不迁移旧数据库。
-- 公网 HTTP 用于访问速度测试，仅开放 API health；不是完整登录/云同步验收入口。
+- 新机数据位于 `/var/lib/pbdh-platform`，已恢复旧站 2026-09-09 的一致性快照；账号配置留空，测试期间不启用登录和云写入。
+- `deploy/bandwagon-preview-tls.conf` 提供临时 HTTPS 与 API 入口，支持 WebCrypto；不要用 HTTP IP 地址验收玩家车卡器。
+- Let's Encrypt 证书通过 webroot 签发；`pbdh-preview-cert-renew.timer` 每日两次检查续期，续期后重载 Nginx。
+- 公网 HTTP 仅供连通性测试，API 除 health 外为 403；完整功能测试使用上述 HTTPS 地址。
 - 正式域名、旧服务器及 `production-preview` Environment 保持原状。
   `Manage public routes` 仍属于旧机维护，不用于新机切流。
 

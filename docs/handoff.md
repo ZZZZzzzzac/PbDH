@@ -1,5 +1,17 @@
 # 开发交接
 
+## 2026-09-09：搬瓦工 v0.1.10 HTTPS 测试部署（最新）
+
+- 用户授权先迁移部署并测试网络，暂不切正式域名。新入口：`https://pbdh-preview.192.243.116.94.sslip.io/pbdh/`，直达 `192.243.116.94`。
+- 应用 Release `v0.1.10`（`e244bc0`）已发布并部署；Release run `34358574396`、Deploy run `34359051363` 全部成功。CI 完整 verify 通过。
+- `Deploy Release` 已改用独立 `bandwagon-preview` Environment；AlmaLinux 使用 Python 3.11，与制品 ABI 对齐。新机 `/var/www/pbdh-platform/current` 指向 `releases/0.1.10`，`pbdh-platform` active。
+- 旧站在 UTC 13:41:30 生成一致性快照并恢复到新机；传输 SHA-256 两端一致：`c547672d0c18b004c50298f9a62b4734f9330249287a17011634395cd0722df0`。恢复前后 integrity_check 均 ok，57 个 Publication、5,367 项资源、121 个媒体（7,914,902 bytes），以及 14 个账号、37 个云文档的计数一致。
+- 新机快照 `/srv/pbdh-migration-20260909/production-snapshot.sqlite3`，旧站备份 `/var/lib/pbdh-platform/bandwagon-snapshot-20260909/pbdh-20260909T134130Z.sqlite3`。均为私有数据，不公开或提交。旧站继续运行，切流前须最终同步；本次没有清理历史幂等回执。
+- HTTPS 已签发证书、启用 HTTP/2/gzip；续期 timer 已启用且 certbot dry-run 通过。旧 IP HTTP 的 API 403 会返回 HTML，且不是安全上下文；完整应用请使用 HTTPS 地址。
+- 真实浏览器确认车卡器启动、姓名编辑、种族资源选择、市场 57 包和封面、九州志异详情卡面，以及将该 180 项资源包安装到 Player 成功。最初一次跨代理请求有 15 秒超时，复试通过；不能据此宣称大陆各网络均已测速通过。
+- 账号配置暂留空，`/api/auth/config` 返回 JSON `configured:false`；测试站暂不启用登录/云写入。旧服务器、正式域名和 SRD/sub2api 服务未切流。
+- 新机旧 `pbdh-preview` 已停用，原目录与数据库保留供回退。运维配置和恢复边界详见 `deploy/README.md`。
+
 ## 2026-09-09：全部优化 Issue 已关闭（最新）
 
 用户明确授权后，已逐项发布验收评论并关闭 GitHub #55–#68，共 14 项；再次查询全部为 CLOSED。本节覆盖下面历史段落中的“待授权关闭”状态。

@@ -1,0 +1,7 @@
+[Unit]
+Description=Renew PbDH preview TLS certificate
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/srv/bandwagon-preview/certbot-venv/bin/certbot renew --quiet --deploy-hook "systemctl reload nginx"
