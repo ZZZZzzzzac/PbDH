@@ -1,5 +1,20 @@
 # 开发交接
 
+## 2026-09-09：正式域名迁移完成与系统包加载修复（最新）
+
+本节覆盖下方测试部署、未切域名和待最终同步的历史状态。
+
+- 用户授权后，daggerheart.cn 与 www 的 A 记录切到 192.243.116.94，现为 DNS only；chat Tunnel 保持原状。
+- 首页已迁移并更新入口；/character → /pbdh/player，/battle → /pbdh/market，/pbdh 默认 Player，/SRD 使用完整生产站。
+- PbDH v0.1.10 保持运行，正式认证配置已恢复；configured=true。没有进行真实账号登录验收。
+- 旧站停止 PbDH/SRD 写入后完成最终一致性同步。14 账号、57 Publication、5,367 资源、121 媒体、37 云文档及 SRD 反馈库均核对一致，SQLite integrity_check 为 ok；未修改 schema 或清理旧回执。
+- 最终私有归档位于新机 /srv/domain-migration-20260909/final/snapshot.tar.gz，SHA-256：44553c07255cbd12c6db00b9ae3a14cc6a2ca5c7e3d70cc5dc96c93b9f7e016a。旧机和新机恢复前备份保留。
+- 正式 Nginx 配置由 Daggerheart_VPS/bandwagon/daggerheart-production.conf 管理。系统包目录使用 ^~，避免隐藏文件规则拦截公开清单 .pbdh-runtime-files.json；五个系统包共 145 个清单文件均通过 HTTPS 获取验证，四个非默认系统包通过正式站真实浏览器加载。
+- 旧服务器应用停用，Nginx 转发新机以承接 DNS 缓存流量；TLS 上游验证深度为 4，健康检查通过。不可直接重启旧应用回滚，否则会分叉数据。
+- Deploy Release 继续使用 bandwagon-preview Environment，PUBLIC_URL 已改为 https://daggerheart.cn/pbdh/；routes.yml 改为只读检查新机，避免旧路由工作流恢复旧部署。
+- SRD 服务 srd-production 位于 /srv/srd-production，使用 5002；构建、9 项 Node 测试、编辑器无修改保存及 Git 推送 dry-run 通过。反馈备份 timer 启用。
+- 正式域名已签发新的 Let's Encrypt 证书，续期使用现有 pbdh-preview-cert-renew.timer。正式域名续期 dry-run 通过；网站、跳转、认证保护与后端健康检查通过。
+
 ## 2026-09-09：搬瓦工 v0.1.10 HTTPS 测试部署（最新）
 
 - 用户授权先迁移部署并测试网络，暂不切正式域名。新入口：`https://pbdh-preview.192.243.116.94.sslip.io/pbdh/`，直达 `192.243.116.94`。

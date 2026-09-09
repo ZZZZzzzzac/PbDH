@@ -1,6 +1,6 @@
 # 服务器部署
 
-## 当前目标：搬瓦工测试部署
+## 当前目标：搬瓦工正式部署
 
 从 v0.1.10 起，`Deploy Release` 使用独立 GitHub Environment
 `bandwagon-preview`，部署到 `192.243.116.94`（AlmaLinux 9.7 x86_64）。
@@ -10,17 +10,18 @@ Python 3.10 的旧制品不能直接作为新机回滚版本。
 
 - `DEPLOY_HOST=192.243.116.94`，`DEPLOY_USER=root`。
 - `DEPLOY_PATH=/var/www/pbdh-platform`。
-- `PUBLIC_URL=https://pbdh-preview.192.243.116.94.sslip.io/pbdh/`。
+- `PUBLIC_URL=https://daggerheart.cn/pbdh/`。
 - SSH key 与 known hosts 只存该 Environment 的 Secrets。
 - `deploy/bandwagon-preview.conf` 管理 IP HTTP 测试入口，保留既有 SRD 路径。
-- 新机数据位于 `/var/lib/pbdh-platform`，已恢复旧站 2026-09-09 的一致性快照；账号配置留空，测试期间不启用登录和云写入。
+- 新机数据位于 `/var/lib/pbdh-platform`，已完成旧站停写后的最终一致性同步；正式账号配置已恢复。
 - `deploy/bandwagon-preview-tls.conf` 提供临时 HTTPS 与 API 入口，支持 WebCrypto；不要用 HTTP IP 地址验收玩家车卡器。
 - Let's Encrypt 证书通过 webroot 签发；`pbdh-preview-cert-renew.timer` 每日两次检查续期，续期后重载 Nginx。
 - 公网 HTTP 仅供连通性测试，API 除 health 外为 403；完整功能测试使用上述 HTTPS 地址。
-- 正式域名、旧服务器及 `production-preview` Environment 保持原状。
-  `Manage public routes` 仍属于旧机维护，不用于新机切流。
+- 正式域名已切到新机。`Inspect public routes` 只读检查新机服务，不再修改旧机路由。
+- 正式域名 Nginx 配置在 `Daggerheart_VPS/bandwagon/daggerheart-production.conf`；系统包目录必须优先匹配，允许公开的 `.pbdh-runtime-files.json`。
+- 正式认证已恢复，但本轮未进行真实账号登录验收。
 
-切域名与生产数据最终同步留待用户测试网络后另行安排。新机的早期
+旧站应用已停用，旧 Nginx 仅转发新机；禁止直接恢复旧应用造成数据分叉。最终私有归档位于 `/srv/domain-migration-20260909/final/`，回滚前必须先备份并同步新机写入。新机的早期
 `pbdh-preview` 服务及 `/srv/bandwagon-preview/pbdh` 保留供回退，部署新版时
 停止旧预览服务，避免争用 8001。正式服务为 `pbdh-platform`。
 
@@ -28,7 +29,7 @@ Python 3.10 的旧制品不能直接作为新机回滚版本。
 `D:/Game/Daggerheart/Daggerheart_VPS/.ssh/ssh-key-2026-03-20.key`，
 不要提交私钥。网络节点可能影响 SSH 连接；认证前断连不代表公钥错误。
 
-## 旧服务器部署记录
+## 旧服务器部署记录（仅历史参考，不再执行以下切流步骤）
 
 生产部署沿用 `Daggerheart_VPS` 的 Nginx、Let's Encrypt 和不可变 GitHub
 Release 目录。前端由宿主 Nginx 直接提供；FastAPI 沿用 systemd 管理，
