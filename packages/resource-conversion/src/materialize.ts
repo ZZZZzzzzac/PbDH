@@ -4,7 +4,8 @@ import {
   type ResourcePackageCandidate,
   type ResourcePackageLogicalDocument,
 } from "@pbdh/contract-runtime";
-import { mapBatchToRegisteredCandidates } from "./template-mapping.ts";
+import { mapBatchToRegisteredCandidates, resourceTemplateId } from "./template-mapping.ts";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
 import type {
   ConversionDiagnostic,
   ResourceFormatId,
@@ -23,15 +24,18 @@ export async function materializeResourceConversion(input: {
   batch: TemporaryResourceBatch;
   targets: ResourcePackageLogicalDocument["targets"];
   diagnosticNamespace: string;
-  templates: ReadonlyArray<{
-    id: string;
-    version: string;
-    defaultPresentation: ResourcePackageLogicalDocument["resources"][number]["presentation"];
-    mediaSlots: ReadonlyArray<{ id: string; accepts: readonly string[] }>;
-  }>;
+  loadTemplate: (id: string) => Promise<TemplateCoreCapability<any> | undefined>;
   normalizeMedia?: ResourceMediaNormalizer;
 }): Promise<ResourceConversionMaterialization> {
-  const mapped = mapBatchToRegisteredCandidates(input.batch.resources);
+  const templateIds = new Set(input.batch.resources.map((resource) => resourceTemplateId(resource.kind)));
+  const templates: TemplateCoreCapability<any>[] = [];
+  for (const id of templateIds) {
+    if (!id) continue;
+    const template = await input.loadTemplate(id);
+    if (!template || template.id !== id) throw new Error(`可信资源模板不可用：${id}`);
+    templates.push(template);
+  }
+  const mapped = mapBatchToRegisteredCandidates(input.batch.resources, templates);
   const mappedResources = input.batch.resources.filter((resource) => !mapped.unmapped.includes(resource));
   const diagnostics = [
     ...mapped.candidates.flatMap((item) => item.diagnostics),
@@ -53,7 +57,7 @@ export async function materializeResourceConversion(input: {
   const normalizedSourceMedia = new Map<string, ReturnType<ResourceMediaNormalizer>>();
   for (const [index, item] of mapped.candidates.entries()) {
     const source = mappedResources[index]!;
-    const template = input.templates.find((candidate) =>
+    const template = templates.find((candidate) =>
       candidate.id === item.template.id && candidate.version === item.template.version);
     if (!template) throw new Error(`可信资源模板不可用：${item.template.id}@${item.template.version}`);
     const bindings: Record<string, string> = {};
@@ -143,7 +147,7 @@ export async function materializeResourceConversion(input: {
     forkSource: null,
     assets: [...assets.values()],
     resources: mapped.candidates.map((item, index) => {
-      const template = input.templates.find((candidate) =>
+      const template = templates.find((candidate) =>
         candidate.id === item.template.id && candidate.version === item.template.version);
       if (!template) throw new Error(`可信资源模板不可用：${item.template.id}@${item.template.version}`);
       return {

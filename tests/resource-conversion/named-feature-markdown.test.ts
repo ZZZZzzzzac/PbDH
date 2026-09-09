@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { currentTemplates } from "@pbdh/templates/core";
 import { describe, expect, it } from "vitest";
 import { mapBatchToRegisteredCandidates, resourceConversionRegistry } from "../../packages/resource-conversion/src/index.ts";
 import { namedFeature, namedFeatures } from "../../packages/resource-conversion/src/shared.ts";
@@ -19,7 +20,7 @@ describe("Markdown headings inside third-party feature strings", () => {
       bytes: new Uint8Array(readFileSync("tests/resource-conversion/fixtures/jiuzhou-xiashi.json")),
     });
     if (!imported.ok) throw new Error(JSON.stringify(imported.report));
-    const mapped = mapBatchToRegisteredCandidates(imported.batch.resources);
+    const mapped = mapBatchToRegisteredCandidates(imported.batch.resources, currentTemplates);
     const xiashi = mapped.candidates.find((candidate) => candidate.data.名称 === "侠士")!;
     expect(xiashi.diagnostics).toEqual([]);
     expect(xiashi.data.希望特性).toMatchObject({ 特性名称: "内力冲穴", 特性描述: "花费3希望点，解除一个影响你的状态。" });

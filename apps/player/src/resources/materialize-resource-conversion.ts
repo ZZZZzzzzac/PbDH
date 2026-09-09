@@ -6,7 +6,7 @@ import {
   type TemporaryResourceBatch,
 } from "@pbdh/resource-conversion";
 import { admitResourceImageBytes } from "@pbdh/media-admission";
-import { currentTemplates } from "@pbdh/templates/core";
+import { loadCurrentTemplateCore } from "@pbdh/templates/core/lazy";
 
 export type PlayerResourceConversionCandidate = ResourceConversionMaterialization;
 
@@ -27,7 +27,7 @@ export async function materializePlayerResourceConversion(
       version: currentSystem.package.version,
     }],
     diagnosticNamespace: "player",
-    templates: currentTemplates,
+    loadTemplate: loadCurrentTemplateCore,
     normalizeMedia,
   });
 }

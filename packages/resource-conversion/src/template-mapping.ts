@@ -1,17 +1,4 @@
-import {
-  currentAdversaryTemplate as adversaryTemplate,
-  currentAncestryTemplate as ancestryTemplate,
-  currentArmorTemplate as armorTemplate,
-  currentCommunityTemplate as communityTemplate,
-  currentDomainTemplate as domainTemplate,
-  currentEnvironmentTemplate as environmentTemplate,
-  currentFreeTemplate as freeTemplate,
-  currentItemTemplate as itemTemplate,
-  currentProfessionTemplate as professionTemplate,
-  currentSubclassTemplate as subclassTemplate,
-  type TemplateCoreCapability,
-  currentWeaponTemplate as weaponTemplate,
-} from "@pbdh/templates/core";
+import type { TemplateCoreCapability } from "@pbdh/templates/core";
 
 import { isObject, namedFeatureGroup, namedFeatures, text } from "./shared.ts";
 import { validateTemplateData } from "./template-validation.ts";
@@ -28,50 +15,56 @@ function adversaryFeature(value: JsonValue): JsonObject {
   };
 }
 
-function templateData(resource: TemporaryResource): {
+export function resourceTemplateId(kind: string): string | undefined {
+  const ids: Record<string, string> = { adversary: "敌人", ancestry: "种族", armor: "护甲", community: "社群",
+    domain: "领域卡", environment: "环境", free: "自由", item: "物品", class: "职业", subclass: "子职业", weapon: "武器" };
+  return Object.hasOwn(ids, kind) ? ids[kind] : undefined;
+}
+
+function templateData(resource: TemporaryResource, template: TemplateCoreCapability<any>): {
   template: TemplateCoreCapability<any>;
   data: JsonObject;
 } | undefined {
   if (resource.kind === "adversary") {
-    const data = structuredClone(adversaryTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if (resource.fields[key] !== undefined) data[key] = resource.fields[key]!;
     }
     data.名称 = resource.name;
     data.特性 = Array.isArray(resource.fields.特性) ? resource.fields.特性.map(adversaryFeature) : [];
-    return { template: adversaryTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "weapon") {
-    const data = structuredClone(weaponTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if (key === "原文" && resource.fields[key] === undefined) delete data[key];
       else if (key === "特性原文" && resource.fields.特性原文 === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
-    return { template: weaponTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "armor") {
-    const data = structuredClone(armorTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if (key === "原文" && resource.fields[key] === undefined) delete data[key];
       else if (key === "特性原文" && resource.fields.特性原文 === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
-    return { template: armorTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "item") {
-    const data = structuredClone(itemTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if ((key === "原文" || key === "特性原文") && resource.fields[key] === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
-    return { template: itemTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "class") {
-    const data = structuredClone(professionTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       const value = resource.fields[key];
       if (key === "特性") data[key] = namedFeatures(value);
@@ -98,10 +91,10 @@ function templateData(resource: TemporaryResource): {
     data.推荐初始武器 = Array.isArray(recommendedWeapons)
       ? recommendedWeapons.map(text).filter(Boolean).join(" + ")
       : text(recommendedWeapons);
-    return { template: professionTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "subclass") {
-    const data = structuredClone(subclassTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
     if (resource.fields.原文 === undefined) delete data.原文;
@@ -111,10 +104,10 @@ function templateData(resource: TemporaryResource): {
     data.施法属性 = text(resource.fields.施法属性);
     data.特性 = namedFeatures(resource.fields.特性);
     data.简介 = text(resource.fields.简介);
-    return { template: subclassTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "ancestry") {
-    const data = structuredClone(ancestryTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     data.名称 = resource.name;
     data.原文 = text(resource.fields.原文);
     data.类型 = text(resource.fields.类型 || data.类型);
@@ -123,32 +116,32 @@ function templateData(resource: TemporaryResource): {
       const feature = isObject(value) ? value : {};
       return { 特性名称: text(feature.特性名称), 特性原文: text(feature.特性原文), 特性描述: text(feature.特性描述) };
     }) : [];
-    return { template: ancestryTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "community") {
     const feature = isObject(resource.fields.特性) ? resource.fields.特性 : {};
     const data: JsonObject = {
       名称: resource.name,
       ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
-      类型: text(resource.fields.类型 || communityTemplate.defaultData.类型),
+      类型: text(resource.fields.类型 || template.defaultData.类型),
       简介: text(resource.fields.简介),
       性格: text(resource.fields.性格),
       特性: { 特性名称: text(feature.特性名称), 特性原文: text(feature.特性原文), 特性描述: text(feature.特性描述) },
     };
-    return { template: communityTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "domain") {
-    const data = structuredClone(domainTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if ((key === "原文" || key === "特性原文") && resource.fields[key] === undefined) delete data[key];
       else data[key] = text(resource.fields[key] ?? data[key]);
     }
     data.名称 = resource.name;
     data.类型 = text(resource.fields.类型 || data.类型);
-    return { template: domainTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "environment") {
-    const data = structuredClone(environmentTemplate.defaultData) as unknown as JsonObject;
+    const data = structuredClone(template.defaultData) as unknown as JsonObject;
     for (const key of Object.keys(data)) {
       if (key !== "特性") data[key] = text(resource.fields[key] ?? data[key]);
     }
@@ -161,16 +154,16 @@ function templateData(resource: TemporaryResource): {
         特性描述: text(feature.特性描述), 引导问题: text(feature.引导问题),
       };
     }) : [];
-    return { template: environmentTemplate, data };
+    return { template, data };
   }
   if (resource.kind === "free" && Array.isArray(resource.fields.内容)) {
-    const fixedFields = new Set(Object.keys(freeTemplate.defaultData));
+    const fixedFields = new Set(Object.keys(template.defaultData));
     const customFields = Object.fromEntries(Object.entries(resource.fields)
       .filter(([key, value]) => !fixedFields.has(key) && typeof value === "string"));
     const data: JsonObject = {
       名称: resource.name,
       ...(resource.fields.原文 === undefined ? {} : { 原文: text(resource.fields.原文) }),
-      类型: text(resource.fields.类型 || freeTemplate.defaultData.类型),
+      类型: text(resource.fields.类型 || template.defaultData.类型),
       简介: text(resource.fields.简介),
       ...customFields,
       内容: resource.fields.内容.map((value) => {
@@ -178,13 +171,16 @@ function templateData(resource: TemporaryResource): {
         return { 名称: text(block.名称), 原文: text(block.原文), 描述: text(block.描述) };
       }),
     };
-    return { template: freeTemplate, data };
+    return { template, data };
   }
   return undefined;
 }
 
-export function mapTemporaryResourceToCandidate(resource: TemporaryResource): GameResourceCandidate | undefined {
-  const mapped = templateData(resource);
+export function mapTemporaryResourceToCandidate(resource: TemporaryResource, templates: readonly TemplateCoreCapability<any>[]): GameResourceCandidate | undefined {
+  const id = resourceTemplateId(resource.kind);
+  const selected = templates.find((template) => template.id === id);
+  if (!selected) return undefined;
+  const mapped = templateData(resource, selected);
   if (!mapped) return undefined;
   const { template } = mapped;
   const data = resource.source.formatId === "pbres"
@@ -207,14 +203,14 @@ export function mapTemporaryResourceToCandidate(resource: TemporaryResource): Ga
   };
 }
 
-export function mapBatchToRegisteredCandidates(resources: readonly TemporaryResource[]): {
+export function mapBatchToRegisteredCandidates(resources: readonly TemporaryResource[], templates: readonly TemplateCoreCapability<any>[]): {
   candidates: GameResourceCandidate[];
   unmapped: TemporaryResource[];
 } {
   const candidates: GameResourceCandidate[] = [];
   const unmapped: TemporaryResource[] = [];
   for (const resource of resources) {
-    const candidate = mapTemporaryResourceToCandidate(resource);
+    const candidate = mapTemporaryResourceToCandidate(resource, templates);
     if (candidate) candidates.push(candidate);
     else unmapped.push(resource);
   }

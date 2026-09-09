@@ -1,10 +1,11 @@
 import { expect, test, vi } from "vitest";
-import { templateRegistry } from "@pbdh/templates/core";
-import { createTemplateCoreLoader, loadTemplateCore, templateCoreLoaders } from "@pbdh/templates/core/lazy";
+import { currentTemplates, templateRegistry } from "@pbdh/templates/core";
+import { createTemplateCoreLoader, currentTemplateReferences, loadTemplateCore, templateCoreLoaders } from "@pbdh/templates/core/lazy";
 
 test("惰性 Core 目录完整保留精确版本和历史能力", async () => {
   const key = (entry: { id: string; version: string }) => `${entry.id}@${entry.version}`;
   expect(templateCoreLoaders.map(key).sort()).toEqual(templateRegistry.list().map(key).sort());
+  expect(currentTemplateReferences.map(key).sort()).toEqual(currentTemplates.map(key).sort());
   for (const entry of templateCoreLoaders) {
     expect(await loadTemplateCore(entry.id, entry.version)).toBe(templateRegistry.resolve(entry.id, entry.version));
   }

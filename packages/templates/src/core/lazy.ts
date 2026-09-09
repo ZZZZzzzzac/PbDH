@@ -77,3 +77,10 @@ export function createTemplateCoreLoader(entries: readonly TemplateCoreLoaderEnt
 
 export const loadTemplateCore = createTemplateCoreLoader(templateCoreLoaders);
 
+export const currentTemplateReferences = ["敌人", "种族", "护甲", "社群", "领域卡", "环境", "自由", "物品", "职业", "子职业", "武器"]
+  .map((id) => ({ id, version: "1.1.0" }));
+
+export function loadCurrentTemplateCore(id: string) {
+  const reference = currentTemplateReferences.find((entry) => entry.id === id);
+  return reference ? loadTemplateCore(reference.id, reference.version) : Promise.resolve(undefined);
+}

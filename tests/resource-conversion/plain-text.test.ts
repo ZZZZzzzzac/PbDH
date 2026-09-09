@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { mapTemporaryResourceToCandidate } from "../../packages/resource-conversion/src/index.ts";
+import { mapTemporaryResourceToCandidate as mapWithTemplates } from "../../packages/resource-conversion/src/index.ts";
+import { currentTemplates } from "@pbdh/templates/core";
 import { markdownToPlainText } from "../../packages/resource-conversion/src/plain-text.ts";
 import type { ResourceFormatId, TemporaryResource } from "../../packages/resource-conversion/src/types.ts";
+const mapTemporaryResourceToCandidate = (resource: TemporaryResource) => mapWithTemplates(resource, currentTemplates);
 
 describe("third-party plain text fields", () => {
   it.each(["近距离范围", "近距离", "极远距离范围", "", " **近距离范围** "])("normalizes weapon range %s", (range) => {

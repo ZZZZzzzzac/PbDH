@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { currentTemplates } from "@pbdh/templates/core";
 
 import { describe, expect, test } from "vitest";
 
@@ -9,7 +10,7 @@ import {
   writePbres,
 } from "../../packages/contract-runtime/src/index.ts";
 import {
-  mapBatchToRegisteredCandidates,
+  mapBatchToRegisteredCandidates as mapBatchWithTemplates,
   resourceConversionRegistry,
   validatePbresConversionCandidate,
 } from "../../packages/resource-conversion/src/index.ts";
@@ -27,6 +28,7 @@ import {
 } from "./upstream-engines.ts";
 
 const encoder = new TextEncoder();
+const mapBatchToRegisteredCandidates = (resources: TemporaryResourceBatch["resources"]) => mapBatchWithTemplates(resources, currentTemplates);
 
 function input(value: JsonValue, fileName = "fixture.json") {
   return { bytes: encoder.encode(JSON.stringify(value)), fileName };

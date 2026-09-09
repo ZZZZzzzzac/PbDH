@@ -5,7 +5,7 @@ import {
   type TemporaryResourceBatch,
 } from "@pbdh/resource-conversion";
 import { admitResourceImageBytes } from "@pbdh/media-admission";
-import { currentTemplates } from "@pbdh/templates/core";
+import { loadCurrentTemplateCore } from "@pbdh/templates/core/lazy";
 
 export type CreatorResourceConversionCandidate = ResourceConversionMaterialization;
 
@@ -22,7 +22,7 @@ export async function materializeCreatorResourceConversion(
     batch,
     targets: [],
     diagnosticNamespace: "creator",
-    templates: currentTemplates,
+    loadTemplate: loadCurrentTemplateCore,
     normalizeMedia,
   });
 }
