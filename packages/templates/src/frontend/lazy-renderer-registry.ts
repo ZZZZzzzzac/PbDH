@@ -1,12 +1,9 @@
-import { manifestEntryFor, templateFrontendManifest } from "./template-frontend-manifest.ts";
+import { templateFrontendManifest } from "./template-frontend-manifest.ts";
+export { manifestEntryFor as resolveTemplateFrontend } from "./template-frontend-manifest.ts";
+export { loadTrustedRenderer, loadTrustedAuthoring } from "./template-loaders.ts";
+export { LazyCanonicalCardSurface as CanonicalCardSurface, useTemplateAuthoring, TemplateLoadStatus } from "./lazy-surfaces.tsx";
+export { TemplateAuthoringSurface } from "./authoring-surface.tsx";
 
 export function listLazyRendererBindings(): readonly string[] {
   return templateFrontendManifest.map((frontend) => `${frontend.templateId}@${frontend.templateVersion}`);
-}
-
-export async function loadTrustedRenderer(
-  templateId: string,
-  version: string,
-) {
-  return manifestEntryFor(templateId, version)?.loadRenderer();
 }

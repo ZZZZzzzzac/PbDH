@@ -70,6 +70,14 @@ test("conversion may import templates core but not frontend", () => {
   );
 });
 
+test("apps load Template frontend implementations through the lazy entry only", () => {
+  assert.deepEqual(validateImport("apps/player/src/preview.tsx", "@pbdh/templates/frontend/lazy"), []);
+  assert.deepEqual(validateImport("apps/player/src/preview.tsx", "@pbdh/templates/frontend"),
+    ["apps must load Template frontends through the lazy entry"]);
+  assert.deepEqual(validateImport("apps/player/src/preview.tsx", "../../../packages/templates/src/frontend/renderer-registry.ts"),
+    ["apps must load Template frontends through the lazy entry"]);
+});
+
 test("conversion cannot reverse-resolve the global template registry", () => {
   assert.deepEqual(
     validateSource(

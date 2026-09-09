@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
+beforeAll(() => loadTrustedRenderer("环境", "1.0.0"));
 
 import { CanonicalPreview } from "../../apps/market/src/MarketApp.tsx";
 import { createHandoffIntent, type Publication } from "../../apps/market/src/market-model.ts";

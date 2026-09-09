@@ -124,10 +124,12 @@ export async function restorePlayerResourceLibrary(
 }
 
 export function PlayerSheetSurface({
+  surfaceVisible = true,
   handoffUrl = window.location.href,
   onHandoffConsumed,
   requestedSystemPackage,
 }: {
+  surfaceVisible?: boolean;
   handoffUrl?: string;
   requestedSystemPackage?: string;
   onHandoffConsumed?(cleanedUrl: URL): void;
@@ -1196,6 +1198,7 @@ export function PlayerSheetSurface({
       )
     : null;
 
+  if (!surfaceVisible) return null;
   return (
     <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme={frameworkColorScheme}>
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,.json,.html,application/zip,application/json,text/html" onChange={(event) => void handleCharacterFile(event)} />

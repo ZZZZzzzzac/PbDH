@@ -38,7 +38,7 @@ import {
   type TabletopCommand,
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 import { templateRegistry } from "@pbdh/templates/core";
 
 import { creatorWorkspaceDesign } from "./design.ts";
@@ -218,12 +218,14 @@ function replacementFailureMessage(code: string): string {
 
 
 export function CreatorWorkspacePrototype({
+  surfaceVisible = true,
   mode,
   onModeChange,
   handoffUrl = window.location.href,
   onHandoffConsumed,
   systemPackageOptions = [],
 }: {
+  surfaceVisible?: boolean;
   mode?: CreatorAppMode;
   onModeChange?(mode: CreatorAppMode): void;
   handoffUrl?: string;
@@ -315,6 +317,7 @@ export function CreatorWorkspacePrototype({
   usePlatformAppBarActions("gm", gmAppBarActions);
   const persistence = useCreatorDocumentPersistence({
     credentials: auth.credentials,
+    surfaceKey: surfaceVisible ? appMode : "hidden",
     workspaces,
     setWorkspaces,
     tabletops,
@@ -380,8 +383,8 @@ export function CreatorWorkspacePrototype({
   const selectedInstanceTemplate = selectedInstance
     ? templateRegistry.resolve(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
-  const selectedInstanceAuthoring = selectedInstance
-    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)?.authoring
+  const selectedInstanceFrontend = selectedInstance
+    ? resolveTemplateFrontend(selectedInstance.resource.template.id, selectedInstance.resource.template.version)
     : undefined;
   const availableResourceTabKeys = useMemo(() => workspaces.flatMap((workspace) =>
     workspace.openResourceIds.map((resourceId) => resourceTabKey(workspace.key, resourceId))), [workspaces]);
@@ -1791,6 +1794,7 @@ export function CreatorWorkspacePrototype({
     }
   }
 
+  if (!surfaceVisible) return null;
   return (
     <main className={`creator-prototype${appMode === "gm" ? " is-gm-mode" : ""}${appMode === "gm" || resourcePanelOpen ? " is-resource-panel-open" : ""}`} style={designStyle}>
       <div className="creator-workspace">
@@ -1867,7 +1871,7 @@ export function CreatorWorkspacePrototype({
           resourceMultiSelect,
           selectedWorkspaceResources,
           selectedInstance,
-          selectedInstanceEditable: Boolean(selectedInstanceAuthoring),
+          selectedInstanceEditable: Boolean(selectedInstanceFrontend),
           selectedInstanceCount: selectedInstanceIds.length,
         }}
         execute={executeContextMenuCommand}

@@ -1,7 +1,7 @@
 import { Ellipsis } from "lucide-react";
-import { CanonicalCardSurface, CardDisplay } from "@pbdh/resource-renderer/react";
+import { CardDisplay } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 import { useEffect, useRef, useState } from "react";
 import type { CardInstance } from "../../domain/cardEngine";
 import type { CardPresentation } from "../../domain/cardPresentation";
@@ -52,8 +52,8 @@ export function CardFace({
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const displayMode = resolveCardDisplayMode(definition, module);
   const showArt = displayMode !== "text" && cardArtUrl && !imageFailed;
-  const canonicalRenderer = resourceCopy
-    ? resolveTemplateFrontend(resourceCopy.template.id, resourceCopy.template.version)?.rendererRevision
+  const canonicalFrontend = resourceCopy
+    ? resolveTemplateFrontend(resourceCopy.template.id, resourceCopy.template.version)
     : undefined;
   const canonicalResource = resourceCopy ? canonicalCardResource(resourceCopy, definition, module, definitionRef?.type === "resourceLibrary" ? definitionRef : undefined) : undefined;
   const assets = resourceCopy
@@ -61,7 +61,7 @@ export function CardFace({
     : new Map<string, ManagedAsset>();
   useEffect(() => setImageFailed(false), [cardArtRef, cardArtUrl]);
 
-  if (canonicalResource && canonicalRenderer) {
+  if (canonicalResource && canonicalFrontend) {
     return <CardDisplay
       designWidth={canonicalCardDesignSize.width}
       designHeight={canonicalCardDesignSize.height}
@@ -69,8 +69,6 @@ export function CardFace({
       displayAspectRatio={63 / 88}
     ><CanonicalCardSurface
         resource={canonicalResource}
-        expectedRendererRevision={canonicalRenderer.revision}
-        renderer={canonicalRenderer}
         assets={assets}
         label={`${fallbackName}规范卡面`}
       /></CardDisplay>;

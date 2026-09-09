@@ -90,6 +90,7 @@ const metrics = {
     initialRendererVersions: templateModules(initialChunks, "renderer"),
     initialEditorVersions: templateModules(initialChunks, "authoring-editor"),
     allRendererVersions: templateModules(chunks, "renderer"),
+    allEditorVersions: templateModules(chunks, "authoring-editor"),
   },
   fixtureMediaFileBytes: assetBytes.byteLength,
 };
@@ -102,3 +103,6 @@ if (!Number.isFinite(metrics.ssr.singleSurfaceRenderMsP95) || metrics.ssr.single
 }
 
 console.log(JSON.stringify(metrics));
+if (metrics.productionBuild.initialRendererVersions.length || metrics.productionBuild.initialEditorVersions.length) {
+  throw new Error("Template renderers and editors must not be in the initial Platform import closure");
+}

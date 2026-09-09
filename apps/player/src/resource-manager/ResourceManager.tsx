@@ -12,9 +12,9 @@ import {
   type ResourceContainer,
   type ResourceFormatId,
 } from "@pbdh/resource-conversion";
-import { CanonicalCardSurface, CardPreviewDialog } from "@pbdh/resource-renderer/react";
+import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 import { OperationStatus, formatStorageBytes } from "@pbdh/platform-ui";
 
 import {
@@ -169,7 +169,7 @@ function PlayerResourcePreviewContent({
 }) {
   const assets = useResourceAssets(installed, resource);
   const name = resourceName(resource);
-  const renderer = resolveTemplateFrontend(resource.template.id, resource.template.version)?.rendererRevision;
+  const frontend = resolveTemplateFrontend(resource.template.id, resource.template.version);
   return <CardPreviewDialog
     designWidth={canonicalCardDesignSize.width}
     designHeight={canonicalCardDesignSize.height}
@@ -177,10 +177,8 @@ function PlayerResourcePreviewContent({
     label={`${name}资源详情`}
     onClose={onClose}
   >
-    {renderer ? <CanonicalCardSurface
+    {frontend ? <CanonicalCardSurface
       resource={resource as unknown as SurfaceResource<Record<string, unknown>>}
-      expectedRendererRevision={renderer.revision}
-      renderer={renderer}
       assets={assets}
       label={`${name}玩家规范卡面`}
     /> : <p>当前 Player 版本尚不能呈现此模板的规范卡面。</p>}

@@ -6,7 +6,7 @@ import {
   publicationCoverPolicy,
   type ImageCropSelection,
 } from "@pbdh/media-admission";
-import { CanonicalCardSurface, CardDisplay, CardPreviewDialog } from "@pbdh/resource-renderer/react";
+import { CardDisplay, CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { useAuth } from "@pbdh/platform-auth/provider";
 import { ImageCropDialog, OperationStatus, usePlatformNotifications, formatStorageBytes } from "@pbdh/platform-ui";
 import {
@@ -18,7 +18,7 @@ import {
 import { canonicalCardDesignSize, usesFixedSurfaceRatio, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { upgradePbresTemplateVersions, validatePbresConversionCandidate } from "@pbdh/resource-conversion";
 import { listTemplateUpgradeRows } from "@pbdh/templates/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 
 import { marketDesign } from "../design.ts";
 import { catalogOptions } from "./catalog-options.ts";
@@ -320,17 +320,15 @@ export function CanonicalPreview({ publication, resourceId }: { publication: Pub
   const [enlarged, setEnlarged] = useState(false);
   const resource = publication.resources.find((item) => item.id === resourceId) ?? publication.resources[0]!;
   const source = isSurfaceResource(resource.source) ? resource.source : null;
-  const renderer = source
-    ? resolveTemplateFrontend(resource.templateId, source.template.version)?.rendererRevision
+  const frontend = source
+    ? resolveTemplateFrontend(resource.templateId, source.template.version)
     : undefined;
   const assets = useMemo(() => new Map(
     Object.entries(publication.mediaUrls ?? {}).map(([id, url]) => [id, { status: "ready" as const, url }]),
   ), [publication.mediaUrls]);
   const fixedRatio = source ? usesFixedSurfaceRatio(source.presentation) : true;
-  const surface = source && renderer ? <CanonicalCardSurface
+  const surface = source && frontend ? <CanonicalCardSurface
     resource={source}
-    expectedRendererRevision={renderer.revision}
-    renderer={renderer}
     assets={assets}
     label={`${resource.name}规范卡面`}
   /> : null;
@@ -540,12 +538,14 @@ export function DeletePublicationDialog({ publication, busy = false, onClose, on
 }
 
 export function MarketApp({
+  surfaceVisible = true,
   locationHref,
   onLocationNavigate,
   onHandoffNavigate,
   basePath = "/",
   systemPackageOptions = [],
 }: {
+  surfaceVisible?: boolean;
   locationHref: string;
   onLocationNavigate(url: URL, replace?: boolean): void;
   onHandoffNavigate(target: HandoffTarget, url: URL): void;
@@ -931,6 +931,7 @@ export function MarketApp({
     };
   }, [auth.status, catalogRevision, filters, locationRoute, manageableCatalog, page, query, sort]);
 
+  if (!surfaceVisible) return null;
   return <main className="market-app" style={{ "--market-appbar-height": `${marketDesign.appBar.height}px` } as React.CSSProperties}>
     {view.page === "missing"
       ? <section className="missing-publication"><Icon name="package" /><h1>{view.resourceId ? "这张资源已经无法公开查看" : "这个资源包已经无法公开查看"}</h1><p>资源包可能已由作者取消公开，或者链接中的编号不存在。</p><button type="button" onClick={() => onLocationNavigate(marketRouteUrl({ page: "discovery" }, window.location.origin, basePath))}>返回资源市场</button></section>

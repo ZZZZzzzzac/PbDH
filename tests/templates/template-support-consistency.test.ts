@@ -6,6 +6,7 @@ import { describe, expect, test } from "vitest";
 import { computeResourcePackageSnapshotDigest } from "@pbdh/contract-runtime";
 import { currentTemplates, listTemplateUpgradeRows, templateRegistry, upgradeTemplateResources } from "@pbdh/templates/core";
 import { resolveTemplateFrontend, supportedTemplateFrontends } from "@pbdh/templates/frontend";
+import { loadTrustedRenderer, loadTrustedAuthoring } from "@pbdh/templates/frontend/lazy";
 
 import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
 
@@ -22,6 +23,13 @@ const catalog = JSON.parse(readFileSync("packages/templates/catalog.json", "utf8
 const key = (item: { id: string; version: string }) => `${item.id}@${item.version}`;
 
 describe("Resource Template support matrix", () => {
+  test("异步入口为全部历史版本返回原有的渲染器和编辑器", async () => {
+    for (const frontend of supportedTemplateFrontends) {
+      await expect(loadTrustedRenderer(frontend.templateId, frontend.templateVersion)).resolves.toBe(frontend.rendererRevision);
+      await expect(loadTrustedAuthoring(frontend.templateId, frontend.templateVersion)).resolves.toBe(frontend.authoring);
+    }
+  });
+
   test("catalog and core registry contain the same exact versions", () => {
     expect(templateRegistry.list().map(key).sort()).toEqual(catalog.templates.map(key).sort());
     expect(supportedTemplateFrontends.map((frontend) => key({

@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 
-import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
 import type { TabletopCommand, TabletopInstance } from "@pbdh/tabletop/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 
 export function GmTabletopCard({
   instance,
@@ -26,14 +25,12 @@ export function GmTabletopCard({
     return url ? [[id, { status: "ready" as const, url }] as const] : [];
   }));
 
-  const renderer = resolveTemplateFrontend(
+  const frontend = resolveTemplateFrontend(
     displayResource.template.id,
     displayResource.template.version,
-  )?.rendererRevision;
-  if (renderer) return <CanonicalCardSurface
+  );
+  if (frontend) return <CanonicalCardSurface
     resource={displayResource as unknown as SurfaceResource<Record<string, unknown>>}
-    expectedRendererRevision={renderer.revision}
-    renderer={renderer}
     assets={assets}
     state={instance.state}
     onStateCommand={(commandId, value) => onCommand({

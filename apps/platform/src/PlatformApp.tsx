@@ -66,6 +66,7 @@ export function PlatformApp() {
     <div className="pbdh-platform-surfaces">
       <section className="pbdh-platform-surface" hidden={location.page !== "player"}>
         <PlayerAppSurface
+          surfaceVisible={location.page === "player"}
           requestedSystemPackage={location.playerSystemPackage}
           handoffUrl={location.href}
           onHandoffConsumed={consumeHandoff}
@@ -73,6 +74,7 @@ export function PlatformApp() {
       </section>
       <section className="pbdh-platform-surface" hidden={location.page !== "creator" && location.page !== "gm"}>
         <CreatorAppSurface
+          surfaceVisible={location.page === "creator" || location.page === "gm"}
           mode={location.page === "gm" ? "gm" : "creator" as CreatorAppMode}
           onModeChange={navigate}
           handoffUrl={location.href}
@@ -82,6 +84,7 @@ export function PlatformApp() {
       </section>
       <section className="pbdh-platform-surface" hidden={location.page !== "market"}>
         <MarketAppSurface
+          surfaceVisible={location.page === "market"}
           locationHref={location.href}
           onLocationNavigate={navigateMarket}
           onHandoffNavigate={navigateHandoff}

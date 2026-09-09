@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
+beforeAll(() => loadTrustedRenderer("护甲", "1.0.0"));
 
 import { PlayerResourcePreviewDialog } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
 import type { InstalledResourcePackage } from "../../apps/player/src/resources/resource-library.ts";

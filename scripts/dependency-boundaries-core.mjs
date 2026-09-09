@@ -37,6 +37,13 @@ export function validateImport(importerPath, specifier) {
   const inLeafFrontendApp = ["apps/player/", "apps/creator/", "apps/market/"]
     .some((prefix) => importer.startsWith(prefix));
 
+  if (importer.startsWith("apps/") && (
+    (importsPackage(specifier, "@pbdh/templates/frontend") && specifier !== "@pbdh/templates/frontend/lazy")
+    || targetPath?.startsWith("packages/templates/src/frontend/")
+  )) {
+    violations.push("apps must load Template frontends through the lazy entry");
+  }
+
   if (inSharedPackage && targetsApp) {
     violations.push("shared packages must not depend on apps");
   }

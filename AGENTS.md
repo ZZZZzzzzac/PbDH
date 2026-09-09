@@ -71,6 +71,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `contracts/` 位于最底层；共享 package 不得形成循环依赖，也不得依赖 `apps/`。
 - `packages/contract-runtime`、`packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
+- 运行中的 App 通过 `@pbdh/templates/frontend/lazy` 按精确版本加载渲染器与编辑器；同步 `frontend` 入口只供契约验收和离线工具使用。历史实现保留，加载失败可重试；不得通过静态注册表把全部历史前端实现引入 App。
 - `packages/local-storage` 只拥有浏览器存储机制与共享信封，不解释 Creator Workspace、GM Tabletop Document 或 Character Save payload；各领域 Repository 负责 Contract 校验与生命周期。
 - `packages/cloud-documents` 可以依赖 `packages/local-storage` 与 `packages/platform-auth` 的凭据类型；不得依赖任何 App、领域 payload、React 或 Template/Renderer。
 - `packages/platform-auth/core` 只依赖外部身份 SDK 和 Platform Backend HTTP 边界；React provider 可依赖 core 与 React，不得依赖任何 App 或业务领域 package。

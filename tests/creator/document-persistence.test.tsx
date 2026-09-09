@@ -2,6 +2,7 @@
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { loadTrustedAuthoring } from "@pbdh/templates/frontend/lazy";
 import type { LocalDocumentSync } from "@pbdh/local-storage";
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import { createTabletopDocument, type TabletopDocumentModel } from "@pbdh/tabletop/core";
@@ -38,6 +39,7 @@ afterEach(async () => {
 });
 
 async function mountEditor(tabletopIds: string[] = []) {
+  await loadTrustedAuthoring("敌人", "1.0.0");
   const workspace = createWorkspace({ document: document as ResourcePackageLogicalDocument, media: new Map() });
   const tabletopDocuments = tabletopIds.map((id) => {
     const model = createTabletopDocument(id, id);
@@ -59,10 +61,11 @@ async function mountEditor(tabletopIds: string[] = []) {
   const save = vi.spyOn(CreatorWorkspaceRepository.prototype, "save").mockResolvedValue(sync);
   const flush = vi.spyOn(CreatorCloudDocumentService.prototype, "flush").mockResolvedValue(recovery);
   function Editor() {
+    const [surfaceVisible, setSurfaceVisible] = useState(true);
     const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
     const [tabletops, setTabletops] = useState<TabletopDocumentModel[]>([]);
     const persistence = useCreatorDocumentPersistence({
-      credentials, workspaces, setWorkspaces, tabletops, setTabletops,
+      credentials, workspaces, setWorkspaces, tabletops, setTabletops, surfaceKey: surfaceVisible ? "creator" : "hidden",
       setActiveWorkspaceKey: noop, setActiveResourceId: noop, setActiveTabletopId: noop,
       setSelectedInstanceId: noop, setSelectedInstanceIds: noop,
       addAssetBytes: noop, retainAssetUrls: noop, notify: noop,
@@ -81,9 +84,10 @@ async function mountEditor(tabletopIds: string[] = []) {
         ...current, [tabletopAssetId, new Uint8Array([2])],
       ]))}>替换引用媒体</button>
       <button data-retry-tabletop onClick={() => setTabletops((current) => [...current])}>重试保存桌面</button>
-      <CreatorWorkbench snapshot={{ workspaces, activeWorkspace: active, activeResource: active?.document.resources[0],
+      <button data-hide-surface onClick={() => setSurfaceVisible(false)}>隐藏编辑器</button>
+      {surfaceVisible && <CreatorWorkbench snapshot={{ workspaces, activeWorkspace: active, activeResource: active?.document.resources[0],
         activeResourceId: active?.document.resources[0]?.id ?? "", editorColumnShare: 0.5, assetUrls: new Map() }}
-        execute={(command) => { if (command.type === "request-cloud-edit") persistence.requestCloudSyncAfterEditing.workspace(); }} />
+        execute={(command) => { if (command.type === "request-cloud-edit") persistence.requestCloudSyncAfterEditing.workspace(); }} />}
     </>;
   }
   await act(async () => root.render(<Editor />));
@@ -145,5 +149,16 @@ test("实际编辑框聚焦时不云同步，失焦后重新等待安静窗口",
   await act(async () => vi.advanceTimersByTimeAsync(9999));
   expect(flush.mock.calls.filter(([kind]) => kind === "creator-workspace")).toHaveLength(0);
   await act(async () => vi.advanceTimersByTimeAsync(1));
+  expect(flush.mock.calls.filter(([kind]) => kind === "creator-workspace")).toHaveLength(1);
+});
+
+test("切换页面隐藏聚焦编辑器后仍会调度云同步", async () => {
+  const { flush } = await mountEditor();
+  const input = container.querySelector<HTMLInputElement>("[data-template-authoring] input")!;
+  await act(async () => input.focus());
+  await act(async () => vi.advanceTimersByTimeAsync(20_000));
+  expect(flush.mock.calls.filter(([kind]) => kind === "creator-workspace")).toHaveLength(0);
+  await act(async () => container.querySelector<HTMLButtonElement>("[data-hide-surface]")!.click());
+  await act(async () => vi.advanceTimersByTimeAsync(10_000));
   expect(flush.mock.calls.filter(([kind]) => kind === "creator-workspace")).toHaveLength(1);
 });

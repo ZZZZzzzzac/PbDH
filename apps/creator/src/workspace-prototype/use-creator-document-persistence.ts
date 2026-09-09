@@ -23,6 +23,7 @@ const LOCAL_SAVE_DELAY_MS = 400;
 
 export function useCreatorDocumentPersistence({
   credentials,
+  surfaceKey = "creator",
   workspaces,
   setWorkspaces,
   tabletops,
@@ -37,6 +38,7 @@ export function useCreatorDocumentPersistence({
   notify,
 }: {
   credentials: PlatformCredentials | null;
+  surfaceKey?: "creator" | "gm" | "hidden";
   workspaces: readonly CreatorWorkspace[];
   setWorkspaces: Dispatch<SetStateAction<CreatorWorkspace[]>>;
   tabletops: readonly TabletopDocumentModel[];
@@ -211,7 +213,7 @@ export function useCreatorDocumentPersistence({
       workspaceWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "工作区同步失败"));
     });
-  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, workspaceCloudSyncRequest, workspaceStorageReady, workspaces]);
+  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, surfaceKey, workspaceCloudSyncRequest, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     if (!tabletopStorageReady || !credentials || isCreatorAuthoringInputFocused()) return;
@@ -225,7 +227,7 @@ export function useCreatorDocumentPersistence({
       tabletopWriteQueueRef.current = write.catch(() => undefined);
       write.catch((error) => notify(error instanceof Error ? error.message : "桌面同步失败"));
     });
-  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, tabletopCloudSyncRequest, tabletopStorageReady, tabletops]);
+  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, surfaceKey, tabletopCloudSyncRequest, tabletopStorageReady, tabletops]);
 
   useEffect(() => {
     if (!credentials) { cloudRecoveryAccountRef.current = null; return; }

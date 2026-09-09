@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { RESOURCE_PACKAGE_VERSION } from "@pbdh/contract-runtime";
-import { resolveTemplateFrontend, TemplateAuthoringSurface } from "@pbdh/templates/frontend";
+import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
 import { templateRegistry } from "@pbdh/templates/core";
 
 import { Icon } from "./creator-controls.tsx";
@@ -43,6 +43,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
   const suppressTabClickRef = useRef(false);
   const active = snapshot.activeWorkspace;
   const resource = snapshot.activeResource;
+  const authoring = useTemplateAuthoring(resource?.template.id, resource?.template.version);
   const templateUpgradeAvailable = resource ? templateRegistry.upgradeTargets(resource.template.id, resource.template.version).length > 0 : false;
   const templateFrontend = resource
     ? resolveTemplateFrontend(resource.template.id, resource.template.version)
@@ -141,18 +142,18 @@ export function CreatorWorkbench({ snapshot, execute }: {
     </nav>
     {active && resource ? <div className="workbench-body" onPointerDown={() => execute({ type: "pin-resource", workspaceKey: active.key, resourceId: resource.id })}>
       <div className="authoring-column" onFocusCapture={() => execute({ type: "request-cloud-edit" })} onBlurCapture={() => execute({ type: "request-cloud-edit" })}>
-        {templateFrontend && <TemplateAuthoringSurface
-          authoring={templateFrontend.authoring}
+        {templateFrontend && (authoring.value ? <TemplateAuthoringSurface
+          authoring={authoring.value}
           data={resource.data as Record<string, unknown>}
           onValue={(path, value) => execute({ type: "authoring-value", path, value })}
           onData={(data) => execute({ type: "replace-authoring-data", data })}
-        />}
+        /> : <TemplateLoadStatus state={authoring} />)}
         <ResourceAttributionEditor
           artworkCredit={resolveResourceAttribution(resource, active.document.package.name).artworkCredit}
           sourceLabel={resolveResourceAttribution(resource, active.document.package.name).sourceLabel}
           onChange={(field, value) => execute({ type: "attribution-value", field, value })}
         />
-        {templateFrontend?.authoring.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
+        {authoring.value?.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
           key={replacement.id}
           label={replacement.label}
           value={resource.replacements?.find((candidate) => candidate.replacementId === replacement.id)?.targetResourceId ?? ""}
@@ -175,7 +176,7 @@ export function CreatorWorkbench({ snapshot, execute }: {
           <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "图+文", image: "纯图片" }[mode]}</button>)}</div>
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
-        {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} frontend={templateFrontend} template={template} /> : null}
+        {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} template={template} /> : null}
         <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "recrop-portrait" })}>重新裁剪</button> : null}{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
       </aside>
     </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}

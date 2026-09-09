@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
+beforeAll(() => loadTrustedRenderer("护甲", "1.0.0"));
 
 import armorPackage from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-armor.json";
 import { CanonicalPreview } from "../../apps/market/src/MarketApp.tsx";

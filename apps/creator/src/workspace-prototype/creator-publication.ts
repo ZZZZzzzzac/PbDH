@@ -8,7 +8,7 @@ import {
 } from "@pbdh/media-admission";
 import { renderCanonicalCardCoverToWebp } from "@pbdh/resource-renderer/react";
 import type { ManagedAsset, RendererRevisionCapability, SurfaceResource } from "@pbdh/resource-renderer/core";
-import { resolveTemplateFrontend } from "@pbdh/templates/frontend";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
 
 import type { CreatorWorkspace, WorkspaceResource } from "./workspace-model.ts";
 
@@ -73,19 +73,19 @@ export async function imageAsset(file: File, policy: ImageAdmissionPolicy, selec
   return { asset, bytes: admitted.bytes, blob: admitted.blob };
 }
 
-export function publicationRenderer(resource: WorkspaceResource): {
+export async function publicationRenderer(resource: WorkspaceResource): Promise<{
   expectedRendererRevision: string;
   renderer?: RendererRevisionCapability<any, any, ReactNode>;
-} {
-  const renderer = resolveTemplateFrontend(resource.template.id, resource.template.version)?.rendererRevision;
+}> {
+  const renderer = await loadTrustedRenderer(resource.template.id, resource.template.version);
   return { expectedRendererRevision: renderer?.revision ?? "", renderer };
 }
 
 async function generatedPublicationCoverForResource(
   workspace: CreatorWorkspace,
   resource: WorkspaceResource,
+  binding: Awaited<ReturnType<typeof publicationRenderer>>,
 ): Promise<PublicationCoverDraft> {
-  const binding = publicationRenderer(resource);
   const assets = new Map<string, ManagedAsset>(await Promise.all(Object.values(resource.media).map(async (assetId) => {
     const bytes = workspace.media.get(assetId);
     if (!bytes) return [assetId, { status: "error" as const, reason: "missing workspace media" }] as const;
@@ -133,9 +133,13 @@ export async function generatedPublicationCover(
   if (workspace.document.resources.length === 0) {
     throw new Error("creator.publication-cover.resource-missing");
   }
+  const bindings = new Map<string, ReturnType<typeof publicationRenderer>>();
   for (const resource of workspace.document.resources as WorkspaceResource[]) {
     try {
-      return await generatedPublicationCoverForResource(workspace, resource);
+      const key = `${resource.template.id}@${resource.template.version}`;
+      const binding = bindings.get(key) ?? publicationRenderer(resource);
+      bindings.set(key, binding);
+      return await generatedPublicationCoverForResource(workspace, resource, await binding);
     } catch {
       // 单张卡不可渲染时继续尝试包内其他资源，封面缺失本身不阻止发布。
     }

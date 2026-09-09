@@ -1,4 +1,7 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+import { generatedPublicationCover } from "../../apps/creator/src/workspace-prototype/creator-publication.ts";
+import { createBlankWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
+import { manifestEntryFor } from "../../packages/templates/src/frontend/template-frontend-manifest.ts";
 
 import { publicationRenderer } from "../../apps/creator/src/workspace-prototype/CreatorWorkspacePrototype.tsx";
 import type { WorkspaceResource } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
@@ -6,6 +9,21 @@ import { buildCanonicalCardCoverSvg } from "../../packages/resource-renderer/src
 import { freeTemplate } from "../../packages/templates/src/core/index.ts";
 
 describe("Creator 发布封面", () => {
+  test("同一版本加载失败时不会按资源数量重复请求", async () => {
+    const workspace = await createBlankWorkspace("封面测试");
+    workspace.document.resources = ["one", "two", "three"].map((id) => ({
+      id, path: `${id}.json`, template: { id: "自由", version: "1.0.2" },
+      presentation: freeTemplate.defaultPresentation, data: freeTemplate.defaultData, media: {},
+    }));
+    const load = vi.spyOn(manifestEntryFor("自由", "1.0.2")!, "loadRenderer").mockRejectedValue(new Error("offline"));
+    try {
+      await expect(generatedPublicationCover(workspace)).rejects.toThrow("creator.publication-cover.render-failed");
+      expect(load).toHaveBeenCalledOnce();
+    } finally {
+      load.mockRestore();
+    }
+  });
+
   test("没有图片的自由资源仍可由规范卡面生成封面", async () => {
     const resource = {
       id: "resource-text-only",
@@ -20,7 +38,7 @@ describe("Creator 发布封面", () => {
       },
       media: {},
     } satisfies WorkspaceResource;
-    const binding = publicationRenderer(resource);
+    const binding = await publicationRenderer(resource);
 
     const cover = await buildCanonicalCardCoverSvg({
       resource,

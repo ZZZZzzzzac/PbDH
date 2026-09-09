@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
 
 import type { TabletopResourceCopy } from "@pbdh/contract-runtime";
 import { ancestryTemplate } from "../../packages/templates/src/core/index.ts";
@@ -7,6 +8,7 @@ import { composeResource } from "../../apps/player/src/sheet-runtime/domain/reso
 import type { ResourceLibraryEntry } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import type { CardTableModule, ResourceComposerModule } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import { CardFace } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
+beforeAll(() => loadTrustedRenderer(ancestryTemplate.id, ancestryTemplate.version));
 
 const composer = {
   ID: "pick-ancestry",

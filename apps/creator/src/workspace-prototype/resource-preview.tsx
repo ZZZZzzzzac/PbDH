@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { CanonicalCardSurface } from "@pbdh/resource-renderer/react";
+import { CanonicalCardSurface } from "@pbdh/templates/frontend/lazy";
 import type { ManagedAsset, SurfaceResource } from "@pbdh/resource-renderer/core";
 import { executeTemplateStateCommand } from "@pbdh/tabletop/core";
-import type { TemplateFrontendCapability } from "@pbdh/templates/frontend";
 import { templateRegistry, type TemplateCoreCapability } from "@pbdh/templates/core";
 
 import { TemplateIcon } from "./TemplateIcon.tsx";
@@ -69,16 +68,13 @@ export function TemplateRuntimePreview({
   resource,
   packageName,
   assets,
-  frontend,
   template,
 }: {
   resource: WorkspaceResource;
   packageName: string;
   assets: ReadonlyMap<string, ManagedAsset>;
-  frontend: TemplateFrontendCapability;
   template: TemplateCoreCapability<Record<string, unknown>>;
 }) {
-  const renderer = frontend.rendererRevision;
   const defaultState = () => template.tabletop.defaultState(resource.data as Record<string, unknown>);
   const [state, setState] = useState<Record<string, string>>(defaultState);
 
@@ -98,8 +94,6 @@ export function TemplateRuntimePreview({
     <AutoFitPreview>
       <CanonicalCardSurface
         resource={{ ...resource, attribution: resolveResourceAttribution(resource, packageName) } as unknown as SurfaceResource<Record<string, unknown>>}
-        expectedRendererRevision={renderer.revision}
-        renderer={renderer}
         assets={assets}
         state={state}
         onStateCommand={runCommand}

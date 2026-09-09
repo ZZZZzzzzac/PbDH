@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
+import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
 
 import { PlayerResourcePreviewDialog } from "../../apps/player/src/resource-manager/ResourceManager.tsx";
 import { CardFace, canonicalCardAssets, canonicalCardResource } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
@@ -10,6 +11,7 @@ import {
 } from "../../packages/templates/src/core/index.ts";
 
 const templates = [ancestryTemplate, communityTemplate, professionTemplate, subclassTemplate, itemTemplate, domainTemplate];
+beforeAll(() => Promise.all(templates.map((template) => loadTrustedRenderer(template.id, template.version))));
 
 describe("Player 六类稳定资源预览", () => {
   test.each(templates)("binds %s to the shared Canonical Card Surface", (template) => {
