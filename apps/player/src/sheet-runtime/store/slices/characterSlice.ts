@@ -84,7 +84,8 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         );
       } catch (error) {
         console.error("flushPendingAutosave failed before switchCharacterSave", error);
-        set({ storageStatus: "error" });
+        set({ storageStatus: "error", importError: "当前角色保存失败，未切换角色。请重试。" });
+        return;
       }
 
       const preparation = await environment.dependencies.storage.prepareCharacterSaveMigration(currentPackage.manifest.ID, saveId);

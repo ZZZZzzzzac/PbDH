@@ -15,6 +15,95 @@ import { configureRuntimeEnvironment, createRuntimeEnvironment } from "../../app
 import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 
 describe("Platform Runtime Storage", () => {
+  it.each([false, true])("保存失败时保留编辑并允许重试切换（定时器已触发：%s）", async (timerFired) => {
+    vi.useFakeTimers();
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(sheetSystemPackage, []);
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage });
+    const runtime = createRuntimeStore(environment);
+    runtime.setState({ currentPackage: sheetSystemPackage });
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      await runtime.getState().createCharacterSave("目标角色");
+      const targetId = runtime.getState().activeCharacterSaveId!;
+      await runtime.getState().createCharacterSave("原角色");
+      const originalId = runtime.getState().activeCharacterSaveId!;
+      const save = vi.spyOn(repository, "save").mockRejectedValue(new Error("storage unavailable"));
+      runtime.getState().updateModuleValue("name", "未保存的新名字");
+      if (timerFired) await vi.advanceTimersByTimeAsync(250);
+
+      await runtime.getState().switchCharacterSave(targetId);
+
+      expect(runtime.getState().activeCharacterSaveId).toBe(originalId);
+      expect(runtime.getState().characterData?.character.values.name).toBe("未保存的新名字");
+      expect(runtime.getState().storageStatus).toBe("error");
+      save.mockRestore();
+      await runtime.getState().switchCharacterSave(targetId);
+      expect(runtime.getState().activeCharacterSaveId).toBe(targetId);
+      expect((await storage.loadCharacterSave(currentSystem.package.id, originalId))?.character.values.name)
+        .toBe("未保存的新名字");
+    } finally {
+      if (environment.autosaveTimer) clearTimeout(environment.autosaveTimer);
+      errorLog.mockRestore();
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    }
+  });
+
+  it("切换等待正在进行的自动保存，再保存较新的编辑", async () => {
+    vi.useFakeTimers();
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const sheetSystemPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem, characterSaves: repository,
+      installedPackages: async () => new Map(), localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(sheetSystemPackage, []);
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage });
+    const runtime = createRuntimeStore(environment);
+    runtime.setState({ currentPackage: sheetSystemPackage });
+    let release!: () => void;
+    const barrier = new Promise<void>((resolve) => { release = resolve; });
+    try {
+      await runtime.getState().createCharacterSave("目标角色");
+      const targetId = runtime.getState().activeCharacterSaveId!;
+      await runtime.getState().createCharacterSave("原角色");
+      const originalId = runtime.getState().activeCharacterSaveId!;
+      const persist = repository.save.bind(repository);
+      const save = vi.spyOn(repository, "save").mockImplementationOnce(async (...args) => {
+        await barrier;
+        return persist(...args);
+      });
+      runtime.getState().updateModuleValue("name", "旧编辑");
+      await vi.advanceTimersByTimeAsync(250);
+      runtime.getState().updateModuleValue("name", "新编辑");
+      const switching = runtime.getState().switchCharacterSave(targetId);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(runtime.getState().activeCharacterSaveId).toBe(originalId);
+      release();
+      await switching;
+      expect(runtime.getState().activeCharacterSaveId).toBe(targetId);
+      expect((await storage.loadCharacterSave(currentSystem.package.id, originalId))?.character.values.name).toBe("新编辑");
+    } finally {
+      release();
+      if (environment.autosaveTimer) clearTimeout(environment.autosaveTimer);
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    }
+  });
+
   it("刷新后从浏览器缓存恢复用户上传的系统包及素材", async () => {
     const repository = new MemoryCharacterSaveStore();
     const cache = new MemoryRuntimeCacheStore<SystemPackageCacheSnapshot>();

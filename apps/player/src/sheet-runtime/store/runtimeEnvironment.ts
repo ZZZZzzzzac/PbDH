@@ -8,6 +8,7 @@ import type { RuntimeDependencies, RuntimePackageLoadResult } from "./runtimeTyp
 export interface RuntimeEnvironment {
   dependencies: RuntimeDependencies;
   autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+  autosaveWrite: Promise<void>;
   activePackageAssetResolver: RuntimeAssetResolver | undefined;
   pendingSystemPackageImportResult: Extract<RuntimePackageLoadResult, { ok: true }> | undefined;
 }
@@ -29,6 +30,7 @@ export function createRuntimeEnvironment(): RuntimeEnvironment {
   return {
     dependencies: defaultRuntimeDependencies,
     autosaveTimer: undefined,
+    autosaveWrite: Promise.resolve(),
     activePackageAssetResolver: undefined,
     pendingSystemPackageImportResult: undefined,
   };
