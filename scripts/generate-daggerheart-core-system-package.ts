@@ -14,6 +14,8 @@ import {
   type SystemPackageDocument,
 } from "../packages/contract-runtime/src/index.ts";
 import { templateRegistry } from "../packages/templates/src/core/index.ts";
+import { filterCoreBookLibraries } from "./daggerheart-core-book-scope.ts";
+import { loadValidatedCoreBook } from "./daggerheart-core-book-validation.ts";
 
 type SourceEntry = Record<string, unknown> & { ID: string; 名称: string };
 type ResourceData = ResourcePackageLogicalDocument["resources"][number]["data"];
@@ -46,22 +48,34 @@ const sourceRoot = path.resolve("apps/player/system-package-sources/daggerheart-
 const resourceRoot = path.resolve(argument("--resource-root") ?? path.join(sourceRoot, "resources"));
 const outputRoot = path.resolve("apps/player/public/system-packages/daggerheart-core");
 const thirdPartyGmPackagePath = path.resolve("docs/third/daggerheart-core-gm.pbres");
+const coreBookPackagePath = path.resolve("docs/third/daggerheart-core-book.pbres");
 const generatedSystemDocumentPath = path.resolve("apps/player/src/daggerheart-core-system.generated.json");
 const generatedPresetPath = path.resolve("apps/player/src/daggerheart-core-preset.generated.json");
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const systemPackageId = "01a0132c-4eef-7703-94ac-ec8d1a660001";
-const systemPackageVersion = "1.0.0";
-const resourcePackageVersion = "1.0.24";
+const systemPackageVersion = "1.0.2";
+const resourceTargetSystemPackageVersion = "1.0.0";
+const resourcePackageVersion = "1.0.25";
 const resourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
 const gmResourcePackageVersion = "1.0.5";
 const gmResourcePackageId = "01a0132c-4eef-7703-94ac-ec8d1a660003";
-const previousPlayerPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
-const previousGmPackage = await loadPreviousPackage(thirdPartyGmPackagePath);
-const legacyManifest = JSON.parse(await readFile(
-  path.join(sourceRoot, "manifest.json"),
-  "utf8",
-)) as LegacyRuntimeManifest;
-
+if (process.argv.includes("--runtime-only") && process.argv.includes("--core-book-only")) {
+  throw new Error("--runtime-only and --core-book-only are mutually exclusive.");
+}
+// 仅修订运行时脚本时，不重建资源归档或改动它们的目标版本与摘要。
+if (process.argv.includes("--runtime-only")) {
+  const systemPath = path.join(outputRoot, "system.json");
+  const system = JSON.parse(await readFile(systemPath, "utf8")) as SystemPackageDocument;
+  const preset = JSON.parse(await readFile(generatedPresetPath, "utf8"));
+  system.package.version = systemPackageVersion;
+  preset.version = systemPackageVersion;
+  const systemJson = `${JSON.stringify(system, null, 2)}\n`;
+  await writeFile(systemPath, systemJson, "utf8");
+  await writeFile(generatedSystemDocumentPath, systemJson, "utf8");
+  await writeFile(generatedPresetPath, `${JSON.stringify(preset, null, 2)}\n`, "utf8");
+  console.log(`synced runtime: daggerheart-core@${systemPackageVersion}`);
+  process.exit(0);
+}
 const playerLibraries = [
   library("ancestries", "种族", "种族", "1.0.1", transformAncestry),
   library("communities", "社群", "社群", "1.0.1", transformCommunity),
@@ -73,11 +87,61 @@ const playerLibraries = [
   library("loot", "物品与消耗品", "物品", "1.0.1", transformItem),
   library("domain-cards", "领域卡", "领域卡", "1.0.1", transformDomain),
 ] as const;
+const playerTemplateIds = new Set(playerLibraries.map(({ templateId }) => templateId));
+const coreBookPackage = await loadValidatedCoreBook(new Uint8Array(await readFile(coreBookPackagePath)), playerTemplateIds);
+// 只替换默认资源及其派生元数据，保留已审核的运行时与其他资源包。
+if (process.argv.includes("--core-book-only")) {
+  const systemPath = path.join(outputRoot, "system.json");
+  const system = JSON.parse(await readFile(systemPath, "utf8")) as SystemPackageDocument;
+  const preset = JSON.parse(await readFile(generatedPresetPath, "utf8"));
+  const resourcePath = "resources/daggerheart-core.pbres";
+  const index = preset.embeddedResourceIndex.find((entry: { path: string }) => entry.path === resourcePath);
+  if (!index || !system.embeddedResources.some((entry) => entry.path === resourcePath)) {
+    throw new Error("Missing default core resource metadata.");
+  }
+  const document: ResourcePackageLogicalDocument = {
+    ...coreBookPackage.document,
+    package: { ...coreBookPackage.document.package, id: resourcePackageId, version: resourcePackageVersion },
+    targets: [{ systemPackageId, version: resourceTargetSystemPackageVersion }],
+  };
+  document.snapshotDigest = await computeResourcePackageSnapshotDigest(document, coreBookPackage.media);
+  const archive = writePbres(document, coreBookPackage.media);
+  await loadValidatedCoreBook(archive, playerTemplateIds);
+  system.package.version = systemPackageVersion;
+  preset.version = systemPackageVersion;
+  index.packageId = resourcePackageId;
+  index.snapshotDigest = document.snapshotDigest;
+  const systemJson = `${JSON.stringify(system, null, 2)}\n`;
+  await writeFile(path.join(outputRoot, resourcePath), archive);
+  await writeFile(systemPath, systemJson, "utf8");
+  await writeFile(generatedSystemDocumentPath, systemJson, "utf8");
+  await writeFile(generatedPresetPath, `${JSON.stringify(preset, null, 2)}\n`, "utf8");
+  console.log(JSON.stringify({ package: document.package, resources: document.resources.length, snapshotDigest: document.snapshotDigest }, null, 2));
+  process.exit(0);
+}
+const previousPlayerPackage = await loadPreviousPackage(path.join(outputRoot, "resources", "daggerheart-core.pbres"));
+const previousGmPackage = await loadPreviousPackage(thirdPartyGmPackagePath);
+const legacyManifest = JSON.parse(await readFile(
+  path.join(sourceRoot, "manifest.json"),
+  "utf8",
+)) as LegacyRuntimeManifest;
+
 const gmLibraries = [
   library("adversaries", "敌人", "敌人", "1.0.1", transformAdversary),
   library("environments", "环境", "环境", "1.0.1", transformEnvironment),
 ] as const;
 const libraries = [...playerLibraries, ...gmLibraries] as const;
+
+const sourceLibraries = await Promise.all(libraries.map(async (definition) => ({
+  definition,
+  entries: JSON.parse(await readFile(path.join(resourceRoot, `${definition.id}.json`), "utf8")) as SourceEntry[],
+})));
+const isPlayerLibrary = (definition: typeof libraries[number]) => playerLibraries.some((candidate) => candidate.id === definition.id);
+// ParaTranz 仍提供正文；核心书归档只决定默认范围，缺项时禁止写出残缺包。
+const scopedLibraries = [
+  ...filterCoreBookLibraries(sourceLibraries.filter(({ definition }) => isPlayerLibrary(definition)), coreBookPackage.document.resources),
+  ...sourceLibraries.filter(({ definition }) => !isPlayerLibrary(definition)),
+];
 
 const generatedLibraries: Array<{
   definition: typeof libraries[number];
@@ -86,17 +150,13 @@ const generatedLibraries: Array<{
   media: Map<string, Uint8Array>;
 }> = [];
 
-for (const definition of libraries) {
+for (const { definition, entries } of scopedLibraries) {
   const media = new Map<string, Uint8Array>();
   const assets = new Map<string, ResourcePackageLogicalDocument["assets"][number]>();
   const resources: ResourcePackageLogicalDocument["resources"] = [];
   const template = templateRegistry.resolve(definition.templateId, definition.templateVersion);
   if (!template) throw new Error(`Missing Template: ${definition.templateId}@${definition.templateVersion}`);
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(template.schema);
-  const entries = JSON.parse(await readFile(
-    path.join(resourceRoot, `${definition.id}.json`),
-    "utf8",
-  )) as SourceEntry[];
   const previousPackage = playerLibraries.some((candidate) => candidate.id === definition.id)
     ? previousPlayerPackage
     : previousGmPackage;
@@ -165,7 +225,7 @@ function resourceDocument(id: string, version: string, name: string, description
     name,
     description,
   },
-  targets: [{ systemPackageId, version: systemPackageVersion }],
+  targets: [{ systemPackageId, version: resourceTargetSystemPackageVersion }],
   license: {
     label: "Darrington Press Community Gaming License",
     declaration: "https://darringtonpress.com/license/",

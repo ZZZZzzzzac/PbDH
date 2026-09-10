@@ -10,7 +10,9 @@ import {
 } from "./creator-controls.tsx";
 import { ResourceIcon, resourceTitle } from "./resource-preview.tsx";
 import { resourceSearchFieldValues } from "./resource-search-query.ts";
-import { TemplateIcon, templateMarkClassName } from "./TemplateIcon.tsx";
+import { templateMarkClassName } from "./TemplateIcon.tsx";
+import { ResourceSortMenu } from "./resource-sort-menu.tsx";
+import { resourceViewRows, useResourceSort } from "./resource-sort-view.ts";
 import { WorkspaceTree } from "./WorkspaceTree.tsx";
 import type {
   CreatorWorkspace,
@@ -107,6 +109,10 @@ export function CreatorResourceExplorer({
   const [inputSearchFields, setInputSearchFields] = useState<ReadonlySet<string>>(new Set());
   const filtering = Boolean(snapshot.search.trim());
   const active = snapshot.workspaces.find((workspace) => workspace.key === snapshot.activeWorkspaceKey);
+  const sortResources = useMemo(() => filtering ? snapshot.filteredResources.map((entry) => entry.resource)
+    : snapshot.workspaces.flatMap((workspace) => workspace.document.resources), [filtering, snapshot.filteredResources, snapshot.workspaces]);
+  const sorting = useResourceSort(sortResources);
+  const searchRows = useMemo(() => resourceViewRows(snapshot.filteredResources, (entry) => entry.resource, sorting.compare, sorting.preferences.mode === "grouped"), [snapshot.filteredResources, sorting.compare, sorting.preferences.mode]);
   const isSelected = (workspaceKey: string, resourceId: string) => snapshot.selectedResources.some(
     (selection) => selection.workspaceKey === workspaceKey && selection.resourceId === resourceId,
   );
@@ -177,6 +183,7 @@ export function CreatorResourceExplorer({
       <button className="explorer-publish-package" type="button" title="发布到资源市场" aria-label="发布到资源市场" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "publish-package" })}><Icon name="store" /></button>
     </div></header>
     {snapshot.operation && snapshot.operationLabel && <div className="creator-operation-strip"><OperationStatus label={snapshot.operationLabel} size="regular" /></div>}
+    {sorting.storageError && <div className="tree-error" role="alert">{sorting.storageError}</div>}
     <div className="explorer-search-row"><div className="explorer-search-composer" onFocus={() => {
       setInputSearchFields(new Set([...document.querySelectorAll<HTMLInputElement>("[data-template-authoring] .template-editor-field input")]
         .map((input) => input.closest("label")?.querySelector(":scope > span")?.textContent?.trim() ?? "")
@@ -221,13 +228,15 @@ export function CreatorResourceExplorer({
           {searchSuggestions.length === 0 && <p>没有匹配的字段或值</p>}
         </div>
       </div>}
-    </div><button type="button" className={`explorer-multi-select${snapshot.multiSelect ? " is-active" : ""}`} aria-pressed={snapshot.multiSelect} onClick={() => execute({ type: "toggle-multi-select" })}>
+    </div><ResourceSortMenu templates={sorting.templates} preferences={sorting.preferences} onChange={sorting.change} error={sorting.error} onRetry={sorting.retry} /><button type="button" className={`explorer-multi-select${snapshot.multiSelect ? " is-active" : ""}`} aria-pressed={snapshot.multiSelect} onClick={() => execute({ type: "toggle-multi-select" })}>
         多选{snapshot.multiSelect && snapshot.selectedResources.length > 0 ? `（${snapshot.selectedResources.length}）` : ""}
       </button></div>
     {filtering && <div className="workspace-resource-results resource-tree" aria-label="跨资源包筛选结果" role="tree">
-      {snapshot.filteredResources.map(({ workspace, resource }) => {
+      {searchRows.map((row) => {
+        if (row.kind === "group") return <div className="resource-template-group-title" key={`group:${row.templateId}`}><span>{row.templateId}</span><small>{row.count}</small></div>;
+        const { workspace, resource } = row.value;
         const selected = isSelected(workspace.key, resource.id);
-        return <div className="workspace-tree-node" key={`${workspace.key}:${resource.id}`}>
+        return <div className="workspace-tree-node" key={`resource:${workspace.key}:${resource.id}`}>
           <div
             className={`file-row filtered-resource-row${workspace.key === active?.key && resource.id === snapshot.activeResourceId ? " is-current" : ""}${snapshot.multiSelect && selected ? " is-multi-selected" : ""}`}
             role="treeitem"
@@ -247,19 +256,26 @@ export function CreatorResourceExplorer({
       })}
       {snapshot.filteredResources.length === 0 && <p>没有符合条件的资源</p>}
     </div>}
-    <div className={`workspace-package-list${filtering ? " is-filtering" : ""}`} onDragOver={allowNodeDrop} onDrop={(event) => {
+    <div className={`workspace-package-list${filtering ? " is-filtering" : ""}`} onContextMenu={(event) => {
+      if (!(event.target instanceof Element) || event.defaultPrevented || event.target.closest('[role="treeitem"], .package-root, button, input')) return;
+      const workspaceKey = event.target.closest<HTMLElement>("[data-workspace-key]")?.dataset.workspaceKey ?? active?.key;
+      if (!workspaceKey) return;
+      event.preventDefault();
+      execute({ type: "open-workspace-context", workspaceKey, x: event.clientX, y: event.clientY });
+    }} onDragOver={allowNodeDrop} onDrop={(event) => {
       if (event.target instanceof Element && event.target.closest('[role="treeitem"], .package-root')) return;
       dropAtRoot(event);
     }}>
       {snapshot.workspaces.map((workspace) => {
         const expanded = snapshot.expandedWorkspaceKeys.has(workspace.key);
-        return <section className={`workspace-package${workspace.key === active?.key ? " is-current" : ""}${expanded ? " is-expanded" : ""}`} key={workspace.key}>
-          <div className={`package-root${workspace.key === active?.key ? " is-current" : ""}`} onDragOver={allowNodeDrop} onDrop={(event) => dropAtRoot(event, workspace.key)} onContextMenu={(event) => {
+        return <section data-workspace-key={workspace.key} className={`workspace-package${workspace.key === active?.key ? " is-current" : ""}${expanded ? " is-expanded" : ""}`} key={workspace.key}>
+          <div className={`package-root${workspace.key === active?.key ? " is-current" : ""}${workspace.key === active?.key && workspace.currentFolderId === null ? " is-root-selected" : ""}`} onDragOver={allowNodeDrop} onDrop={(event) => dropAtRoot(event, workspace.key)} onContextMenu={(event) => {
             event.preventDefault();
             execute({ type: "open-workspace-context", workspaceKey: workspace.key, x: event.clientX, y: event.clientY });
           }}>
-            <button type="button" className="package-root-main" aria-expanded={expanded} onClick={() => execute({ type: "toggle-package", workspaceKey: workspace.key })}>
-              <Icon name={expanded ? "chevronDown" : "chevronRight"} /><Icon name="package" /><strong>{workspace.document.package.name}</strong>
+            <button type="button" className="package-root-chevron" aria-label={`${expanded ? "折叠" : "展开"}${workspace.document.package.name}`} aria-expanded={expanded} onClick={() => execute({ type: "toggle-package", workspaceKey: workspace.key })}><Icon name={expanded ? "chevronDown" : "chevronRight"} /></button>
+            <button type="button" className="package-root-main" aria-pressed={workspace.key === active?.key && workspace.currentFolderId === null} onClick={() => execute({ type: "select-folder", workspaceKey: workspace.key, folderId: null })}>
+              <Icon name="package" /><strong>{workspace.document.package.name}</strong>
               <CloudSyncIndicator sync={snapshot.sync.get(workspace.key)} saving={snapshot.savingWorkspaceKey === workspace.key} />
             </button>
             <button type="button" aria-label={`${workspace.document.package.name}菜单`} onClick={(event) => {
@@ -270,6 +286,8 @@ export function CreatorResourceExplorer({
           <div className={`workspace-package-contents${expanded ? " is-open" : ""}`} aria-hidden={!expanded} inert={!expanded}><div>
             <div className="resource-tree"><WorkspaceTree
               workspace={workspace}
+              compareResources={sorting.compare}
+              groupResources={sorting.preferences.mode === "grouped"}
               activeResourceId={workspace.key === active?.key ? snapshot.activeResourceId : ""}
               selectionMode={snapshot.multiSelect}
               selectedResourceIds={new Set(snapshot.selectedResources.filter((selection) => selection.workspaceKey === workspace.key).map((selection) => selection.resourceId))}

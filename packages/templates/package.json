@@ -6,12 +6,14 @@
   "exports": {
     "./core": "./src/core/index.ts",
     "./core/lazy": "./src/core/lazy.ts",
+    "./core/explorer-sorting": "./src/core/explorer-sorting.ts",
     "./core/validation": "./src/core/validation-metadata.ts",
     "./frontend": "./src/frontend/index.ts",
     "./frontend/lazy": "./src/frontend/lazy-renderer-registry.ts"
   },
   "dependencies": {
     "@pbdh/resource-renderer": "0.0.0",
+    "lucide-react": "1.23.0",
     "react": "19.2.7"
   }
 }

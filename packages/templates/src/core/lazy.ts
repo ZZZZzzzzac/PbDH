@@ -11,6 +11,7 @@ export type TemplateCoreLoaderEntry = {
 };
 
 export const templateCoreLoaders: readonly TemplateCoreLoaderEntry[] = [
+  { id: "玩家卡", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./player-card/1.0.0/capability.ts", () => import("./player-card/1.0.0/capability.ts")).then((module) => module.playerCardTemplate) },
   { id: "敌人", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./adversary/1.0.0/capability.ts", () => import("./adversary/1.0.0/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "敌人", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./adversary/1.0.1/capability.ts", () => import("./adversary/1.0.1/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "敌人", version: "1.0.2", fromVersions: ["1.0.1"], load: () => retryTemplateImport("./adversary/1.0.2/capability.ts", () => import("./adversary/1.0.2/capability.ts")).then((module) => module.adversaryTemplate) },
@@ -87,7 +88,7 @@ export const loadTemplateCore = coreLoader.load;
 export const readLoadedTemplateCore = coreLoader.read;
 
 export const currentTemplateReferences = ["敌人", "种族", "护甲", "社群", "领域卡", "环境", "自由", "物品", "职业", "子职业", "武器"]
-  .map((id) => ({ id, version: "1.1.0" }));
+  .map((id) => ({ id, version: "1.1.0" })).concat({ id: "玩家卡", version: "1.0.0" });
 
 export function loadCurrentTemplateCore(id: string) {
   const reference = currentTemplateReferences.find((entry) => entry.id === id);

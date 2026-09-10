@@ -54,6 +54,18 @@ import {
 } from "@pbdh/templates/core";
 
 const root = process.cwd();
+test("explicit root selection survives workspace cloning and new resource creation", async () => {
+  const folder = createWorkspaceFolder(await createBlankWorkspace("根目录回归"), null, "子目录");
+  const nested = addTemplateResource(folder, adversaryTemplate);
+  const selectedRoot = selectWorkspaceFolder(nested.workspace, null);
+  expect(selectedRoot.openResourceIds).toContain(nested.resourceId);
+  expect(createWorkspace(selectedRoot).currentFolderId).toBeNull();
+  const created = addTemplateResource(selectedRoot, domainTemplate);
+  expect(created.workspace.resourceLocations.find((item) => item.resourceId === created.resourceId)?.parentId).toBeNull();
+  expect(created.workspace.document.resources.find((item) => item.id === created.resourceId)?.path).not.toContain("/");
+  expect(created.workspace.resourceLocations.find((item) => item.resourceId === nested.resourceId)?.parentId).toBe(folder.currentFolderId);
+});
+
 const document = stableMinotaurPackage as ResourcePackageLogicalDocument;
 const asset = document.assets[0]!;
 const media = new Map([[asset.id, new Uint8Array(readFileSync(path.join(

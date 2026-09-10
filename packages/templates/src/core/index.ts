@@ -1,3 +1,6 @@
+import { playerCardTemplate } from "./player-card/1.0.0/capability.ts";
+export { playerCardTemplate } from "./player-card/1.0.0/capability.ts";
+export type { PlayerCardData, PlayerCardState } from "./player-card/1.0.0/capability.ts";
 import { adversaryTemplate } from "./adversary/1.0.0/capability.ts";
 import { ancestryTemplate } from "./ancestry/1.0.0/capability.ts";
 import { armorTemplate } from "./armor/1.0.0/capability.ts";
@@ -78,6 +81,7 @@ export type {
 } from "./types.ts";
 
 export const currentTemplates = Object.freeze([
+  playerCardTemplate,
   adversaryTemplate110,
   ancestryTemplate110,
   armorTemplate110,
@@ -172,6 +176,7 @@ export function upgradeTemplateResources<T extends {
 }
 
 export const supportedTemplates = Object.freeze([
+  playerCardTemplate,
   adversaryTemplate110,
   ancestryTemplate110,
   armorTemplate110,

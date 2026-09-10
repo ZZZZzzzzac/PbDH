@@ -1,6 +1,7 @@
 {
   "catalogVersion": 1,
   "templates": [
+    {"id":"玩家卡","version":"1.0.0","state":"published","schema":"src/core/player-card/1.0.0/schema.json","tabletopReplacements":[{"id":"alternate-form","label":"切换形态"}],"publication":{"development":true,"production":true}},
     {"id":"敌人","version":"1.1.0","state":"published","schema":"src/core/adversary/1.1.0/schema.json","tabletopReplacements":[{"id":"alternate-form","label":"切换形态"}],"publication":{"development":true,"production":true}},
     {"id":"种族","version":"1.1.0","state":"published","schema":"src/core/ancestry/1.1.0/schema.json","tabletopReplacements":[{"id":"alternate-form","label":"切换形态"}],"publication":{"development":true,"production":true}},
     {"id":"护甲","version":"1.1.0","state":"published","schema":"src/core/armor/1.1.0/schema.json","tabletopReplacements":[{"id":"alternate-form","label":"切换形态"}],"publication":{"development":true,"production":true}},

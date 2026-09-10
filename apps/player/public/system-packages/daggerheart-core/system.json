@@ -2,7 +2,7 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "name": "匕首之心",
     "description": "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。"
   },

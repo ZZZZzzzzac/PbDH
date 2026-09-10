@@ -9,6 +9,7 @@ import {
   Skull,
   Sword,
   Trees,
+  UserRound,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const lucideTemplateIconDefinitions: Readonly<Record<string, TemplateIconDefinit
   武器: { icon: Sword, tone: "combat" },
   护甲: { icon: Shield, tone: "combat" },
   种族: { icon: Dna, tone: "identity" },
+  玩家卡: { icon: UserRound, tone: "identity" },
   社群: { icon: UsersRound, tone: "community" },
   职业: { icon: BriefcaseBusiness, tone: "vocation" },
   子职业: { icon: Milestone, tone: "vocation" },

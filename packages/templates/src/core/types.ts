@@ -1,5 +1,12 @@
 export type TemplateLifecycleState = "development" | "published" | "deprecated";
 
+export type TemplateSortField = {
+  key: string;
+  label: string;
+  kind: "text" | "number" | "enum";
+  values?: readonly string[];
+};
+
 export type TemplateProjection = {
   title: string;
   summary: string;

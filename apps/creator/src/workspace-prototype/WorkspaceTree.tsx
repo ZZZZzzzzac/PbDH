@@ -1,13 +1,12 @@
 import {
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type DragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { TabletopContextMenu } from "@pbdh/tabletop/react";
 
 import {
   workspaceResourceCountByFolder,
@@ -17,6 +16,7 @@ import {
   type WorkspaceResource,
 } from "./workspace-model.ts";
 import { templateMarkClassName } from "./TemplateIcon.tsx";
+import { resourceViewRows } from "./resource-sort-view.ts";
 
 import { readWorkspaceNodeDrag, workspaceNodeDataType } from "./workspace-node-drag.ts";
 
@@ -38,6 +38,8 @@ export function WorkspaceTree({
   onCopyFolder,
   resourceTitle,
   renderResourceIcon,
+  compareResources,
+  groupResources = false,
 }: {
   workspace: CreatorWorkspace;
   activeResourceId: string;
@@ -56,12 +58,13 @@ export function WorkspaceTree({
   onCopyFolder?: (folderId: string) => void;
   resourceTitle: (resource: WorkspaceResource) => string;
   renderResourceIcon: (resource: WorkspaceResource) => ReactNode;
+  compareResources?: (left: WorkspaceResource, right: WorkspaceResource) => number;
+  groupResources?: boolean;
 }) {
   const [menu, setMenu] = useState<{ node: WorkspaceNodeRef; x: number; y: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
   const folderById = useMemo(() => new Map(workspace.folders.map((folder) => [folder.id, folder])), [workspace.folders]);
   const resourceById = useMemo(() => new Map(workspace.document.resources.map((resource) => [resource.id, resource])), [workspace.document.resources]);
   const resourceCountByFolder = useMemo(
@@ -72,20 +75,12 @@ export function WorkspaceTree({
     () => workspaceTreeItemsByParent(workspace),
     [workspace.document.resources, workspace.folders, workspace.resourceLocations],
   );
-
-  useEffect(() => {
-    if (!menu) return;
-    const dismiss = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenu(null);
-    };
-    const escape = (event: KeyboardEvent) => event.key === "Escape" && setMenu(null);
-    document.addEventListener("pointerdown", dismiss);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("pointerdown", dismiss);
-      document.removeEventListener("keydown", escape);
-    };
-  }, [menu]);
+  const sortedItemsByParent = useMemo(() => new Map([...treeItemsByParent].map(([parentId, items]) => {
+    const folders = items.filter((item) => item.kind === "folder");
+    const resources = items.filter((item) => item.kind === "resource");
+    const rows = resourceViewRows(resources, (item) => resourceById.get(item.id)!, compareResources ?? (() => 0), groupResources);
+    return [parentId, [...folders, ...rows.map((row) => row.kind === "group" ? row : row.value)]] as const;
+  })), [treeItemsByParent, resourceById, compareResources, groupResources]);
 
   const openMenu = (event: MouseEvent, node: WorkspaceNodeRef) => {
     event.preventDefault();
@@ -95,8 +90,8 @@ export function WorkspaceTree({
     }
     setMenu({
       node,
-      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 180)),
-      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 140)),
+      x: event.clientX,
+      y: event.clientY,
     });
   };
 
@@ -144,12 +139,21 @@ export function WorkspaceTree({
       event.stopPropagation();
       move(node, null);
     } : undefined}>
-      {(treeItemsByParent.get(parentId) ?? []).map((item) => {
+      {(sortedItemsByParent.get(parentId) ?? []).map((item) => {
+        if (item.kind === "group") return <div className="resource-template-group-title" style={{ paddingLeft: 24 + depth * 14 }} key={`group:${item.templateId}`} onDragOver={(event) => {
+          if (event.dataTransfer.types.includes(workspaceNodeDataType)) event.preventDefault();
+        }} onDrop={(event) => {
+          event.stopPropagation();
+          const node = readDraggedNode(event, workspace.key);
+          if (!node) return;
+          event.preventDefault();
+          move(node, parentId);
+        }}><span>{item.templateId}</span><small>{item.count}</small></div>;
         if (item.kind === "folder") {
           const folder = folderById.get(item.id)!;
           const node = { kind: "folder" as const, id: folder.id };
           const count = resourceCountByFolder.get(folder.id) ?? 0;
-          return <div className="workspace-tree-node" key={folder.id}>
+          return <div className="workspace-tree-node" key={`folder:${folder.id}`}>
             <div
               className={`folder-row${workspace.currentFolderId === folder.id ? " is-current" : ""}`}
               style={{ paddingLeft: 6 + depth * 14 }}
@@ -183,7 +187,7 @@ export function WorkspaceTree({
         const resource = resourceById.get(item.id)!;
         const node = { kind: "resource" as const, id: resource.id };
         const selected = selectedResourceIds?.has(resource.id) ?? false;
-        return <div className="workspace-tree-node" key={resource.id}>
+        return <div className="workspace-tree-node" key={`resource:${resource.id}`}>
           <div
             className={`file-row${resource.id === activeResourceId && !selectionMode ? " is-current" : ""}${selectionMode && selected ? " is-multi-selected" : ""}`}
             style={{ paddingLeft: 24 + depth * 14 }}
@@ -206,11 +210,11 @@ export function WorkspaceTree({
 
   return <>
     {renderLevel(null, 0)}
-    {menu && <div ref={menuRef} className="context-menu workspace-node-menu" role="menu" style={{ left: menu.x, top: menu.y }}>
+    {menu && <TabletopContextMenu className="context-menu workspace-node-menu" x={menu.x} y={menu.y} onClose={() => setMenu(null)}>
       {menu.node.kind === "folder" && <button type="button" role="menuitem" onClick={() => beginRename(menu.node.id)}>重命名</button>}
       {menu.node.kind === "folder" && onCopyFolder && <button type="button" role="menuitem" onClick={() => { onCopyFolder(menu.node.id); setMenu(null); }}>复制到资源包…</button>}
       <button type="button" role="menuitem" className="delete" onClick={() => { onDeleteNode(menu.node); setMenu(null); }}>删除</button>
-    </div>}
+    </TabletopContextMenu>}
   </>;
 }
 

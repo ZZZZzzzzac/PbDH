@@ -15,6 +15,13 @@
   "assets": [],
   "resources": [
     {
+      "id": "review-player-card", "path": "玩家卡/艾琳.json",
+      "template": { "id": "玩家卡", "version": "1.0.0" },
+      "presentation": { "mode": "text", "fixedRatio": false },
+      "data": { "名称": "艾琳", "类型": "玩家卡", "玩家名": "阿青", "生命上限": "6", "压力上限": "6", "希望上限": "6", "护甲槽上限": "3", "备注": "先侦察。" },
+      "media": {}
+    },
+    {
       "id": "review-adversary", "path": "敌人/铁门守卫.json",
       "template": { "id": "敌人", "version": "1.0.0" },
       "presentation": { "mode": "text", "fixedRatio": false },
@@ -99,5 +106,5 @@
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:a36c57372f703463c8abb8b2803084aa8de28899b13d6c3067c1fa7e369c3d14"
+  "snapshotDigest": "sha256:e47ebd92baf01320bde33c5563a6915393e31e90e69da3f6dadba63add7f3f12"
 }

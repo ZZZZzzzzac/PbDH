@@ -2,7 +2,7 @@
   "id": "01a0132c-4eef-7703-94ac-ec8d1a660001",
   "urlPath": "daggerheart",
   "name": "匕首之心",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "releaseVersion": "0.0.0-dev",
   "directory": "daggerheart-core",
   "inventoryPath": ".pbdh-runtime-files.json",
@@ -12,7 +12,7 @@
     {
       "path": "resources/daggerheart-core.pbres",
       "packageId": "01a0132c-4eef-7703-94ac-ec8d1a660002",
-      "snapshotDigest": "sha256:8a6827ea5865018fe873d53fb7a8a042b6406ad1b082a9be0571a3f25e19ebb3"
+      "snapshotDigest": "sha256:c9e42f75fb00afbfdea67be2f7b11111b227ed322132a754f5dff13b780ced3a"
     }
   ],
   "loadingPresentation": {

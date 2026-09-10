@@ -30,6 +30,7 @@ export function ValidationIssueDialog({
           </div>
         </header>
         <div className="validation-dialog-body">
+          <p>审核仅供参考；有条件、临时或无法确定的效果请与主持人核对。</p>
           {issues.length === 0 ? (
             <p className="validation-empty">未发现问题。</p>
           ) : (

@@ -514,6 +514,7 @@ def test_publication_fork_requires_an_exact_existing_source_snapshot(tmp_path: P
     assert len(api.get("/api/publications").json()["publications"]) == 2
 
 @pytest.mark.parametrize(("template_id", "data"), [
+    ("玩家卡", {"名称": "艾琳", "类型": "玩家卡", "玩家名": "阿青", "生命上限": "6", "压力上限": "6", "希望上限": "6", "护甲槽上限": "0", "备注": "初始备注"}),
     ("护甲", {"名称": "填充布甲", "类型": "护甲", "护甲值": "3", "重度伤害阈值": "5", "严重伤害阈值": "11", "特性名称": "灵活", "特性原文": "Flexible", "特性描述": "闪避值+1。", "简介": "轻柔填料缝入耐磨布层。", "位阶": "1"}),
     ("环境", {"名称": "荒废林地", "类型": "环境", "原文": "ABANDONED GROVE", "位阶": "1", "种类": "探索", "简介": "一片曾经的德鲁伊林地。", "趋向": "吸引好奇者", "难度": "11", "潜在敌人": "野兽，林地守卫", "特性": [{"特性名称": "蔓生战场", "特性原文": "Overgrown Battlefield", "特性类型": "被动", "特性描述": "此地曾发生过一场战斗。", "引导问题": "为何发生冲突？"}]}),
     ("种族", {"名称": "人类", "原文": "Human", "类型": "种族", "简介": "适应力强。", "特性": [{"特性名称": "适应", "特性原文": "Adaptable", "特性描述": "获得优势。"}]}),
@@ -538,6 +539,27 @@ def test_development_templates_are_publishable_in_development(tmp_path: Path, te
         "id": template_id,
         "version": "1.0.0",
     }
+
+
+@pytest.mark.parametrize(("mode", "maximum", "expected_code"), [
+    ("production", "6", None),
+    ("development", [], "template.data.invalid"),
+])
+def test_player_card_template_enforces_lifecycle_and_schema(tmp_path: Path, mode: str, maximum: str | list[str], expected_code: str | None) -> None:
+    api = client(tmp_path, mode)
+    document, media = candidate()
+    document["resources"][0]["template"] = {"id": "玩家卡", "version": "1.0.0"}
+    document["resources"][0]["data"] = {
+        "名称": "艾琳", "类型": "玩家卡", "玩家名": "阿青", "生命上限": maximum,
+        "压力上限": "6", "希望上限": "6", "护甲槽上限": "0", "备注": "初始备注",
+    }
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+    response = publish(api, claim(api, "player-card-author"), document, media)
+    if expected_code is None:
+        assert response.status_code == 200, response.text
+        return
+    assert response.status_code == 422, response.text
+    assert expected_code in [item["code"] for item in response.json()["error"]["fieldErrors"]]
 
 
 def test_production_mode_accepts_published_template(tmp_path: Path) -> None:

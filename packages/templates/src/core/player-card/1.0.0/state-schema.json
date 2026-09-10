@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "required": ["currentHp", "currentStress", "currentHope", "currentArmor", "notes"],
+  "properties": {
+    "currentHp": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "currentStress": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "currentHope": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "currentArmor": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": false
+}

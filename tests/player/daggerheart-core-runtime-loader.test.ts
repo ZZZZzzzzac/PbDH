@@ -34,7 +34,10 @@ const marketWeaponMedia = new Uint8Array(await readFile(path.resolve(
 )));
 
 describe("Daggerheart Core Sheet Runtime 加载", () => {
-  it("从带包级封面的原生 .pbres 组装完整资源库且不报告未使用图片", async () => {
+  it.each([
+    { scope: "默认核心书", includeExpansion: false, resources: 640, professions: 9, domains: 9 },
+    { scope: "核心书与按需导入扩展", includeExpansion: true, resources: 980, professions: 13, domains: 10 },
+  ])("从带包级封面的原生 .pbres 组装$scope资源库且不报告未使用图片", async (scenario) => {
     const installedPackages = new Map();
     for (const embedded of currentSystem.embeddedResources) {
       const archive = await loadPbres(
@@ -56,6 +59,21 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
           currentSystem,
           resourcePackage: candidate.document,
         }),
+      });
+    }
+    if (scenario.includeExpansion) {
+      const archive = await loadPbres(
+        new Uint8Array(await readFile(path.resolve("docs/third/daggerheart-hope-and-fear.pbres"))),
+        validateResourcePackageCandidate,
+      );
+      expect(archive.diagnostics).toEqual([]);
+      expect(archive.candidate).toBeDefined();
+      const candidate = archive.candidate!;
+      expect(candidate.document.resources).toHaveLength(340);
+      expect(installedPackages.has(candidate.document.package.id)).toBe(false);
+      installedPackages.set(candidate.document.package.id, {
+        ...candidate,
+        routes: routeResourcePackage({ currentSystem, resourcePackage: candidate.document }),
       });
     }
     const fetchFile: typeof fetch = async (url) => {
@@ -83,7 +101,10 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     expect(loaded.package.modules.length).toBeGreaterThan(20);
     expect(loaded.package.pages.length).toBeGreaterThan(1);
     expect(loaded.package.resourceLibraries?.reduce((total, library) =>
-      total + library.entries.length, 0)).toBe(980);
+      total + library.entries.length, 0)).toBe(scenario.resources);
+    expect(loaded.package.resourceLibraries?.find((library) => library.ID === "classes")?.entries).toHaveLength(scenario.professions);
+    expect(new Set(loaded.package.resourceLibraries?.find((library) => library.ID === "domain-cards")
+      ?.entries.map((entry) => entry.fields.领域))).toHaveLength(scenario.domains);
     for (const libraryId of ["subclasses", "domain-cards"]) {
       const imageEntry = loaded.package.resourceLibraries?.find((library) => library.ID === libraryId)
         ?.entries.find((entry) => entry.resourceCopy?.presentation.mode === "image");

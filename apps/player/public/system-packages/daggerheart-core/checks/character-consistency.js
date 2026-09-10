@@ -2,6 +2,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const context = createContext(characterData, resourceLibraries);
   const issues = [];
 
+  checkEquipmentResources(issues, context);
   checkLevel(issues, context);
   checkRequiredCardCounts(issues, context);
   checkWeaponLoadout(issues, context);
@@ -25,10 +26,15 @@ function createContext(characterData, resourceLibraries) {
   const level = integer(values.level);
   const tier = level === undefined ? undefined : level >= 8 ? 4 : level >= 5 ? 3 : level >= 2 ? 2 : 1;
   const classEntry = findEntryByName(libraries.get("classes"), text(values["class-name"]));
-  const armorEntry = findEntryByName(libraries.get("armor"), text(values["armor-name"]));
+  const armorEntry = findEntryByName(libraries.get("armor"), selectedName(values["armor-name"]));
   const primaryWeapon = findEntryByName(libraries.get("weapons"), selectedName(values["primary-weapon-name"]));
   const secondaryWeapon = findEntryByName(libraries.get("weapons"), selectedName(values["secondary-weapon-name"]));
   const inventoryEntries = inventoryNames(values.inventory).map((name) => findEntryByName(libraries.get("loot"), name)).filter(Boolean);
+  const unresolvedEquipment = [
+    ["armor-name", armorEntry],
+    ["primary-weapon-name", primaryWeapon],
+    ["secondary-weapon-name", secondaryWeapon],
+  ].filter(([key, entry]) => selectedName(values[key]) && !entry).map(([key]) => key);
 
   return {
     values,
@@ -42,7 +48,15 @@ function createContext(characterData, resourceLibraries) {
     secondaryWeapon,
     weapons: [primaryWeapon, secondaryWeapon].filter(Boolean),
     inventoryEntries,
+    unresolvedEquipment,
   };
+}
+
+function checkEquipmentResources(issues, context) {
+  for (const key of context.unresolvedEquipment) {
+    warn(issues, "EQUIPMENT_RESOURCE_UNRESOLVED", `character.values.${key}`,
+      `装备“${selectedName(context.values[key])}”资源未加载或无法识别；请导入对应资源包后再审核，自定义装备请人工核对。已暂停依赖装备定义的属性分配、闪避、护甲和伤害阈值审核。`);
+  }
 }
 
 function checkWeaponLoadout(issues, context) {
@@ -50,7 +64,7 @@ function checkWeaponLoadout(issues, context) {
     warn(issues, "PRIMARY_WEAPON_IN_SECONDARY_SLOT", "character.values.secondary-weapon-name", "副武器栏不能装备主武器。" );
   }
 
-  const hasSecondaryWeapon = text(context.values["secondary-weapon-name"]) !== "";
+  const hasSecondaryWeapon = selectedName(context.values["secondary-weapon-name"]) !== "";
   if (
     context.primaryWeapon
     && field(context.primaryWeapon, "负荷") === "双手"
@@ -137,7 +151,7 @@ function checkTraits(issues, context, states) {
   const normalized = actual.map((value, index) => value - staticModifiers[index]);
   const upgrades = states.map((state) => countSelectedPrefix(state, "traits-"));
 
-  if (upgrades.some((count) => count > 3) || !hasLegalTraitAllocation(normalized, upgrades)) {
+  if (upgrades.some((count) => count > 3) || (context.unresolvedEquipment.length === 0 && !hasLegalTraitAllocation(normalized, upgrades))) {
     warn(
       issues,
       "TRAIT_DISTRIBUTION_MISMATCH",
@@ -265,6 +279,8 @@ function checkArmor(issues, context) {
     );
   }
 
+  // 字段间一致性仍可核对，缺失定义时不猜测装备修正。
+  if (context.unresolvedEquipment.length > 0) return;
   let expected;
   if (context.armorEntry) {
     expected = integer(field(context.armorEntry, "护甲值"));
@@ -274,6 +290,11 @@ function checkArmor(issues, context) {
   }
   if (expected === undefined) return;
 
+  if (field(context.armorEntry, "名称") === "格兰明斯特华服") {
+    const presence = integer(context.values.presence);
+    if (presence === undefined) return;
+    expected += presence;
+  }
   for (const weapon of context.weapons) expected += weaponArmorModifier(field(weapon, "名称"));
   if (context.armorEntry && hasActiveDomain(context, "护甲大师")) expected += 1;
   if (activeDomainCount(context, "勇气") >= 4 && hasActiveDomain(context, "勇气恩泽")) expected += 1;
@@ -286,6 +307,7 @@ function checkArmor(issues, context) {
 }
 
 function checkEvasion(issues, context) {
+  if (context.unresolvedEquipment.length > 0) return;
   if (!context.classEntry) return;
   let expected = integer(field(context.classEntry, "闪避值"));
   if (expected === undefined) return;
@@ -327,13 +349,14 @@ function checkPersistentPoolsAndThresholds(issues, context) {
   if (hasAncestrySlot(context, "A", "人类")) expected.stress += 1;
   if (hasSubclass(context, "复仇战卫", "基础")) expected.stress += 1;
 
-  const thresholdBase = baseThresholds(context);
+  const thresholdBase = context.unresolvedEquipment.length === 0 ? baseThresholds(context) : undefined;
   if (thresholdBase && validLevel(context.level)) {
     expected.major = thresholdBase.major + context.level;
     expected.severe = thresholdBase.severe + context.level;
     const both = thresholdBothModifier(context, proficiency);
     expected.major += both;
     expected.severe += both;
+    if (context.weapons.some((weapon) => field(weapon, "名称") === "勇气之剑")) expected.major += 3;
     expected.severe += thresholdSevereModifier(context, proficiency);
   }
 
@@ -374,7 +397,18 @@ function baseThresholds(context) {
   if (context.armorEntry) {
     const major = integer(field(context.armorEntry, "重度阈值"));
     const severe = integer(field(context.armorEntry, "严重阈值"));
-    return major === undefined || severe === undefined ? undefined : { major, severe };
+    const name = field(context.armorEntry, "名称");
+    let bonus = 0;
+    if (["法师长袍", "改进法师长袍", "高级法师长袍", "传说法师长袍"].includes(name)) {
+      const traitLabels = { 敏捷: "agility", 力量: "strength", 灵巧: "finesse", 本能: "instinct", 风度: "presence", 知识: "knowledge" };
+      const spellTraits = [...new Set(context.cards.filter((card) => card.libraryId === "subclasses")
+        .map((card) => traitLabels[field(card.entry, "施法属性")]).filter(Boolean))];
+      // 兼职等情形无法唯一确定施法属性时，保留人工核对，不猜测阈值。
+      if (spellTraits.length !== 1) return undefined;
+      bonus = integer(context.values[spellTraits[0]]);
+    }
+    if (name === "符文锻造外骨骼") bonus = context.tier;
+    return major === undefined || severe === undefined || bonus === undefined ? undefined : { major: major + bonus, severe: severe + bonus };
   }
   if (!hasActiveDomain(context, "铁骨铮铮") || context.tier === undefined) return undefined;
   return [{ major: 9, severe: 19 }, { major: 11, severe: 24 }, { major: 13, severe: 31 }, { major: 15, severe: 38 }][context.tier - 1];
@@ -382,6 +416,8 @@ function baseThresholds(context) {
 
 function thresholdBothModifier(context, proficiency) {
   let bonus = 0;
+  const cloakBonuses = { 战斗斗篷: 2, 改良战斗斗篷: 3, 高级战斗斗篷: 4, 传奇战斗斗篷: 5 };
+  for (const weapon of context.weapons) bonus += cloakBonuses[field(weapon, "名称")] ?? 0;
   if (hasAncestrySlot(context, "A", "龟人") && proficiency !== undefined) bonus += proficiency;
   if (context.armorEntry && hasActiveDomain(context, "强化护甲")) bonus += 2;
   for (const stage of ["基础", "进阶", "精通"]) {
@@ -395,7 +431,6 @@ function thresholdSevereModifier(context, proficiency) {
   if (activeDomainCount(context, "利刃") >= 4 && hasActiveDomain(context, "利刃恩泽")) bonus += 4;
   if (activeDomainCount(context, "辉耀") >= 4 && hasActiveDomain(context, "辉耀恩泽")) bonus += 3;
   if (hasActiveDomain(context, "奋起直追") && proficiency !== undefined) bonus += proficiency;
-  if (context.weapons.some((weapon) => field(weapon, "名称") === "勇气之剑")) bonus += 3;
   if (hasSubclass(context, "翔翼哨兵", "精通")) bonus += 4;
   return bonus;
 }
@@ -405,12 +440,13 @@ function staticTraitModifiers(context) {
   const addTrait = (trait, value) => { result[TRAITS.indexOf(trait)] += value; };
   const armorName = field(context.armorEntry, "名称");
   if (["全板甲", "改良全板甲", "高级全板甲", "传奇全板甲"].includes(armorName)) addTrait("agility", -1);
+  if (["鳞甲", "改进鳞甲", "高级鳞甲", "传奇鳞甲"].includes(armorName)) addTrait("finesse", -1);
   if (armorName === "贝拉莫伊精致护甲") addTrait("presence", 1);
   if (armorName === "救世主链甲") TRAITS.forEach((trait) => addTrait(trait, -1));
   for (const weapon of context.weapons) {
     const name = field(weapon, "名称");
     if (["戟", "改良戟", "高级戟", "传奇戟", "长弓", "改良长弓", "高级长弓", "传奇长弓"].includes(name)) addTrait("finesse", -1);
-    if (name === "巨斧") addTrait("agility", -1);
+    if (["巨斧", "黑火药蛇铳"].includes(name)) addTrait("agility", -1);
   }
   const relicTraits = {
     神行遗宝: "agility", 强力遗宝: "strength", 控制遗宝: "finesse",
@@ -425,6 +461,9 @@ function staticTraitModifiers(context) {
 }
 
 function armorEvasionModifier(name) {
+  if (name === "蛛丝束腰外衣") return 1;
+  if (name === "天空守望者鳞甲") return 2;
+  if (["环片甲", "改进环片甲", "高级环片甲", "传奇环片甲"].includes(name)) return -1;
   if (["填充布甲", "改良填充布甲", "高级填充布甲", "传奇填充布甲"].includes(name)) return 1;
   if (["链甲", "改良链甲", "高级链甲", "传奇链甲", "救世主链甲"].includes(name)) return -1;
   if (["全板甲", "改良全板甲", "高级全板甲", "传奇全板甲"].includes(name)) return -2;
@@ -438,7 +477,7 @@ function weaponEvasionModifier(name) {
 
 function weaponArmorModifier(name) {
   const modifiers = {
-    拉布里斯斧: 1, 圆盾: 1, 改良圆盾: 2, 高级圆盾: 3, 传奇圆盾: 4,
+    拉布里斯斧: 1, 附魔橡木棍: 1, 圆盾: 1, 改良圆盾: 2, 高级圆盾: 3, 传奇圆盾: 4,
     塔盾: 2, 改良塔盾: 3, 高级塔盾: 4, 传奇塔盾: 5, 尖刺盾牌: 1,
   };
   return modifiers[name] ?? 0;
@@ -581,7 +620,8 @@ function activeDomainCount(context, domain) {
 
 function selectedName(value) {
   const source = text(value);
-  return source.match(/^\*\*([^*]+)\*\*/)?.[1]?.trim() ?? source.split("｜", 1)[0].replace(/^\*\*|\*\*$/g, "").trim();
+  const name = source.match(/^\*\*([^*]+)\*\*/)?.[1]?.trim() ?? source.split("｜", 1)[0].replace(/^\*\*|\*\*$/g, "").trim();
+  return name === "-" ? "" : name;
 }
 
 function inventoryNames(value) {

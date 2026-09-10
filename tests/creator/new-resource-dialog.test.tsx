@@ -31,6 +31,14 @@ async function mount() {
   return { root, container, execute, render, button };
 }
 
+test("玩家卡菜单按精确初版加载并创建正式模板", async () => {
+  const template = templateRegistry.resolve("玩家卡", "1.0.0")!;
+  const view = await mount();
+  await act(async () => view.button("玩家卡").click());
+  expect(template.state).toBe("published");
+  expect(view.execute).toHaveBeenCalledExactlyOnceWith({ type: "create-resource", template, workspaceKey: "workspace-a" });
+});
+
 test("菜单不加载能力；确认选项后使用最新提交回调", async () => {
   const loads = templateCoreLoaders.map((entry) => ({ entry, load: vi.spyOn(entry, "load") }));
   const template = templateRegistry.resolve("护甲", "1.1.0")!;

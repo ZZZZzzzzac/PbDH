@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { playerCardAuthoring } from "./player-card/1.0.0/authoring-editor.tsx";
+import { playerCardRendererRevision } from "./player-card/1.0.0/renderer.tsx";
 
 import type { RendererRevisionCapability } from "@pbdh/resource-renderer/core";
 
@@ -98,6 +100,7 @@ export type TemplateFrontendCapability = {
 };
 
 export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] = [
+  binding(playerCardAuthoring, playerCardRendererRevision),
   binding(adversaryAuthoring110, adversaryRendererRevision110),
   binding(ancestryAuthoring110, ancestryRendererRevision110),
   binding(armorAuthoring110, armorRendererRevision110),

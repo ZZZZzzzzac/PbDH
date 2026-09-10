@@ -1,4 +1,5 @@
-import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode, type Ref } from "react";
+import { createPortal } from "react-dom";
 
 import {
   clampTabletopPosition,
@@ -296,14 +297,39 @@ export function TabletopContextMenu({
   x,
   y,
   className,
-  estimatedWidth = 200,
-  estimatedHeight = 160,
   children,
   onClose,
 }: TabletopContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+    menu.style.removeProperty("min-width");
+    const minimumWidth = parseFloat(getComputedStyle(menu).minWidth) || 0;
+    const positionMenu = () => {
+      const viewport = window.visualViewport;
+      const left = (viewport?.offsetLeft ?? 0) + 8;
+      const top = (viewport?.offsetTop ?? 0) + 8;
+      const right = left + Math.max(0, (viewport?.width ?? window.innerWidth) - 16);
+      const bottom = top + Math.max(0, (viewport?.height ?? window.innerHeight) - 16);
+      menu.style.maxWidth = `${right - left}px`;
+      menu.style.minWidth = `${Math.min(minimumWidth, right - left)}px`;
+      menu.style.maxHeight = `${bottom - top}px`;
+      // 先在完整可用空间测量，避免右侧剩余宽度影响菜单的自然尺寸。
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+      const { width, height } = menu.getBoundingClientRect();
+      menu.style.left = `${Math.max(left, Math.min(x + width > right ? x - width : x, right - width))}px`;
+      menu.style.top = `${Math.max(top, Math.min(y + height > bottom ? y - height : y, bottom - height))}px`;
+    };
+    positionMenu();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(positionMenu);
+    observer?.observe(menu);
+    return () => observer?.disconnect();
+  }, [x, y, children, className]);
 
   useEffect(() => {
     const closeOutside = (event: globalThis.PointerEvent) => {
@@ -313,29 +339,49 @@ export function TabletopContextMenu({
       if (event.key === "Escape") onCloseRef.current();
     };
     const closeOnBlur = () => onCloseRef.current();
+    const closeOnScroll = (event: Event) => {
+      if (event.target instanceof Node && menuRef.current?.contains(event.target)) return;
+      onCloseRef.current();
+    };
+    const viewport = window.visualViewport;
     window.addEventListener("pointerdown", closeOutside);
     window.addEventListener("blur", closeOnBlur);
     window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnScroll, true);
+    window.addEventListener("resize", closeOnBlur);
+    viewport?.addEventListener("resize", closeOnBlur);
+    viewport?.addEventListener("scroll", closeOnBlur);
     return () => {
       window.removeEventListener("pointerdown", closeOutside);
       window.removeEventListener("blur", closeOnBlur);
       window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnScroll, true);
+      window.removeEventListener("resize", closeOnBlur);
+      viewport?.removeEventListener("resize", closeOnBlur);
+      viewport?.removeEventListener("scroll", closeOnBlur);
     };
   }, []);
 
-  return (
+  return createPortal(
     <div
       ref={menuRef}
       className={className}
       data-pbdh-tabletop-context-menu=""
       role="menu"
       style={{
-        left: Math.max(8, Math.min(x, window.innerWidth - estimatedWidth)),
-        top: Math.max(8, Math.min(y, window.innerHeight - estimatedHeight)),
+        position: "fixed",
+        boxSizing: "border-box",
+        minHeight: 0,
+        gridAutoRows: "max-content",
+        alignContent: "start",
+        overflowY: "auto",
+        overflowX: "auto",
+        overscrollBehavior: "contain",
       }}
       onPointerDown={(event) => event.stopPropagation()}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }

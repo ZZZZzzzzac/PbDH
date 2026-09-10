@@ -119,7 +119,7 @@ describe("additional migrated System Packages", () => {
       new Uint8Array(await readFile(path.join(root, "daggerheart-core/resources/daggerheart-core.pbres"))),
       validateResourcePackageCandidate,
     );
-    expect(daggerheart.candidate?.document.package.name).toBe("匕首之心玩家资源");
+    expect(daggerheart.candidate?.document.package.name).toBe("匕首之心：核心书");
   });
 
   test.each(migrated)("loads $name through the Player runtime", async (item) => {

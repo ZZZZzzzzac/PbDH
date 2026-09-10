@@ -71,7 +71,8 @@ export function createWorkspace(
     previewResourceId: source.previewResourceId && resourceIds.has(source.previewResourceId)
       ? source.previewResourceId
       : null,
-    currentFolderId: source.currentFolderId && layout.folders.some((folder) => folder.id === source.currentFolderId)
+    // null 是显式选择根目录，只有未提供或失效的目录才回退到打开资源的位置。
+    currentFolderId: source.currentFolderId === null || (source.currentFolderId && layout.folders.some((folder) => folder.id === source.currentFolderId))
       ? source.currentFolderId
       : layout.resourceLocations.find((location) => location.resourceId === openResourceIds[0])?.parentId ?? null,
   };

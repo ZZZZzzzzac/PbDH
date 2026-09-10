@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/%E7%8E%A9%E5%AE%B6%E5%8D%A1/1.0.0/schema.json",
+  "title": "玩家卡 Template Data",
+  "type": "object",
+  "required": ["名称", "类型", "玩家名", "生命上限", "压力上限", "希望上限", "护甲槽上限", "备注"],
+  "properties": {
+    "名称": { "type": "string" },
+    "类型": { "type": "string" },
+    "玩家名": { "type": "string" },
+    "生命上限": { "$ref": "#/$defs/count" },
+    "压力上限": { "$ref": "#/$defs/count" },
+    "希望上限": { "$ref": "#/$defs/count" },
+    "护甲槽上限": { "$ref": "#/$defs/count" },
+    "备注": { "type": "string" }
+  },
+  "$defs": { "count": { "type": "string" } },
+  "additionalProperties": false
+}

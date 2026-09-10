@@ -11,6 +11,7 @@ export type TemplateFrontendManifestEntry = {
 };
 
 export const templateFrontendManifest: readonly TemplateFrontendManifestEntry[] = [
+  entry("玩家卡", "1.0.0", () => retryTemplateImport("./player-card/1.0.0/renderer.tsx", () => import("./player-card/1.0.0/renderer.tsx")).then((module) => module.playerCardRendererRevision), () => retryTemplateImport("./player-card/1.0.0/authoring-editor.tsx", () => import("./player-card/1.0.0/authoring-editor.tsx")).then((module) => module.playerCardAuthoring)),
   entry("敌人", "1.1.0", () => retryTemplateImport("./adversary/1.1.0/renderer.tsx", () => import("./adversary/1.1.0/renderer.tsx")).then((module) => module.adversaryRendererRevision), () => retryTemplateImport("./adversary/1.1.0/authoring-editor.tsx", () => import("./adversary/1.1.0/authoring-editor.tsx")).then((module) => module.adversaryAuthoring)),
   entry("种族", "1.1.0", () => retryTemplateImport("./ancestry/1.1.0/renderer.tsx", () => import("./ancestry/1.1.0/renderer.tsx")).then((module) => module.ancestryRendererRevision), () => retryTemplateImport("./ancestry/1.1.0/authoring-editor.tsx", () => import("./ancestry/1.1.0/authoring-editor.tsx")).then((module) => module.ancestryAuthoring), true),
   entry("护甲", "1.1.0", () => retryTemplateImport("./armor/1.1.0/renderer.tsx", () => import("./armor/1.1.0/renderer.tsx")).then((module) => module.armorRendererRevision), () => retryTemplateImport("./armor/1.1.0/authoring-editor.tsx", () => import("./armor/1.1.0/authoring-editor.tsx")).then((module) => module.armorAuthoring)),

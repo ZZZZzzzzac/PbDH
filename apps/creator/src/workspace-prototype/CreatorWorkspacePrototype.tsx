@@ -1669,6 +1669,8 @@ export function CreatorWorkspacePrototype({
       case "toggle-package": toggleWorkspacePackage(command.workspaceKey); return;
       case "open-workspace-context":
         switchWorkspace(command.workspaceKey);
+        setWorkspaces((current) => current.map((workspace) => workspace.key === command.workspaceKey
+          ? selectWorkspaceFolder(workspace, null) : workspace));
         setTabletopContextMenu({ kind: "workspace", workspaceKey: command.workspaceKey, x: command.x, y: command.y });
         return;
       case "select-folder": {

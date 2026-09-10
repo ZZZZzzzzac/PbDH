@@ -5,7 +5,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import type { SystemPackageDocument } from "@pbdh/contract-runtime";
+import { computeResourcePackageSnapshotDigest, loadPbres, type ResourcePackageCandidate, type SystemPackageDocument } from "@pbdh/contract-runtime";
+import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
 
 import { installMissingEmbeddedResourcePackages } from "../../apps/player/src/resources/install-embedded-resource-packages.ts";
 import {
@@ -54,7 +55,7 @@ describe("系统包内置 .pbres 安装", () => {
     expect(first.installedPackageIds).toHaveLength(1);
     expect(repository.packages).toHaveLength(1);
     expect(repository.packages.reduce((total, candidate) =>
-      total + candidate.document.resources.length, 0)).toBe(980);
+      total + candidate.document.resources.length, 0)).toBe(640);
     expect(second).toMatchObject({
       installedPackageIds: [],
       unchangedPackageIds: preset.embeddedResourceIndex.map((item) => item.packageId),
@@ -96,6 +97,55 @@ describe("系统包内置 .pbres 安装", () => {
     expect(requestedUrl).toBe("https://preset.invalid/resources/daggerheart-core.pbres?v=0.1.2");
     expect(progress).toContainEqual({ completed: 0.5, total: 1 });
     expect(progress.at(-1)).toEqual({ completed: 1, total: 1 });
+  });
+
+  it("用核心书替换旧混合内置包，并保留用户另行导入的扩展包", async () => {
+    const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
+    const load = async (filePath: string) => {
+      const result = await loadPbres(new Uint8Array(await readFile(filePath)), validateResourcePackageCandidate);
+      expect(result.diagnostics).toEqual([]);
+      if (!result.candidate) throw new Error(`Invalid resource package: ${filePath}`);
+      return result.candidate;
+    };
+    const coreBook = await load("docs/third/daggerheart-core-book.pbres");
+    const expansion = await load("docs/third/daggerheart-hope-and-fear.pbres");
+    const bundled = await load(path.join(packageRoot, "resources/daggerheart-core.pbres"));
+    const packageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
+    expect(bundled.document.package).toMatchObject({ id: packageId, version: "1.0.25" });
+    expect(bundled.document.resources).toEqual(coreBook.document.resources);
+    expect(bundled.document.assets).toEqual(coreBook.document.assets);
+    expect(bundled.document.targets).toEqual(coreBook.document.targets);
+    expect(bundled.document.license).toEqual(coreBook.document.license);
+    expect(preset.embeddedResourceIndex).toEqual([{
+      path: "resources/daggerheart-core.pbres", packageId, snapshotDigest: bundled.document.snapshotDigest,
+    }]);
+
+    const oldDocument = structuredClone(bundled.document);
+    oldDocument.package.version = "1.0.24";
+    oldDocument.resources.push(...expansion.document.resources);
+    oldDocument.assets = [...new Map([...oldDocument.assets, ...expansion.document.assets].map((asset) => [asset.id, asset])).values()];
+    const oldMedia = new Map([...bundled.media, ...expansion.media]);
+    oldDocument.snapshotDigest = await computeResourcePackageSnapshotDigest(oldDocument, oldMedia);
+    expect(oldDocument.resources).toHaveLength(980);
+    const repository = new MemoryRepository();
+    await repository.replace(systemPackage.package.id, { document: oldDocument, media: oldMedia }, "bundled");
+    await repository.replace(systemPackage.package.id, expansion, "file");
+    let fetchCount = 0;
+    const fetchFile: typeof fetch = async () => {
+      fetchCount += 1;
+      return new Response(await readFile(path.join(packageRoot, "resources/daggerheart-core.pbres")));
+    };
+    const input = { systemPackage, embeddedResourceIndex: preset.embeddedResourceIndex,
+      systemPackageBaseUrl: "https://preset.invalid", repository, fetchFile };
+    expect((await installMissingEmbeddedResourcePackages(input)).installedPackageIds).toEqual([packageId]);
+    const installed = repository.packages.find((candidate) => candidate.document.package.id === packageId)!;
+    expect(installed.document).toEqual(bundled.document);
+    expect(installed.document.resources).toHaveLength(640);
+    expect(repository.packages).toHaveLength(2);
+    expect(repository.packages.find((candidate) => candidate.source === "file")?.document).toEqual(expansion.document);
+    expect((await installMissingEmbeddedResourcePackages(input)).unchangedPackageIds).toEqual([packageId]);
+    expect(fetchCount).toBe(1);
   });
 
   it("内置来源发生变化时直接采用当前归档，不比较预设版本或摘要", async () => {
@@ -216,7 +266,7 @@ class MemoryRepository implements ResourcePackageRepository {
     return this.packages.filter((item) => item.systemPackageId === systemPackageId);
   }
 
-  async replace(systemPackageId: string, candidate: StoredResourcePackage, source: StoredResourcePackage["source"]): Promise<void> {
+  async replace(systemPackageId: string, candidate: ResourcePackageCandidate, source: StoredResourcePackage["source"]): Promise<void> {
     this.packages = this.packages.filter((item) =>
       item.systemPackageId !== systemPackageId || item.document.package.id !== candidate.document.package.id);
     this.packages.push({
