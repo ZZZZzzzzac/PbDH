@@ -12,6 +12,8 @@ import {
 } from "./core.ts";
 import { useContainerTextFit } from "./text-fit.ts";
 
+export { renderCanonicalCardToPng } from "./card-image.ts";
+
 export {
   RestrictedMarkdown,
   RestrictedMarkdownRenderer,

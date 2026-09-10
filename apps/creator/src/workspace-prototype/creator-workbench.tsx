@@ -1,10 +1,12 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 
 import { RESOURCE_PACKAGE_VERSION } from "@pbdh/contract-runtime";
+import { renderCanonicalCardToPng } from "@pbdh/resource-renderer/react";
 import { resolveTemplateFrontend, TemplateAuthoringSurface, useTemplateAuthoring, useTemplateCore, TemplateLoadStatus } from "@pbdh/templates/frontend/lazy";
 import { templateUpgradeTargets } from "@pbdh/templates/core/lazy";
 
 import { Icon } from "./creator-controls.tsx";
+import { safeFileName } from "./creator-file-actions.ts";
 import { CreatorColumnResizeHandle, creatorColumnPreferences } from "./creator-layout.tsx";
 import { ReplacementEditor, ResourceAttributionEditor } from "./resource-authoring.tsx";
 import { ResourceIcon, TemplateRuntimePreview, resourceTitle } from "./resource-preview.tsx";
@@ -41,6 +43,10 @@ export function CreatorWorkbench({ snapshot, execute }: {
   const [dropTarget, setDropTarget] = useState<{ key: string; placement: TabDropPlacement } | null>(null);
   const dragRef = useRef<{ pointerId: number; sourceKey: string; startX: number; moved: boolean } | null>(null);
   const suppressTabClickRef = useRef(false);
+  const previewRef = useRef<HTMLElement>(null);
+  const downloadInProgress = useRef(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
   const active = snapshot.activeWorkspace;
   const resource = snapshot.activeResource;
   const authoring = useTemplateAuthoring(resource?.template.id, resource?.template.version);
@@ -58,6 +64,32 @@ export function CreatorWorkbench({ snapshot, execute }: {
     const candidate = workspace.document.resources.find((item) => item.id === resourceId);
     return candidate ? [{ key: resourceTabKey(workspace.key, candidate.id), workspace, candidate }] : [];
   })), snapshot.tabOrder ?? [], (tab) => tab.key);
+
+  async function downloadCardImage() {
+    if (!resource || downloadInProgress.current) return;
+    const host = previewRef.current?.querySelector<HTMLElement>("[data-pbdh-canonical-surface]");
+    if (!host) return;
+    const fileName = `${safeFileName(resourceTitle(resource))}.png`;
+    downloadInProgress.current = true;
+    setDownloading(true);
+    setDownloadError("");
+    try {
+      const blob = await renderCanonicalCardToPng(host);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : "卡图下载失败，请重试。");
+    } finally {
+      downloadInProgress.current = false;
+      setDownloading(false);
+    }
+  }
 
   function dropAt(clientX: number, clientY: number) {
     const element = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-resource-tab-key]");
@@ -170,13 +202,13 @@ export function CreatorWorkbench({ snapshot, execute }: {
 
       <CreatorColumnResizeHandle label="调整编辑区与预览区宽度" value={snapshot.editorColumnShare} preference={creatorColumnPreferences.editor} cssVariable="--creator-editor-share" onChange={(value) => execute({ type: "set-editor-share", value })} />
 
-      <aside className="preview-panel">
+      <aside ref={previewRef} className="preview-panel">
         <header><h1>实时预览</h1><div>
           <div className="card-mode" role="group" aria-label="卡面模式">{(["text", "split", "image"] as const).map((mode) => <button type="button" key={mode} aria-pressed={resource.presentation.mode === mode} onClick={() => execute({ type: "presentation-mode", mode })}>{{ text: "纯文字", split: "图+文", image: "纯图片" }[mode]}</button>)}</div>
           <button type="button" className="fixed-ratio" role="switch" aria-checked={resource.presentation.fixedRatio} onClick={() => execute({ type: "toggle-fixed-ratio" })}><span>固定比例</span><i /></button>
         </div></header>
         {templateFrontend && template ? <TemplateRuntimePreview key={`${active.document.package.id}:${resource.id}:${resource.template.id}:${resource.template.version}`} resource={resource} packageName={active.document.package.name} assets={previewAssets} template={template} /> : <TemplateLoadStatus state={core} />}
-        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "recrop-portrait" })}>重新裁剪</button> : null}{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}</footer>
+        <footer className="preview-media"><span className="media-icon"><Icon name="image" /></span><strong>{resource.media.portrait ? "已设置卡图" : "未设置卡图"}</strong><button type="button" onClick={() => execute({ type: "choose-portrait" })}><Icon name="image" />{resource.media.portrait ? "替换" : "添加"}</button>{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "recrop-portrait" })}>重新裁剪</button> : null}{resource.media.portrait ? <button type="button" onClick={() => execute({ type: "remove-portrait" })}><Icon name="trash" />删除卡图</button> : null}<button type="button" disabled={downloading || !templateFrontend || !template} onClick={() => void downloadCardImage()}><Icon name="download" />{downloading ? "正在生成…" : "下载卡图"}</button>{downloadError && <span role="alert">{downloadError}</span>}</footer>
       </aside>
     </div> : <div className="closed-tabs-empty"><strong>没有打开的资源</strong></div>}
   </section>;
