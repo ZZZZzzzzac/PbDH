@@ -17,6 +17,12 @@ Package、Market 或云存储。
 - `zzz`：`ZZZZzzzzac/DaggerHeart_Character@64e6a4484dd1daf9b93779dcf7aaea6e512efde4`
 - `dhsheet`：`RidRisR/DaggerHeart-CharacterSheet@fdc1f9e1423a5e044fc547b84f4dbe02af6a5b38`
 
+Rink 导入支持单个 JSON（对象或数组），以及每个 JSON 文件包含一个资源对象的 ZIP。
+ZIP 内的相对目录和文件名直接成为资源 path，不移除顶层目录，也不按模板重新分类；
+UTF-8 文件名按 ZIP 标记读取，未标记的旧中文文件名按 GBK/GB18030 解码。
+图片和其他非 JSON 成员完全忽略。坏记录按成员路径报告，不安全路径和路径重名拒绝整包；
+ZIP 最多 1000 个成员，JSON 解压后总量最多 64 MiB。导出仍使用原有 JSON 格式。
+
 未裁定的字段损失不会静默接受。Adapter 返回 `decision-required` 诊断，由后续逐
 Template 策略决定允许、拒绝或采用显式降级映射。
 

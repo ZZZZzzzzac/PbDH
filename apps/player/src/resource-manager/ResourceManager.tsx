@@ -483,7 +483,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
 
   return <div className="resource-manager-layer" style={style}>
     <section className="player-package-manager" role="dialog" aria-modal="true" aria-label="资源管理器">
-      <header className="manager-bar"><h1>资源管理器</h1><span>{operation === "checking" ? <OperationStatus label="正在检查资源包…" /> : operation === "converting" ? <OperationStatus label="正在转换资源…" /> : currentSystem.package.name}</span><div className="manager-import-actions"><button className="install" disabled={Boolean(operation)} onClick={() => inputRef.current?.click()}>导入pbres格式</button>{thirdPartyFormats.map((format) => <button key={format.id} type="button" disabled={Boolean(operation)} onClick={() => { conversionFormatRef.current = format.id; if (conversionInputRef.current) { conversionInputRef.current.accept = format.id === "dhsheet" ? ".json,.dhcb" : ".json,.dhcb,.png,application/json,image/png"; conversionInputRef.current.click(); } }}>{format.label}</button>)}</div><button className="close" aria-label="关闭资源管理器" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
+      <header className="manager-bar"><h1>资源管理器</h1><span>{operation === "checking" ? <OperationStatus label="正在检查资源包…" /> : operation === "converting" ? <OperationStatus label="正在转换资源…" /> : currentSystem.package.name}</span><div className="manager-import-actions"><button className="install" disabled={Boolean(operation)} onClick={() => inputRef.current?.click()}>导入pbres格式</button>{thirdPartyFormats.map((format) => <button key={format.id} type="button" disabled={Boolean(operation)} onClick={() => { conversionFormatRef.current = format.id; if (conversionInputRef.current) { conversionInputRef.current.accept = format.id === "dhsheet" ? ".json,.dhcb" : format.id === "rinkcx" ? ".json,.zip,application/json,application/zip" : ".json,.dhcb,.png,application/json,image/png"; conversionInputRef.current.click(); } }}>{format.label}</button>)}</div><button className="close" aria-label="关闭资源管理器" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
       <div className="manager-body">
         <aside className="package-list"><div className="list-title"><h2>已安装资源包</h2><span>{packages.length}</span></div>
           <input aria-label="搜索资源包" placeholder="搜索资源包" value={packageQuery} onChange={(event) => setPackageQuery(event.target.value)} />
@@ -530,6 +530,7 @@ function resourceTargetLabel(document: ResourcePackageCandidate["document"]): st
 function resourceContainer(fileName: string): ResourceContainer {
   const extension = fileName.split(".").at(-1)?.toLocaleLowerCase();
   if (extension === "dhcb") return "dhcb";
+  if (extension === "zip") return "zip";
   if (extension === "png") return "png";
   return "json";
 }

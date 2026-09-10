@@ -5,7 +5,7 @@ export type JsonValue = JsonPrimitive | JsonValue[] | JsonObject;
 export type JsonObject = { [key: string]: JsonValue };
 
 export type ResourceFormatId = "pbres" | "rinkcx" | "kid" | "dhsheet" | "zzz";
-export type ResourceContainer = "json" | "dhcb" | "pbres" | "png";
+export type ResourceContainer = "json" | "zip" | "dhcb" | "pbres" | "png";
 export type ResourceKind =
   | "adversary"
   | "environment"

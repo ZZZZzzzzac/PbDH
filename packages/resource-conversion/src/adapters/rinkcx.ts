@@ -1,3 +1,4 @@
+import { readRinkZip } from "./rinkcx-zip.ts";
 import {
   asJsonObject,
   exportFailure,
@@ -181,6 +182,40 @@ export const rinkcxAdapter: ResourceFormatAdapter = {
   id: "rinkcx",
   upstreamRevision,
   import(input) {
+    if (input.container === "zip" || /\.zip$/iu.test(input.fileName)) {
+      let files: Map<string, Uint8Array>;
+      try {
+        files = readRinkZip(input.bytes);
+      } catch (error) {
+        return importFailure("rinkcx", "rinkcx.zip.invalid", error instanceof Error ? error.message : "RinkCX ZIP 无法解析。");
+      }
+      if (files.size === 0) return importFailure("rinkcx", "rinkcx.zip.empty", "RinkCX ZIP 中没有 JSON 资源。");
+      const resources: TemporaryResource[] = [];
+      const diagnostics: ConversionDiagnostic[] = [];
+      for (const [path, bytes] of files) {
+        let value: unknown;
+        try {
+          value = parseJson(bytes);
+        } catch {
+          diagnostics.push({ code: "rinkcx.json.invalid", severity: "error", message: "RinkCX JSON 无法解析。", path });
+          continue;
+        }
+        const parsed = parseRecord(value, resources.length);
+        if ("severity" in parsed) diagnostics.push({ ...parsed, path });
+        else resources.push({ ...parsed, sourceId: path, source: { ...parsed.source, path } });
+      }
+      if (resources.length === 0) return { ok: false, report: report("rinkcx", "import", 0, diagnostics) };
+      return {
+        ok: true,
+        batch: {
+          name: input.fileName.replace(/\.zip$/iu, ""),
+          resources,
+          sourceDocument: { formatId: "rinkcx", upstreamRevision, container: "zip" },
+          media: new Map(),
+        },
+        report: report("rinkcx", "import", resources.length, diagnostics),
+      };
+    }
     let document: unknown;
     try {
       document = parseJson(input.bytes);

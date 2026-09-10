@@ -152,7 +152,9 @@ export async function materializeResourceConversion(input: {
       if (!template) throw new Error(`可信资源模板不可用：${item.template.id}@${item.template.version}`);
       return {
         id: uuidV7(),
-        path: materializedResourcePath(
+        path: input.batch.sourceDocument.formatId === "rinkcx" && input.batch.sourceDocument.container === "zip"
+          ? mappedResources[index]!.source.path
+          : materializedResourcePath(
           input.batch.sourceDocument.formatId,
           item.template.id,
           item.data,

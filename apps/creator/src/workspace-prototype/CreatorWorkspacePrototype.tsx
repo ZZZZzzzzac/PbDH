@@ -1643,7 +1643,9 @@ export function CreatorWorkspacePrototype({
         if (conversionImportRef.current) {
           conversionImportRef.current.accept = command.formatId === "dhsheet"
             ? ".json,.dhcb"
-            : ".json,.dhcb,.png,application/json,image/png";
+            : command.formatId === "rinkcx"
+              ? ".json,.zip,application/json,application/zip"
+              : ".json,.dhcb,.png,application/json,image/png";
           conversionImportRef.current.click();
         }
         return;
