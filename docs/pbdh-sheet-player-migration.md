@@ -40,7 +40,9 @@
 - Sheet Runtime 条目 ID 使用 `Resource Package ID + 包内 Resource ID`，避免不同资源包的同 ID 条目互相覆盖；该 ID 只存在于运行投影中。
 - `.pbres` 媒体在 Runtime 投影中使用确定性虚拟路径，实际字节继续由已安装资源仓储拥有，渲染时才产生浏览器 Object URL。
 
-## 当前进度
+## 初次迁移记录
+
+以下数量、版本和校验结果是迁移时的历史证据，不代表当前发布状态；当前制品以系统包清单为准。
 
 - Daggerheart Core 已生成为单个 `daggerheart-core.pbres`，包含 625 个资源和 280 个唯一媒体资产；`.pbres` 不再受压缩归档总字节数限制。
 - Player 首次加载会安装缺失的内置资源包；相同摘要保持幂等，更高本地版本不会被预置包覆盖。
@@ -60,7 +62,7 @@
 - `src/domain/characterData.ts` 的勾选项兼容行为迁入 `apps/player/src/sheet-runtime/domain/characterData.ts`：导入时丢弃无效旧选项并警告，保留有效勾选；不建立旧 Sheet 存档直接读取通道，不修改数据库 schema。
 - 平台原生 TTTRI Character Data 从 `1.0.0` 升至 `1.1.0`，通过已有版本升级流程执行包内 `adapters/scripts/upgrade-advancement.js`；只移除废弃领取选项、给第二格技艺交流补默认未选中值，不改其他升级、特性、数值。系统包 `1.1.0`，资源包 `2.1.0`。
 - 验证覆盖新增分支、晋升奖励、两格技艺交流、规则勘误、原生资源加载及旧勾选保留。旧源测试 `src/test/tttri{Package,Validation,CharacterFormatAdapter}.test.ts` 作为行为证据，在当前 Player 测试中重建断言。
-- 可重放生成入口：`npx tsx scripts/sync-tttri-sheet-update.ts D:/Fish/TRPG/PbDH_sheet`，之后运行 `npx tsx scripts/sync-bundled-system-package-metadata.ts`。脚本只读固定 Git 提交，不依赖源仓库工作区，也不复制其发布配置。
+- 一次性同步已完成，旧同步脚本已移除，避免将后续平台适配覆盖回固定上游版本。来源 commit、原路径和映射保留在本节；后续更新需重新比较上游与当前实现。
 - 结果：新增 40 项、更新 17 项；568 个资源、281 个媒体，归档 25,149,368 bytes。全量前端 111 文件/911 测试、类型检查、内置包一致性和构建通过。真实本地 Player 显示 TTTRI 1.1.0，子职选择器 280 项，排陷手包含五个阶段。完整 `verify` 被既有 `.pytest-native` 目录权限错误阻断，未记为通过；尚未人工确认真实旧人物升级。
 
 ## HTML 与 PDF 输出
