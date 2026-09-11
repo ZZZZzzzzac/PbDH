@@ -66,7 +66,7 @@ describe("Platform App Bar style isolation", () => {
     expect(stylesheet).toContain(".pbdh-platform-trash-dialog");
     expect(source).toContain("永久删除回收站中的全部 ${items.length} 项（包含本机和云端内容）？删除后不能恢复。");
     expect(source).toContain("onClick={() => void deleteAll()}");
-    expect(source).toContain('if (operation || status !== "ready" || error || !items.length) return;');
+    expect(source).toContain('if (operation || loading || error || loadErrors.length || !items.length) return;');
     expect(stylesheet).toContain(".pbdh-platform-trash-footer");
   });
 

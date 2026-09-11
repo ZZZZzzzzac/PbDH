@@ -26,7 +26,7 @@ import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { CreatorWorkspace, WorkspaceNodeRef } from "./workspace-model.ts";
 
 export type CloudDocumentKind = Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">;
-export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "convert-package" | "export-package" | "publication-cover" | "upgrade-templates" | "prepare-tabletop";
+export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "import-package" | "convert-package" | "export-package" | "publication-cover" | "upgrade-templates" | "prepare-tabletop";
 
 export type CreatorConversionReview = {
   formatId: Exclude<ResourceFormatId, "pbres">;
@@ -51,7 +51,7 @@ export type CreatorDialogState =
   | { kind: "delete-workspace-node"; workspaceKey: string; node: WorkspaceNodeRef; name: string }
   | { kind: "delete-selected-resources"; selections: WorkspaceResourceSelection[] }
   | { kind: "copy-resource-to-package"; sources: WorkspaceCopySource[]; name: string }
-  | { kind: "close-workspace"; workspaceKey: string; name: string }
+  | { kind: "trash-workspace"; workspaceKey: string; name: string }
   | { kind: "new-tabletop" }
   | { kind: "rename-tabletop"; tabletopId: string }
   | { kind: "delete-tabletop"; tabletopId: string; name: string }
@@ -65,7 +65,7 @@ export type CreatorDialogCommand =
   | { type: "set-new-name" | "set-copy-package-name" | "set-tabletop-name"; value: string }
   | { type: "set-package-info"; value: ResourcePackageEditorValue }
   | { type: "create-resource"; template: TemplateCoreCapability<any>; workspaceKey: string }
-  | { type: "save-package" | "close-workspace"; workspaceKey: string }
+  | { type: "save-package" | "trash-workspace"; workspaceKey: string }
   | { type: "upgrade-templates"; workspaceKey: string; selections: readonly TemplateUpgradeDialogSelection[] }
   | { type: "export-conversion" | "accept-conversion"; review: CreatorConversionReview }
   | { type: "commit-incoming" | "save-aside"; incoming: ResourcePackageCandidate; handoff?: CreatorMarketHandoff }
@@ -190,7 +190,7 @@ export function CreatorDialogs({
     {dialog.kind === "delete-selected-resources" && <><h2>批量删除资源</h2><p>删除已选的 {dialog.selections.length} 个资源？此操作会从对应资源包中移除它们。</p><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" onClick={() => execute({ type: "delete-selected-resources", selections: dialog.selections })}>删除</button></div></>}
     {dialog.kind === "copy-resource-to-package" && <><h2>复制“{dialog.name}”到资源包</h2><p>复制后是独立资源，修改副本不会影响原资源。有关联的切换形态时会一起复制。</p><div className="conflict-choices">{snapshot.workspaces.filter((workspace) => !dialog.sources.some((source) => source.workspaceKey === workspace.key)).map((workspace) => <button type="button" key={workspace.key} onClick={() => execute({ type: "copy-resource", sources: dialog.sources, targetWorkspaceKey: workspace.key })}>{workspace.document.package.name}</button>)}</div>
       {snapshot.workspaces.length <= 1 && <p>可以在下面直接新建资源包。</p>}<Field className="dialog-field" label="新资源包名称" value={snapshot.copyPackageName} onChange={(value) => execute({ type: "set-copy-package-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.copyPackageName.trim()} onClick={() => execute({ type: "copy-resource-to-new-package", sources: dialog.sources })}>新建并复制</button></div></>}
-    {dialog.kind === "close-workspace" && <><h2>移到回收站</h2><p>{dialog.name}</p><div className="dialog-actions"><button type="button" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close-workspace", workspaceKey: dialog.workspaceKey })}>{snapshot.creatorOperation === "trash-workspace" ? <OperationStatus label="正在移到回收站…" /> : "移到回收站"}</button></div></>}
+    {dialog.kind === "trash-workspace" && <><h2>移到回收站</h2><p>{dialog.name}</p><div className="dialog-actions"><button type="button" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "trash-workspace", workspaceKey: dialog.workspaceKey })}>{snapshot.creatorOperation === "trash-workspace" ? <OperationStatus label="正在移到回收站…" /> : "移到回收站"}</button></div></>}
     {dialog.kind === "new-tabletop" && <><h2>新建桌面</h2><Field className="dialog-field" label="名称" value={snapshot.tabletopName} onChange={(value) => execute({ type: "set-tabletop-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.tabletopName.trim()} onClick={() => execute({ type: "create-tabletop" })}>创建</button></div></>}
     {dialog.kind === "rename-tabletop" && <><h2>重命名桌面</h2><Field className="dialog-field" label="名称" value={snapshot.tabletopName} onChange={(value) => execute({ type: "set-tabletop-name", value })} /><div className="dialog-actions"><button type="button" onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="primary" disabled={!snapshot.tabletopName.trim()} onClick={() => execute({ type: "rename-tabletop", tabletopId: dialog.tabletopId })}>保存</button></div></>}
     {dialog.kind === "delete-tabletop" && <><h2>{snapshot.tabletopSync.get(dialog.tabletopId)?.scope === "cloud" ? "移到回收站" : "删除桌面"}</h2><p>{dialog.name}</p><div className="dialog-actions"><button type="button" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "close" })}>取消</button><button type="button" className="danger" disabled={Boolean(snapshot.creatorOperation)} onClick={() => execute({ type: "delete-tabletop", tabletopId: dialog.tabletopId })}>{snapshot.creatorOperation === "trash-tabletop" ? <OperationStatus label="正在移到回收站…" /> : "移到回收站"}</button></div></>}

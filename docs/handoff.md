@@ -1,14 +1,44 @@
 # 开发交接
 
-整理日期：2026-09-10。以下是已有交接记录的收敛，不代表本次重新检查了线上状态。已完成的发布流水、阶段停点和旧测试计数不再重复保留；历史可从 Git 查询，发布与恢复操作见 [部署说明](../deploy/README.md)。
+整理日期：2026-09-11。当前目标版本 **v0.1.18**，部署回执待发布完成后补充。历史可从 Git 查询，发布与恢复操作见 [部署说明](../deploy/README.md)。
+
+## 本次修复（工作区优先）
+
+- 工作区优先：`saveImported` 可原子替换本机同 ID 的 trash 文档；普通 `save` 不可复活已删除文档。
+- 云端同 ID 删除记录只暂停 Creator 工作区同步，不删除本机资源包。
+- 资源包回收站恢复不覆盖已有活动工作区。
+- 完整文档信封在事务内比较，拒绝过时快照的覆盖与删除。
+- `mergeWorkspaceSnapshot` 按 baseline 与指定目标接纳：保留新编辑与新建，不复活请求期间删除；GM 快照不改 workspace。
+- 异步 `export/publish/upgrade/image/metadata` 结果不覆盖其后的编辑。
+- 编辑立即排队，flush 后执行云动作；导入新建保存成功后再显示；初始读取失败不置 ready。
+- 回收站 6 个独立来源、部分失败仍显示其余、失败禁用全部删除、不显示假空、15s 超时重试与来源阶段中文诊断、到期清理同事务防重复。
+- 无 schema 更改，无迁移。
+
+## 验证状态
+
+- 本轮最终 `npm run verify` 通过：142 个 TypeScript 测试文件、1,251 个测试，170 个 Python 测试；依赖边界、Contract、类型检查、渲染测量与前端构建均通过。
+- 回归入口：`tests/creator/creator-workspace-repository.test.ts`、`cloud-document-service.test.ts`、`workspace-persistence.test.tsx`、`workspace-snapshot.test.ts`，以及 `tests/local-storage/local-document-store.test.ts`、`tests/platform-ui/platform-trash.test.tsx`。
+- 本地真实工坊页面可加载；未用真实账号数据执行破坏性验收。
 
 ## 最近交付与未结事项
 
-- 最近记录的部署为 v0.1.14（`bdd755f`）：修复 dhsheet 资源包导出的名称声明、施法值及变体效果。回归入口为 `tests/resource-conversion/resource-conversion.test.ts`。
-- 上游严格校验器曾通过 1,004 张卡，尚未收到用户在 dhsheet 页面实际导入成功的反馈。若继续报错，核对是否刷新后重新导出，并收集具体报错；不依赖已清理的本机临时修正版和脚本。
+- 历史记录：v0.1.14（`bdd755f`）曾记录为最近部署，修复 dhsheet 资源包导出的名称声明、施法值及变体效果；该部署声明降级为历史记录保留。回归入口 `tests/resource-conversion/resource-conversion.test.ts`。
+- 上游严格校验器曾通过 1,004 张卡，尚未收到用户在 dhsheet 页面实际导入成功的反馈。若继续报错，核对是否刷新后重新导出并收集具体报错；不依赖已清理的本机临时修正版和脚本。dhsheet 需求未结。
 - 旧记录中的云端 Creator Workspace `contract.schema.invalid` 尚无明确关闭证据；再次遇到时按真实文档复现，不放宽校验绕过。
 - 大量卡牌的 PDF 预览卡顿按用户要求暂缓；分页末行已在此前完成成品验收。
 - 历史幂等回执压缩没有执行；`scripts/compact-cloud-receipts.py` 保留。执行数据处理仍需单独授权和备份。
+
+## 残余风险
+
+- 用户 Edge 原 `UnknownError` 底层未真实复现，只复现并修复了并发清理与错误放大。
+- 本机旧 GM 文档 `Invalid stored Tabletop Document: contract.version.unsupported` 未修复未清理。
+- 已永久丢失的数据不会自动恢复。
+- 线上验收待工作流与 HTTP 版本 health 确认。
+
+## 发布状态
+
+- 拟发布 v0.1.18；当前源码未提交、未推送、未部署。
+- 最新 GitHub Release 为 v0.1.17，仅确认发布，不代表已部署。
 
 ## 运维边界
 

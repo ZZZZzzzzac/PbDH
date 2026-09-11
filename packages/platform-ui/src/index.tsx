@@ -81,6 +81,8 @@ export type PlatformTrashItem = {
 
 export type PlatformTrashSource = {
   id: string;
+  label?: string;
+  location?: "local" | "cloud";
   list(): Promise<PlatformTrashItem[]>;
   restore(itemId: string): Promise<void>;
   deletePermanently(itemId: string): Promise<void>;
@@ -302,23 +304,40 @@ function PlatformTrashDialog({
   const [items, setItems] = useState<Array<PlatformTrashItem & { sourceId: string }>>([]);
   const [status, setStatus] = useState<"loading" | "ready">("loading");
   const [error, setError] = useState("");
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
+  const [loadedSources, setLoadedSources] = useState(sources);
+  const currentSources = useRef(sources);
+  currentSources.current = sources;
+  const requestSequence = useRef(0);
   const [operation, setOperation] = useState<{ key: string; action: "restore" | "delete" } | null>(null);
-  const refresh = useCallback(async (showLoading = true) => {
-    if (showLoading) setStatus("loading");
+  const refresh = useCallback(async () => {
+    const sequence = ++requestSequence.current;
+    setStatus("loading");
+    setItems([]);
+    setLoadedSources(sources);
+    setLoadErrors([]);
     setError("");
-    try {
-      const groups = await Promise.all(sources.map(async (source) =>
-        (await source.list()).map((item) => ({ ...item, sourceId: source.id }))));
-      setItems(groups.flat().sort((left, right) => right.deletedAt.localeCompare(left.deletedAt)));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "回收站读取失败");
-    } finally {
-      setStatus("ready");
-    }
+    const groups = await Promise.allSettled(sources.map(readTrashSource));
+    if (sequence !== requestSequence.current || currentSources.current !== sources) return;
+    const nextItems: Array<PlatformTrashItem & { sourceId: string }> = [];
+    const failures: string[] = [];
+    groups.forEach((group, index) => {
+      const source = sources[index]!;
+      if (group.status === "fulfilled") nextItems.push(...group.value.map((item) => ({ ...item, sourceId: source.id })));
+      else failures.push(trashFailure(source, "读取", group.reason));
+    });
+    setItems(nextItems.sort((left, right) => right.deletedAt.localeCompare(left.deletedAt)));
+    setLoadErrors(failures);
+    setStatus("ready");
   }, [sources]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    return () => { requestSequence.current += 1; };
+  }, [refresh]);
+  const loading = status === "loading" || loadedSources !== sources;
+  const visibleItems = loadedSources === sources ? items : [];
   const act = async (item: PlatformTrashItem & { sourceId: string }, action: "restore" | "delete") => {
-    if (operation) return;
+    if (operation || loading) return;
     const source = sources.find((candidate) => candidate.id === item.sourceId);
     if (!source) return;
     if (action === "delete" && !window.confirm(`永久删除“${item.name}”？删除后不能恢复。`)) return;
@@ -328,49 +347,107 @@ function PlatformTrashDialog({
     try {
       if (action === "restore") await source.restore(item.id);
       else await source.deletePermanently(item.id);
-      await refresh(false);
+      if (currentSources.current === sources) await refresh();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "回收站操作失败");
+      if (currentSources.current === sources) setError(trashFailure(source, action === "restore" ? "恢复" : "永久删除", reason, item.name));
     } finally {
       setOperation(null);
     }
   };
   const deleteAll = async () => {
-    if (operation || status !== "ready" || error || !items.length) return;
+    if (operation || loading || error || loadErrors.length || !items.length) return;
     if (!window.confirm(`永久删除回收站中的全部 ${items.length} 项（包含本机和云端内容）？删除后不能恢复。`)) return;
     setOperation({ key: "all", action: "delete" });
     let failure = "";
     try {
       for (const item of items) {
+        if (currentSources.current !== sources) break;
         const source = sources.find((candidate) => candidate.id === item.sourceId);
         if (!source) throw new Error(`无法删除“${item.name}”：来源不可用。`);
         try {
           await source.deletePermanently(item.id);
         } catch (reason) {
-          throw new Error(`删除“${item.name}”失败：${reason instanceof Error ? reason.message : "请重试"}`);
+          failure = trashFailure(source, "永久删除", reason, item.name);
+          break;
         }
       }
     } catch (reason) {
       failure = reason instanceof Error ? reason.message : "全部删除失败";
     } finally {
-      await refresh(false);
-      if (failure) setError(failure);
+      if (currentSources.current === sources) {
+        await refresh();
+        if (failure) setError(failure);
+      }
       setOperation(null);
     }
   };
   return <div className="pbdh-platform-trash-backdrop" role="presentation">
     <section className="pbdh-platform-trash-dialog" role="dialog" aria-modal="true" aria-label="回收站">
       <header><div><strong>回收站</strong><small>内容保留 30 天，之后自动永久删除</small></div><button type="button" aria-label="关闭回收站" disabled={Boolean(operation)} onClick={onClose}>×</button></header>
+      <div className="pbdh-platform-trash-body">
       {error ? <p className="pbdh-platform-trash-error" role="alert">{error}</p> : null}
-      {status === "loading" ? <p className="pbdh-platform-trash-empty">正在读取…</p> : items.length === 0
-        ? <p className="pbdh-platform-trash-empty">回收站为空</p>
-        : <ol>{items.map((item) => <li key={`${item.sourceId}:${item.id}`}>
+      {!loading && loadErrors.length > 0 ? <div className="pbdh-platform-trash-error" role="alert">{loadErrors.map((message) => <p key={message}>{message}</p>)}</div> : null}
+      {loading ? <p className="pbdh-platform-trash-empty">正在读取…</p> : visibleItems.length === 0
+        ? <p className="pbdh-platform-trash-empty">{loadErrors.length ? "回收站未能完整读取，无法确认是否为空" : "回收站为空"}</p>
+        : <ol>{visibleItems.map((item) => <li key={`${item.sourceId}:${item.id}`}>
           <div><strong>{item.name}</strong><small>{item.documentType} · {item.location === "cloud" ? "云端" : "本机"}{remainingDays(item.purgeAfter)}</small></div>
           <div><button type="button" disabled={Boolean(operation)} onClick={() => void act(item, "restore")}>{operation?.key === `${item.sourceId}:${item.id}` && operation.action === "restore" ? <OperationStatus label="正在恢复…" /> : "恢复"}</button><button type="button" className="danger" disabled={Boolean(operation)} onClick={() => void act(item, "delete")}>{operation?.key === `${item.sourceId}:${item.id}` && operation.action === "delete" ? <OperationStatus label="正在删除…" /> : "永久删除"}</button></div>
         </li>)}</ol>}
-      <footer className="pbdh-platform-trash-footer"><span>{items.length} 项</span><button type="button" className="danger" disabled={status !== "ready" || !items.length || Boolean(operation) || Boolean(error)} onClick={() => void deleteAll()}>{operation?.key === "all" ? <OperationStatus label="正在全部删除…" /> : <><BarIcon kind="trash" />全部删除</>}</button>{error && <button type="button" disabled={Boolean(operation)} onClick={() => void refresh()}>刷新</button>}</footer>
+      </div>
+      <footer className="pbdh-platform-trash-footer"><span>{loading ? "正在读取" : loadErrors.length ? visibleItems.length ? `已读取 ${visibleItems.length} 项 · 列表不完整` : "列表未完整读取" : `${visibleItems.length} 项`}</span><button type="button" className="danger" disabled={loading || !visibleItems.length || Boolean(operation) || Boolean(error) || loadErrors.length > 0} onClick={() => void deleteAll()}>{operation?.key === "all" ? <OperationStatus label="正在全部删除…" /> : <><BarIcon kind="trash" />全部删除</>}</button><button type="button" disabled={loading || Boolean(operation)} onClick={() => void refresh()}>刷新</button></footer>
     </section>
   </div>;
+}
+
+function readTrashSource(source: PlatformTrashSource): Promise<PlatformTrashItem[]> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new DOMException("", "TimeoutError")), 15_000);
+    Promise.resolve().then(() => source.list()).then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
+function trashFailure(source: PlatformTrashSource, action: string, reason: unknown, itemName?: string): string {
+  const failure = reason && typeof reason === "object" ? reason as { name?: string; message?: string; code?: string; status?: number; stage?: string; cause?: unknown } : {};
+  const cause = failure.cause && typeof failure.cause === "object" ? failure.cause as { name?: string } : failure;
+  const local = source.location === "local";
+  const stage = failure.stage === "cleanup" ? "清理过期记录" : action;
+  let code = local ? "TRASH_LOCAL_STORAGE" : "TRASH_LOAD_FAILED";
+  let guidance = local
+    ? "浏览器本地存储未能完成操作。请关闭本站其他标签页后重试；仍失败请重启浏览器。不要清除网站数据。"
+    : "请检查网络后刷新重试；仍失败请将此提示反馈给维护者。";
+  if (failure.message === "工作区已有同 ID 资源包，已保留工作区内容，不能用回收站版本覆盖。") {
+    code = "TRASH_ACTIVE_WORKSPACE_EXISTS";
+    guidance = "工作区已有同 ID 资源包。工作区内容优先，未用回收站版本覆盖。";
+  } else if (failure.name === "LocalDocumentChangedError") {
+    code = "TRASH_LOCAL_DOCUMENT_CHANGED";
+    guidance = "操作期间本地内容已更新，已停止处理旧版本。请先导出当前内容备份，再确认操作。";
+  } else if (cause.name === "TimeoutError") {
+    code = "TRASH_TIMEOUT";
+    guidance = "等待超过 15 秒，请刷新重试；本机来源可尝试重启浏览器，云端来源请检查网络。";
+  } else if (cause.name === "QuotaExceededError") {
+    code = "TRASH_STORAGE_QUOTA";
+    guidance = "浏览器存储空间不足。请释放设备空间后重试，不要清除本站数据。";
+  } else if (cause.name === "SecurityError" || cause.name === "NotAllowedError") {
+    code = "TRASH_STORAGE_BLOCKED";
+    guidance = "浏览器阻止了存储访问。请检查本站权限与隐私设置后重试，不要清除网站数据。";
+  } else if (source.location === "cloud") {
+    code = "TRASH_CLOUD_REQUEST";
+    guidance = "云端请求未能完成。请检查网络和登录状态后刷新重试；仍失败请将此提示反馈给维护者。";
+    if (failure.status === 401) {
+      code = "TRASH_SIGN_IN_REQUIRED";
+      guidance = "登录状态已失效，请重新登录后重试。本机回收站不受影响。";
+    } else if (failure.status === 403) {
+      code = "TRASH_PERMISSION_DENIED";
+      guidance = "当前账号或会话没有操作权限，请检查登录账号与活动会话后重试。";
+    } else if (failure.status === 404 || failure.status === 409) {
+      code = "TRASH_DOCUMENT_CHANGED";
+      guidance = "云端文档已不存在或状态已改变，请刷新列表后确认；不要重复提交旧操作。";
+    } else if (failure.status && failure.status >= 500) {
+      code = "TRASH_SERVER_ERROR";
+      guidance = "云端服务暂时异常，请稍后刷新重试；持续失败请反馈给维护者。";
+    }
+  }
+  return `${source.label ?? source.id}${itemName ? `“${itemName}”` : ""}：${stage}失败。${guidance}（${code}）`;
 }
 
 function remainingDays(purgeAfter: string | null): string {

@@ -222,6 +222,7 @@ export function PlayerSheetSurface({
   );
   const credentialsRef = useRef(auth.credentials);
   credentialsRef.current = auth.credentials;
+  const accountId = auth.credentials?.accountId ?? null;
   const libraryRef = useRef<ResourceLibrary>(new Map());
   const runtimeStorageRef = useRef<PlatformRuntimeStorage | null>(null);
   const runtimeStorage = useMemo(() => new PlatformRuntimeStorage({
@@ -861,52 +862,68 @@ export function PlayerSheetSurface({
 
   const playerTrashSource = useMemo<PlatformTrashSource>(() => ({
     id: "player-character-saves",
+    label: "本机人物存档",
+    location: "local",
     async list() {
-      const local = (await characterSaveRepository.listTrashMetadata()).map((item) => ({
-        id: `local:${item.document.documentId}`,
+      return (await characterSaveRepository.listTrashMetadata()).map((item) => ({
+        id: item.document.documentId,
         name: item.document.name || "未命名角色",
         documentType: "人物存档" as const,
         location: "local" as const,
         deletedAt: item.deletedAt,
         purgeAfter: item.purgeAfter,
       }));
+    },
+    async restore(documentId) {
+      await characterSaveRepository.restore(documentId);
+      await reloadActiveSystemPackage();
+    },
+    async deletePermanently(documentId) {
+      await characterSaveRepository.deleteFromTrash(documentId);
+    },
+  }), [characterSaveRepository]);
+  usePlatformTrashSource(playerTrashSource);
+
+  // 账号变化时重建来源，避免回收站用新账号去读取或操作旧账号的云端存档。
+  const playerCloudTrashSource = useMemo<PlatformTrashSource>(() => ({
+    id: "player-character-saves-cloud",
+    label: "云端人物存档",
+    location: "cloud",
+    async list() {
       const credentials = credentialsRef.current;
-      if (!credentials) return local;
-      const cloud = (await cloudDocumentService.listTrash(credentials)).map((remote) => ({
-        id: `cloud:${remote.documentId}`,
+      if (!credentials || credentials.accountId !== accountId) return [];
+      return (await cloudDocumentService.listTrash(credentials)).map((remote) => ({
+        id: remote.documentId,
         name: remoteDocumentName(remote),
         documentType: "人物存档" as const,
         location: "cloud" as const,
         deletedAt: remote.deletedAt!,
         purgeAfter: remote.purgeAfter,
       }));
-      return [...local, ...cloud];
     },
-    async restore(itemId) {
-      const [location, documentId] = splitTrashItemId(itemId);
-      if (location === "local") await characterSaveRepository.restore(documentId);
-      else {
-        const credentials = credentialsRef.current;
-        if (!credentials) throw new Error("请先登录再恢复云端人物存档。");
-        const remote = (await cloudDocumentService.listTrash(credentials))
-          .find((item) => item.documentId === documentId);
-        if (!remote) throw new Error("云端回收站里找不到这个人物存档。");
-        await cloudDocumentService.restoreFromTrash(remote, credentials);
+    async restore(documentId) {
+      const credentials = credentialsRef.current;
+      if (!credentials || credentials.accountId !== accountId) {
+        throw new Error("请先登录再恢复云端人物存档。");
       }
+      const remote = (await cloudDocumentService.listTrash(credentials))
+        .find((item) => item.documentId === documentId);
+      if (!remote) throw new Error("云端回收站里找不到这个人物存档。");
+      await cloudDocumentService.restoreFromTrash(remote, credentials);
       await reloadActiveSystemPackage();
     },
-    async deletePermanently(itemId) {
-      const [location, documentId] = splitTrashItemId(itemId);
-      if (location === "local") return characterSaveRepository.deleteFromTrash(documentId);
+    async deletePermanently(documentId) {
       const credentials = credentialsRef.current;
-      if (!credentials) throw new Error("请先登录再永久删除云端人物存档。");
+      if (!credentials || credentials.accountId !== accountId) {
+        throw new Error("请先登录再永久删除云端人物存档。");
+      }
       const remote = (await cloudDocumentService.listTrash(credentials))
         .find((item) => item.documentId === documentId);
       if (!remote) throw new Error("云端回收站里找不到这个人物存档。");
       await cloudDocumentService.deleteFromTrash(remote, credentials);
     },
-  }), [characterSaveRepository, cloudDocumentService]);
-  usePlatformTrashSource(playerTrashSource);
+  }), [accountId, cloudDocumentService]);
+  usePlatformTrashSource(playerCloudTrashSource);
 
   function currentEmbeddedPackageIndex(): Map<string, unknown> {
     if (currentCatalogEntry) {
@@ -1339,15 +1356,6 @@ function remoteDocumentName(remote: RemoteCloudDocument): string {
     if (typeof name === "string" && name.trim()) return name;
   }
   return "未命名角色";
-}
-
-function splitTrashItemId(itemId: string): ["local" | "cloud", string] {
-  const separator = itemId.indexOf(":");
-  const location = itemId.slice(0, separator);
-  if ((location !== "local" && location !== "cloud") || separator < 0) {
-    throw new Error("回收站项目编号无效。");
-  }
-  return [location, itemId.slice(separator + 1)];
 }
 
 function safeFileName(value: string): string {
