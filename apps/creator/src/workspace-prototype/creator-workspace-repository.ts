@@ -5,6 +5,7 @@ import {
 } from "@pbdh/cloud-documents";
 import {
   DexieLocalDocumentStore,
+  LocalDocumentChangedError,
   type LocalDocumentEnvelope,
   type LocalMediaAssetRecord,
   type LocalDocumentSync,
@@ -23,8 +24,6 @@ type CreatorWorkspacePayload = {
   key: string;
   dirty: boolean;
   dirtyResourceIds?: string[];
-  /** 兼容修正前“关闭但保留”产生的本地记录。 */
-  closed?: boolean;
   document: ResourcePackageLogicalDocument;
   folders: WorkspaceFolder[];
   resourceLocations: WorkspaceResourceLocation[];
@@ -91,10 +90,6 @@ export class CreatorWorkspaceRepository {
     const workspaces: StoredCreatorWorkspace[] = [];
     for (const envelope of envelopes) {
       if (envelope.payload.version !== 1) throw new Error("Unsupported stored Creator Workspace version");
-      if (envelope.payload.closed) {
-        await this.#store.remove("creator-workspace", envelope.documentId);
-        continue;
-      }
       const media = await this.#store.getMedia(envelope.assetIds);
       workspaces.push({ workspace: createWorkspace({
         document: envelope.payload.document,
@@ -115,7 +110,31 @@ export class CreatorWorkspaceRepository {
     cloudAccountId: string | null = null,
     enableExistingCloud = false,
   ): Promise<LocalDocumentSync> {
+    return this.#save(workspace, cloudAccountId, enableExistingCloud, false);
+  }
+
+  /**
+   * 导入云端资源包到本地；与 save 共用保存实现，但允许用新的初始同步替换同编号的回收站记录。
+   */
+  async saveImported(
+    workspace: CreatorWorkspace,
+    cloudAccountId: string | null = null,
+  ): Promise<LocalDocumentSync> {
+    return this.#save(workspace, cloudAccountId, false, true);
+  }
+
+  async #save(
+    workspace: CreatorWorkspace,
+    cloudAccountId: string | null,
+    enableExistingCloud: boolean,
+    replaceTrash: boolean,
+  ): Promise<LocalDocumentSync> {
     const existing = await this.#store.get<CreatorWorkspacePayload>("creator-workspace", workspace.key);
+    // 只有导入入口会读取回收站记录来构造 CAS 基准，普通 save 不能复活回收站文档。
+    const trashed = replaceTrash
+      ? await this.#store.getTrash<CreatorWorkspacePayload>("creator-workspace", workspace.key)
+      : undefined;
+    const expected: LocalDocumentEnvelope<CreatorWorkspacePayload> | null = existing ?? trashed ?? null;
     const now = this.#now();
     const nextPayload = payload(workspace);
     const assetIds = workspace.document.assets.map((asset) => asset.id);
@@ -128,6 +147,7 @@ export class CreatorWorkspaceRepository {
     const initialSync: LocalDocumentSync = cloudAccountId
       ? { scope: "cloud", state: "clean", baseRevision: null, accountId: cloudAccountId }
       : { scope: "local-only", state: "clean", baseRevision: null };
+    // 替换回收站记录时沿用新的初始 sync，不继承回收站里的 revision。
     const currentSync = shouldEnableExistingCloud
       ? initialSync
       : existing?.sync ?? initialSync;
@@ -137,13 +157,13 @@ export class CreatorWorkspaceRepository {
       documentKind: "creator-workspace",
       contractFamily: "creator-workspace-draft",
       contractVersion: "1",
-      createdAt: existing?.createdAt ?? now,
+      createdAt: existing?.createdAt ?? trashed?.createdAt ?? now,
       updatedAt: now,
       assetIds,
       sync,
       payload: nextPayload,
     };
-    await this.#store.put(envelope, mediaRecords(workspace));
+    await this.#store.put(envelope, mediaRecords(workspace), { expected, replaceTrash });
     return sync;
   }
 
@@ -151,7 +171,18 @@ export class CreatorWorkspaceRepository {
     remote: RemoteCloudDocument,
     media: ReadonlyMap<string, Uint8Array>,
     accountId: string,
+    expected?: LocalDocumentEnvelope | null,
   ): Promise<StoredCreatorWorkspace> {
+    // 未显式传入下载前快照时，以当前本地记录（含回收站）作为 CAS 基准。
+    let baseline: LocalDocumentEnvelope | null;
+    if (expected !== undefined) {
+      baseline = expected;
+    } else {
+      const current = await this.#store.get("creator-workspace", remote.documentId);
+      baseline = current
+        ?? await this.#store.getTrash("creator-workspace", remote.documentId)
+        ?? null;
+    }
     if (remote.documentKind !== "creator-workspace"
       || remote.contractFamily !== "creator-workspace-draft"
       || remote.contractVersion !== "1"
@@ -183,6 +214,7 @@ export class CreatorWorkspaceRepository {
       mutationId: null,
       lastError: null,
     };
+    // 恢复远端时不启用 replaceTrash：本地回收站不能被下载结果静默复活。
     await this.#store.put({
       documentId: remote.documentId,
       documentKind: "creator-workspace",
@@ -193,7 +225,7 @@ export class CreatorWorkspaceRepository {
       assetIds: [...remote.assetIds],
       sync,
       payload: structuredClone(remote.payload),
-    }, mediaRecords(workspace));
+    }, mediaRecords(workspace), { expected: baseline });
     return { workspace, sync };
   }
 
@@ -201,12 +233,20 @@ export class CreatorWorkspaceRepository {
     return (await this.#store.get("creator-workspace", documentId))?.sync;
   }
 
-  async remove(workspaceKey: string): Promise<void> {
-    await this.#store.remove("creator-workspace", workspaceKey);
+  async getUnchanged(workspace: CreatorWorkspace): Promise<LocalDocumentEnvelope> {
+    const existing = await this.#store.get<CreatorWorkspacePayload>("creator-workspace", workspace.key);
+    if (!existing || !sameContent(existing, payload(workspace), workspace.document.assets.map((asset) => asset.id))) {
+      throw new LocalDocumentChangedError(workspace.key);
+    }
+    return existing;
   }
 
-  async trash(workspaceKey: string): Promise<void> {
-    await this.#store.trash("creator-workspace", workspaceKey, this.#now());
+  async trash(workspaceKey: string, expectedWorkspace?: CreatorWorkspace): Promise<void> {
+    const existing = await this.#store.get<CreatorWorkspacePayload>("creator-workspace", workspaceKey);
+    if (expectedWorkspace && (!existing || !sameContent(existing, payload(expectedWorkspace), expectedWorkspace.document.assets.map((asset) => asset.id)))) {
+      throw new LocalDocumentChangedError(workspaceKey);
+    }
+    await this.#store.trash("creator-workspace", workspaceKey, this.#now(), { expected: existing ?? null });
   }
 
   async listTrash(): Promise<TrashedCreatorWorkspace[]> {

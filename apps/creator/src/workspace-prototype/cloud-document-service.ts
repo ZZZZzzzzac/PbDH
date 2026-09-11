@@ -8,6 +8,8 @@ import {
 } from "@pbdh/cloud-documents";
 import {
   DexieLocalDocumentStore,
+  LocalDocumentChangedError,
+  type LocalDocumentEnvelope,
   type LocalDocumentKind,
   type LocalDocumentSync,
 } from "@pbdh/local-storage";
@@ -115,12 +117,17 @@ export class CreatorCloudDocumentService {
     documentKind: Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">,
     documentId: string,
     credentials: CloudCredentials,
+    expectedWorkspace?: StoredCreatorWorkspace["workspace"],
   ): Promise<CreatorCloudRecovery> {
+    const expected = documentKind === "creator-workspace"
+      ? expectedWorkspace ? await this.#workspaceRepository.getUnchanged(expectedWorkspace)
+        : await this.#store.get(documentKind, documentId) ?? null
+      : undefined;
     const remote = await this.#api.getDocument(documentId, credentials);
     if (remote.documentKind !== documentKind || remote.deletedAt !== null) {
       throw new Error("云端文档当前不可恢复。");
     }
-    await this.#restoreRemote(remote, credentials);
+    await this.#restoreRemote(remote, credentials, expected);
     return this.localSnapshot(credentials.accountId);
   }
 
@@ -134,11 +141,16 @@ export class CreatorCloudDocumentService {
     return this.localSnapshot(credentials.accountId);
   }
 
-  async listTrash(credentials: CloudCredentials): Promise<RemoteCloudDocument[]> {
-    const documents = await Promise.all([
-      this.#api.listDocuments("creator-workspace", true, credentials),
-      this.#api.listDocuments("gm-tabletop-document", true, credentials),
-    ]);
+  async listTrash(
+    credentials: CloudCredentials,
+    documentKind?: Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">,
+  ): Promise<RemoteCloudDocument[]> {
+    const documentKinds: Array<Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">> = documentKind
+      ? [documentKind]
+      : ["creator-workspace", "gm-tabletop-document"];
+    const documents = await Promise.all(
+      documentKinds.map((kind) => this.#api.listDocuments(kind, true, credentials)),
+    );
     return documents.flat().filter((document) => document.deletedAt !== null);
   }
 
@@ -148,6 +160,10 @@ export class CreatorCloudDocumentService {
   ): Promise<CreatorCloudRecovery> {
     const local = await this.#store.get(remote.documentKind, remote.documentId)
       ?? await this.#store.getTrash(remote.documentKind, remote.documentId);
+    if (remote.documentKind === "creator-workspace"
+      && local && !local.deletedAt) {
+      throw new Error("工作区已有同 ID 资源包，已保留工作区内容，不能用回收站版本覆盖。");
+    }
     if (local && (local.sync.scope === "local-only" || local.sync.accountId !== credentials.accountId)) {
       throw new Error("本地已有同 ID 文档。请从本地回收站恢复本机版本；如需云端版本，请先导出保留本地内容，再移除同 ID 本地文档。");
     }
@@ -157,7 +173,7 @@ export class CreatorCloudDocumentService {
       remote.revision,
       credentials,
     );
-    await this.#restoreRemote(restored, credentials);
+    await this.#restoreRemote(restored, credentials, remote.documentKind === "creator-workspace" ? local ?? null : undefined);
     return this.localSnapshot(credentials.accountId);
   }
 
@@ -179,32 +195,51 @@ export class CreatorCloudDocumentService {
         ?? await this.#store.getTrash(documentKind, remote.documentId);
       if (remote.deletedAt !== null) {
         if (local?.sync.scope === "cloud" && local.sync.accountId === credentials.accountId) {
-          await this.#store.preserveInLocalTrash(documentKind, remote.documentId, credentials.accountId);
+          if (documentKind === "creator-workspace") {
+            // 云端旧删除记录不能销毁重新导入或仍在编辑的本地资源包。
+            await this.#store.updateSync(documentKind, remote.documentId, (current) =>
+              current.sync.scope === "cloud" && current.sync.accountId === credentials.accountId
+                ? { ...current.sync, state: "conflict", lastError: "云端资源包已在回收站，本地内容已保留，自动同步已暂停。" }
+                : undefined);
+          } else {
+            await this.#store.preserveInLocalTrash(documentKind, remote.documentId, credentials.accountId);
+          }
         }
         continue;
       }
       if (!local) {
-        await this.#restoreRemote(remote, credentials);
+        try {
+          await this.#restoreRemote(remote, credentials, documentKind === "creator-workspace" ? null : undefined);
+        } catch (error) {
+          if (!(error instanceof LocalDocumentChangedError)) throw error;
+        }
         continue;
       }
-      if (local.sync.scope !== "cloud"
+      if (local.deletedAt || local.sync.scope !== "cloud"
         || local.sync.accountId !== credentials.accountId
         || local.sync.state !== "clean") continue;
       const localRevision = local.sync.baseRevision === null ? 0 : revisionNumber(local.sync.baseRevision);
-      if (remote.revision > localRevision) await this.#restoreRemote(remote, credentials);
+      if (remote.revision > localRevision) {
+        try {
+          await this.#restoreRemote(remote, credentials, documentKind === "creator-workspace" ? local : undefined);
+        } catch (error) {
+          if (!(error instanceof LocalDocumentChangedError)) throw error;
+        }
+      }
     }
   }
 
   async #restoreRemote(
     remote: RemoteCloudDocument,
     credentials: CloudCredentials,
+    expected?: LocalDocumentEnvelope | null,
   ): Promise<void> {
     const media = new Map<string, Uint8Array>();
     for (const assetId of remote.assetIds) {
       media.set(assetId, await this.#api.getMedia(remote.documentId, assetId, credentials));
     }
     if (remote.documentKind === "creator-workspace") {
-      await this.#workspaceRepository.restoreRemote(remote, media, credentials.accountId);
+      await this.#workspaceRepository.restoreRemote(remote, media, credentials.accountId, expected);
       return;
     }
     if (remote.documentKind === "gm-tabletop-document") {

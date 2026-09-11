@@ -877,7 +877,7 @@ describe("Creator Workspace UI contracts", () => {
     expect(creatorSource).not.toContain("openTabletopIds");
     expect(creatorSource).not.toContain("handoff-tabletop");
     expect(creatorSource).toContain(
-      "creatorWorkspaceRepository.save(next, auth.credentials?.accountId ?? null, true)",
+      "creatorWorkspaceRepository.saveImported(next, accountId)",
     );
   });
 
@@ -1084,7 +1084,10 @@ describe("Creator Workspace UI contracts", () => {
       "packages/platform-ui/src/index.tsx",
     ), "utf8");
 
-    expect(creatorSource).toContain('id: "creator-and-gm-documents"');
+    expect(creatorSource).toContain('id: "creator-trash-local-workspace"');
+    expect(creatorSource).toContain('id: "creator-trash-local-tabletop"');
+    expect(creatorSource).toContain('id: "creator-trash-cloud-workspace"');
+    expect(creatorSource).toContain('id: "creator-trash-cloud-tabletop"');
     expect(creatorSource).toContain("workspaceRepository.listTrash()");
     expect(creatorSource).toContain("tabletopRepository.listTrash()");
     expect(controlsSource).toContain("仅保存在此浏览器，不等于云备份");

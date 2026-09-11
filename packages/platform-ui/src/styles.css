@@ -82,13 +82,14 @@
 .pbdh-platform-account { width: auto; max-width: 150px; }
 .pbdh-platform-trash-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 20px; background: #160e09a8; box-sizing: border-box; }
 .pbdh-platform-trash-dialog { width: min(680px, 100%); max-height: min(680px, calc(100vh - 40px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #6e584b; border-radius: 10px; color: #2a1d17; background: #fffdf8; box-shadow: 0 24px 70px #0007; }
-.pbdh-platform-trash-dialog > header { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 18px; border-bottom: 1px solid #e1d8cf; }
+.pbdh-platform-trash-dialog > header { min-height: 68px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 18px; border-bottom: 1px solid #e1d8cf; }
 .pbdh-platform-trash-dialog > header > div { display: grid; gap: 4px; }
 .pbdh-platform-trash-dialog > header strong { font-size: 17px; }
 .pbdh-platform-trash-dialog > header small, .pbdh-platform-trash-dialog li small { color: #806e62; }
 .pbdh-platform-trash-dialog > header button { width: 34px; height: 34px; border: 0; border-radius: 5px; color: #655247; background: transparent; font-size: 24px; cursor: pointer; }
 .pbdh-platform-trash-dialog > header button:hover { background: #eee7e1; }
-.pbdh-platform-trash-dialog > ol { min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.pbdh-platform-trash-body { min-height: 0; overflow: auto; }
+.pbdh-platform-trash-body > ol { margin: 0; padding: 0; list-style: none; }
 .pbdh-platform-trash-dialog li { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 18px; border-bottom: 1px solid #eee7e1; box-sizing: border-box; }
 .pbdh-platform-trash-dialog li > div:first-child { min-width: 0; display: grid; gap: 4px; }
 .pbdh-platform-trash-dialog li > div:first-child strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -96,13 +97,20 @@
 .pbdh-platform-trash-dialog li button { min-height: 32px; padding: 0 11px; border: 1px solid #cfc2b6; border-radius: 5px; color: #45342b; background: #fff; cursor: pointer; }
 .pbdh-platform-trash-dialog li button.danger { border-color: #b76464; color: #8c2020; }
 .pbdh-platform-trash-dialog button:disabled { cursor: wait; opacity: .58; }
-.pbdh-platform-trash-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 18px; border-top: 1px solid #e1d8cf; }
+.pbdh-platform-trash-footer { display: flex; flex-wrap: wrap; flex-shrink: 0; align-items: center; justify-content: flex-end; gap: 12px; padding: 12px 18px; border-top: 1px solid #e1d8cf; }
 .pbdh-platform-trash-footer > span { margin-right: auto; }
 .pbdh-platform-trash-footer button { min-height: 36px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid #cfc2b6; border-radius: 5px; background: #fff; cursor: pointer; }
 .pbdh-platform-trash-footer button.danger { border-color: #b76464; color: #8c2020; }
 .pbdh-platform-trash-footer svg { width: 16px; height: 16px; }
-.pbdh-platform-trash-empty { min-height: 230px; display: grid; place-items: center; margin: 0; color: #806e62; }
-.pbdh-platform-trash-error { margin: 0; padding: 10px 18px; color: #851f1f; background: #fff0ef; }
+.pbdh-platform-trash-empty { min-height: min(230px, 35vh); display: grid; place-items: center; margin: 0; padding: 18px; text-align: center; box-sizing: border-box; color: #806e62; }
+.pbdh-platform-trash-error { margin: 0; padding: 10px 18px; overflow-wrap: anywhere; color: #851f1f; background: #fff0ef; }
+.pbdh-platform-trash-error > p { margin: 0; }
+.pbdh-platform-trash-error > p + p { margin-top: 10px; }
+@media (max-width: 520px) {
+  .pbdh-platform-trash-footer > span { flex-basis: 100%; }
+  .pbdh-platform-trash-dialog li { flex-direction: column; align-items: stretch; gap: 8px; }
+  .pbdh-platform-trash-dialog li > div:last-child { justify-content: flex-end; }
+}
 .pbdh-platform-mobile-button { display: none !important; }
 .pbdh-platform-mobile-menu, .pbdh-platform-mobile-pages, .pbdh-platform-mobile-extra { display: none; }
 body:has(.player-sheet-runtime.print-mode) .pbdh-platform-appbar { display: none; }

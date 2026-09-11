@@ -75,7 +75,7 @@ export async function trashCloudDocument(
       }
     }
   }
-  await store.preserveInLocalTrash(documentKind, documentId, credentials.accountId);
+  await store.preserveInLocalTrash(documentKind, documentId, credentials.accountId, { expected: local });
 }
 
 export interface CloudDocumentApi {

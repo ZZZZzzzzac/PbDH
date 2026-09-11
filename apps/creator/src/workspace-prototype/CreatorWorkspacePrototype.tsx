@@ -169,6 +169,7 @@ const creatorOperationLabels: Record<CreatorOperation, string> = {
   "import-tabletop": "正在写入桌面…",
   "export-tabletop": "正在导出桌面…",
   "read-package": "正在检查资源包…",
+  "import-package": "正在保存资源包…",
   "convert-package": "正在转换第三方资源…",
   "export-package": "正在导出资源包…",
   "publication-cover": "正在生成发布封面…",
@@ -238,6 +239,10 @@ export function CreatorWorkspacePrototype({
 } = {}) {
   const auth = useAuth();
   const [workspaces, setWorkspaces] = useState<CreatorWorkspace[]>([]);
+  const currentWorkspacesRef = useRef(workspaces);
+  currentWorkspacesRef.current = workspaces;
+  const currentAccountRef = useRef(auth.credentials?.accountId ?? null);
+  currentAccountRef.current = auth.credentials?.accountId ?? null;
   const [activeKey, setActiveKey] = useState("");
   const [activeResourceId, setActiveResourceId] = useState("");
   const [resourceTabOrder, setResourceTabOrder] = useState(() => readStoredTabOrder(creatorResourceTabOrderKey));
@@ -268,6 +273,7 @@ export function CreatorWorkspacePrototype({
   const [imageCropError, setImageCropError] = useState<string | null>(null);
   const [trashError, setTrashError] = useState<string | null>(null);
   const [creatorOperation, setCreatorOperation] = useState<CreatorOperation | null>(null);
+  const packageImportRunning = useRef(false);
   const [localAppMode, setLocalAppMode] = useState<CreatorAppMode>("creator");
   const appMode = mode ?? localAppMode;
   const changeAppMode = useCallback((nextMode: CreatorAppMode) => {
@@ -355,7 +361,10 @@ export function CreatorWorkspacePrototype({
   const requestWorkspaceCloudSyncAfterEditing = persistence.requestCloudSyncAfterEditing.workspace;
   const requestTabletopCloudSyncAfterEditing = persistence.requestCloudSyncAfterEditing.tabletop;
   const applyCloudSnapshot = persistence.applyCloudSnapshot;
+  const flushWorkspaceWrites = persistence.flushWorkspaceWrites;
   useCreatorTrashSource({
+    workspaces,
+    flushWorkspaceWrites,
     credentials: auth.credentials,
     workspaceRepository: creatorWorkspaceRepository,
     tabletopRepository,
@@ -488,7 +497,7 @@ export function CreatorWorkspacePrototype({
             snapshotDigest: handoff.snapshotDigest,
           }).then((fork) => acceptIncoming({ document: fork.document, media: fork.media }, handoff));
         }
-        acceptIncoming(result.candidate, handoff);
+        return acceptIncoming(result.candidate, handoff);
       })
       .catch((error) => setDialog({
         kind: "diagnostics",
@@ -516,13 +525,20 @@ export function CreatorWorkspacePrototype({
   const designStyle = creatorWorkspaceStyle(appMode, workspaceColumnShare, editorColumnShare);
 
   function replaceActive(next: CreatorWorkspace) {
-    if (!active) return;
-    setWorkspaces((current) => current.map((workspace) => workspace.key === active.key ? next : workspace));
+    if (!active || !replaceWorkspace(active.key, next)) return false;
     setActiveKey(next.key);
+    return true;
   }
 
   function replaceWorkspace(workspaceKey: string, next: CreatorWorkspace) {
-    setWorkspaces((current) => current.map((workspace) => workspace.key === workspaceKey ? next : workspace));
+    const expected = workspaces.find((workspace) => workspace.key === workspaceKey);
+    if (!workspaceStorageReady || !expected || currentWorkspacesRef.current.find((workspace) => workspace.key === workspaceKey) !== expected
+      || currentAccountRef.current !== (auth.credentials?.accountId ?? null)) {
+      notify("工作区已变化或尚未恢复完成，已保留当前内容，未应用过时的操作结果。");
+      return false;
+    }
+    setWorkspaces((current) => current.map((workspace) => workspace === expected ? next : workspace));
+    return true;
   }
 
   function switchWorkspace(workspaceKey: string) {
@@ -533,11 +549,11 @@ export function CreatorWorkspacePrototype({
     setTabletopContextMenu(null);
   }
 
-  function requestWorkspacePackageClose(workspaceKey: string) {
+  function requestWorkspacePackageDeletion(workspaceKey: string) {
     const workspace = workspaces.find((candidate) => candidate.key === workspaceKey);
     if (!workspace) return;
     setTabletopContextMenu(null);
-    setDialog({ kind: "close-workspace", workspaceKey, name: workspace.document.package.name });
+    setDialog({ kind: "trash-workspace", workspaceKey, name: workspace.document.package.name });
   }
 
   function requestCloudSync(documentKind: CloudDocumentKind, documentId: string, name: string) {
@@ -555,6 +571,7 @@ export function CreatorWorkspacePrototype({
     if (creatorOperation) return;
     setCreatorOperation("cloud-sync");
     try {
+      if (documentKind === "creator-workspace") await flushWorkspaceWrites();
       const snapshot = await cloudDocumentService.enable(documentKind, documentId, credentials);
       persistence.applyCloudSync(snapshot);
       setDialog(null);
@@ -576,7 +593,7 @@ export function CreatorWorkspacePrototype({
     if (creatorOperation) return;
     setCreatorOperation("cloud-conflict");
     try {
-      if (documentKind === "creator-workspace") await workspaceWriteQueueRef.current;
+      if (documentKind === "creator-workspace") await flushWorkspaceWrites();
       else await tabletopWriteQueueRef.current;
       if (action === "aside") {
         if (documentKind === "creator-workspace") {
@@ -594,10 +611,17 @@ export function CreatorWorkspacePrototype({
           }, tabletopMedia, null);
         }
       }
+      if (documentKind === "creator-workspace"
+        && (currentAccountRef.current !== credentials.accountId
+          || currentWorkspacesRef.current.find((item) => item.key === documentId) !== workspaces.find((item) => item.key === documentId))) {
+        throw new Error("工作区已继续编辑或账号已切换，已取消旧版本覆盖。");
+      }
       const snapshot = action === "local"
         ? await cloudDocumentService.overwriteWithLocal(documentKind, documentId, credentials)
-        : await cloudDocumentService.keepCloud(documentKind, documentId, credentials);
-      applyCloudSnapshot(snapshot, true);
+        : await cloudDocumentService.keepCloud(documentKind, documentId, credentials,
+          documentKind === "creator-workspace" ? workspaces.find((workspace) => workspace.key === documentId) : undefined);
+      applyCloudSnapshot(snapshot, true, documentKind === "creator-workspace"
+        ? { baseline: workspaces, replaceKeys: [documentId] } : undefined);
       setDialog(null);
       notify(action === "local" ? "已用本地版本覆盖云端" : action === "aside" ? "本地版本已另存" : "已保留云端版本");
     } catch (error) {
@@ -607,15 +631,19 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  async function closeWorkspacePackage(workspaceKey: string) {
-    const closing = workspaces.find((workspace) => workspace.key === workspaceKey);
-    if (!closing || creatorOperation) return;
+  async function trashWorkspacePackage(workspaceKey: string) {
+    const targetWorkspace = workspaces.find((workspace) => workspace.key === workspaceKey);
+    if (!targetWorkspace || creatorOperation) return;
     setTrashError(null);
     setCreatorOperation("trash-workspace");
     setTabletopContextMenu(null);
     try {
-      await workspaceWriteQueueRef.current;
-      const sync = workspaceSync.get(workspaceKey);
+      await flushWorkspaceWrites();
+      if (currentAccountRef.current !== (auth.credentials?.accountId ?? null)
+        || currentWorkspacesRef.current.find((workspace) => workspace.key === workspaceKey) !== targetWorkspace) {
+        throw new Error("资源包已继续编辑，已取消这次删除。");
+      }
+      const sync = await creatorWorkspaceRepository.syncState(workspaceKey);
       if (sync?.scope === "cloud") {
         if (!auth.credentials) throw new Error("请先登录当前账号再删除云端工作区。");
         if (!auth.credentials.canWrite && sync.baseRevision !== null) {
@@ -625,11 +653,11 @@ export function CreatorWorkspacePrototype({
           "creator-workspace",
           workspaceKey,
           auth.credentials,
-        ), true);
+        ), true, { baseline: workspaces, removeKeys: [workspaceKey] });
       } else {
-        await creatorWorkspaceRepository.trash(workspaceKey);
-        const remaining = workspaces.filter((workspace) => workspace.key !== workspaceKey);
-        setWorkspaces(remaining);
+        await creatorWorkspaceRepository.trash(workspaceKey, targetWorkspace);
+        const remaining = currentWorkspacesRef.current.filter((workspace) => workspace.key !== workspaceKey);
+        setWorkspaces((current) => current.filter((workspace) => workspace !== targetWorkspace));
         if (active?.key === workspaceKey) {
           const next = remaining[0];
           setActiveKey(next?.key ?? "");
@@ -991,7 +1019,7 @@ export function CreatorWorkspacePrototype({
     let count = 0;
     for (const request of sources) {
       const source = workspaces.find((item) => item.key === request.workspaceKey);
-      if (!source) throw new Error("源资源包已关闭，请重新选择资源");
+      if (!source) throw new Error("源资源包已不存在，请重新选择资源");
       const result = copyWorkspaceResourcesToPackage(source, workspace, request.resourceIds, request.folderId);
       workspace = result.workspace;
       resourceId = result.resourceId || resourceId;
@@ -1005,7 +1033,7 @@ export function CreatorWorkspacePrototype({
     if (!target) return;
     try {
       const result = copyIntoTarget(sources, target);
-      setWorkspaces((current) => current.map((workspace) => workspace.key === target.key ? result.workspace : workspace));
+      if (!replaceWorkspace(target.key, result.workspace)) return;
       setActiveKey(target.key);
       setActiveResourceId(result.resourceId);
       setDialog(null);
@@ -1017,7 +1045,7 @@ export function CreatorWorkspacePrototype({
     try {
       const target = await createBlankWorkspace(copyPackageName);
       const result = copyIntoTarget(sources, target);
-      setWorkspaces((current) => [...current, result.workspace]);
+      await saveNewWorkspace(result.workspace);
       setActiveKey(result.workspace.key);
       setActiveResourceId(result.resourceId);
       setDialog(null);
@@ -1270,32 +1298,66 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  function commitIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
+  async function commitIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
+    if (packageImportRunning.current || !workspaceStorageReady) {
+      notify("资源包正在恢复或导入，请稍后重试。");
+      return false;
+    }
+    packageImportRunning.current = true;
+    setCreatorOperation("import-package");
     const next = createWorkspace(candidate);
-    addAssetBytes(candidate.media);
-    setWorkspaces((current) => {
-      const existing = current.findIndex((workspace) => workspace.document.package.id === next.document.package.id);
-      if (existing < 0) return [...current, next];
-      return current.map((workspace, index) => index === existing ? next : workspace);
-    });
-    setActiveKey(next.key);
-    setActiveResourceId(next.document.resources[0]?.id ?? "");
-    setDialog(null);
-    const write = workspaceWriteQueueRef.current.then(async () => {
-      await creatorWorkspaceRepository.save(next, auth.credentials?.accountId ?? null, true);
-    });
-    workspaceWriteQueueRef.current = write.catch(() => undefined);
-    write.then(() => {
+    const expected = currentWorkspacesRef.current.find((workspace) => workspace.key === next.key);
+    const accountId = auth.credentials?.accountId ?? null;
+    const unchanged = () => currentAccountRef.current === accountId
+      && currentWorkspacesRef.current.find((workspace) => workspace.key === next.key) === expected;
+    try {
+      await flushWorkspaceWrites();
+      const write = workspaceWriteQueueRef.current.then(async () => {
+        if (!unchanged()) throw new Error("工作区已变化，已取消导入覆盖，请重新确认。");
+        await creatorWorkspaceRepository.saveImported(next, accountId);
+      });
+      workspaceWriteQueueRef.current = write.catch(() => undefined);
+      await write;
+      if (!unchanged()) throw new Error("导入期间工作区已变化，当前编辑已保留，请重新确认导入。");
+      addAssetBytes(candidate.media);
+      setWorkspaces((current) => expected
+        ? current.map((workspace) => workspace === expected ? next : workspace)
+        : current.some((workspace) => workspace.key === next.key) ? current : [...current, next]);
+      setActiveKey(next.key);
+      setActiveResourceId(next.document.resources[0]?.id ?? "");
+      setDialog(null);
       if (handoff) finishMarketHandoff(next, handoff);
       else notify(`已载入 ${next.document.package.name}`);
-    }).catch((error) => notify(error instanceof Error ? error.message : "工作区保存失败"));
+      return true;
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "导入未保存，工作区保持原样");
+      return false;
+    } finally {
+      packageImportRunning.current = false;
+      setCreatorOperation(null);
+    }
   }
 
-  function acceptIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
-    const existing = workspaces.find((workspace) =>
+  async function saveNewWorkspace(workspace: CreatorWorkspace, cloudAccountId = auth.credentials?.accountId ?? null) {
+    const accountId = auth.credentials?.accountId ?? null;
+    await flushWorkspaceWrites();
+    const write = workspaceWriteQueueRef.current.then(async () => {
+      if (currentAccountRef.current !== accountId || currentWorkspacesRef.current.some((item) => item.key === workspace.key)) {
+        throw new Error("工作区或账号已变化，已取消创建。");
+      }
+      await creatorWorkspaceRepository.save(workspace, cloudAccountId);
+    });
+    workspaceWriteQueueRef.current = write.catch(() => undefined);
+    await write;
+    if (currentAccountRef.current !== accountId) throw new Error("账号已切换，资源包已保存在原账号范围内。");
+    setWorkspaces((current) => current.some((item) => item.key === workspace.key) ? current : [...current, workspace]);
+  }
+
+  async function acceptIncoming(candidate: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
+    const existing = currentWorkspacesRef.current.find((workspace) =>
       workspace.document.package.id === candidate.document.package.id);
     const plan = planImport(existing, candidate);
-    if (plan === "insert") commitIncoming(candidate, handoff);
+    if (plan === "insert") await commitIncoming(candidate, handoff);
     if (plan === "no-op") {
       setActiveKey(existing!.key);
       if (handoff) finishMarketHandoff(existing!, handoff);
@@ -1319,7 +1381,7 @@ export function CreatorWorkspacePrototype({
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
       }
-      if (result.type === "import-ready") acceptIncoming(result.candidate);
+      if (result.type === "import-ready") await acceptIncoming(result.candidate);
     } finally {
       setCreatorOperation(null);
     }
@@ -1342,7 +1404,7 @@ export function CreatorWorkspacePrototype({
       }
       if (result.type !== "workspace-export" && result.type !== "third-party-export") return;
       downloadBytes(result.bytes, result.fileName);
-      replaceActive(result.workspace);
+      if (!replaceActive(result.workspace)) return;
       notify(result.message);
     } finally {
       setCreatorOperation(null);
@@ -1485,7 +1547,7 @@ export function CreatorWorkspacePrototype({
         if (!workspace) throw new Error("找不到要修改的资源包。");
         const next = replacePortrait(workspace, asset, bytes, pending.resourceId);
         addAssetBlob(asset.id, blob);
-        setWorkspaces((current) => current.map((candidate) => candidate.key === pending.workspaceKey ? next : candidate));
+        if (!replaceWorkspace(pending.workspaceKey, next)) return;
         notify("卡牌图片已替换；规范卡面同步更新");
       }
       setPendingCreatorImage(null);
@@ -1509,8 +1571,8 @@ export function CreatorWorkspacePrototype({
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
       }
+      if (!replaceActive(result.workspace)) return;
       notify(result.message);
-      replaceActive(result.workspace);
       setDialog(null);
     } finally {
       setPublicationBusy(false);
@@ -1518,12 +1580,16 @@ export function CreatorWorkspacePrototype({
   }
 
   async function createWorkspaceFromDialog() {
-    const next = await createBlankWorkspace(newName);
-    setWorkspaces((current) => [...current, next]);
-    setActiveKey(next.key);
-    setActiveResourceId(next.document.resources[0]?.id ?? "");
-    setDialog(null);
-    notify("已显式创建空白 Workspace");
+    try {
+      const next = await createBlankWorkspace(newName);
+      await saveNewWorkspace(next);
+      setActiveKey(next.key);
+      setActiveResourceId(next.document.resources[0]?.id ?? "");
+      setDialog(null);
+      notify("已显式创建空白 Workspace");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "创建失败，资源包未保存");
+    }
   }
 
   async function upgradeWorkspaceTemplates(workspaceKey: string, selections: Parameters<typeof upgradePbresTemplateVersions>[1]) {
@@ -1547,7 +1613,7 @@ export function CreatorWorkspacePrototype({
         media: result.candidate.media,
       }, true);
       upgradedWorkspace.dirtyResourceIds = [...new Set([...workspace.dirtyResourceIds, ...upgradedResourceIds])];
-      replaceWorkspace(workspaceKey, upgradedWorkspace);
+      if (!replaceWorkspace(workspaceKey, upgradedWorkspace)) return;
       setDialog(null);
       notify(`模板已升级，资源包版本更新为 ${result.candidate.document.package.version}`);
     } catch (error) {
@@ -1587,9 +1653,7 @@ export function CreatorWorkspacePrototype({
         return;
       }
       addAssetBytes(result.workspace.media);
-      setWorkspaces((current) => current.map((candidate) => candidate.key === workspaceKey
-        ? result.workspace
-        : candidate));
+      if (!replaceWorkspace(workspaceKey, result.workspace)) return;
       setDialog(null);
       notify(result.message);
     } finally {
@@ -1628,13 +1692,20 @@ export function CreatorWorkspacePrototype({
   }
 
   async function saveAsideThenImport(incoming: ResourcePackageCandidate, handoff?: CreatorMarketHandoff) {
-    const existing = workspaces.find((workspace) =>
+    const existing = currentWorkspacesRef.current.find((workspace) =>
       workspace.document.package.id === incoming.document.package.id);
     if (!existing) return commitIncoming(incoming, handoff);
-    const fork = await forkCurrentWorkspace(existing);
-    setWorkspaces((current) => [...current.filter((workspace) => workspace.key !== existing.key), fork]);
-    commitIncoming(incoming, handoff);
-    notify("本地修改已另存为新 Package ID；导入版本已载入");
+    try {
+      await flushWorkspaceWrites();
+      const fork = await forkCurrentWorkspace(existing);
+      if (currentWorkspacesRef.current.find((workspace) => workspace.key === existing.key) !== existing) {
+        throw new Error("工作区已继续编辑，已取消旧版本导入。");
+      }
+      await saveNewWorkspace(fork, null);
+      if (await commitIncoming(incoming, handoff)) notify("本地修改已另存为新 Package ID；导入版本已载入");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "另存失败，原工作区已保留");
+    }
   }
 
   function executeResourceExplorerCommand(command: CreatorResourceExplorerCommand) {
@@ -1814,7 +1885,7 @@ export function CreatorWorkspacePrototype({
       }
       case "edit-package": void openPackageMetadataDialog(command.workspaceKey); return;
       case "upgrade-templates": setTabletopContextMenu(null); setDialog({ kind: "template-upgrade", workspaceKey: command.workspaceKey }); return;
-      case "close-package": requestWorkspacePackageClose(command.workspaceKey); return;
+      case "delete-package": requestWorkspacePackageDeletion(command.workspaceKey); return;
       case "place-selected": placeSelectedTabletopResources(); return;
       case "delete-selected-resources": requestSelectedResourceDeletion(); return;
       case "place-resource": placeWorkspaceResources([{ workspaceKey: command.workspaceKey, resourceId: command.resourceId }]); setTabletopContextMenu(null); return;
@@ -1878,7 +1949,7 @@ export function CreatorWorkspacePrototype({
       case "delete-selected-resources": confirmSelectedResourceDeletion(command.selections); return;
       case "copy-resource": copyResourceIntoWorkspace(command.sources, command.targetWorkspaceKey); return;
       case "copy-resource-to-new-package": void copyResourceIntoNewWorkspace(command.sources); return;
-      case "close-workspace": void closeWorkspacePackage(command.workspaceKey); return;
+      case "trash-workspace": void trashWorkspacePackage(command.workspaceKey); return;
       case "create-tabletop": createTabletopFromDialog(); return;
       case "rename-tabletop": renameTabletopFromDialog(command.tabletopId); return;
       case "delete-tabletop": void deleteTabletop(command.tabletopId); return;

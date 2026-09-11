@@ -7,8 +7,10 @@ import {
   DexieAuthorPreviewHandleStore,
   DexieLocalDocumentStore,
   DexieRuntimeCacheStore,
+  LocalDocumentChangedError,
   PbDHLocalDatabase,
   type LocalDocumentEnvelope,
+  type LocalMediaAssetRecord,
 } from "../../packages/local-storage/src/index.ts";
 
 const databases: PbDHLocalDatabase[] = [];
@@ -37,6 +39,10 @@ function database() {
   return value;
 }
 
+function mediaRecord(assetId: string, byte: number): LocalMediaAssetRecord {
+  return { assetId, mediaType: "image/webp", byteLength: "1", bytes: new Uint8Array([byte]) };
+}
+
 afterEach(async () => {
   await Promise.all(databases.splice(0).map(async (value) => {
     value.close();
@@ -45,6 +51,18 @@ afterEach(async () => {
 });
 
 describe("shared local document store", () => {
+  test("多个来源并发读取回收站时过期清理不会重复删除报错", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    await store.put(envelope("expired", "creator-workspace"));
+    await store.trash("creator-workspace", "expired", "2020-01-01T00:00:00.000Z");
+    const results = await Promise.allSettled([
+      store.listTrash("creator-workspace"), store.listTrash("gm-tabletop-document"), store.listTrash("character-save"),
+    ]);
+    expect(results).toEqual([
+      { status: "fulfilled", value: [] }, { status: "fulfilled", value: [] }, { status: "fulfilled", value: [] },
+    ]);
+  });
   test("同步字段更新在事务中读取最新内容，不重写正文或复活回收站记录", async () => {
     const store = new DexieLocalDocumentStore(database());
     const original = envelope("sync-update", "creator-workspace");
@@ -257,5 +275,99 @@ describe("shared local document store", () => {
     });
     await reopenedStore.remove("player-current-system-package");
     expect(await reopenedStore.load("player-current-system-package")).toBeNull();
+  });
+
+  test("显式 replaceTrash 可原子替换同 kind 回收站文档并只清理无人引用的旧媒体", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    const sharedAssetId = `sha256:${"e".repeat(64)}`;
+    const trashOnlyAssetId = `sha256:${"f".repeat(64)}`;
+    const newAssetId = `sha256:${"1".repeat(64)}`;
+    // 另一个活动文档共享旧媒体，替换后该媒体必须保留。
+    await store.put(
+      envelope("other", "gm-tabletop-document", [sharedAssetId]),
+      [mediaRecord(sharedAssetId, 1)],
+    );
+    await store.put(
+      envelope("tabletop-1", "gm-tabletop-document", [sharedAssetId, trashOnlyAssetId]),
+      [mediaRecord(sharedAssetId, 1), mediaRecord(trashOnlyAssetId, 2)],
+    );
+    await store.trash("gm-tabletop-document", "tabletop-1");
+
+    // 默认拒绝复活回收站文档。
+    await expect(store.put(envelope("tabletop-1", "gm-tabletop-document", [newAssetId])))
+      .rejects.toThrow("同编号文档仍在回收站");
+
+    await store.put(
+      envelope("tabletop-1", "gm-tabletop-document", [newAssetId]),
+      [mediaRecord(newAssetId, 3)],
+      { replaceTrash: true },
+    );
+
+    expect(await store.getTrash("gm-tabletop-document", "tabletop-1")).toBeUndefined();
+    expect(await store.get("gm-tabletop-document", "tabletop-1")).toMatchObject({ assetIds: [newAssetId] });
+    // 旧回收站独有媒体被清理，共享旧媒体与其他文档引用保留，新活动媒体完整。
+    expect(await store.getMedia([trashOnlyAssetId])).toEqual(new Map());
+    expect((await store.getMedia([sharedAssetId])).get(sharedAssetId)).toEqual(new Uint8Array([1]));
+    expect((await store.getMedia([newAssetId])).get(newAssetId)).toEqual(new Uint8Array([3]));
+  });
+
+  test("跨 kind 同编号不可覆盖", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    await store.put(envelope("shared-id", "creator-workspace"));
+    await expect(store.put(envelope("shared-id", "gm-tabletop-document"))).rejects.toThrow();
+    await expect(store.put(
+      envelope("shared-id", "gm-tabletop-document"),
+      [],
+      { replaceTrash: true },
+    )).rejects.toThrow();
+    expect(await store.get("creator-workspace", "shared-id")).toBeDefined();
+    expect(await store.get("gm-tabletop-document", "shared-id")).toBeUndefined();
+  });
+
+  test("expected 不匹配时拒绝写入且不写媒体或正文", async () => {
+    const value = database();
+    const store = new DexieLocalDocumentStore(value);
+    await store.put(envelope("cas-1", "creator-workspace"));
+    const snapshot = (await store.get("creator-workspace", "cas-1"))!;
+    await store.put({ ...snapshot, payload: { name: "并发更新" } }, [], { expected: snapshot });
+
+    const newAssetId = `sha256:${"2".repeat(64)}`;
+    await expect(store.put(
+      envelope("cas-1", "creator-workspace", [newAssetId]),
+      [mediaRecord(newAssetId, 4)],
+      { expected: snapshot },
+    )).rejects.toBeInstanceOf(LocalDocumentChangedError);
+
+    expect((await store.get("creator-workspace", "cas-1"))?.payload).toEqual({ name: "并发更新" });
+    expect(await store.getMedia([newAssetId])).toEqual(new Map());
+
+    // 原不存在但随后出现时同样拒绝写入。
+    await store.put(envelope("cas-new", "creator-workspace"), [], { expected: null });
+    await expect(store.put(envelope("cas-new", "creator-workspace"), [], { expected: null }))
+      .rejects.toBeInstanceOf(LocalDocumentChangedError);
+  });
+
+  test("remove 按 expected 校验，防止删除网络期间出现的新本地副本", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    await store.put(envelope("remove-1", "creator-workspace"));
+    const snapshot = (await store.get("creator-workspace", "remove-1"))!;
+    await store.put({ ...snapshot, payload: { name: "本地更新" } }, [], { expected: snapshot });
+
+    await expect(store.remove("creator-workspace", "remove-1", { expected: snapshot }))
+      .rejects.toBeInstanceOf(LocalDocumentChangedError);
+    expect(await store.get("creator-workspace", "remove-1")).toBeDefined();
+
+    // 原不存在但随后出现时同样拒绝删除。
+    await expect(store.remove("creator-workspace", "remove-missing", { expected: null })).resolves.toBeUndefined();
+    await store.put(envelope("remove-missing", "creator-workspace"));
+    await expect(store.remove("creator-workspace", "remove-missing", { expected: null }))
+      .rejects.toBeInstanceOf(LocalDocumentChangedError);
+    expect(await store.get("creator-workspace", "remove-missing")).toBeDefined();
+
+    // expected 与当前一致时正常删除。
+    const latest = (await store.get("creator-workspace", "remove-1"))!;
+    await store.remove("creator-workspace", "remove-1", { expected: latest });
+    expect(await store.get("creator-workspace", "remove-1")).toBeUndefined();
   });
 });

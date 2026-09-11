@@ -210,6 +210,40 @@ function installedResourceAssetIds(record: InstalledResourcePackageRecord): stri
   });
 }
 
+class LocalTrashReadError extends Error {
+  constructor(readonly stage: "cleanup" | "list", cause: unknown) {
+    super(stage === "cleanup" ? "本机回收站过期清理失败" : "本机回收站列表读取失败", { cause });
+    this.name = "LocalTrashReadError";
+  }
+}
+
+/** 事务内比较完整信封时的并发冲突错误，调用方据此放弃本次写入。 */
+export class LocalDocumentChangedError extends Error {
+  constructor(readonly documentId?: string) {
+    super(documentId
+      ? `本地文档「${documentId}」已被其他操作更新，本次操作已停止；请先导出当前内容备份。`
+      : "本地文档已被其他操作更新，本次操作已停止；请先导出当前内容备份。");
+    this.name = "LocalDocumentChangedError";
+  }
+}
+
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+    const record = item as Record<string, unknown>;
+    return Object.fromEntries(Object.keys(record).sort().map((key) => [key, record[key]]));
+  });
+}
+
+/** 比较“当前信封（不存在视为 null）”与期望信封的 JSON 结构。 */
+function sameEnvelopeJson(
+  current: LocalDocumentEnvelope | null,
+  expected: LocalDocumentEnvelope | null,
+): boolean {
+  if (current === null || expected === null) return current === expected;
+  return canonicalJson(current) === canonicalJson(expected);
+}
+
 export class DexieLocalDocumentStore {
   readonly #database: PbDHLocalDatabase;
 
@@ -253,15 +287,23 @@ export class DexieLocalDocumentStore {
   }
 
   async listTrash<T>(documentKind: LocalDocumentKind): Promise<Array<LocalDocumentEnvelope<T>>> {
-    await this.purgeExpiredTrash();
-    const records = await this.#database.localDocuments
-      .where("documentKind")
-      .equals(documentKind)
-      .sortBy("deletedAt");
-    return records
-      .filter((record) => Boolean(record.deletedAt))
-      .reverse()
-      .map((record) => structuredClone(record) as LocalDocumentEnvelope<T>);
+    try {
+      await this.purgeExpiredTrash();
+    } catch (cause) {
+      throw new LocalTrashReadError("cleanup", cause);
+    }
+    try {
+      const records = await this.#database.localDocuments
+        .where("documentKind")
+        .equals(documentKind)
+        .sortBy("deletedAt");
+      return records
+        .filter((record) => Boolean(record.deletedAt))
+        .reverse()
+        .map((record) => structuredClone(record) as LocalDocumentEnvelope<T>);
+    } catch (cause) {
+      throw new LocalTrashReadError("list", cause);
+    }
   }
 
   async getTrash<T>(
@@ -276,14 +318,28 @@ export class DexieLocalDocumentStore {
   async put<T>(
     envelope: LocalDocumentEnvelope<T>,
     media: readonly LocalMediaAssetRecord[] = [],
+    options: { replaceTrash?: boolean; expected?: LocalDocumentEnvelope | null } = {},
   ): Promise<void> {
     await this.#database.transaction(
       "rw",
+      this.#database.installedSystemResourcePackages,
       this.#database.localDocuments,
       this.#database.mediaAssets,
       async () => {
         const existing = await this.#database.localDocuments.get(envelope.documentId);
-        if (existing?.deletedAt && !envelope.deletedAt) {
+        // 并发写保护：比较事务内最新信封与调用方快照，变化或不一致就拒绝写入媒体与正文。
+        if (options.expected !== undefined) {
+          const current = existing ? structuredClone(existing) as LocalDocumentEnvelope : null;
+          if (!sameEnvelopeJson(current, options.expected)) {
+            throw new LocalDocumentChangedError(envelope.documentId);
+          }
+        }
+        if (existing && existing.documentKind !== envelope.documentKind) {
+          throw new Error(`同编号本地文档类型不一致：${envelope.documentId}`);
+        }
+        // 默认拒绝复活回收站文档；只有显式 replaceTrash 且同 kind 才允许原子替换。
+        const replacingTrash = Boolean(options.replaceTrash && existing?.deletedAt && !envelope.deletedAt);
+        if (existing?.deletedAt && !envelope.deletedAt && !replacingTrash) {
           throw new Error("同编号文档仍在回收站，请先恢复或永久删除。");
         }
         if (media.length > 0) await this.#database.mediaAssets.bulkPut(media.map(copyMedia));
@@ -291,11 +347,19 @@ export class DexieLocalDocumentStore {
         const missing = envelope.assetIds.filter((id) => !stored.has(id));
         if (missing.length > 0) throw new Error(`Missing local media: ${missing.join(", ")}`);
         await this.#database.localDocuments.put(structuredClone(envelope));
+        if (replacingTrash && existing) {
+          // 替换后只清理旧回收站中无人引用的媒体；新活动文档引用的媒体仍被文档表引用，不会被清理。
+          await this.#removeUnreferencedMedia(existing.assetIds);
+        }
       },
     );
   }
 
-  async remove(documentKind: LocalDocumentKind, documentId: string): Promise<void> {
+  async remove(
+    documentKind: LocalDocumentKind,
+    documentId: string,
+    options: { expected?: LocalDocumentEnvelope | null } = {},
+  ): Promise<void> {
     await this.#database.transaction(
       "rw",
       this.#database.installedSystemResourcePackages,
@@ -303,6 +367,13 @@ export class DexieLocalDocumentStore {
       this.#database.mediaAssets,
       async () => {
         const record = await this.#database.localDocuments.get(documentId);
+        // 删除同样按事务内最新信封做 CAS，避免云端删除期间出现的新本地副本被误删。
+        if (options.expected !== undefined) {
+          const current = record ? structuredClone(record) as LocalDocumentEnvelope : null;
+          if (!sameEnvelopeJson(current, options.expected)) {
+            throw new LocalDocumentChangedError(documentId);
+          }
+        }
         if (record?.documentKind !== documentKind) return;
         await this.#database.localDocuments.delete(documentId);
         await this.#removeUnreferencedMedia(record.assetIds);
@@ -314,9 +385,13 @@ export class DexieLocalDocumentStore {
     documentKind: LocalDocumentKind,
     documentId: string,
     deletedAt = new Date().toISOString(),
+    options: { expected?: LocalDocumentEnvelope | null } = {},
   ): Promise<void> {
     await this.#database.transaction("rw", this.#database.localDocuments, async () => {
       const record = await this.#database.localDocuments.get(documentId);
+      if (options.expected !== undefined && !sameEnvelopeJson(record ?? null, options.expected)) {
+        throw new LocalDocumentChangedError(documentId);
+      }
       if (!record || record.documentKind !== documentKind || record.deletedAt) return;
       await this.#database.localDocuments.put({
         ...record,
@@ -331,9 +406,13 @@ export class DexieLocalDocumentStore {
     documentKind: LocalDocumentKind,
     documentId: string,
     accountId: string,
+    options: { expected?: LocalDocumentEnvelope | null } = {},
   ): Promise<void> {
     await this.#database.transaction("rw", this.#database.localDocuments, async () => {
       const record = await this.#database.localDocuments.get(documentId);
+      if (options.expected !== undefined && !sameEnvelopeJson(record ?? null, options.expected)) {
+        throw new LocalDocumentChangedError(documentId);
+      }
       if (!record || record.documentKind !== documentKind) return;
       if (record.sync.scope === "cloud" && record.sync.accountId !== accountId) {
         throw new Error("请切换到文档所属账号后重试。");
@@ -379,12 +458,16 @@ export class DexieLocalDocumentStore {
   }
 
   async purgeExpiredTrash(now = new Date().toISOString()): Promise<number> {
-    const expired = (await this.#database.localDocuments.toArray())
-      .filter((record) => record.deletedAt && record.purgeAfter && record.purgeAfter <= now);
-    for (const record of expired) {
-      await this.deletePermanently(record.documentKind, record.documentId);
-    }
-    return expired.length;
+    // 多个来源与浏览器标签可能同时清理；查找和删除必须共享事务。
+    return this.#database.transaction("rw", this.#database.installedSystemResourcePackages,
+      this.#database.localDocuments, this.#database.mediaAssets, async () => {
+        const expired = (await this.#database.localDocuments.toArray())
+          .filter((record) => record.deletedAt && record.purgeAfter && record.purgeAfter <= now);
+        for (const record of expired) {
+          await this.deletePermanently(record.documentKind, record.documentId);
+        }
+        return expired.length;
+      });
   }
 
   async replace<T>(

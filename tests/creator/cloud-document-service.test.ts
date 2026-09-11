@@ -163,7 +163,7 @@ describe("Creator and GM cloud recovery", () => {
     expect((await repository.list())[0]?.key).toBe(workspace.key);
   });
 
-  test("closes a signed-in workspace locally when its first cloud upload has not succeeded", async () => {
+  test("trashes a signed-in workspace locally when its first cloud upload has not succeeded", async () => {
     const store = new DexieLocalDocumentStore(database());
     const workspaceRepository = new CreatorWorkspaceRepository(store);
     const tabletopRepository = new TabletopDocumentRepository(store);
@@ -287,5 +287,264 @@ describe("Creator and GM cloud recovery", () => {
       media: { portrait: asset.id },
     });
     expect(tabletopOnlyRecovery.tabletops[0]?.media.get(asset.id)).toEqual(bytes);
+  });
+});
+
+const recoveryMediaPath = "contracts/conformance/resource-package/1.0.0/media/0e282056f7db585202319c5c8df5857189a8f4280dcd0015814bbfadc89b7034.webp";
+
+/** 读取 minotaur fixture 的首个媒体资源，供本地记录与云端墓碑共用。 */
+function recoveryMedia() {
+  const document = minotaurPackage as ResourcePackageLogicalDocument;
+  const asset = document.assets[0]!;
+  return {
+    document,
+    asset,
+    bytes: new Uint8Array(readFileSync(path.join(process.cwd(), recoveryMediaPath))),
+  };
+}
+
+/** 建立当前账号的 cloud creator-workspace，并把同步状态固定为指定初始值。 */
+async function seedCloudWorkspace(
+  store: DexieLocalDocumentStore,
+  repository: CreatorWorkspaceRepository,
+  accountId: string,
+  state: "clean" | "pending" | "conflict",
+) {
+  const { document, asset, bytes } = recoveryMedia();
+  const workspace = createWorkspace({ document, media: new Map([[asset.id, bytes]]) });
+  await repository.save(workspace, accountId);
+  const envelope = (await store.get("creator-workspace", workspace.key))!;
+  envelope.sync = {
+    scope: "cloud",
+    state,
+    baseRevision: "1",
+    accountId,
+    mutationId: null,
+    lastError: state === "conflict" ? "本地已有冲突内容" : null,
+  };
+  await store.put(envelope);
+  return { workspace, asset, bytes };
+}
+
+/** 用本地记录构造同 ID 的云端回收站文档（deletedAt 非空）。 */
+async function remoteWorkspaceTombstone(
+  store: DexieLocalDocumentStore,
+  documentId: string,
+  revision: number,
+): Promise<RemoteCloudDocument> {
+  const envelope = (await store.get("creator-workspace", documentId))!;
+  return {
+    documentId,
+    documentKind: "creator-workspace",
+    contractFamily: envelope.contractFamily,
+    contractVersion: envelope.contractVersion,
+    revision,
+    assetIds: [...envelope.assetIds],
+    payload: structuredClone(envelope.payload),
+    createdAt: envelope.createdAt,
+    updatedAt: envelope.updatedAt,
+    deletedAt: "2026-09-01T00:00:00.000Z",
+    purgeAfter: "2026-10-01T00:00:00.000Z",
+  };
+}
+
+describe("Creator cloud recovery versus a trashed cloud copy", () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  test("恢复云回收站不能覆盖当前账号的活动工作区", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(store, repository, credentials.accountId, "clean");
+    const remote = await remoteWorkspaceTombstone(store, workspace.key, 2);
+    const api = new RecoveryApi([remote], new Map([[asset.id, bytes]]));
+    const restore = vi.spyOn(api, "restoreDocument");
+    const before = await store.get("creator-workspace", workspace.key);
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+    await expect(service.restoreFromTrash(remote, credentials)).rejects.toThrow("工作区已有同 ID");
+    expect(restore).not.toHaveBeenCalled();
+    expect(await store.get("creator-workspace", workspace.key)).toEqual(before);
+  });
+
+  test("保留云端的旧确认不能覆盖已经保存的新编辑", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(store, repository, credentials.accountId, "clean");
+    const edited = createWorkspace(workspace);
+    edited.document.package.name = "确认后继续编辑";
+    await repository.save(edited, credentials.accountId);
+    const api = new RecoveryApi([], new Map([[asset.id, bytes]]));
+    const getDocument = vi.spyOn(api, "getDocument");
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+    await expect(service.keepCloud("creator-workspace", workspace.key, credentials, workspace)).rejects.toThrow("已被其他操作更新");
+    expect(getDocument).not.toHaveBeenCalled();
+    expect((await repository.list())[0]?.document.package.name).toBe("确认后继续编辑");
+  });
+
+  test.each([true, false])("下载云端快照期间出现的本地编辑或导入不能被覆盖（原有工作区：%s）", async (existing) => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(store, repository, credentials.accountId, "clean");
+    const remote = { ...await remoteWorkspaceTombstone(store, workspace.key, 2), deletedAt: null, purgeAfter: null };
+    if (!existing) await store.remove("creator-workspace", workspace.key);
+    const api = new RecoveryApi([remote], new Map([[asset.id, bytes]]));
+    vi.spyOn(api, "getMedia").mockImplementation(async () => {
+      workspace.document.package.name = "下载期间的新编辑";
+      await repository.saveImported(workspace, credentials.accountId);
+      return bytes;
+    });
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+    const snapshot = await service.recover(credentials);
+    expect(snapshot.workspaces[0]?.workspace.document.package.name).toBe("下载期间的新编辑");
+    expect((await repository.list())[0]?.document.package.name).toBe("下载期间的新编辑");
+    expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
+  });
+
+  test("云删除请求期间重新保存的本地包不能被删除回执清理", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(store, repository, credentials.accountId, "clean");
+    const remote = await remoteWorkspaceTombstone(store, workspace.key, 2);
+    const api = new RecoveryApi([{ ...remote, deletedAt: null }], new Map([[asset.id, bytes]]));
+    vi.spyOn(api, "trashDocument").mockImplementation(async () => {
+      workspace.document.package.name = "删除期间的新内容";
+      await repository.saveImported(workspace, credentials.accountId);
+      return remote;
+    });
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+    await expect(service.trash("creator-workspace", workspace.key, credentials)).rejects.toThrow("已被其他操作更新");
+    expect((await repository.list())[0]?.document.package.name).toBe("删除期间的新内容");
+    expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
+  });
+
+  test("删除云端包后重新导入同 ID，连续恢复仍保留重新导入的本地内容", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const workspaceRepository = new CreatorWorkspaceRepository(store);
+    const tabletopRepository = new TabletopDocumentRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(
+      store, workspaceRepository, credentials.accountId, "clean",
+    );
+    const tombstone = await remoteWorkspaceTombstone(store, workspace.key, 2);
+    const api = new RecoveryApi([{ ...tombstone, deletedAt: null }], new Map([[asset.id, bytes]]));
+    vi.spyOn(api, "trashDocument").mockImplementation(async () => {
+      api.documents.splice(0, 1, tombstone);
+      return tombstone;
+    });
+    const putDocument = vi.spyOn(api, "putDocument");
+    const service = new CreatorCloudDocumentService(store, workspaceRepository, tabletopRepository, api);
+    await service.trash("creator-workspace", workspace.key, credentials);
+    expect(await store.get("creator-workspace", workspace.key)).toBeUndefined();
+
+    workspace.document.package.name = "重新导入的本地内容";
+    await workspaceRepository.saveImported(workspace, credentials.accountId);
+    const reimported = (await store.get("creator-workspace", workspace.key))!;
+    expect(reimported.sync).toMatchObject({ state: "pending", baseRevision: null });
+
+    for (let refresh = 0; refresh < 2; refresh += 1) {
+      const snapshot = await service.recover(credentials);
+      expect(snapshot.workspaces).toHaveLength(1);
+      expect(snapshot.workspaces[0]?.workspace.document.package.name).toBe("重新导入的本地内容");
+      expect(snapshot.workspaces[0]?.workspace.media.get(asset.id)).toEqual(bytes);
+      expect((await store.get("creator-workspace", workspace.key))?.payload).toEqual(reimported.payload);
+    }
+    expect(putDocument).not.toHaveBeenCalled();
+    expect(api.documents[0]?.deletedAt).toBe(tombstone.deletedAt);
+  });
+
+  test.each(["clean", "pending", "conflict"] as const)(
+    "本地当前账号 cloud 工作区在云端为回收站时保留 payload 与媒体并标记 conflict（%s）",
+    async (initialState) => {
+      const store = new DexieLocalDocumentStore(database());
+      const workspaceRepository = new CreatorWorkspaceRepository(store);
+      const tabletopRepository = new TabletopDocumentRepository(store);
+      const { workspace, asset, bytes } = await seedCloudWorkspace(
+        store,
+        workspaceRepository,
+        credentials.accountId,
+        initialState,
+      );
+      const before = (await store.get("creator-workspace", workspace.key))!;
+      const api = new RecoveryApi(
+        [await remoteWorkspaceTombstone(store, workspace.key, 2)],
+        new Map([[asset.id, bytes]]),
+      );
+      const putDocument = vi.spyOn(api, "putDocument");
+      const restoreDocument = vi.spyOn(api, "restoreDocument");
+      const service = new CreatorCloudDocumentService(store, workspaceRepository, tabletopRepository, api);
+
+      await service.recover(credentials);
+
+      const retained = await store.get("creator-workspace", workspace.key);
+      expect(retained).toBeDefined();
+      expect(retained?.sync).toMatchObject({
+        scope: "cloud",
+        state: "conflict",
+        accountId: credentials.accountId,
+      });
+      expect(retained?.sync.lastError).toContain("云端");
+      expect(retained?.sync.lastError).toContain("回收站");
+      expect(retained?.payload).toEqual(before.payload);
+      expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
+      expect(putDocument).not.toHaveBeenCalled();
+      expect(restoreDocument).not.toHaveBeenCalled();
+
+      // 第二次 recover：冲突未解决前仍必须保留本地 payload 与媒体，且不得上传。
+      await service.recover(credentials);
+
+      const retainedAgain = await store.get("creator-workspace", workspace.key);
+      expect(retainedAgain).toBeDefined();
+      expect(retainedAgain?.sync).toMatchObject({ state: "conflict" });
+      expect(retainedAgain?.payload).toEqual(before.payload);
+      expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
+      expect(putDocument).not.toHaveBeenCalled();
+    },
+  );
+
+  test("local-only 工作区在云端同 ID 墓碑下不受影响", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const workspaceRepository = new CreatorWorkspaceRepository(store);
+    const tabletopRepository = new TabletopDocumentRepository(store);
+    const { document, asset, bytes } = recoveryMedia();
+    const workspace = createWorkspace({ document, media: new Map([[asset.id, bytes]]) });
+    await workspaceRepository.save(workspace);
+    const before = (await store.get("creator-workspace", workspace.key))!;
+    const service = new CreatorCloudDocumentService(
+      store,
+      workspaceRepository,
+      tabletopRepository,
+      new RecoveryApi([await remoteWorkspaceTombstone(store, workspace.key, 2)], new Map([[asset.id, bytes]])),
+    );
+
+    await service.recover(credentials);
+
+    const after = await store.get("creator-workspace", workspace.key);
+    expect(after?.sync).toMatchObject({ scope: "local-only", state: "clean" });
+    expect(after?.payload).toEqual(before.payload);
+    expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
+  });
+
+  test("其他账号的 cloud 工作区在云端同 ID 墓碑下不受影响", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const workspaceRepository = new CreatorWorkspaceRepository(store);
+    const tabletopRepository = new TabletopDocumentRepository(store);
+    const { workspace, asset, bytes } = await seedCloudWorkspace(
+      store,
+      workspaceRepository,
+      "account-2",
+      "clean",
+    );
+    const before = (await store.get("creator-workspace", workspace.key))!;
+    const service = new CreatorCloudDocumentService(
+      store,
+      workspaceRepository,
+      tabletopRepository,
+      new RecoveryApi([await remoteWorkspaceTombstone(store, workspace.key, 2)], new Map([[asset.id, bytes]])),
+    );
+
+    await service.recover(credentials);
+
+    const after = await store.get("creator-workspace", workspace.key);
+    expect(after?.sync).toMatchObject({ scope: "cloud", state: "clean", accountId: "account-2" });
+    expect(after?.payload).toEqual(before.payload);
+    expect((await store.getMedia([asset.id])).get(asset.id)).toEqual(bytes);
   });
 });

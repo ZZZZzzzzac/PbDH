@@ -18,6 +18,7 @@ import {
   resourceTabKey,
 } from "./tab-order.ts";
 import type { CreatorWorkspace } from "./workspace-model.ts";
+import { mergeWorkspaceSnapshot, type WorkspaceSnapshotUpdate } from "./workspace-snapshot.ts";
 
 const LOCAL_SAVE_DELAY_MS = 400;
 
@@ -74,6 +75,13 @@ export function useCreatorDocumentPersistence({
   const workspaceWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const tabletopWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
   const workspaceSaveSequenceRef = useRef(0);
+  const currentWorkspacesRef = useRef(workspaces);
+  currentWorkspacesRef.current = workspaces;
+  const workspaceAccountRef = useRef(credentials?.accountId ?? null);
+  const currentAccountIdRef = useRef(credentials?.accountId ?? null);
+  currentAccountIdRef.current = credentials?.accountId ?? null;
+  const workspaceRestoredRef = useRef(false);
+  const savedWorkspacesRef = useRef(new Map<string, CreatorWorkspace>());
   const tabletopSaveSequenceRef = useRef(0);
   const savedTabletopsRef = useRef(new Map<string, {
     model: TabletopDocumentModel;
@@ -86,7 +94,8 @@ export function useCreatorDocumentPersistence({
     setTabletopSync(new Map(snapshot.tabletopSync));
   }, []);
 
-  const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean) => {
+  const applyCloudSnapshot = useCallback((snapshot: CreatorCloudRecovery, replaceDocuments: boolean, workspaceUpdate?: WorkspaceSnapshotUpdate) => {
+    if (currentAccountIdRef.current !== (credentials?.accountId ?? null)) return;
     const restoredWorkspaces = snapshot.workspaces.map((item) => item.workspace);
     const restoredTabletops = snapshot.tabletops.map((item) => containGmTabletopInstances(item.model));
     setWorkspaceSync(new Map(snapshot.workspaces.map((item) => [item.workspace.key, item.sync])));
@@ -96,17 +105,45 @@ export function useCreatorDocumentPersistence({
       model: item.model, media: item.model.assets.map((asset) => item.media.get(asset.id)),
       accountId: credentials?.accountId ?? null,
     }));
-    setWorkspaces(restoredWorkspaces);
+    if (workspaceUpdate) {
+      setWorkspaces((current) => mergeWorkspaceSnapshot(current, restoredWorkspaces, workspaceUpdate));
+    }
     setTabletops(restoredTabletops);
-    setActiveWorkspaceKey((current) => restoredWorkspaces.some((item) => item.key === current) ? current : restoredWorkspaces[0]?.key ?? "");
-    setActiveResourceId((current) => restoredWorkspaces.some((item) => item.document.resources.some((resource) => resource.id === current))
-      ? current : restoredWorkspaces[0]?.openResourceIds[0] ?? "");
     setActiveTabletopId((current) => restoredTabletops.some((item) => item.id === current) ? current : restoredTabletops[0]?.id ?? "");
     const media = new Map(snapshot.tabletops.flatMap((item) => [...item.media]));
     setTabletopMedia(media);
     addAssetBytes(restoredWorkspaces.flatMap((workspace) => [...workspace.media]));
     addAssetBytes(media);
   }, [addAssetBytes, credentials?.accountId, setActiveResourceId, setActiveTabletopId, setActiveWorkspaceKey, setTabletops, setWorkspaces]);
+
+  const saveWorkspaceSnapshot = useCallback((snapshot: readonly CreatorWorkspace[], accountId: string | null) => {
+    const sequence = ++workspaceSaveSequenceRef.current;
+    setWorkspaceSaving(true);
+    const write = workspaceWriteQueueRef.current.then(async () => {
+      for (const workspace of snapshot) {
+        if (currentWorkspacesRef.current.find((item) => item.key === workspace.key) !== workspace
+          || savedWorkspacesRef.current.get(workspace.key) === workspace) continue;
+        await workspaceRepository.save(workspace, accountId);
+        savedWorkspacesRef.current.set(workspace.key, workspace);
+      }
+    });
+    workspaceWriteQueueRef.current = write.catch(() => undefined);
+    void write.then(
+      () => { if (workspaceSaveSequenceRef.current === sequence) setWorkspaceSaving(false); },
+      () => { if (workspaceSaveSequenceRef.current === sequence) setWorkspaceSaving(false); },
+    );
+    return write;
+  }, [workspaceRepository]);
+
+  const flushWorkspaceWrites = useCallback(async () => {
+    if (!workspaceRestoredRef.current || workspaceAccountRef.current !== currentAccountIdRef.current) {
+      throw new Error("工作区尚未恢复完成，请稍后重试。");
+    }
+    while (true) {
+      await saveWorkspaceSnapshot(currentWorkspacesRef.current, workspaceAccountRef.current);
+      if (currentWorkspacesRef.current.every((workspace) => savedWorkspacesRef.current.get(workspace.key) === workspace)) return;
+    }
+  }, [saveWorkspaceSnapshot]);
 
   useEffect(() => {
     retainAssetUrls([...workspaces.flatMap((workspace) => [...workspace.media.keys()]), ...tabletopMedia.keys()]);
@@ -119,7 +156,13 @@ export function useCreatorDocumentPersistence({
   useEffect(() => {
     if (!restoreStarted) return;
     let cancelled = false;
-    workspaceRepository.listStored().then((stored) => {
+    const baseline = currentWorkspacesRef.current;
+    const accountChanged = workspaceAccountRef.current !== (credentials?.accountId ?? null);
+    setWorkspaceStorageReady(false);
+    const pendingWrites = workspaceRestoredRef.current
+      ? saveWorkspaceSnapshot(baseline, workspaceAccountRef.current)
+      : workspaceWriteQueueRef.current;
+    pendingWrites.then(() => workspaceRepository.listStored()).then((stored) => {
       const visible = stored.filter((item) => item.sync.scope === "local-only" || item.sync.accountId === credentials?.accountId);
       if (cancelled) return;
       const restored = visible.map((item) => item.workspace);
@@ -133,15 +176,25 @@ export function useCreatorDocumentPersistence({
         openResources.map((item) => item.tabKey),
       );
       const activeResource = openResources.find((item) => item.tabKey === activeTabKey);
-      setWorkspaces(restored);
+      workspaceAccountRef.current = credentials?.accountId ?? null;
+      workspaceRestoredRef.current = true;
+      if (accountChanged) savedWorkspacesRef.current.clear();
+      setWorkspaces((current) => accountChanged ? restored : mergeWorkspaceSnapshot(current, restored, { baseline }));
       setWorkspaceSync(new Map(visible.map((item) => [item.workspace.key, item.sync])));
       setActiveWorkspaceKey(activeResource?.workspaceKey ?? restored[0]?.key ?? "");
       setActiveResourceId(activeResource?.resourceId ?? "");
       addAssetBytes(restored.flatMap((workspace) => [...workspace.media]));
-    }).catch((error) => notify(error instanceof Error ? error.message : "工作区恢复失败"))
-      .finally(() => { if (!cancelled) setWorkspaceStorageReady(true); });
+      setWorkspaceStorageReady(true);
+    }).catch((error) => { if (!cancelled) notify(error instanceof Error ? error.message : "工作区恢复失败"); });
     return () => { cancelled = true; };
-  }, [addAssetBytes, credentials?.accountId, notify, restoreStarted, setActiveResourceId, setActiveWorkspaceKey, setWorkspaces, workspaceRepository]);
+  }, [addAssetBytes, credentials?.accountId, notify, restoreStarted, saveWorkspaceSnapshot, setActiveResourceId, setActiveWorkspaceKey, setWorkspaces, workspaceRepository]);
+
+  useEffect(() => {
+    if (!workspaceStorageReady) return;
+    setActiveWorkspaceKey((current) => workspaces.some((workspace) => workspace.key === current) ? current : workspaces[0]?.key ?? "");
+    setActiveResourceId((current) => workspaces.some((workspace) => workspace.document.resources.some((resource) => resource.id === current))
+      ? current : workspaces[0]?.openResourceIds[0] ?? "");
+  }, [setActiveResourceId, setActiveWorkspaceKey, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     if (!restoreStarted) return;
@@ -171,22 +224,11 @@ export function useCreatorDocumentPersistence({
   }, [addAssetBytes, credentials?.accountId, notify, restoreStarted, setActiveTabletopId, setSelectedInstanceId, setSelectedInstanceIds, setTabletops, tabletopRepository]);
 
   useEffect(() => {
-    if (!workspaceStorageReady) return;
-    const timeout = window.setTimeout(() => {
-      const sequence = ++workspaceSaveSequenceRef.current;
-      setWorkspaceSaving(true);
-      const write = workspaceWriteQueueRef.current.then(async () => {
-        await Promise.all(workspaces.map((workspace) => workspaceRepository.save(workspace, credentials?.accountId ?? null)));
-      });
-      workspaceWriteQueueRef.current = write.catch(() => undefined);
-      write.catch((error) => notify(error instanceof Error ? error.message : "工作区保存失败"));
-      void write.then(
-        () => { if (workspaceSaveSequenceRef.current === sequence) setWorkspaceSaving(false); },
-        () => { if (workspaceSaveSequenceRef.current === sequence) setWorkspaceSaving(false); },
-      );
-    }, LOCAL_SAVE_DELAY_MS);
-    return () => window.clearTimeout(timeout);
-  }, [credentials?.accountId, notify, workspaceRepository, workspaceStorageReady, workspaces]);
+    if (!workspaceStorageReady || workspaceAccountRef.current !== (credentials?.accountId ?? null)) return;
+    // 编辑立即进入写队列，排队期间过时的快照会被跳过，不再留下防抖未落盘窗口。
+    void saveWorkspaceSnapshot(workspaces, credentials?.accountId ?? null)
+      .catch((error) => notify(error instanceof Error ? error.message : "工作区保存失败"));
+  }, [credentials?.accountId, notify, saveWorkspaceSnapshot, workspaceStorageReady, workspaces]);
 
   useEffect(() => {
     if (!tabletopStorageReady) return;
@@ -256,16 +298,21 @@ export function useCreatorDocumentPersistence({
   useEffect(() => {
     if (!credentials) { cloudRecoveryAccountRef.current = null; return; }
     if (!workspaceStorageReady || !tabletopStorageReady || cloudRecoveryAccountRef.current === credentials.accountId) return;
-    cloudRecoveryAccountRef.current = credentials.accountId;
     let cancelled = false;
-    cloudDocumentService.recover(credentials).then((snapshot) => {
-      if (!cancelled) applyCloudSnapshot(snapshot, true);
+    flushWorkspaceWrites().then(async () => {
+      if (cancelled) return;
+      const baseline = currentWorkspacesRef.current;
+      const snapshot = await cloudDocumentService.recover(credentials);
+      if (!cancelled) {
+        applyCloudSnapshot(snapshot, true, { baseline, replaceKeys: baseline.map((workspace) => workspace.key) });
+        cloudRecoveryAccountRef.current = credentials.accountId;
+      }
     }).catch((error) => {
       cloudRecoveryAccountRef.current = null;
       if (!cancelled) notify(error instanceof Error ? error.message : "云文档恢复失败");
     });
     return () => { cancelled = true; };
-  }, [applyCloudSnapshot, cloudDocumentService, credentials, notify, tabletopStorageReady, workspaceStorageReady]);
+  }, [applyCloudSnapshot, cloudDocumentService, credentials, flushWorkspaceWrites, notify, tabletopStorageReady, workspaceStorageReady]);
 
   return {
     repositories: { workspace: workspaceRepository, tabletop: tabletopRepository },
@@ -281,5 +328,6 @@ export function useCreatorDocumentPersistence({
     },
     applyCloudSnapshot,
     applyCloudSync,
+    flushWorkspaceWrites,
   };
 }

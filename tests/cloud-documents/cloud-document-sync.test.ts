@@ -40,7 +40,6 @@ describe("Cloud document deletion", () => {
         const cloud = api();
         vi.spyOn(cloud, "getDocument").mockResolvedValue(remote(local, 7));
         const trash = vi.spyOn(cloud, "trashDocument").mockImplementation(async () => {
-          await store.put({ ...local, payload: { name: "删除请求期间的编辑" } });
           return { ...remote(local, 8), deletedAt: new Date().toISOString() };
         });
         await trashCloudDocument(store, cloud, kind, local.documentId, credentials);
@@ -48,7 +47,7 @@ describe("Cloud document deletion", () => {
         expect(trash).toHaveBeenCalledWith(local.documentId, expect.any(String), 7, credentials);
         expect(await store.get(kind, local.documentId)).toBeUndefined();
         expect(await store.getTrash(kind, local.documentId)).toMatchObject({
-          payload: { name: "删除请求期间的编辑" }, sync: { scope: "local-only", state: "clean", baseRevision: null },
+          payload: local.payload, sync: { scope: "local-only", state: "clean", baseRevision: null },
         });
         expect((await store.getMedia(local.assetIds)).get("sha256:asset")).toEqual(new Uint8Array([1, 2, 3]));
         await trashCloudDocument(store, cloud, kind, local.documentId, credentials);
