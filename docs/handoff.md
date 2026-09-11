@@ -1,6 +1,6 @@
 # 开发交接
 
-整理日期：2026-09-11。当前目标版本 **v0.1.18**，部署回执待发布完成后补充。历史可从 Git 查询，发布与恢复操作见 [部署说明](../deploy/README.md)。
+整理日期：2026-09-11。**v0.1.18 已发布并部署到正式站点**，回执见下文。历史可从 Git 查询，发布与恢复操作见 [部署说明](../deploy/README.md)。
 
 ## 本次修复（工作区优先）
 
@@ -33,12 +33,14 @@
 - 用户 Edge 原 `UnknownError` 底层未真实复现，只复现并修复了并发清理与错误放大。
 - 本机旧 GM 文档 `Invalid stored Tabletop Document: contract.version.unsupported` 未修复未清理。
 - 已永久丢失的数据不会自动恢复。
-- 线上验收待工作流与 HTTP 版本 health 确认。
+- 线上已核对版本、前端制品与 API 健康状态；未使用真实账号数据执行删除、重新导入或冲突恢复验收。
 
 ## 发布状态
 
-- 拟发布 v0.1.18；当前源码未提交、未推送、未部署。
-- 最新 GitHub Release 为 v0.1.17，仅确认发布，不代表已部署。
+- 修复提交 `f529e7a1a5f1d91a4166efe7de82718c15cb0441` 已推送 `main`，标签 `v0.1.18` 指向该提交。
+- [Release 工作流](https://github.com/ZZZZzzzzac/PbDH/actions/runs/34590216167) 成功：Linux 完整验证、双基路径构建与不可变制品发布完成。
+- [Deploy Release 工作流](https://github.com/ZZZZzzzzac/PbDH/actions/runs/34590462030) 成功，使用既有备份与原子切换流程；[发布版本](https://github.com/ZZZZzzzzac/PbDH/releases/tag/v0.1.18)。
+- 独立线上检查：[正式首页](https://daggerheart.cn/pbdh/) 与引用的 JavaScript 制品均为 HTTP 200；页面版本 `0.1.18`，制品包含 `saveImported` 与 `TRASH_ACTIVE_WORKSPACE_EXISTS`；`/api/health` 返回 `status: ok`、`service: pbdh-platform-api`。
 
 ## 运维边界
 
