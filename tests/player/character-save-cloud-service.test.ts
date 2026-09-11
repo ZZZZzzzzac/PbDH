@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type {
   CloudCredentials,
@@ -77,6 +77,24 @@ class RecoveryApi implements CloudDocumentApi {
 }
 
 describe("Player Character Save cloud recovery", () => {
+  test("云端删除后的恢复扫描保留未同步本地内容，恢复后不自动上传", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CharacterSaveRepository(store);
+    const document = structuredClone(characterJson) as CharacterSaveDocument;
+    await repository.save(document, new Map(), credentials.accountId);
+    await store.updateSync("character-save", document.documentId, (local) => ({ ...local.sync, state: "conflict", baseRevision: "1" }));
+    const local = (await store.get("character-save", document.documentId))!;
+    const api = new RecoveryApi([{ ...local, revision: 3, deletedAt: new Date().toISOString(), purgeAfter: null }], new Map());
+    const put = vi.spyOn(api, "putDocument");
+    const service = new PlayerCloudDocumentService(store, repository, api);
+    expect(await service.recover(credentials)).toEqual([]);
+    expect((await store.getTrash("character-save", document.documentId))?.payload).toEqual(local.payload);
+    await repository.restore(document.documentId);
+    await service.recover(credentials);
+    expect((await store.get("character-save", document.documentId))?.sync.scope).toBe("local-only");
+    expect(put).not.toHaveBeenCalled();
+  });
+
   test("moves a signed-in save to local trash when its first cloud upload has not succeeded", async () => {
     const store = new DexieLocalDocumentStore(database());
     const repository = new CharacterSaveRepository(store);
@@ -93,7 +111,7 @@ describe("Player Character Save cloud recovery", () => {
     expect(await repository.list()).toEqual([]);
     expect(await repository.listTrashMetadata()).toMatchObject([{
       document: { documentId: document.documentId },
-      sync: { scope: "cloud", state: "pending", baseRevision: null },
+      sync: { scope: "local-only", state: "clean", baseRevision: null },
     }]);
   });
 

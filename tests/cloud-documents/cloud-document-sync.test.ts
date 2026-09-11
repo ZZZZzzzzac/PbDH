@@ -7,6 +7,7 @@ import {
   CloudDocumentCoordinator,
   HttpCloudDocumentApi,
   pendingSync,
+  trashCloudDocument,
   type CloudCredentials,
   type CloudDocumentApi,
   type RemoteCloudDocument,
@@ -25,6 +26,67 @@ const credentials: CloudCredentials = {
   accountId: "account-1",
   canWrite: true,
 };
+
+describe("Cloud document deletion", () => {
+  test.each((["character-save", "creator-workspace", "gm-tabletop-document"] as const)
+    .flatMap((kind) => (["clean", "pending", "conflict"] as const).map((state) => ({ kind, state }))))(
+    "$kind / $state 删除不上传内容，使用最新 revision 并保留可恢复快照", async ({ kind, state }) => {
+      const db = new PbDHLocalDatabase(`trash-${crypto.randomUUID()}`);
+      const store = new DexieLocalDocumentStore(db);
+      try {
+        const local = envelope("deleting", kind);
+        local.sync = { scope: "cloud", state, baseRevision: "1", accountId: credentials.accountId };
+        await store.put(local, [{ assetId: "sha256:asset", mediaType: "image/webp", byteLength: "3", bytes: new Uint8Array([1, 2, 3]) }]);
+        const cloud = api();
+        vi.spyOn(cloud, "getDocument").mockResolvedValue(remote(local, 7));
+        const trash = vi.spyOn(cloud, "trashDocument").mockImplementation(async () => {
+          await store.put({ ...local, payload: { name: "删除请求期间的编辑" } });
+          return { ...remote(local, 8), deletedAt: new Date().toISOString() };
+        });
+        await trashCloudDocument(store, cloud, kind, local.documentId, credentials);
+        expect(cloud.putDocument).not.toHaveBeenCalled();
+        expect(trash).toHaveBeenCalledWith(local.documentId, expect.any(String), 7, credentials);
+        expect(await store.get(kind, local.documentId)).toBeUndefined();
+        expect(await store.getTrash(kind, local.documentId)).toMatchObject({
+          payload: { name: "删除请求期间的编辑" }, sync: { scope: "local-only", state: "clean", baseRevision: null },
+        });
+        expect((await store.getMedia(local.assetIds)).get("sha256:asset")).toEqual(new Uint8Array([1, 2, 3]));
+        await trashCloudDocument(store, cloud, kind, local.documentId, credentials);
+        expect(trash).toHaveBeenCalledTimes(1);
+        await store.restore(kind, local.documentId);
+        expect((await store.get(kind, local.documentId))?.sync.scope).toBe("local-only");
+      } finally { db.close(); await db.delete(); }
+    });
+
+  test.each(["offline", "session", "account", "revision", "deleted", "missing", "first-upload"])(
+    "%s 有明确结果且不丢本地内容", async (scenario) => {
+      const db = new PbDHLocalDatabase(`trash-errors-${crypto.randomUUID()}`);
+      const store = new DexieLocalDocumentStore(db);
+      try {
+        const local = envelope(); local.assetIds = [];
+        local.sync = { scope: "cloud", state: "conflict", baseRevision: scenario === "first-upload" ? null : "1", accountId: credentials.accountId };
+        await store.put(local);
+        const cloud = api();
+        const get = vi.spyOn(cloud, "getDocument").mockResolvedValue({ ...remote(local, 2), deletedAt: scenario === "deleted" ? new Date().toISOString() : null });
+        const trash = vi.spyOn(cloud, "trashDocument");
+        if (scenario === "offline") get.mockRejectedValue(new TypeError("Failed to fetch"));
+        if (scenario === "missing") get.mockRejectedValue(new CloudApiError(404, "CLOUD_DOCUMENT_NOT_FOUND", "missing"));
+        if (scenario === "revision") trash.mockRejectedValue(new CloudApiError(409, "CLOUD_DOCUMENT_REVISION_CONFLICT", "conflict"));
+        const auth = { ...credentials, canWrite: scenario !== "session", accountId: scenario === "account" ? "other-account" : credentials.accountId };
+        const operation = trashCloudDocument(store, cloud, local.documentKind, local.documentId, auth);
+        if (["offline", "session", "account", "revision"].includes(scenario)) {
+          await expect(operation).rejects.toThrow(/重试/);
+          expect(await store.get(local.documentKind, local.documentId)).toEqual(local);
+        } else {
+          await operation;
+          expect((await store.getTrash(local.documentKind, local.documentId))?.payload).toEqual(local.payload);
+          expect(trash).not.toHaveBeenCalled();
+        }
+        if (["session", "account", "first-upload"].includes(scenario)) expect(get).not.toHaveBeenCalled();
+        expect(cloud.putDocument).not.toHaveBeenCalled();
+      } finally { db.close(); await db.delete(); }
+    });
+});
 
 describe("Cloud sync acknowledgement during editing", () => {
   test.each((["character-save", "creator-workspace", "gm-tabletop-document"] as const)

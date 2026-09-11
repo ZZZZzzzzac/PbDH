@@ -778,7 +778,7 @@ export function PlayerSheetSurface({
   }
 
   async function handleDeleteSave() {
-    if (!activeCharacterSaveId || playerOperation || !window.confirm("删除当前角色存档？")) return;
+    if (!activeCharacterSaveId || playerOperation || !window.confirm("将当前角色存档移到回收站？云端版本与本机快照分别保留 30 天，可从回收站恢复。")) return;
     setPlayerOperation("save");
     try {
       await deleteCharacterSave(activeCharacterSaveId);
@@ -872,7 +872,10 @@ export function PlayerSheetSurface({
       }));
       const credentials = credentialsRef.current;
       if (!credentials) return local;
-      const cloud = (await cloudDocumentService.listTrash(credentials)).map((remote) => ({
+      const cloud = (await cloudDocumentService.listTrash(credentials).catch(() => {
+        setCloudNotice("云端回收站暂不可用，当前显示本地内容。请检查网络或重新登录后刷新回收站。");
+        return [];
+      })).map((remote) => ({
         id: `cloud:${remote.documentId}`,
         name: remoteDocumentName(remote),
         documentType: "人物存档" as const,

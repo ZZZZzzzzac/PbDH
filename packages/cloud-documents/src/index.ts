@@ -39,6 +39,45 @@ export class CloudApiError extends Error {
   }
 }
 
+/** 删除是独立生命周期操作，不以内容上传成功为前提。 */
+export async function trashCloudDocument(
+  store: Pick<DexieLocalDocumentStore, "get" | "getTrash" | "preserveInLocalTrash">,
+  api: CloudDocumentApi,
+  documentKind: LocalDocumentKind,
+  documentId: string,
+  credentials: CloudCredentials,
+): Promise<void> {
+  const local = await store.get(documentKind, documentId);
+  if (!local) {
+    if (await store.getTrash(documentKind, documentId)) return;
+    throw new Error("没有找到要移到回收站的文档。");
+  }
+  if (local.sync.scope === "cloud") {
+    if (local.sync.accountId !== credentials.accountId) throw new Error("请切换到文档所属账号后重试。");
+    if (local.sync.baseRevision !== null) {
+      if (!credentials.canWrite) throw new Error("当前会话不能删除云文档，请重新登录后重试。");
+      try {
+        const remote = await api.getDocument(documentId, credentials);
+        if (remote.documentKind !== documentKind) throw new Error("云端文档类型不匹配，未执行删除。");
+        if (remote.deletedAt === null) {
+          await api.trashDocument(documentId, crypto.randomUUID(), remote.revision, credentials);
+        }
+      } catch (error) {
+        if (!(error instanceof CloudApiError && error.code === "CLOUD_DOCUMENT_NOT_FOUND")) {
+          if (error instanceof CloudApiError && error.code === "CLOUD_DOCUMENT_REVISION_CONFLICT") {
+            throw new Error("删除期间云端版本再次更新，请重试移到回收站；本地内容已保留。");
+          }
+          if (error instanceof TypeError || error instanceof DOMException && error.name === "TimeoutError") {
+            throw new Error("无法连接云端，本地内容已保留。请检查网络后重试移到回收站。");
+          }
+          throw error;
+        }
+      }
+    }
+  }
+  await store.preserveInLocalTrash(documentKind, documentId, credentials.accountId);
+}
+
 export interface CloudDocumentApi {
   listDocuments(
     documentKind: LocalDocumentKind,
@@ -122,6 +161,8 @@ export class CloudDocumentCoordinator {
   readonly #store: LocalDocumentStore;
   readonly #api: CloudDocumentApi;
   readonly #mutationId: () => string;
+  readonly #paused = new Set<string>();
+  readonly #uploads = new Map<string, Promise<keyof FlushResult>>();
 
   constructor(
     store: LocalDocumentStore,
@@ -152,6 +193,18 @@ export class CloudDocumentCoordinator {
     await this.#store.put(local);
   }
 
+  /** 等待已发出的上传回执，并在生命周期操作期间禁止启动新的上传。 */
+  async withSyncPaused<T>(documentId: string, operation: () => Promise<T>): Promise<T> {
+    if (this.#paused.has(documentId)) throw new Error("该文档正在处理，请稍后重试。");
+    this.#paused.add(documentId);
+    try {
+      await this.#uploads.get(documentId);
+      return await operation();
+    } finally {
+      this.#paused.delete(documentId);
+    }
+  }
+
   async flush(
     documentKind: LocalDocumentKind,
     credentials: CloudCredentials,
@@ -166,7 +219,16 @@ export class CloudDocumentCoordinator {
     }
     const result: FlushResult = { synced: 0, pending: 0, conflicts: 0 };
     for (const document of pending) {
-      const outcome = await this.#flushOne(document, credentials);
+      const latest = await this.#store.get(documentKind, document.documentId);
+      if (!latest || latest.sync.scope !== "cloud" || latest.sync.state !== "pending"
+        || latest.sync.accountId !== credentials.accountId) continue;
+      if (this.#paused.has(document.documentId)) { result.pending += 1; continue; }
+      let upload = this.#uploads.get(document.documentId);
+      if (!upload) {
+        upload = this.#flushOne(latest, credentials).finally(() => this.#uploads.delete(document.documentId));
+        this.#uploads.set(document.documentId, upload);
+      }
+      const outcome = await upload;
       result[outcome] += 1;
     }
     return result;
@@ -274,7 +336,13 @@ export class HttpCloudDocumentApi implements CloudDocumentApi {
   readonly #fetch: typeof fetch;
 
   constructor(fetcher?: typeof fetch) {
-    this.#fetch = fetcher ?? globalThis.fetch.bind(globalThis);
+    const request = fetcher ?? globalThis.fetch.bind(globalThis);
+    this.#fetch = (input, init) => request(input, {
+      ...init,
+      signal: init?.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(30_000)])
+        : AbortSignal.timeout(30_000),
+    });
   }
 
   async listDocuments(

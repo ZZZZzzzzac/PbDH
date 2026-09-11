@@ -1,6 +1,7 @@
 import {
   CloudDocumentCoordinator,
   HttpCloudDocumentApi,
+  trashCloudDocument,
   type CloudCredentials,
   type CloudDocumentApi,
   type RemoteCloudDocument,
@@ -128,29 +129,8 @@ export class CreatorCloudDocumentService {
     documentId: string,
     credentials: CloudCredentials,
   ): Promise<CreatorCloudRecovery> {
-    let local = await this.#store.get(documentKind, documentId);
-    if (!local) throw new Error("没有找到要移入回收站的本地文档。");
-    if (local.sync.scope !== "cloud") {
-      await this.#store.trash(documentKind, documentId);
-      return this.localSnapshot(credentials.accountId);
-    }
-    await this.#coordinator.flush(documentKind, credentials);
-    local = await this.#store.get(documentKind, documentId);
-    if (!local || local.sync.state !== "clean" || local.sync.baseRevision === null) {
-      if (local?.sync.baseRevision === null) {
-        await this.#store.trash(documentKind, documentId);
-        return this.localSnapshot(credentials.accountId);
-      }
-      throw new Error("文档尚未完成同步，暂时不能移到云端回收站。");
-    }
-    if (!credentials.canWrite) throw new Error("当前会话不能删除已经上传的云文档。");
-    await this.#api.trashDocument(
-      documentId,
-      crypto.randomUUID(),
-      revisionNumber(local.sync.baseRevision),
-      credentials,
-    );
-    await this.#store.remove(documentKind, documentId);
+    await this.#coordinator.withSyncPaused(documentId, () =>
+      trashCloudDocument(this.#store, this.#api, documentKind, documentId, credentials));
     return this.localSnapshot(credentials.accountId);
   }
 
@@ -169,7 +149,7 @@ export class CreatorCloudDocumentService {
     const local = await this.#store.get(remote.documentKind, remote.documentId)
       ?? await this.#store.getTrash(remote.documentKind, remote.documentId);
     if (local && (local.sync.scope === "local-only" || local.sync.accountId !== credentials.accountId)) {
-      throw new Error("本地已有同 ID 文档，不能直接恢复云端版本。");
+      throw new Error("本地已有同 ID 文档。请从本地回收站恢复本机版本；如需云端版本，请先导出保留本地内容，再移除同 ID 本地文档。");
     }
     const restored = await this.#api.restoreDocument(
       remote.documentId,
@@ -199,7 +179,7 @@ export class CreatorCloudDocumentService {
         ?? await this.#store.getTrash(documentKind, remote.documentId);
       if (remote.deletedAt !== null) {
         if (local?.sync.scope === "cloud" && local.sync.accountId === credentials.accountId) {
-          await this.#store.remove(documentKind, remote.documentId);
+          await this.#store.preserveInLocalTrash(documentKind, remote.documentId, credentials.accountId);
         }
         continue;
       }

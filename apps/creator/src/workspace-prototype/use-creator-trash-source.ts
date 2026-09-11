@@ -86,7 +86,10 @@ export function useCreatorTrashSource({
         })),
       ];
       if (!credentials) return local;
-      const cloud = (await cloudDocumentService.listTrash(credentials)).map((remote) => ({
+      const cloud = (await cloudDocumentService.listTrash(credentials).catch(() => {
+        notify("云端回收站暂不可用，当前显示本地内容。请检查网络或重新登录后刷新回收站。");
+        return [];
+      })).map((remote) => ({
         id: `cloud:${remote.documentKind}:${remote.documentId}`,
         name: trashDocumentName(remote),
         documentType: remote.documentKind === "creator-workspace" ? "资源工作区" as const : "GM 桌面" as const,

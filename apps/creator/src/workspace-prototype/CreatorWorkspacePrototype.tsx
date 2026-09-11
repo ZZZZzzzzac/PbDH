@@ -266,6 +266,7 @@ export function CreatorWorkspacePrototype({
   const [pendingCreatorImage, setPendingCreatorImage] = useState<PendingCreatorImage | null>(null);
   const [imageCropWorking, setImageCropWorking] = useState(false);
   const [imageCropError, setImageCropError] = useState<string | null>(null);
+  const [trashError, setTrashError] = useState<string | null>(null);
   const [creatorOperation, setCreatorOperation] = useState<CreatorOperation | null>(null);
   const [localAppMode, setLocalAppMode] = useState<CreatorAppMode>("creator");
   const appMode = mode ?? localAppMode;
@@ -609,6 +610,7 @@ export function CreatorWorkspacePrototype({
   async function closeWorkspacePackage(workspaceKey: string) {
     const closing = workspaces.find((workspace) => workspace.key === workspaceKey);
     if (!closing || creatorOperation) return;
+    setTrashError(null);
     setCreatorOperation("trash-workspace");
     setTabletopContextMenu(null);
     try {
@@ -636,7 +638,7 @@ export function CreatorWorkspacePrototype({
       }
       setDialog(null);
     } catch (error) {
-      notify(error instanceof Error ? error.message : "资源包关闭失败");
+      setTrashError(error instanceof Error ? error.message : "资源包删除失败，请重试。");
       return;
     } finally {
       setCreatorOperation(null);
@@ -1094,6 +1096,7 @@ export function CreatorWorkspacePrototype({
 
   async function deleteTabletop(tabletopId: string) {
     if (creatorOperation) return;
+    setTrashError(null);
     setCreatorOperation("trash-tabletop");
     setTabletopContextMenu(null);
     try {
@@ -1116,7 +1119,7 @@ export function CreatorWorkspacePrototype({
       setDialog(null);
       notify("桌面已移到回收站");
     } catch (error) {
-      notify(error instanceof Error ? error.message : "桌面删除失败");
+      setTrashError(error instanceof Error ? error.message : "桌面删除失败，请重试。");
     } finally {
       setCreatorOperation(null);
     }
@@ -1843,7 +1846,7 @@ export function CreatorWorkspacePrototype({
 
   function executeDialogCommand(command: CreatorDialogCommand) {
     switch (command.type) {
-      case "close": setDialog(null); return;
+      case "close": setTrashError(null); setDialog(null); return;
       case "set-new-name": setNewName(command.value); return;
       case "set-copy-package-name": setCopyPackageName(command.value); return;
       case "set-tabletop-name": setTabletopNameDraft(command.value); return;
@@ -2019,6 +2022,7 @@ export function CreatorWorkspacePrototype({
           publicationCover,
           publicationBusy,
           creatorOperation,
+          trashError,
           newName,
           copyPackageName,
           tabletopName: tabletopNameDraft,

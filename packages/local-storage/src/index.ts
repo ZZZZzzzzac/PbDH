@@ -326,6 +326,28 @@ export class DexieLocalDocumentStore {
     });
   }
 
+  /** 原子保留当前快照并解除同步；迟到的同步回执不能再认领它。 */
+  async preserveInLocalTrash(
+    documentKind: LocalDocumentKind,
+    documentId: string,
+    accountId: string,
+  ): Promise<void> {
+    await this.#database.transaction("rw", this.#database.localDocuments, async () => {
+      const record = await this.#database.localDocuments.get(documentId);
+      if (!record || record.documentKind !== documentKind) return;
+      if (record.sync.scope === "cloud" && record.sync.accountId !== accountId) {
+        throw new Error("请切换到文档所属账号后重试。");
+      }
+      const deletedAt = record.deletedAt ?? new Date().toISOString();
+      await this.#database.localDocuments.put({
+        ...record,
+        deletedAt,
+        purgeAfter: record.purgeAfter ?? new Date(Date.parse(deletedAt) + LOCAL_TRASH_RETENTION_MS).toISOString(),
+        sync: { scope: "local-only", state: "clean", baseRevision: null },
+      });
+    });
+  }
+
   async restore(documentKind: LocalDocumentKind, documentId: string): Promise<void> {
     await this.#database.transaction("rw", this.#database.localDocuments, async () => {
       const record = await this.#database.localDocuments.get(documentId);

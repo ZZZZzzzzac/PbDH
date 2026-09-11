@@ -4,6 +4,7 @@
 
 ## 最近交付与未结事项
 
+- 2026-09-11 本地修复（尚未部署）：线上“匕首之心玩家资源”处于 revision 冲突，删除被“先同步到 clean”前置条件拦住。Creator、GM 与 Player 现在共用独立删除流程，读取当前云 revision 后移入回收站，本机快照与媒体原子保留为本地回收站项；恢复本机快照不会自动上传。覆盖删除与首次上传并发、云端已删除/不存在、版本再次变化、离线和账号/会话门禁；云端不可用时仍可读取本地回收站。回归入口：`tests/creator/cloud-document-service.test.ts`、`tests/player/character-save-cloud-service.test.ts`、`tests/cloud-documents/cloud-document-sync.test.ts`。本地页面已验收删除与恢复；原线上资源包未删除，正式环境仍待发布后复验。此修复不代表下面的 `contract.schema.invalid` 已解决。
 - 最近记录的部署为 v0.1.14（`bdd755f`）：修复 dhsheet 资源包导出的名称声明、施法值及变体效果。回归入口为 `tests/resource-conversion/resource-conversion.test.ts`。
 - 上游严格校验器曾通过 1,004 张卡，尚未收到用户在 dhsheet 页面实际导入成功的反馈。若继续报错，核对是否刷新后重新导出，并收集具体报错；不依赖已清理的本机临时修正版和脚本。
 - 旧记录中的云端 Creator Workspace `contract.schema.invalid` 尚无明确关闭证据；再次遇到时按真实文档复现，不放宽校验绕过。

@@ -12,6 +12,10 @@ The former `gm-tabletop-document-trash` document kind is migrated into the gener
 
 ## Consequences
 
+- Deletion is independent from content synchronization. For a confirmed cloud document, read its current revision and trash that revision without uploading pending or conflicted content first. A concurrent revision change leaves local content intact and asks the user to retry; an already deleted or missing cloud document permits local completion. Network and session failures preserve the active local document.
+- On successful deletion, atomically preserve the latest local snapshot and media in local trash and detach its cloud binding. The cloud version and local snapshot are separate recoverable entries labeled by location. Local restore retains the ID and remains local-only; it does not silently revive or overwrite the cloud version. Cloud recovery likewise preserves local content when it observes a remote deletion. Same-ID local content continues to block cloud restoration rather than being overwritten.
+- Failed first uploads go directly to local trash without another upload attempt, and restoration remains local-only. Cloud requests have a 30-second timeout; deletion errors are shown at the action, and unavailable cloud trash does not hide local recovery entries.
+
 - The Platform App Bar exposes the recycle bin independently from the account menu, so local trash remains available while signed out.
 - Domain apps register adapters that list and act on their own document kinds; the Platform UI labels items as local or cloud and never interprets their payload.
 - Active document repository reads exclude trashed records. Autosave cannot silently revive a trashed document; restoration is explicit.

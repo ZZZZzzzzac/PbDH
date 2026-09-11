@@ -105,6 +105,64 @@ test("同步回执只刷新同步状态，不重读文档媒体或重新恢复�
 });
 
 describe("Creator and GM cloud recovery", () => {
+  test("首次上传途中删除会等待回执，再删除云端文档，后台 flush 不会重建它", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const workspace = await createBlankWorkspace("上传中的资源包");
+    await repository.save(workspace, credentials.accountId);
+    const local = (await store.get("creator-workspace", workspace.key))!;
+    const remote: RemoteCloudDocument = { ...local, revision: 1, deletedAt: null, purgeAfter: null };
+    const api = new RecoveryApi([remote], new Map());
+    let complete!: (value: RemoteCloudDocument) => void;
+    let started!: () => void;
+    const uploading = new Promise<void>((resolve) => { started = resolve; });
+    const put = vi.spyOn(api, "putDocument").mockImplementation(() => {
+      started(); return new Promise((resolve) => { complete = resolve; });
+    });
+    const trash = vi.spyOn(api, "trashDocument").mockResolvedValue({ ...remote, deletedAt: new Date().toISOString() });
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+    const flush = service.flush("creator-workspace", credentials);
+    await uploading;
+    const deletion = service.trash("creator-workspace", workspace.key, credentials);
+    await service.flush("creator-workspace", credentials);
+    expect(trash).not.toHaveBeenCalled();
+    complete(remote);
+    await Promise.all([flush, deletion]);
+    await service.flush("creator-workspace", credentials);
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(trash).toHaveBeenCalledWith(workspace.key, expect.any(String), 1, credentials);
+    expect((await store.getTrash("creator-workspace", workspace.key))?.sync.scope).toBe("local-only");
+  });
+
+  test("冲突工作区可以直接删除，保留本地内容且不先上传", async () => {
+    const store = new DexieLocalDocumentStore(database());
+    const repository = new CreatorWorkspaceRepository(store);
+    const workspace = await createBlankWorkspace("冲突资源包");
+    await repository.save(workspace, credentials.accountId);
+    await store.updateSync("creator-workspace", workspace.key, (local) => ({
+      ...local.sync, state: "conflict", baseRevision: "1",
+    }));
+    const local = (await store.get("creator-workspace", workspace.key))!;
+    const remote: RemoteCloudDocument = { ...local, revision: 3, deletedAt: null, purgeAfter: null };
+    const api = new RecoveryApi([remote], new Map());
+    const put = vi.spyOn(api, "putDocument");
+    const trash = vi.spyOn(api, "trashDocument").mockResolvedValue({ ...remote, deletedAt: new Date().toISOString() });
+    const service = new CreatorCloudDocumentService(store, repository, new TabletopDocumentRepository(store), api);
+
+    await service.trash("creator-workspace", workspace.key, credentials);
+
+    expect(trash).toHaveBeenCalledWith(workspace.key, expect.any(String), 3, credentials);
+    expect(put).not.toHaveBeenCalled();
+    expect(await repository.list()).toEqual([]);
+    expect(await store.getTrash("creator-workspace", workspace.key)).toMatchObject({
+      payload: local.payload, sync: { scope: "local-only", state: "clean", baseRevision: null },
+    });
+    await service.recover(credentials);
+    expect(await store.getTrash("creator-workspace", workspace.key)).toBeDefined();
+    await repository.restore(workspace.key);
+    expect((await repository.list())[0]?.key).toBe(workspace.key);
+  });
+
   test("closes a signed-in workspace locally when its first cloud upload has not succeeded", async () => {
     const store = new DexieLocalDocumentStore(database());
     const workspaceRepository = new CreatorWorkspaceRepository(store);
@@ -124,7 +182,7 @@ describe("Creator and GM cloud recovery", () => {
     expect(await workspaceRepository.list()).toEqual([]);
     expect(await workspaceRepository.listTrash()).toMatchObject([{
       workspace: { key: workspace.key },
-      sync: { scope: "cloud", state: "pending", baseRevision: null },
+      sync: { scope: "local-only", state: "clean", baseRevision: null },
     }]);
   });
 

@@ -1,6 +1,7 @@
 import {
   CloudDocumentCoordinator,
   HttpCloudDocumentApi,
+  trashCloudDocument,
   type CloudCredentials,
   type CloudDocumentApi,
   type RemoteCloudDocument,
@@ -41,7 +42,7 @@ export class PlayerCloudDocumentService {
         ?? await this.#store.getTrash("character-save", remote.documentId);
       if (remote.deletedAt !== null) {
         if (local?.sync.scope === "cloud" && local.sync.accountId === credentials.accountId) {
-          await this.#store.remove("character-save", remote.documentId);
+          await this.#store.preserveInLocalTrash("character-save", remote.documentId, credentials.accountId);
         }
         continue;
       }
@@ -107,29 +108,8 @@ export class PlayerCloudDocumentService {
     documentId: string,
     credentials: CloudCredentials,
   ): Promise<StoredCharacterSave[]> {
-    let local = await this.#store.get("character-save", documentId);
-    if (!local) throw new Error("没有找到要删除的人物存档。");
-    if (local.sync.scope !== "cloud") {
-      await this.#store.trash("character-save", documentId);
-      return this.localSnapshot(credentials.accountId);
-    }
-    await this.#coordinator.flush("character-save", credentials);
-    local = await this.#store.get("character-save", documentId);
-    if (!local || local.sync.state !== "clean" || local.sync.baseRevision === null) {
-      if (local?.sync.baseRevision === null) {
-        await this.#store.trash("character-save", documentId);
-        return this.localSnapshot(credentials.accountId);
-      }
-      throw new Error("人物存档尚未完成同步，暂时不能移到云端回收站。");
-    }
-    if (!credentials.canWrite) throw new Error("当前会话不能删除已经上传的云端人物存档。");
-    await this.#api.trashDocument(
-      documentId,
-      crypto.randomUUID(),
-      revisionNumber(local.sync.baseRevision),
-      credentials,
-    );
-    await this.#store.remove("character-save", documentId);
+    await this.#coordinator.withSyncPaused(documentId, () =>
+      trashCloudDocument(this.#store, this.#api, "character-save", documentId, credentials));
     return this.localSnapshot(credentials.accountId);
   }
 
