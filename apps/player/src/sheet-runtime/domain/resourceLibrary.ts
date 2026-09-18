@@ -425,9 +425,13 @@ export function getOtherResourceLibraryFields(library: ResourceLibrary): Resourc
     }
   }
   if (library.fields.some((field) => field.key === "特性")) scalarDataKeys.add("特性");
-  return scalarDataKeys.size > 0
-    ? library.fields.filter((field) => scalarDataKeys.has(field.key))
-    : library.fields;
+  if (scalarDataKeys.size === 0) return library.fields;
+  const fieldsByKey = new Map(library.fields.map((field) => [field.key, field]));
+  // 按当前类型的数据字段排列，避免其他类型先加载时改变本表列顺序。
+  return [...scalarDataKeys].flatMap((key) => {
+    const field = fieldsByKey.get(key);
+    return field ? [field] : [];
+  });
 }
 
 function isTabletopResourceCopy(value: unknown): value is TabletopResourceCopy {

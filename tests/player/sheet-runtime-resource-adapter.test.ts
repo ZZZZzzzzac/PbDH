@@ -316,6 +316,8 @@ describe("Sheet Runtime 平台资源适配", () => {
     expect(library.ID).toBe("free-resources");
     expect(library.entries).toHaveLength(4);
     expect(views.flatMap((view) => view.entries).every((entry) => library.entries.includes(entry))).toBe(true);
+    const reordered = getOtherResourceLibraryViews({ ...library, fields: [...library.fields].reverse() });
+    expect(reordered.map((view) => view.fields)).toEqual(views.map((view) => view.fields));
   });
 
   it("局部替换平台资源，同时保留系统自己的资源条目", () => {
