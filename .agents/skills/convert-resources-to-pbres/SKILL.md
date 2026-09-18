@@ -1,18 +1,29 @@
 ---
 name: convert-resources-to-pbres
-description: 将非标准桌游资源（第三方卡包、Markdown、纯文本、表格或混合图文资料）整理并转换为 PbDH PBRES；用于需要识别资源边界、选择模板、保留语义、关联图片并完成字段与卡面验收的任务。
+description: 将非标准桌游资源（第三方卡包、Markdown、纯文本、表格或混合图文资料）整理并转换为 PbDH PBRES；用于识别资源边界、选择模板、保留语义、关联图片并产出可导入的 PBRES。只做转换，不新建测试、测量页或渲染夹具。
 ---
 
 # 转换非标准资源为 PBRES
 
 把来源资料转换为可导入、可渲染且可追溯的 PBRES。来源是权威内容，PBRES 是最终交付物；中间副本、候选 JSON 与一次性提取代码只服务于本次转换，不成为第二份长期权威源。
 
+## 任务边界
+
+这个 skill 的交付物是 PBRES 与转换报告本身。转换期间的核查限定在来源对照、字段映射和仓库正式 CLI 的回读之内，到此收手并把结果交给用户。
+
+- 不新建测试文件、测试夹具、测量页或浏览器验证：仓库 `pbres:pack` 已经执行 Contract/模板校验、摘要重算和 `loadPbres` 回读，不需要在它之外另搭一套。
+- 不为验收而跑 `npm run verify` 或整个测试套件；本任务不改变代码，改动只落在资源包内。
+- 不量卡面像素高度、不截图、不做渲染回归：卡面尺寸与字号由共享渲染器按固定比例自行处理，不构成转换的交付条件。
+- 临时脚本只做提取、候选生成与来源对账，放在任务 `.scratch` 工作区，任务结束不再维护。
+
+发现内容确实装不下卡面、或来源存在需要改规则才能容纳的问题时，把卡片、位置和选项交给用户决定；不代用户做测试和取舍。
+
 ## 开始前
 
 1. 阅读仓库根 `AGENTS.md` 及与任务相关的 `docs/agents/` 规则。
 2. 完整阅读来源本体并盘点文件、附件、图片、已有 ID、目录关系和许可信息，不凭文件名猜格式。
 3. 阅读 [references/repository-contract.md](references/repository-contract.md)，确认仓库当前 Contract、Template、Adapter、PBRES 和图片入口。不要硬编码本技能编写时的版本号或字段。
-4. 原生文本转换必须阅读 [references/semantic-extraction.md](references/semantic-extraction.md)。进入验收前必须阅读 [references/validation-review.md](references/validation-review.md)。
+4. 原生文本转换必须阅读 [references/semantic-extraction.md](references/semantic-extraction.md)。封包后的自检必须阅读 [references/validation-review.md](references/validation-review.md)。
 
 ## 转换前确认与包级元数据约定
 
@@ -24,7 +35,7 @@ description: 将非标准桌游资源（第三方卡包、Markdown、纯文本�
 4. **资源包简介格式**：PBRES `package.description` 按如下格式书写，并附原始网页链接（找不到链接时向用户询问）：
    `《{资源包名称}》作者：{作者} 译者：{译者}\n{原始网页链接}`
 
-## 不可跳过的六步流程
+## 六步流程
 
 ### 1. 阅读本体并选择入口
 
@@ -56,11 +67,18 @@ description: 将非标准桌游资源（第三方卡包、Markdown、纯文本�
 
 图片必须走 `packages/media-admission` 的资源图片准入流程，再写入 PBRES 资产并绑定资源。图片对应关系不确定时询问用户。
 
-### 6. 验证 PBRES
+### 6. 封包与自检
 
-按 [references/validation-review.md](references/validation-review.md) 完成全部检查：正式回读、数量与路径、模板和字段、来源对照、媒体、真实卡面渲染及高度溢出。仅通过 Schema 或 `loadPbres` 不算完成。
+用正式 CLI 封包，让工具完成它的校验：`pbres:pack` 会重算摘要、执行 Contract 与模板校验、写出产物并对产物再次 `loadPbres` 回读。这一步已经是本次转换的收尾，不需要在它之外补测试。
 
-遇到真实内容装不下卡面时，先排查字段放错、重复内容和格式问题；仍溢出则向用户提供上下文与处理选项。不得擅自删减规则文本、改固定比例、拆卡或改变展示模式。
+自己只做两件来源侧的自检：
+
+- 逐资源核对 `data` 与当前 Template 的 Schema、`defaultData`：必填字段齐全、字段名与当前 Schema 一致、数组与对象没被压成文本、简介/普通字段/特性没有互相错位。
+- 生成来源对账表：来源候选数 = converted + skipped + pending，并说明合法的拆分或合并差额。
+
+按 [references/validation-review.md](references/validation-review.md) 执行这两项；回读、数量与路径、模板引用、媒体与署名的结论以 `pbres:pack` 的输出为准并使用 `pbres:unpack` 复核。
+
+发现字段放错、重复内容或格式问题时按语义修正后重新封包。若来源内容本身超出该模板的表达能力，把资源、位置与选项交给用户决定，不擅自删减规则文本或改展示模式。
 
 ## 交付要求
 
@@ -69,7 +87,7 @@ description: 将非标准桌游资源（第三方卡包、Markdown、纯文本�
 - 来源格式、所走入口和输出 PBRES；
 - 来源资源数、输出资源数及 converted/skipped/pending 数量；
 - 使用的模板及需要用户裁定的项目；
-- 字段完整性、媒体、回读和卡面溢出检查结果；
+- `pbres:pack` 的版本、摘要与回读结果，字段完整性、媒体与署名核对结果；
 - 临时副本、统一格式文本和候选 JSON 的位置。
 
 未解决问题保持 `pending`，不得用猜测换取“全部成功”。
