@@ -389,6 +389,30 @@ function isComplexResourceValue(value: unknown): boolean {
   return typeof value === "object" && value !== null;
 }
 
+export function getOtherResourceLibraryViews(library: ResourceLibrary): ResourceLibrary[] {
+  const groups = new Map<string, { name: string; entries: ResourceLibraryEntry[] }>();
+  for (const entry of library.entries) {
+    const templateId = entry.resourceCopy?.template.id;
+    const name = templateId === "自由"
+      ? entry.fields.类型?.trim() || "自由资源"
+      : templateId ?? library.名称;
+    const id = JSON.stringify([library.ID, templateId ?? "", name]);
+    const group = groups.get(id) ?? { name, entries: [] };
+    group.entries.push(entry);
+    groups.set(id, group);
+  }
+  return [...groups].map(([id, group]) => {
+    const view = { ...library, ID: id, 名称: group.name, entries: group.entries };
+    return {
+      ...view,
+      fields: getOtherResourceLibraryFields(view).map((field) => ({
+        ...field,
+        width: inferResourceFieldWidth(group.entries.map((entry) => entry.fields[field.key] ?? "")),
+      })),
+    };
+  });
+}
+
 export function getOtherResourceLibraryFields(library: ResourceLibrary): ResourceLibraryField[] {
   const scalarDataKeys = new Set<string>();
   for (const entry of library.entries) {

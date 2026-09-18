@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { findResourceLibrary, getOtherResourceLibraries, getResourcePickerLinks, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
-import { getOtherResourceLibraryFields, getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
+import { getOtherResourceLibraryViews, getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
 
@@ -17,8 +17,11 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
     : getResourcePickerLinks(module), [module, systemPackage]);
   const availableLibraries = useMemo(() => links.flatMap((link) => {
     const library = findResourceLibrary(systemPackage, link.ID);
-    return library ? [{ link, library }] : [];
-  }), [links, systemPackage]);
+    if (!library) return [];
+    return module.资源库 === "其他"
+      ? getOtherResourceLibraryViews(library).map((view) => ({ link, library: view }))
+      : [{ link, library }];
+  }), [links, module.资源库, systemPackage]);
   const [selectedLibraryId, setSelectedLibraryId] = useState(availableLibraries[0]?.library.ID ?? "");
   const [queriesByLibrary, setQueriesByLibrary] = useState<Record<string, ResourceLibraryQuery>>({});
   const active = availableLibraries.find(({ library }) => library.ID === selectedLibraryId) ?? availableLibraries[0];
@@ -28,7 +31,7 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   const browserFields = useMemo(() => {
     if (!library) return [];
     return module.资源库 === "其他"
-      ? getOtherResourceLibraryFields(library)
+      ? library.fields
       : getResourceLibraryFields(library, active?.link.字段模板);
   }, [active?.link.字段模板, library, module.资源库]);
   const defaultQuery = useMemo(
@@ -48,11 +51,12 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   };
 
   const commitSelection = (entries: ResourceLibraryEntry[]) => {
-    if (!library) {
+    if (!active) {
       return;
     }
 
-    commitResourceSelection(module.ID, library.ID, entries);
+    // 分表只影响浏览；建卡仍使用真实资源库 ID，不持久化视图 ID。
+    commitResourceSelection(module.ID, active.link.ID, entries);
     closeBrowser();
   };
 
@@ -64,6 +68,7 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
       </button>
       {open && library ? (
         <ResourceLibraryBrowser
+          key={library.ID}
           library={library}
           fields={browserFields}
           multiSelect={module.多选 ?? false}

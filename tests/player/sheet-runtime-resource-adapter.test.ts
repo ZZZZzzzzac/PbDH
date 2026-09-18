@@ -11,7 +11,7 @@ import {
   replacePlatformRuntimeMediaAssets,
   sheetRuntimeMediaPath,
 } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
-import { getOtherResourceLibraryFields, getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { getOtherResourceLibraryFields, getOtherResourceLibraryViews, getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import type { ResourceLibrary as SheetResourceLibrary } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import { getOtherResourceLibraries } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
@@ -293,6 +293,29 @@ describe("Sheet Runtime 平台资源适配", () => {
     expect(buildSheetRuntimeMediaAssets(installedPackages)).toMatchObject([{
       路径: sheetRuntimeMediaPath(packageId, portraitId),
     }]);
+  });
+
+  it("其他资源分表支持任意自由类型、跨版本合并与空类型兜底，不改写源资源库", () => {
+    const first = resource("madness", "自由", { 名称: "记忆障碍", 类型: "疯狂", 疯狂等级: "2", 内容: [] });
+    const second = { ...resource("madness-new", "自由", { 名称: "疑神疑鬼", 类型: "疯狂", 疯狂等级: "1", 内容: [] }),
+      template: { id: "自由", version: "1.1.0" } };
+    const library = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        first, second,
+        resource("style", "自由", { 名称: "孤独", 类型: "求生者风格", 内容: [] }),
+        resource("blank", "自由", { 名称: "未分类", 类型: " ", 内容: [] }),
+      ]),
+    }).find((candidate) => candidate.ID === "free-resources")!;
+    const views = getOtherResourceLibraryViews(library);
+    expect(views.map((view) => view.名称)).toEqual(["自由资源", "疯狂", "求生者风格"]);
+    expect(views.find((view) => view.名称 === "疯狂")?.entries).toHaveLength(2);
+    expect(views.find((view) => view.名称 === "疯狂")?.fields.map((field) => field.key)).toContain("疯狂等级");
+    expect(views.find((view) => view.名称 === "求生者风格")?.fields.map((field) => field.key)).not.toContain("疯狂等级");
+    expect(new Set(views.map((view) => view.ID)).size).toBe(3);
+    expect(library.ID).toBe("free-resources");
+    expect(library.entries).toHaveLength(4);
+    expect(views.flatMap((view) => view.entries).every((entry) => library.entries.includes(entry))).toBe(true);
   });
 
   it("局部替换平台资源，同时保留系统自己的资源条目", () => {

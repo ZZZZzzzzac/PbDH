@@ -258,7 +258,7 @@ const systemDocument: SystemPackageDocument = {
     description: "由迁移后的 Sheet Runtime 驱动的 Daggerheart Core 系统包。",
   },
   runtime: mapLegacyRuntime(legacyManifest),
-  resourceCompatibility: libraries.map((definition) => ({
+  resourceCompatibility: libraries.filter((definition) => definition.templateId !== "自由").map((definition) => ({
     templateId: definition.templateId,
     versionRange: { minimumInclusive: "1.0.0", maximumExclusive: "2.0.0" },
     nativeEntry: { id: definition.id, label: definition.label },

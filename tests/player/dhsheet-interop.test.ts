@@ -128,10 +128,12 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     const failures: string[] = [];
     const nativeIds = new Set<string>();
     const upstreamCards: Array<Record<string, unknown>> = process.env.PBDH_DHSHEET_NATIVE_CARDS ? JSON.parse(await readFile(process.env.PBDH_DHSHEET_NATIVE_CARDS, "utf8")) : [];
-    for (const id of ["classes", "subclasses", "ancestries", "communities", "domain-cards", "beastforms"]) {
+    for (const id of ["classes", "subclasses", "ancestries", "communities", "domain-cards", "其他"]) {
       const library = system.resourceLibraries!.find((library) => library.ID === id)!;
       expect(library, id).toBeDefined();
-      for (const entry of library.entries) {
+      const entries = id === "其他" ? library.entries.filter((entry) => entry.fields.类型 === "野兽形态") : library.entries;
+      if (id === "其他") expect(entries).toHaveLength(24);
+      for (const entry of entries) {
         const data = createEmptyCharacterData(system);
         data.cards.instances = [{ instanceId: "native-card", tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: id, entryId: entry.ID }, state: "宝库", xPct: 0, yPct: 0, zIndex: 0, face: "front", rotation: 0, scale: 1 }];
         const exported = await exportSheet(system, data);
@@ -148,7 +150,7 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
             for (const key of ["id", "name", "type", "class", "level", "headerDisplay", "cardSelectDisplay", "variantSpecial", "ruleset", "batchId", "source"]) expect(card[key], `${card.name}/${key}`).toEqual(native![key]);
           }
         }
-        if (id === "beastforms") {
+        if (entry.fields.类型 === "野兽形态") {
           const imported = await importSheet(system, sourceDocument(cards));
           expect(imported.report.skippedCards).toBe(0);
           expect(imported.data.cards.instances[0]!.definitionRef).toMatchObject({ libraryId: id, entryId: entry.ID });

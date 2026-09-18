@@ -30,6 +30,20 @@ function routeWithTargets(targets: ResourcePackageLogicalDocument["targets"]) {
 }
 
 describe("Player Resource Compatibility routing", () => {
+  test("匕首心未指定用途的自由资源进入其他资源，不统一识别为野兽形态", () => {
+    const resources = ["野兽形态", "转变卡"].map((type, index) => ({
+      ...resourcePackage.resources[0]!,
+      id: `free-${index}`,
+      path: `${type}.json`,
+      template: { id: "自由", version: "1.1.0" },
+      data: { 名称: type, 类型: type, 内容: [] },
+    }));
+    expect(routeResourcePackage({
+      currentSystem: system,
+      resourcePackage: { ...resourcePackage, resources },
+    }).map((route) => route.destination)).toEqual(["other-resources", "other-resources"]);
+  });
+
   test("包版本与文字变更不改变原生路由，删除资源和换模板按实际内容处理", () => {
     const changed = structuredClone(resourcePackage);
     changed.package.version = "9.0.0";
