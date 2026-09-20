@@ -113,6 +113,7 @@ export const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   剩余值标记: markerDescriptorSchema.optional(),
   标记尺寸: z.number().min(5).max(96).optional(),
   加减号字号: z.number().min(5).max(96).optional(),
+  打印保留当前值: z.boolean().optional().meta({ default: false }),
 }).superRefine((module, context) => {
   if (module.显示方式 !== "标记") return;
   if (module.当前值标记 === undefined) {

@@ -141,6 +141,7 @@
     "步长": 1,
     "显示方式": "标记",
     "标记尺寸": 26,
+    "打印保留当前值": true,
     "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-marked.svg" },
     "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-unmarked.svg" }
   },

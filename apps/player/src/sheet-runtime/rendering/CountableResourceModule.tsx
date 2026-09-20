@@ -99,6 +99,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
              data-part="marker-group"
              data-marker-layout={imageMarkerPresentation ? "image" : "text"}
             data-countable-unbounded={max === null ? "true" : undefined}
+            data-countable-print-keep={module.打印保留当前值 ? "true" : undefined}
             role="img"
             aria-label={`${module.标签}：当前值 ${current}，${max === null ? "无上限" : `上限 ${max}`}`}
           >

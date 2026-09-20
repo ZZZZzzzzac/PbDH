@@ -78,12 +78,13 @@
   line-height: 1;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
+/* 打印/PDF 默认把标记清成统一方格方便手填；模块声明「打印保留当前值」时整段规则都不适用。 */
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"]) .marker-cell .marker-glyph {
   display: none;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-group,
-[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-text-fit="overflow"] {
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"]),
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"])[data-text-fit="overflow"] {
   height: auto;
   min-height: calc(5.8mm + 4px);
   padding-block: 2px;
@@ -94,13 +95,13 @@
   white-space: normal;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell {
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"]) .marker-cell {
   flex: 0 0 5.8mm;
   width: 5.8mm;
   height: 5.8mm;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell::before {
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"]) .marker-cell::before {
   display: inline-block;
   flex: 0 0 5.5mm;
   content: "□";
@@ -109,7 +110,7 @@
   line-height: 1;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-countable-unbounded="true"] .marker-cell {
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group:not([data-countable-print-keep="true"])[data-countable-unbounded="true"] .marker-cell {
   display: none;
 }
 

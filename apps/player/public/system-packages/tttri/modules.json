@@ -31,7 +31,7 @@
   { "ID": "hp", "类型": "countableResource", "标签": "生命", "最小值": 0, "最大值": 6, "默认值": 0, "步长": 1, "最大值可改": true, "显示方式": "标记", "标记尺寸": 26, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-unmarked.svg" } },
   { "ID": "stress", "类型": "countableResource", "标签": "压力", "最小值": 0, "最大值": 6, "默认值": 0, "步长": 1, "最大值可改": true, "显示方式": "标记", "标记尺寸": 26, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" } },
   { "ID": "hope", "类型": "countableResource", "标签": "希望", "最小值": 0, "最大值": 6, "默认值": 2, "步长": 1, "最大值可改": true, "显示方式": "标记", "标记尺寸": 26, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.svg" } },
-  { "ID": "proficiency", "类型": "countableResource", "标签": "熟练度", "最小值": 0, "最大值": 6, "默认值": 1, "步长": 1, "显示方式": "标记", "标记尺寸": 26, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-unmarked.svg" } },
+  { "ID": "proficiency", "类型": "countableResource", "标签": "熟练度", "最小值": 0, "最大值": 6, "默认值": 1, "步长": 1, "显示方式": "标记", "标记尺寸": 26, "打印保留当前值": true, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-unmarked.svg" } },
   { "ID": "agility", "类型": "freeText", "标签": "敏捷" },
   { "ID": "strength", "类型": "freeText", "标签": "力量" },
   { "ID": "finesse", "类型": "freeText", "标签": "灵巧" },
