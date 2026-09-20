@@ -441,6 +441,7 @@ describe("migrated Daggerheart Core System Package", () => {
     const backupWeapon1 = pickerLibrary("pick-backup-weapon-1");
     const backupWeapon2 = pickerLibrary("pick-backup-weapon-2");
     const armor = pickerLibrary("pick-armor");
+    const inventoryItem = pickerLibrary("pick-inventory-item");
 
     expect(primaryWeapon.字段模板?.map((field) => field.键)).toEqual([
       "名称", "属性", "距离", "伤害", "负荷", "位阶", "伤害类型", "特性名称", "特性描述", "类型",
@@ -460,6 +461,8 @@ describe("migrated Daggerheart Core System Package", () => {
     expect(primaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
     expect(secondaryWeapon.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
     expect(armor.默认查询?.sort).toEqual({ field: "位阶", direction: "asc" });
+    expect(inventoryItem.字段模板?.map((field) => field.键)).toEqual(["名称", "掷骰", "特性描述"]);
+    expect(inventoryItem.默认查询?.sort).toEqual({ field: "掷骰", direction: "asc" });
 
     const primaryDamageType = primaryWeapon.字段模板?.find((field) => field.键 === "伤害类型");
     const secondaryDamageType = secondaryWeapon.字段模板?.find((field) => field.键 === "伤害类型");

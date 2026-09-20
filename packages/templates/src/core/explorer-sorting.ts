@@ -33,6 +33,12 @@ const definitions: readonly {
     { key: "主职", label: "主职", kind: "text" },
     { key: "等级", label: "等级", kind: "enum", values: ["基础", "进阶", "精通"] },
   ] },
+  { id: "罗德岛子职", versions: ["1.0.0"], fields: [
+    nameField,
+    { key: "主职", label: "主职", kind: "text" },
+    { key: "等级", label: "等级", kind: "enum", values: ["预备", "正式", "资深", "精英X", "精英Y"] },
+    { key: "阶段", label: "阶段", kind: "enum", values: ["T1", "T2", "T3", "T4X", "T4Y"] },
+  ] },
   { id: "武器", versions: commonVersions, fields: [nameField, tierField] },
 ];
 

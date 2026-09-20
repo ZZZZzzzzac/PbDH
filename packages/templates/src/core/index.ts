@@ -10,6 +10,7 @@ import { environmentTemplate } from "./environment/1.0.0/capability.ts";
 import { freeTemplate } from "./free/1.0.0/capability.ts";
 import { itemTemplate } from "./item/1.0.0/capability.ts";
 import { professionTemplate } from "./profession/1.0.0/capability.ts";
+import { rhodesSubclassTemplate } from "./rhodes-subclass/1.0.0/capability.ts";
 import { subclassTemplate } from "./subclass/1.0.0/capability.ts";
 import { TemplateRegistry } from "./registry.ts";
 import { weaponTemplate } from "./weapon/1.0.0/capability.ts";
@@ -65,6 +66,8 @@ export { itemTemplate } from "./item/1.0.0/capability.ts";
 export type { ItemData } from "./item/1.0.0/capability.ts";
 export { professionTemplate } from "./profession/1.0.0/capability.ts";
 export type { ProfessionData } from "./profession/1.0.0/capability.ts";
+export { rhodesSubclassTemplate } from "./rhodes-subclass/1.0.0/capability.ts";
+export type { RhodesSubclassData } from "./rhodes-subclass/1.0.0/capability.ts";
 export { subclassTemplate } from "./subclass/1.0.0/capability.ts";
 export type { SubclassData } from "./subclass/1.0.0/capability.ts";
 export { weaponTemplate } from "./weapon/1.0.0/capability.ts";
@@ -91,6 +94,7 @@ export const currentTemplates = Object.freeze([
   freeTemplate110,
   itemTemplate110,
   professionTemplate110,
+  rhodesSubclassTemplate,
   subclassTemplate110,
   weaponTemplate110,
 ]);
@@ -105,6 +109,7 @@ export {
   freeTemplate110 as currentFreeTemplate,
   itemTemplate110 as currentItemTemplate,
   professionTemplate110 as currentProfessionTemplate,
+  rhodesSubclassTemplate as currentRhodesSubclassTemplate,
   subclassTemplate110 as currentSubclassTemplate,
   weaponTemplate110 as currentWeaponTemplate,
 };
@@ -186,6 +191,7 @@ export const supportedTemplates = Object.freeze([
   freeTemplate110,
   itemTemplate110,
   professionTemplate110,
+  rhodesSubclassTemplate,
   subclassTemplate110,
   weaponTemplate110,
   adversaryTemplate,

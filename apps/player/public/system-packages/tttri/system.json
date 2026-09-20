@@ -99,7 +99,7 @@
       }
     },
     {
-      "templateId": "子职业",
+      "templateId": "罗德岛子职",
       "versionRange": {
         "minimumInclusive": "1.0.0",
         "maximumExclusive": "2.0.0"

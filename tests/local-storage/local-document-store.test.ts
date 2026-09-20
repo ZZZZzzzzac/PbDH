@@ -7,6 +7,7 @@ import {
   DexieAuthorPreviewHandleStore,
   DexieLocalDocumentStore,
   DexieRuntimeCacheStore,
+  LOCAL_TRASH_RETENTION_MS,
   LocalDocumentChangedError,
   PbDHLocalDatabase,
   type LocalDocumentEnvelope,
@@ -163,14 +164,16 @@ describe("shared local document store", () => {
     const store = new DexieLocalDocumentStore(value);
     await store.put(envelope("character-1", "character-save"));
 
-    await store.trash("character-save", "character-1", "2026-08-20T10:00:00.000Z");
+    // 保留期以真实当前时间计算，listTrash 会先清理过期项，故 fixture 必须落在保留期内。
+    const deletedAt = new Date(Date.now() - 60_000).toISOString();
+    await store.trash("character-save", "character-1", deletedAt);
 
     expect(await store.get("character-save", "character-1")).toBeUndefined();
     expect(await store.list("character-save")).toEqual([]);
     expect(await store.listTrash("character-save")).toMatchObject([{
       documentId: "character-1",
-      deletedAt: "2026-08-20T10:00:00.000Z",
-      purgeAfter: "2026-09-19T10:00:00.000Z",
+      deletedAt,
+      purgeAfter: new Date(Date.parse(deletedAt) + LOCAL_TRASH_RETENTION_MS).toISOString(),
     }]);
 
     await store.restore("character-save", "character-1");
@@ -206,10 +209,12 @@ describe("shared local document store", () => {
       authorPreviewHandles: "&id",
       runtimeCaches: "&id",
     });
+    // 迁移把 legacy 的 updatedAt 当作 deletedAt；相对当前时间才不会被保留期清理掉。
+    const legacyUpdatedAt = new Date(Date.now() - 60_000).toISOString();
     await legacy.table("localDocuments").put({
       ...envelope("gm-tabletop-document-trash:tabletop-1", "gm-tabletop-document"),
       documentKind: "gm-tabletop-document-trash",
-      updatedAt: "2026-08-20T10:00:00.000Z",
+      updatedAt: legacyUpdatedAt,
       payload: { name: "旧桌面" },
     });
     legacy.close();
@@ -220,6 +225,8 @@ describe("shared local document store", () => {
     expect(await store.listTrash("gm-tabletop-document")).toMatchObject([{
       documentId: "tabletop-1",
       documentKind: "gm-tabletop-document",
+      deletedAt: legacyUpdatedAt,
+      purgeAfter: new Date(Date.parse(legacyUpdatedAt) + LOCAL_TRASH_RETENTION_MS).toISOString(),
       payload: { name: "旧桌面" },
     }]);
   });

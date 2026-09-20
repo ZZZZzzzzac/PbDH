@@ -7,7 +7,7 @@ import { afterEach, describe, expect, test } from "vitest";
 
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
 import type { RemoteCloudDocument } from "@pbdh/cloud-documents";
-import { DexieLocalDocumentStore, LocalDocumentChangedError, PbDHLocalDatabase } from "@pbdh/local-storage";
+import { DexieLocalDocumentStore, LOCAL_TRASH_RETENTION_MS, LocalDocumentChangedError, PbDHLocalDatabase } from "@pbdh/local-storage";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import { CreatorWorkspaceRepository } from "../../apps/creator/src/workspace-prototype/creator-workspace-repository.ts";
@@ -116,9 +116,11 @@ describe("Creator Workspace local repository", () => {
   });
 
   test("moves a local Creator Workspace through the shared recoverable trash lifecycle", async () => {
+    // 保留期以真实当前时间计算，listTrash 会先清理过期项，故注入的时钟必须落在保留期内。
+    const deletedAt = new Date(Date.now() - 60_000).toISOString();
     const repository = new CreatorWorkspaceRepository(
       new DexieLocalDocumentStore(database()),
-      () => "2026-08-20T10:00:00.000Z",
+      () => deletedAt,
     );
     const workspace = await createBlankWorkspace("待恢复资源包");
     await repository.save(workspace);
@@ -127,8 +129,8 @@ describe("Creator Workspace local repository", () => {
     expect(await repository.list()).toEqual([]);
     expect(await repository.listTrash()).toMatchObject([{
       workspace: { key: workspace.key },
-      deletedAt: "2026-08-20T10:00:00.000Z",
-      purgeAfter: "2026-09-19T10:00:00.000Z",
+      deletedAt,
+      purgeAfter: new Date(Date.parse(deletedAt) + LOCAL_TRASH_RETENTION_MS).toISOString(),
     }]);
 
     const restored = await repository.restore(workspace.key);

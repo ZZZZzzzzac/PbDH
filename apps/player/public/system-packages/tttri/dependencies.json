@@ -148,5 +148,15 @@
     "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
     "条件": { "类型": "selectedResourceFieldNotEquals", "字段": "希望特性", "值": "" },
     "动作": [{ "类型": "fillText", "目标模块ID": "class-hope-feature", "内容": { "类型": "selectedResourceField", "字段": "希望特性" } }]
+  },
+  {
+    "ID": "append-inventory-items",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-inventory-item" }],
+    "targets": [{ "类型": "module", "模块ID": "inventory" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-inventory-item" },
+    "条件": { "类型": "always" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "inventory", "写入方式": "追加", "追加分隔符": "\n", "内容": { "类型": "selectedResourceTemplate", "格式": "- **{{名称}}**: {{特性描述}}", "分隔符": "\n" } }
+    ]
   }
 ]

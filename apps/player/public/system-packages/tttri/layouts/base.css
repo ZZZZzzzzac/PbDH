@@ -245,10 +245,27 @@
 
 .region-heading-row > [data-module-slot-id="proficiency"] { flex: 1; }
 
+/* 物品栏标题行：选择按钮与 section-title 同行，按钮缩小以适配标题高度。 */
+.inventory-heading-row > .section-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inventory-heading-row [data-module-id="pick-inventory-item"] {
+  min-height: 0;
+}
+
+.inventory-heading-row [data-module-id="pick-inventory-item"] [data-part="button"] {
+  width: 1.65rem;
+  min-width: 1.65rem;
+  min-height: 1.35rem;
+  height: 1.35rem;
+}
+
 
 .item-list {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.25rem;
   align-items: start;
 }
@@ -428,6 +445,5 @@
   .resource-row,
   .domain-row,
   .subclass-heading-row,
-  .item-list,
   .currency-row { grid-template-columns: 1fr; }
 }

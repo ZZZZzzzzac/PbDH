@@ -194,7 +194,7 @@ function materializedResourcePath(
   const semanticFolder = formatId === "dhsheet"
     ? templateId === "领域卡"
       ? textField(data, "领域")
-      : templateId === "子职业"
+      : templateId === "子职业" || templateId === "罗德岛子职"
         ? textField(data, "主职")
         : ""
     : "";

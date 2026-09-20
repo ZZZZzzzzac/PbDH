@@ -41,6 +41,7 @@
   { "ID": "primary-domain", "类型": "freeText", "标签": "主领域" },
   { "ID": "secondary-domain", "类型": "freeText", "标签": "次领域", "占位文本": "选择", "选项": ["奥术", "工业", "攻坚", "坚阵", "精准", "秘行", "奇迹", "心界", "迅攻", "远见", "支柱"] },
   { "ID": "pick-domain-card", "类型": "resourcePicker", "按钮文本": "选择领域卡", "资源库": [{ "ID": "domain-cards", "字段模板": [{ "键": "名称", "默认显示": true }, { "键": "领域", "默认显示": true }, { "键": "等级", "默认显示": true }, { "键": "属性", "默认显示": true }, { "键": "回想", "默认显示": true }, { "键": "描述", "默认显示": true }, { "键": "类型", "默认显示": false }, { "键": "卡图", "默认显示": false }, { "键": "卡背", "默认显示": false }], "默认查询": { "sort": { "field": "等级", "direction": "asc" } } }], "创建卡牌": { "卡牌桌面模块ID": "character-card-table", "默认状态": "配置" } },
+  { "ID": "pick-other-resources", "类型": "resourcePicker", "按钮文本": "选择其他资源", "资源库": "其他", "创建卡牌": { "卡牌桌面模块ID": "character-card-table", "默认状态": "配置" } },
   { "ID": "class-hope-feature", "类型": "longText", "标签": "希望特性", "行数": 5 },
   { "ID": "class-feature", "类型": "longText", "标签": "", "行数": 14 },
   {
@@ -102,7 +103,8 @@
     "资源来源": [
       { "类型": "resourceLibrary", "ID": "ancestries", "卡牌展示": { "名称模板": "{{名称}}", "描述模板": "{{简介}}\n\n**推荐经历：** {{推荐经历}}", "标签字段": [] } },
       { "类型": "resourceLibrary", "ID": "communities", "卡牌展示": { "名称模板": "{{名称}}", "描述模板": "{{简介}}\n\n{{描述}}\n\n**参考出身：**\n{{参考出身}}", "标签字段": [] } },
-      { "类型": "resourceLibrary", "ID": "domain-cards" }
+      { "类型": "resourceLibrary", "ID": "domain-cards" },
+      { "类型": "otherResourceLibraries", "ID": "其他" }
     ],
     "状态选项": ["配置", "宝库"],
     "状态外观": { "宝库": { "描边颜色": "#385f71", "徽标": "宝库" } },
@@ -115,6 +117,7 @@
   { "ID": "armor-feature", "类型": "longText", "标签": "", "占位文本": "护甲特性", "行数": 3 },
   { "ID": "armor-slots", "类型": "countableResource", "标签": "护甲", "最小值": 0, "最大值": 0, "默认值": 0, "步长": 1, "最大值可改": true, "显示方式": "标记", "标记尺寸": 26, "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-marked.svg" }, "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-unmarked.svg" } },
   { "ID": "inventory", "类型": "longText", "标签": "", "默认值": "一根照明棒、一捆工业弹力绳、作战食品包。\n- [二选一] 小型治疗药剂（回复1d4生命点）或小型理智药剂（清除1d4点压力点）\n- 罗德岛干员通行证", "占位文本": "记录携带物品", "行数": 10 },
+  { "ID": "pick-inventory-item", "类型": "resourcePicker", "按钮文本": "添加物品", "资源库": [{ "ID": "loot", "字段模板": [{ "键": "名称", "默认显示": true }, { "键": "掷骰", "默认显示": true }, { "键": "特性描述", "默认显示": true }, { "键": "类型", "默认显示": false }], "默认查询": { "sort": { "field": "掷骰", "direction": "asc" } } }], "多选": true },
   { "ID": "handful-gold", "类型": "countableResource", "标签": "把", "最小值": 0, "最大值": 9, "默认值": 1, "步长": 1 },
   { "ID": "bag-gold", "类型": "countableResource", "标签": "袋", "最小值": 0, "最大值": 9, "默认值": 0, "步长": 1 },
   { "ID": "chest-gold", "类型": "countableResource", "标签": "箱", "最小值": 0, "默认值": 0, "步长": 1 },

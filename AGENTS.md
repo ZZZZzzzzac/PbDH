@@ -18,6 +18,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - 安装 Node 依赖：`npm install`。
 - Python 开发依赖安装到项目 `.venv`，使用 `python -m pip install -r requirements-dev.txt`；不得安装全局依赖。
 - 单一非交互式验证命令：`npm run verify`。
+- 验证并发与超时上限只在两处配置：根目录 `vitest.config.ts`（8 worker、20s 单用例超时）与 `test:python` 的 `pytest -n auto`；内置资源包体量大，取消这两个上限会让并发解包再次触发随机超时。
 - 新增 App、共享 package、Contract 实现或 Python 消费端时，必须接入该命令；不得建立只在子目录运行的隐藏验证入口。
 - 重启本地 Platform Backend 与 Platform Shell 时运行 `node scripts/restart-dev.mjs`；只有 Backend 和 Shell 内三个 App Surface 的模块级健康检查全部通过后才能报告启动完成。
 
@@ -56,7 +57,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `apps/backend/`：模块化单体 Platform Backend
 - `contracts/`：语言无关、独立版本化的 Contract Schemas 与契约样例；不得依赖具体 App、共享 package 或编程语言
 - `packages/contract-runtime/`：前端共享的 Contract Catalog Reader、Validator 与稳定诊断映射；只依赖 `contracts/` 制品，不拥有 Schema 或业务操作
-- `packages/templates/`：可信 Resource Templates 与 Template Registry；使用无 React 的 `core` 入口和前端专用 `frontend` 入口隔离
+- `packages/templates/`：可信 Resource Templates 与 Template Registry；使用无 React 的 `core` 入口和前端专用 `frontend` 入口隔离；内置模板默认服务 daggerheart，一个模板只服务一个系统，其它系统的专用契约另建以系统命名的模板（如 `罗德岛子职`），不得把别的系统字段加进内置模板
 - `packages/resource-renderer/`：所有前端共用的 Canonical Card Surface 渲染接口、基础组件与隔离样式；接收已解析 Template，不反向读取 Template Registry
 - `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
 - `packages/tabletop/`：共享 Tabletop Core 与 React Surface；使用 `core` 和 `react` 子入口隔离

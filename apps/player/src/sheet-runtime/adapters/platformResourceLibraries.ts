@@ -104,7 +104,7 @@ export function buildSheetResourceLibraryInputs(input: {
         route.resource,
         input.resolveMediaReference,
       );
-      // 子职选择可读取所属职业的特性；同包优先，跨包只接受唯一匹配。
+      // 子职业（daggerheart 模板）没有职业特性字段，其值取自所属职业；同包优先，跨包只接受唯一匹配。
       if (route.resource.template.id === "子职业" && isRecord(route.resource.data)) {
         const profession = route.resource.data.主职;
         const matches = installed.flatMap((item) => item.document.resources
@@ -227,6 +227,8 @@ function toSheetResourceEntry(
       };
     }
     case "子职业":
+      return { ...common, 描述: subclassFeatures(data.特性) };
+    case "罗德岛子职":
       return {
         ...common,
         描述: subclassFeatures(data.特性),

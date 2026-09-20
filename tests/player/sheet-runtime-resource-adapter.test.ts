@@ -23,6 +23,7 @@ const currentSystem = {
     { templateId: "种族", nativeEntry: { id: "ancestries", label: "种族" } },
     { templateId: "职业", nativeEntry: { id: "classes", label: "职业" } },
     { templateId: "子职业", nativeEntry: { id: "subclasses", label: "子职业" } },
+    { templateId: "罗德岛子职", nativeEntry: { id: "subclasses", label: "干员" } },
     { templateId: "护甲", nativeEntry: { id: "armor", label: "护甲" } },
     { templateId: "自由", nativeEntry: { id: "free-resources", label: "自由资源" } },
   ],
@@ -152,13 +153,12 @@ describe("Sheet Runtime 平台资源适配", () => {
     });
   });
 
-  it("把子职特性数组投影为可读的 Sheet 字段，同时保留结构化资源副本", () => {
+  it("子职业（daggerheart）只投影特性数组，不携带罗德岛字段", () => {
     const library = buildSheetResourceLibraries({
       currentSystem,
       installedPackages: libraryWith([
         resource("subclass", "子职业", {
           名称: "言文巧匠",
-          推荐次领域: "心界、远见",
           特性: [
             { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
             { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
@@ -168,11 +168,61 @@ describe("Sheet Runtime 平台资源适配", () => {
     }).find((candidate) => candidate.ID === "subclasses")!;
 
     expect(library.entries[0]?.fields.描述).toBe("振奋演说：鼓舞一名盟友。\n\n闻名遐迩：你的声名远播。");
-    expect(library.entries[0]?.fields.推荐副领域).toBe("心界、远见");
+    expect(library.entries[0]?.fields).not.toHaveProperty("推荐副领域");
     expect(library.entries[0]?.resourceCopy?.data.特性).toEqual([
       { 特性名称: "振奋演说", 特性描述: "鼓舞一名盟友。" },
       { 特性名称: "闻名遐迩", 特性描述: "你的声名远播。" },
     ]);
+  });
+
+  it("罗德岛子职保留阶段与武器原型，并投影推荐副领域", () => {
+    const library = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        resource("rhodes-subclass", "罗德岛子职", {
+          名称: "荒野术师",
+          类型: "子职",
+          主职: "术师",
+          等级: "精英Y",
+          阶段: "T4Y",
+          推荐次领域: "攻坚、坚阵",
+          武器原型: "施术权杖 远距离/双手 d10+9/法术",
+          子职提升: "职业特性追加：神经打击",
+          职业特性: "法术聚焦\\-荒野术师：降低施法难度。",
+          特性: [{ 特性名称: "神经打击", 特性描述: "额外造成一次神经元素损伤。" }],
+        }),
+      ]),
+    }).find((candidate) => candidate.ID === "subclasses")!;
+
+    expect(library.entries[0]?.fields).toMatchObject({
+      阶段: "T4Y",
+      武器原型: "施术权杖 远距离/双手 d10+9/法术",
+      子职提升: "职业特性追加：神经打击",
+      职业特性: "法术聚焦\\-荒野术师：降低施法难度。",
+      描述: "神经打击：额外造成一次神经元素损伤。",
+      推荐副领域: "攻坚、坚阵",
+    });
+  });
+
+  it("子职业（daggerheart）的职业特性取自所属职业，罗德岛子职保留自有值", () => {
+    const libraries = buildSheetResourceLibraries({
+      currentSystem,
+      installedPackages: libraryWith([
+        resource("class", "职业", {
+          名称: "术师",
+          特性: [{ 特性名称: "法术聚焦", 特性描述: "降低施法难度。" }],
+        }),
+        resource("subclass", "子职业", { 名称: "荒野术师", 主职: "术师", 等级: "精通", 特性: [] }),
+        resource("rhodes", "罗德岛子职", {
+          名称: "荒野术师", 主职: "术师", 等级: "精英Y", 阶段: "T4Y",
+          职业特性: "法术聚焦\\-荒野术师：降低施法难度。", 特性: [],
+        }),
+      ]),
+    }).find((candidate) => candidate.ID === "subclasses")!;
+    const featureOf = (id: string) => libraries.entries.find((entry) => entry.ID.endsWith(`:${id}`))?.fields.职业特性;
+
+    expect(featureOf("subclass")).toBe("法术聚焦：降低施法难度。");
+    expect(featureOf("rhodes")).toBe("法术聚焦\\-荒野术师：降低施法难度。");
   });
 
   it("把职业特性数组投影为可读的 Sheet 表格字段", () => {
@@ -404,6 +454,8 @@ function installedPackage(
           ? { id: "classes", label: "职业" }
         : candidate.template.id === "子职业"
           ? { id: "subclasses", label: "子职业" }
+        : candidate.template.id === "罗德岛子职"
+          ? { id: "subclasses", label: "干员" }
         : candidate.template.id === "自由"
           ? { id: "free-resources", label: "自由资源" }
           : { id: "ancestries", label: "种族" },

@@ -43,6 +43,7 @@ export const templateCoreLoaders: readonly TemplateCoreLoaderEntry[] = [
   { id: "物品", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./item/1.0.0/capability.ts", () => import("./item/1.0.0/capability.ts")).then((module) => module.itemTemplate) },
   { id: "物品", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./item/1.0.1/capability.ts", () => import("./item/1.0.1/capability.ts")).then((module) => module.itemTemplate) },
   { id: "物品", version: "1.1.0", fromVersions: ["1.0.1"], load: () => retryTemplateImport("./item/1.1.0/capability.ts", () => import("./item/1.1.0/capability.ts")).then((module) => module.itemTemplate) },
+  { id: "罗德岛子职", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./rhodes-subclass/1.0.0/capability.ts", () => import("./rhodes-subclass/1.0.0/capability.ts")).then((module) => module.rhodesSubclassTemplate) },
   { id: "职业", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./profession/1.0.0/capability.ts", () => import("./profession/1.0.0/capability.ts")).then((module) => module.professionTemplate) },
   { id: "职业", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./profession/1.0.1/capability.ts", () => import("./profession/1.0.1/capability.ts")).then((module) => module.professionTemplate) },
   { id: "职业", version: "1.1.0", fromVersions: ["1.0.1"], load: () => retryTemplateImport("./profession/1.1.0/capability.ts", () => import("./profession/1.1.0/capability.ts")).then((module) => module.professionTemplate) },
@@ -88,7 +89,8 @@ export const loadTemplateCore = coreLoader.load;
 export const readLoadedTemplateCore = coreLoader.read;
 
 export const currentTemplateReferences = ["敌人", "种族", "护甲", "社群", "领域卡", "环境", "自由", "物品", "职业", "子职业", "武器"]
-  .map((id) => ({ id, version: "1.1.0" })).concat({ id: "玩家卡", version: "1.0.0" });
+  .map((id) => ({ id, version: "1.1.0" }))
+  .concat({ id: "罗德岛子职", version: "1.0.0" }, { id: "玩家卡", version: "1.0.0" });
 
 export function loadCurrentTemplateCore(id: string) {
   const reference = currentTemplateReferences.find((entry) => entry.id === id);

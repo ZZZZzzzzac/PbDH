@@ -33,6 +33,8 @@ export {
 export { itemRendererRevision, itemRendererStyles } from "./item/1.0.0/renderer.tsx";
 export { professionRendererRevision, professionRendererStyles } from "./profession/1.0.0/renderer.tsx";
 export { subclassRendererRevision, subclassRendererStyles } from "./subclass/1.0.0/renderer.tsx";
+export { rhodesSubclassAuthoring, RhodesSubclassAuthoringEditor } from "./rhodes-subclass/1.0.0/authoring-editor.tsx";
+export { rhodesSubclassRendererRevision, rhodesSubclassRendererStyles } from "./rhodes-subclass/1.0.0/renderer.tsx";
 export {
   isStableReferenceTemplateId,
   stableReferenceAuthoringFor,

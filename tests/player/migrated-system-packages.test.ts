@@ -10,7 +10,7 @@ import { validateResourcePackageCandidate } from "../../apps/player/src/resource
 import { commitResourcePackageRemoval, type ResourceLibrary } from "../../apps/player/src/resources/resource-library.ts";
 import { routeResourcePackage } from "../../apps/player/src/resources/route-resource-package.ts";
 import { replacePlatformResourceLibraries } from "../../apps/player/src/sheet-runtime/adapters/platformResourceLibraries.ts";
-import { getResourceLibraryFields } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { getResourceLibraryFields, queryResourceLibraryEntries } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import { resolveCardDisplayMode } from "../../apps/player/src/sheet-runtime/rendering/cardTable/cardDefinition.ts";
 import { createEmptyCharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
@@ -21,7 +21,7 @@ const root = path.resolve("apps/player/public/system-packages");
 const migrated = [
   { directory: "witchy", name: "巫趣 Witchy", resources: 12, assets: 0 },
   { directory: "hows-my-driving", name: "我的车技如何？", resources: 39, assets: 0 },
-  { directory: "tttri", name: "罗德岛旅记", resources: 607, assets: 286 },
+  { directory: "tttri", name: "罗德岛旅记", resources: 738, assets: 286 },
 ] as const;
 
 function hasStructuredSubclassFeatures(data: unknown): boolean {
@@ -98,11 +98,25 @@ describe("additional migrated System Packages", () => {
         expect(armor.find((resource) => resource.id === "护甲:身负重任套装")?.data).toMatchObject({
           重度伤害阈值: "18", 严重伤害阈值: "48", 护甲值: "8", 特性名称: "困难", 特性描述: "所有角色属性以及闪避值-1",
         });
-        const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "子职业") ?? [];
-        expect(subclasses).toHaveLength(280);
-        for (const name of ["排陷手", "破术者", "收割者", "卫盟者", "回环射手", "塑灵术师", "游击手", "行商"]) {
+        const subclasses = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "罗德岛子职") ?? [];
+        expect(subclasses).toHaveLength(350);
+        expect(subclasses.every((resource) => resource.template.version === "1.0.0")).toBe(true);
+        for (const name of [
+          "排陷手", "破术者", "收割者", "卫盟者", "回环射手", "塑灵术师", "游击手", "行商",
+          "爆破手", "速援手", "教官", "剑豪", "巡卫", "本源铁卫", "炮手", "裂空炮手",
+          "荒野术师", "本源术师", "守望者", "巫役", "炼金师", "陷阱师",
+        ]) {
           expect(subclasses.filter((resource) => (resource.data as Record<string, unknown>).名称 === name)).toHaveLength(5);
         }
+        const newSubclass = subclasses.find((resource) => resource.id === "子职:先锋:爆破手:T2");
+        expect(newSubclass?.data).toMatchObject({
+          名称: "爆破手", 主职: "先锋", 等级: "正式", 阶段: "T2", 推荐次领域: "工业、攻坚", 武器原型: "爆破装置 近距离/双手 d12+3/物理",
+          子职特性: expect.stringContaining("爆破时刻\\+："),
+          特性: [{ 特性名称: "爆破时刻+", 特性描述: expect.stringContaining(":red[**近距离内的一处位置**]") }],
+        });
+        expect(subclasses.find((resource) => resource.id === "子职:先锋:爆破手:T4Y")?.data).toMatchObject({
+          职业特性: expect.stringContaining("可控爆破："),
+        });
         const hook = subclasses.find((resource) => resource.id === "子职:特种:钩索师:T4Y");
         expect(hook?.data).toMatchObject({ 特性: [{ 特性名称: "外置捕网", 特性描述: expect.stringContaining("敏捷反应掷骰（17）") }] });
         const guard = subclasses.find((resource) => resource.id === "子职:近卫:无畏者:T4Y");
@@ -111,7 +125,39 @@ describe("additional migrated System Packages", () => {
         const professions = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "职业") ?? [];
         expect(professions).toHaveLength(7);
         expect(professions.every((resource) => hasStructuredProfessionFeatures(resource.data))).toBe(true);
-        expect(loaded.candidate?.document.resources.some((resource) => resource.template.id === "物品")).toBe(false);
+        const loot = loaded.candidate?.document.resources.filter((resource) => resource.template.id === "物品") ?? [];
+        expect(loot).toHaveLength(60);
+        expect(loot.every((resource) => /^物品\/消耗品\/[^/]+\.json$/u.test(resource.path))).toBe(true);
+        expect(loot.map((resource) => (resource.data as Record<string, unknown>).掷骰).sort()).toEqual(
+          Array.from({ length: 60 }, (_, index) => String(index + 1).padStart(2, "0")),
+        );
+        expect(loot.find((resource) => resource.id === "物品:小型治疗药剂-药水")?.data).toMatchObject({
+          名称: "小型治疗药剂/药水",
+          类型: "消耗品",
+          掷骰: "07",
+          特性描述: "立刻恢复 1d4 生命点。",
+        });
+        const elementDamage = loaded.candidate?.document.resources.find((resource) => resource.id === "说明:元素损伤");
+        expect(elementDamage?.template).toEqual({ id: "自由", version: "1.0.1" });
+        expect(elementDamage?.path).toBe("说明/元素损伤.json");
+        // 说明卡 data 由 pbres 载入，按自由模板契约读取
+        const elementDamageData = elementDamage?.data as { 简介?: string; 内容?: Array<{ 名称: string; 原文?: string; 描述: string }> } | undefined;
+        expect(elementDamageData?.简介).toBe("");
+        expect(elementDamageData?.内容).toHaveLength(1);
+        expect(elementDamageData?.内容?.[0]?.名称).toBe("");
+        expect(elementDamageData?.内容?.[0]?.原文).toBe("");
+        const elementDamageText = elementDamageData?.内容?.[0]?.描述 ?? "";
+        const elementDamageLines = elementDamageText.split("\n");
+        expect(elementDamageLines).toHaveLength(6);
+        expect(elementDamageLines.map((line) => /^- ([^:：]+)[:：]/u.exec(line)?.[1])).toEqual([
+          "神经损伤", "侵蚀损伤", "凋亡损伤", "狂躁损伤", "灼燃损伤", "元素伤害",
+        ]);
+        expect(elementDamageText).toContain("神经损伤：造成使用你攻击属性的d4点元素伤害");
+        expect(elementDamageText).toContain("元素伤害：特殊伤害类型");
+        expect(elementDamageText).not.toContain("\n\n");
+        expect(elementDamageText.split("\n")).toHaveLength(6);
+        expect(subclasses.filter((resource) => JSON.stringify(resource.data).includes("神经损伤："))).toEqual([]);
+        expect(subclasses.filter((resource) => JSON.stringify(resource.data).includes("详情见其他资源里的元素损伤卡"))).toHaveLength(12);
       }
     }
 
@@ -166,11 +212,39 @@ describe("additional migrated System Packages", () => {
       const picker = loaded.package.modules.find((module) => module.ID === "pick-armor");
       expect(picker?.类型).toBe("resourcePicker");
       for (const layout of ["layouts/character-main.html", "skins/rhodes-island/character-main.html", "skins/terra-portal/character-main.html"]) {
-        expect(await readFile(path.join(root, "tttri", layout), "utf8")).toContain('<pb-module id="pick-armor"></pb-module>');
+        const layoutHtml = await readFile(path.join(root, "tttri", layout), "utf8");
+        expect(layoutHtml).toContain('<pb-module id="pick-armor"></pb-module>');
+        expect(layoutHtml).toMatch(/<div class="region-heading-row inventory-heading-row">.*<pb-module id="pick-inventory-item"><\/pb-module><\/div>/u);
+        expect(layoutHtml).toContain('<div class="item-list"><pb-module id="inventory"></pb-module></div>');
       }
+      const layoutCss = await readFile(path.join(root, "tttri", "layouts/base.css"), "utf8");
+      expect(layoutCss).toMatch(/\.inventory-heading-row \[data-module-id="pick-inventory-item"\] \[data-part="button"\] \{[^}]*min-height: 1\.35rem;/u);
+      const itemPicker = loaded.package.modules.find((module) => module.ID === "pick-inventory-item");
+      expect(itemPicker?.类型).toBe("resourcePicker");
+      const lootLibrary = loaded.package.resourceLibraries!.find((library) => library.ID === "loot")!;
+      expect(lootLibrary.entries).toHaveLength(60);
+      if (!itemPicker || itemPicker.类型 !== "resourcePicker" || !Array.isArray(itemPicker.资源库)) throw new Error("tttri pick-inventory-item missing");
+      const lootLink = itemPicker.资源库.find((link) => link.ID === "loot")!;
+      expect(lootLink.默认查询?.sort).toEqual({ field: "掷骰", direction: "asc" });
+      const rollOrdered = queryResourceLibraryEntries(lootLibrary, lootLink.默认查询);
+      expect(rollOrdered.slice(0, 3).map((entry) => entry.fields.掷骰)).toEqual(["01", "02", "03"]);
+      expect(rollOrdered.at(-1)?.fields.掷骰).toBe("60");
       const empty = createEmptyCharacterData(loaded.package);
       expect(String(empty.character.values.inventory).split("\n")).toHaveLength(3);
       expect(String(empty.character.values.inventory).split("\n")[0]).toBe("一根照明棒、一捆工业弹力绳、作战食品包。");
+      const potion = lootLibrary.entries.find((entry) => entry.fields.名称 === "小型治疗药剂/药水")!;
+      const withItems = applyResourceSelectionToDraft(
+        empty,
+        loaded.package,
+        "pick-inventory-item",
+        "loot",
+        [potion, lootLibrary.entries.find((entry) => entry.fields.名称 === "巫王手稿")!],
+      ).characterData;
+      expect(String(withItems.character.values.inventory)).toBe([
+        ...String(empty.character.values.inventory).split("\n"),
+        "- **小型治疗药剂/药水**: 立刻恢复 1d4 生命点。",
+        "- **巫王手稿**: 使用以激活巫王创造的音律法术，对当前场景内的所有生物直接造成 10d12 点法术伤害。",
+      ].join("\n"));
       const issues: PackageIssue[] = [];
       validateSelectedResourceField(loaded.package, picker, "不存在的护甲字段", "test", "fill-armor", issues);
       expect(issues.map((issue) => issue.code)).toEqual(["MISSING_RESOURCE_FIELD_REFERENCE"]);
@@ -188,6 +262,24 @@ describe("additional migrated System Packages", () => {
         "armor-slots": { max: Number(armor.fields.护甲值) },
         inventory: empty.character.values.inventory,
       });
+      const subclassLibrary = loaded.package.resourceLibraries!.find((library) => library.ID === "subclasses")!;
+      expect(subclassLibrary.entries).toHaveLength(350);
+      const elite = subclassLibrary.entries.find((entry) => entry.ID.endsWith(":子职:术师:荒野术师:T4Y"))!;
+      const eliteCharacter = applyResourceSelectionToDraft(empty, loaded.package, "pick-subclass-t1", "subclasses", [elite]).characterData;
+      expect(eliteCharacter.character.values).toMatchObject({
+        "subclass-name": "荒野术师",
+        "subclass-stage": "精英Y",
+        "class-feature": expect.stringContaining("神经打击："),
+      });
+      expect(String(eliteCharacter.character.values["class-feature"])).toContain("法术聚焦\\-荒野术师：");
+      const eliteHope = subclassLibrary.entries.find((entry) => entry.ID.endsWith(":子职:术师:荒野术师:T4X"))!;
+      const eliteHopeCharacter = applyResourceSelectionToDraft(eliteCharacter, loaded.package, "pick-subclass-t1", "subclasses", [eliteHope]).characterData;
+      expect(String(eliteHopeCharacter.character.values["class-hope-feature"])).toContain("再度施法\\-荒野术师：");
+      expect(eliteHopeCharacter.character.values["class-feature"]).toBe(eliteCharacter.character.values["class-feature"]);
+      const veteran = subclassLibrary.entries.find((entry) => entry.ID.endsWith(":子职:先锋:冲锋手:T3"))!;
+      const veteranCharacter = applyResourceSelectionToDraft(empty, loaded.package, "pick-subclass-t1", "subclasses", [veteran]).characterData;
+      expect(String(veteranCharacter.character.values["class-feature"])).toContain("一鼓作气\\-冲锋手：");
+      expect(String(veteranCharacter.character.values["subclass-current"])).toContain("冲锋陷阵");
       const ancestries = loaded.package.resourceLibraries?.find((library) => library.ID === "ancestries");
       const communities = loaded.package.resourceLibraries?.find((library) => library.ID === "communities");
       const professions = loaded.package.resourceLibraries?.find((library) => library.ID === "classes");

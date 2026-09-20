@@ -30,7 +30,7 @@
     "check:visual-sources": "node scripts/check-visual-sources.mjs",
     "test:ts": "vitest run tests",
     "check:dhsheet-interop": "node scripts/check-dhsheet-interop.mjs",
-    "test:python": "node scripts/python.mjs -m pytest tests",
+    "test:python": "node scripts/python.mjs -m pytest tests -n auto",
     "measure:renderer": "tsx scripts/measure-renderer-performance.ts",
     "template:status": "tsx scripts/template-status.ts",
     "system-package": "tsx scripts/system-package-cli.ts",

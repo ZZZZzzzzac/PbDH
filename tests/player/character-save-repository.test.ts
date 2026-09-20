@@ -3,7 +3,7 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { CharacterSaveDocument, ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
-import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
+import { DexieLocalDocumentStore, LOCAL_TRASH_RETENTION_MS, PbDHLocalDatabase } from "@pbdh/local-storage";
 
 import fixtureJson from "../../contracts/conformance/character-save/1.0.0/valid/module-state.json";
 import weaponPackageJson from "../../contracts/conformance/resource-package/1.0.0/valid/daggerheart-core-primary-weapon.json";
@@ -206,9 +206,11 @@ describe("CharacterSaveRepository", () => {
   });
 
   test("moves a local Character Save through the shared recoverable trash lifecycle", async () => {
+    // 保留期以真实当前时间计算，listTrash 会先清理过期项，故注入的时钟必须落在保留期内。
+    const deletedAt = new Date(Date.now() - 60_000).toISOString();
     const repository = new CharacterSaveRepository(
       new DexieLocalDocumentStore(database()),
-      () => "2026-08-27T10:00:00.000Z",
+      () => deletedAt,
     );
     const document = structuredClone(fixtureJson) as CharacterSaveDocument;
     await repository.save(document, new Map());
@@ -217,8 +219,8 @@ describe("CharacterSaveRepository", () => {
     expect(await repository.list()).toEqual([]);
     expect(await repository.listTrashMetadata()).toMatchObject([{
       document: { documentId: document.documentId },
-      deletedAt: "2026-08-27T10:00:00.000Z",
-      purgeAfter: "2026-09-26T10:00:00.000Z",
+      deletedAt,
+      purgeAfter: new Date(Date.parse(deletedAt) + LOCAL_TRASH_RETENTION_MS).toISOString(),
     }]);
 
     const restored = await repository.restore(document.documentId);

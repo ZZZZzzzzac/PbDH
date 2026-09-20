@@ -87,6 +87,8 @@ import { subclassAuthoring as subclassAuthoring110 } from "./subclass/1.1.0/auth
 import { subclassRendererRevision as subclassRendererRevision110 } from "./subclass/1.1.0/renderer.tsx";
 import { weaponAuthoring as weaponAuthoring110 } from "./weapon/1.1.0/authoring-editor.tsx";
 import { weaponRendererRevision as weaponRendererRevision110 } from "./weapon/1.1.0/renderer.tsx";
+import { rhodesSubclassAuthoring } from "./rhodes-subclass/1.0.0/authoring-editor.tsx";
+import { rhodesSubclassRendererRevision } from "./rhodes-subclass/1.0.0/renderer.tsx";
 
 export type TrustedTemplateRenderer = RendererRevisionCapability<any, any, ReactNode>;
 
@@ -111,6 +113,7 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(itemAuthoring110, itemRendererRevision110),
   binding(professionAuthoring110, professionRendererRevision110),
   binding(subclassAuthoring110, subclassRendererRevision110),
+  binding(rhodesSubclassAuthoring, rhodesSubclassRendererRevision),
   binding(weaponAuthoring110, weaponRendererRevision110),
   binding(adversaryAuthoring, adversaryRendererRevision),
   binding(ancestryAuthoring, ancestryRendererRevision),

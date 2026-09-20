@@ -107,7 +107,7 @@ function kindFor(templateId: string): ResourceKind {
   if (templateId === "护甲") return "armor";
   if (templateId === "物品") return "item";
   if (templateId === "职业") return "class";
-  if (templateId === "子职业") return "subclass";
+  if (templateId === "子职业" || templateId === "罗德岛子职") return "subclass";
   if (templateId === "种族") return "ancestry";
   if (templateId === "社群") return "community";
   if (templateId === "领域卡") return "domain";
