@@ -1,0 +1,7 @@
+root = true
+
+# 行尾与 git 一致：仓库以 LF 为唯一权威行尾，编辑器不要写回 CRLF。
+[*]
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true

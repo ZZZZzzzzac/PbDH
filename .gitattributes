@@ -1,7 +1,7 @@
-*.json text eol=lf
-*.md text eol=lf
-*.mjs text eol=lf
-*.py text eol=lf
-*.sql text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
+# 仓库以 LF 为唯一权威行尾。
+# eol=lf 覆盖所有文本文件，并优先于各机器的 core.autocrlf：CI、Windows 工作区与
+# 内容摘要必须看到同一份字节，否则文本比对、快照与派生摘要会在平台之间漂移。
+* text=auto eol=lf
+# 归档与图片按原样保存，不参与行尾归一化。
+*.pbres -text
+*.webp -text

@@ -19,6 +19,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - Python 开发依赖安装到项目 `.venv`，使用 `python -m pip install -r requirements-dev.txt`；不得安装全局依赖。
 - 单一非交互式验证命令：`npm run verify`。
 - 验证并发与超时上限只在两处配置：根目录 `vitest.config.ts`（8 worker、20s 单用例超时）与 `test:python` 的 `pytest -n auto`；内置资源包体量大，取消这两个上限会让并发解包再次触发随机超时。
+- 行尾以 LF 为唯一权威：`.gitattributes` 用 `* text=auto eol=lf` 覆盖所有文本文件，优先于各机器的 `core.autocrlf`。`npm run verify` 第一步 `check:line-endings` 会在工作区出现 CRLF 时报错，用 `npm run fix:line-endings` 就地改回 LF（只动行尾）。新增内容摘要、快照或文本比对时，判据不得依赖检出平台。
 - 新增 App、共享 package、Contract 实现或 Python 消费端时，必须接入该命令；不得建立只在子目录运行的隐藏验证入口。
 - 重启本地 Platform Backend 与 Platform Shell 时运行 `node scripts/restart-dev.mjs`；只有 Backend 和 Shell 内三个 App Surface 的模块级健康检查全部通过后才能报告启动完成。
 
