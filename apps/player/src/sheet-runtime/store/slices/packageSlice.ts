@@ -2,7 +2,9 @@ import type { PackageIssue } from "../../domain/systemPackage";
 import { validateCachedSystemPackage } from "../../domain/systemPackage/cachedPackageValidation";
 import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../../domain/effectiveResourceCatalog";
 import { createRuntimeAssetResolver, type RuntimePackageAsset } from "../../loaders/assetResolver";
+import { isPresetCacheContentCurrent } from "../../loaders/presetSystemPackageLoader";
 import type { PresetSystemPackage } from "../../loaders/presetSystemPackageLoader";
+import type { SystemPackageCacheMetadata } from "../../storage/runtimeStorage";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
 import {
   collectStaleResourceReferenceIssues,
@@ -72,12 +74,8 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
         const cacheMetadata = await environment.dependencies.storage
           .loadCurrentSystemPackageCacheMetadata();
         const matchingPreset = presets.find((preset) => preset.id === cachedValidation.package.manifest.ID);
-        const presetIsStale = matchingPreset && (
-          (cacheMetadata?.source === "preset"
-            && cacheMetadata.presetId === matchingPreset.id
-            && cacheMetadata.releaseVersion !== matchingPreset.releaseVersion)
-          || (cacheMetadata === null && isLegacyPresetCache(matchingPreset, cachedAssets))
-        );
+        const presetIsStale = matchingPreset
+          && presetCacheIsStale(matchingPreset, cacheMetadata, cachedAssets);
         let fallbackIssues: PackageIssue[] = [];
 
         if (matchingPreset && presetIsStale) {
@@ -303,6 +301,29 @@ export function createPackageSlice(environment: RuntimeEnvironment): RuntimeSlic
       }
     },
 
+    // 启动与入口跳转用：缓存已是该预置的当前内容时直接沿用，只校验内嵌资源归档，
+    // 不再抓取整包（这是刷新页面时加载条走满一整圈的根源）。
+    async ensurePresetSystemPackage(preset) {
+      const state = get();
+      const cacheMetadata = await environment.dependencies.storage
+        .loadCurrentSystemPackageCacheMetadata();
+      if (state.currentPackage?.manifest.ID === preset.id
+        && isPresetCacheContentCurrent(cacheMetadata, preset)) {
+        await environment.dependencies.ensurePresetEmbeddedResources?.(preset);
+        return;
+      }
+      // initialize 已为同一个预置抓取好新版并挂起待确认时，启动直接确认那次结果，
+      // 不再重复下载一遍同样的运行文件。
+      if (state.pendingSystemPackageImport?.packageId === preset.id) {
+        await get().confirmSystemPackageImport();
+        const confirmed = await environment.dependencies.storage
+          .loadCurrentSystemPackageCacheMetadata();
+        if (get().currentPackage?.manifest.ID === preset.id
+          && isPresetCacheContentCurrent(confirmed, preset)) return;
+      }
+      await get().switchToPresetSystemPackage(preset, true);
+    },
+
     selectSystemPackageSkin(skinId) {
       const systemPackage = get().currentPackage;
       if (!systemPackage?.skins?.some((skin) => skin.ID === skinId)) return;
@@ -483,7 +504,32 @@ function initialPresetProgress(preset: PresetSystemPackage) {
 }
 
 function presetCacheMetadata(preset: PresetSystemPackage) {
-  return { source: "preset" as const, presetId: preset.id, releaseVersion: preset.releaseVersion };
+  return {
+    source: "preset" as const,
+    presetId: preset.id,
+    releaseVersion: preset.releaseVersion,
+    ...(preset.metadataDigest ? { metadataDigest: preset.metadataDigest } : {}),
+  };
+}
+
+// 预置缓存是否过期。
+// 双方都有内容摘要时以摘要为唯一判据：部署了新版本但预置内容没变，就不该重下整包；
+// 旧缓存记录（无摘要）或未生成摘要的预置退回按发布版本比较，由启动时的缓存校验决定是否重装。
+function presetCacheIsStale(
+  preset: PresetSystemPackage,
+  cacheMetadata: SystemPackageCacheMetadata | null,
+  packageAssets: RuntimePackageAsset[],
+): boolean {
+  if (cacheMetadata?.source === "preset"
+    && cacheMetadata.presetId === preset.id
+    && preset.metadataDigest
+    && cacheMetadata.metadataDigest) {
+    return cacheMetadata.metadataDigest !== preset.metadataDigest;
+  }
+  return (cacheMetadata?.source === "preset"
+      && cacheMetadata.presetId === preset.id
+      && cacheMetadata.releaseVersion !== preset.releaseVersion)
+    || (cacheMetadata === null && isLegacyPresetCache(preset, packageAssets));
 }
 
 function isLegacyPresetCache(preset: PresetSystemPackage, packageAssets: RuntimePackageAsset[]): boolean {

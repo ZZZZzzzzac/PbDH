@@ -6,7 +6,7 @@ import type { SystemPackage } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "../loaders/assetResolver";
 
 export type SystemPackageCacheMetadata =
-  | { source: "preset"; presetId: string; releaseVersion: string }
+  | { source: "preset"; presetId: string; releaseVersion: string; metadataDigest?: string }
   | {
     source: "imported";
     systemDocument?: SystemPackageDocument;

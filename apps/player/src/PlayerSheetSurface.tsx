@@ -127,19 +127,33 @@ export function PlayerSheetSurface({
   surfaceVisible = true,
   handoffUrl = window.location.href,
   onHandoffConsumed,
+  onActiveSystemPackageChange,
   requestedSystemPackage,
 }: {
   surfaceVisible?: boolean;
   handoffUrl?: string;
   requestedSystemPackage?: string;
   onHandoffConsumed?(cleanedUrl: URL): void;
+  // 当前生效的预置系统包变化时报告它的直达段（预置目录名），由宿主写回地址栏。
+  onActiveSystemPackageChange?(systemPackageDirectory: string): void;
 } = {}) {
   const auth = useAuth();
   const { notify } = usePlatformNotifications();
   const requestedSystemRef = useRef(requestedSystemPackage);
   requestedSystemRef.current = requestedSystemPackage;
+  const surfaceVisibleRef = useRef(surfaceVisible);
+  surfaceVisibleRef.current = surfaceVisible;
+  const activeSystemPackageHandlerRef = useRef(onActiveSystemPackageChange);
+  activeSystemPackageHandlerRef.current = onActiveSystemPackageChange;
   const appliedSystemRouteRef = useRef<string | undefined>(undefined);
   const [runtimeInitialized, setRuntimeInitialized] = useState(false);
+  // 只在 Player 页面可见时报告：三个 surface 常驻挂载，隐藏时也会跑完启动，
+  // 不能让隐藏的 Player 改写 Creator/Market 页面的地址。
+  const reportActiveSystemPackage = useCallback(() => {
+    if (!surfaceVisibleRef.current) return;
+    const entry = findPlayerSystemPackage(useRuntimeStore.getState().currentPackage?.manifest.ID);
+    if (entry) activeSystemPackageHandlerRef.current?.(entry.preset.directory);
+  }, []);
   const importedSystemsRef = useRef(new Map<string, SystemPackageDocument>());
   const importedEmbeddedPackageIdsRef = useRef(new Map<string, Set<string>>());
   const importedEmbeddedPackagesRef = useRef(new Map<string, ReadonlyMap<string, ResourcePackageCandidate>>());
@@ -298,6 +312,7 @@ export function PlayerSheetSurface({
   const initialize = useRuntimeStore((state) => state.initialize);
   const refreshPlatformResources = useRuntimeStore((state) => state.refreshPlatformResources);
   const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
+  const ensurePresetSystemPackage = useRuntimeStore((state) => state.ensurePresetSystemPackage);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const confirmSystemPackageImport = useRuntimeStore((state) => state.confirmSystemPackageImport);
   const cancelSystemPackageImport = useRuntimeStore((state) => state.cancelSystemPackageImport);
@@ -361,9 +376,16 @@ export function PlayerSheetSurface({
         if (credentials) await cloudDocumentService.recover(credentials);
         else await cloudDocumentService.localSnapshot();
         recoveredAccountRef.current = credentials?.accountId ?? "local";
+        // 启动目标（直达链接 → 上次使用的系统包 → 默认包）在这里先固定下来：
+        // 资源库路由、缓存校验与后续入口跳转都按它执行，避免先按默认包路由再被整包重载覆盖。
+        const requested = playerSystemPackageCatalog.find((entry) =>
+          entry.preset.directory === requestedSystemRef.current);
+        const startupEntry = requested
+          ?? findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
+          ?? defaultPlayerSystemPackage;
         const restored = await restorePlayerResourceLibrary(
           resourceRepository,
-          defaultPlayerSystemPackage.system,
+          startupEntry.system,
         );
         if (cancelled) return;
         libraryRef.current = restored;
@@ -391,6 +413,25 @@ export function PlayerSheetSurface({
           },
           loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load(),
           savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle),
+          ensurePresetEmbeddedResources: async (preset) => {
+            const entry = findPlayerSystemPackage(preset.id);
+            if (!entry) return;
+            const releaseVersion = document
+              .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
+              ?.content || entry.preset.releaseVersion;
+            const installed = await installMissingEmbeddedResourcePackages({
+              systemPackage: entry.system,
+              embeddedResourceIndex: entry.preset.embeddedResourceIndex,
+              systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+              releaseVersion,
+              repository: resourceRepository,
+            });
+            if (installed.installedPackageIds.length === 0) return;
+            const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
+            libraryRef.current = routed;
+            setLibrary(routed);
+            await refreshInstalledResources(routed);
+          },
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
@@ -450,15 +491,12 @@ export function PlayerSheetSurface({
         await initialize(playerSystemPackageCatalog.map((entry) => entry.preset));
         if (cancelled) return;
         const state = useRuntimeStore.getState();
-        const requested = playerSystemPackageCatalog.find((entry) => entry.preset.directory === requestedSystemRef.current);
         if (requested || !state.authorPreviewActive) {
-          const preferred = requested ?? findPlayerSystemPackage(localStorage.getItem(preferredSystemPackageKey) ?? undefined)
-            ?? defaultPlayerSystemPackage;
           const importedWasRestored = cachedMetadata?.source === "imported"
             && cachedMetadata.systemDocument?.package.id === state.currentPackage?.manifest.ID;
           if (requested || !importedWasRestored) {
             if (requested && state.authorPreviewActive) exitAuthorPreview();
-            await switchToPresetSystemPackage(preferred.preset, true);
+            await ensurePresetSystemPackage(startupEntry.preset);
             if (requested && useRuntimeStore.getState().currentPackage?.manifest.ID === requested.system.package.id) {
               localStorage.setItem(preferredSystemPackageKey, requested.system.package.id);
             }
@@ -467,6 +505,8 @@ export function PlayerSheetSurface({
         runtimeReadyRef.current = true;
         appliedSystemRouteRef.current = requested?.preset.directory;
         setRuntimeInitialized(true);
+        // 启动解析出的包立刻写进地址栏：/player 不再停在无段地址上显示上一个包。
+        reportActiveSystemPackage();
       } catch (error) {
         if (!cancelled) setSurfaceError(error instanceof Error ? error.message : "Player 初始化失败");
       }
@@ -476,7 +516,7 @@ export function PlayerSheetSurface({
       runtimeReadyRef.current = false;
       resetRuntimeDependencies();
     };
-  }, [authorPreviewHandleStore, cloudDocumentService, initialize, resourceRepository, runtimeStorage, switchToPresetSystemPackage]);
+  }, [authorPreviewHandleStore, cloudDocumentService, ensurePresetSystemPackage, initialize, reportActiveSystemPackage, resourceRepository, runtimeStorage]);
 
   async function loadImportedSystemPackage(
     vfs: PackageVirtualFileSystem,
@@ -677,15 +717,21 @@ export function PlayerSheetSurface({
     );
   }
 
+  // 预置系统包切换后的统一收尾：确实落位到目标包才记住偏好，并把地址栏指向它，
+  // 刷新后不会退回切换前的系统包。
+  function commitActivePreset(packageId: string): void {
+    if (useRuntimeStore.getState().currentPackage?.manifest.ID !== packageId) return;
+    localStorage.setItem(preferredSystemPackageKey, packageId);
+    reportActiveSystemPackage();
+  }
+
   async function handleSwitchSystem(entry: PlayerSystemPackageCatalogEntry): Promise<void> {
     if (entry.system.package.id === currentSystem.package.id && !authorPreviewActive) return;
     try {
       await flushCurrentCharacter();
       if (authorPreviewActive) exitAuthorPreview();
       await switchToPresetSystemPackage(entry.preset, true);
-      if (useRuntimeStore.getState().currentPackage?.manifest.ID === entry.system.package.id) {
-        localStorage.setItem(preferredSystemPackageKey, entry.system.package.id);
-      }
+      commitActivePreset(entry.system.package.id);
     } catch (error) {
       setCloudNotice(error instanceof Error ? error.message : "系统包切换失败");
     }
@@ -694,11 +740,22 @@ export function PlayerSheetSurface({
   useEffect(() => {
     if (!runtimeInitialized || appliedSystemRouteRef.current === requestedSystemPackage) return;
     appliedSystemRouteRef.current = requestedSystemPackage;
-    if (!requestedSystemPackage) return;
+    if (!requestedSystemPackage) {
+      // 回到无段地址（例如点顶部栏的 Player）时补写当前包，不让地址停在 /player 上。
+      reportActiveSystemPackage();
+      return;
+    }
     const entry = playerSystemPackageCatalog.find((candidate) => candidate.preset.directory === requestedSystemPackage);
     if (entry) void handleSwitchSystem(entry);
     else setCloudNotice(`未找到系统包：${requestedSystemPackage}`);
-  }, [requestedSystemPackage, runtimeInitialized]);
+  }, [reportActiveSystemPackage, requestedSystemPackage, runtimeInitialized]);
+
+  // 进入 Player 页时补写当前生效的包：隐藏时常驻的启动不会报告，从别的页面切回来时要补上，
+  // 否则 /player 会一直停在无段地址上而显示上一次的包。
+  useEffect(() => {
+    if (!surfaceVisible || !runtimeInitialized) return;
+    reportActiveSystemPackage();
+  }, [reportActiveSystemPackage, runtimeInitialized, surfaceVisible]);
 
   async function handlePackageFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -945,9 +1002,7 @@ export function PlayerSheetSurface({
     }
     await runtimeStorage.setActiveCharacterSaveId(save.packageId, save.id);
     await switchToPresetSystemPackage(target.preset, true);
-    if (useRuntimeStore.getState().currentPackage?.manifest.ID === save.packageId) {
-      localStorage.setItem(preferredSystemPackageKey, save.packageId);
-    }
+    commitActivePreset(save.packageId);
   }
 
   function characterSystemName(packageId: string): string {
@@ -1040,9 +1095,7 @@ export function PlayerSheetSurface({
       }
       if (pending.targetSystem) {
         await switchToPresetSystemPackage(pending.targetSystem.preset, true);
-        if (useRuntimeStore.getState().currentPackage?.manifest.ID === pending.targetSystem.system.package.id) {
-          localStorage.setItem(preferredSystemPackageKey, pending.targetSystem.system.package.id);
-        }
+        commitActivePreset(pending.targetSystem.system.package.id);
         setCloudNotice(`已导入人物存档：${imported.document.name}`);
       } else {
         await refreshAllCharacterSaves();

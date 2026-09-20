@@ -3,10 +3,13 @@ import path from "node:path";
 
 import type { SystemPackageDocument } from "../packages/contract-runtime/src/index.ts";
 import type { PresetSystemPackage } from "../apps/player/src/sheet-runtime/loaders/presetSystemPackageLoader.ts";
+import { computeRuntimeMetadataDigest } from "./system-package-metadata-digest.ts";
 
 const runtimeInventoryName = ".pbdh-runtime-files.json";
 const checkOnly = process.argv.includes("--check");
-const directories = ["heart-of-hopefind", "witchy", "hows-my-driving", "tttri"] as const;
+// daggerheart-core 的预置 JSON 由 scripts/generate-daggerheart-core-system-package.ts 生成，
+// 但内容摘要与文件计数同样由本脚本统一维护，避免两处各写一套判据。
+const directories = ["daggerheart-core", "heart-of-hopefind", "witchy", "hows-my-driving", "tttri"] as const;
 
 for (const directory of directories) await syncPackage(directory);
 
@@ -24,6 +27,7 @@ async function syncPackage(directory: typeof directories[number]) {
   }
 
   const runtimeFiles = [...await collectPublishedRuntimePaths(publicRoot), "system.json"].sort();
+  const metadataDigest = await computeRuntimeMetadataDigest(publicRoot, runtimeFiles);
   const systemJson = `${JSON.stringify(system, null, 2)}\n`;
   const inventoryJson = `${JSON.stringify({ schemaVersion: 1, files: runtimeFiles })}\n`;
   const presetJson = `${JSON.stringify({
@@ -35,6 +39,7 @@ async function syncPackage(directory: typeof directories[number]) {
     inventoryPath: runtimeInventoryName,
     fileCount: runtimeFiles.length,
     metadataFileCount: runtimeFiles.filter((file) => !file.startsWith("assets/")).length,
+    metadataDigest,
     embeddedResourceIndex: existingPreset.embeddedResourceIndex.map(({ path, packageId, snapshotDigest }) => ({
       path,
       packageId,

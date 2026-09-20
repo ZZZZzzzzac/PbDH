@@ -35,6 +35,11 @@ export interface RuntimeDependencies {
   loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<RuntimePackageLoadResult>;
   loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<RuntimePackageLoadResult>;
   loadPresetSystemPackage: (preset: PresetSystemPackage, onProgress?: (progress: PresetLoadProgress) => void) => Promise<RuntimePackageLoadResult>;
+  /**
+   * 校验并补装预置包的内嵌资源归档（按摘要判断，已装则零请求），
+   * 若确有更新则同时刷新当前运行时的资源库。启动时缓存命中走这条路，避免整包重下。
+   */
+  ensurePresetEmbeddedResources?: (preset: PresetSystemPackage) => Promise<void>;
   loadPreviewDirectoryHandle: () => Promise<PackageDirectoryHandle | null>;
   savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: RuntimeStorage;
@@ -111,6 +116,7 @@ export interface PackageSlice {
   confirmSystemPackageImport: () => Promise<void>;
   cancelSystemPackageImport: () => void;
   switchToPresetSystemPackage: (preset: PresetSystemPackage, forceReload?: boolean) => Promise<void>;
+  ensurePresetSystemPackage: (preset: PresetSystemPackage) => Promise<void>;
   selectSystemPackageSkin: (skinId: string) => void;
   setFrameworkColorSchemePreference: (preference: FrameworkColorSchemePreference) => void;
   enterAuthorPreview: (handle: PackageDirectoryHandle) => Promise<void>;

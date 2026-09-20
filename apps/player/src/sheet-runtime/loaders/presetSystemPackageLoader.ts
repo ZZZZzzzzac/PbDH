@@ -1,4 +1,5 @@
 import type { PackageIssue, SystemPackage } from "../domain/systemPackage";
+import type { SystemPackageCacheMetadata } from "../storage/runtimeStorage";
 import { inferMimeType } from "../utils";
 import { createVirtualFileSystem, normalizePackagePath, packageArchiveLimits } from "./packageVfs";
 import {
@@ -21,12 +22,29 @@ export interface PresetSystemPackage {
   inventoryPath: string;
   fileCount: number;
   metadataFileCount: number;
+  /**
+   * 运行时可抓取文件的集合内容摘要，由 scripts/sync-bundled-system-package-metadata.ts 生成。
+   * 启动时用它判断浏览器里缓存的系统包是否仍是当前预置内容；缺失时只能按发布版本判断。
+   */
+  metadataDigest?: string;
   embeddedResourceIndex: Array<{
     path: string;
     packageId: string;
     snapshotDigest?: string;
   }>;
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
+}
+
+// 缓存记录与当前预置是否内容一致：只有双方都有摘要且相等才算一致。
+// 缺少摘要（旧缓存记录或未生成摘要的预置）一律视为不一致，退回重新抓取。
+export function isPresetCacheContentCurrent(
+  cacheMetadata: SystemPackageCacheMetadata | null,
+  preset: PresetSystemPackage,
+): boolean {
+  return Boolean(preset.metadataDigest)
+    && cacheMetadata?.source === "preset"
+    && cacheMetadata.presetId === preset.id
+    && cacheMetadata.metadataDigest === preset.metadataDigest;
 }
 
 // 按直达链接路径段查找预制包；只匹配 urlPath，不匹配旧的长 id。

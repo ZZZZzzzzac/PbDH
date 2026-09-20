@@ -27,7 +27,9 @@ export function readPlatformLocation(
       : url.pathname;
   const segments = applicationPath.split("/").filter(Boolean);
   const segment = segments[0];
-  if (segments.length === 0) return { page: "player", href: url.href, playerSystemPackage: "daggerheart-core" };
+  // 无路径段的入口不指定系统包：由 Player 按「上次使用的系统包 → 默认包」决定，
+  // 否则每次从根路径进入都会先加载一遍匕首之心。
+  if (segments.length === 0) return { page: "player", href: url.href };
   const page = platformPages.has(segment as PlatformPage)
     ? segment as PlatformPage
     : "creator";
@@ -42,4 +44,14 @@ export function platformPageUrl(
   basePath = "/",
 ): URL {
   return new URL(`${normalizeBasePath(basePath)}${page}`, origin);
+}
+
+// Player 页指向某个系统包的直达地址。段名用预置的 directory，与 Player 解析直达链接的
+// 匹配方式一致（它按 preset.directory 找包），这样写回去的地址刷新后仍解析到同一个包。
+export function playerSystemPackageUrl(
+  directory: string,
+  origin: string,
+  basePath = "/",
+): URL {
+  return new URL(`${normalizeBasePath(basePath)}player/${encodeURIComponent(directory)}`, origin);
 }

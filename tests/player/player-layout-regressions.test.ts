@@ -140,14 +140,55 @@ describe("Player layout regressions", () => {
 
   it("刷新后按实际恢复的预置系统重新装载对应资源库", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
-    const startup = source.slice(
-      source.indexOf("const cachedMetadata = await runtimeStorage.loadCurrentSystemPackageCacheMetadata()"),
+    const boot = source.slice(
+      source.indexOf('recoveredAccountRef.current = credentials?.accountId ?? "local"'),
       source.indexOf("runtimeReadyRef.current = true"),
     );
 
-    expect(startup).toContain("if (requested || !importedWasRestored) {");
-    expect(startup).toContain("await switchToPresetSystemPackage(preferred.preset, true)");
-    expect(startup).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
+    // 资源库按启动目标（直达链接 → 上次使用 → 默认包）路由，而不是先按默认包路由再被整包重载覆盖。
+    expect(boot.indexOf("const startupEntry = requested")).toBeGreaterThan(-1);
+    expect(boot.indexOf("const startupEntry = requested"))
+      .toBeLessThan(boot.indexOf("await restorePlayerResourceLibrary("));
+    expect(boot).toContain("startupEntry.system,");
+    expect(boot).toContain("if (requested || !importedWasRestored) {");
+    // 缓存内容仍是当前预置时不再整包重下：无条件 forceReload 曾让每次刷新都把加载条走满一圈。
+    expect(boot).toContain("await ensurePresetSystemPackage(startupEntry.preset)");
+    expect(boot).not.toContain("switchToPresetSystemPackage(startupEntry.preset, true)");
+    expect(boot).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
+  });
+
+  it("切换系统包后把地址栏指向对应系统包，刷新不再退回上一个包", async () => {
+    const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
+    const commit = source.slice(
+      source.indexOf("function commitActivePreset(packageId: string)"),
+      source.indexOf("async function handleSwitchSystem"),
+    );
+    const boot = source.slice(
+      source.indexOf("runtimeReadyRef.current = true"),
+      source.indexOf("setSurfaceError(error instanceof Error"),
+    );
+
+    // 只有确实落位到目标包才记住偏好并改写地址；切换失败时地址保持原样。
+    expect(commit).toContain("if (useRuntimeStore.getState().currentPackage?.manifest.ID !== packageId) return;");
+    expect(commit).toContain("localStorage.setItem(preferredSystemPackageKey, packageId);");
+    expect(commit).toContain("reportActiveSystemPackage();");
+    // 三条切换入口（系统包选择、打开其他系统的人物存档、导入人物存档）共用同一收尾。
+    expect(source.match(/commitActivePreset\(/gu)).toHaveLength(4);
+    // 隐藏的 surface 也会跑完启动，报告前必须确认 Player 页面可见。
+    expect(source).toContain("if (!surfaceVisibleRef.current) return;");
+    // 报告的段必须是预置目录名：platform 按它拼地址，解析回来才能命中同一个包。
+    expect(source).toContain("activeSystemPackageHandlerRef.current?.(entry.preset.directory);");
+    // 启动解析出的包与重新进入 Player 页时都要补写地址。
+    expect(boot).toContain("reportActiveSystemPackage();");
+    expect(source).toContain("if (!surfaceVisible || !runtimeInitialized) return;");
+    // 回到无段地址（顶部栏点 Player）也要补写，否则地址会停在 /player。
+    const routeEffect = source.slice(
+      source.indexOf("appliedSystemRouteRef.current === requestedSystemPackage"),
+      source.indexOf("async function handlePackageFile"),
+    );
+    expect(routeEffect).toContain("reportActiveSystemPackage();");
+    expect(routeEffect.indexOf("if (!requestedSystemPackage) {"))
+      .toBeLessThan(routeEffect.indexOf("reportActiveSystemPackage();"));
   });
 
   it("只在激活预置系统包时安装它自己的内嵌资源", async () => {

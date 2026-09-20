@@ -12,7 +12,8 @@
 
 - 本目录内 `system.json`、页面、模块、依赖、布局、皮肤与运行时资产是各 System Package 的作者源，直接维护。
 - `apps/player/src/*-system.generated.json`、`*-preset.generated.json` 与 `.pbdh-runtime-files.json` 是派生元数据，不手工维护；其中 PBRES 索引只包含稳定路径和包 ID。
-- `npm run check:builtin-system-packages` 校验系统运行文件的派生元数据是否同步，不比较 PBRES 版本或摘要，也不修改文件。
+- `*-preset.generated.json` 的 `metadataDigest` 是运行时文件集合的内容摘要，由 `npm run sync:builtin-system-packages` 计算，供 Player 判断本地缓存是否仍是当前预置内容（见 `docs/adr/0075-judge-preset-cache-freshness-by-content-digest.md`）。改动本目录任何运行时文件后必须重新同步，否则摘要过期会让运行时不必要地重下整包。
+- `npm run check:builtin-system-packages` 校验系统运行文件的派生元数据是否同步（含五个预置包的 `metadataDigest`），不比较 PBRES 版本或摘要，也不修改文件。
 
 ## 验证
 

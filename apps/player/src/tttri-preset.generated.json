@@ -18,5 +18,6 @@
   "loadingPresentation": {
     "标语": "正在连接PRTS...",
     "强调色": "#63bfd1"
-  }
+  },
+  "metadataDigest": "sha256:3c9776a9b33458710aba3a35e76795c00fab154d55e8bec7f7cd12e8e5325d79"
 }

@@ -11,6 +11,7 @@ import { PlatformChrome, type PlatformPage } from "@pbdh/platform-ui";
 import {
   normalizeBasePath,
   platformPageUrl,
+  playerSystemPackageUrl,
   readPlatformLocation,
 } from "./platform-route.ts";
 
@@ -45,13 +46,21 @@ export function PlatformApp() {
     commitLocation(cleanedUrl, true);
   }, [commitLocation]);
 
+  // Player 报告当前生效的系统包后，地址栏立刻跟随（替换当前记录，不新增历史）。
+  // 这样「/player 解析出的包」与「页内切换到的包」都会写上对应段，刷新不会再回到上一个包。
+  // 路径已经正确时不动地址，避免抹掉直达链接自带的查询参数或哈希。
+  const followPlayerSystemPackage = useCallback((directory: string) => {
+    const url = playerSystemPackageUrl(directory, window.location.origin, platformBasePath);
+    if (url.pathname === window.location.pathname) return;
+    commitLocation(url, true);
+  }, [commitLocation]);
+
   useEffect(() => {
     if (
       window.location.pathname === platformBasePath
       || window.location.pathname === platformBasePath.slice(0, -1)
     ) {
       const defaultUrl = platformPageUrl("player", window.location.origin, platformBasePath);
-      defaultUrl.pathname += "/daggerheart-core";
       commitLocation(defaultUrl, true);
     }
     const restoreLocation = () => setLocation(readPlatformLocation(
@@ -70,6 +79,7 @@ export function PlatformApp() {
           requestedSystemPackage={location.playerSystemPackage}
           handoffUrl={location.href}
           onHandoffConsumed={consumeHandoff}
+          onActiveSystemPackageChange={followPlayerSystemPackage}
         />
       </section>
       <section className="pbdh-platform-surface" hidden={location.page !== "creator" && location.page !== "gm"}>

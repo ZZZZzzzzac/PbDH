@@ -556,6 +556,242 @@ describe("Platform Runtime Storage", () => {
     await expect(storage.loadCurrentPackageAssets(currentSystem.package.id)).resolves.toEqual([asset]);
   });
 
+  it("缓存内容与当前预置一致时刷新不再重下整包，内容变化后才重下", async () => {
+    vi.stubGlobal("sessionStorage", new MemoryStorage());
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const cachedPackage = minimalSheetSystemPackage(currentSystem);
+    if (cachedPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    cachedPackage.modules[0].标签 = "旧版姓名";
+    const nextPackage = structuredClone(cachedPackage);
+    if (nextPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    nextPackage.modules[0].标签 = "新版姓名";
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(cachedPackage, [], {
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:current",
+    });
+    const loadPresetSystemPackage = vi.fn(async () => ({
+      ok: true as const,
+      package: nextPackage,
+      packageAssets: [],
+      issues: [],
+    }));
+    const ensurePresetEmbeddedResources = vi.fn(async () => {});
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage, loadPresetSystemPackage, ensurePresetEmbeddedResources });
+    const runtime = createRuntimeStore(environment);
+    const preset = { ...minimalPreset(currentSystem), metadataDigest: "sha256:current" };
+
+    await runtime.getState().initialize([preset]);
+    await runtime.getState().ensurePresetSystemPackage(preset);
+
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("旧版姓名");
+    expect(loadPresetSystemPackage).not.toHaveBeenCalled();
+    expect(ensurePresetEmbeddedResources).toHaveBeenCalledOnce();
+
+    await runtime.getState().ensurePresetSystemPackage({ ...preset, metadataDigest: "sha256:changed" });
+
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("新版姓名");
+  });
+
+  it("预置缺少内容摘要时不把缓存当作当前内容，仍重新抓取", async () => {
+    vi.stubGlobal("sessionStorage", new MemoryStorage());
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const cachedPackage = minimalSheetSystemPackage(currentSystem);
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(cachedPackage, [], {
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:current",
+    });
+    const loadPresetSystemPackage = vi.fn(async () => ({
+      ok: true as const,
+      package: cachedPackage,
+      packageAssets: [],
+      issues: [],
+    }));
+    const ensurePresetEmbeddedResources = vi.fn(async () => {});
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage, loadPresetSystemPackage, ensurePresetEmbeddedResources });
+    const runtime = createRuntimeStore(environment);
+
+    await runtime.getState().initialize([minimalPreset(currentSystem)]);
+    await runtime.getState().ensurePresetSystemPackage(minimalPreset(currentSystem));
+
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(ensurePresetEmbeddedResources).not.toHaveBeenCalled();
+  });
+
+  it("预置内容变化时启动只抓取一次：确认预置刷新分支已下载的版本，不重复下载", async () => {
+    vi.stubGlobal("sessionStorage", new MemoryStorage());
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const cachedPackage = minimalSheetSystemPackage(currentSystem);
+    if (cachedPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    cachedPackage.modules[0].标签 = "旧版姓名";
+    const nextPackage = structuredClone(cachedPackage);
+    if (nextPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    nextPackage.modules[0].标签 = "新版姓名";
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(cachedPackage, [], {
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:old",
+    });
+    const loadPresetSystemPackage = vi.fn(async () => ({
+      ok: true as const,
+      package: nextPackage,
+      packageAssets: [],
+      issues: [],
+    }));
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage, loadPresetSystemPackage });
+    const runtime = createRuntimeStore(environment);
+    const preset = { ...minimalPreset(currentSystem), metadataDigest: "sha256:new" };
+
+    // initialize 发现缓存内容过期，抓取一次并挂起待确认，此时运行时仍是旧内容。
+    await runtime.getState().initialize([preset]);
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("旧版姓名");
+    expect(runtime.getState().pendingSystemPackageImport).not.toBeNull();
+
+    await runtime.getState().ensurePresetSystemPackage(preset);
+
+    // 启动确认已下载的版本，不再第二次抓取同样的运行文件。
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("新版姓名");
+    expect(runtime.getState().pendingSystemPackageImport).toBeNull();
+    await expect(storage.loadCurrentSystemPackageCacheMetadata()).resolves.toEqual({
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:new",
+    });
+  });
+
+  it("旧缓存记录没有摘要时不由预置刷新分支重下，改由启动校验重装一次", async () => {
+    vi.stubGlobal("sessionStorage", new MemoryStorage());
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const cachedPackage = minimalSheetSystemPackage(currentSystem);
+    if (cachedPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    cachedPackage.modules[0].标签 = "旧版姓名";
+    const nextPackage = structuredClone(cachedPackage);
+    if (nextPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    nextPackage.modules[0].标签 = "新版姓名";
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    // 升级前的缓存记录只有发布版本，没有内容摘要。
+    await storage.saveCurrentSystemPackage(cachedPackage, [], {
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+    });
+    const loadPresetSystemPackage = vi.fn(async () => ({
+      ok: true as const,
+      package: nextPackage,
+      packageAssets: [],
+      issues: [],
+    }));
+    const ensurePresetEmbeddedResources = vi.fn(async () => {});
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage, loadPresetSystemPackage, ensurePresetEmbeddedResources });
+    const runtime = createRuntimeStore(environment);
+    const preset = { ...minimalPreset(currentSystem), metadataDigest: "sha256:current" };
+
+    await runtime.getState().initialize([preset]);
+    await runtime.getState().ensurePresetSystemPackage(preset);
+
+    // 只有启动校验这一次重装，且缓存里补上了摘要，下次刷新即可命中。
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("新版姓名");
+    expect(ensurePresetEmbeddedResources).not.toHaveBeenCalled();
+    await expect(storage.loadCurrentSystemPackageCacheMetadata()).resolves.toEqual({
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:current",
+    });
+  });
+
+  it("发布版本变化但内容摘要一致时不刷新，摘要变化时按摘要刷新", async () => {
+    vi.stubGlobal("sessionStorage", new MemoryStorage());
+    const repository = new MemoryCharacterSaveStore();
+    const currentSystem = systemJson as SystemPackageDocument;
+    const cachedPackage = minimalSheetSystemPackage(currentSystem);
+    const nextPackage = structuredClone(cachedPackage);
+    if (nextPackage.modules[0]?.类型 !== "freeText") throw new Error("Expected freeText module");
+    nextPackage.modules[0].标签 = "新版姓名";
+    const storage = new PlatformRuntimeStorage({
+      currentSystem,
+      characterSaves: repository,
+      installedPackages: async () => new Map(),
+      localStorage: new MemoryStorage(),
+    });
+    await storage.saveCurrentSystemPackage(cachedPackage, [], {
+      source: "preset",
+      presetId: currentSystem.package.id,
+      releaseVersion: "test",
+      metadataDigest: "sha256:same",
+    });
+    const loadPresetSystemPackage = vi.fn(async () => ({
+      ok: true as const,
+      package: nextPackage,
+      packageAssets: [],
+      issues: [],
+    }));
+    const environment = createRuntimeEnvironment();
+    configureRuntimeEnvironment(environment, { storage, loadPresetSystemPackage });
+    const runtime = createRuntimeStore(environment);
+
+    // 部署了新版本但预置内容没变：沿用缓存，不刷新、不提示替换。
+    await runtime.getState().initialize([{
+      ...minimalPreset(currentSystem),
+      releaseVersion: "next-release",
+      metadataDigest: "sha256:same",
+    }]);
+
+    expect(freeTextLabel(runtime.getState().currentPackage)).toBe("姓名");
+    expect(loadPresetSystemPackage).not.toHaveBeenCalled();
+    expect(runtime.getState().pendingSystemPackageImport).toBeNull();
+
+    // 发布版本没变但内容变了（开发时重打包）：必须按摘要刷新。
+    await runtime.getState().initialize([{
+      ...minimalPreset(currentSystem),
+      releaseVersion: "test",
+      metadataDigest: "sha256:changed",
+    }]);
+
+    expect(loadPresetSystemPackage).toHaveBeenCalledOnce();
+    expect(runtime.getState().pendingSystemPackageImport).not.toBeNull();
+  });
+
   it("预置系统包有新版时继续使用旧版，确认后才替换", async () => {
     vi.stubGlobal("sessionStorage", new MemoryStorage());
     const repository = new MemoryCharacterSaveStore();
