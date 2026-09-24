@@ -52,6 +52,8 @@ export function PlatformApp() {
   const followPlayerSystemPackage = useCallback((directory: string) => {
     const url = playerSystemPackageUrl(directory, window.location.origin, platformBasePath);
     if (url.pathname === window.location.pathname) return;
+    url.search = window.location.search;
+    url.hash = window.location.hash;
     commitLocation(url, true);
   }, [commitLocation]);
 
@@ -61,6 +63,8 @@ export function PlatformApp() {
       || window.location.pathname === platformBasePath.slice(0, -1)
     ) {
       const defaultUrl = platformPageUrl("player", window.location.origin, platformBasePath);
+      defaultUrl.search = window.location.search;
+      defaultUrl.hash = window.location.hash;
       commitLocation(defaultUrl, true);
     }
     const restoreLocation = () => setLocation(readPlatformLocation(

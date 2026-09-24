@@ -9,7 +9,11 @@ from pbdh_backend.settings import Settings
 
 
 class FakeTokenVerifier:
-    def verify(self, token: str) -> VerifiedIdentity:
+    revoked: set[str] = set()
+
+    def verify(self, token: str, *, require_live_session: bool = False) -> VerifiedIdentity:
+        if require_live_session and token in self.revoked:
+            raise ApiError(401, "AUTH_TOKEN_INVALID", "请重新登录。")
         if not token.startswith("token:"):
             raise ApiError(401, "AUTH_TOKEN_INVALID", "登录凭据无效或已过期。")
         return VerifiedIdentity(token.removeprefix("token:"))
@@ -31,6 +35,25 @@ def client(tmp_path: Path) -> TestClient:
 
 def bearer(subject: str) -> dict[str, str]:
     return {"Authorization": f"Bearer token:{subject}"}
+
+
+def test_password_recovery_revokes_old_platform_access_and_prevents_reclaim(tmp_path: Path) -> None:
+    token_verifier = FakeTokenVerifier()
+    api = TestClient(create_app(settings(tmp_path), token_verifier))
+    original = claim(api, "recovery-user").json()
+    old_headers = {**bearer("recovery-user"), "X-PbDH-Session": original["sessionId"]}
+    replacement = claim(api, "recovery-user", replace_existing=True).json()
+    assert replacement["profile"]["accountId"] == original["profile"]["accountId"]
+    assert replacement["sessionId"] != original["sessionId"]
+    assert api.delete("/api/auth/session", headers={
+        **bearer("recovery-user"), "X-PbDH-Session": replacement["sessionId"],
+    }).status_code == 200
+    assert api.get("/api/auth/me", headers=old_headers).json()["error"]["code"] == "AUTH_SESSION_REPLACED"
+    token_verifier.revoked = {"token:recovery-user"}
+    assert claim(api, "recovery-user", replace_existing=True).status_code == 401
+    token_verifier.revoked = set()
+    signed_in = claim(api, "recovery-user").json()
+    assert signed_in["profile"]["accountId"] == original["profile"]["accountId"]
 
 
 def claim(

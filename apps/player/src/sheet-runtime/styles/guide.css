@@ -1,7 +1,7 @@
 .guide-spotlight-root {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 110;
   pointer-events: none;
 }
 
@@ -105,11 +105,41 @@
 }
 
 .guide-actions-default {
-  position: sticky;
-  bottom: 0;
+  position: static;
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+
+.guide-intro {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+}
+
+.guide-intro .guide-panel {
+  position: static;
+  transform: none;
+  min-height: 0;
+  min-width: 0;
 }
 
 @media (max-width: 640px) {
+  .guide-intro {
+    top: auto;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px;
+    width: auto;
+    transform: none;
+  }
+
   .guide-panel-mobile {
     right: 8px;
     bottom: max(8px, env(safe-area-inset-bottom));

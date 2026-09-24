@@ -32,7 +32,7 @@ FIXTURE_ROOT = ROOT / "contracts/conformance/resource-package/1.0.0"
 
 
 class FakeTokenVerifier:
-    def verify(self, token: str) -> VerifiedIdentity:
+    def verify(self, token: str, *, require_live_session: bool = False) -> VerifiedIdentity:
         if not token.startswith("token:"):
             raise ApiError(401, "AUTH_TOKEN_INVALID", "登录凭据无效或已过期。")
         return VerifiedIdentity(token.removeprefix("token:"))

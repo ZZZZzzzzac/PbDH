@@ -11,6 +11,6 @@ window.name = "pbdh-platform";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider><PlatformApp /></AuthProvider>
+    <AuthProvider basePath={import.meta.env.BASE_URL}><PlatformApp /></AuthProvider>
   </StrictMode>,
 );

@@ -163,7 +163,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
         <div className="guide-target-ring" style={ringStyle(targetState.rect)} aria-hidden="true" />
       ) : null}
       {!interactionSurface && step.目标 ? actions : null}
-      {!interactionSurface ? <section
+      {!interactionSurface ? <div className={!step.目标 ? "guide-intro" : undefined}><section
         className={`guide-panel${isMobile ? " guide-panel-mobile" : ""}${!targetState.rect || targetState.unavailable ? " guide-panel-default" : ""}`}
         style={panelStyle}
         ref={panelRef}
@@ -178,8 +178,9 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
           <RestrictedMarkdown className="guide-instructions" value={step.说明} />
           {targetState.unavailable ? <p className="guide-target-unavailable" role="status">当前目标不可见，请先完成前置步骤。</p> : null}
         </div>
-        {!step.目标 ? actions : null}
-      </section> : null}
+      </section>
+      {!step.目标 ? actions : null}
+      </div> : null}
     </div>,
     document.querySelector<HTMLElement>(".app-shell") ?? document.body,
   );

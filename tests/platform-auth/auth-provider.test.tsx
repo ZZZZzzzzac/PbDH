@@ -11,11 +11,12 @@ const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) await cleanup();
   localStorage.clear();
+  window.history.replaceState(null, "", "/");
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
-async function mountAuth(restored = false) {
+async function mountAuth(restored = false, overrides: Partial<AuthGateway> = {}) {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   localStorage.setItem("pbdh-platform-site-session", "local-session");
   let owner: string | null = restored ? "local-session" : "other-device";
@@ -30,6 +31,7 @@ async function mountAuth(restored = false) {
     })),
     loadProfile: vi.fn().mockResolvedValue({ profile }),
     saveUsername: vi.fn().mockResolvedValue({ profile }),
+    releaseSession: vi.fn(async () => { owner = null; return { released: true }; }),
     claimSession: vi.fn(async () => {
       owner = `claimed-${++claims}`;
       return { sessionId: owner, profile, replacedExisting: true };
@@ -41,6 +43,9 @@ async function mountAuth(restored = false) {
     signIn: async () => { const session = { accessToken: "test-token" }; callback?.(session); return session; },
     signUp: async () => null,
     signOut: async () => { callback?.(null); },
+    requestPasswordReset: vi.fn().mockResolvedValue(undefined),
+    updatePassword: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
   };
   function Probe() { context = useAuth(); return <output>{context.status}</output>; }
   const container = document.createElement("div");
@@ -48,8 +53,76 @@ async function mountAuth(restored = false) {
   const root = createRoot(container);
   cleanups.push(async () => { await act(async () => root.unmount()); container.remove(); });
   await act(async () => root.render(<AuthProvider api={api} gatewayFactory={() => gateway}><Probe /></AuthProvider>));
-  return { api, read: () => context, emit: (session: AuthSession | null, event?: string) => callback?.(session, event), replaceOwner: () => { owner = "other-device"; } };
+  return { api, gateway, read: () => context, emit: (session: AuthSession | null, event?: string) => callback?.(session, event), replaceOwner: () => { owner = "other-device"; } };
 }
+
+test("恢复事件禁用云凭据，不认领旧会话，并优先于后续恢复通知", async () => {
+  const auth = await mountAuth(true);
+  auth.api.loadSessionStatus.mockClear();
+  await act(async () => auth.emit({ accessToken: "recovery-token" }, "PASSWORD_RECOVERY"));
+  await act(async () => auth.emit({ accessToken: "recovery-token" }, "INITIAL_SESSION"));
+  expect(auth.read().recovery).toBe("ready");
+  expect(auth.read().credentials).toBeNull();
+  expect(auth.api.loadSessionStatus).not.toHaveBeenCalled();
+  expect(auth.api.claimSession).not.toHaveBeenCalled();
+});
+
+test("恢复回调刷新及 SDK 早期事件丢失时仍显示新密码窗口", async () => {
+  window.history.replaceState(null, "", "/?auth=recovery#type=recovery&access_token=test-only");
+  const auth = await mountAuth(true);
+  expect(auth.read().recovery).toBe("ready");
+  expect(auth.api.loadSessionStatus).not.toHaveBeenCalled();
+  expect(window.location.hash).toBe("");
+});
+
+test("过期恢复链接不回退成已有账号登录，也不暴露上游错误", async () => {
+  window.history.replaceState(null, "", "/?auth=recovery#error_code=otp_expired");
+  const auth = await mountAuth(true, { getSession: async () => { throw new Error("private upstream details"); } });
+  expect(auth.read().recovery).toBe("invalid");
+  expect(auth.read().credentials).toBeNull();
+  expect(auth.read().message).toContain("过期");
+  expect(auth.read().message).not.toContain("private");
+});
+
+test("密码更新后强制替换并释放平台会话，全局退出后要求重新登录且保留本地数据", async () => {
+  const signOut = vi.fn().mockResolvedValue(undefined);
+  const auth = await mountAuth(true, { signOut });
+  localStorage.setItem("unrelated-local-document", "keep");
+  await act(async () => auth.emit({ accessToken: "recovery-token" }, "PASSWORD_RECOVERY"));
+  await act(async () => auth.read().resetPassword("new-password"));
+  expect(auth.gateway.updatePassword).toHaveBeenCalledExactlyOnceWith("new-password");
+  expect(auth.api.claimSession).toHaveBeenCalledExactlyOnceWith("test-token", null, true);
+  expect(auth.api.releaseSession).toHaveBeenCalledExactlyOnceWith("test-token", "claimed-1");
+  expect(signOut).toHaveBeenCalledExactlyOnceWith("global");
+  expect(auth.read().status).toBe("anonymous");
+  expect(auth.read().recovery).toBe("none");
+  expect(auth.read().message).toContain("密码已重置");
+  expect(localStorage.getItem("pbdh-platform-site-session")).toBeNull();
+  expect(localStorage.getItem("unrelated-local-document")).toBe("keep");
+});
+
+test("退出旧会话失败保留重试入口，不重复提交已修改的密码", async () => {
+  const signOut = vi.fn().mockRejectedValueOnce(new Error("network")).mockResolvedValue(undefined);
+  const auth = await mountAuth(true, { signOut });
+  await act(async () => auth.emit({ accessToken: "recovery-token" }, "PASSWORD_RECOVERY"));
+  await act(async () => auth.read().resetPassword("new-password"));
+  expect(auth.read().recovery).toBe("finishing");
+  expect(auth.read().credentials).toBeNull();
+  await act(async () => auth.read().resetPassword(""));
+  expect(auth.gateway.updatePassword).toHaveBeenCalledOnce();
+  expect(auth.api.claimSession).toHaveBeenCalledOnce();
+  expect(auth.read().recovery).toBe("none");
+});
+
+test("恢复邮件请求使用当前网站回调，不泄漏邮箱是否注册或上游异常", async () => {
+  const requestPasswordReset = vi.fn().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("user does not exist"));
+  const auth = await mountAuth(false, { requestPasswordReset });
+  await act(async () => auth.read().requestPasswordReset(" user@example.test "));
+  expect(requestPasswordReset).toHaveBeenCalledExactlyOnceWith("user@example.test", `${window.location.origin}/?auth=recovery`);
+  expect(auth.read().message).toContain("如果该邮箱已注册");
+  await act(async () => auth.read().requestPasswordReset("user@example.test"));
+  expect(auth.read().message).not.toContain("does not exist");
+});
 
 test("切回标签页的慢恢复和临时网络失败不清空已确认账号", async () => {
   const auth = await mountAuth(true);

@@ -17,7 +17,9 @@ export interface AuthGateway {
   onAuthStateChange(callback: (session: AuthSession | null, event?: string) => void): () => void;
   signIn(email: string, password: string): Promise<AuthSession>;
   signUp(email: string, password: string): Promise<AuthSession | null>;
-  signOut(): Promise<void>;
+  requestPasswordReset(email: string, redirectTo: string): Promise<void>;
+  updatePassword(password: string): Promise<void>;
+  signOut(scope?: "local" | "global"): Promise<void>;
 }
 
 export type AuthGatewayFactory = (

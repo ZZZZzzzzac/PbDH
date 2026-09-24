@@ -8,11 +8,14 @@ export const createSupabaseGateway: AuthGatewayFactory = ({ supabaseUrl, supabas
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      flowType: "implicit",
       storageKey: "pbdh-platform-supabase-auth",
     },
   });
   const gateway: AuthGateway = {
     async getSession() {
+      const initialized = await client.auth.initialize();
+      if (initialized.error) throw initialized.error;
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
       return mapSession(data.session);
@@ -32,8 +35,16 @@ export const createSupabaseGateway: AuthGatewayFactory = ({ supabaseUrl, supabas
       if (error) throw error;
       return mapSession(data.session);
     },
-    async signOut() {
-      const { error } = await client.auth.signOut({ scope: "local" });
+    async requestPasswordReset(email, redirectTo) {
+      const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+    },
+    async updatePassword(password) {
+      const { error } = await client.auth.updateUser({ password });
+      if (error) throw error;
+    },
+    async signOut(scope = "local") {
+      const { error } = await client.auth.signOut({ scope });
       if (error) throw error;
     },
   };

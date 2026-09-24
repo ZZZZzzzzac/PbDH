@@ -62,6 +62,7 @@ def create_app(
             resolved.supabase_url,
             resolved.supabase_audience,
             resolved.supabase_jwt_secret,
+            anon_key=resolved.supabase_anon_key,
         )
         if resolved.auth_configured and resolved.supabase_url
         else None

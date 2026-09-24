@@ -310,7 +310,8 @@
   border-top: 1px solid var(--dh-line-muted);
 }
 
-.equipment-slot + .equipment-slot {
+.equipment-slot + .equipment-slot,
+[data-guide-region-id="guide-weapons"] + .equipment-slot {
   margin-top: 0.15rem;
 }
 

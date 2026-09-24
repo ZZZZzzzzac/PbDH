@@ -32,8 +32,7 @@
 .pbdh-account-field input:focus { border-color: #9b403d; box-shadow: 0 0 0 2px rgb(155 64 61 / 12%); }
 .pbdh-account-dialog button.primary { min-height: 34px; padding: 0 14px; border: 1px solid #7d2f2c; border-radius: 5px; color: #fffaf4; background: #8f3734; font-weight: 700; }
 .pbdh-account-actions { display: flex; gap: 8px; }
-.pbdh-account-actions > button:not(.primary), .pbdh-account-mode { min-height: 34px; padding: 0 12px; border: 1px solid #cfc5b9; border-radius: 5px; color: #433b35; background: #f8f4ed; }
-.pbdh-account-mode { margin-top: 12px; }
+.pbdh-account-actions > button:not(.primary) { min-height: 34px; padding: 0 12px; border: 1px solid #cfc5b9; border-radius: 5px; color: #433b35; background: #f8f4ed; }
 .pbdh-account-message { padding: 8px 10px; border-left: 3px solid #a8403d; background: #f7ece9; color: #7d2f2c !important; }
 .pbdh-account-heading { display: flex; align-items: center; gap: 8px; }
 .pbdh-account-heading h2 { margin-bottom: 8px; }

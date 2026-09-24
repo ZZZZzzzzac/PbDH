@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useOptionalAuth } from "@pbdh/platform-auth/provider";
 
 export const tutorialUrl = "https://vcn3zvu2w61p.feishu.cn/docx/AopFdHoPmootkUx48Ujc8mVfn7c";
 const preferenceKey = "pbdh:tutorial:do-not-show";
@@ -10,10 +11,13 @@ function isDismissed() {
 }
 
 export function TutorialEntry() {
+  const auth = useOptionalAuth();
+  const recovering = auth != null && auth.recovery !== "none";
   const [dismissed, setDismissed] = useState(isDismissed);
-  const [open, setOpen] = useState(() => !isDismissed());
+  const [open, setOpen] = useState(() => !isDismissed() && !recovering);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (open && !dialog.current?.open) dialog.current?.showModal(); }, [open]);
+  useEffect(() => { if (recovering) setOpen(false); }, [recovering]);
   return <>
     <button type="button" aria-label="使用教程" title="使用教程" onClick={() => setOpen(true)}>
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

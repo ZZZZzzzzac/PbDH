@@ -20,3 +20,13 @@ When replaced, the old client stops authenticated cloud writes. Local-first guar
 - Session replacement is detected from actual authenticated request failures, not a dedicated 15-second polling loop. An idle old device may display the change later, but the server still rejects its writes immediately. Notifications are scoped to the requesting session so stale responses cannot invalidate a newer login.
 - Public Market browsing remains anonymous and unaffected. Authenticated Market actions require the active Platform session.
 - Multi-device or cross-App concurrent cloud use requires a future ADR and measured user demand; it is not implemented through hidden per-document exceptions.
+
+## Password recovery
+
+Issue #72 adds an explicit recovery state that never grants Platform credentials or automatically claims an active session. The browser uses Supabase's implicit email recovery flow so the link can be opened on a different browser or device. Recovery credentials are consumed by the identity SDK and removed from the address bar; a non-secret recovery query flag keeps the password form available after a refresh.
+
+After a successful password update, the client forces a new Platform session claim with no prior session ID, releases that claim, and requests global Supabase sign-out. This invalidates the old Platform session immediately and revokes Supabase refresh sessions. Only after all steps succeed does the UI report completion and require a new password login. A partial failure retains a retry action rather than reporting success or submitting the same password again.
+
+Every Platform session claim additionally checks the current identity session through Supabase Auth's `/user` endpoint. Local JWT signature validation alone cannot reject an already signed-out token before its expiry. Live validation fails closed if Supabase is unavailable; existing active cloud operations continue using the normal JWT and Platform session checks. No administrator credentials, new database schema, or domain-data mutation is involved.
+
+Password recovery preserves local caches and durable outboxes. Idle devices discover a replaced Platform session on their next cloud operation, just as with an explicit takeover.

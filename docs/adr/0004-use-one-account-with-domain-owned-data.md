@@ -13,4 +13,4 @@ One identity removes duplicate registration and makes publication ownership, ins
 - Player App, Creator App, and GM App retain anonymous/local-only operation; authentication cannot become a startup requirement for offline data.
 - Public Market browsing and file-based import/export remain usable without an account; actions that need ownership, such as publishing, require authentication.
 - A valid login does not silently upload local data. Each document type keeps its own explicit migration contract.
-- Account deletion, export, and recovery will need a coordinated platform policy, but each domain remains responsible for deleting or exporting its owned records.
+- Account recovery resets the existing identity's password through Supabase Auth. It preserves the stable Account ID and all domain-owned records and media; the session policy is defined in ADR-0034. Account deletion and export still need a coordinated platform policy, with each domain responsible for its owned records.

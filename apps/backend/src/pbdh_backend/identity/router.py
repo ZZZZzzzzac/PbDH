@@ -80,6 +80,18 @@ def active_account(
     return AuthenticatedAccount(account, session_id)
 
 
+def live_identity(
+    authorization: Annotated[str | None, Header()] = None,
+    token_verifier: TokenVerifier = Depends(verifier),
+) -> VerifiedIdentity:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise ApiError(401, "AUTH_REQUIRED", "请先登录。")
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise ApiError(401, "AUTH_REQUIRED", "请先登录。")
+    return token_verifier.verify(token, require_live_session=True)
+
+
 def optional_active_account(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,
@@ -138,7 +150,7 @@ def session_status(
 @router.post("/session/claim")
 def claim_session(
     body: SessionClaimRequest,
-    identity: VerifiedIdentity = Depends(verified_identity),
+    identity: VerifiedIdentity = Depends(live_identity),
     identity_repository: IdentityRepository = Depends(repository),
     resolved: Settings = Depends(settings),
 ) -> dict[str, object]:
