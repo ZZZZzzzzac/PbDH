@@ -26,7 +26,7 @@ import { TemplateIcon } from "./TemplateIcon.tsx";
 import type { CreatorWorkspace, WorkspaceNodeRef } from "./workspace-model.ts";
 
 export type CloudDocumentKind = Extract<LocalDocumentKind, "creator-workspace" | "gm-tabletop-document">;
-export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "import-package" | "convert-package" | "export-package" | "publication-cover" | "upgrade-templates" | "prepare-tabletop";
+export type CreatorOperation = "cloud-sync" | "cloud-conflict" | "trash-workspace" | "trash-tabletop" | "duplicate-tabletop" | "read-tabletop" | "import-tabletop" | "export-tabletop" | "read-package" | "import-package" | "convert-package" | "export-package" | "export-package-pdf" | "publication-cover" | "upgrade-templates" | "prepare-tabletop";
 
 export type CreatorConversionReview = {
   formatId: Exclude<ResourceFormatId, "pbres">;

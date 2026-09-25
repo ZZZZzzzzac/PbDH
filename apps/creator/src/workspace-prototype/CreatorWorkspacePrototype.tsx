@@ -58,6 +58,7 @@ import {
 import {
   downloadBytes,
   isSemanticVersion,
+  safeFileName,
 } from "./creator-file-actions.ts";
 import { runCreatorPackageFileWorkflow } from "./creator-package-file-workflow.ts";
 import {
@@ -172,6 +173,7 @@ const creatorOperationLabels: Record<CreatorOperation, string> = {
   "import-package": "正在保存资源包…",
   "convert-package": "正在转换第三方资源…",
   "export-package": "正在导出资源包…",
+  "export-package-pdf": "正在导出 PDF，请稍候…",
   "publication-cover": "正在生成发布封面…",
   "upgrade-templates": "正在升级模板…",
   "prepare-tabletop": "正在加载桌面模板…",
@@ -273,6 +275,7 @@ export function CreatorWorkspacePrototype({
   const [imageCropError, setImageCropError] = useState<string | null>(null);
   const [trashError, setTrashError] = useState<string | null>(null);
   const [creatorOperation, setCreatorOperation] = useState<CreatorOperation | null>(null);
+  const [pdfProgressLabel, setPdfProgressLabel] = useState("");
   const packageImportRunning = useRef(false);
   const [localAppMode, setLocalAppMode] = useState<CreatorAppMode>("creator");
   const appMode = mode ?? localAppMode;
@@ -1411,6 +1414,27 @@ export function CreatorWorkspacePrototype({
     }
   }
 
+  async function exportPackagePdf(workspaceKey: string) {
+    const workspace = workspaces.find((item) => item.key === workspaceKey);
+    if (!workspace || creatorOperation) return;
+    setCreatorOperation("export-package-pdf");
+    setPdfProgressLabel("准备导出 PDF · 0%");
+    try {
+      const { exportCreatorPackagePdf } = await import("./creator-package-pdf.tsx");
+      const result = await exportCreatorPackagePdf(workspace, undefined, (progress) => {
+        setPdfProgressLabel(progress.stage === "cards"
+          ? `正在导出 PDF · ${progress.percent}%（${progress.completed}/${progress.total} 张卡牌）`
+          : `正在生成 PDF 文件 · ${progress.percent}%`);
+      });
+      downloadBytes(result.bytes, `${safeFileName(workspace.document.package.name)}.pdf`, "application/pdf");
+      notify(`已导出 PDF · ${result.cardCount} 张卡牌，共 ${result.pageCount} 页 A4`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "PDF 导出失败，请重试。");
+    } finally {
+      setCreatorOperation(null);
+    }
+  }
+
   function applyPackageInformationDraft(draft: CreatorPublicationDraft) {
     setPublicationVersionSuggestion(draft.versionSuggestion);
     setPackageNameDraft(draft.package.name);
@@ -1869,6 +1893,7 @@ export function CreatorWorkspacePrototype({
       case "new-package": setTabletopContextMenu(null); setDialog({ kind: "new" }); return;
       case "import-package": setTabletopContextMenu(null); importRef.current?.click(); return;
       case "export-package": setTabletopContextMenu(null); void exportPackage(); return;
+      case "export-package-pdf": setTabletopContextMenu(null); void exportPackagePdf(command.workspaceKey); return;
       case "publish-package": setTabletopContextMenu(null); void openPublicationDialog(); return;
       case "new-resource": setTabletopContextMenu(null); if (active) setDialog({ kind: "new-resource", workspaceKey: active.key }); return;
       case "new-folder": if (active) replaceActive(createWorkspaceFolder(active)); setTabletopContextMenu(null); return;
@@ -1973,7 +1998,8 @@ export function CreatorWorkspacePrototype({
             activeResourceId,
             activeResourceCount: active?.document.resources.length ?? 0,
             operation: creatorOperation,
-            operationLabel: creatorOperation ? creatorOperationLabels[creatorOperation] : undefined,
+            operationLabel: creatorOperation === "export-package-pdf" ? pdfProgressLabel
+              : creatorOperation ? creatorOperationLabels[creatorOperation] : undefined,
             search: resourceSearch,
             filteredResources: filteredWorkspaceResources,
             multiSelect: resourceMultiSelect,

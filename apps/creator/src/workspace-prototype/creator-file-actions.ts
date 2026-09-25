@@ -12,8 +12,8 @@ export function safeFileName(value: string): string {
   return value.replace(/[\\/:*?"<>|]/gu, "-").trim() || "resources";
 }
 
-export function downloadBytes(bytes: Uint8Array, fileName: string): void {
-  const url = URL.createObjectURL(new Blob([bytes.slice().buffer], { type: "application/zip" }));
+export function downloadBytes(bytes: Uint8Array, fileName: string, mediaType = "application/zip"): void {
+  const url = URL.createObjectURL(new Blob([bytes.slice().buffer], { type: mediaType }));
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
