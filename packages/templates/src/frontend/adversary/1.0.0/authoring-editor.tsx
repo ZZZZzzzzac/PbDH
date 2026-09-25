@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AdversaryStatPresetControl } from "../stat-preset-control.tsx";
 
 import { authoringControlStyles, EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
 import { adversaryFeaturePresets } from "../../feature-presets.ts";
@@ -15,7 +16,7 @@ const damageTypeOptions = ["物理", "魔法"];
 const featureTypeOptions = ["动作", "被动", "反应"];
 const emptyFeature = { 特性名称: "新特性", 特性原文: "", 特性类型: "动作", 特性描述: "" };
 
-export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEditorProps) {
+export function AdversaryAuthoringEditor({ data, onValue, onData }: TemplateAuthoringEditorProps) {
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const features = Array.isArray(data.特性) ? data.特性 as Record<string, unknown>[] : [];
   const field = (path: string, label: string, options?: readonly string[]) => <EditorInput label={label} value={data[path]} options={options} onChange={(value) => onValue(path, value)} />;
@@ -41,6 +42,7 @@ export function AdversaryAuthoringEditor({ data, onValue }: TemplateAuthoringEdi
       {field("动机与战术", "动机与战术")}{field("经历", "经历")}
     </section>
     <section className="adversary-editor-group adversary-combat" data-authoring-section="combat">
+      <AdversaryStatPresetControl data={data} onData={onData} />
       {field("难度", "难度")}{field("重度伤害阈值", "重度阈值")}{field("严重伤害阈值", "严重阈值")}{field("生命点", "生命")}{field("压力点", "压力")}
       {field("攻击命中", "攻击")}{field("攻击武器", "武器")}{field("攻击范围", "范围", rangeOptions)}{field("攻击伤害", "伤害")}{field("攻击属性", "类型", damageTypeOptions)}
     </section>
