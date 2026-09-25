@@ -12,12 +12,12 @@ module.exports = async (input) => {
   ];
   for (const die of dice) {
     const value = typeof values[die.id] === "string" ? values[die.id].trim().toUpperCase() : "";
-    if (!["D4", "D6", "D8", "D10", "D12", "D20"].includes(value)) {
+    if (!["D4", "D6", "D8", "D10", "D12"].includes(value)) {
       issues.push({
         level: "error",
         code: die.code,
         path: `character.values.${die.id}`,
-        text: `${die.label}必须选择d4、d6、d8、d10、d12或d20。`,
+        text: `${die.label}必须选择d4、d6、d8、d10或d12（噪音的D20单独显示）。`,
       });
     }
   }

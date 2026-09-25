@@ -26,7 +26,7 @@ describe("all current Templates share explicit one-step replacements", () => {
       media: {},
     }));
     workspace.document.snapshotDigest = await computeResourcePackageSnapshotDigest(workspace.document, workspace.media);
-    expect(template.version).toBe(template.id === "玩家卡" || template.id === "罗德岛子职" ? "1.0.0" : template.id === "敌人" || template.id === "环境" ? "1.1.1" : "1.1.0");
+    expect(template.version).toBe(template.id === "寻望物资" || template.id === "玩家卡" || template.id === "罗德岛子职" ? "1.0.0" : template.id === "敌人" || template.id === "环境" ? "1.1.1" : "1.1.0");
     expect(template.tabletop.replacements).toBe(sharedTabletopReplacements);
     expect(templateCatalog.templates.find(entry => entry.id === template.id && entry.version === template.version)?.tabletopReplacements)
       .toEqual(sharedTabletopReplacements);

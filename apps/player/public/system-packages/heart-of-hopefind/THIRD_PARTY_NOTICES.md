@@ -31,3 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+
+## 寻望之心规则资料
+
+新增的 50 条武器与物资来自用户提供的《寻望之心 Heart of hopefind（未完成版）》PDF 第 16—19 页，作者署名为诸星观。保留原文的名称、尺寸、特征与用途；这里只做结构化整理，不改变原作者的权利声明。

@@ -180,6 +180,8 @@ export const allowedHtmlAttributesByTag = new Map([
   ["th", new Set(["colspan", "rowspan"])],
 ]);
 export const allowedHtmlTags = new Set([
+  "details",
+  "summary",
   "article",
   "div",
   "em",

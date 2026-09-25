@@ -414,8 +414,28 @@
         "位阶": "2"
       },
       "media": {}
+    },
+    {
+      "id": "review-hopefind-supply",
+      "path": "寻望物资/水壶.json",
+      "template": {
+        "id": "寻望物资",
+        "version": "1.0.0"
+      },
+      "presentation": {
+        "mode": "text",
+        "fixedRatio": true
+      },
+      "data": {
+        "名称": "水壶",
+        "类型": "物资",
+        "尺寸": "1×2",
+        "简介": "便携水壶",
+        "内容": []
+      },
+      "media": {}
     }
   ],
   "emptyDirectories": [],
-  "snapshotDigest": "sha256:f3c1e243ccfeb0e19725cf47b73fa3281a7cacb788b857be1dcca859acd5f984"
+  "snapshotDigest": "sha256:a8c83094aa05997116d35b235e1a0e2f4c5351e1b286a4f730b1f95b6f5866db"
 }

@@ -40,8 +40,8 @@ describe("Resource Template support matrix", () => {
 
   test("every development-publishable version is complete and every Template has one current version", async () => {
     const developmentEntries = catalog.templates.filter((item) => item.publication.development);
-    expect(currentTemplates).toHaveLength(13);
-    expect(new Set(currentTemplates.map((item) => item.id)).size).toBe(13);
+    expect(currentTemplates).toHaveLength(14);
+    expect(new Set(currentTemplates.map((item) => item.id)).size).toBe(14);
     expect(currentTemplates.every((template) => developmentEntries.some((entry) => key(entry) === key(template)))).toBe(true);
     expect(supportedTemplateFrontends.filter((frontend) => developmentEntries.some((entry) =>
       entry.id === frontend.templateId && entry.version === frontend.templateVersion)).map((frontend) => key({

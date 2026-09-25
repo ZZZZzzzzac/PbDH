@@ -167,6 +167,7 @@ export interface QuestionnaireSlice {
 }
 
 export interface CardSlice {
+  moveGridItem: (move: import("../domain/gridLayout").GridMove) => string | null;
   cardTableCardWidths: Record<string, number>;
   cardTableSurfaceHeights: Record<string, number>;
   pendingCardTablePlacements: Record<string, string[]>;

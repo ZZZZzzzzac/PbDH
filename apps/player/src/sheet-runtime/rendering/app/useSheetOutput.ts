@@ -108,7 +108,7 @@ export function useSheetOutput({
     if (tidyCardsForOutput) {
       const characterData = useRuntimeStore.getState().characterData;
       cardLayoutSnapshotRef.current = currentPackage.modules
-        .filter((module) => module.类型 === "cardTable")
+        .filter((module) => module.类型 === "cardTable" && !module.网格布局)
         .map((module) => ({
           tableModuleId: module.ID,
           cards: (characterData?.cards.instances ?? [])
@@ -122,7 +122,8 @@ export function useSheetOutput({
             })),
         }));
       for (const module of currentPackage.modules) {
-        if (module.类型 !== "cardTable") continue;
+        // 格子坐标和朝向属于物资占位数据，输出时不能套用自由桌面的自动整理。
+        if (module.类型 !== "cardTable" || module.网格布局) continue;
         const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
         tidyCardTable(
           module.ID,

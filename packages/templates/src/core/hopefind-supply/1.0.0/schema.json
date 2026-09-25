@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/templates/hopefind-supply/1.0.0/schema.json",
+  "title": "寻望物资",
+  "type": "object",
+  "required": [
+    "名称",
+    "类型",
+    "简介",
+    "内容",
+    "尺寸"
+  ],
+  "properties": {
+    "名称": {
+      "type": "string"
+    },
+    "原文": {
+      "type": "string"
+    },
+    "类型": {
+      "type": "string"
+    },
+    "简介": {
+      "type": "string"
+    },
+    "内容": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "名称",
+          "描述"
+        ],
+        "properties": {
+          "名称": {
+            "type": "string"
+          },
+          "原文": {
+            "type": "string"
+          },
+          "描述": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "尺寸": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

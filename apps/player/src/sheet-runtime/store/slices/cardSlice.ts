@@ -20,9 +20,20 @@ import { generateId } from "../../utils";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
 import type { CardSlice, RuntimeGet, RuntimeSet, RuntimeSlice } from "../runtimeTypes";
 import { scheduleAutosave } from "../workflows/autosave";
+import { moveGridItem } from "../../domain/gridLayout";
 
 export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<CardSlice> {
   return (set, get) => ({
+    moveGridItem(move) {
+      const system = get().currentPackage;
+      if (!system) return "系统包未加载。";
+      try {
+        updateCardAndAutosave(environment, get, set, (data) => moveGridItem(data, system, move));
+        return null;
+      } catch (error) {
+        return error instanceof Error ? error.message : "物资移动失败。";
+      }
+    },
     cardTableCardWidths: {},
     cardTableSurfaceHeights: {},
     pendingCardTablePlacements: {},

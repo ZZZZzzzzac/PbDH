@@ -7,6 +7,14 @@
       "html": "layouts/character-sheet.html",
       "css": "layouts/base.css"
     }
+  },
+  {
+    "ID": "inventory",
+    "名称": "背包与物资",
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/inventory.html",
+      "css": "layouts/inventory.css"
+    }
   }
 ]
-

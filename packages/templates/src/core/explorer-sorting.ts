@@ -13,6 +13,7 @@ const definitions: readonly {
   versions: readonly string[];
   fields: readonly TemplateSortField[];
 }[] = [
+  { id: "寻望物资", versions: ["1.0.0"], fields: [nameField, { key: "尺寸", label: "尺寸", kind: "text" }] },
   { id: "玩家卡", versions: ["1.0.0"], fields: [nameField, { key: "玩家名", label: "玩家名", kind: "text" }] },
   { id: "敌人", versions: [...commonVersions, "1.0.2", "1.0.3", "1.0.4", "1.0.5", "1.1.1"], fields: [nameField, kindField, tierField] },
   { id: "种族", versions: commonVersions, fields: [nameField] },

@@ -168,6 +168,7 @@ function toSheetResourceEntry(
   };
 
   switch (resource.template.id) {
+    case "寻望物资":
     case "自由":
       return {
         ...freeTemplateSections(data.内容),

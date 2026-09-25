@@ -1,3 +1,5 @@
+import { hopefindSupplyAuthoring } from "./hopefind-supply/1.0.0/authoring-editor";
+import { hopefindSupplyRendererRevision } from "./hopefind-supply/1.0.0/renderer";
 import type { ReactNode } from "react";
 import { playerCardAuthoring } from "./player-card/1.0.0/authoring-editor.tsx";
 import { playerCardRendererRevision } from "./player-card/1.0.0/renderer.tsx";
@@ -120,6 +122,7 @@ export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] =
   binding(professionAuthoring110, professionRendererRevision110),
   binding(subclassAuthoring110, subclassRendererRevision110),
   binding(rhodesSubclassAuthoring, rhodesSubclassRendererRevision),
+  binding(hopefindSupplyAuthoring, hopefindSupplyRendererRevision),
   binding(weaponAuthoring110, weaponRendererRevision110),
   binding(adversaryAuthoring, adversaryRendererRevision),
   binding(ancestryAuthoring, ancestryRendererRevision),

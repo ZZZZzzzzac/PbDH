@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pbdh.dev/contracts/system-package/1.0.0/grid-layout.schema.json",
+  "title": "Card Table Grid Layout 1.0.0",
+  "type": "object",
+  "required": [
+    "版本",
+    "尺寸字段",
+    "手上状态",
+    "最大列数",
+    "最大行数",
+    "容器"
+  ],
+  "properties": {
+    "版本": {
+      "const": "1.0.0"
+    },
+    "尺寸字段": {
+      "type": "string",
+      "minLength": 1
+    },
+    "手上状态": {
+      "type": "string",
+      "minLength": 1
+    },
+    "最大列数": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "最大行数": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "容量上限": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 400
+    },
+    "容器": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": [
+          "状态",
+          "名称",
+          "行数模块ID",
+          "列数模块ID"
+        ],
+        "properties": {
+          "状态": {
+            "type": "string",
+            "minLength": 1
+          },
+          "名称": {
+            "type": "string",
+            "minLength": 1
+          },
+          "行数模块ID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "列数模块ID": {
+            "type": "string",
+            "minLength": 1
+          },
+          "尺寸选项": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "名称",
+                "行数",
+                "列数"
+              ],
+              "properties": {
+                "名称": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "行数": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "列数": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "大件记录模块ID": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

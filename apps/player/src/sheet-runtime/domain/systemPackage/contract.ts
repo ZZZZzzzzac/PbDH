@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateGridLayout, type GridLayout } from "../gridLayoutContract";
 import {
   resourceLibraryFieldTemplateSchema,
   resourceLibraryPackageInputSchema,
@@ -178,6 +179,7 @@ export const cardTableResourceSourceSchema = z.discriminatedUnion("类型", [
 ]);
 
 export const cardTableModuleSchema = sheetModuleBaseSchema.extend({
+  网格布局: z.custom<GridLayout>((value) => validateGridLayout(value), "无效的网格布局声明。").optional(),
   类型: z.literal("cardTable"),
   标签: z.string().min(1),
   资源来源: z.array(cardTableResourceSourceSchema).min(1).refine((sources) => new Set(sources.map((source) => `${source.类型}:${source.ID}`)).size === sources.length, {

@@ -9,6 +9,7 @@ import { LongTextModule } from "./LongTextModule";
 import { ReadOnlyDisplayModule } from "./ReadOnlyDisplayModule";
 import { ResourcePickerModule } from "./ResourcePickerModule";
 import { ResourceComposerModule } from "./ResourceComposerModule";
+import { GridInventoryModule } from "./GridInventoryModule";
 
 interface ModuleRendererProps<TModule extends SheetModule> {
   module: TModule;
@@ -28,7 +29,7 @@ export const moduleRegistry: ModuleRegistry = {
   countableResource: CountableResourceModule,
   readOnlyDisplay: ReadOnlyDisplayModule,
   imageField: ImageFieldModule,
-  cardTable: CardTableModule,
+  cardTable: (props) => props.module.网格布局 ? <GridInventoryModule {...props} /> : <CardTableModule {...props} />,
   resourcePicker: ResourcePickerModule,
   resourceComposer: ResourceComposerModule,
 };

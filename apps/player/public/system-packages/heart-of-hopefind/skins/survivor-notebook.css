@@ -105,24 +105,24 @@
   --restricted-markdown-black: var(--hopefind-ink);
 }
 
-:scope [data-module-id="noise"] {
+:scope :is([data-module-id="noise"], [data-module-id="dark-erosion"]) {
   min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
 }
 
-:scope [data-module-id="noise"] > [data-part="label"] {
+:scope :is([data-module-id="noise"], [data-module-id="dark-erosion"]) > [data-part="label"] {
   display: none;
 }
 
-:scope [data-module-id="noise"] [data-part="options"] {
+:scope :is([data-module-id="noise"], [data-module-id="dark-erosion"]) [data-part="options"] {
   height: 100%;
   padding: 0;
   place-content: center;
 }
 
-:scope [data-module-id="noise"] [data-part="option"] {
+:scope :is([data-module-id="noise"], [data-module-id="dark-erosion"]) [data-part="option"] {
   min-height: 0;
   justify-content: center;
 }

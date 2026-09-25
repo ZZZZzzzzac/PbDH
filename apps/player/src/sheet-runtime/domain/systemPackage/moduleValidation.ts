@@ -7,6 +7,15 @@ export function collectModuleValidationIssues(context: ValidationContext): void 
   const { systemPackage, issues, assetRefs, usedAssetRefs, moduleIds } = context;
   // --- Module field references ---
   for (const module of systemPackage.modules) {
+    if (module.类型 === "cardTable" && module.网格布局) {
+      const grid = module.网格布局;
+      const states = [grid.手上状态, ...grid.容器.map((bag) => bag.状态)];
+      const validStates = new Set(states).size === states.length && states.every((state) => module.状态选项?.includes(state));
+      const validFields = grid.容器.every((bag) => [bag.行数模块ID, bag.列数模块ID].every((id) =>
+        systemPackage.modules.some((candidate) => candidate.ID === id && candidate.类型 === "freeText")));
+      const validNotes = !grid.大件记录模块ID || systemPackage.modules.some((candidate) => candidate.ID === grid.大件记录模块ID && candidate.类型 === "longText");
+      if (!validStates || !validFields || !validNotes) issues.push({ level: "error", code: "INVALID_GRID_REFERENCES", text: "网格容器状态、行列数模块或大件记录模块无效。", path: `modules.${module.ID}.网格布局` });
+    }
     if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源路径) {
       issues.push({
         level: "error",

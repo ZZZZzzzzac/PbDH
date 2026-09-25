@@ -11,9 +11,9 @@ module.exports = async (input) => {
   }
   const professionActive = text(values["profession-name"]) !== "" || professionFields.some(Boolean);
   if (professionActive) {
-    let total = 0;
     for (let index = 1; index <= 4; index += 1) {
       const raw = text(values[`profession-modifier-${index}`]);
+      if (raw === "") continue;
       if (!/^[+-]?\d+$/.test(raw)) {
         issues.push({
           level: "error",
@@ -24,22 +24,14 @@ module.exports = async (input) => {
         continue;
       }
       const value = Number(raw);
-      total += value;
-      if (value < 0 || value > 3) {
+      if (value > 3) {
         issues.push({
           level: "error",
           code: "HOPEFIND_PROFESSION_MODIFIER_MAX",
           path: `character.values.profession-modifier-${index}`,
-          text: `职业关键词${index}的加值必须位于0到+3。`,
+          text: `职业关键词${index}的加值不能超过+3。`,
         });
       }
-    }
-    if (total !== 6) {
-      issues.push({
-        level: "error",
-        code: "HOPEFIND_PROFESSION_MODIFIER_TOTAL",
-        text: `四项职业关键词加值合计应为6，当前可解析合计为${total}。`,
-      });
     }
   }
 
@@ -63,4 +55,3 @@ module.exports = async (input) => {
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
-

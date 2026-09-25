@@ -1,0 +1,13 @@
+:scope { width: 210mm; max-width: none; margin-inline: auto; }
+:scope .inventory-page { box-sizing: border-box; width: 210mm; height: 297mm; padding: 12px; display: grid; grid-template-rows: 74px minmax(0, 1fr) 110px; gap: 14px; }
+:scope .sheet-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+:scope .sheet-title h1, :scope .sheet-title p { margin: 0; }
+:scope .inventory-page > * { min-width: 0; min-height: 0; }
+:scope [data-module-slot-id="supply-inventory"] { height: 100%; }
+:scope [data-module-id="oversized-supplies"] { height: 100%; min-height: 0; }
+:scope [data-module-id="oversized-supplies"] textarea { height: 80px; min-height: 0; resize: none; }
+
+:scope [data-module-id="oversized-supplies"] [data-part="input"] { max-height: 80px; overflow: auto; }
+
+:scope .inventory-toolbar { display: flex; align-items: center; gap: 8px; }
+:scope .inventory-size-slot select { height: 32px; font-size: 13px; }

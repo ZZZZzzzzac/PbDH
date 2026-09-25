@@ -131,3 +131,52 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+:scope .status-stack { display: grid; gap: 2mm; }
+
+/* 状态保持单行薄栏，不挤占起承转合的记录区域。 */
+:scope .core-hurt-phases article { gap: 1mm; }
+:scope [data-module-id^="core-hurt-status-"] {
+  min-height: 22px;
+  height: 22px;
+  padding: 0;
+}
+:scope [data-module-id^="core-hurt-status-"] [data-part="input"] {
+  min-height: 0;
+  height: 22px;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* 噪音只替换同一行的骰面展示，基础骰值仍保存在原字段中。 */
+:scope [data-module-id="noisy-fear-die"] {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 32px;
+  min-height: 0;
+  padding: 0 6px;
+  background: #fffefa;
+  border: 1px solid #cbd3d7;
+}
+:scope [data-module-id="noisy-fear-die"] h3,
+:scope [data-module-id="noisy-fear-die"] p {
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+:scope [data-module-id="noisy-fear-die"] [data-part="label"] {
+  flex: 0 0 auto;
+}
+:scope [data-module-id="noisy-fear-die"] [data-part="value"] {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}

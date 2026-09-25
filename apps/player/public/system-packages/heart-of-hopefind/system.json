@@ -2,7 +2,7 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a04186-51be-74e1-b94f-ec17d354dc00",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "name": "寻望之心",
     "description": "由迁移后的 Sheet Runtime 驱动的寻望之心系统包。"
   },
@@ -37,6 +37,10 @@
       {
         "id": "core-hurt",
         "script": "checks/core-hurt.js"
+      },
+      {
+        "id": "inventory",
+        "script": "checks/inventory.js"
       }
     ]
   },
@@ -50,6 +54,17 @@
       "nativeEntry": {
         "id": "survivor-styles",
         "label": "求生者风格"
+      }
+    },
+    {
+      "templateId": "寻望物资",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "supplies",
+        "label": "物资"
       }
     }
   ],

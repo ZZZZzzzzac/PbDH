@@ -1,3 +1,4 @@
+import { hopefindSupplyTemplate } from "./hopefind-supply/1.0.0/capability";
 import { playerCardTemplate } from "./player-card/1.0.0/capability.ts";
 export { playerCardTemplate } from "./player-card/1.0.0/capability.ts";
 export type { PlayerCardData, PlayerCardState } from "./player-card/1.0.0/capability.ts";
@@ -97,6 +98,7 @@ export const currentTemplates = Object.freeze([
   itemTemplate110,
   professionTemplate110,
   rhodesSubclassTemplate,
+  hopefindSupplyTemplate,
   subclassTemplate110,
   weaponTemplate110,
 ]);
@@ -196,6 +198,7 @@ export const supportedTemplates = Object.freeze([
   itemTemplate110,
   professionTemplate110,
   rhodesSubclassTemplate,
+  hopefindSupplyTemplate,
   subclassTemplate110,
   weaponTemplate110,
   adversaryTemplate,

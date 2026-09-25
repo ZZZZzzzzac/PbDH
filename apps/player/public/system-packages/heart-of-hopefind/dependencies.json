@@ -1,20 +1,6 @@
 [
-  {
-    "ID": "show-noisy-fear-die",
-    "sources": [{ "类型": "checkboxResource", "模块ID": "noise" }],
-    "targets": [{ "类型": "module", "模块ID": "fear-die" }],
-    "触发": { "类型": "checkboxChanged", "来源模块ID": "noise" },
-    "条件": { "类型": "checkboxOptionChecked", "选项ID": "active" },
-    "动作": [{ "类型": "fillText", "目标模块ID": "fear-die", "内容": "d20" }]
-  },
-  {
-    "ID": "show-quiet-fear-die",
-    "sources": [{ "类型": "checkboxResource", "模块ID": "noise" }],
-    "targets": [{ "类型": "module", "模块ID": "fear-die" }],
-    "触发": { "类型": "checkboxChanged", "来源模块ID": "noise" },
-    "条件": { "类型": "checkboxOptionUnchecked", "选项ID": "active" },
-    "动作": [{ "类型": "fillText", "目标模块ID": "fear-die", "内容": "d12" }]
-  },
+  {"ID": "show-noisy-fear-die", "sources": [{"类型": "checkboxResource", "模块ID": "noise"}], "targets": [{"类型": "module", "模块ID": "noisy-fear-die"}, {"类型": "module", "模块ID": "fear-die"}], "触发": {"类型": "checkboxChanged", "来源模块ID": "noise"}, "条件": {"类型": "checkboxOptionChecked", "选项ID": "active"}, "动作": [{"类型": "setVisibility", "目标类型": "module", "目标ID": "noisy-fear-die", "显示": true}, {"类型": "setVisibility", "目标类型": "module", "目标ID": "fear-die", "显示": false}]},
+  {"ID": "show-quiet-fear-die", "sources": [{"类型": "checkboxResource", "模块ID": "noise"}], "targets": [{"类型": "module", "模块ID": "noisy-fear-die"}, {"类型": "module", "模块ID": "fear-die"}], "触发": {"类型": "checkboxChanged", "来源模块ID": "noise"}, "条件": {"类型": "checkboxOptionUnchecked", "选项ID": "active"}, "动作": [{"类型": "setVisibility", "目标类型": "module", "目标ID": "noisy-fear-die", "显示": false}, {"类型": "setVisibility", "目标类型": "module", "目标ID": "fear-die", "显示": true}]},
   {
     "ID": "fill-survivor-style",
     "sources": [{ "类型": "resourceComposer", "模块ID": "pick-survivor-style" }],
