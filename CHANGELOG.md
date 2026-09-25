@@ -3,6 +3,26 @@
 记录已成功部署的版本。时间为北京时间（Asia/Shanghai），以部署工作流完成时间为准。
 代码 commit 以 Release tag 指向的提交为准，不以部署工作流的 `headSha` 代替：重新部署旧版本时，工作流可能使用更新的部署脚本。
 
+## v0.1.27 — 2026-09-25 19:30:21
+
+- 状态：已部署，公网版本与 API 健康检查通过。
+- 代码 commit：[f9d7c53](https://github.com/ZZZZzzzzac/PbDH/commit/f9d7c532fcec951fb0dc222276b9eaf9a8502d58)。
+- 上一部署：`v0.1.26` / `eda0d0d`。
+- [Release](https://github.com/ZZZZzzzzac/PbDH/releases/tag/v0.1.27) · [构建记录](https://github.com/ZZZZzzzzac/PbDH/actions/runs/36129355634) · [部署记录](https://github.com/ZZZZzzzzac/PbDH/actions/runs/36129696493) · [完整差异](https://github.com/ZZZZzzzzac/PbDH/compare/v0.1.26...v0.1.27)。
+
+### 新增与调整
+
+- 寻望之心系统包 1.0.3：A4 背包页、并排手上区与主背包、三档容量、固定格长、完整落点预览、拖放与右键旋转；大件物资直接追加到文字记录。
+- 独立寻望物资模板和 50 条武器、物资。每次领取保存独立副本，位置和朝向随角色存档恢复。
+- 修正希望骰上限、职业单项校验和孤狼名称；增加暗蚀开关与四阶段状态，压缩人物卡版面。
+- PDF 输出跳过背包自动整理，保留物资摆放和旋转；普通卡牌桌面继续沿用原打印整理行为。
+
+### 验证
+
+- 本地 `npm run verify` 通过：1379 项 TypeScript 测试、178 项 Python 测试，以及契约、边界、类型、渲染依赖和生产构建检查。
+- 真实浏览器验证资源选择、拖放、旋转、存档恢复、固定格长和 A4 页框；打印准备和结束的回归测试验证背包位置与朝向不变。
+- GitHub Release 与 Deploy Release 工作流成功。公网应用版本为 0.1.27，寻望之心系统包为 1.0.3，物资选择器为单选，API 返回 ok。
+
 ## v0.1.15 — 2026-09-10 13:48:43
 
 - 状态：已部署，公网版本与 API 健康检查通过。
