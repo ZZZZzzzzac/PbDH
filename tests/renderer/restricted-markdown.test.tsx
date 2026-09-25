@@ -13,6 +13,13 @@ import {
 } from "../../packages/templates/src/frontend/index.ts";
 
 describe("shared Restricted Markdown", () => {
+  test("block 模式保留截图中的列表，而 inline 模式按约定只保留行内内容", () => {
+    const value = "123\n- 123\n- 123";
+    expect(renderToStaticMarkup(<RestrictedMarkdownRenderer value={value} />))
+      .toBe("<p>123</p><ul><li>123</li><li>123</li></ul>");
+    expect(renderToStaticMarkup(<RestrictedMarkdownRenderer value={value} inline />))
+      .toBe("123123123");
+  });
   test("emits one visual break per editor newline under pre-wrap", () => {
     const markup = renderToStaticMarkup(<RestrictedMarkdownRenderer value={"普通换行\n1123"} />);
     expect(markup).toBe("<p>普通换行<br/>1123</p>");

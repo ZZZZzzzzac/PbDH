@@ -65,7 +65,9 @@ import { weaponAuthoring as weaponAuthoring101 } from "./weapon/1.0.1/authoring-
 import { weaponRendererRevision as weaponRendererRevision101 } from "./weapon/1.0.1/renderer.tsx";
 import { manifestEntryFor } from "./template-frontend-manifest.ts";
 
+import { adversaryAuthoring as adversaryAuthoring111 } from "./adversary/1.1.1/authoring-editor.tsx";
 import { adversaryAuthoring as adversaryAuthoring110 } from "./adversary/1.1.0/authoring-editor.tsx";
+import { adversaryRendererRevision as adversaryRendererRevision111 } from "./adversary/1.1.1/renderer.tsx";
 import { adversaryRendererRevision as adversaryRendererRevision110 } from "./adversary/1.1.0/renderer.tsx";
 import { ancestryAuthoring as ancestryAuthoring110 } from "./ancestry/1.1.0/authoring-editor.tsx";
 import { ancestryRendererRevision as ancestryRendererRevision110 } from "./ancestry/1.1.0/renderer.tsx";
@@ -75,7 +77,9 @@ import { communityAuthoring as communityAuthoring110 } from "./community/1.1.0/a
 import { communityRendererRevision as communityRendererRevision110 } from "./community/1.1.0/renderer.tsx";
 import { domainAuthoring as domainAuthoring110 } from "./domain/1.1.0/authoring-editor.tsx";
 import { domainRendererRevision as domainRendererRevision110 } from "./domain/1.1.0/renderer.tsx";
+import { environmentAuthoring as environmentAuthoring111 } from "./environment/1.1.1/authoring-editor.tsx";
 import { environmentAuthoring as environmentAuthoring110 } from "./environment/1.1.0/authoring-editor.tsx";
+import { environmentRendererRevision as environmentRendererRevision111 } from "./environment/1.1.1/renderer.tsx";
 import { environmentRendererRevision as environmentRendererRevision110 } from "./environment/1.1.0/renderer.tsx";
 import { freeAuthoring as freeAuthoring110 } from "./free/1.1.0/authoring-editor.tsx";
 import { freeRendererRevision as freeRendererRevision110 } from "./free/1.1.0/renderer.tsx";
@@ -103,11 +107,13 @@ export type TemplateFrontendCapability = {
 
 export const supportedTemplateFrontends: readonly TemplateFrontendCapability[] = [
   binding(playerCardAuthoring, playerCardRendererRevision),
+  binding(adversaryAuthoring111, adversaryRendererRevision111),
   binding(adversaryAuthoring110, adversaryRendererRevision110),
   binding(ancestryAuthoring110, ancestryRendererRevision110),
   binding(armorAuthoring110, armorRendererRevision110),
   binding(communityAuthoring110, communityRendererRevision110),
   binding(domainAuthoring110, domainRendererRevision110),
+  binding(environmentAuthoring111, environmentRendererRevision111),
   binding(environmentAuthoring110, environmentRendererRevision110),
   binding(freeAuthoring110, freeRendererRevision110),
   binding(itemAuthoring110, itemRendererRevision110),

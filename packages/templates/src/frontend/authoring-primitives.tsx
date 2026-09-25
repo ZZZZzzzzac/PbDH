@@ -1,10 +1,72 @@
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 export const textValue = (value: unknown): string => typeof value === "string" ? value : "";
 export const linesValue = (value: unknown): string => Array.isArray(value) ? value.join("\n") : "";
 export const parseLines = (value: string): string[] => value.split("\n").map((item) => item.trim()).filter(Boolean);
 export const singleEntryMapLines = (value: unknown): string => Array.isArray(value) ? value.flatMap((item) => item && typeof item === "object" && !Array.isArray(item) ? Object.entries(item).map(([key, entry]) => `${key}: ${String(entry)}`) : []).join("\n") : "";
 export const parseSingleEntryMapLines = (value: string): Record<string, string>[] => value.split("\n").map((line) => line.split(/:(.*)/su)).filter(([key]) => key?.trim()).map(([key, entry]) => ({ [key!.trim()]: (entry ?? "").trim() }));
+
+/** 仅调整位置，完整保留条目及其字段；不修改传入数组。 */
+export function moveArrayItem<T>(items: readonly T[], index: number, offset: -1 | 1): T[] {
+  const next = [...items];
+  const target = index + offset;
+  if (index < 0 || index >= items.length || target < 0 || target >= items.length) return next;
+  [next[index], next[target]] = [next[target]!, next[index]!];
+  return next;
+}
+
+export function ArrayItemActions({ item, index, count, onClear, onDelete, onMove }: {
+  item: unknown;
+  index: number;
+  count: number;
+  onClear(): void;
+  onDelete(): void;
+  onMove(offset: -1 | 1): void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  // 条目被替换或移动时，不能把确认状态带给同位置的新条目。
+  useEffect(() => setConfirming(false), [item]);
+  useEffect(() => {
+    if (!confirming) return;
+    const owner = deleteRef.current?.ownerDocument;
+    if (!owner) return;
+    const cancelOutside = (event: Event) => {
+      if (!event.composedPath().includes(deleteRef.current!)) setConfirming(false);
+    };
+    const cancelEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setConfirming(false);
+    };
+    owner.addEventListener("pointerdown", cancelOutside, true);
+    owner.addEventListener("click", cancelOutside, true);
+    owner.addEventListener("focusin", cancelOutside, true);
+    owner.addEventListener("keydown", cancelEscape, true);
+    return () => {
+      owner.removeEventListener("pointerdown", cancelOutside, true);
+      owner.removeEventListener("click", cancelOutside, true);
+      owner.removeEventListener("focusin", cancelOutside, true);
+      owner.removeEventListener("keydown", cancelEscape, true);
+    };
+  }, [confirming]);
+  const buttonStyle = { minHeight: 34, height: 34, padding: "0 7px", flex: "none" } as const;
+  return <div className="template-editor-array-actions" role="group" aria-label={`第 ${index + 1} 项特性操作`}
+    style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignSelf: "end", minWidth: 0, gap: 4 }}>
+    <button type="button" style={buttonStyle} onClick={() => { setConfirming(false); onClear(); }}>清空</button>
+    <button ref={deleteRef} type="button" aria-label={`${confirming ? "确认删除" : "删除"}第 ${index + 1} 项特性`}
+      style={{ ...buttonStyle, ...(confirming ? { background: "#8b2d31", borderColor: "#8b2d31", color: "#fff" } : {}) }}
+      onClick={() => {
+        if (!confirming) { setConfirming(true); return; }
+        setConfirming(false);
+        onDelete();
+      }}>{confirming ? "确认" : "删除"}</button>
+    <button type="button" aria-label={`上移第 ${index + 1} 项特性`} disabled={index === 0}
+      title="上移" style={{ ...buttonStyle, width: 26, padding: 0, opacity: index === 0 ? 0.4 : 1 }}
+      onClick={() => { setConfirming(false); onMove(-1); }}>↑</button>
+    <button type="button" aria-label={`下移第 ${index + 1} 项特性`} disabled={index >= count - 1}
+      title="下移" style={{ ...buttonStyle, width: 26, padding: 0, opacity: index >= count - 1 ? 0.4 : 1 }}
+      onClick={() => { setConfirming(false); onMove(1); }}>↓</button>
+  </div>;
+}
 
 export function EditorInput({ label, value, onChange, options, onOptionSelect }: { label: string; value: unknown; onChange(value: string): void; options?: readonly string[]; onOptionSelect?(option: string): void }) {
   const id = useId();

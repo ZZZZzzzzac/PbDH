@@ -33,11 +33,13 @@ import { professionTemplate as professionTemplate101 } from "./profession/1.0.1/
 import { subclassTemplate as subclassTemplate101 } from "./subclass/1.0.1/capability.ts";
 import { weaponTemplate as weaponTemplate101 } from "./weapon/1.0.1/capability.ts";
 
+import { adversaryTemplate as adversaryTemplate111 } from "./adversary/1.1.1/capability.ts";
 import { adversaryTemplate as adversaryTemplate110 } from "./adversary/1.1.0/capability.ts";
 import { ancestryTemplate as ancestryTemplate110 } from "./ancestry/1.1.0/capability.ts";
 import { armorTemplate as armorTemplate110 } from "./armor/1.1.0/capability.ts";
 import { communityTemplate as communityTemplate110 } from "./community/1.1.0/capability.ts";
 import { domainTemplate as domainTemplate110 } from "./domain/1.1.0/capability.ts";
+import { environmentTemplate as environmentTemplate111 } from "./environment/1.1.1/capability.ts";
 import { environmentTemplate as environmentTemplate110 } from "./environment/1.1.0/capability.ts";
 import { freeTemplate as freeTemplate110 } from "./free/1.1.0/capability.ts";
 import { itemTemplate as itemTemplate110 } from "./item/1.1.0/capability.ts";
@@ -85,12 +87,12 @@ export type {
 
 export const currentTemplates = Object.freeze([
   playerCardTemplate,
-  adversaryTemplate110,
+  adversaryTemplate111,
   ancestryTemplate110,
   armorTemplate110,
   communityTemplate110,
   domainTemplate110,
-  environmentTemplate110,
+  environmentTemplate111,
   freeTemplate110,
   itemTemplate110,
   professionTemplate110,
@@ -100,12 +102,12 @@ export const currentTemplates = Object.freeze([
 ]);
 
 export {
-  adversaryTemplate110 as currentAdversaryTemplate,
+  adversaryTemplate111 as currentAdversaryTemplate,
   ancestryTemplate110 as currentAncestryTemplate,
   armorTemplate110 as currentArmorTemplate,
   communityTemplate110 as currentCommunityTemplate,
   domainTemplate110 as currentDomainTemplate,
-  environmentTemplate110 as currentEnvironmentTemplate,
+  environmentTemplate111 as currentEnvironmentTemplate,
   freeTemplate110 as currentFreeTemplate,
   itemTemplate110 as currentItemTemplate,
   professionTemplate110 as currentProfessionTemplate,
@@ -183,11 +185,13 @@ export function upgradeTemplateResources<T extends {
 export const supportedTemplates = Object.freeze([
   playerCardTemplate,
   adversaryTemplate110,
+  adversaryTemplate111,
   ancestryTemplate110,
   armorTemplate110,
   communityTemplate110,
   domainTemplate110,
   environmentTemplate110,
+  environmentTemplate111,
   freeTemplate110,
   itemTemplate110,
   professionTemplate110,

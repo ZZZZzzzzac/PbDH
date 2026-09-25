@@ -210,7 +210,7 @@ describe("Creator third-party resource conversion", () => {
     const converted = await materializeCreatorResourceConversion(imported.batch);
 
     expect(converted.candidate?.document.resources.map((resource) => resource.template)).toEqual([
-      { id: "敌人", version: "1.1.0" },
+      { id: "敌人", version: "1.1.1" },
     ]);
     expect(converted.candidate).not.toBeNull();
     if (!converted.candidate) return;
@@ -218,6 +218,6 @@ describe("Creator third-party resource conversion", () => {
       writePbres(converted.candidate.document, converted.candidate.media),
       validateResourcePackageCandidate,
     );
-    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.1.0" });
+    expect(exported.candidate?.document.resources[0]?.template).toEqual({ id: "敌人", version: "1.1.1" });
   });
 });

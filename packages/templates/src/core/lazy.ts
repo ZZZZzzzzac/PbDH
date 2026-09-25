@@ -18,6 +18,7 @@ export const templateCoreLoaders: readonly TemplateCoreLoaderEntry[] = [
   { id: "敌人", version: "1.0.3", fromVersions: ["1.0.2"], load: () => retryTemplateImport("./adversary/1.0.3/capability.ts", () => import("./adversary/1.0.3/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "敌人", version: "1.0.4", fromVersions: ["1.0.3"], load: () => retryTemplateImport("./adversary/1.0.4/capability.ts", () => import("./adversary/1.0.4/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "敌人", version: "1.0.5", fromVersions: ["1.0.4"], load: () => retryTemplateImport("./adversary/1.0.5/capability.ts", () => import("./adversary/1.0.5/capability.ts")).then((module) => module.adversaryTemplate) },
+  { id: "敌人", version: "1.1.1", fromVersions: ["1.1.0"], load: () => retryTemplateImport("./adversary/1.1.1/capability.ts", () => import("./adversary/1.1.1/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "敌人", version: "1.1.0", fromVersions: ["1.0.5"], load: () => retryTemplateImport("./adversary/1.1.0/capability.ts", () => import("./adversary/1.1.0/capability.ts")).then((module) => module.adversaryTemplate) },
   { id: "种族", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./ancestry/1.0.0/capability.ts", () => import("./ancestry/1.0.0/capability.ts")).then((module) => module.ancestryTemplate) },
   { id: "种族", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./ancestry/1.0.1/capability.ts", () => import("./ancestry/1.0.1/capability.ts")).then((module) => module.ancestryTemplate) },
@@ -35,6 +36,7 @@ export const templateCoreLoaders: readonly TemplateCoreLoaderEntry[] = [
   { id: "环境", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./environment/1.0.1/capability.ts", () => import("./environment/1.0.1/capability.ts")).then((module) => module.environmentTemplate) },
   { id: "环境", version: "1.0.2", fromVersions: ["1.0.1"], load: () => retryTemplateImport("./environment/1.0.2/capability.ts", () => import("./environment/1.0.2/capability.ts")).then((module) => module.environmentTemplate) },
   { id: "环境", version: "1.0.3", fromVersions: ["1.0.2"], load: () => retryTemplateImport("./environment/1.0.3/capability.ts", () => import("./environment/1.0.3/capability.ts")).then((module) => module.environmentTemplate) },
+  { id: "环境", version: "1.1.1", fromVersions: ["1.1.0"], load: () => retryTemplateImport("./environment/1.1.1/capability.ts", () => import("./environment/1.1.1/capability.ts")).then((module) => module.environmentTemplate) },
   { id: "环境", version: "1.1.0", fromVersions: ["1.0.3"], load: () => retryTemplateImport("./environment/1.1.0/capability.ts", () => import("./environment/1.1.0/capability.ts")).then((module) => module.environmentTemplate) },
   { id: "自由", version: "1.0.0", fromVersions: [], load: () => retryTemplateImport("./free/1.0.0/capability.ts", () => import("./free/1.0.0/capability.ts")).then((module) => module.freeTemplate) },
   { id: "自由", version: "1.0.1", fromVersions: ["1.0.0"], load: () => retryTemplateImport("./free/1.0.1/capability.ts", () => import("./free/1.0.1/capability.ts")).then((module) => module.freeTemplate) },
@@ -89,7 +91,7 @@ export const loadTemplateCore = coreLoader.load;
 export const readLoadedTemplateCore = coreLoader.read;
 
 export const currentTemplateReferences = ["敌人", "种族", "护甲", "社群", "领域卡", "环境", "自由", "物品", "职业", "子职业", "武器"]
-  .map((id) => ({ id, version: "1.1.0" }))
+  .map((id) => ({ id, version: id === "敌人" || id === "环境" ? "1.1.1" : "1.1.0" }))
   .concat({ id: "罗德岛子职", version: "1.0.0" }, { id: "玩家卡", version: "1.0.0" });
 
 export function loadCurrentTemplateCore(id: string) {

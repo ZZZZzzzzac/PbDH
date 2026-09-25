@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { AdversaryStatPresetControl } from "../stat-preset-control.tsx";
 
-import { authoringControlStyles, EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
+import { authoringControlStyles, ArrayItemActions, moveArrayItem, EditorInput, EditorTextarea } from "../../authoring-primitives.tsx";
 import { adversaryFeaturePresets } from "../../feature-presets.ts";
 import type { TemplateAuthoringCapability, TemplateAuthoringEditorProps } from "../../types.ts";
 
 const styles = `${authoringControlStyles}
-.adversary-editor{min-width:0;display:flex;flex-direction:column;gap:9px;padding:12px 14px;background:#f1ece4;color:#3b302a;font-family:system-ui,sans-serif}.adversary-editor-group{min-width:0;display:grid;gap:8px;padding:10px;border:1px solid #d8cec0;border-radius:6px;background:#f8f4ed}.adversary-identity{grid-template-columns:repeat(6,minmax(0,1fr))}.adversary-identity>:nth-child(1),.adversary-identity>:nth-child(2){grid-column:span 3}.adversary-identity>:nth-child(n+3){grid-column:span 2}.adversary-description{grid-template-columns:repeat(2,minmax(0,1fr))}.adversary-description>:first-child{grid-column:1/-1}.adversary-combat{grid-template-columns:repeat(5,minmax(0,1fr))}.adversary-features{display:flex;flex-direction:column;gap:8px}.adversary-features>header{display:flex;align-items:center;justify-content:space-between}.adversary-features h3{margin:0;color:#6f2024;font-size:16px}.adversary-editor button:not(.template-editor-select-toggle):not([role=option]){min-height:30px;padding:0 12px;border:1px solid #c9c1b6;border-radius:4px;color:#5f2024;background:#fffdf8;font-weight:700}.adversary-editor .template-editor-select-toggle{display:grid;place-items:center;padding:0;border:0;border-radius:0;background:transparent;font-size:0}.adversary-feature{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr) auto auto;gap:8px;padding:8px 10px;border:1px solid #d8cec0;background:#fffaf2}.adversary-feature>.template-editor-field:nth-of-type(4){grid-column:1/-1}.adversary-feature-action{height:34px;min-height:34px;align-self:end}.adversary-feature-confirm{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#7c2025;font-size:13px}@media(max-width:760px){.adversary-identity,.adversary-description,.adversary-combat,.adversary-feature{grid-template-columns:minmax(0,1fr)}.adversary-identity>*,.adversary-description>*,.adversary-feature>.template-editor-field:nth-of-type(4){grid-column:1!important}}
+.adversary-editor{min-width:0;display:flex;flex-direction:column;gap:9px;padding:12px 14px;background:#f1ece4;color:#3b302a;font-family:system-ui,sans-serif}.adversary-editor-group{min-width:0;display:grid;gap:8px;padding:10px;border:1px solid #d8cec0;border-radius:6px;background:#f8f4ed}.adversary-identity{grid-template-columns:repeat(6,minmax(0,1fr))}.adversary-identity>:nth-child(1),.adversary-identity>:nth-child(2){grid-column:span 3}.adversary-identity>:nth-child(n+3){grid-column:span 2}.adversary-description{grid-template-columns:repeat(2,minmax(0,1fr))}.adversary-description>:first-child{grid-column:1/-1}.adversary-combat{grid-template-columns:repeat(5,minmax(0,1fr))}.adversary-features{display:flex;flex-direction:column;gap:8px}.adversary-features>header{display:flex;align-items:center;justify-content:space-between}.adversary-features h3{margin:0;color:#6f2024;font-size:16px}.adversary-editor button:not(.template-editor-select-toggle):not([role=option]){min-height:30px;padding:0 12px;border:1px solid #c9c1b6;border-radius:4px;color:#5f2024;background:#fffdf8;font-weight:700}.adversary-editor .template-editor-select-toggle{display:grid;place-items:center;padding:0;border:0;border-radius:0;background:transparent;font-size:0}.adversary-feature{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1fr) auto;gap:8px;padding:8px 10px;border:1px solid #d8cec0;background:#fffaf2}.adversary-feature>.template-editor-field:nth-of-type(4){grid-column:1/-1}@media(max-width:760px){.adversary-identity,.adversary-description,.adversary-combat,.adversary-feature{grid-template-columns:minmax(0,1fr)}.adversary-identity>*,.adversary-description>*,.adversary-feature>.template-editor-field:nth-of-type(4){grid-column:1!important}}
 `;
 
 const tierOptions = ["1", "2", "3", "4"];
@@ -17,7 +17,6 @@ const featureTypeOptions = ["动作", "被动", "反应"];
 const emptyFeature = { 特性名称: "新特性", 特性原文: "", 特性类型: "动作", 特性描述: "" };
 
 export function AdversaryAuthoringEditor({ data, onValue, onData }: TemplateAuthoringEditorProps) {
-  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const features = Array.isArray(data.特性) ? data.特性 as Record<string, unknown>[] : [];
   const field = (path: string, label: string, options?: readonly string[]) => <EditorInput label={label} value={data[path]} options={options} onChange={(value) => onValue(path, value)} />;
   const updateFeature = (index: number, path: string, value: string) => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...item, [path]: value } : item));
@@ -51,10 +50,9 @@ export function AdversaryAuthoringEditor({ data, onValue, onData }: TemplateAuth
         <EditorInput label="特性名称" value={feature.特性名称} options={adversaryFeaturePresets.map((item) => item.label)} onOptionSelect={(label) => selectFeature(index, label)} onChange={(value) => updateFeature(index, "特性名称", value)} />
         <EditorInput label="特性原文" value={feature.特性原文} onChange={(value) => updateFeature(index, "特性原文", value)} />
         <EditorInput label="特性类型" value={feature.特性类型} options={featureTypeOptions} onChange={(value) => updateFeature(index, "特性类型", value)} />
-        <button type="button" className="adversary-feature-action" onClick={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))}>清空</button>
-        <button type="button" className="adversary-feature-action" onClick={() => setPendingDelete(index)}>删除</button>
+        <ArrayItemActions item={feature} index={index} count={features.length} onClear={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))} onDelete={() => onValue("特性", features.filter((_, row) => row !== index))} onMove={(offset) => onValue("特性", moveArrayItem(features, index, offset))} />
         <EditorTextarea label="特性描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} />
-        {pendingDelete === index ? <div className="adversary-feature-confirm"><span>确认删除“{textValue(feature.特性名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
+
       </article>)}
     </section>
   </div>;

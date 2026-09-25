@@ -58,7 +58,7 @@ describe("子职业 Template 1.0.0", () => {
     expect(markup.match(/>删除<\/button>/gu)).toHaveLength(2);
     expect(markup).not.toContain(">特性类型<");
     expect(markup).toMatch(/>特性名称<.*>特性原文<.*>清空<\/button>.*>删除<\/button>.*>特性描述</su);
-    expect(markup).toContain("grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto auto");
+    expect(markup).toContain("grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto;");
     expect(markup).toContain(".subclass-editor .subclass-features{container-type:inline-size;display:flex");
     expect(markup).not.toContain(".subclass-editor section{grid-template-columns");
     expect(subclassTemplate.project(data).searchText).toContain("Rousing Speech");

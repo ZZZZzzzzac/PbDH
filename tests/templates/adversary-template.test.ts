@@ -153,8 +153,8 @@ describe("敌人 Template Authoring 与支持清单", () => {
     expect(standardStyles).not.toContain(".template-owned-editor button{");
     expect(source).toContain("button:not(.template-editor-select-toggle):not([role=option])");
     expect(source).not.toContain(".adversary-editor button{");
-    expect(source).toContain("adversary-feature-action");
-    expect(source).toContain(">清空</button>");
+    expect(source).toContain("<ArrayItemActions");
+    expect(primitives).toContain(">清空</button>");
     expect(source).not.toContain("清空内容");
     expect(source).toContain('["近战", "邻近", "近距离", "远距离", "极远"]');
     expect(source).toContain('["动作", "被动", "反应"]');

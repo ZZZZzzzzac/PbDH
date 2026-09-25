@@ -59,7 +59,7 @@ describe("自由 Template 1.0.0", () => {
     expect(markup).toContain("free-blocks");
     expect(markup).toContain("free-editor-block");
     expect(markup).toContain("grid-template-columns:repeat(3,minmax(0,1fr))");
-    expect(markup).toContain("grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto auto");
+    expect(markup).toContain("grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto;");
     expect(markup).toContain("@container(max-width:360px)");
     expect(markup).toContain("free-block-description");
     expect(markup.indexOf(">名称<")).toBeLessThan(markup.indexOf(">原文<"));

@@ -14,7 +14,7 @@ const definitions: readonly {
   fields: readonly TemplateSortField[];
 }[] = [
   { id: "玩家卡", versions: ["1.0.0"], fields: [nameField, { key: "玩家名", label: "玩家名", kind: "text" }] },
-  { id: "敌人", versions: [...commonVersions, "1.0.2", "1.0.3", "1.0.4", "1.0.5"], fields: [nameField, kindField, tierField] },
+  { id: "敌人", versions: [...commonVersions, "1.0.2", "1.0.3", "1.0.4", "1.0.5", "1.1.1"], fields: [nameField, kindField, tierField] },
   { id: "种族", versions: commonVersions, fields: [nameField] },
   { id: "护甲", versions: commonVersions, fields: [nameField, tierField] },
   { id: "社群", versions: commonVersions, fields: [nameField] },
@@ -24,7 +24,7 @@ const definitions: readonly {
     { key: "等级", label: "等级", kind: "number" },
     { key: "回想", label: "回想", kind: "number" },
   ] },
-  { id: "环境", versions: [...commonVersions, "1.0.2", "1.0.3"], fields: [nameField, tierField, kindField] },
+  { id: "环境", versions: [...commonVersions, "1.0.2", "1.0.3", "1.1.1"], fields: [nameField, tierField, kindField] },
   { id: "自由", versions: [...commonVersions, "1.0.2"], fields: [nameField] },
   { id: "物品", versions: commonVersions, fields: [nameField] },
   { id: "职业", versions: commonVersions, fields: [nameField] },

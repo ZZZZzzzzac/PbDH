@@ -1,6 +1,4 @@
-import { useState } from "react";
-
-import { EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
+import { ArrayItemActions, moveArrayItem, EditorInput, EditorTextarea, textValue } from "../../authoring-primitives.tsx";
 import { standardEditorStyles } from "../../standard-editor-styles.ts";
 import type { TemplateAuthoringCapability, TemplateAuthoringEditorProps } from "../../types.ts";
 
@@ -15,7 +13,6 @@ function listValue(value: unknown): string[] {
 }
 
 export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEditorProps) {
-  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const features = Array.isArray(data.特性) ? data.特性 as Record<string, unknown>[] : [];
   const hope = recordValue(data.希望特性);
   const attributes = recordValue(data.推荐初始属性);
@@ -38,10 +35,10 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
     .profession-hope-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto;gap:8px}.profession-hope-row>.template-editor-field:last-child{grid-column:1/-1}
     .profession-features>header{display:flex;align-items:center;justify-content:space-between}.profession-features h3{margin:0;color:#6f2024;font-size:16px}
     .profession-section-title{margin:0;color:#6f2024;font-size:16px;font-weight:700}
-    .profession-feature{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto auto;gap:8px;padding:8px 10px;border:1px solid #d8cec0;background:#fffaf2}
-    .profession-feature>.template-editor-field:nth-of-type(3){grid-column:1/-1}.profession-feature-action{height:34px;min-height:34px;align-self:end}
-    .profession-feature-confirm{grid-column:1/-1;display:flex;align-items:center;justify-content:flex-end;gap:8px;color:#7c2025;font-size:13px}
-    @container(max-width:520px){.profession-hope-row,.profession-feature{grid-template-columns:repeat(2,minmax(0,1fr))}.profession-feature-action{width:100%}.profession-hope-row>.template-editor-field:last-of-type,.profession-feature>.template-editor-field:nth-of-type(3){grid-column:1/-1}}
+    .profession-feature{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) auto;gap:8px;padding:8px 10px;border:1px solid #d8cec0;background:#fffaf2}
+    .profession-feature>.template-editor-field:nth-of-type(3){grid-column:1/-1}
+
+    @container(max-width:520px){.profession-hope-row,.profession-feature{grid-template-columns:repeat(2,minmax(0,1fr))}.profession-hope-row>.template-editor-field:last-of-type,.profession-feature>.template-editor-field:nth-of-type(3){grid-column:1/-1}}
     @media(max-width:760px){.profession-editor section{grid-template-columns:repeat(2,minmax(0,1fr))}.profession-editor .span-2,.profession-editor .span-3,.profession-editor .span-4,.profession-editor .span-6{grid-column:span 1}.profession-editor .span-12{grid-column:1/-1}}
   `}</style>
     <section>
@@ -65,10 +62,9 @@ export function ProfessionAuthoringEditor({ data, onValue }: TemplateAuthoringEd
       {features.map((feature, index) => <article className="profession-feature" key={index}>
         <EditorInput label="特性名称" value={feature.特性名称} onChange={(value) => updateFeature(index, "特性名称", value)} />
         <EditorInput label="特性原文" value={feature.特性原文} onChange={(value) => updateFeature(index, "特性原文", value)} />
-        <button type="button" className="profession-feature-action" onClick={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))}>清空</button>
-        <button type="button" className="profession-feature-action" onClick={() => setPendingDelete(index)}>删除</button>
+        <ArrayItemActions item={feature} index={index} count={features.length} onClear={() => onValue("特性", features.map((item, rowIndex) => rowIndex === index ? { ...emptyFeature } : item))} onDelete={() => onValue("特性", features.filter((_, row) => row !== index))} onMove={(offset) => onValue("特性", moveArrayItem(features, index, offset))} />
         <EditorTextarea label="职业特性描述" value={feature.特性描述} onChange={(value) => updateFeature(index, "特性描述", value)} />
-        {pendingDelete === index ? <div className="profession-feature-confirm"><span>确认删除“{textValue(feature.特性名称)}”？</span><button type="button" onClick={() => setPendingDelete(null)}>取消</button><button type="button" onClick={() => { onValue("特性", features.filter((_, rowIndex) => rowIndex !== index)); setPendingDelete(null); }}>确认删除</button></div> : null}
+
       </article>)}
     </section>
     <section>
