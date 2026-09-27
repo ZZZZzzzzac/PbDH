@@ -4,6 +4,7 @@ import { PDFDocument, rgb } from "pdf-lib";
 import { CanonicalCardSurface, renderCanonicalCardToPng } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, type ManagedAsset, type SurfaceResource } from "@pbdh/resource-renderer/core";
 import { loadTrustedRenderer } from "@pbdh/templates/frontend/lazy";
+import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { resolveResourceAttribution, type CreatorWorkspace, type WorkspaceResource } from "./workspace-model.ts";
 import { layoutPackagePdf, packagePdfPage } from "./package-pdf-layout.ts";
 
@@ -66,12 +67,20 @@ export async function exportCreatorPackagePdf(
   if (!workspace.document.resources.length) throw new Error("资源包中没有可导出的卡牌。");
   const total = workspace.document.resources.length;
   onProgress?.({ percent: 0, completed: 0, total, stage: "cards" });
+  // 按显示名称作自然排序，让作者添加的数字前缀决定打印顺序；不改写工作区数组。
+  const namedResources = await Promise.all(workspace.document.resources.map(async (resource, index) => {
+    const core = await loadTemplateCore(resource.template.id, resource.template.version);
+    if (!core) throw new Error(`卡牌「${resource.path}」不支持模板 ${resource.template.id}@${resource.template.version}`);
+    return { resource, index, title: core.project(resource.data as Record<string, unknown>).title };
+  }));
+  const names = new Intl.Collator("zh-CN", { numeric: true, sensitivity: "base" });
+  namedResources.sort((a, b) => names.compare(a.title, b.title) || a.index - b.index);
   const pdf = await PDFDocument.create();
   pdf.setTitle(workspace.document.package.name);
   pdf.setCreator("PbDH Creator");
   const images = [];
   // 逐张渲染、嵌入并释放 DOM 与媒体 URL，避免同时挂载整个资源包。
-  for (const resource of workspace.document.resources) {
+  for (const { resource } of namedResources) {
     try {
       const image = await pdf.embedPng(await capture(resource, workspace));
       // 把图片压缩计入逐张处理进度，避免全部卡牌处理后长时间停在文件生成阶段。

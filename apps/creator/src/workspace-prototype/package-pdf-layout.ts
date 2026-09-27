@@ -4,7 +4,7 @@ export const packagePdfPage = { width: 210, height: 297, margin: 5, gap: 2, card
 export type PdfCardSize = { width: number; height: number };
 export type PdfCardPlacement = PdfCardSize & { index: number; page: number; x: number; y: number };
 
-/** 按高度降序填入三列，回填前页空位；超长卡整张等比缩小，绝不跨页切割。 */
+/** 按输入顺序从左到右逐行排版；不重排、不回填，超长卡整张等比缩小。 */
 export function layoutPackagePdf(sizes: readonly PdfCardSize[]): PdfCardPlacement[] {
   const { width, height, margin, gap, cardWidth } = packagePdfPage;
   const availableHeight = height - 2 * margin;
@@ -16,21 +16,26 @@ export function layoutPackagePdf(sizes: readonly PdfCardSize[]): PdfCardPlacemen
     }
     const scale = Math.min(cardWidth / size.width, availableHeight / size.height);
     return { index, width: size.width * scale, height: size.height * scale };
-  }).sort((a, b) => b.height - a.height || a.index - b.index);
-  const used: number[][] = [];
+  });
+  let page = 0;
+  let column = 0;
+  let y = margin;
+  let rowHeight = 0;
   return cards.map((card) => {
-    let page = 0;
-    let column = -1;
-    for (; page < used.length; page += 1) {
-      column = used[page]!.findIndex((filled) => filled + card.height <= availableHeight + 1e-8);
-      if (column !== -1) break;
-    }
-    if (column === -1) {
-      used.push(Array<number>(columns).fill(0));
+    if (column === columns) {
+      y += rowHeight + gap;
       column = 0;
+      rowHeight = 0;
     }
-    const y = margin + used[page]![column]!;
-    used[page]![column]! += card.height + gap;
-    return { ...card, page, x: left + column * (cardWidth + gap) + (cardWidth - card.width) / 2, y };
+    if (y + card.height > height - margin + 1e-8) {
+      page += 1;
+      y = margin;
+      column = 0;
+      rowHeight = 0;
+    }
+    const placement = { ...card, page, x: left + column * (cardWidth + gap) + (cardWidth - card.width) / 2, y };
+    column += 1;
+    rowHeight = Math.max(rowHeight, card.height);
+    return placement;
   });
 }

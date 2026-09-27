@@ -11,9 +11,19 @@ describe("资源包 A4 PDF", () => {
     const cards = layoutPackagePdf(Array.from({ length: 19 }, () => ({ width: 630, height: 880 })));
     expect([0, 1, 2].map((page) => cards.filter((card) => card.page === page).length)).toEqual([9, 9, 1]);
     expect(cards.every((card) => card.width === 63 && card.height === 88)).toBe(true);
+    expect(cards[1]!.y).toBe(cards[0]!.y);
+    expect(cards[1]!.x).toBeGreaterThan(cards[0]!.x);
+    expect(cards[3]!.y).toBeGreaterThan(cards[0]!.y);
   });
 
-  test("混合高度卡回填空位，超长卡等比缩小；全部卡牌无重叠、无越界", () => {
+  test("混合高度也严格保持从左到右、从上到下的阅读顺序，不回填前页", () => {
+    const sizes = [88, 140, 60, 200, 40, 88, 20, 1000, 88, 88, 40].map((height) => ({ width: 63, height }));
+    const cards = layoutPackagePdf(sizes);
+    const readingOrder = [...cards].sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
+    expect(readingOrder.map((card) => card.index)).toEqual(sizes.map((_, index) => index));
+  });
+
+  test("混合高度卡按序排版，超长卡等比缩小；全部卡牌无重叠、无越界", () => {
     const sizes = [200, 200, 200, 80, 80, 80, 2000, 50, 5, 88, 140, 800].map((height) => ({ width: 63, height }));
     const cards = layoutPackagePdf(sizes);
     const firstSix = layoutPackagePdf(sizes.slice(0, 6));
@@ -46,6 +56,21 @@ describe("资源包 A4 PDF", () => {
     return result;
   };
   const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64"));
+
+  test("按卡牌显示名称的数字顺序导出，而不是内部数组或文件名顺序", async () => {
+    const source = workspace();
+    source.document.resources = source.document.resources.slice(0, 3).map((resource, index) => ({
+      ...resource,
+      path: ["a.json", "z.json", "m.json"][index]!,
+      data: { ...resource.data as Record<string, unknown>, 名称: ["10 终章", "2 中段", "1 开场"][index]! },
+    }));
+    const before = structuredClone(source);
+    const capture = vi.fn(async (_resource: typeof source.document.resources[number]) => png);
+    await exportCreatorPackagePdf(source, capture);
+    expect(capture.mock.calls.map(([resource]) => (resource.data as Record<string, unknown>).名称))
+      .toEqual(["1 开场", "2 中段", "10 终章"]);
+    expect(source).toEqual(before);
+  });
 
   test("生成可读取的 A4 PDF，包含所有文件夹资源且不改写工作区", async () => {
     const source = workspace();
