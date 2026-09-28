@@ -1,3 +1,5 @@
+import { zipSync } from "fflate";
+
 import {
   asJsonObject,
   exportFailure,
@@ -331,6 +333,27 @@ function readDocument(input: Uint8Array, image: boolean): unknown {
   return JSON.parse(payload.slice(start, end + 1)) as unknown;
 }
 
+function npcStatBlock(fields: JsonObject): string {
+  const value = (key: string) => text(fields[key]).trim();
+  const tier = value("位阶");
+  const major = value("重度伤害阈值");
+  const severe = value("严重伤害阈值");
+  const vitality = [
+    value("生命点") ? `生命点：${value("生命点")}` : "",
+    value("压力点") ? `压力点：${value("压力点")}` : "",
+    major || severe ? `阈值：${major || "—"}/${severe || "—"}` : "",
+  ].filter(Boolean).join(" | ");
+  const attack = [
+    value("攻击命中") ? `攻击${value("攻击命中")}` : "",
+    value("攻击武器"), value("攻击范围"),
+    [value("攻击伤害"), value("攻击属性")].filter(Boolean).join(" "),
+  ].filter(Boolean).join(" | ");
+  return [
+    `${tier ? `位阶${tier}` : ""}${value("种类")}`,
+    vitality, attack, value("经历") ? `经历：${value("经历")}` : "",
+  ].filter(Boolean).join("\n");
+}
+
 function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject | ConversionDiagnostic {
   const native = sourceRaw(resource, "kid");
   if (native) return { ...native, name: resource.name };
@@ -426,17 +449,21 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
   if (resource.kind === "adversary") return {
     ...base,
     type: "npc",
+    description: [...new Set([text(fields.简介), text(fields.原文)].filter((value) => value.trim()))].join("\n\n"),
     difficulty: text(fields.难度),
     motive: text(fields.动机与战术),
-    features: Array.isArray(fields.特性) ? fields.特性.map((value) => {
-      const item = isObject(value) ? value : {};
-      return {
-        name: text(item.特性名称),
-        choice: text(item.选择),
-        trigger: text(item.触发),
-        effect: text(item.特性描述),
-      };
-    }) : [],
+    features: [
+      ...(npcStatBlock(fields) ? [{ name: "", choice: "", trigger: "", effect: npcStatBlock(fields) }] : []),
+      ...(Array.isArray(fields.特性) ? fields.特性.map((value) => {
+        const item = isObject(value) ? value : {};
+        return {
+          name: [text(item.特性名称), text(item.特性类型)].filter((part) => part.trim()).join(" - "),
+          choice: text(item.选择),
+          trigger: text(item.触发),
+          effect: text(item.特性描述),
+        };
+      }) : []),
+    ],
   };
   if (resource.kind === "environment") return {
     ...base,
@@ -465,7 +492,8 @@ function toKid(resource: TemporaryResource, options: ExportOptions): JsonObject 
 function formatEquipmentFeature(fields: JsonObject): string {
   const name = text(fields.特性名称).trim();
   const description = text(fields.特性描述).trim();
-  return name && description ? `${name}：${description}` : name || description;
+  const tier = text(fields.位阶).trim();
+  return [tier ? `位阶${tier}` : "", name && description ? `${name}：${description}` : name || description].filter(Boolean).join("\n");
 }
 
 function subclassToKid(resources: TemporaryResource[], options: ExportOptions): JsonObject | ConversionDiagnostic {
@@ -489,6 +517,10 @@ function subclassToKid(resources: TemporaryResource[], options: ExportOptions): 
     resourceId: first.sourceId,
   };
   const feature = (level: string) => formatNamedFeatures(resources.find((resource) => text(resource.fields.等级) === level)?.fields.特性);
+  const levels = resources.map((resource) => text(resource.fields.等级));
+  if (new Set(levels).size !== levels.length || levels.some((level) => !subclassLevels.some((entry) => entry.level === level))) {
+    return { code: "kid.subclass.level-invalid", severity: "error", message: "基德子职业等级必须为基础、进阶或精通，且同一子职业不能重复等级。", resourceId: first.sourceId };
+  }
   return {
     ...native,
     id: text(native.id) || first.sourceId,
@@ -548,21 +580,59 @@ export const kidAdapter: ResourceFormatAdapter = {
     };
   },
   export(batch, options: ExportOptions = {}) {
-    const subclasses = batch.resources.length > 0 && batch.resources.every((resource) => resource.kind === "subclass");
-    if (batch.resources.length !== 1 && !subclasses) {
+    const unsupported = batch.resources.filter((resource) => {
+      const raw = sourceRaw(resource, "pbres");
+      return isObject(raw?.template) && raw.template.id === "罗德岛子职";
+    });
+    if (unsupported.length > 0) return exportFailure("kid", unsupported.map((resource) => ({
+      code: "kid.template.unsupported",
+      severity: "error",
+      message: "罗德岛子职不支持导出基德格式。",
+      resourceId: resource.sourceId,
+    })));
+    if (batch.resources.length === 0) {
       return exportFailure("kid", [{
-        code: "kid.single-card.required",
+        code: "kid.cards.empty",
         severity: "error",
-        message: "基德原生 JSON 每个文件只能包含一张卡。",
+        message: "没有可导出的基德卡牌。",
       }]);
     }
-    const converted = subclasses
-      ? subclassToKid(batch.resources, options)
-      : toKid(batch.resources[0]!, options);
-    if ("severity" in converted) return exportFailure("kid", [converted as ConversionDiagnostic]);
+    const groups: TemporaryResource[][] = [];
+    const subclasses = new Map<string, TemporaryResource[]>();
+    for (const resource of batch.resources) {
+      if (resource.kind !== "subclass") {
+        groups.push([resource]);
+        continue;
+      }
+      const key = JSON.stringify([subclassName(resource.name), text(resource.fields.主职)]);
+      let group = subclasses.get(key);
+      if (!group) {
+        group = [];
+        subclasses.set(key, group);
+        groups.push(group);
+      }
+      group.push(resource);
+    }
+    const cards: JsonObject[] = [];
+    const diagnostics: ConversionDiagnostic[] = [];
+    for (const group of groups) {
+      const converted = group[0]!.kind === "subclass" ? subclassToKid(group, options) : toKid(group[0]!, options);
+      if ("severity" in converted) diagnostics.push(converted as ConversionDiagnostic);
+      else cards.push(converted);
+    }
+    // 不输出残缺包：任何卡无法映射时，返回逐卡诊断。
+    if (diagnostics.length > 0) return exportFailure("kid", diagnostics);
+    const artifacts = cards.map((card, index) => jsonArtifact(card, `${index + 1}-${safeStem(text(card.name))}.json`));
     return {
       ok: true,
-      artifact: jsonArtifact(converted, `${safeStem(batch.resources[0]!.name)}.json`),
+      artifact: cards.length === 1
+        ? jsonArtifact(cards[0]!, `${safeStem(text(cards[0]!.name))}.json`)
+        : {
+          bytes: zipSync(Object.fromEntries(artifacts.map((artifact) => [artifact.fileName, artifact.bytes]))),
+          fileName: `${safeStem(options.packageName ?? batch.name)}_kid.zip`,
+          container: "zip",
+          mediaType: "application/zip",
+        },
       report: report("kid", "export", batch.resources.length),
     };
   },
