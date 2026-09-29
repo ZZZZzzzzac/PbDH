@@ -157,7 +157,7 @@ describe("Player layout regressions", () => {
     expect(boot).not.toContain("state.currentPackage?.manifest.ID !== preferred.system.package.id");
   });
 
-  it("切换系统包后把地址栏指向对应系统包，刷新不再退回上一个包", async () => {
+  it("预设切换报告直达目标，共用入口不补后缀，本地包确认后清除旧后缀", async () => {
     const source = await readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8");
     const commit = source.slice(
       source.indexOf("function commitActivePreset(packageId: string)"),
@@ -178,17 +178,24 @@ describe("Player layout regressions", () => {
     expect(source).toContain("if (!surfaceVisibleRef.current) return;");
     // 报告的段必须是预置目录名：platform 按它拼地址，解析回来才能命中同一个包。
     expect(source).toContain("activeSystemPackageHandlerRef.current?.(entry.preset.directory);");
-    // 启动解析出的包与重新进入 Player 页时都要补写地址。
+    // 启动时报告预设，由宿主决定是否更新直达后缀。
     expect(boot).toContain("reportActiveSystemPackage();");
-    expect(source).toContain("if (!surfaceVisible || !runtimeInitialized) return;");
-    // 回到无段地址（顶部栏点 Player）也要补写，否则地址会停在 /player。
+    // 回到共用入口不再补写预设后缀。
     const routeEffect = source.slice(
       source.indexOf("appliedSystemRouteRef.current === requestedSystemPackage"),
+      source.indexOf("async function handleConfirmSystemPackageImport"),
+    );
+    expect(routeEffect).toContain("if (!requestedSystemPackage) return;");
+    expect(routeEffect).not.toContain("reportActiveSystemPackage();");
+    const confirm = source.slice(
+      source.indexOf("async function handleConfirmSystemPackageImport"),
       source.indexOf("async function handlePackageFile"),
     );
-    expect(routeEffect).toContain("reportActiveSystemPackage();");
-    expect(routeEffect.indexOf("if (!requestedSystemPackage) {"))
-      .toBeLessThan(routeEffect.indexOf("reportActiveSystemPackage();"));
+    expect(confirm).toContain("await confirmSystemPackageImport();");
+    expect(confirm).toContain("state.currentPackage?.manifest.ID !== pending.packageId");
+    expect(confirm).toContain('metadata?.source === "imported"');
+    expect(confirm).toContain("if (surfaceVisibleRef.current) activeSystemPackageHandlerRef.current?.(undefined);");
+    expect(source).toContain("onClick={() => void handleConfirmSystemPackageImport()}");
   });
 
   it("只在激活预置系统包时安装它自己的内嵌资源", async () => {

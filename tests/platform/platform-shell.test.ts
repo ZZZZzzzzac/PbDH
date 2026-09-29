@@ -67,7 +67,7 @@ describe("Platform Shell composition", () => {
     expect(shell).toContain("onHandoffNavigate={navigateHandoff}");
   });
 
-  it("使地址栏跟随 Player 报告的系统包，而不是停在 /player 上", async () => {
+  it("共用入口保持 /player，仅已有后缀时跟随 Player 报告的预设", async () => {
     const [shell, route] = await Promise.all([
       readSource("apps/platform/src/PlatformApp.tsx"),
       readSource("apps/platform/src/platform-route.ts"),
@@ -75,6 +75,7 @@ describe("Platform Shell composition", () => {
 
     expect(shell).toContain("onActiveSystemPackageChange={followPlayerSystemPackage}");
     expect(shell).toContain("playerSystemPackageUrl(directory, window.location.origin, platformBasePath)");
+    expect(shell).toContain("if (directory && !current.playerSystemPackage) return;");
     // 路径已经正确时不动地址，避免抹掉直达链接自带的查询参数或哈希。
     expect(shell).toContain("if (url.pathname === window.location.pathname) return;");
     expect(route).toContain("player/${encodeURIComponent(directory)}");
