@@ -1,10 +1,11 @@
 import { expect, test, vi } from "vitest";
 import { readEmbedConfig, readResources, SealChatSync, type EmbedClient, type EmbedContext } from "../../apps/player/src/sealchat/adapter.ts";
+import { readDiceData, rollCommand, type RollRequest } from "../../apps/player/src/sealchat/roll.ts";
 
 function fixture() {
   let context: EmbedContext = { channel: { id: "channel-1" }, currentUser: { id: "user-1" },
     currentCharacter: { id: "identity-1" }, connection: { state: "connected" }, permissions: { canSendMessage: true } };
-  let card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6 } };
+  let card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 力量: 0, DH经历: "" } };
   let changedContext = (_value: EmbedContext) => {};
   let changedConnection = (_value: { state: string }) => {};
   let closed = () => {};
@@ -126,4 +127,44 @@ test("未授予最小能力时拒绝接入，卸载关闭会话", async () => {
   await f.sync.start();
   expect(f.sync.state.phase).toBe("error");
   f.sync.stop(); expect(f.client.close).toHaveBeenCalledOnce();
+});
+
+const rollRequest = (): RollRequest => ({ trait: "力量", options: { mode: "action", edge: "normal", modifier: "", difficulty: "", reason: "", experienceIndices: [], experienceRevision: "" } });
+
+test("零特质可掷骰，未知不能冒充 0；公式使用实际 .dd/.ddr 语法", () => {
+  const data = readDiceData({ 力量: "0", 敏捷: -1 });
+  expect(data.traits.力量).toBe(0); expect(data.traits.灵巧).toBeNull();
+  const request = rollRequest();
+  request.options = { ...request.options, mode: "reaction", edge: "dis", modifier: "-2", difficulty: "0", reason: "测试" };
+  expect(rollCommand(request, data, 0)).toBe(".ddr 力量 -2 dis dc0 -- 测试");
+  expect(() => rollCommand({ ...request, trait: "灵巧" }, data, 2)).toThrow("尚未录入");
+  expect(() => rollCommand({ ...request, expression: ".st 希望+1" }, data, 2)).toThrow("手动公式");
+  expect(() => rollCommand({ ...request, expression: ".dd 力量\n.dd 力量" }, data, 2)).toThrow();
+  expect(rollCommand({ ...request, expression: ".dd 力量+1d6 adv" }, data, 2)).toBe(".dd 力量+1d6 adv");
+});
+
+test("掷骰执行前回读经历版本与希望，费用交由插件；过期选项不发送", async () => {
+  const f = fixture();
+  f.card.attrs.DH经历 = JSON.stringify({ schemaVersion: 1, experiences: [{ name: "经历", modifier: 0 }] });
+  await f.sync.start(); await f.sync.bind();
+  const request = rollRequest(); request.options.experienceIndices = [1]; request.options.experienceRevision = f.sync.state.dice.experienceRevision;
+  expect(request.options.experienceRevision).toBe("a779cedd");
+  expect(await f.sync.roll(request)).toBe(true);
+  expect(f.client.messages.send).toHaveBeenCalledWith({ text: ".dd 力量 exp=1@a779cedd", identityId: "identity-1", icMode: "ooc" });
+  f.card.attrs.希望 = 0; expect(await f.sync.roll(request)).toBe(false);
+  f.card.attrs.希望 = 2; f.card.attrs.DH经历 = JSON.stringify({ schemaVersion: 1, experiences: [{ name: "另一个经历", modifier: 2 }] });
+  expect(await f.sync.roll(request)).toBe(false);
+  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+});
+
+test("掷骰在卡切换时取消；双击、请求未知与断线不重发", async () => {
+  const f = fixture(); const request = rollRequest();
+  await f.sync.start(); await f.sync.bind();
+  f.card.name = "其他卡"; expect(await f.sync.roll(request)).toBe(false);
+  expect(f.client.messages.send).not.toHaveBeenCalled();
+  await f.sync.bind(); vi.mocked(f.client.messages.send).mockRejectedValue(new Error("timeout"));
+  await Promise.all([f.sync.roll(request), f.sync.roll(request)]);
+  expect(f.client.messages.send).toHaveBeenCalledTimes(1); expect(f.sync.state.phase).toBe("error");
+  await f.sync.bind(); f.disconnect(); expect(await f.sync.roll(request)).toBe(false);
+  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
 });

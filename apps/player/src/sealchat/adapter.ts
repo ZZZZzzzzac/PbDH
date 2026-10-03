@@ -1,4 +1,5 @@
 // 仅描述已核对的 SealChat 7a7b5bb Embed SDK 子集；SDK 由宿主加载。
+import { readDiceData, rollCommand, type DiceData, type RollRequest } from "./roll.ts";
 export interface EmbedContext {
   channel: { id: string };
   currentUser: { id: string } | null;
@@ -83,13 +84,14 @@ export interface SyncState {
   phase: "connecting" | "ready" | "bound" | "closed" | "error";
   cardName: string;
   resources: Resources;
+  dice: DiceData;
   busy: boolean;
   canBind: boolean;
   message: string;
 }
 
 export class SealChatSync {
-  state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), busy: false, canBind: false, message: "正在连接 SealChat…" };
+  state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), dice: readDiceData({}), busy: false, canBind: false, message: "正在连接 SealChat…" };
   private localKey: string;
   private epoch = 0;
   private boundKey: string | null = null;
@@ -112,7 +114,7 @@ export class SealChatSync {
     this.epoch++;
     this.boundKey = null;
     this.remote = null;
-    this.publish({ phase: "ready", resources: emptyResources(), canBind: false, message });
+    this.publish({ phase: "ready", resources: emptyResources(), dice: readDiceData({}), canBind: false, message });
   }
   async start() {
     if (!["context.read", "characterCard.read", "messages.send"].every(cap => this.client.capabilities.includes(cap))) {
@@ -178,6 +180,7 @@ export class SealChatSync {
           this.remote = { context: after, card };
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: card.name, canBind: usable,
             resources: this.boundKey ? readResources(card.attrs) : emptyResources(),
+            dice: this.boundKey ? readDiceData(card.attrs) : readDiceData({}),
             message: usable ? (this.boundKey ? "生命、压力、护甲、希望由 Dice 保存。" : "确认关联后，四项资源使用 Dice 当前值。") : "请启用匕首之心规则并确认发送权限。" });
         } catch (error) {
           if (epoch !== this.epoch || this.stopped) continue;
@@ -194,9 +197,33 @@ export class SealChatSync {
     await this.refresh();
     if (epoch !== this.epoch || !this.remote || !this.state.canBind || this.stopped) return;
     this.boundKey = remoteKey(this.remote.context, this.remote.card);
-    this.publish({ phase: "bound", resources: readResources(this.remote.card.attrs), message: "生命、压力、护甲、希望由 Dice 保存。" });
+    this.publish({ phase: "bound", resources: readResources(this.remote.card.attrs), dice: readDiceData(this.remote.card.attrs), message: "生命、压力、护甲、希望由 Dice 保存。" });
   }
   pause() { this.unbind("同步已暂停，请重新确认关联。"); }
+  async roll(request: RollRequest): Promise<boolean> {
+    if (this.state.busy || !this.boundKey || !this.connected) return false;
+    const key = this.boundKey;
+    const epoch = this.epoch;
+    this.publish({ busy: true });
+    try {
+      await this.refresh();
+      if (this.stopped || epoch !== this.epoch || key !== this.boundKey || !this.remote) return false;
+      let text: string;
+      try { text = rollCommand(request, this.state.dice, this.state.resources.hope?.current ?? null); }
+      catch (error) { this.publish({ message: error instanceof Error ? error.message : "掷骰选项无效。" }); return false; }
+      await this.client.messages.send({ text,
+        ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
+      if (epoch === this.epoch) this.publish({ message: "已请求掷骰，请在聊天查看结果；资源等待 Dice 回读。" });
+      await this.refresh();
+      return epoch === this.epoch && !this.stopped;
+    } catch {
+      if (epoch === this.epoch) {
+        this.unbind("掷骰请求结果未知，请核对聊天后重新关联；不会自动重发。");
+        this.publish({ phase: "error" });
+      }
+      return false;
+    } finally { this.publish({ busy: false }); }
+  }
   async change(id: ResourceId, delta: number) {
     if (this.state.busy || !this.boundKey || !this.connected || ![1, -1].includes(delta)) return;
     const key = this.boundKey;

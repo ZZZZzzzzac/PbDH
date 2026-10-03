@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { daggerheartSystemId, emptyResources, readEmbedConfig, resourceId, SealChatSync,
   type EmbedClient, type ResourceId, type SyncState } from "./adapter.ts";
 import "./sealchat.css";
+import { readDiceData, type Trait } from "./roll.ts";
+import { SealChatRollDialog, traitModules } from "./SealChatRollDialog.tsx";
 
 interface EmbedSDK { connect(options: { targetOrigin: string; timeoutMs: number }): Promise<EmbedClient> }
 type SDKWindow = Window & { SealChatEmbed?: EmbedSDK };
@@ -48,7 +50,8 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
   localKeyRef.current = localKey;
   const syncRef = useRef<SealChatSync | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<SyncState>({ phase: "connecting", cardName: "", resources: emptyResources(), busy: false, canBind: false, message: config.error || "正在连接 SealChat…" });
+  const [selectedTrait, setSelectedTrait] = useState<Trait | null>(null);
+  const [state, setState] = useState<SyncState>({ phase: "connecting", cardName: "", resources: emptyResources(), dice: readDiceData({}), busy: false, canBind: false, message: config.error || "正在连接 SealChat…" });
 
   useEffect(() => {
     if (!config.value || !visible || !supported || !characterId) return;
@@ -56,7 +59,7 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
     let stopped = false;
     let sync: SealChatSync | null = null;
     let timer: number | undefined;
-    setState({ phase: "connecting", cardName: "", resources: emptyResources(), busy: false, canBind: false, message: "正在连接 SealChat…" });
+    setState({ phase: "connecting", cardName: "", resources: emptyResources(), dice: readDiceData({}), busy: false, canBind: false, message: "正在连接 SealChat…" });
     void (async () => {
       const sdk = await loadSDK(activeConfig.sdkUrl);
       if (stopped) return;
@@ -67,13 +70,15 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
       await sync.start();
       if (!stopped) timer = window.setInterval(() => { void sync?.refresh(); }, 10_000);
     })().catch(error => {
-      if (!stopped) setState({ phase: "error", cardName: "", resources: emptyResources(), busy: false, canBind: false,
+      if (!stopped) setState({ phase: "error", cardName: "", resources: emptyResources(), dice: readDiceData({}), busy: false, canBind: false,
         message: error instanceof Error ? error.message : "SealChat 连接失败。" });
     });
     return () => { stopped = true; window.clearInterval(timer); sync?.stop(); syncRef.current = null; };
   }, [attempt, config, supported, visible, !!characterId]);
 
   useEffect(() => { syncRef.current?.setLocalKey(localKey); }, [localKey]);
+  useEffect(() => { setSelectedTrait(null); }, [localKey, visible]);
+  useEffect(() => { if (state.phase !== "bound") setSelectedTrait(null); }, [state.phase]);
   const control = useMemo<ResourceControl | null>(() => requested && supported ? {
     state, change: (id, delta) => { void syncRef.current?.change(id, delta); },
   } : null, [requested, supported, state]);
@@ -93,6 +98,18 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
         }}>刷新 / 重连</button>
       </div>
     </section> : null}
-    {children}
+    <div className="sealchat-session" onClickCapture={event => {
+      if (!control || !visible || state.phase !== "bound" || state.busy || !(event.target instanceof Element)) return;
+      // 仅已关联 iframe 的六特质点击进入掷骰窗；暂停关联后沿用原有属性编辑。
+      if (event.target.closest("textarea,select,[contenteditable=true]")) return;
+      const module = event.target.closest("[data-module-id]");
+      const trait = module && traitModules[module.getAttribute("data-module-id") ?? ""];
+      if (!trait) return;
+      event.preventDefault(); event.stopPropagation();
+      setSelectedTrait(trait);
+      void syncRef.current?.refresh();
+    }}>{children}</div>
+    {selectedTrait && state.phase === "bound" && visible ? <SealChatRollDialog trait={selectedTrait} state={state}
+      roll={request => syncRef.current?.roll(request) ?? Promise.resolve(false)} close={() => setSelectedTrait(null)} /> : null}
   </SealChatResourceContext.Provider>;
 }

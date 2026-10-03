@@ -3,3 +3,20 @@
 .sealchat-sync > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .sealchat-sync button { padding: 6px 10px; }
 @media print { .sealchat-sync { display: none; } }
+.sealchat-session { display: contents; }
+.sealchat-roll-dialog { box-sizing: border-box; margin: auto; width: min(94vw, 420px); max-height: 90vh; overflow: auto; padding: 20px; border: 1px solid var(--framework-border-strong); border-radius: 8px; background: var(--framework-surface, #fff); color: var(--framework-text, #222); }
+.sealchat-roll-dialog::backdrop { background: #0007; }
+.sealchat-roll-dialog h2 { margin: 0 0 10px; font-size: 1.15rem; }
+.sealchat-roll-dialog p { margin: 8px 0; font-size: .85rem; }
+.sealchat-roll-dialog fieldset { margin: 12px 0; padding: 10px; border: 1px solid var(--framework-border, #aaa); }
+.sealchat-roll-dialog label { display: block; margin: 10px 0; }
+.sealchat-roll-dialog input:not([type=checkbox]) { box-sizing: border-box; display: block; width: 100%; padding: 7px; color: inherit; background: var(--framework-canvas, #fafafa); border: 1px solid var(--framework-border-strong, #aaa); }
+.sealchat-roll-dialog button { padding: 7px 12px; color: inherit; background: var(--framework-surface-muted, #eee); border: 1px solid var(--framework-border-strong, #aaa); cursor: pointer; }
+.sealchat-roll-dialog button[aria-pressed=true] { border-color: var(--framework-accent, #3371c1); background: var(--framework-accent-soft, #d7e5f8); }
+.sealchat-roll-dialog button:disabled { opacity: .5; cursor: default; }
+.sealchat-roll-buttons, .sealchat-roll-modifier { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sealchat-roll-modifier input:not([type=checkbox]) { width: 90px; }
+.sealchat-roll-expression { font-family: monospace; }
+.sealchat-roll-dialog [role=alert] { color: var(--framework-danger-strong, #a42929); }
+.sealchat-roll-note { color: var(--framework-text-muted, #555); }
+@media print { .sealchat-roll-dialog { display: none; } }

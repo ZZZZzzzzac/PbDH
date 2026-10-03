@@ -18,3 +18,11 @@ The upstream SDK is loaded from the current SealChat instance, with an explicit 
 - Host policy configuration and isolated unmodified SealChat/Dice acceptance remain necessary before publishing. The preview uses the actual read-only SDK with a protocol fixture; it is not an actual host or production acceptance.
 
 The parallel Seal integration worktree owns iForm setup artifacts and a local protocol preview. This experiment leaves the main workspaces' uncommitted native-sheet/export development unchanged.
+
+## Dice assistant (2026-10-04 experiment)
+
+Both worktrees have merged their latest committed main lines (Seal 8d6526c / sealpack 0.4.7; PbDH f6261fa). The assistant listens to the six existing Daggerheart trait modules' value/label clicks, with a `display: contents` event boundary. Package skin/layout files stay unchanged; pausing the association restores normal attribute editing, and standalone behavior remains unchanged. Only the new modal has scoped presentation rules. It uses Dice trait values (including explicit zero), not saved PbDH modifiers, and shows the Dice experience list and hope cost.
+
+The modal supports action/reaction, normal/advantage/disadvantage, extra modifier, difficulty, reason, and a manually editable single-line `.dd`/`.ddr` command. Experience selections include the sealpack's content revision; changes use the controls to generate the command. Dispatch re-reads the active card, revision and hope, preserves the same association/connection guards, and never optimistically deducts hope. The plugin validates selected experience costs and settles the result. An uncertain send is not retried. Fresh static data still enters Dice through an explicit PbDH export, never through the session overlay.
+
+The official iForm's relative container accepts an absolutely positioned direct iframe with `inset:0; width:100%; height:100%`. The setup artifacts choose 840 × 790 as the default floating window; dragging its edges changes the iframe viewport. This activates PbDH's existing 1080px narrow layout, placing the card table below the A4 sheet without changing its layout CSS. Existing saved floating-window sizes may require resizing or reopening the window.
