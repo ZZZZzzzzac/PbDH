@@ -1,3 +1,5 @@
+import daggerheartPreset from "../../daggerheart-core-preset.generated.json";
+import { daggerheartSealDiceExperiences } from "./daggerheartSealDiceExport";
 import type { CharacterData } from "./characterData";
 import type { CharacterTextExport, CharacterTextExportField } from "./characterTextExport";
 
@@ -9,6 +11,9 @@ export function formatCharacterTextExport(
     const value = readIntegerValue(field, characterData.character.values[field.模块ID]);
     return value === undefined ? [] : [replaceAll(field.模板, "{值}", value)];
   });
+  if (definition.ID === "sealdice" && characterData.systemPackage.id === daggerheartPreset.id) {
+    fields.push(daggerheartSealDiceExperiences(characterData));
+  }
   return replaceAll(definition.模板, "{字段}", fields.join(definition.字段分隔符)).trim();
 }
 

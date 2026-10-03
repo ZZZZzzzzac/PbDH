@@ -249,8 +249,8 @@ export function useSheetOutput({
     try {
       await navigator.clipboard.writeText(formatCharacterTextExport(definition, characterData));
       useRuntimeStore.setState({ importError: null, importNotice: `${definition.名称}已复制。` });
-    } catch {
-      useRuntimeStore.setState({ importError: `${definition.名称}复制失败，请检查浏览器剪贴板权限。`, importNotice: null });
+    } catch (error) {
+      useRuntimeStore.setState({ importError: error instanceof Error ? `${definition.名称}失败：${error.message}` : `${definition.名称}复制失败，请检查浏览器剪贴板权限。`, importNotice: null });
     } finally {
       setOutputOperation(null);
     }
