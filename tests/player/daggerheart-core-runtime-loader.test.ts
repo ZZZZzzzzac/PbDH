@@ -16,6 +16,7 @@ import {
   parseCharacterDataJson,
 } from "../../apps/player/src/sheet-runtime/domain/characterData.ts";
 import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
+import { queryResourceLibraryEntries } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import {
   daggerheartCorePreset,
   loadDaggerheartCoreRuntimePackage,
@@ -117,6 +118,26 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     }
     expect(loaded.issues.some((issue) => issue.code === "UNUSED_PACKAGE_IMAGE")).toBe(false);
     expect(loaded.package.resourceFormatAdapters).toBeUndefined();
+    const classes = loaded.package.resourceLibraries!.find((library) => library.ID === "classes")!;
+    const domains = loaded.package.resourceLibraries!.find((library) => library.ID === "domain-cards")!;
+    const thirdParty = structuredClone(classes.entries[0]!);
+    thirdParty.ID = "third-party-class";
+    thirdParty.fields.名称 = "第三方职业";
+    thirdParty.fields.领域 = "灵感 + 利刃";
+    (thirdParty.resourceCopy!.data as Record<string, unknown>).领域 = ["灵感", "利刃"];
+    classes.entries.push(thirdParty);
+    for (const entry of classes.entries) {
+      const selected = applyResourceSelectionToDraft(
+        createEmptyCharacterData(loaded.package, "class-filter"), loaded.package, "pick-class", "classes", [entry],
+      );
+      const expected = (entry.resourceCopy!.data as { 领域: string[] }).领域;
+      const query = selected.derivedResult.resourcePickerDefaultQueries["pick-domain-card"]!;
+      expect(selected.interactionResult.warnings).toEqual([]);
+      expect(selected.derivedResult.warnings).toEqual([]);
+      expect(query.filters?.领域).toEqual(expected);
+      expect(queryResourceLibraryEntries(domains, query)).toEqual(domains.entries.filter((card) => expected.includes(card.fields.领域!)));
+    }
+    classes.entries.pop();
     expect(daggerheartCorePreset.fileCount).toBeGreaterThan(10);
     expect(progress.some(({ completed }) => completed > 0)).toBe(true);
     expect(progress.at(-1)).toEqual({

@@ -297,9 +297,7 @@ function applyAction({
         ? action.值
         : action.值.类型 === "selectedResourceField"
           ? event.type === "resourceSelected"
-            ? action.值.选择索引 === undefined
-              ? selectedFieldValues(event, action.值.字段)
-              : [event.selectedEntries[action.值.选择索引]?.fields[action.值.字段] ?? ""]
+            ? selectedFilterValues(event, action.值.字段, action.值.选择索引)
             : []
           : [...new Set(action.值.模块IDs
             .map((moduleId) => data.character.values[moduleId])
@@ -491,6 +489,18 @@ function appendText(existingValue: string, addedValue: string, separator: string
 
 function selectedFieldValues(event: ResourceSelectedEvent, field: string): string[] {
   return event.selectedEntries.map((entry) => entry.fields[field] ?? "");
+}
+
+function selectedFilterValues(event: ResourceSelectedEvent, field: string, selectedIndex?: number): string[] {
+  const entries = selectedIndex === undefined ? event.selectedEntries : event.selectedEntries.slice(selectedIndex, selectedIndex + 1);
+  return [...new Set(entries.flatMap((entry) => {
+    // 筛选保留资源原始多值字段的边界，不拆解用于展示的组合文本。
+    const data = entry.resourceCopy?.data;
+    const raw = data && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)[field] : undefined;
+    return Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string" && value.length > 0)
+      : [entry.fields[field] ?? ""].filter(Boolean);
+  }))];
 }
 
 function selectedFieldText(entries: ResourceLibraryEntry[], field: string, selectedIndex?: number, separator = "\n\n") {
