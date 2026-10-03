@@ -6,6 +6,7 @@ import { useTextFit } from "./textFit";
 import { usePointerActions } from "./usePointerActions";
 import { clampInt } from "../utils";
 import { useRef, useState, type CSSProperties } from "react";
+import { useSealChatResource } from "../../sealchat/SealChatResources.tsx";
 
 interface CountableResourceModuleProps {
   module: CountableResourceModuleConfig;
@@ -14,9 +15,11 @@ interface CountableResourceModuleProps {
 type CountableState = { current: number; max: number | null };
 
 export function CountableResourceModule({ module }: CountableResourceModuleProps) {
+  const remote = useSealChatResource(module.ID);
+  const blocked = !!remote && (remote.disabled || !remote.value);
   const min = module.最小值 ?? 0;
   const step = module.步长 ?? 1;
-  const editableMax = module.最大值可改 ?? false;
+  const editableMax = !remote && (module.最大值可改 ?? false);
   const fallback: CountableState = {
     current: clampInt(module.默认值 ?? min, min, module.最大值 ?? null),
     max: module.最大值 ?? null,
@@ -25,11 +28,15 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
   const updateModuleValue = useRuntimeStore((state) => state.updateModuleValue);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
-  const state = readCountableState(rawValue, fallback);
+  const state = remote ? remote.value ?? { current: 0, max: 0 } : readCountableState(rawValue, fallback);
   const max = state.max;
   const current = clampInt(state.current, min, max);
 
   const setState = (next: Partial<CountableState>) => {
+    if (remote) {
+      if (!blocked && next.current !== undefined && next.current !== current) remote.change(next.current - current);
+      return;
+    }
     updateModuleValue(module.ID, { ...state, ...next });
   };
   const setCurrent = (nextCurrent: number) => setState({ current: clampInt(nextCurrent, min, max) });
@@ -46,7 +53,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const transitionConfig = { min, step, editableMax };
   const applyMarkerAction = (target: "current" | "maximum", direction: CountableDirection) => {
     const next = transitionCountableState(normalizedState, transitionConfig, target, direction);
-    if (next.current !== current || next.max !== max) updateModuleValue(module.ID, next);
+    if (next.current !== current || next.max !== max) setState(next);
   };
   const canUseMarkerButton = (direction: CountableDirection) =>
     canTransitionCountableState(normalizedState, transitionConfig, "current", direction)
@@ -54,12 +61,12 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const decrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "decrement") : setCurrent(current - step),
     () => applyMarkerAction("maximum", "decrement"),
-    markerPresentation,
+    markerPresentation && !remote,
   );
   const incrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "increment") : setCurrent(current + step),
     () => applyMarkerAction("maximum", "increment"),
-    markerPresentation,
+    markerPresentation && !remote,
   );
   useTextFit(
     markerGroupRef,
@@ -87,12 +94,12 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
           data-part="decrement-button"
           type="button"
           {...decrementPointerActions}
-          disabled={markerPresentation ? !canUseMarkerButton("decrement") : current <= min}
+          disabled={blocked || (markerPresentation ? !canUseMarkerButton("decrement") : current <= min)}
           aria-label={`${module.标签}减少`}
         >
           -
         </button>
-        {markerPresentation ? (
+        {remote && !remote.value ? <span role="status" aria-label={`${module.标签}未录入`}>未录入</span> : markerPresentation ? (
           <span
             ref={markerGroupRef}
              className="counter-value-group marker-group"
@@ -118,6 +125,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
               inputMode="numeric"
               aria-label={module.标签}
               value={current}
+              disabled={blocked || !!remote}
               onChange={(event) => setCurrent(parseInteger(event.target.value, fallback.current))}
             />
             {max !== null ? (
@@ -144,7 +152,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
           data-part="increment-button"
           type="button"
           {...incrementPointerActions}
-          disabled={markerPresentation ? !canUseMarkerButton("increment") : max !== null && current >= max}
+          disabled={blocked || (markerPresentation ? !canUseMarkerButton("increment") : max !== null && current >= max)}
           aria-label={`${module.标签}增加`}
         >
           +

@@ -1,0 +1,5 @@
+.sealchat-sync { margin: 8px 12px; padding: 12px; border: 1px solid currentColor; border-radius: 8px; }
+.sealchat-sync p { margin: 6px 0; }
+.sealchat-sync > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.sealchat-sync button { padding: 6px 10px; }
+@media print { .sealchat-sync { display: none; } }

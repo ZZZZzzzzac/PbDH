@@ -108,6 +108,7 @@ import {
   useRuntimeStore,
 } from "./sheet-runtime/store/runtimeStore.ts";
 import { loadPlatformSystemPackageFromVfs } from "./system-package-ingress.ts";
+import { SealChatResources } from "./sealchat/SealChatResources.tsx";
 
 const preferredSystemPackageKey = "pbdh:player:preferred-system-package";
 
@@ -1274,6 +1275,8 @@ export function PlayerSheetSurface({
 
   if (!surfaceVisible) return null;
   return (
+    <SealChatResources systemPackageId={currentPackage?.manifest.ID} characterId={characterData?.character.id}
+      characterName={String(characterData?.character.values["character-name"] ?? "")} visible={surfaceVisible}>
     <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme={frameworkColorScheme}>
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,.json,.html,application/zip,application/json,text/html" onChange={(event) => void handleCharacterFile(event)} />
       <input ref={packageFileInputRef} hidden type="file" accept=".pbsys,application/zip" onChange={(event) => void handlePackageFile(event)} />
@@ -1399,6 +1402,7 @@ export function PlayerSheetSurface({
         </div>
       ) : null}
     </div>
+    </SealChatResources>
   );
 }
 
