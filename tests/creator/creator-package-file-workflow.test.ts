@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { strFromU8, unzipSync } from "fflate";
 
 import { loadPbres } from "@pbdh/contract-runtime";
 import { createPbresCandidateValidator, upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
@@ -20,6 +21,30 @@ const archive = new Uint8Array(readFileSync(new URL(
 )));
 
 describe("Creator package file workflow", () => {
+  test.each([1, 2])("exports %i unsigned cards to Kid through the real workspace workflow", async (count) => {
+    const inspected = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
+    if (inspected.type !== "import-ready") throw new Error("fixture should be importable");
+    const candidate = inspected.candidate;
+    const original = candidate.document.resources[0]!;
+    candidate.document.resources = Array.from({ length: count }, (_, index) => ({
+      ...structuredClone(original), id: `enemy-${index}`, path: `enemy-${index}.json`,
+    }));
+    const result = await runCreatorPackageFileWorkflow({
+      type: "export-third-party", formatId: "kid", workspace: createWorkspace(candidate, true),
+    });
+    expect(result.type).toBe("third-party-export");
+    if (result.type !== "third-party-export") throw new Error(JSON.stringify(result));
+    expect(result.fileName.endsWith(count === 1 ? ".json" : ".zip")).toBe(true);
+    const files = count === 1 ? [result.bytes] : Object.values(unzipSync(result.bytes));
+    expect(files).toHaveLength(count);
+    expect(files.map(bytes => JSON.parse(strFromU8(bytes)))).toEqual(
+      Array.from({ length: count }, (_, index) => expect.objectContaining({
+        id: `enemy-${index}`, type: "npc", name: "牛头人破坏者", creator: "未署名", owner: "未署名",
+        features: expect.any(Array),
+      })),
+    );
+  });
+
   test("inspects a package archive without mutating workspace state", async () => {
     const result = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
 

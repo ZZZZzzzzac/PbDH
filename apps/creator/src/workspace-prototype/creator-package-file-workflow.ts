@@ -86,6 +86,8 @@ export async function runCreatorPackageFileWorkflow(
     const exported = await resourceConversionRegistry.export(command.formatId, pbres.batch, {
       packageName: workspace.document.package.name,
       packageVersion: workspace.document.package.version,
+      // 基德要求署名字段；匿名资源不冒用包名或当前登录账号。
+      ...(command.formatId === "kid" ? { creator: "未署名", owner: "未署名" } : {}),
     });
     if (!exported.ok) {
       return {

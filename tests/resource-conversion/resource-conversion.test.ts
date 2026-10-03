@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { unzipSync } from "fflate";
 import { currentTemplates } from "@pbdh/templates/core";
 import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 
@@ -420,7 +421,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.diagnostics).toEqual([]);
   });
 
-  test("enemy Contract exports to RinkCX and Kid with the approved nonessential fields omitted", async () => {
+  test("enemy Contract exports combat fields to RinkCX and a leading Kid feature", async () => {
     const rink = await resourceConversionRegistry.export("rinkcx", adversaryBatch);
     const kid = await resourceConversionRegistry.export("kid", adversaryBatch, { creator: "测试", owner: "测试" });
     expect(rink.ok && kid.ok).toBe(true);
@@ -428,8 +429,11 @@ describe("registered Template mapping and native pbres", () => {
     expect(rink.report.diagnostics).toEqual([]);
     expect(rinkcxEngineRead(rink.artifact.bytes)[0]?.data).toMatchObject({ health: "9", damageDice: "3d10+2" });
     expect(kidEngineRead(kid.artifact.bytes)).toMatchObject({
-      type: "npc", description: "用于敌人模板转换。", difficulty: "17", motive: "守住大门",
+      type: "npc", description: expect.stringContaining("用于敌人模板转换。"), difficulty: "17", motive: "守住大门",
     });
+    const stats = (kidEngineRead(kid.artifact.bytes).features as { effect: string }[])[0]!.effect;
+    expect(stats).toContain("生命点：9");
+    expect(stats).toContain("3d10+2");
     const rinkImported = await resourceConversionRegistry.import("rinkcx", {
       bytes: rink.artifact.bytes, fileName: rink.artifact.fileName,
     });
@@ -440,6 +444,33 @@ describe("registered Template mapping and native pbres", () => {
     if (!rinkImported.ok || !kidImported.ok) throw new Error("re-import failed");
     expect(mapBatchToRegisteredCandidates(rinkImported.batch.resources).candidates[0]?.diagnostics).toEqual([]);
     expect(mapBatchToRegisteredCandidates(kidImported.batch.resources).candidates[0]?.diagnostics).toEqual([]);
+  });
+
+  test("Kid NPC uses compact stats and typed feature names while keeping flavor separate", async () => {
+    const extra = {
+      原文: "The Watcher", 类型: "友军/敌人", 位阶: "2", 种类: "标准",
+      重度伤害阈值: "8", 严重伤害阈值: "16", 生命点: "0", 压力点: "3",
+      攻击命中: "+2", 攻击武器: "短剑", 攻击范围: "近战", 攻击伤害: "2d6",
+      攻击属性: "物理", 经历: "守望+2\n追踪+1",
+    };
+    const resource = { ...adversaryBatch.resources[0]!, fields: {
+      ...adversaryBatch.resources[0]!.fields, ...extra, 简介: "原有简介。",
+      特性: [{ 特性名称: "反击", 特性原文: "标记1压力", 特性类型: "反应", 特性描述: "立即攻击。" }],
+    } };
+    const result = await resourceConversionRegistry.export("kid", { ...adversaryBatch, resources: [resource] }, { creator: "测试", owner: "测试" });
+    if (!result.ok) throw new Error("export failed");
+    const card = kidEngineRead(result.artifact.bytes);
+    expect(card.description).toBe("原有简介。\n\nThe Watcher");
+    expect(card.features).toEqual([
+      { name: "", choice: "", trigger: "", effect: "位阶2标准\n生命点：0 | 压力点：3 | 阈值：8/16\n攻击+2 | 短剑 | 近战 | 2d6 物理\n经历：守望+2\n追踪+1" },
+      { name: "反击 - 反应", choice: "", trigger: "", effect: "立即攻击。" },
+    ]);
+    const empty = await resourceConversionRegistry.export("kid", { ...adversaryBatch, resources: [{
+      ...resource, fields: { 简介: "仅简介", 特性: [] },
+    }] }, { creator: "测试", owner: "测试" });
+    if (!empty.ok) throw new Error("export failed");
+    expect(kidEngineRead(empty.artifact.bytes).description).toBe("仅简介");
+    expect(kidEngineRead(empty.artifact.bytes).features).toEqual([]);
   });
 
   test("enemy Contract remains complete in dhsheet variant and ZZZ open records", async () => {
@@ -485,7 +516,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.diagnostics).toEqual([]);
   });
 
-  test("weapon Contract exports to Kid while approved tier loss stays silent", async () => {
+  test("weapon Contract exports its tier in the Kid feature text", async () => {
     const exported = await resourceConversionRegistry.export("kid", weaponBatch, { creator: "测试", owner: "测试" });
     expect(exported.ok).toBe(true);
     if (!exported.ok) throw new Error("export failed");
@@ -493,7 +524,7 @@ describe("registered Template mapping and native pbres", () => {
     expect(kidEngineRead(exported.artifact.bytes)).toMatchObject({
       type: "weapon",
       description: "刀身映着冷白月光。",
-      feature: "可靠：攻击掷骰+1。",
+      feature: "位阶2\n可靠：攻击掷骰+1。",
     });
     expect(kidEngineRead(exported.artifact.bytes)).not.toHaveProperty("tier");
   });
@@ -534,16 +565,36 @@ describe("registered Template mapping and native pbres", () => {
     expect(candidate?.diagnostics).toEqual([]);
   });
 
-  test("armor exports to Kid with approved tier loss", async () => {
+  test("armor exports its tier in the Kid feature text", async () => {
     const exported = await resourceConversionRegistry.export("kid", armorBatch, { creator: "测试", owner: "测试" });
     expect(exported.ok).toBe(true);
     if (!exported.ok) throw new Error("export failed");
     expect(exported.report.diagnostics).toEqual([]);
     expect(kidEngineRead(exported.artifact.bytes)).toMatchObject({
       type: "armor", description: "层叠缝制的轻便布甲。", score: "3",
-      majorThreshold: "5", severeThreshold: "11", feature: "灵活：闪避值+1。",
+      majorThreshold: "5", severeThreshold: "11", feature: "位阶1\n灵活：闪避值+1。",
     });
     expect(kidEngineRead(exported.artifact.bytes)).not.toHaveProperty("tier");
+  });
+
+  test("Kid keeps equipment features unchanged when the tier is empty", async () => {
+    const exported = await resourceConversionRegistry.export("kid", {
+      ...weaponBatch, resources: weaponBatch.resources.map(resource => ({ ...resource, fields: { ...resource.fields, 位阶: "" } })),
+    }, { creator: "测试", owner: "测试" });
+    if (!exported.ok) throw new Error("export failed");
+    expect(kidEngineRead(exported.artifact.bytes).feature).toBe("可靠：攻击掷骰+1。");
+  });
+
+  test("Kid rejects Rhodes subclasses even when their level matches a normal subclass", async () => {
+    const resource = subclassBatch.resources[0]!;
+    const exported = await resourceConversionRegistry.export("kid", {
+      ...subclassBatch, resources: [...weaponBatch.resources, {
+        ...resource, source: { ...resource.source, formatId: "pbres", raw: { template: { id: "罗德岛子职", version: "1.0.0" } } },
+      }],
+    }, { creator: "测试", owner: "测试" });
+    expect(exported.ok).toBe(false);
+    expect(exported.report.converted).toBe(0);
+    expect(exported.report.diagnostics).toContainEqual(expect.objectContaining({ code: "kid.template.unsupported", resourceId: resource.sourceId }));
   });
 
   test("armor normalizes dhsheet and ZZZ threshold spellings without semantic loss", async () => {
@@ -875,15 +926,55 @@ describe("registered Template mapping and native pbres", () => {
     });
   });
 
-  test("Kid refuses to merge unrelated subclass resources", async () => {
+  test("Kid exports unrelated subclasses as separate cards in a ZIP", async () => {
     const exported = await resourceConversionRegistry.export("kid", {
       ...subclassBatch,
       resources: [subclassBatch.resources[0]!, {
         ...subclassBatch.resources[1]!, fields: { ...subclassBatch.resources[1]!.fields, 主职: "法师" },
       }],
     }, { creator: "测试", owner: "测试" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) throw new Error("export failed");
+    expect(exported.artifact.container).toBe("zip");
+    const cards = Object.values(unzipSync(exported.artifact.bytes)).map(kidEngineRead);
+    expect(cards).toHaveLength(2);
+    expect(cards.map(card => card.baseClass)).toEqual(["吟游诗人", "法师"]);
+  });
+
+  test("Kid merges subclass levels inside mixed packages without overwriting same-name cards", async () => {
+    const resources = [
+      ...subclassBatch.resources,
+      ...weaponBatch.resources.map(resource => ({ ...resource, name: "../同名" })),
+      ...armorBatch.resources.map(resource => ({ ...resource, name: "../同名" })),
+    ];
+    const exported = await resourceConversionRegistry.export("kid", { ...subclassBatch, resources }, { creator: "测试", owner: "测试" });
+    expect(exported.ok).toBe(true);
+    if (!exported.ok) throw new Error("export failed");
+    const files = unzipSync(exported.artifact.bytes);
+    expect(Object.keys(files)).toHaveLength(3);
+    expect(Object.keys(files).every(name => !name.includes("/") && !name.includes("\\"))).toBe(true);
+    const cards = Object.values(files).map(kidEngineRead);
+    expect(cards.map(card => card.type)).toEqual(["subclass", "weapon", "armor"]);
+    expect(cards[0]).toMatchObject({ foundationFeature: expect.any(String), advancedFeature: expect.any(String), masteryFeature: "传奇之言：扭转绝境。" });
+    for (const [fileName, bytes] of Object.entries(files)) {
+      expect((await resourceConversionRegistry.import("kid", { fileName, bytes })).ok).toBe(true);
+    }
+  });
+
+  test("Kid rejects duplicate subclass levels instead of silently losing a resource", async () => {
+    const exported = await resourceConversionRegistry.export("kid", {
+      ...subclassBatch, resources: [subclassBatch.resources[0]!, subclassBatch.resources[0]!],
+    }, { creator: "测试", owner: "测试" });
     expect(exported.ok).toBe(false);
-    expect(exported.report.diagnostics).toContainEqual(expect.objectContaining({ code: "kid.subclass.batch-mismatch" }));
+    expect(exported.report.diagnostics).toContainEqual(expect.objectContaining({ code: "kid.subclass.level-invalid" }));
+  });
+
+  test("Kid rejects empty and partially unsupported packages without returning an incomplete ZIP", async () => {
+    for (const resources of [[], [...weaponBatch.resources, { ...weaponBatch.resources[0]!, kind: "free" as const }]]) {
+      const exported = await resourceConversionRegistry.export("kid", { ...weaponBatch, resources }, { creator: "测试", owner: "测试" });
+      expect(exported.ok).toBe(false);
+      expect(exported.report.converted).toBe(0);
+    }
   });
 
   test("subclass levels remain complete through dhsheet and ZZZ native shapes", async () => {

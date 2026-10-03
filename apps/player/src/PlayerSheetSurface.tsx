@@ -134,8 +134,8 @@ export function PlayerSheetSurface({
   handoffUrl?: string;
   requestedSystemPackage?: string;
   onHandoffConsumed?(cleanedUrl: URL): void;
-  // 当前生效的预置系统包变化时报告它的直达段（预置目录名），由宿主写回地址栏。
-  onActiveSystemPackageChange?(systemPackageDirectory: string): void;
+  // 预置包报告直达段；本地上传包以 undefined 请求宿主回到共用入口。
+  onActiveSystemPackageChange?(systemPackageDirectory?: string): void;
 } = {}) {
   const auth = useAuth();
   const { notify } = usePlatformNotifications();
@@ -505,7 +505,7 @@ export function PlayerSheetSurface({
         runtimeReadyRef.current = true;
         appliedSystemRouteRef.current = requested?.preset.directory;
         setRuntimeInitialized(true);
-        // 启动解析出的包立刻写进地址栏：/player 不再停在无段地址上显示上一个包。
+        // 仅让既有直达入口跟随预设；宿主保持 /player 共用入口不变。
         reportActiveSystemPackage();
       } catch (error) {
         if (!cancelled) setSurfaceError(error instanceof Error ? error.message : "Player 初始化失败");
@@ -717,8 +717,7 @@ export function PlayerSheetSurface({
     );
   }
 
-  // 预置系统包切换后的统一收尾：确实落位到目标包才记住偏好，并把地址栏指向它，
-  // 刷新后不会退回切换前的系统包。
+  // 预置系统包确实落位后记住偏好；宿主仅在直达入口更新后缀。
   function commitActivePreset(packageId: string): void {
     if (useRuntimeStore.getState().currentPackage?.manifest.ID !== packageId) return;
     localStorage.setItem(preferredSystemPackageKey, packageId);
@@ -740,22 +739,26 @@ export function PlayerSheetSurface({
   useEffect(() => {
     if (!runtimeInitialized || appliedSystemRouteRef.current === requestedSystemPackage) return;
     appliedSystemRouteRef.current = requestedSystemPackage;
-    if (!requestedSystemPackage) {
-      // 回到无段地址（例如点顶部栏的 Player）时补写当前包，不让地址停在 /player 上。
-      reportActiveSystemPackage();
-      return;
-    }
+    if (!requestedSystemPackage) return;
     const entry = playerSystemPackageCatalog.find((candidate) => candidate.preset.directory === requestedSystemPackage);
     if (entry) void handleSwitchSystem(entry);
     else setCloudNotice(`未找到系统包：${requestedSystemPackage}`);
   }, [reportActiveSystemPackage, requestedSystemPackage, runtimeInitialized]);
 
-  // 进入 Player 页时补写当前生效的包：隐藏时常驻的启动不会报告，从别的页面切回来时要补上，
-  // 否则 /player 会一直停在无段地址上而显示上一次的包。
-  useEffect(() => {
-    if (!surfaceVisible || !runtimeInitialized) return;
-    reportActiveSystemPackage();
-  }, [reportActiveSystemPackage, runtimeInitialized, surfaceVisible]);
+  async function handleConfirmSystemPackageImport(): Promise<void> {
+    const pending = useRuntimeStore.getState().pendingSystemPackageImport;
+    if (!pending) return;
+    await confirmSystemPackageImport();
+    const state = useRuntimeStore.getState();
+    // 取消、校验或激活失败不能改地址；脚本确认与人物升级不影响已激活系统包的身份。
+    if (state.importError || state.pendingSystemPackageImport || state.currentPackage?.manifest.ID !== pending.packageId) return;
+    const metadata = await runtimeStorage.loadCurrentSystemPackageCacheMetadata();
+    if (metadata?.source === "imported") {
+      if (surfaceVisibleRef.current) activeSystemPackageHandlerRef.current?.(undefined);
+    } else {
+      reportActiveSystemPackage();
+    }
+  }
 
   async function handlePackageFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -1333,7 +1336,7 @@ export function PlayerSheetSurface({
               : "确认后才会保存并打开这个系统包。"}</p>
             <footer>
               <button type="button" onClick={cancelSystemPackageImport}>取消</button>
-              <button className="primary" type="button" onClick={() => void confirmSystemPackageImport()}>确认导入并切换</button>
+              <button className="primary" type="button" onClick={() => void handleConfirmSystemPackageImport()}>确认导入并切换</button>
             </footer>
           </section>
         </div>
