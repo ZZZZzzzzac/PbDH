@@ -109,3 +109,37 @@ test("非法人物姓名不会发送或留下半关联状态", async () => {
   expect(f.client.messages.send).not.toHaveBeenCalled(); expect(f.sync.state.phase).toBe("error");
   expect(f.sync.state.busy).toBe(false); expect(f.source.applyResources).not.toHaveBeenCalled();
 });
+
+test("未标记类型的空卡可以显式关联，原生 st 填入 DH 类型后保持关联", async () => {
+  const f = fixture(); f.card.name = ""; f.card.sheetType = ""; f.card.attrs = {};
+  await f.sync.start(); expect(f.sync.state.canBind).toBe(true); expect(f.sync.state.message).toContain("未标记类型");
+  expect(f.client.messages.send).not.toHaveBeenCalled(); await f.sync.bind();
+  expect(f.sync.state.phase).toBe("bound"); expect(f.local.resources.hope?.current).toBe(2);
+  f.card.sheetType = "daggerheart"; await f.sync.refresh();
+  expect(f.sync.state.phase).toBe("bound"); expect(await f.sync.change("hope", -1)).toBe(true);
+  expect(f.local.resources.hope?.current).toBe(1);
+});
+test("规则类型、账号和发送权限分别说明，已有其他规则卡不能初始化", async () => {
+  const f = fixture(); f.card.sheetType = "coc7"; await f.sync.start();
+  expect(f.sync.state.canBind).toBe(false); expect(f.sync.state.message).toContain("coc7");
+  await f.sync.bind(); expect(f.client.messages.send).not.toHaveBeenCalled();
+  f.card.sheetType = ""; f.setContext({ ...f.context, permissions: { canSendMessage: false } }); await f.sync.refresh();
+  expect(f.sync.state.canBind).toBe(false); expect(f.sync.state.message).toContain("发送权限");
+  f.setContext({ ...f.context, currentUser: null, permissions: { canSendMessage: true } }); await f.sync.refresh();
+  expect(f.sync.state.message).toContain("登录");
+});
+test("SDK 未授权读取身份时不能建立无法检测身份切换的关联", async () => {
+  const f = fixture(); f.client.capabilities = ["context.read", "characterCard.read", "messages.send"];
+  await f.sync.start(); expect(f.sync.state.canBind).toBe(false); expect(f.sync.state.message).toContain("characters.read");
+  await f.sync.refresh(); await f.sync.bind();
+  expect(f.client.characterCard.getCurrent).not.toHaveBeenCalled(); expect(f.client.messages.send).not.toHaveBeenCalled();
+});
+test("世界徽标变化不改关联，角色切换后旧草稿停止且新指令采用新身份", async () => {
+  const f = fixture(); await f.bind(); const token = f.sync.state.bindingToken;
+  f.setContext({ ...f.context }); await f.sync.refresh(); expect(f.sync.state.bindingToken).toBe(token);
+  expect(await f.sync.change("hope", 1, token)).toBe(true);
+  expect(vi.mocked(f.client.messages.send).mock.calls[0]![0]).toMatchObject({ identityId: "identity-1", icMode: "ooc" });
+  f.setContext({ ...f.context, currentCharacter: { id: "identity-2" } }); await f.sync.refresh();
+  expect(await f.sync.change("hope", -1, token)).toBe(false); await f.sync.bind();
+  expect(vi.mocked(f.client.messages.send).mock.lastCall![0].identityId).toBe("identity-2");
+});

@@ -87,9 +87,18 @@ export function readEmbedConfig(href: string, embedded: boolean): EmbedConfig | 
 function contextKey(context: EmbedContext): string {
   return JSON.stringify([context.channel.id, context.currentUser?.id, context.currentCharacter?.id]);
 }
+function supportsCardType(type: string): boolean { return ["", "daggerheart", "dh"].includes(type); }
+function bindingBlocker(context: EmbedContext, card: EmbedCard): string | null {
+  if (!context.currentUser?.id) return "请先登录 SealChat。";
+  if (context.connection.state !== "connected") return "SealChat 未连接，请重连后再关联。";
+  if (!context.permissions.canSendMessage) return "当前身份没有发送权限，请确认已加入频道且未处于旁观模式。";
+  if (!supportsCardType(card.sheetType)) return "Dice 当前人物卡类型为 " + card.sheetType + "；请切换到匕首之心人物卡后关联。";
+  return null;
+}
 function remoteKey(context: EmbedContext, card: EmbedCard): string {
   // 官方返回值没有稳定 Dice 卡 ID，只能关联当前账号、频道、身份、卡名及卡类型。
-  return JSON.stringify([contextKey(context), card.name, card.sheetType]);
+  // 空卡经官方 .st 格式化为 DH 类型属于同一次关联；已有其他规则卡仍拒绝。
+  return JSON.stringify([contextKey(context), card.name, supportsCardType(card.sheetType) ? "daggerheart" : card.sheetType]);
 }
 
 export interface PlayerSnapshot { key: string; documentId: string; name: string; resources: Resources; rolls: RollData }
@@ -110,6 +119,7 @@ export class SealChatSync {
   private reading: Promise<void> | null = null;
   private refreshQueued = false;
   private connected = false;
+  private authorized = false;
   private stopped = false;
   private sending = false;
   private mirror: Resources | null = null;
@@ -127,9 +137,11 @@ export class SealChatSync {
     this.publish({ phase: "ready", resources: emptyResources(), bindingToken: "", busy: this.sending, canBind: false, message });
   }
   async start() {
-    if (!["context.read", "characterCard.read", "messages.send"].every(cap => this.client.capabilities.includes(cap))) {
-      this.publish({ phase: "error", message: "iForm 缺少 context.read、characterCard.read 或 messages.send 权限。" }); return;
+    const missing = ["context.read", "characters.read", "characterCard.read", "messages.send"].filter(cap => !this.client.capabilities.includes(cap));
+    if (missing.length) {
+      this.publish({ phase: "error", message: "iForm 缺少 " + missing.join("、") + " 权限，请检查 Embed API 配置及频道发送权限。" }); return;
     }
+    this.authorized = true;
     this.cleanups.push(this.client.context.onChanged(context => {
       if (this.remote && contextKey(context) !== contextKey(this.remote.context)) this.unbind("SealChat 身份或频道已变化，请重新关联。");
       if (!context.permissions.canSendMessage) this.unbind("当前身份不能发送消息。");
@@ -164,7 +176,7 @@ export class SealChatSync {
     this.source.applyResources(patch, this.localKey);
   }
   async refresh(): Promise<void> {
-    if (this.stopped || this.state.phase === "closed") return;
+    if (this.stopped || !this.authorized || this.state.phase === "closed") return;
     this.refreshQueued = true;
     if (this.reading) return this.reading;
     this.reading = (async () => {
@@ -184,7 +196,8 @@ export class SealChatSync {
           }
           if (!result.status.available || !result.card) { this.unbind(result.status.reason || "当前频道没有可用的 Dice 活动人物卡。"); continue; }
           const card = result.card;
-          const usable = ["daggerheart", "dh"].includes(card.sheetType) && !!after.currentUser?.id && after.permissions.canSendMessage && after.connection.state === "connected";
+          const blocker = bindingBlocker(after, card);
+          const usable = blocker === null;
           const key = remoteKey(after, card);
           if (this.boundKey && this.boundKey !== key) this.unbind("Dice 活动人物卡已变化，请重新关联。");
           if (!usable && this.boundKey) this.unbind("当前卡类型、连接或权限不可用。");
@@ -198,7 +211,7 @@ export class SealChatSync {
               return actual && Object.entries(expected).every(([property, value]) => actual[property as keyof ResourceValue] === value);
             });
             if (!confirmed) {
-              if (Date.now() - p.started > 30_000) this.unbind("资源写入尚未确认，请核对聊天后重新关联；不会自动重发。");
+              if (Date.now() - p.started > 30_000) this.unbind("资源写入尚未确认，请查看聊天中的 Dice 回复后重新关联；尚未启用群规则时先发送 .set dh。不会自动重发。");
               continue;
             }
             this.pending = null; this.apply(resources, p.source); this.refreshQueued = true;
@@ -222,7 +235,7 @@ export class SealChatSync {
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: this.boundKey ? current.name : card.name, canBind: usable,
             resources: this.boundKey ? resources : emptyResources(), bindingToken: this.bindingToken(), rolls: this.snapshot()?.rolls ?? emptyRollData(),
             busy: this.sending || !!this.pending,
-            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : "关联时以当前 PbDH 存档初始化 Dice 资源。") : "请启用匕首之心规则并确认发送权限。" });
+            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : (card.sheetType === "" ? "Dice 当前卡未标记类型；可关联，Dice 会校验群规则。尚未启用时请先发送 .set dh。" : "关联时以当前 PbDH 存档初始化 Dice 资源。")) : blocker! });
         } catch (error) {
           if (epoch !== this.epoch || this.stopped) continue;
           this.unbind(error instanceof Error ? error.message : "人物卡读取失败。"); this.publish({ phase: "error" });

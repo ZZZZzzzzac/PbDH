@@ -10,7 +10,7 @@ export function fixture() {
   let execute = true;
   const source: PlayerSource = { read: () => structuredClone(local), applyResources: vi.fn((patch, key) => { if (key === local.key) local.resources = { ...local.resources, ...structuredClone(patch) }; }) };
   const client: EmbedClient = {
-    capabilities: ["context.read", "characterCard.read", "messages.send"],
+    capabilities: ["context.read", "characters.read", "characterCard.read", "messages.send"],
     context: { get: vi.fn(async () => structuredClone(context)), onChanged: cb => { changedContext = cb; return vi.fn(); } },
     connection: { getState: vi.fn(async () => context.connection), onChanged: cb => { changedConnection = cb; return vi.fn(); } },
     characterCard: { getCurrent: vi.fn(async () => ({ status: { available: true }, card: structuredClone(card) })) },
