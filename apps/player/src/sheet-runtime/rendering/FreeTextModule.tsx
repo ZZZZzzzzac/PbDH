@@ -1,7 +1,6 @@
 import { SealChatRollButton, useSealChatNumber } from "../../sealchat/SealChatResources.tsx";
 import { SealChatNumberInput } from "../../sealchat/SealChatNumberInput.tsx";
 import { traitModules } from "../../sealchat/numbers.ts";
-import { weaponIds } from "../../sealchat/damage.ts";
 import { useContext } from "react";
 import { SealChatResourceContext } from "../../sealchat/SealChatResources.tsx";
 import type { FreeTextModule } from "../domain/systemPackage";
@@ -18,7 +17,7 @@ interface FreeTextModuleProps {
 export function FreeTextModule({ module }: FreeTextModuleProps) {
   const remote = useSealChatNumber(module.ID);
   const embedded = useContext(SealChatResourceContext) !== null;
-  const hasDice = embedded && (!!traitModules[module.ID] || weaponIds.some(id => id === module.ID));
+  const hasDice = embedded && !!traitModules[module.ID];
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
   const commitFreeTextChange = useRuntimeStore((state) => state.commitFreeTextChange);
   const derivedPlaceholder = useRuntimeStore((state) => state.derivedTextPlaceholders[module.ID]);
@@ -83,7 +82,7 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
           )}
         />
       )}
-      <SealChatRollButton moduleId={module.ID} />
+      {hasDice ? <SealChatRollButton moduleId={module.ID} /> : null}
     </div>
   );
 }

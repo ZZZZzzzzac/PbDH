@@ -1,3 +1,4 @@
+import { SealChatRollButton, sealChatWeaponHeadingId } from "../../sealchat/SealChatResources.tsx";
 import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { allowedHtmlTags, findModule } from "../domain/systemPackage";
@@ -43,6 +44,8 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
   const props = templateElementProps(element, assetUrls);
   const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility, assetUrls, pageOutlet));
 
+  const weaponId = sealChatWeaponHeadingId(element);
+  if (weaponId) children.push(<SealChatRollButton key="sealchat-dice" moduleId={weaponId} placement="heading" />);
   return createTemplateElement(tagName, key, props, children);
 }
 

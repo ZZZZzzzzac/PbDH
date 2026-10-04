@@ -133,16 +133,21 @@ export function useSealChatNumber(moduleId: string) {
     disabled: control.state.phase !== "bound" || control.state.busy,
     set: (value: string, binding: string) => control.setNumber?.(id, value, binding) ?? Promise.resolve(false) };
 }
-export function SealChatRollButton({ moduleId }: { moduleId: string }) {
+export function sealChatWeaponHeadingId(element: Element): WeaponId | undefined {
+  if (element.tagName !== "H3" || !element.classList.contains("equipment-slot-title")) return undefined;
+  const modules = [...element.parentElement?.querySelectorAll("pb-module[id]") ?? []].map(module => module.getAttribute("id"));
+  const weapons = weaponIds.filter(id => modules.includes(id));
+  return weapons.length === 1 ? weapons[0] : undefined;
+}
+export function SealChatRollButton({ moduleId, placement = "trait" }: { moduleId: string; placement?: "trait" | "heading" }) {
   const control = useContext(SealChatResourceContext);
   const trait = traitModules[moduleId];
   const weapon = weaponIds.find(id => id === moduleId);
   if (!control || (!trait && !weapon)) return null;
   const label = trait ? trait + "掷骰" : (weapon === "primary-weapon-name" ? "主武器" : "副武器") + "伤害掷骰";
-  return <button type="button" className="sealchat-dice-button" aria-label={label} title={label}
+  return <button type="button" className={"sealchat-dice-button sealchat-dice-" + placement} aria-label={label} title={label}
     disabled={control.state.phase !== "bound"}
     onClick={() => control.openRoll?.(trait ? { kind: "trait", trait } : { kind: "weapon", weapon: readWeapon(weapon!) })}>
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" strokeWidth="1.7" />
-      {[ [7,7], [17,7], [7,12], [17,12], [7,17], [17,17] ].map(([cx,cy], i) => <circle key={i} cx={cx} cy={cy} r="1.25" fill="currentColor" />)}</svg>
+    <span aria-hidden="true">🎲</span>
   </button>;
 }

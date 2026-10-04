@@ -2,6 +2,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, test, vi } from "vitest";
+import { SheetRenderer } from "../../apps/player/src/sheet-runtime/rendering/SheetRenderer.tsx";
+import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage.ts";
 import { FreeTextModule } from "../../apps/player/src/sheet-runtime/rendering/FreeTextModule.tsx";
 import { useRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 import { SealChatResourceContext } from "../../apps/player/src/sealchat/SealChatResources.tsx";
@@ -16,11 +18,19 @@ test("六特质与主副武器各有独立骰子按钮，属性原输入可编�
   const element = document.createElement("div"); document.body.append(element); const root = createRoot(element);
   const state: SyncState = { phase: "bound", cardName: "角色", bindingToken: "test", busy: false, canBind: true, message: "", resources: emptyResources(),
     numbers: readNumbers({ 敏捷: 0, 力量: 0, 灵巧: 0, 本能: 0, 风度: 0, 知识: 0, 闪避: 0 }), dice: readDiceData({}) };
+  const ids = ["agility", "strength", "finesse", "instinct", "presence", "knowledge", "evasion", "primary-weapon-name", "secondary-weapon-name"];
+  const system: SystemPackage = { manifest: { ID: "test", 名称: "测试", 版本: "1.0.0", 角色数据版本: "1.0.0" },
+    modules: ids.map(id => ({ ID: id, 类型: "freeText", 标签: id })),
+    pages: [{ ID: "main", 名称: "测试", layout: { 类型: "htmlTemplate", htmlContent: ids.slice(0, 7).map(id => `<pb-module id="${id}"></pb-module>`).join("") +
+      ["primary", "secondary"].map(id => `<article class="equipment-slot"><h3 class="equipment-slot-title">武器</h3><pb-module id="${id}-weapon-name"></pb-module></article>`).join("") } }] };
   try {
     await act(async () => root.render(<SealChatResourceContext.Provider value={{ state, change: vi.fn(), setNumber, openRoll }}>
-      {["agility", "strength", "finesse", "instinct", "presence", "knowledge", "evasion", "primary-weapon-name", "secondary-weapon-name"].map(id => <FreeTextModule key={id} module={{ ID: id, 类型: "freeText", 标签: id }} />)}
+      <SheetRenderer systemPackage={system} />
     </SealChatResourceContext.Provider>));
     expect(element.querySelectorAll(".sealchat-dice-button")).toHaveLength(8);
+    expect(element.querySelectorAll("h3 .sealchat-dice-heading")).toHaveLength(2);
+    expect(element.querySelector('[data-module-id="primary-weapon-name"] .sealchat-dice-button')).toBeNull();
+    expect([...element.querySelectorAll(".sealchat-dice-button")].every(button => button.textContent === "🎲")).toBe(true);
     const strength = element.querySelector<HTMLInputElement>('[data-module-id="strength"] input')!;
     await act(async () => strength.click()); expect(openRoll).not.toHaveBeenCalled(); expect(strength.disabled).toBe(false);
     await act(async () => element.querySelector<HTMLButtonElement>('[aria-label="力量掷骰"]')!.click());

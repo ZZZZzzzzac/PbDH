@@ -3,8 +3,10 @@
 .sealchat-sync > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .sealchat-sync button { padding: 6px 10px; }
 [data-sealchat-dice=true] { position: relative; }
-[data-sealchat-dice=true] [data-part=input] { padding-right: 28px; }
-.sealchat-dice-button { position: absolute; right: 3px; bottom: 3px; display: grid; place-items: center; width: 24px; height: 24px; padding: 2px; border: 0; border-radius: 3px; background: transparent; color: #284b40; cursor: pointer; }
+[data-sealchat-dice=true] [data-part=label] { padding-right: 26px; }
+.sealchat-dice-button { display: inline-grid; vertical-align: middle; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: #284b40; cursor: pointer; font: 18px/1 system-ui, sans-serif; }
+.sealchat-dice-trait { position: absolute; right: 3px; top: 0; }
+.sealchat-dice-heading { margin-left: 6px; }
 .sealchat-dice-button:hover { background: #284b4012; }
 .sealchat-dice-button:focus-visible { outline: 2px solid #284b40; outline-offset: 1px; }
 .sealchat-dice-button:disabled { opacity: .35; cursor: default; }
@@ -43,6 +45,5 @@
 .sealchat-roll-footer { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin-top: 14px; }
 .sealchat-roll-footer code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 12px/1.5 ui-monospace, monospace; color: #62695d; }
 .sealchat-roll-footer button { background: #284b40; border-color: #284b40; color: #fffdf7; min-width: 76px; padding: 6px 16px; }
-.sealchat-damage-base { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #e9eddf; border-left: 3px solid #365c4d; color: #345949; font-size: 12px; margin-bottom: 6px; }
-.sealchat-damage-base code { font-size: 16px; }
+.sealchat-damage-inputs { grid-template-columns: 1fr 1.2fr 1.2fr; gap: 10px; }
 @media print { .sealchat-sync, .sealchat-roll-dialog, .sealchat-dice-button { display: none; } }
