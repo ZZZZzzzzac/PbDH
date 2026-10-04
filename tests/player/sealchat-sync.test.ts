@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import { readEmbedConfig, readResources } from "../../apps/player/src/sealchat/adapter.ts";
+import { readEmbedConfig, readResources, readDefenses } from "../../apps/player/src/sealchat/adapter.ts";
 import { readPlayerRollData, rollCommand, type RollRequest } from "../../apps/player/src/sealchat/roll.ts";
 import { fixture, documentId, sourceField } from "./sealchat-fixture.ts";
 const request = (): RollRequest => ({ trait: "力量", options: { mode: "action", edge: "normal", modifier: "", difficulty: "", reason: "", experienceIndices: [], experienceRevision: "" } });
@@ -12,14 +12,14 @@ test("仅显式 iframe 接入宿主 SDK，验证 origin 和路径", () => {
   expect(readEmbedConfig(url, true)?.sdkUrl).toContain("/chat/api/v1/"); expect(readEmbedConfig(url, false)).toBeNull();
   expect(() => readEmbedConfig(url.replace("sdkUrl=https://chat.example", "sdkUrl=https://evil.example"), true)).toThrow();
 });
-test("关联以 PbDH 初始化且只写资源、姓名和存档标识，基础数值与经历不写 Dice", async () => {
+test("关联以 PbDH 初始化且只写资源、徽标数值、姓名和存档标识，六特质与经历不写 Dice", async () => {
   const f = fixture(); f.local.resources.hope = { current: 0, max: 6 };
   await f.sync.start(); expect(f.client.messages.send).not.toHaveBeenCalled(); await f.sync.bind();
   const sent = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
   expect(sent.startsWith(".dh pbdh ")).toBe(true);
   const payload = JSON.parse(sent.slice(9));
-  expect(payload).toMatchObject({ source: documentId, name: f.local.name, values: { 希望: 0 } });
-  expect(sent).not.toMatch(/力量|DH经历|闪避|阈值/); expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
+  expect(payload).toMatchObject({ source: documentId, name: f.local.name, values: { 希望: 0, 闪避: 11, 重伤阈值: 11, 严重阈值: 22 } });
+  expect(sent).not.toMatch(/力量|DH经历/); expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
   expect(f.sync.state.phase).toBe("bound"); expect(f.sync.state.rolls.traits.力量).toBe(0);
 });
 test("未执行的回执不会覆盖 PbDH 存档，确认资源写入后才关联", async () => {
@@ -152,4 +152,33 @@ test("关联指令直接显示中文 JSON，比旧 URI 编码短，特殊姓名�
   expect(text).not.toContain('<at'); expect(text).not.toContain('&');
   const payload = JSON.parse(text.slice(9)); expect(payload.name).toBe(f.local.name);
   expect(text.length).toBeLessThan(('.dh pbdh '+encodeURIComponent(JSON.stringify(payload))).length * 0.5);
+});
+
+test("徽标字段区分零与无效值，PbDH 编辑和 Dice 外部修改均以 PbDH 为准", async () => {
+  expect(readDefenses({ 闪避: 0, 重伤阈值: " 0 ", 严重阈值: "22" })).toEqual({ evasion: 0, "major-threshold": 0, "severe-threshold": 22 });
+  expect(readDefenses({ 闪避: "", 重伤阈值: -1, 严重阈值: 1.5 })).toEqual({ evasion: null, "major-threshold": null, "severe-threshold": null });
+  const f = fixture(); await f.bind();
+  f.local.defenses = { evasion: 0, "major-threshold": 12, "severe-threshold": 24 }; f.card.attrs.希望 = 3;
+  await f.sync.refresh();
+  expect(f.client.messages.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: ".st 闪避=0 重伤阈值=12 严重阈值=24" }));
+  expect(f.card.attrs).toMatchObject({ 闪避: 0, 重伤阈值: 12, 严重阈值: 24 }); expect(f.local.resources.hope?.current).toBe(3);
+  await f.sync.refresh(); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+  f.card.attrs.闪避 = 99; await f.sync.refresh();
+  expect(f.client.messages.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: ".st 闪避=0" })); expect(f.local.defenses.evasion).toBe(0);
+  expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
+});
+test("徽标写入等待三个字段回读，期间较新的 PbDH 编辑继续同步", async () => {
+  const f = fixture(); f.holdWrites(); f.local.defenses = { evasion: 0, "major-threshold": 0, "severe-threshold": 0 }; await f.sync.start(); await f.sync.bind();
+  Object.assign(f.card.attrs, { [sourceField]: documentId, DHPbDH姓名: f.local.name });
+  await f.sync.refresh(); expect(f.sync.state.phase).toBe("binding"); expect(f.source.applyResources).not.toHaveBeenCalled();
+  f.card.attrs.闪避 = 0; await f.sync.refresh(); expect(f.sync.state.phase).toBe("binding");
+  Object.assign(f.card.attrs, { 重伤阈值: 0, 严重阈值: 0 }); f.local.defenses.evasion = 12; await f.sync.refresh();
+  expect(f.client.messages.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: ".st 闪避=12" })); expect(f.sync.state.phase).toBe("binding");
+  f.card.attrs.闪避 = 12; await f.sync.refresh(); expect(f.sync.state.phase).toBe("bound"); expect(f.local.defenses.evasion).toBe(12);
+});
+test("无效的 PbDH 徽标字段不初始化或写零，关联后无效也停止同步", async () => {
+  const f = fixture(); f.local.defenses.evasion = null; await f.sync.start(); await f.sync.bind();
+  expect(f.client.messages.send).not.toHaveBeenCalled(); expect(f.sync.state.phase).toBe("error");
+  f.local.defenses.evasion = 11; await f.sync.bind(); vi.mocked(f.client.messages.send).mockClear();
+  f.local.defenses["major-threshold"] = null; await f.sync.refresh(); expect(f.sync.state.phase).toBe("error"); expect(f.client.messages.send).not.toHaveBeenCalled();
 });

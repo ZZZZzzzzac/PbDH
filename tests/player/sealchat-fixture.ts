@@ -4,8 +4,8 @@ import { readPlayerRollData } from "../../apps/player/src/sealchat/roll.ts";
 export const documentId = "01234567-89ab-4cde-8fab-0123456789ab";
 export function fixture() {
   let context: EmbedContext = { channel: { id: "channel-1" }, currentUser: { id: "user-1" }, currentCharacter: { id: "identity-1" }, connection: { state: "connected" }, permissions: { canSendMessage: true } };
-  const card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 金币把: 0, 金币袋: 0, 金币箱: 0, 力量: 99, DH经历: "坏的旧经历" } as Record<string, unknown> };
-  let local: PlayerSnapshot = { key: "local-1", documentId, name: "测试人物", resources: readResources(card.attrs), rolls: readPlayerRollData({ strength: "0" }) };
+  const card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 金币把: 0, 金币袋: 0, 金币箱: 0, 闪避: 11, 重伤阈值: 11, 严重阈值: 22, 力量: 99, DH经历: "坏的旧经历" } as Record<string, unknown> };
+  let local: PlayerSnapshot = { key: "local-1", documentId, name: "测试人物", resources: readResources(card.attrs), defenses: { evasion: 11, "major-threshold": 11, "severe-threshold": 22 }, rolls: readPlayerRollData({ strength: "0" }) };
   let changedContext = (_: EmbedContext) => {}, changedConnection = (_: { state: string }) => {}, closed = () => {};
   let execute = true;
   const source: PlayerSource = { read: () => structuredClone(local), applyResources: vi.fn((patch, key) => { if (key === local.key) local.resources = { ...local.resources, ...structuredClone(patch) }; }) };
@@ -44,7 +44,7 @@ export function playerFixture() {
   const f = fixture();
   const pkg: SystemPackage = { manifest: { ID: daggerheartSystemId, 名称: "测试", 版本: "1.0.0", 角色数据版本: "1.0.0" }, modules: [
     ...Object.entries(f.local.resources).map(([id, value]) => ({ ID: id, 类型: "countableResource" as const, 标签: id, 默认值: value!.current, ...(value!.max === null ? {} : { 最大值: value!.max }) })),
-    ...["strength", "armor-value", "experience-1", "experience-modifier-1"].map(id => ({ ID: id, 类型: "freeText" as const, 标签: id, 默认值: id === "experience-1" ? "经历" : "0" })),
+    ...["strength", "armor-value", "evasion", "major-threshold", "severe-threshold", "experience-1", "experience-modifier-1"].map(id => ({ ID: id, 类型: "freeText" as const, 标签: id, 默认值: id === "experience-1" ? "经历" : "0" })),
   ], pages: [] };
   const data = createEmptyCharacterData(pkg, documentId);
   return { ...f, pkg, data };

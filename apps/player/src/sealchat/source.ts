@@ -1,7 +1,7 @@
 import type { CharacterData } from "../sheet-runtime/domain/characterData.ts";
 import type { SystemPackage } from "../sheet-runtime/domain/systemPackage.ts";
 import { readCountableState } from "../sheet-runtime/rendering/moduleState.ts";
-import { emptyResources, resourceFields, goldFields, type Resources, type ResourceId, type PlayerSnapshot } from "./adapter.ts";
+import { emptyResources, resourceFields, goldFields, readDefenses, type Resources, type ResourceId, type PlayerSnapshot } from "./adapter.ts";
 import { readPlayerRollData } from "./roll.ts";
 export function readPlayerSnapshot(data: CharacterData | null, pkg: SystemPackage | null): PlayerSnapshot | null {
   if (!data || !pkg) return null;
@@ -17,5 +17,5 @@ export function readPlayerSnapshot(data: CharacterData | null, pkg: SystemPackag
         && (value.max === null || Number.isSafeInteger(value.max) && value.max >= value.current && value.max <= cap)) resources[id] = { ...value };
   }
   for (const id of Object.keys(goldFields) as Array<keyof typeof goldFields>) if (resources[id]) resources[id]!.max = goldFields[id].max;
-  return { key: JSON.stringify([pkg.manifest.ID, data.character.id]), documentId: data.character.id, name, resources, rolls: readPlayerRollData(data.character.values) };
+  return { key: JSON.stringify([pkg.manifest.ID, data.character.id]), documentId: data.character.id, name, resources, defenses: readDefenses(data.character.values), rolls: readPlayerRollData(data.character.values) };
 }

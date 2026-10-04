@@ -101,7 +101,17 @@ function remoteKey(context: EmbedContext, card: EmbedCard): string {
   return JSON.stringify([contextKey(context), card.name, supportsCardType(card.sheetType) ? "daggerheart" : card.sheetType]);
 }
 
-export interface PlayerSnapshot { key: string; documentId: string; name: string; resources: Resources; rolls: RollData }
+export const defenseFields = { evasion: "闪避", "major-threshold": "重伤阈值", "severe-threshold": "严重阈值" } as const;
+export type DefenseId = keyof typeof defenseFields;
+export type Defenses = Record<DefenseId, number | null>;
+export function readDefenses(attrs: Record<string, unknown>): Defenses {
+  return Object.fromEntries(Object.entries(defenseFields).map(([id, attr]) => {
+    const raw = Object.hasOwn(attrs, attr) ? attrs[attr] : attrs[id];
+    const value = integer(typeof raw === "string" ? raw.trim() : raw);
+    return [id, value !== null && value <= 1_000_000 ? value : null];
+  })) as Defenses;
+}
+export interface PlayerSnapshot { key: string; documentId: string; name: string; resources: Resources; defenses: Defenses; rolls: RollData }
 export interface PlayerSource { read(): PlayerSnapshot | null; applyResources(resources: Partial<Resources>, key: string): void }
 export interface SyncState {
   phase: "connecting" | "ready" | "binding" | "bound" | "closed" | "error";
@@ -110,7 +120,7 @@ export interface SyncState {
 export const sourceField = "DHPbDH来源";
 export const nameField = "DHPbDH姓名";
 const same = (a: ResourceValue | null | undefined, b: ResourceValue | null | undefined) => a?.current === b?.current && a?.max === b?.max;
-type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; source: PlayerSnapshot; initialize: boolean; started: number };
+type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; defenses: Partial<Defenses>; source: PlayerSnapshot; initialize: boolean; started: number };
 export class SealChatSync {
   state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), rolls: emptyRollData(), bindingToken: "", busy: false, canBind: false, message: "正在连接 SealChat…" };
   private epoch = 0;
@@ -206,7 +216,8 @@ export class SealChatSync {
           const resources = readResources(card.attrs);
           if (this.pending) {
             const p = this.pending;
-            const confirmed = card.attrs[sourceField] === p.source.documentId && (!p.initialize || card.attrs[nameField] === p.source.name.trim()) && Object.entries(p.expected).every(([id, expected]) => {
+            const remoteDefenses = readDefenses(card.attrs);
+            const confirmed = Object.entries(p.defenses).every(([id, value]) => remoteDefenses[id as DefenseId] === value) && card.attrs[sourceField] === p.source.documentId && (!p.initialize || card.attrs[nameField] === p.source.name.trim()) && Object.entries(p.expected).every(([id, expected]) => {
               const actual = resources[id as ResourceId];
               return actual && Object.entries(expected).every(([property, value]) => actual[property as keyof ResourceValue] === value);
             });
@@ -217,8 +228,8 @@ export class SealChatSync {
             this.pending = null; this.apply(resources, p.source); this.refreshQueued = true;
           } else if (this.boundKey) {
             if (card.attrs[sourceField] !== current.documentId) { this.unbind("Dice 的 PbDH 关联已变化，请重新关联。"); continue; }
+            const changes: Partial<Record<ResourceId, Partial<ResourceValue>>> = {};
             if (this.mirror) {
-              const changes: Partial<Record<ResourceId, Partial<ResourceValue>>> = {};
               for (const id of Object.keys(resources) as ResourceId[]) {
                 const local = current.resources[id], previous = this.mirror[id];
                 if (local && previous && !same(local, previous)) {
@@ -228,8 +239,14 @@ export class SealChatSync {
                   if (Object.keys(fields).length) changes[id] = fields;
                 }
               }
-              if (Object.keys(changes).length) { await this.writeResources(current, changes, false); continue; }
             }
+            // 徽标数值仅由 PbDH 写到 Dice；外部修改也恢复为当前存档值。
+            const remoteDefenses = readDefenses(card.attrs), defenses: Partial<Defenses> = {};
+            for (const id of Object.keys(defenseFields) as DefenseId[]) {
+              if (current.defenses[id] === null) throw Error("PbDH 闪避或阈值无效，请编辑为非负整数后重新关联。");
+              if (current.defenses[id] !== remoteDefenses[id]) defenses[id] = current.defenses[id];
+            }
+            if (Object.keys(changes).length || Object.keys(defenses).length) { await this.writeFields(current, changes, false, defenses); continue; }
             this.apply(resources);
           }
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: this.boundKey ? current.name : card.name, canBind: usable,
@@ -244,7 +261,7 @@ export class SealChatSync {
     })().finally(() => { this.reading = null; });
     return this.reading;
   }
-  private async writeResources(source: PlayerSnapshot, expected: Pending["expected"], initialize: boolean) {
+  private async writeFields(source: PlayerSnapshot, expected: Pending["expected"], initialize: boolean, defenses: Partial<Defenses>) {
     if (!this.remote || !this.boundKey || this.pending) return;
     if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(source.documentId)) throw Error("PbDH 存档标识无效。");
     const epoch = this.epoch;
@@ -255,11 +272,15 @@ export class SealChatSync {
       if (fields.current !== undefined) { parts.push(field.attr + "=" + fields.current); values[field.attr] = fields.current; }
       if (fields.max !== undefined && adjustableMaximum(id)) { parts.push(resourceFields[id].max + "=" + fields.max); values[resourceFields[id].max] = fields.max!; }
     }
+    for (const [id, value] of Object.entries(defenses) as Array<[DefenseId, number | null]>) {
+      if (value === null || !Number.isSafeInteger(value) || value < 0 || value > 1_000_000) throw Error("PbDH 闪避或阈值无效，请编辑为非负整数后重新关联。");
+      parts.push(defenseFields[id] + "=" + value); values[defenseFields[id]] = value;
+    }
     if (!parts.length) return;
     if (initialize && (!source.name.trim() || source.name.length > 100 || /[\u0000-\u001f\u007f]/.test(source.name))) throw Error("PbDH 人物姓名无效，请先检查姓名。");
     const text = initialize ? ".dh pbdh " + JSON.stringify({ source: source.documentId, name: source.name.trim(), values }).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026") : ".st " + parts.join(" ");
-    this.pending = { expected, source: structuredClone(source), initialize, started: Date.now() };
-    this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源，等待 Dice 确认…" : "正在同步 PbDH 的资源修改…" });
+    this.pending = { expected, defenses, source: structuredClone(source), initialize, started: Date.now() };
+    this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源与徽标数值，等待 Dice 确认…" : "正在同步 PbDH 的数值修改…" });
     try {
       await this.client.messages.send({ text, ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
       if (epoch === this.epoch && !this.stopped) this.refreshQueued = true;
@@ -273,7 +294,7 @@ export class SealChatSync {
     if (Object.values(source.resources).some(value => !value || value.max !== null && value.current > value.max)) { this.publish({ message: "请检查 PbDH 的资源当前值与上限。" }); return; }
     this.boundKey = remoteKey(this.remote.context, this.remote.card);
     const expected = Object.fromEntries(Object.entries(source.resources).map(([id, value]) => [id, { current: value!.current, ...(adjustableMaximum(id as ResourceId) ? { max: value!.max } : {}) }]));
-    try { await this.writeResources(source, expected, true); await this.refresh(); }
+    try { await this.writeFields(source, expected, true, source.defenses); await this.refresh(); }
     catch (error) { this.unbind(error instanceof Error ? error.message : "关联数据无效。"); this.publish({ phase: "error" }); }
   }
   pause() { this.unbind("同步已暂停，请重新确认关联。"); }

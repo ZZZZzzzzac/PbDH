@@ -27,3 +27,9 @@ test("人物姓名读取存档姓名字段，空白姓名有明确回退", () =>
   expect(readPlayerSnapshot(f.data,f.pkg)?.name).toBe('汉妮 - Hope "旅者"');
   f.data.character.values["character-name"] = " "; expect(readPlayerSnapshot(f.data,f.pkg)?.name).toBe("未命名角色");
 });
+
+test("徽标数值直接读取 PbDH 存档，保留零和缺失的区别", () => {
+  const f = playerFixture(); Object.assign(f.data.character.values, { evasion: " 11 ", "major-threshold": "0", "severe-threshold": "22" });
+  expect(readPlayerSnapshot(f.data, f.pkg)?.defenses).toEqual({ evasion: 11, "major-threshold": 0, "severe-threshold": 22 });
+  f.data.character.values.evasion = ""; expect(readPlayerSnapshot(f.data, f.pkg)?.defenses.evasion).toBeNull();
+});
