@@ -64,6 +64,7 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
   localKeyRef.current = localKey;
   const syncRef = useRef<SealChatSync | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const reconnectAfterStart = useRef(false);
   const [selection, setSelection] = useState<RollSelection | null>(null);
   const [state, setState] = useState<SyncState>({ phase: "connecting", cardName: "", resources: emptyResources(), bindingToken: "", rolls: emptyRollData(), busy: false, canBind: false, message: config.error || "正在连接 SealChat…" });
 
@@ -87,6 +88,7 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
       sync = new SealChatSync(client, localKeyRef.current, next => { if (!stopped) setState(next); }, source);
       syncRef.current = sync;
       await sync.start();
+      if (!stopped && reconnectAfterStart.current) { reconnectAfterStart.current = false; await sync.reconnect(); }
       if (!stopped) unsubscribe = useRuntimeStore.subscribe((next, previous) => {
         if (next.characterData === previous.characterData) return;
         const snapshot = readPlayerSnapshot(next.characterData, next.currentPackage);
@@ -120,8 +122,10 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
           onClick={() => { void syncRef.current?.bind(); }}>关联并使用 PbDH 资源</button>
         <button type="button" disabled={state.phase !== "bound" || state.busy} onClick={() => syncRef.current?.pause()}>暂停同步</button>
         <button type="button" disabled={!config.value || state.busy} onClick={() => {
-          if (state.phase === "closed" || state.phase === "error") setAttempt(value => value + 1);
-          else void syncRef.current?.refresh();
+          if (state.phase === "closed" || state.phase === "error" || !syncRef.current) {
+            reconnectAfterStart.current = true; setAttempt(value => value + 1);
+          } else if (state.phase === "bound") void syncRef.current.refresh();
+          else void syncRef.current.reconnect();
         }}>刷新 / 重连</button>
       </div>
     </section> : null}

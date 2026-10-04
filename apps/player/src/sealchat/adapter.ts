@@ -252,7 +252,7 @@ export class SealChatSync {
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: this.boundKey ? current.name : card.name, canBind: usable,
             resources: this.boundKey ? resources : emptyResources(), bindingToken: this.bindingToken(), rolls: this.snapshot()?.rolls ?? emptyRollData(),
             busy: this.sending || !!this.pending,
-            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : (card.sheetType === "" ? "Dice 当前卡未标记类型；可关联，Dice 会校验群规则。尚未启用时请先发送 .set dh。" : "关联时以当前 PbDH 存档初始化 Dice 资源。")) : blocker! });
+            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : (card.sheetType === "" ? "Dice 当前卡未标记类型；可关联，Dice 会校验群规则。尚未启用时请先发送 .set dh。" : "可重连读取已关联人物的 Dice 资源，或用 PbDH 存档重新初始化。")) : blocker! });
         } catch (error) {
           if (epoch !== this.epoch || this.stopped) continue;
           this.unbind(error instanceof Error ? error.message : "人物卡读取失败。"); this.publish({ phase: "error" });
@@ -285,6 +285,40 @@ export class SealChatSync {
       await this.client.messages.send({ text, ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
       if (epoch === this.epoch && !this.stopped) this.refreshQueued = true;
     } catch { if (epoch === this.epoch) { this.unbind("资源请求结果未知，请核对聊天后重新关联；不会自动重发。"); this.publish({ phase: "error" }); } }
+  }
+  // 复用 Dice 已保存的关联标记；重连只读取当前资源，不重新初始化。
+  async reconnect(): Promise<boolean> {
+    if (this.state.busy || this.stopped || this.state.phase === "closed") return false;
+    if (this.boundKey) { await this.refresh(); return this.state.phase === "bound"; }
+    const captured = this.snapshot();
+    if (!captured) return false;
+    const epoch = this.epoch;
+    this.sending = true; this.publish({ busy: true });
+    try {
+      await this.refresh();
+      const source = this.snapshot();
+      if (epoch !== this.epoch || !source || !this.remote || !this.state.canBind || this.stopped) return false;
+      const { card, context } = this.remote;
+      if (card.attrs[sourceField] !== source.documentId || card.attrs[nameField] !== source.name.trim()) {
+        this.publish({ message: "Dice 没有此人物的完整关联标记，请用‘关联并使用 PbDH 资源’初始化。" });
+        return false;
+      }
+      if (Object.values(source.defenses).some(value => value === null || !Number.isSafeInteger(value) || value < 0 || value > 1_000_000)) {
+        throw Error("PbDH 闪避或阈值无效，请编辑为非负整数后重连。");
+      }
+      const resources = readResources(card.attrs);
+      this.boundKey = remoteKey(context, card);
+      this.apply(resources, captured);
+      this.publish({ phase: "bound", cardName: source.name, resources, bindingToken: this.bindingToken(), rolls: source.rolls,
+        message: "已重连，沿用 Dice 当前资源；没有发送初始化指令。" });
+      return true;
+    } catch (error) {
+      if (epoch === this.epoch) {
+        this.unbind(error instanceof Error ? error.message : "重连失败，请核对关联人物。");
+        this.publish({ phase: "error" });
+      }
+      return false;
+    } finally { this.sending = false; this.publish({ busy: !!this.pending }); }
   }
   async bind() {
     if (this.state.busy) return;
