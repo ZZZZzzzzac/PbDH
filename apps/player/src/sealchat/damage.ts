@@ -6,7 +6,15 @@ export interface DamageValues { proficiency: number; die: string; fixed: number 
 export interface DamageAdjustment { diceCountDelta: number; flat: number; extraDice: string }
 export interface DamageRequest { weapon: WeaponSnapshot; values: DamageValues; adjustments?: DamageAdjustment[] }
 export function weaponLabel(id: WeaponId): string { return id === "primary-weapon-name" ? "主武器" : "副武器"; }
-export function weaponName(text: string): string { return text.split(/[｜|]/)[0].replace(/[*_~`]/g, "").trim(); }
+export function weaponName(text: string): string {
+  const clean = text.replace(/[*_~`]/g, "").trim();
+  const explicit = /(?:^|\s)(?:武器名称|武器名|名称|武器)\s*[:：=]\s*([^｜|/，,；;\r\n（(]+)/.exec(clean)?.[1];
+  const delimited = /[｜|/（(]/.test(clean) ? clean.split(/[｜|/（(]/)[0] : clean;
+  const name = (explicit ?? delimited).trim();
+  if (!name || name.length > 100 || /[\u0000-\u001f\u007f]/.test(name) || /d\s*\d/i.test(name) || /[:：=]/.test(name)
+    || /^(?:名称|武器|主武器|副武器|伤害|属性|距离|负荷|敏捷|力量|灵巧|本能|风度|知识|未知|请选择.*)$/.test(name)) return "";
+  return name;
+}
 export function parseWeapon(text: string) {
   // 只扫描伤害骰条目，不依赖摘要分隔符；允许 D、空格和多位整数。
   const match = /d\s*(\d+)(?:\s*([+-])\s*(\d+))?/i.exec(text);
@@ -48,5 +56,5 @@ export function damageFormula(request: DamageRequest): string {
 export function damageCommand(request: DamageRequest, latest: WeaponSnapshot): string {
   const source = request.weapon;
   if (!weaponIds.includes(source.id) || source.id !== latest.id || source.text !== latest.text || source.proficiency !== latest.proficiency) throw Error("武器或熟练度已变化，请重新打开伤害助手。");
-  return ".r " + damageFormula(request) + " " + weaponLabel(source.id);
+  return ".r " + damageFormula(request) + " " + (weaponName(source.text) || weaponLabel(source.id));
 }

@@ -20,6 +20,8 @@ function releaseVersionPlugin(version: string): Plugin {
   };
 }
 
+const apiProxy = { "/api": process.env.PBDH_API_PROXY_TARGET ?? "http://127.0.0.1:8001" };
+
 export default defineConfig({
   base: normalizeBasePath(process.env.PBDH_BASE_PATH),
   build: {
@@ -30,10 +32,11 @@ export default defineConfig({
     releaseVersionPlugin(process.env.PBDH_RELEASE_VERSION ?? "development"),
   ],
   publicDir: "../player/public",
+  preview: { host: "127.0.0.1", proxy: apiProxy },
   server: {
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    proxy: { "/api": "http://127.0.0.1:8001" },
+    proxy: apiProxy,
   },
 });
