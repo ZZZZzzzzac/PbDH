@@ -12,11 +12,13 @@ test("仅显式 iframe 接入宿主 SDK，验证 origin 和路径", () => {
   expect(readEmbedConfig(url, true)?.sdkUrl).toContain("/chat/api/v1/"); expect(readEmbedConfig(url, false)).toBeNull();
   expect(() => readEmbedConfig(url.replace("sdkUrl=https://chat.example", "sdkUrl=https://evil.example"), true)).toThrow();
 });
-test("关联以 PbDH 初始化且只写资源和存档标识，基础数值与经历不写 Dice", async () => {
+test("关联以 PbDH 初始化且只写资源、姓名和存档标识，基础数值与经历不写 Dice", async () => {
   const f = fixture(); f.local.resources.hope = { current: 0, max: 6 };
   await f.sync.start(); expect(f.client.messages.send).not.toHaveBeenCalled(); await f.sync.bind();
   const sent = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
-  expect(sent).toContain(sourceField + '="' + documentId + '"'); expect(sent).toContain("希望=0");
+  expect(sent.startsWith(".dh pbdh ")).toBe(true);
+  const payload = JSON.parse(decodeURIComponent(sent.slice(9)));
+  expect(payload).toMatchObject({ source: documentId, name: f.local.name, values: { 希望: 0 } });
   expect(sent).not.toMatch(/力量|DH经历|闪避|阈值/); expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
   expect(f.sync.state.phase).toBe("bound"); expect(f.sync.state.rolls.traits.力量).toBe(0);
 });
@@ -24,7 +26,7 @@ test("未执行的回执不会覆盖 PbDH 存档，确认资源写入后才关�
   const f = fixture(); f.holdWrites(); f.local.resources.hope = { current: 1, max: 6 }; await f.sync.start(); await f.sync.bind();
   expect(f.sync.state.phase).toBe("binding"); expect(f.source.applyResources).not.toHaveBeenCalled(); expect(f.local.resources.hope?.current).toBe(1);
   await f.sync.refresh(); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
-  f.card.attrs[sourceField] = documentId; f.card.attrs.希望 = 1; await f.sync.refresh(); expect(f.sync.state.phase).toBe("bound");
+  f.card.attrs[sourceField] = documentId; f.card.attrs.DHPbDH姓名 = f.local.name; f.card.attrs.希望 = 1; await f.sync.refresh(); expect(f.sync.state.phase).toBe("bound");
 });
 test("Dice 资源结果进入人物存档，重复轮询没有反向写回循环", async () => {
   const f = fixture(); await f.bind(); f.card.attrs.希望 = 3; f.card.attrs.金币箱 = 2; await f.sync.refresh();
@@ -83,4 +85,27 @@ test("请求结果未知时不重发，停止时释放 SDK", async () => {
 test("外部非法资源不进入人物存档或云保存", async () => {
   const f = fixture(); await f.bind(); f.card.attrs.金币袋 = 20; await f.sync.refresh();
   expect(f.sync.state.phase).toBe("error"); expect(f.source.applyResources).not.toHaveBeenCalled(); expect(f.local.resources["bag-gold"]?.current).toBe(0);
+});
+
+test("关联使用 PbDH 姓名，保留空格、连字符和引号，回读确认人物昵称", async () => {
+  const f = fixture(); f.local.name = '汉妮 - Hope "旅者"';
+  f.local.resources.hp = { current: 0, max: 7 }; f.local.resources["armor-slots"] = { current: 0, max: 5 };
+  await f.sync.start(); await f.sync.bind();
+  expect(f.card.attrs.DHPbDH姓名).toBe(f.local.name); expect(f.sync.state.cardName).toBe(f.local.name); expect(f.sync.state.phase).toBe("bound");
+  expect(f.card.attrs.生命上限).toBe(7); expect(f.card.attrs.护甲上限).toBe(5);
+  await f.sync.change("hope", -1); expect(f.local.resources.hope?.current).toBe(1);
+});
+test("初始化回执不能冒充姓名确认，外部切卡仍取消关联", async () => {
+  const f = fixture(); f.local.name = "汉妮"; f.holdWrites();
+  await f.sync.start(); await f.sync.bind();
+  f.card.attrs[sourceField] = documentId; await f.sync.refresh();
+  expect(f.sync.state.phase).toBe("binding"); expect(f.source.applyResources).not.toHaveBeenCalled();
+  f.card.attrs.DHPbDH姓名 = "汉妮"; await f.sync.refresh(); expect(f.sync.state.phase).toBe("bound");
+  f.card.name = "另一人物"; await f.sync.refresh(); expect(f.sync.state.phase).toBe("ready");
+});
+
+test("非法人物姓名不会发送或留下半关联状态", async () => {
+  const f = fixture(); f.local.name = "名字\n新指令"; await f.sync.start(); await f.sync.bind();
+  expect(f.client.messages.send).not.toHaveBeenCalled(); expect(f.sync.state.phase).toBe("error");
+  expect(f.sync.state.busy).toBe(false); expect(f.source.applyResources).not.toHaveBeenCalled();
 });

@@ -5,6 +5,8 @@ import { emptyResources, resourceFields, goldFields, type Resources, type Resour
 import { readPlayerRollData } from "./roll.ts";
 export function readPlayerSnapshot(data: CharacterData | null, pkg: SystemPackage | null): PlayerSnapshot | null {
   if (!data || !pkg) return null;
+  const rawName = data.character.values["character-name"];
+  const name = typeof rawName === "string" && rawName.trim() ? rawName.trim() : "未命名角色";
   const resources = emptyResources();
   for (const id of Object.keys(resources) as ResourceId[]) {
     const module = pkg.modules.find(m => m.ID === id);
@@ -15,5 +17,5 @@ export function readPlayerSnapshot(data: CharacterData | null, pkg: SystemPackag
         && (value.max === null || Number.isSafeInteger(value.max) && value.max >= value.current && value.max <= cap)) resources[id] = { ...value };
   }
   for (const id of Object.keys(goldFields) as Array<keyof typeof goldFields>) if (resources[id]) resources[id]!.max = goldFields[id].max;
-  return { key: JSON.stringify([pkg.manifest.ID, data.character.id]), documentId: data.character.id, resources, rolls: readPlayerRollData(data.character.values) };
+  return { key: JSON.stringify([pkg.manifest.ID, data.character.id]), documentId: data.character.id, name, resources, rolls: readPlayerRollData(data.character.values) };
 }

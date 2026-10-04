@@ -21,3 +21,9 @@ test("确认资源更新进入正常 250ms 保存链，重复回读不保存，�
     applyPlayerResources({ hope: { current: 5, max: 6 } }, key); await vi.advanceTimersByTimeAsync(250); expect(save).toHaveBeenCalledOnce();
   } finally { resetRuntimeDependencies(); useRuntimeStore.setState(original, true); vi.useRealTimers(); }
 });
+
+test("人物姓名读取存档姓名字段，空白姓名有明确回退", () => {
+  const f = playerFixture(); f.data.character.values["character-name"] = '  汉妮 - Hope "旅者"  ';
+  expect(readPlayerSnapshot(f.data,f.pkg)?.name).toBe('汉妮 - Hope "旅者"');
+  f.data.character.values["character-name"] = " "; expect(readPlayerSnapshot(f.data,f.pkg)?.name).toBe("未命名角色");
+});

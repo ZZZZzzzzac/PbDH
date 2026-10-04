@@ -92,15 +92,16 @@ function remoteKey(context: EmbedContext, card: EmbedCard): string {
   return JSON.stringify([contextKey(context), card.name, card.sheetType]);
 }
 
-export interface PlayerSnapshot { key: string; documentId: string; resources: Resources; rolls: RollData }
+export interface PlayerSnapshot { key: string; documentId: string; name: string; resources: Resources; rolls: RollData }
 export interface PlayerSource { read(): PlayerSnapshot | null; applyResources(resources: Partial<Resources>, key: string): void }
 export interface SyncState {
   phase: "connecting" | "ready" | "binding" | "bound" | "closed" | "error";
   cardName: string; resources: Resources; rolls: RollData; bindingToken: string; busy: boolean; canBind: boolean; message: string;
 }
 export const sourceField = "DHPbDH来源";
+export const nameField = "DHPbDH姓名";
 const same = (a: ResourceValue | null | undefined, b: ResourceValue | null | undefined) => a?.current === b?.current && a?.max === b?.max;
-type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; source: PlayerSnapshot; started: number };
+type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; source: PlayerSnapshot; initialize: boolean; started: number };
 export class SealChatSync {
   state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), rolls: emptyRollData(), bindingToken: "", busy: false, canBind: false, message: "正在连接 SealChat…" };
   private epoch = 0;
@@ -192,7 +193,7 @@ export class SealChatSync {
           const resources = readResources(card.attrs);
           if (this.pending) {
             const p = this.pending;
-            const confirmed = card.attrs[sourceField] === p.source.documentId && Object.entries(p.expected).every(([id, expected]) => {
+            const confirmed = card.attrs[sourceField] === p.source.documentId && (!p.initialize || card.attrs[nameField] === p.source.name.trim()) && Object.entries(p.expected).every(([id, expected]) => {
               const actual = resources[id as ResourceId];
               return actual && Object.entries(expected).every(([property, value]) => actual[property as keyof ResourceValue] === value);
             });
@@ -218,7 +219,7 @@ export class SealChatSync {
             }
             this.apply(resources);
           }
-          this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: card.name, canBind: usable,
+          this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: this.boundKey ? current.name : card.name, canBind: usable,
             resources: this.boundKey ? resources : emptyResources(), bindingToken: this.bindingToken(), rolls: this.snapshot()?.rolls ?? emptyRollData(),
             busy: this.sending || !!this.pending,
             message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : "关联时以当前 PbDH 存档初始化 Dice 资源。") : "请启用匕首之心规则并确认发送权限。" });
@@ -234,17 +235,20 @@ export class SealChatSync {
     if (!this.remote || !this.boundKey || this.pending) return;
     if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(source.documentId)) throw Error("PbDH 存档标识无效。");
     const epoch = this.epoch;
-    const parts = initialize ? [sourceField + "=" + JSON.stringify(source.documentId)] : [];
+    const parts: string[] = [];
+    const values: Record<string, number> = {};
     for (const [id, fields] of Object.entries(expected) as Array<[ResourceId, Partial<ResourceValue>]>) {
       const field = adjustableMaximum(id) ? resourceFields[id] : goldFields[id];
-      if (fields.current !== undefined) parts.push(field.attr + "=" + fields.current);
-      if (fields.max !== undefined && adjustableMaximum(id)) parts.push(resourceFields[id].max + "=" + fields.max);
+      if (fields.current !== undefined) { parts.push(field.attr + "=" + fields.current); values[field.attr] = fields.current; }
+      if (fields.max !== undefined && adjustableMaximum(id)) { parts.push(resourceFields[id].max + "=" + fields.max); values[resourceFields[id].max] = fields.max!; }
     }
     if (!parts.length) return;
-    this.pending = { expected, source: structuredClone(source), started: Date.now() };
+    if (initialize && (!source.name.trim() || source.name.length > 100 || /[\u0000-\u001f\u007f]/.test(source.name))) throw Error("PbDH 人物姓名无效，请先检查姓名。");
+    const text = initialize ? ".dh pbdh " + encodeURIComponent(JSON.stringify({ source: source.documentId, name: source.name.trim(), values })) : ".st " + parts.join(" ");
+    this.pending = { expected, source: structuredClone(source), initialize, started: Date.now() };
     this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源，等待 Dice 确认…" : "正在同步 PbDH 的资源修改…" });
     try {
-      await this.client.messages.send({ text: ".st " + parts.join(" "), ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
+      await this.client.messages.send({ text, ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
       if (epoch === this.epoch && !this.stopped) this.refreshQueued = true;
     } catch { if (epoch === this.epoch) { this.unbind("资源请求结果未知，请核对聊天后重新关联；不会自动重发。"); this.publish({ phase: "error" }); } }
   }
@@ -256,7 +260,8 @@ export class SealChatSync {
     if (Object.values(source.resources).some(value => !value || value.max !== null && value.current > value.max)) { this.publish({ message: "请检查 PbDH 的资源当前值与上限。" }); return; }
     this.boundKey = remoteKey(this.remote.context, this.remote.card);
     const expected = Object.fromEntries(Object.entries(source.resources).map(([id, value]) => [id, { current: value!.current, ...(adjustableMaximum(id as ResourceId) ? { max: value!.max } : {}) }]));
-    await this.writeResources(source, expected, true); await this.refresh();
+    try { await this.writeResources(source, expected, true); await this.refresh(); }
+    catch (error) { this.unbind(error instanceof Error ? error.message : "关联数据无效。"); this.publish({ phase: "error" }); }
   }
   pause() { this.unbind("同步已暂停，请重新确认关联。"); }
   async sendBound(build: () => string | null, expectedBinding = this.bindingToken()): Promise<boolean> {
