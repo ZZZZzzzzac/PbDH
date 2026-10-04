@@ -20,7 +20,12 @@ function releaseVersionPlugin(version: string): Plugin {
   };
 }
 
-const apiProxy = { "/api": process.env.PBDH_API_PROXY_TARGET ?? "http://127.0.0.1:8001" };
+const apiProxy = {
+  "/api": {
+    target: process.env.PBDH_API_PROXY_TARGET ?? "http://127.0.0.1:8001",
+    changeOrigin: true,
+  },
+};
 
 export default defineConfig({
   base: normalizeBasePath(process.env.PBDH_BASE_PATH),
