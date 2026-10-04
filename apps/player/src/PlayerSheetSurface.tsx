@@ -139,6 +139,12 @@ export function PlayerSheetSurface({
   onActiveSystemPackageChange?(systemPackageDirectory?: string): void;
 } = {}) {
   const auth = useAuth();
+  // 首次启动先等账号恢复，避免匿名列表把上次选中的云存档回退成本地卡。
+  // 完成后保持锁存；后续登录操作仍走原有账号切换恢复，不重启整套 Runtime。
+  const [startupAuthReady, setStartupAuthReady] = useState(() => auth.status !== "loading" && auth.status !== "working");
+  useEffect(() => {
+    if (auth.status !== "loading" && auth.status !== "working") setStartupAuthReady(true);
+  }, [auth.status]);
   const { notify } = usePlatformNotifications();
   const requestedSystemRef = useRef(requestedSystemPackage);
   requestedSystemRef.current = requestedSystemPackage;
@@ -370,6 +376,7 @@ export function PlayerSheetSurface({
   });
 
   useEffect(() => {
+    if (!startupAuthReady) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -517,7 +524,7 @@ export function PlayerSheetSurface({
       runtimeReadyRef.current = false;
       resetRuntimeDependencies();
     };
-  }, [authorPreviewHandleStore, cloudDocumentService, ensurePresetSystemPackage, initialize, reportActiveSystemPackage, resourceRepository, runtimeStorage]);
+  }, [authorPreviewHandleStore, cloudDocumentService, ensurePresetSystemPackage, initialize, reportActiveSystemPackage, resourceRepository, runtimeStorage, startupAuthReady]);
 
   async function loadImportedSystemPackage(
     vfs: PackageVirtualFileSystem,
