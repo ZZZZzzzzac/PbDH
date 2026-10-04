@@ -11,6 +11,7 @@ import { PlatformChrome, type PlatformPage } from "@pbdh/platform-ui";
 import {
   normalizeBasePath,
   platformPageUrl,
+  preserveSealChatEntry,
   playerSystemPackageUrl,
   readPlatformLocation,
 } from "./platform-route.ts";
@@ -18,17 +19,19 @@ import {
 const platformBasePath = normalizeBasePath(import.meta.env.BASE_URL);
 
 export function PlatformApp() {
+  const [entryHref] = useState(() => window.location.href);
   const [location, setLocation] = useState(() => readPlatformLocation(
     window.location.href,
     platformBasePath,
   ));
 
-  const commitLocation = useCallback((url: URL, replace: boolean) => {
+  const commitLocation = useCallback((target: URL, replace: boolean) => {
+    const url = preserveSealChatEntry(target, entryHref);
     const relativeUrl = `${url.pathname}${url.search}${url.hash}`;
     if (replace) window.history.replaceState(null, "", relativeUrl);
     else window.history.pushState(null, "", relativeUrl);
     setLocation(readPlatformLocation(url, platformBasePath));
-  }, []);
+  }, [entryHref]);
 
   const navigate = useCallback((page: PlatformPage) => {
     commitLocation(platformPageUrl(page, window.location.origin, platformBasePath), false);
@@ -70,10 +73,7 @@ export function PlatformApp() {
       defaultUrl.hash = window.location.hash;
       commitLocation(defaultUrl, true);
     }
-    const restoreLocation = () => setLocation(readPlatformLocation(
-      window.location.href,
-      platformBasePath,
-    ));
+    const restoreLocation = () => commitLocation(new URL(window.location.href), true);
     window.addEventListener("popstate", restoreLocation);
     return () => window.removeEventListener("popstate", restoreLocation);
   }, [commitLocation]);

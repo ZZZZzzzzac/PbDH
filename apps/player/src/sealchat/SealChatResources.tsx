@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { daggerheartSystemId, emptyResources, readEmbedConfig, resourceId, adjustableMaximum, SealChatSync,
   type EmbedClient, type ResourceId, type SyncState, type PlayerSource, type Resources } from "./adapter.ts";
 import "./sealchat.css";
@@ -50,14 +50,16 @@ export function useSealChatResource(moduleId: string) {
     editableMax: adjustableMaximum(id), changeMax: (delta: number) => control.changeMax?.(id, delta) };
 }
 
-export function SealChatResources({ systemPackageId, characterId, characterName, visible, children }: {
-  systemPackageId?: string; characterId?: string; characterName: string; visible: boolean; children: ReactNode;
+export function SealChatResources({ systemPackageId, characterId, characterName, visible, connectionRequest = 0, children }: {
+  systemPackageId?: string; characterId?: string; characterName: string; visible: boolean; connectionRequest?: number; children: ReactNode;
 }) {
   const [config] = useState(() => {
     try { return { value: readEmbedConfig(window.location.href, window.parent !== window), error: "" }; }
     catch (error) { return { value: null, error: error instanceof Error ? error.message : "接入配置无效。" }; }
   });
   const requested = !!config.value || !!config.error;
+  const [panelVisible, setPanelVisible] = useState(requested);
+  const handledConnectionRequest = useRef(0);
   const supported = systemPackageId === daggerheartSystemId;
   const localKey = JSON.stringify([systemPackageId, characterId]);
   const localKeyRef = useRef(localKey);
@@ -103,6 +105,20 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
     return () => { stopped = true; window.clearInterval(timer); unsubscribe?.(); sync?.stop(); syncRef.current = null; };
   }, [attempt, config, supported, visible, !!characterId]);
 
+  const requestConnection = useCallback(() => {
+    setPanelVisible(true);
+    if (!config.value || !supported) return;
+    if (state.phase === "closed" || state.phase === "error" || !syncRef.current) {
+      reconnectAfterStart.current = true; setAttempt(value => value + 1);
+    } else if (state.phase === "bound") void syncRef.current.refresh();
+    else void syncRef.current.reconnect();
+  }, [config.value, supported, state.phase]);
+  useEffect(() => {
+    if (connectionRequest <= handledConnectionRequest.current) return;
+    handledConnectionRequest.current = connectionRequest;
+    requestConnection();
+  }, [connectionRequest, requestConnection]);
+
   useEffect(() => { syncRef.current?.setLocalKey(localKey); }, [localKey]);
   useEffect(() => { setSelection(null); }, [localKey, visible]);
   useEffect(() => { if (state.phase !== "bound") setSelection(null); }, [state.phase]);
@@ -113,20 +129,18 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
   } : null, [requested, supported, state, visible]);
 
   return <SealChatResourceContext.Provider value={control}>
-    {requested && visible ? <section className="sealchat-sync" aria-label="SealChat 资源同步">
+    {panelVisible && visible ? <section className="sealchat-sync" aria-label="SealChat 资源同步">
       <strong>SealChat 同步（实验）</strong>
-      <p role="status">{!supported ? "此实验仅支持匕首之心核心系统包。" : config.error || state.message}</p>
+      <p role="status">{!requested ? "请从海豹聊天的 PbDH 嵌入人物卡打开此页面，再连接聊天。独立网页不能直接连接。" : !supported ? "此实验仅支持匕首之心核心系统包。" : config.error || state.message}</p>
       {supported && state.cardName ? <p>PbDH：{characterName || "未命名人物"} · Dice：{state.cardName}</p> : null}
       <div>
+        {requested ? <>
         <button type="button" disabled={!supported || !state.canBind || state.busy || ["bound", "binding"].includes(state.phase)}
           onClick={() => { void syncRef.current?.bind(); }}>关联并使用 PbDH 资源</button>
         <button type="button" disabled={state.phase !== "bound" || state.busy} onClick={() => syncRef.current?.pause()}>暂停同步</button>
-        <button type="button" disabled={!config.value || state.busy} onClick={() => {
-          if (state.phase === "closed" || state.phase === "error" || !syncRef.current) {
-            reconnectAfterStart.current = true; setAttempt(value => value + 1);
-          } else if (state.phase === "bound") void syncRef.current.refresh();
-          else void syncRef.current.reconnect();
-        }}>刷新 / 重连</button>
+        <button type="button" disabled={!config.value || state.busy} onClick={requestConnection}>刷新 / 重连</button>
+        </> : null}
+        <button type="button" onClick={() => setPanelVisible(false)}>收起连接面板</button>
       </div>
     </section> : null}
     {children}

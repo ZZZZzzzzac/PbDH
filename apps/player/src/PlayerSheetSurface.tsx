@@ -139,6 +139,7 @@ export function PlayerSheetSurface({
   onActiveSystemPackageChange?(systemPackageDirectory?: string): void;
 } = {}) {
   const auth = useAuth();
+  const [sealChatConnectionRequest, setSealChatConnectionRequest] = useState(0);
   // 首次启动先等账号恢复，避免匿名列表把上次选中的云存档回退成本地卡。
   // 完成后保持锁存；后续登录操作仍走原有账号切换恢复，不重启整套 Runtime。
   const [startupAuthReady, setStartupAuthReady] = useState(() => auth.status !== "loading" && auth.status !== "working");
@@ -1189,6 +1190,7 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span>{outputOperation === "validation" ? <OperationStatus label="正在审核…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
+          <button type="button" role="menuitem" onClick={() => setSealChatConnectionRequest(value => value + 1)}>与海豹聊天连接</button>
           <button className="player-menu-resource-manager" type="button" role="menuitem" onClick={() => setManagerOpen(true)}><span>资源管理器</span><strong>{library.size}</strong></button>
           {currentPackage?.characterCreationGuide ? (
             <button ref={guideButtonRef} type="button" role="menuitem" disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
@@ -1283,7 +1285,8 @@ export function PlayerSheetSurface({
   if (!surfaceVisible) return null;
   return (
     <SealChatResources systemPackageId={currentPackage?.manifest.ID} characterId={characterData?.character.id}
-      characterName={String(characterData?.character.values["character-name"] ?? "")} visible={surfaceVisible}>
+      characterName={String(characterData?.character.values["character-name"] ?? "")} visible={surfaceVisible}
+      connectionRequest={sealChatConnectionRequest}>
     <div className={`app-shell player-sheet-runtime${printMode ? " print-mode" : ""}`} data-framework-color-scheme={frameworkColorScheme}>
       <input ref={characterFileInputRef} hidden type="file" accept=".pbcha,.json,.html,application/zip,application/json,text/html" onChange={(event) => void handleCharacterFile(event)} />
       <input ref={packageFileInputRef} hidden type="file" accept=".pbsys,application/zip" onChange={(event) => void handlePackageFile(event)} />

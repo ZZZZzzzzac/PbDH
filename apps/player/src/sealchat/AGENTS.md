@@ -1,6 +1,7 @@
 # SealChat 实验接入
 
 - 仅通过宿主提供的 Channel Embed SDK 通信，不复制 SDK、不读取 token、不调用内部 HTTP API。需授予 context.read、characters.read、characterCard.read、messages.send；characters.read 用于活动消息身份及切换保护。官方读卡仍按账号读取 Dice 活动卡，不假设场内/场外身份各有一张 Dice 卡。
+- Platform 仅在同源导航中保留入口的 sealchat、hostOrigin、sdkUrl 三个参数；市场查询与一次性交接参数不沿用，不向外站传递接入设置。玩家功能的“与海豹聊天连接”打开或恢复面板并重连，不初始化资源；独立网页只显示正确入口说明。
 - 匕首之心专用字段映射仅属于此适配器，不进入 System Package Contract 或通用角色存档模型。
 - 经用户明确调整，PbDH 当前 Character Save 是属性、经历、装备和持久化资源的来源。iframe 的账号、导入、本地保存和云同步复用正常 Platform/Runtime，不另建存档或手动云保存接口。
 - 明确关联通过实验 .dh pbdh 可读中文 JSON 指令初始化资源、存档 UUID 和人物昵称；普通汉字直接显示，仅对 <、>、& 作 JSON 字符转义。姓名取 Character Data 的 character-name 字段，空白回退为未命名角色。DHPbDH姓名 是昵称确认标记，不改 Dice 绑卡元数据。确认回读来源、姓名及所有资源后通过 Runtime 字段更新保存资源；普通模式保持原有行为，不改变系统包皮肤和布局。

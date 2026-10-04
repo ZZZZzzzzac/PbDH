@@ -55,3 +55,16 @@ export function playerSystemPackageUrl(
 ): URL {
   return new URL(`${normalizeBasePath(basePath)}player/${encodeURIComponent(directory)}`, origin);
 }
+
+// iframe 的接入设置属于当前入口，页面导航不应把它变成普通 Player。
+// 只带这三个参数，资源市场的一次性交接数据仍按原流程消费。
+export function preserveSealChatEntry(target: URL, entryHref: string): URL {
+  const next = new URL(target.href), entry = new URL(entryHref);
+  if (next.origin !== entry.origin || entry.searchParams.get("sealchat") !== "1") return next;
+  for (const key of ["sealchat", "hostOrigin", "sdkUrl"]) {
+    const value = entry.searchParams.get(key);
+    if (value === null) next.searchParams.delete(key);
+    else next.searchParams.set(key, value);
+  }
+  return next;
+}
