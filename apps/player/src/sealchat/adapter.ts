@@ -257,7 +257,7 @@ export class SealChatSync {
     }
     if (!parts.length) return;
     if (initialize && (!source.name.trim() || source.name.length > 100 || /[\u0000-\u001f\u007f]/.test(source.name))) throw Error("PbDH 人物姓名无效，请先检查姓名。");
-    const text = initialize ? ".dh pbdh " + encodeURIComponent(JSON.stringify({ source: source.documentId, name: source.name.trim(), values })) : ".st " + parts.join(" ");
+    const text = initialize ? ".dh pbdh " + JSON.stringify({ source: source.documentId, name: source.name.trim(), values }).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026") : ".st " + parts.join(" ");
     this.pending = { expected, source: structuredClone(source), initialize, started: Date.now() };
     this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源，等待 Dice 确认…" : "正在同步 PbDH 的资源修改…" });
     try {

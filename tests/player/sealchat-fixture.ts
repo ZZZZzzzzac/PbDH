@@ -16,7 +16,7 @@ export function fixture() {
     characterCard: { getCurrent: vi.fn(async () => ({ status: { available: true }, card: structuredClone(card) })) },
     messages: { send: vi.fn(async ({ text }) => {
       if (execute && text.startsWith(".dh pbdh ")) {
-        const payload = JSON.parse(decodeURIComponent(text.slice(9)));
+        const payload = JSON.parse(text.slice(9));
         Object.assign(card.attrs, payload.values, { [sourceField]: payload.source, DHPbDH姓名: payload.name });
       }
       if (execute && text.startsWith(".st ")) for (const token of text.slice(4).split(" ")) {

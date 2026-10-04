@@ -17,7 +17,7 @@ test("关联以 PbDH 初始化且只写资源、姓名和存档标识，基础�
   await f.sync.start(); expect(f.client.messages.send).not.toHaveBeenCalled(); await f.sync.bind();
   const sent = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
   expect(sent.startsWith(".dh pbdh ")).toBe(true);
-  const payload = JSON.parse(decodeURIComponent(sent.slice(9)));
+  const payload = JSON.parse(sent.slice(9));
   expect(payload).toMatchObject({ source: documentId, name: f.local.name, values: { 希望: 0 } });
   expect(sent).not.toMatch(/力量|DH经历|闪避|阈值/); expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
   expect(f.sync.state.phase).toBe("bound"); expect(f.sync.state.rolls.traits.力量).toBe(0);
@@ -142,4 +142,14 @@ test("世界徽标变化不改关联，角色切换后旧草稿停止且新指�
   f.setContext({ ...f.context, currentCharacter: { id: "identity-2" } }); await f.sync.refresh();
   expect(await f.sync.change("hope", -1, token)).toBe(false); await f.sync.bind();
   expect(vi.mocked(f.client.messages.send).mock.lastCall![0].identityId).toBe("identity-2");
+});
+
+test("关联指令直接显示中文 JSON，比旧 URI 编码短，特殊姓名不破坏传输", async () => {
+  const f = fixture(); f.local.name = '杏丝·坦格利安  - Hope "旅者" 100% %E4 --adv <at id="x"/> & 🐈';
+  f.holdWrites(); await f.sync.start(); await f.sync.bind();
+  const text = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
+  expect(text).toContain('"生命":0'); expect(text).toContain('杏丝·坦格利安'); expect(text).not.toContain('%7B');
+  expect(text).not.toContain('<at'); expect(text).not.toContain('&');
+  const payload = JSON.parse(text.slice(9)); expect(payload.name).toBe(f.local.name);
+  expect(text.length).toBeLessThan(('.dh pbdh '+encodeURIComponent(JSON.stringify(payload))).length * 0.5);
 });

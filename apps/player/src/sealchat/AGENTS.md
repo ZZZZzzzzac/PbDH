@@ -3,7 +3,7 @@
 - 仅通过宿主提供的 Channel Embed SDK 通信，不复制 SDK、不读取 token、不调用内部 HTTP API。需授予 context.read、characters.read、characterCard.read、messages.send；characters.read 用于活动消息身份及切换保护。官方读卡仍按账号读取 Dice 活动卡，不假设场内/场外身份各有一张 Dice 卡。
 - 匕首之心专用字段映射仅属于此适配器，不进入 System Package Contract 或通用角色存档模型。
 - 经用户明确调整，PbDH 当前 Character Save 是属性、经历、装备和持久化资源的来源。iframe 的账号、导入、本地保存和云同步复用正常 Platform/Runtime，不另建存档或手动云保存接口。
-- 明确关联通过实验 .dh pbdh 结构化指令初始化资源、存档 UUID 和人物昵称；姓名取 Character Data 的 character-name 字段，空白回退为未命名角色。DHPbDH姓名 是昵称确认标记，不改 Dice 绑卡元数据。确认回读来源、姓名及所有资源后通过 Runtime 字段更新保存资源；普通模式保持原有行为，不改变系统包皮肤和布局。
+- 明确关联通过实验 .dh pbdh 可读中文 JSON 指令初始化资源、存档 UUID 和人物昵称；普通汉字直接显示，仅对 <、>、& 作 JSON 字符转义。姓名取 Character Data 的 character-name 字段，空白回退为未命名角色。DHPbDH姓名 是昵称确认标记，不改 Dice 绑卡元数据。确认回读来源、姓名及所有资源后通过 Runtime 字段更新保存资源；普通模式保持原有行为，不改变系统包皮肤和布局。
 - 未标记规则类型的活动卡允许显式关联，sealpack 初始化仍在写入前校验群规则；已有其他规则卡拒绝。原生 .st 为未标记卡填入 DH 类型不打断关联。登录、连接、发送权限、类型与 SDK 授权显示具体原因。
 - 资源步进发送相对 .st；PbDH 原生编辑引起的资源变化仅同步变化字段。回读不会触发反向重复写入；等待结果期间的较新本地修改不能被旧结果覆盖。
 - 切换存档、身份、频道、来源标识或断线后重新确认关联；草稿携带关联令牌。宿主缺少原子 expectedCardId/版本比较，不宣称严格外部 .st 并发安全。
