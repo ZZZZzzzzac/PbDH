@@ -4,12 +4,11 @@ import { createRoot } from "react-dom/client";
 import { expect, test, vi } from "vitest";
 import { SealChatResourceContext } from "../../apps/player/src/sealchat/SealChatResources.tsx";
 import { emptyResources } from "../../apps/player/src/sealchat/adapter.ts";
-import { readNumbers } from "../../apps/player/src/sealchat/numbers.ts";
-import { readDiceData } from "../../apps/player/src/sealchat/roll.ts";
+import { readPlayerRollData } from "../../apps/player/src/sealchat/roll.ts";
 import { CountableResourceModule } from "../../apps/player/src/sheet-runtime/rendering/CountableResourceModule.tsx";
 import { useRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 
-test("现有资源控件读取会话覆盖，发送 ±1；不修改本地角色存档", async () => {
+test("关联资源按钮发送 ±1 并等待回读；未关联保持正常本地编辑", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const original = useRuntimeStore.getState();
   const write = vi.fn(); const change = vi.fn(); const changeMax = vi.fn();
@@ -18,7 +17,7 @@ test("现有资源控件读取会话覆盖，发送 ±1；不修改本地角色�
   const root = createRoot(element);
   const module = { ID: "hope", 类型: "countableResource" as const, 标签: "希望", 最大值: 6, 默认值: 2, 显示方式: "标记" as const, 当前值标记: { 类型: "文字" as const, 内容: "●" }, 剩余值标记: { 类型: "文字" as const, 内容: "○" } };
   try {
-    await act(async () => root.render(<SealChatResourceContext.Provider value={{ state: { phase: "bound", cardName: "人物", canBind: true, busy: false, message: "", numbers: readNumbers({}), bindingToken: "test", dice: readDiceData({}), resources: { ...emptyResources(), hope: { current: 4, max: 6 } } }, change, changeMax }}><CountableResourceModule module={module} /></SealChatResourceContext.Provider>));
+    await act(async () => root.render(<SealChatResourceContext.Provider value={{ state: { phase: "bound", cardName: "人物", canBind: true, busy: false, message: "", bindingToken: "test", rolls: readPlayerRollData({}), resources: { ...emptyResources(), hope: { current: 4, max: 6 } } }, change, changeMax }}><CountableResourceModule module={module} /></SealChatResourceContext.Provider>));
     expect(element.querySelector('[role="img"]')?.getAttribute("aria-label")).toContain("当前值 4");
     await act(async () => element.querySelector<HTMLButtonElement>('[aria-label="希望减少"]')!.click());
     expect(change).toHaveBeenCalledWith("hope", -1);
@@ -26,9 +25,9 @@ test("现有资源控件读取会话覆盖，发送 ±1；不修改本地角色�
     expect(changeMax).toHaveBeenCalledWith("hope", 1);
     expect(change).toHaveBeenCalledTimes(1);
     expect(write).not.toHaveBeenCalled();
-    await act(async () => root.render(<SealChatResourceContext.Provider value={{ state: { phase: "ready", cardName: "人物", canBind: true, busy: false, message: "", numbers: readNumbers({}), bindingToken: "test", dice: readDiceData({}), resources: emptyResources() }, change, changeMax }}><CountableResourceModule module={module} /></SealChatResourceContext.Provider>));
-    expect(element.textContent).toContain("未录入");
-    expect(element.querySelector<HTMLButtonElement>('[aria-label="希望增加"]')?.disabled).toBe(true);
+    await act(async () => root.render(<SealChatResourceContext.Provider value={{ state: { phase: "ready", cardName: "人物", canBind: true, busy: false, message: "", bindingToken: "test", rolls: readPlayerRollData({}), resources: emptyResources() }, change, changeMax }}><CountableResourceModule module={module} /></SealChatResourceContext.Provider>));
+    expect(element.textContent).not.toContain("未录入");
+    expect(element.querySelector<HTMLButtonElement>('[aria-label="希望增加"]')?.disabled).toBe(false);
     await act(async () => root.render(<CountableResourceModule module={module} />));
     await act(async () => element.querySelector<HTMLButtonElement>('[aria-label="希望增加"]')!.click());
     expect(write).toHaveBeenCalledWith("hope", { current: 3, max: 6 });

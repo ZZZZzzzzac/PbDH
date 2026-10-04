@@ -4,12 +4,11 @@ import { createRoot } from "react-dom/client";
 import { expect, test, vi } from "vitest";
 import { SealChatDamageDialog } from "../../apps/player/src/sealchat/SealChatDamageDialog.tsx";
 import { emptyResources, type SyncState } from "../../apps/player/src/sealchat/adapter.ts";
-import { readDiceData } from "../../apps/player/src/sealchat/roll.ts";
-import { readNumbers } from "../../apps/player/src/sealchat/numbers.ts";
+import { readPlayerRollData } from "../../apps/player/src/sealchat/roll.ts";
 test("伤害窗只有三个输入，识别格式化武器摘要，手改后完整指令随请求发送", async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   const element = document.createElement("div"); document.body.append(element); const root = createRoot(element);
-  const state: SyncState = { phase: "bound", cardName: "角色", bindingToken: "test", busy: false, canBind: true, message: "", resources: emptyResources(), numbers: readNumbers({}), dice: readDiceData({}) };
+  const state: SyncState = { phase: "bound", cardName: "角色", bindingToken: "test", busy: false, canBind: true, message: "", resources: emptyResources(), rolls: readPlayerRollData({}) };
   const weapon = { id: "secondary-weapon-name" as const, text: "改良巨杖｜魔法/双手/极远｜知识: d6+3", proficiency: 3 };
   const roll = vi.fn(async () => true), close = vi.fn();
   try {

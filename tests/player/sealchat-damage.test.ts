@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { damageCommand, damageFormula, parseWeapon, weaponName, weaponDamageDefaults, type DamageRequest } from "../../apps/player/src/sealchat/damage.ts";
-import { SealChatSync, type EmbedClient, type EmbedContext } from "../../apps/player/src/sealchat/adapter.ts";
+import { fixture } from "./sealchat-fixture.ts";
 const weapon = { id: "primary-weapon-name" as const, text: "**长弓**｜敏捷｜远距离｜d8+3 物理｜双手", proficiency: 2 };
 const request: DamageRequest = { weapon, values: { proficiency: 2, die: "d8", fixed: 3 } };
 test("伤害为熟练度个武器骰加固定值，支持额外骰、同类骰及固定因素；保留 0 熟练度", () => {
@@ -18,18 +18,12 @@ test("武器或熟练变化须重开助手，拒绝含混武器、负骰数和�
   expect(() => damageFormula({ ...request, values: { ...request.values, fixed: NaN } })).toThrow("固定调整值");
 });
 test("伤害复用发送前读取与关联保护，更新武器时取消，不会发送旧伤害", async () => {
-  const context: EmbedContext = { channel: { id: "test" }, currentUser: { id: "test" }, currentCharacter: null, connection: { state: "connected" }, permissions: { canSendMessage: true } };
-  let latest = weapon;
-  const client: EmbedClient = { capabilities: ["context.read", "characterCard.read", "messages.send"],
-    context: { get: async () => context, onChanged: () => () => {} }, connection: { getState: async () => context.connection, onChanged: () => () => {} },
-    characterCard: { getCurrent: async () => ({ status: { available: true }, card: { name: "测试", sheetType: "dh", attrs: {} } }) },
-    messages: { send: vi.fn(async () => ({})) }, session: { onClosed: () => () => {} }, close: vi.fn() };
-  const sync = new SealChatSync(client, "local", vi.fn()); await sync.start(); await sync.bind();
+  const f = fixture(); const client = f.client; const sync = f.sync; let latest = weapon; await f.bind();
   latest = { ...weapon, proficiency: 3 };
   expect(await sync.sendBound(() => damageCommand(request, latest))).toBe(false); expect(client.messages.send).not.toHaveBeenCalled();
   expect(sync.state.phase).toBe("bound"); latest = weapon;
   expect(await sync.sendBound(() => damageCommand(request, latest))).toBe(true);
-  expect(client.messages.send).toHaveBeenCalledWith({ text: ".r 2d8+3 长弓", icMode: "ooc" });
+  expect(client.messages.send).toHaveBeenCalledWith(expect.objectContaining({ text: ".r 2d8+3 长弓", icMode: "ooc" }));
   sync.stop();
 });
 

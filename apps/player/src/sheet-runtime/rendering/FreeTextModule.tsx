@@ -1,6 +1,5 @@
-import { SealChatRollButton, useSealChatNumber } from "../../sealchat/SealChatResources.tsx";
-import { SealChatNumberInput } from "../../sealchat/SealChatNumberInput.tsx";
-import { traitModules } from "../../sealchat/numbers.ts";
+import { SealChatRollButton } from "../../sealchat/SealChatResources.tsx";
+import { traitModules } from "../../sealchat/roll.ts";
 import { useContext } from "react";
 import { SealChatResourceContext } from "../../sealchat/SealChatResources.tsx";
 import type { FreeTextModule } from "../domain/systemPackage";
@@ -15,7 +14,6 @@ interface FreeTextModuleProps {
 }
 
 export function FreeTextModule({ module }: FreeTextModuleProps) {
-  const remote = useSealChatNumber(module.ID);
   const embedded = useContext(SealChatResourceContext) !== null;
   const hasDice = embedded && !!traitModules[module.ID];
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
@@ -43,7 +41,7 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
           {module.标签}
         </label>
       ) : null}
-      {remote ? <SealChatNumberInput key={remote.binding} moduleId={module.ID} inputId={inputId} label={accessibleName} /> : dropdownOptions ? (
+      {dropdownOptions ? (
         <select
           id={inputId}
           className="input"

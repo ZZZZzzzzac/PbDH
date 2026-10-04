@@ -1,6 +1,5 @@
-// 仅描述已核对的 SealChat 7a7b5bb Embed SDK 子集；SDK 由宿主加载。
-import { readNumbers, numberFields, type NumberId, type Numbers } from "./numbers.ts";
-import { readDiceData, rollCommand, type DiceData, type RollRequest } from "./roll.ts";
+// 仅使用官方 Channel Embed SDK；不访问宿主内部 API。
+import { emptyRollData, rollCommand, type RollData, type RollRequest } from "./roll.ts";
 export interface EmbedContext {
   channel: { id: string };
   currentUser: { id: string } | null;
@@ -93,21 +92,17 @@ function remoteKey(context: EmbedContext, card: EmbedCard): string {
   return JSON.stringify([contextKey(context), card.name, card.sheetType]);
 }
 
+export interface PlayerSnapshot { key: string; documentId: string; resources: Resources; rolls: RollData }
+export interface PlayerSource { read(): PlayerSnapshot | null; applyResources(resources: Partial<Resources>, key: string): void }
 export interface SyncState {
-  phase: "connecting" | "ready" | "bound" | "closed" | "error";
-  cardName: string;
-  resources: Resources;
-  numbers: Numbers;
-  bindingToken: string;
-  dice: DiceData;
-  busy: boolean;
-  canBind: boolean;
-  message: string;
+  phase: "connecting" | "ready" | "binding" | "bound" | "closed" | "error";
+  cardName: string; resources: Resources; rolls: RollData; bindingToken: string; busy: boolean; canBind: boolean; message: string;
 }
-
+export const sourceField = "DHPbDH来源";
+const same = (a: ResourceValue | null | undefined, b: ResourceValue | null | undefined) => a?.current === b?.current && a?.max === b?.max;
+type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; source: PlayerSnapshot; started: number };
 export class SealChatSync {
-  state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), numbers: readNumbers({}), bindingToken: "", dice: readDiceData({}), busy: false, canBind: false, message: "正在连接 SealChat…" };
-  private localKey: string;
+  state: SyncState = { phase: "connecting", cardName: "", resources: emptyResources(), rolls: emptyRollData(), bindingToken: "", busy: false, canBind: false, message: "正在连接 SealChat…" };
   private epoch = 0;
   private boundKey: string | null = null;
   private remote: { context: EmbedContext; card: EmbedCard } | null = null;
@@ -115,26 +110,24 @@ export class SealChatSync {
   private refreshQueued = false;
   private connected = false;
   private stopped = false;
+  private sending = false;
+  private mirror: Resources | null = null;
+  private pending: Pending | null = null;
   private cleanups: Array<() => void> = [];
-
-  constructor(private client: EmbedClient, localKey: string, private changed: (state: SyncState) => void) {
-    this.localKey = localKey;
-  }
+  constructor(private client: EmbedClient, private localKey: string, private changed: (state: SyncState) => void, private source: PlayerSource) {}
   private publish(patch: Partial<SyncState>) {
     if (this.stopped) return;
     this.state = { ...this.state, ...patch };
     this.changed(this.state);
   }
+  private snapshot() { const s = this.source.read(); return s?.key === this.localKey ? s : null; }
   private unbind(message: string) {
-    this.epoch++;
-    this.boundKey = null;
-    this.remote = null;
-    this.publish({ phase: "ready", resources: emptyResources(), numbers: readNumbers({}), bindingToken: "", dice: readDiceData({}), canBind: false, message });
+    this.epoch++; this.boundKey = null; this.remote = null; this.mirror = null; this.pending = null;
+    this.publish({ phase: "ready", resources: emptyResources(), bindingToken: "", busy: this.sending, canBind: false, message });
   }
   async start() {
     if (!["context.read", "characterCard.read", "messages.send"].every(cap => this.client.capabilities.includes(cap))) {
-      this.publish({ phase: "error", message: "iForm 缺少 context.read、characterCard.read 或 messages.send 权限。" });
-      return;
+      this.publish({ phase: "error", message: "iForm 缺少 context.read、characterCard.read 或 messages.send 权限。" }); return;
     }
     this.cleanups.push(this.client.context.onChanged(context => {
       if (this.remote && contextKey(context) !== contextKey(this.remote.context)) this.unbind("SealChat 身份或频道已变化，请重新关联。");
@@ -147,18 +140,27 @@ export class SealChatSync {
       void this.refresh();
     }));
     this.cleanups.push(this.client.session.onClosed(() => {
-      this.connected = false;
-      this.unbind("SealChat 会话已结束，请重新连接。");
-      this.publish({ phase: "closed" });
+      this.connected = false; this.unbind("SealChat 会话已结束，请重新连接。"); this.publish({ phase: "closed" });
     }));
     this.connected = (await this.client.connection.getState()).state === "connected";
     await this.refresh();
   }
   setLocalKey(key: string) {
     if (key === this.localKey) return;
-    this.localKey = key;
-    this.unbind("PbDH 人物已变化，请重新关联。");
-    void this.refresh();
+    this.localKey = key; this.unbind("PbDH 人物已变化，请重新关联。"); void this.refresh();
+  }
+  private bindingToken() { return this.boundKey ? JSON.stringify([this.localKey, this.boundKey, this.epoch]) : ""; }
+  private apply(resources: Resources, captured?: PlayerSnapshot) {
+    if (Object.values(resources).some(v => !v || v.max !== null && v.current > v.max)) throw Error("Dice 资源缺失或越界，已停止同步；请核对后重新关联。");
+    const now = this.snapshot();
+    if (!now || !this.boundKey) return;
+    const patch: Partial<Resources> = {};
+    for (const id of Object.keys(resources) as ResourceId[]) {
+      // 等待执行期间本地又改过的字段，留给下一轮同步，不能用旧结果覆盖。
+      if (resources[id] && (!captured || same(now.resources[id], captured.resources[id]))) patch[id] = resources[id];
+    }
+    this.mirror = structuredClone(resources);
+    this.source.applyResources(patch, this.localKey);
   }
   async refresh(): Promise<void> {
     if (this.stopped || this.state.phase === "closed") return;
@@ -169,90 +171,122 @@ export class SealChatSync {
         this.refreshQueued = false;
         const epoch = this.epoch;
         try {
-          if (!this.connected) {
-            this.publish({ canBind: false, message: "SealChat 未连接。" });
-            continue;
-          }
+          const source = this.snapshot();
+          this.publish({ rolls: source?.rolls ?? emptyRollData() });
+          if (!this.connected) { this.publish({ canBind: false, message: "SealChat 未连接。" }); continue; }
           const before = await this.client.context.get();
           const result = await this.client.characterCard.getCurrent();
           const after = await this.client.context.get();
           if (this.stopped || epoch !== this.epoch) continue;
-          if (contextKey(before) !== contextKey(after)) {
-            this.unbind("读取期间身份发生变化，请重新关联。");
-            this.refreshQueued = true;
-            continue;
+          if (!this.snapshot() || contextKey(before) !== contextKey(after)) {
+            this.unbind("读取期间人物或身份发生变化，请重新关联。"); continue;
           }
-          if (!result.status.available || !result.card) {
-            this.unbind(result.status.reason || "当前频道没有可用的 Dice 活动人物卡。");
-            continue;
-          }
+          if (!result.status.available || !result.card) { this.unbind(result.status.reason || "当前频道没有可用的 Dice 活动人物卡。"); continue; }
           const card = result.card;
-          const usable = ["daggerheart", "dh"].includes(card.sheetType) && !!after.currentUser?.id
-            && after.permissions.canSendMessage && after.connection.state === "connected";
+          const usable = ["daggerheart", "dh"].includes(card.sheetType) && !!after.currentUser?.id && after.permissions.canSendMessage && after.connection.state === "connected";
           const key = remoteKey(after, card);
           if (this.boundKey && this.boundKey !== key) this.unbind("Dice 活动人物卡已变化，请重新关联。");
           if (!usable && this.boundKey) this.unbind("当前卡类型、连接或权限不可用。");
           this.remote = { context: after, card };
+          const current = this.snapshot()!;
+          const resources = readResources(card.attrs);
+          if (this.pending) {
+            const p = this.pending;
+            const confirmed = card.attrs[sourceField] === p.source.documentId && Object.entries(p.expected).every(([id, expected]) => {
+              const actual = resources[id as ResourceId];
+              return actual && Object.entries(expected).every(([property, value]) => actual[property as keyof ResourceValue] === value);
+            });
+            if (!confirmed) {
+              if (Date.now() - p.started > 30_000) this.unbind("资源写入尚未确认，请核对聊天后重新关联；不会自动重发。");
+              continue;
+            }
+            this.pending = null; this.apply(resources, p.source); this.refreshQueued = true;
+          } else if (this.boundKey) {
+            if (card.attrs[sourceField] !== current.documentId) { this.unbind("Dice 的 PbDH 关联已变化，请重新关联。"); continue; }
+            if (this.mirror) {
+              const changes: Partial<Record<ResourceId, Partial<ResourceValue>>> = {};
+              for (const id of Object.keys(resources) as ResourceId[]) {
+                const local = current.resources[id], previous = this.mirror[id];
+                if (local && previous && !same(local, previous)) {
+                  const fields: Partial<ResourceValue> = {};
+                  if (local.current !== previous.current) fields.current = local.current;
+                  if (local.max !== previous.max && adjustableMaximum(id)) fields.max = local.max;
+                  if (Object.keys(fields).length) changes[id] = fields;
+                }
+              }
+              if (Object.keys(changes).length) { await this.writeResources(current, changes, false); continue; }
+            }
+            this.apply(resources);
+          }
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: card.name, canBind: usable,
-            resources: this.boundKey ? readResources(card.attrs) : emptyResources(),
-            numbers: this.boundKey ? readNumbers(card.attrs) : readNumbers({}), bindingToken: this.bindingToken(),
-            dice: this.boundKey ? readDiceData(card.attrs) : readDiceData({}),
-            message: usable ? (this.boundKey ? "资源、金币与属性由 Dice 保存。" : "确认关联后使用 Dice 当前数值。") : "请启用匕首之心规则并确认发送权限。" });
+            resources: this.boundKey ? resources : emptyResources(), bindingToken: this.bindingToken(), rolls: this.snapshot()?.rolls ?? emptyRollData(),
+            busy: this.sending || !!this.pending,
+            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : "关联时以当前 PbDH 存档初始化 Dice 资源。") : "请启用匕首之心规则并确认发送权限。" });
         } catch (error) {
           if (epoch !== this.epoch || this.stopped) continue;
-          this.unbind(error instanceof Error ? error.message : "人物卡读取失败。");
-          this.publish({ phase: "error" });
+          this.unbind(error instanceof Error ? error.message : "人物卡读取失败。"); this.publish({ phase: "error" });
         }
       }
     })().finally(() => { this.reading = null; });
     return this.reading;
   }
+  private async writeResources(source: PlayerSnapshot, expected: Pending["expected"], initialize: boolean) {
+    if (!this.remote || !this.boundKey || this.pending) return;
+    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(source.documentId)) throw Error("PbDH 存档标识无效。");
+    const epoch = this.epoch;
+    const parts = initialize ? [sourceField + "=" + JSON.stringify(source.documentId)] : [];
+    for (const [id, fields] of Object.entries(expected) as Array<[ResourceId, Partial<ResourceValue>]>) {
+      const field = adjustableMaximum(id) ? resourceFields[id] : goldFields[id];
+      if (fields.current !== undefined) parts.push(field.attr + "=" + fields.current);
+      if (fields.max !== undefined && adjustableMaximum(id)) parts.push(resourceFields[id].max + "=" + fields.max);
+    }
+    if (!parts.length) return;
+    this.pending = { expected, source: structuredClone(source), started: Date.now() };
+    this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源，等待 Dice 确认…" : "正在同步 PbDH 的资源修改…" });
+    try {
+      await this.client.messages.send({ text: ".st " + parts.join(" "), ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
+      if (epoch === this.epoch && !this.stopped) this.refreshQueued = true;
+    } catch { if (epoch === this.epoch) { this.unbind("资源请求结果未知，请核对聊天后重新关联；不会自动重发。"); this.publish({ phase: "error" }); } }
+  }
   async bind() {
     if (this.state.busy) return;
-    const epoch = this.epoch;
-    await this.refresh();
-    if (epoch !== this.epoch || !this.remote || !this.state.canBind || this.stopped) return;
+    const epoch = this.epoch; await this.refresh();
+    const source = this.snapshot();
+    if (epoch !== this.epoch || !source || !this.remote || !this.state.canBind || this.stopped) return;
+    if (Object.values(source.resources).some(value => !value || value.max !== null && value.current > value.max)) { this.publish({ message: "请检查 PbDH 的资源当前值与上限。" }); return; }
     this.boundKey = remoteKey(this.remote.context, this.remote.card);
-    this.publish({ phase: "bound", resources: readResources(this.remote.card.attrs), numbers: readNumbers(this.remote.card.attrs), bindingToken: this.bindingToken(), dice: readDiceData(this.remote.card.attrs), message: "资源、金币与属性由 Dice 保存。" });
+    const expected = Object.fromEntries(Object.entries(source.resources).map(([id, value]) => [id, { current: value!.current, ...(adjustableMaximum(id as ResourceId) ? { max: value!.max } : {}) }]));
+    await this.writeResources(source, expected, true); await this.refresh();
   }
   pause() { this.unbind("同步已暂停，请重新确认关联。"); }
-  private bindingToken() { return this.boundKey ? JSON.stringify([this.localKey, this.boundKey, this.epoch]) : ""; }
   async sendBound(build: () => string | null, expectedBinding = this.bindingToken()): Promise<boolean> {
-    if (this.state.busy || !this.boundKey || !this.connected || expectedBinding !== this.bindingToken()) return false;
-    const key = this.boundKey;
-    const epoch = this.epoch;
-    this.publish({ busy: true });
+    if (this.state.busy || this.state.phase !== "bound" || !this.boundKey || !this.connected || expectedBinding !== this.bindingToken()) return false;
+    const key = this.boundKey, epoch = this.epoch;
+    this.sending = true; this.publish({ busy: true });
     try {
       await this.refresh();
-      if (this.stopped || epoch !== this.epoch || key !== this.boundKey || !this.remote) return false;
+      if (this.stopped || epoch !== this.epoch || key !== this.boundKey || !this.remote || this.pending || this.state.phase !== "bound") return false;
       let text: string | null;
-      try { text = build(); }
-      catch (error) { this.publish({ message: error instanceof Error ? error.message : "选项无效。" }); return false; }
+      try { text = build(); } catch (error) { this.publish({ message: error instanceof Error ? error.message : "选项无效。" }); return false; }
       if (!text) return false;
-      await this.client.messages.send({ text,
-        ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
-      // 回执不证明 Dice 已执行；继续回读，不乐观修改，不自动重发。
-      if (epoch === this.epoch) this.publish({ message: "已发送，请在聊天查看结果；数值等待 Dice 回读。" });
-      await this.refresh();
-      return epoch === this.epoch && !this.stopped;
+      await this.client.messages.send({ text, ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
+      if (epoch === this.epoch) this.publish({ message: "已发送，请在聊天查看结果；资源等待 Dice 回读后自动保存。" });
+      await this.refresh(); return epoch === this.epoch && !this.stopped;
     } catch {
-      if (epoch === this.epoch) {
-        this.unbind("请求结果未知，请核对聊天后重新关联；不会自动重发。");
-        this.publish({ phase: "error" });
-      }
+      if (epoch === this.epoch) { this.unbind("请求结果未知，请核对聊天后重新关联；不会自动重发。"); this.publish({ phase: "error" }); }
       return false;
-    } finally { this.publish({ busy: false }); }
+    } finally { this.sending = false; this.publish({ busy: !!this.pending }); }
   }
   roll(request: RollRequest, expectedBinding?: string) {
-    return this.sendBound(() => rollCommand(request, this.state.dice, this.state.resources.hope?.current ?? null), expectedBinding);
+    return this.sendBound(() => { const source = this.snapshot(); return source ? rollCommand(request, source.rolls, this.state.resources.hope?.current ?? null, source.documentId) : null; }, expectedBinding);
   }
   change(id: ResourceId, delta: number, expectedBinding?: string) {
     return this.sendBound(() => {
       if (![1, -1].includes(delta) || !resourceId(id)) return null;
       const value = this.state.resources[id];
-      if (!value || value.current + delta < 0 || (delta > 0 && value.current + delta > (value.max ?? 1_000_000))) return null;
+      if (!value || value.current + delta < 0 || delta > 0 && value.current + delta > (value.max ?? 1_000_000)) return null;
       const attr = adjustableMaximum(id) ? resourceFields[id].attr : goldFields[id].attr;
-      return `.st ${attr}${delta > 0 ? "+" : "-"}1`;
+      return ".st " + attr + (delta > 0 ? "+" : "-") + "1";
     }, expectedBinding);
   }
   changeMax(id: ResourceId, delta: number, expectedBinding?: string) {
@@ -260,24 +294,8 @@ export class SealChatSync {
       if (!adjustableMaximum(id) || ![1, -1].includes(delta)) return null;
       const value = this.state.resources[id];
       if (!value || value.max === null || value.max + delta < value.current || value.max + delta < 0 || value.max + delta > 60) return null;
-      return `.st ${resourceFields[id].max}${delta > 0 ? "+" : "-"}1`;
+      return ".st " + resourceFields[id].max + (delta > 0 ? "+" : "-") + "1";
     }, expectedBinding);
   }
-  setNumber(id: NumberId, value: string, expectedBinding?: string) {
-    return this.sendBound(() => {
-      const field = numberFields[id];
-      if (!field || !/^[+-]?\d+$/.test(value.trim())) throw Error("请输入整数。");
-      const next = Number(value);
-      if (!Number.isSafeInteger(next) || next < field.min || next > field.max) throw Error("数值超出范围。");
-      if (id === "armor-value" && next < (this.state.resources["armor-slots"]?.current ?? 0)) throw Error("护甲上限不能低于当前护甲槽。");
-      if (this.state.numbers[id] === next) return null;
-      return `.st ${field.attr}=${next}`;
-    }, expectedBinding);
-  }
-  stop() {
-    this.stopped = true;
-    this.epoch++;
-    this.cleanups.splice(0).forEach(off => off());
-    this.client.close();
-  }
+  stop() { this.stopped = true; this.epoch++; this.cleanups.splice(0).forEach(off => off()); this.client.close(); }
 }

@@ -1,0 +1,23 @@
+// @vitest-environment happy-dom
+import { expect, test, vi } from "vitest";
+import { applyPlayerResources } from "../../apps/player/src/sealchat/SealChatResources.tsx";
+import { useRuntimeStore, configureRuntimeDependencies, resetRuntimeDependencies } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
+import { unconfiguredRuntimeStorage } from "../../apps/player/src/sheet-runtime/storage/runtimeStorage.ts";
+import { readPlayerSnapshot } from "../../apps/player/src/sealchat/source.ts";
+import { playerFixture } from "./sealchat-fixture.ts";
+test("确认资源更新进入正常 250ms 保存链，重复回读不保存，旧人物结果不写新卡", async () => {
+  vi.useFakeTimers(); const original = useRuntimeStore.getState(); const f = playerFixture();
+  const save = vi.fn(async (_data: unknown) => {});
+  configureRuntimeDependencies({ storage: { ...unconfiguredRuntimeStorage, saveCurrentCharacterData: save } });
+  useRuntimeStore.setState({ currentPackage: f.pkg, characterData: f.data, activeCharacterSaveId: f.data.character.id });
+  const key = readPlayerSnapshot(f.data, f.pkg)!.key;
+  try {
+    applyPlayerResources({ hope: { current: 3, max: 6 }, "chest-gold": { current: 1, max: null }, "armor-slots": { current: 0, max: 4 } }, key);
+    expect(useRuntimeStore.getState().characterData!.character.values["armor-value"]).toBe("4");
+    expect(save).not.toHaveBeenCalled(); await vi.advanceTimersByTimeAsync(250);
+    expect(save).toHaveBeenCalledOnce(); expect(save.mock.calls[0]![0]).toMatchObject({ character: { values: { hope: { current: 3, max: 6 }, "chest-gold": { current: 1, max: null } } } });
+    applyPlayerResources({ hope: { current: 3, max: 6 } }, key); await vi.advanceTimersByTimeAsync(250); expect(save).toHaveBeenCalledOnce();
+    useRuntimeStore.setState({ characterData: { ...f.data, character: { ...f.data.character, id: "other" } } });
+    applyPlayerResources({ hope: { current: 5, max: 6 } }, key); await vi.advanceTimersByTimeAsync(250); expect(save).toHaveBeenCalledOnce();
+  } finally { resetRuntimeDependencies(); useRuntimeStore.setState(original, true); vi.useRealTimers(); }
+});

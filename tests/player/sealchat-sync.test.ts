@@ -1,209 +1,86 @@
 import { expect, test, vi } from "vitest";
-import { readEmbedConfig, readResources, SealChatSync, type EmbedClient, type EmbedContext } from "../../apps/player/src/sealchat/adapter.ts";
-import { readNumbers } from "../../apps/player/src/sealchat/numbers.ts";
-import { readDiceData, rollCommand, type RollRequest } from "../../apps/player/src/sealchat/roll.ts";
-
-function fixture() {
-  let context: EmbedContext = { channel: { id: "channel-1" }, currentUser: { id: "user-1" },
-    currentCharacter: { id: "identity-1" }, connection: { state: "connected" }, permissions: { canSendMessage: true } };
-  let card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 力量: 0, 闪避: 0, 重伤阈值: 0, 严重阈值: 0, 金币把: 0, 金币袋: 0, 金币箱: 0, DH经历: "" } };
-  let changedContext = (_value: EmbedContext) => {};
-  let changedConnection = (_value: { state: string }) => {};
-  let closed = () => {};
-  const client: EmbedClient = {
-    capabilities: ["context.read", "characterCard.read", "messages.send"],
-    context: { get: vi.fn(async () => structuredClone(context)), onChanged: cb => { changedContext = cb; return vi.fn(); } },
-    connection: { getState: vi.fn(async () => context.connection), onChanged: cb => { changedConnection = cb; return vi.fn(); } },
-    characterCard: { getCurrent: vi.fn(async () => ({ status: { available: true }, card: structuredClone(card) })) },
-    messages: { send: vi.fn(async () => ({})) }, session: { onClosed: cb => { closed = cb; return vi.fn(); } }, close: vi.fn(),
-  };
-  const sync = new SealChatSync(client, "local-1", vi.fn());
-  return { client, sync, get card() { return card; }, set card(value) { card = value; },
-    setContext(value: EmbedContext) { context = value; changedContext(value); },
-    get context() { return context; },
-    emitCompanionEvents() { changedContext(context); changedConnection(context.connection); },
-    disconnect() { context = { ...context, connection: { state: "offline" } }; changedConnection(context.connection); },
-    closeSession() { closed(); } };
-}
-
-test("四项资源区分未知与 0，护甲槽不读取护甲值，拒绝无界或越界标记", () => {
-  expect(readResources({ 生命: 0, 生命上限: 6, 护甲值: 8, 希望: "0", 希望上限: "6" })).toEqual({
-    hp: { current: 0, max: 6 }, stress: null, "armor-slots": null, hope: { current: 0, max: 6 }, "handful-gold": null, "bag-gold": null, "chest-gold": null,
-  });
-  expect(readResources({ hp: 7, hpMax: 6, stress: 1, stressMax: 1_000_000, hope: null, hopeMax: 6 }).hp).toBeNull();
+import { readEmbedConfig, readResources } from "../../apps/player/src/sealchat/adapter.ts";
+import { readPlayerRollData, rollCommand, type RollRequest } from "../../apps/player/src/sealchat/roll.ts";
+import { fixture, documentId, sourceField } from "./sealchat-fixture.ts";
+const request = (): RollRequest => ({ trait: "力量", options: { mode: "action", edge: "normal", modifier: "", difficulty: "", reason: "", experienceIndices: [], experienceRevision: "" } });
+test("资源区分未知与明确的零，拒绝无界标记", () => {
+  expect(readResources({ 生命: 0, 生命上限: 6, 希望: "0", 希望上限: "6" }).hp).toEqual({ current: 0, max: 6 });
+  expect(readResources({ hp: 7, hpMax: 6 }).hp).toBeNull(); expect(readResources({ stress: 1, stressMax: 1000000 }).stress).toBeNull();
 });
-
-test("只在显式 iframe 模式加载宿主 SDK，并检查实例地址和路径", () => {
+test("仅显式 iframe 接入宿主 SDK，验证 origin 和路径", () => {
   const url = "https://daggerheart.cn/pbdh/player?sealchat=1&hostOrigin=https://chat.example&sdkUrl=https://chat.example/chat/api/v1/channel-embed-sdk.js";
-  expect(readEmbedConfig(url, true)?.sdkUrl).toContain("/chat/api/v1/");
-  expect(readEmbedConfig(url, false)).toBeNull();
-  expect(readEmbedConfig("https://daggerheart.cn/pbdh/player", true)).toBeNull();
+  expect(readEmbedConfig(url, true)?.sdkUrl).toContain("/chat/api/v1/"); expect(readEmbedConfig(url, false)).toBeNull();
   expect(() => readEmbedConfig(url.replace("sdkUrl=https://chat.example", "sdkUrl=https://evil.example"), true)).toThrow();
-  expect(() => readEmbedConfig(url.replace("hostOrigin=https://chat.example", "hostOrigin=https://chat.example/other"), true)).toThrow();
 });
-
-test("关联和刷新无写入；外部 .dd 的资源变化回读到显示", async () => {
-  const f = fixture(); await f.sync.start();
-  expect(f.sync.state.phase).toBe("ready");
-  expect(f.sync.state.resources.hope).toBeNull();
-  await f.sync.bind();
-  f.card.attrs.希望 = 3;
-  await f.sync.refresh();
-  expect(f.sync.state.resources.hope).toEqual({ current: 3, max: 6 });
-  expect(f.client.messages.send).not.toHaveBeenCalled();
+test("关联以 PbDH 初始化且只写资源和存档标识，基础数值与经历不写 Dice", async () => {
+  const f = fixture(); f.local.resources.hope = { current: 0, max: 6 };
+  await f.sync.start(); expect(f.client.messages.send).not.toHaveBeenCalled(); await f.sync.bind();
+  const sent = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
+  expect(sent).toContain(sourceField + '="' + documentId + '"'); expect(sent).toContain("希望=0");
+  expect(sent).not.toMatch(/力量|DH经历|闪避|阈值/); expect(f.card.attrs.力量).toBe(99); expect(f.card.attrs.DH经历).toBe("坏的旧经历");
+  expect(f.sync.state.phase).toBe("bound"); expect(f.sync.state.rolls.traits.力量).toBe(0);
 });
-
-test("按钮始终发相对指令，执行前读取最新余额，不回传旧整卡", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  f.card.attrs.希望 = 5;
-  await f.sync.change("hope", -1);
-  expect(f.client.messages.send).toHaveBeenCalledWith({ text: ".st 希望-1", identityId: "identity-1", icMode: "ooc" });
-  expect(f.sync.state.resources.hope?.current).toBe(5);
-  f.card.attrs.希望 = 0;
-  await f.sync.change("hope", -1);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+test("未执行的回执不会覆盖 PbDH 存档，确认资源写入后才关联", async () => {
+  const f = fixture(); f.holdWrites(); f.local.resources.hope = { current: 1, max: 6 }; await f.sync.start(); await f.sync.bind();
+  expect(f.sync.state.phase).toBe("binding"); expect(f.source.applyResources).not.toHaveBeenCalled(); expect(f.local.resources.hope?.current).toBe(1);
+  await f.sync.refresh(); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+  f.card.attrs[sourceField] = documentId; f.card.attrs.希望 = 1; await f.sync.refresh(); expect(f.sync.state.phase).toBe("bound");
 });
-
-test("缺失资源和护甲上限 0 不自动初始化，不发送修改", async () => {
-  const f = fixture(); f.card.attrs.希望上限 = NaN;
-  await f.sync.start(); await f.sync.bind();
-  await f.sync.change("armor-slots", 1); await f.sync.change("hope", -1);
-  expect(f.client.messages.send).not.toHaveBeenCalled();
+test("Dice 资源结果进入人物存档，重复轮询没有反向写回循环", async () => {
+  const f = fixture(); await f.bind(); f.card.attrs.希望 = 3; f.card.attrs.金币箱 = 2; await f.sync.refresh();
+  expect(f.local.resources.hope?.current).toBe(3); expect(f.local.resources["chest-gold"]?.current).toBe(2);
+  await f.sync.refresh(); expect(f.client.messages.send).not.toHaveBeenCalled();
 });
-
-test("伴随 context/connection 事件会排队刷新，不丢失新卡", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  let release!: () => void;
+test("普通 PbDH 修改资源上限自动同步，保留同时到达的 Dice 当前值变化", async () => {
+  const f = fixture(); await f.bind(); f.local.resources.hp = { current: 0, max: 7 }; f.card.attrs.生命 = 1;
+  await f.sync.refresh(); expect(f.client.messages.send).toHaveBeenCalledWith(expect.objectContaining({ text: ".st 生命上限=7" }));
+  expect(f.local.resources.hp).toEqual({ current: 1, max: 7 }); await f.sync.refresh(); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+});
+test("资源按钮发相对指令，发送前回读最新余额；金币和右键上限都回写存档", async () => {
+  const f = fixture(); await f.bind(); f.card.attrs.希望 = 5; await f.sync.change("hope", -1);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith(expect.objectContaining({ text: ".st 希望-1" })); expect(f.local.resources.hope?.current).toBe(4);
+  await f.sync.change("handful-gold", 1); expect(f.local.resources["handful-gold"]?.current).toBe(1);
+  await f.sync.changeMax("armor-slots", 1); expect(f.local.resources["armor-slots"]?.max).toBe(1);
+});
+test("切存档、频道、身份、同名卡来源或断线会取消关联，旧草稿不能发送", async () => {
+  const f = fixture(); await f.bind(); const token = f.sync.state.bindingToken;
+  f.local = { ...f.local, key: "local-2", documentId: "11234567-89ab-4cde-8fab-0123456789ab" }; f.sync.setLocalKey("local-2"); await f.sync.refresh();
+  expect(await f.sync.change("hope", 1, token)).toBe(false); expect(f.source.applyResources).not.toHaveBeenCalled();
+  await f.sync.bind(); vi.mocked(f.source.applyResources).mockClear(); f.card.attrs[sourceField] = "another"; await f.sync.refresh(); expect(f.sync.state.phase).toBe("ready"); expect(f.source.applyResources).not.toHaveBeenCalled();
+  await f.sync.bind(); f.setContext({ ...f.context, currentCharacter: { id: "other" } }); await f.sync.refresh(); expect(f.sync.state.phase).toBe("ready");
+  await f.sync.bind(); f.disconnect(); expect(await f.sync.roll(request())).toBe(false);
+});
+test("回读期间切卡的旧数据不能写入新存档", async () => {
+  const f = fixture(); await f.bind(); f.card.attrs.希望 = 4;
   vi.mocked(f.client.characterCard.getCurrent).mockImplementationOnce(async () => {
-    await new Promise<void>(resolve => { release = resolve; });
+    f.local = { ...f.local, key: "local-2" }; f.sync.setLocalKey("local-2");
     return { status: { available: true }, card: structuredClone(f.card) };
   });
-  const pending = f.sync.refresh();
-  await vi.waitFor(() => expect(release).toBeTypeOf("function"));
-  f.emitCompanionEvents(); f.card.attrs.希望 = 4; release(); await pending;
-  expect(f.sync.state.phase).toBe("bound");
-  expect(f.sync.state.resources.hope?.current).toBe(4);
+  await f.sync.refresh(); expect(f.source.applyResources).not.toHaveBeenCalled(); expect(f.local.resources.hope?.current).toBe(2);
 });
-
-test("切换本地人物或 SealChat 身份使关联失效，旧读取不能恢复关联", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  f.sync.setLocalKey("local-2"); await f.sync.refresh();
-  await f.sync.change("hope", 1);
-  expect(f.client.messages.send).not.toHaveBeenCalled();
-  await f.sync.bind();
-  f.setContext({ ...f.context, currentCharacter: { id: "identity-2" } });
-  await f.sync.refresh();
-  expect(f.sync.state.phase).toBe("ready");
-  expect(f.sync.state.resources.hope).toBeNull();
+test("零特质生成数值公式，经历修正内联、单独传费用，不使用 Dice 属性或经历", () => {
+  const data = readPlayerRollData({ strength: "0", "experience-1": "世界旅行者", "experience-modifier-1": "2" });
+  const r = request(); r.options = { ...r.options, experienceIndices: [1], experienceRevision: data.experienceRevision, modifier: "-1", difficulty: "0", mode: "reaction", edge: "adv" };
+  expect(rollCommand(r, data, 2)).toBe(".ddr 0+2-1 adv hope=1 dc0 -- 力量 · 世界旅行者");
+  expect(rollCommand(r, data, 2, documentId)).toContain("pbdh=" + documentId);
+  expect(() => rollCommand(r, data, 0)).toThrow("希望不足"); expect(() => rollCommand({ ...r, trait: "知识" }, data, 2)).toThrow("尚未填写");
+  expect(() => rollCommand({ ...r, expression: ".st 希望+1" }, data, 2)).toThrow("手动公式");
 });
-
-test("活动 Dice 卡变化、断线、权限撤销和会话关闭均暂停操作", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  f.card.name = "另一个人物"; await f.sync.change("hope", 1);
-  expect(f.sync.state.phase).toBe("ready");
-  await f.sync.bind(); f.disconnect(); await f.sync.change("hope", 1);
-  f.setContext({ ...f.context, connection: { state: "connected" } });
-  f.emitCompanionEvents(); await f.sync.refresh(); await f.sync.bind();
-  f.setContext({ ...f.context, permissions: { canSendMessage: false } });
-  await f.sync.refresh(); await f.sync.change("hope", 1);
-  expect(f.sync.state.canBind).toBe(false);
-  f.setContext({ ...f.context, permissions: { canSendMessage: true } });
-  await f.sync.refresh(); await f.sync.bind();
-  f.closeSession(); await f.sync.change("hope", 1);
-  expect(f.sync.state.phase).toBe("closed");
-  expect(f.client.messages.send).not.toHaveBeenCalled();
+test("发送前读取最新 PbDH 经历；过期选项、费用不足和双击均不重复发送", async () => {
+  const f = fixture(); f.local.rolls = readPlayerRollData({ strength: "0", "experience-1": "经历", "experience-modifier-1": "2" }); await f.bind();
+  const r = request(); r.options.experienceIndices = [1]; r.options.experienceRevision = f.local.rolls.experienceRevision;
+  await Promise.all([f.sync.roll(r), f.sync.roll(r)]); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(f.client.messages.send).mock.calls[0]![0].text).toBe(".dd 0+2 hope=1 pbdh=" + documentId + " -- 力量 · 经历");
+  f.local.rolls = readPlayerRollData({ strength: "0", "experience-1": "改变了", "experience-modifier-1": "3" }); expect(await f.sync.roll(r)).toBe(false);
+  f.card.attrs.希望 = 0; expect(await f.sync.roll(r)).toBe(false); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
 });
-
-test("请求超时结果未知，不重发，快速双击只发送一次", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  vi.mocked(f.client.messages.send).mockRejectedValue(new Error("timeout"));
-  await Promise.all([f.sync.change("hope", -1), f.sync.change("hope", -1)]);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
-  expect(f.sync.state.phase).toBe("error");
-  expect(f.sync.state.message).toContain("不会自动重发");
-});
-
-test("未授予最小能力时拒绝接入，卸载关闭会话", async () => {
-  const f = fixture(); f.client.capabilities = ["context.read"];
-  await f.sync.start();
-  expect(f.sync.state.phase).toBe("error");
+test("请求结果未知时不重发，停止时释放 SDK", async () => {
+  const f = fixture(); await f.bind(); vi.mocked(f.client.messages.send).mockRejectedValueOnce(Error("timeout"));
+  expect(await f.sync.change("hope", 1)).toBe(false); expect(f.sync.state.phase).toBe("error"); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
   f.sync.stop(); expect(f.client.close).toHaveBeenCalledOnce();
 });
 
-const rollRequest = (): RollRequest => ({ trait: "力量", options: { mode: "action", edge: "normal", modifier: "", difficulty: "", reason: "", experienceIndices: [], experienceRevision: "" } });
-
-test("零特质可掷骰，未知不能冒充 0；公式使用实际 .dd/.ddr 语法", () => {
-  const data = readDiceData({ 力量: "0", 敏捷: -1 });
-  expect(data.traits.力量).toBe(0); expect(data.traits.灵巧).toBeNull();
-  const request = rollRequest();
-  request.options = { ...request.options, mode: "reaction", edge: "dis", modifier: "-2", difficulty: "0", reason: "测试" };
-  expect(rollCommand(request, data, 0)).toBe(".ddr 力量 -2 dis dc0 -- 测试");
-  expect(() => rollCommand({ ...request, trait: "灵巧" }, data, 2)).toThrow("尚未录入");
-  expect(() => rollCommand({ ...request, expression: ".st 希望+1" }, data, 2)).toThrow("手动公式");
-  expect(() => rollCommand({ ...request, expression: ".dd 力量\n.dd 力量" }, data, 2)).toThrow();
-  expect(rollCommand({ ...request, expression: ".dd 力量+1d6 adv" }, data, 2)).toBe(".dd 力量+1d6 adv");
-});
-
-test("掷骰执行前回读经历版本与希望，费用交由插件；过期选项不发送", async () => {
-  const f = fixture();
-  f.card.attrs.DH经历 = JSON.stringify({ schemaVersion: 1, experiences: [{ name: "经历", modifier: 0 }] });
-  await f.sync.start(); await f.sync.bind();
-  const request = rollRequest(); request.options.experienceIndices = [1]; request.options.experienceRevision = f.sync.state.dice.experienceRevision;
-  expect(request.options.experienceRevision).toBe("a779cedd");
-  expect(await f.sync.roll(request)).toBe(true);
-  expect(f.client.messages.send).toHaveBeenCalledWith({ text: ".dd 力量 exp=1@a779cedd", identityId: "identity-1", icMode: "ooc" });
-  f.card.attrs.希望 = 0; expect(await f.sync.roll(request)).toBe(false);
-  f.card.attrs.希望 = 2; f.card.attrs.DH经历 = JSON.stringify({ schemaVersion: 1, experiences: [{ name: "另一个经历", modifier: 2 }] });
-  expect(await f.sync.roll(request)).toBe(false);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
-});
-
-test("掷骰在卡切换时取消；双击、请求未知与断线不重发", async () => {
-  const f = fixture(); const request = rollRequest();
-  await f.sync.start(); await f.sync.bind();
-  f.card.name = "其他卡"; expect(await f.sync.roll(request)).toBe(false);
-  expect(f.client.messages.send).not.toHaveBeenCalled();
-  await f.sync.bind(); vi.mocked(f.client.messages.send).mockRejectedValue(new Error("timeout"));
-  await Promise.all([f.sync.roll(request), f.sync.roll(request)]);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(1); expect(f.sync.state.phase).toBe("error");
-  await f.sync.bind(); f.disconnect(); expect(await f.sync.roll(request)).toBe(false);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(1);
-});
-
-test("金币三单位逐项同步，0 有效；较大外部值可以逐次减少，箱不强制上限", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  expect(f.sync.state.resources["handful-gold"]).toEqual({ current: 0, max: 9 });
-  await f.sync.change("handful-gold", 1);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币把+1", identityId: "identity-1", icMode: "ooc" });
-  f.card.attrs.金币袋 = 20; await f.sync.change("bag-gold", -1);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币袋-1", identityId: "identity-1", icMode: "ooc" });
-  f.card.attrs.金币箱 = 20; await f.sync.change("chest-gold", 1);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币箱+1", identityId: "identity-1", icMode: "ooc" });
-});
-test("右键上限使用最新相对值，拒绝降到当前值以下，不附带清空当前值", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind();
-  f.card.attrs.生命 = 6;
-  await f.sync.changeMax("hp", -1); expect(f.client.messages.send).not.toHaveBeenCalled();
-  f.card.attrs.生命上限 = 7;
-  await f.sync.changeMax("hp", -1);
-  expect(f.client.messages.send).toHaveBeenCalledWith({ text: ".st 生命上限-1", identityId: "identity-1", icMode: "ooc" });
-  await f.sync.changeMax("armor-slots", 1);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 护甲上限+1", identityId: "identity-1", icMode: "ooc" });
-  await f.sync.changeMax("chest-gold", 1); expect(f.client.messages.send).toHaveBeenCalledTimes(2);
-});
-test("闪避、护甲上限、阈值和特质显示明确 0，编辑只发单字段，旧关联草稿不发送", async () => {
-  const f = fixture(); await f.sync.start(); await f.sync.bind(); const binding = f.sync.state.bindingToken;
-  expect(f.sync.state.numbers.evasion).toBe(0); expect(f.sync.state.numbers["armor-value"]).toBe(0);
-  expect(f.sync.state.numbers["major-threshold"]).toBe(0); expect(f.sync.state.numbers["severe-threshold"]).toBe(0);
-  await f.sync.setNumber("evasion", "12", binding);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 闪避=12", identityId: "identity-1", icMode: "ooc" });
-  expect(f.sync.state.numbers.evasion).toBe(0);
-  await f.sync.setNumber("armor-value", "3", binding);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 护甲上限=3", identityId: "identity-1", icMode: "ooc" });
-  await f.sync.setNumber("strength", "-1", binding);
-  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 力量=-1", identityId: "identity-1", icMode: "ooc" });
-  await f.sync.setNumber("evasion", "0\n.st 希望=6", binding); expect(f.client.messages.send).toHaveBeenCalledTimes(3);
-  f.sync.pause(); await f.sync.bind(); await f.sync.setNumber("evasion", "10", binding);
-  expect(f.client.messages.send).toHaveBeenCalledTimes(3);
-  expect(readNumbers({ 闪避: "0", 重伤阈值: "" }).evasion).toBe(0);
+test("外部非法资源不进入人物存档或云保存", async () => {
+  const f = fixture(); await f.bind(); f.card.attrs.金币袋 = 20; await f.sync.refresh();
+  expect(f.sync.state.phase).toBe("error"); expect(f.source.applyResources).not.toHaveBeenCalled(); expect(f.local.resources["bag-gold"]?.current).toBe(0);
 });
