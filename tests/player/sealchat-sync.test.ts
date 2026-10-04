@@ -1,11 +1,12 @@
 import { expect, test, vi } from "vitest";
 import { readEmbedConfig, readResources, SealChatSync, type EmbedClient, type EmbedContext } from "../../apps/player/src/sealchat/adapter.ts";
+import { readNumbers } from "../../apps/player/src/sealchat/numbers.ts";
 import { readDiceData, rollCommand, type RollRequest } from "../../apps/player/src/sealchat/roll.ts";
 
 function fixture() {
   let context: EmbedContext = { channel: { id: "channel-1" }, currentUser: { id: "user-1" },
     currentCharacter: { id: "identity-1" }, connection: { state: "connected" }, permissions: { canSendMessage: true } };
-  let card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 力量: 0, DH经历: "" } };
+  let card = { name: "测试人物", sheetType: "daggerheart", attrs: { 生命: 0, 生命上限: 6, 压力: 0, 压力上限: 6, 护甲: 0, 护甲上限: 0, 希望: 2, 希望上限: 6, 力量: 0, 闪避: 0, 重伤阈值: 0, 严重阈值: 0, 金币把: 0, 金币袋: 0, 金币箱: 0, DH经历: "" } };
   let changedContext = (_value: EmbedContext) => {};
   let changedConnection = (_value: { state: string }) => {};
   let closed = () => {};
@@ -27,7 +28,7 @@ function fixture() {
 
 test("四项资源区分未知与 0，护甲槽不读取护甲值，拒绝无界或越界标记", () => {
   expect(readResources({ 生命: 0, 生命上限: 6, 护甲值: 8, 希望: "0", 希望上限: "6" })).toEqual({
-    hp: { current: 0, max: 6 }, stress: null, "armor-slots": null, hope: { current: 0, max: 6 },
+    hp: { current: 0, max: 6 }, stress: null, "armor-slots": null, hope: { current: 0, max: 6 }, "handful-gold": null, "bag-gold": null, "chest-gold": null,
   });
   expect(readResources({ hp: 7, hpMax: 6, stress: 1, stressMax: 1_000_000, hope: null, hopeMax: 6 }).hp).toBeNull();
 });
@@ -167,4 +168,42 @@ test("掷骰在卡切换时取消；双击、请求未知与断线不重发", as
   expect(f.client.messages.send).toHaveBeenCalledTimes(1); expect(f.sync.state.phase).toBe("error");
   await f.sync.bind(); f.disconnect(); expect(await f.sync.roll(request)).toBe(false);
   expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+});
+
+test("金币三单位逐项同步，0 有效；较大外部值可以逐次减少，箱不强制上限", async () => {
+  const f = fixture(); await f.sync.start(); await f.sync.bind();
+  expect(f.sync.state.resources["handful-gold"]).toEqual({ current: 0, max: 9 });
+  await f.sync.change("handful-gold", 1);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币把+1", identityId: "identity-1", icMode: "ooc" });
+  f.card.attrs.金币袋 = 20; await f.sync.change("bag-gold", -1);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币袋-1", identityId: "identity-1", icMode: "ooc" });
+  f.card.attrs.金币箱 = 20; await f.sync.change("chest-gold", 1);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 金币箱+1", identityId: "identity-1", icMode: "ooc" });
+});
+test("右键上限使用最新相对值，拒绝降到当前值以下，不附带清空当前值", async () => {
+  const f = fixture(); await f.sync.start(); await f.sync.bind();
+  f.card.attrs.生命 = 6;
+  await f.sync.changeMax("hp", -1); expect(f.client.messages.send).not.toHaveBeenCalled();
+  f.card.attrs.生命上限 = 7;
+  await f.sync.changeMax("hp", -1);
+  expect(f.client.messages.send).toHaveBeenCalledWith({ text: ".st 生命上限-1", identityId: "identity-1", icMode: "ooc" });
+  await f.sync.changeMax("armor-slots", 1);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 护甲上限+1", identityId: "identity-1", icMode: "ooc" });
+  await f.sync.changeMax("chest-gold", 1); expect(f.client.messages.send).toHaveBeenCalledTimes(2);
+});
+test("闪避、护甲上限、阈值和特质显示明确 0，编辑只发单字段，旧关联草稿不发送", async () => {
+  const f = fixture(); await f.sync.start(); await f.sync.bind(); const binding = f.sync.state.bindingToken;
+  expect(f.sync.state.numbers.evasion).toBe(0); expect(f.sync.state.numbers["armor-value"]).toBe(0);
+  expect(f.sync.state.numbers["major-threshold"]).toBe(0); expect(f.sync.state.numbers["severe-threshold"]).toBe(0);
+  await f.sync.setNumber("evasion", "12", binding);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 闪避=12", identityId: "identity-1", icMode: "ooc" });
+  expect(f.sync.state.numbers.evasion).toBe(0);
+  await f.sync.setNumber("armor-value", "3", binding);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 护甲上限=3", identityId: "identity-1", icMode: "ooc" });
+  await f.sync.setNumber("strength", "-1", binding);
+  expect(f.client.messages.send).toHaveBeenLastCalledWith({ text: ".st 力量=-1", identityId: "identity-1", icMode: "ooc" });
+  await f.sync.setNumber("evasion", "0\n.st 希望=6", binding); expect(f.client.messages.send).toHaveBeenCalledTimes(3);
+  f.sync.pause(); await f.sync.bind(); await f.sync.setNumber("evasion", "10", binding);
+  expect(f.client.messages.send).toHaveBeenCalledTimes(3);
+  expect(readNumbers({ 闪避: "0", 重伤阈值: "" }).evasion).toBe(0);
 });

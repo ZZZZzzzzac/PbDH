@@ -1,3 +1,9 @@
+import { SealChatRollButton, useSealChatNumber } from "../../sealchat/SealChatResources.tsx";
+import { SealChatNumberInput } from "../../sealchat/SealChatNumberInput.tsx";
+import { traitModules } from "../../sealchat/numbers.ts";
+import { weaponIds } from "../../sealchat/damage.ts";
+import { useContext } from "react";
+import { SealChatResourceContext } from "../../sealchat/SealChatResources.tsx";
 import type { FreeTextModule } from "../domain/systemPackage";
 import type { RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
@@ -10,6 +16,9 @@ interface FreeTextModuleProps {
 }
 
 export function FreeTextModule({ module }: FreeTextModuleProps) {
+  const remote = useSealChatNumber(module.ID);
+  const embedded = useContext(SealChatResourceContext) !== null;
+  const hasDice = embedded && (!!traitModules[module.ID] || weaponIds.some(id => id === module.ID));
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
   const commitFreeTextChange = useRuntimeStore((state) => state.commitFreeTextChange);
   const derivedPlaceholder = useRuntimeStore((state) => state.derivedTextPlaceholders[module.ID]);
@@ -28,13 +37,14 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
       data-part="container"
       data-label-hidden={labelHidden ? "true" : undefined}
       data-free-text-mode={dropdownOptions ? "select" : "input"}
+      data-sealchat-dice={hasDice ? "true" : undefined}
     >
       {!labelHidden ? (
         <label className="label" data-part="label" htmlFor={inputId}>
           {module.标签}
         </label>
       ) : null}
-      {dropdownOptions ? (
+      {remote ? <SealChatNumberInput key={remote.binding} moduleId={module.ID} inputId={inputId} label={accessibleName} /> : dropdownOptions ? (
         <select
           id={inputId}
           className="input"
@@ -73,6 +83,7 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
           )}
         />
       )}
+      <SealChatRollButton moduleId={module.ID} />
     </div>
   );
 }

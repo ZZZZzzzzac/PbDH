@@ -2,21 +2,47 @@
 .sealchat-sync p { margin: 6px 0; }
 .sealchat-sync > div { display: flex; flex-wrap: wrap; gap: 8px; }
 .sealchat-sync button { padding: 6px 10px; }
-@media print { .sealchat-sync { display: none; } }
-.sealchat-session { display: contents; }
-.sealchat-roll-dialog { box-sizing: border-box; margin: auto; width: min(94vw, 420px); max-height: 90vh; overflow: auto; padding: 20px; border: 1px solid var(--framework-border-strong); border-radius: 8px; background: var(--framework-surface, #fff); color: var(--framework-text, #222); }
-.sealchat-roll-dialog::backdrop { background: #0007; }
-.sealchat-roll-dialog h2 { margin: 0 0 10px; font-size: 1.15rem; }
-.sealchat-roll-dialog p { margin: 8px 0; font-size: .85rem; }
-.sealchat-roll-dialog fieldset { margin: 12px 0; padding: 10px; border: 1px solid var(--framework-border, #aaa); }
-.sealchat-roll-dialog label { display: block; margin: 10px 0; }
-.sealchat-roll-dialog input:not([type=checkbox]) { box-sizing: border-box; display: block; width: 100%; padding: 7px; color: inherit; background: var(--framework-canvas, #fafafa); border: 1px solid var(--framework-border-strong, #aaa); }
-.sealchat-roll-dialog button { padding: 7px 12px; color: inherit; background: var(--framework-surface-muted, #eee); border: 1px solid var(--framework-border-strong, #aaa); cursor: pointer; }
-.sealchat-roll-dialog button[aria-pressed=true] { border-color: var(--framework-accent, #3371c1); background: var(--framework-accent-soft, #d7e5f8); }
-.sealchat-roll-dialog button:disabled { opacity: .5; cursor: default; }
-.sealchat-roll-buttons, .sealchat-roll-modifier { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.sealchat-roll-modifier input:not([type=checkbox]) { width: 90px; }
-.sealchat-roll-expression { font-family: monospace; }
-.sealchat-roll-dialog [role=alert] { color: var(--framework-danger-strong, #a42929); }
-.sealchat-roll-note { color: var(--framework-text-muted, #555); }
-@media print { .sealchat-roll-dialog { display: none; } }
+[data-sealchat-dice=true] { position: relative; }
+[data-sealchat-dice=true] [data-part=input] { padding-right: 28px; }
+.sealchat-dice-button { position: absolute; right: 3px; bottom: 3px; display: grid; place-items: center; width: 24px; height: 24px; padding: 2px; border: 0; border-radius: 3px; background: transparent; color: #284b40; cursor: pointer; }
+.sealchat-dice-button:hover { background: #284b4012; }
+.sealchat-dice-button:focus-visible { outline: 2px solid #284b40; outline-offset: 1px; }
+.sealchat-dice-button:disabled { opacity: .35; cursor: default; }
+.sealchat-roll-dialog { box-sizing: border-box; margin: auto; width: min(94vw, 408px); max-height: 88vh; overflow: auto; padding: 16px; border: 1px solid #c9c2b2; border-radius: 9px; background: #f7f5ee; color: #292d27; box-shadow: 0 16px 48px #172d3033; font: 14px/1.4 system-ui, sans-serif; }
+.sealchat-roll-dialog::backdrop { background: #17231e70; }
+.sealchat-roll-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 12px; }
+.sealchat-roll-eyebrow { color: #696e63; font-size: 11px; letter-spacing: .1em; }
+.sealchat-roll-dialog h2 { margin: 2px 0 0; font-size: 20px; font-weight: 650; }
+.sealchat-roll-dialog h2 small { font-size: 16px; color: #345949; margin-left: 4px; }
+.sealchat-roll-dialog button { min-height: 30px; padding: 4px 10px; color: inherit; background: #eeece2; border: 1px solid #d1ccbe; border-radius: 4px; cursor: pointer; font: inherit; }
+.sealchat-roll-dialog button:hover { border-color: #365c4d; }
+.sealchat-roll-dialog .sealchat-roll-close { min-width: 30px; font-size: 23px; line-height: 1; background: transparent; border: 0; color: #747768; padding: 0; }
+.sealchat-roll-dialog button[aria-pressed=true] { color: #f7f5ee; border-color: #284b40; background: #284b40; }
+.sealchat-roll-dialog button:disabled { opacity: .45; cursor: default; }
+.sealchat-roll-dialog label { display: block; margin: 8px 0; font-size: 12px; color: #62695d; }
+.sealchat-roll-dialog input:not([type=checkbox]) { box-sizing: border-box; display: block; width: 100%; height: 32px; margin-top: 4px; padding: 5px 8px; color: #292d27; background: #fffdf7; border: 1px solid #d1ccbe; border-radius: 4px; font: 14px/1.3 system-ui, sans-serif; }
+.sealchat-roll-dialog input:focus-visible { outline: 2px solid #416952; outline-offset: 1px; }
+.sealchat-roll-mode { display: flex; gap: 4px; }
+.sealchat-roll-mode button { flex: 1; font-size: 12px; white-space: nowrap; }
+.sealchat-roll-mode button:last-child { margin-left: 6px; flex: 1.4; }
+.sealchat-roll-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0; }
+.sealchat-roll-modifier { display: flex; align-items: stretch; gap: 3px; margin-top: 4px; }
+.sealchat-roll-modifier input:not([type=checkbox]) { margin: 0; width: 100%; min-width: 0; text-align: center; }
+.sealchat-roll-modifier button { width: 28px; flex-shrink: 0; padding: 0; }
+.sealchat-roll-experiences { margin: 10px 0; }
+.sealchat-roll-section-label { color: #62695d; font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+.sealchat-roll-section-label small { font-size: 11px; }
+.sealchat-roll-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.sealchat-roll-dialog .sealchat-roll-experience { display: inline-flex; gap: 5px; align-items: center; margin: 0; padding: 5px 7px; border: 1px solid #d1ccbe; border-radius: 4px; background: #fffdf7; color: #384d3e; cursor: pointer; }
+.sealchat-roll-experience:has(input:checked) { border-color: #365c4d; background: #e3e9dc; }
+.sealchat-roll-experience input { margin: 0; accent-color: #284b40; }
+.sealchat-roll-more { margin: 12px 0 4px; border-top: 1px solid #d7d1c2; padding-top: 8px; font-size: 12px; color: #62695d; }
+.sealchat-roll-more summary { cursor: pointer; }
+.sealchat-roll-dialog .sealchat-roll-expression { font-family: ui-monospace, monospace; font-size: 12px; }
+.sealchat-roll-dialog [role=alert] { color: #a34231; font-size: 12px; margin: 10px 0 0; }
+.sealchat-roll-footer { display: flex; align-items: center; gap: 10px; justify-content: space-between; margin-top: 14px; }
+.sealchat-roll-footer code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 12px/1.5 ui-monospace, monospace; color: #62695d; }
+.sealchat-roll-footer button { background: #284b40; border-color: #284b40; color: #fffdf7; min-width: 76px; padding: 6px 16px; }
+.sealchat-damage-base { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; background: #e9eddf; border-left: 3px solid #365c4d; color: #345949; font-size: 12px; margin-bottom: 6px; }
+.sealchat-damage-base code { font-size: 16px; }
+@media print { .sealchat-sync, .sealchat-roll-dialog, .sealchat-dice-button { display: none; } }

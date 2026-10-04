@@ -19,7 +19,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const blocked = !!remote && (remote.disabled || !remote.value);
   const min = module.最小值 ?? 0;
   const step = module.步长 ?? 1;
-  const editableMax = !remote && (module.最大值可改 ?? false);
+  const editableMax = remote ? remote.editableMax : (module.最大值可改 ?? false);
   const fallback: CountableState = {
     current: clampInt(module.默认值 ?? min, min, module.最大值 ?? null),
     max: module.最大值 ?? null,
@@ -30,7 +30,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const state = remote ? remote.value ?? { current: 0, max: 0 } : readCountableState(rawValue, fallback);
   const max = state.max;
-  const current = clampInt(state.current, min, max);
+  const current = remote ? state.current : clampInt(state.current, min, max);
 
   const setState = (next: Partial<CountableState>) => {
     if (remote) {
@@ -52,21 +52,33 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const normalizedState = { current, max };
   const transitionConfig = { min, step, editableMax };
   const applyMarkerAction = (target: "current" | "maximum", direction: CountableDirection) => {
+    if (remote) {
+      if (blocked) return;
+      const delta = direction === "increment" ? 1 : -1;
+      if (target === "maximum") remote.changeMax(delta); else remote.change(delta);
+      return;
+    }
     const next = transitionCountableState(normalizedState, transitionConfig, target, direction);
     if (next.current !== current || next.max !== max) setState(next);
   };
-  const canUseMarkerButton = (direction: CountableDirection) =>
-    canTransitionCountableState(normalizedState, transitionConfig, "current", direction)
-    || canTransitionCountableState(normalizedState, transitionConfig, "maximum", direction);
+  const canUseMarkerButton = (direction: CountableDirection) => {
+    if (remote) {
+      const delta = direction === "increment" ? 1 : -1;
+      return current + delta >= min && (max === null || current + delta <= max)
+        || editableMax && max !== null && max + delta >= current && max + delta >= min && max + delta <= 60;
+    }
+    return canTransitionCountableState(normalizedState, transitionConfig, "current", direction)
+      || canTransitionCountableState(normalizedState, transitionConfig, "maximum", direction);
+  };
   const decrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "decrement") : setCurrent(current - step),
     () => applyMarkerAction("maximum", "decrement"),
-    markerPresentation && !remote,
+    markerPresentation && editableMax,
   );
   const incrementPointerActions = usePointerActions(
     () => markerPresentation ? applyMarkerAction("current", "increment") : setCurrent(current + step),
     () => applyMarkerAction("maximum", "increment"),
-    markerPresentation && !remote,
+    markerPresentation && editableMax,
   );
   useTextFit(
     markerGroupRef,
@@ -96,6 +108,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
           {...decrementPointerActions}
           disabled={blocked || (markerPresentation ? !canUseMarkerButton("decrement") : current <= min)}
           aria-label={`${module.标签}减少`}
+          title={remote?.editableMax ? "左键减少当前值，右键减少上限" : undefined}
         >
           -
         </button>
@@ -131,7 +144,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
             {max !== null ? (
               <span className="value" data-part="maximum">
                 /{" "}
-                {editableMax ? (
+                {editableMax && !remote ? (
                   <input
                     className="input max-input"
                     data-part="maximum-input"
@@ -154,6 +167,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
           {...incrementPointerActions}
           disabled={blocked || (markerPresentation ? !canUseMarkerButton("increment") : max !== null && current >= max)}
           aria-label={`${module.标签}增加`}
+          title={remote?.editableMax ? "左键增加当前值，右键增加上限" : undefined}
         >
           +
         </button>
