@@ -128,20 +128,31 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
     openRoll: next => { if (visible && state.phase === "bound") { setSelection(next); void syncRef.current?.refresh(); } },
   } : null, [requested, supported, state, visible]);
 
+  const status = !requested ? "未连接" : !supported ? "不支持" : config.error || state.phase === "error" ? "连接异常"
+    : state.phase === "bound" ? (state.busy ? "发送中" : "已连接") : state.phase === "binding" ? "同步中"
+    : state.phase === "connecting" ? "连接中" : state.phase === "closed" ? "已断开" : state.message === "同步已暂停。" ? "已暂停" : "未关联";
+  const notice = !requested ? "请从海豹聊天的嵌入人物卡打开。" : !supported ? "仅支持匕首之心核心系统包。"
+    : config.error || (["connecting", "binding"].includes(state.phase) ? "" : state.message);
+  const playerName = characterName || "未命名人物";
+  const names = state.cardName && state.cardName !== playerName ? playerName + " → " + state.cardName : playerName;
+
   return <SealChatResourceContext.Provider value={control}>
-    {panelVisible && visible ? <section className="sealchat-sync" aria-label="SealChat 资源同步">
-      <strong>SealChat 同步（实验）</strong>
-      <p role="status">{!requested ? "请从海豹聊天的 PbDH 嵌入人物卡打开此页面，再连接聊天。独立网页不能直接连接。" : !supported ? "此实验仅支持匕首之心核心系统包。" : config.error || state.message}</p>
-      {supported && state.cardName ? <p>PbDH：{characterName || "未命名人物"} · Dice：{state.cardName}</p> : null}
-      <div>
-        {requested ? <>
-        <button type="button" disabled={!supported || !state.canBind || state.busy || ["bound", "binding"].includes(state.phase)}
-          onClick={() => { void syncRef.current?.bind(); }}>关联并使用 PbDH 资源</button>
-        <button type="button" disabled={state.phase !== "bound" || state.busy} onClick={() => syncRef.current?.pause()}>暂停同步</button>
-        <button type="button" disabled={!config.value || state.busy} onClick={requestConnection}>刷新 / 重连</button>
-        </> : null}
-        <button type="button" onClick={() => setPanelVisible(false)}>收起连接面板</button>
+    {panelVisible && visible ? <section className="sealchat-sync" data-phase={config.error ? "error" : state.phase} aria-label="SealChat 资源同步">
+      <div className="sealchat-sync-bar">
+        <strong>海豹聊天</strong>
+        <span className="sealchat-sync-status" role="status">{status}</span>
+        {requested && supported && characterId ? <span className="sealchat-sync-name" title={names}>{names}</span> : null}
+        <div className="sealchat-sync-actions">
+          {requested ? <>
+            <button type="button" className="sealchat-sync-bind" aria-label="关联并使用 PbDH 资源" title="用当前人物初始化 Dice 资源"
+              disabled={!supported || !state.canBind || state.busy || ["bound", "binding"].includes(state.phase)} onClick={() => { void syncRef.current?.bind(); }}>关联</button>
+            <button type="button" aria-label="暂停同步" disabled={state.phase !== "bound" || state.busy} onClick={() => syncRef.current?.pause()}>暂停</button>
+            <button type="button" aria-label="刷新 / 重连" disabled={!config.value || state.busy} onClick={requestConnection}>重连</button>
+          </> : null}
+          <button type="button" className="sealchat-sync-close" aria-label="收起连接面板" title="收起连接面板" onClick={() => setPanelVisible(false)}>×</button>
+        </div>
       </div>
+      {notice ? <p className="sealchat-sync-notice" role="status">{notice}</p> : null}
     </section> : null}
     {children}
     {selection && state.phase === "bound" && visible ? selection.kind === "trait" ? <SealChatRollDialog trait={selection.trait} state={state}

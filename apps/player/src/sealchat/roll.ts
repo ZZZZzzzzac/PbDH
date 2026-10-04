@@ -1,4 +1,4 @@
-// iframe 检定仅消费 PbDH 当前存档；Dice 不需要保存属性或经历。
+// iframe 掷骰仅消费 PbDH 当前存档；Dice 不需要保存属性或经历。
 export const traits = ["敏捷", "力量", "灵巧", "本能", "风度", "知识"] as const;
 export type Trait = typeof traits[number];
 export const traitModules: Record<string, Trait> = { agility: "敏捷", strength: "力量", finesse: "灵巧", instinct: "本能", presence: "风度", knowledge: "知识" };
@@ -40,7 +40,7 @@ function numberOption(raw: string, label: string, integerOnly = false): number |
   if (!Number.isFinite(n) || Math.abs(n) > 1_000_000 || (integerOnly && (!Number.isSafeInteger(n) || n < 0))) throw Error(label + "超出范围。");
   return n;
 }
-export function rollCommand(request: RollRequest, data: RollData, hope: number | null, documentId?: string): string {
+export function rollCommand(request: RollRequest, data: RollData, hope: number | null): string {
   const { trait, options: o } = request;
   if (!traits.includes(trait) || data.traits[trait] === null) throw Error("PbDH 尚未填写此特质。明确的 0 可以掷骰。");
   if (!["action", "reaction"].includes(o.mode) || !["normal", "adv", "dis"].includes(o.edge)) throw Error("掷骰模式无效。");
@@ -62,14 +62,9 @@ export function rollCommand(request: RollRequest, data: RollData, hope: number |
   if (difficulty !== null) parts.push("dc" + difficulty);
   const labels = [trait, ...indices.map(i => data.experiences[i - 1]!.name), reason].filter(Boolean).join(" · ");
   parts.push("--", labels);
-  let command = request.expression?.trim() || parts.join(" ");
+  const command = request.expression?.trim() || parts.join(" ");
   if (!/^\.ddr?(?:\s|$)/.test(command) || /[\u0000-\u001f\u007f]/.test(command) || command.length > 1000) throw Error("手动公式只接受单行 .dd / .ddr 指令。");
   if (indices.length && command !== parts.join(" ")) throw Error("使用经历时请通过选项调整公式，或取消勾选后手动编辑。");
   if (/(?:^|\s)pbdh=/.test(command.split(/\s--(?:\s|$)/)[0]!)) throw Error("人物关联由接入层管理。");
-  if (documentId) {
-    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(documentId)) throw Error("PbDH 存档标识无效。");
-    const at = command.search(/\s--(?:\s|$)/);
-    command = at < 0 ? command + " pbdh=" + documentId : command.slice(0, at) + " pbdh=" + documentId + command.slice(at);
-  }
   return command;
 }

@@ -20,7 +20,7 @@ test("掷骰窗使用 PbDH 零特质和经历，显示费用并保留反应/优�
   try {
     await act(async () => root.render(<SealChatRollDialog trait="力量" state={state} roll={roll} close={close} />));
     const dialog = document.querySelector<HTMLDialogElement>("dialog")!;
-    expect(dialog.open).toBe(true); expect(dialog.textContent).toContain("力量检定 +0");
+    expect(dialog.open).toBe(true); expect(dialog.textContent).toContain("力量掷骰 +0");
     const button = (text: string) => [...dialog.querySelectorAll("button")].find(item => item.textContent === text)!;
     await act(async () => { button("优势").click(); button("反应掷骰").click(); });
     await act(async () => dialog.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
@@ -47,13 +47,16 @@ test("属性点击仍可编辑，独立骰子按钮开助手；暂停后禁用�
     await act(async () => root.render(<SealChatResources systemPackageId={daggerheartSystemId} characterId={f.data.character.id} characterName="测试" visible>
       <div data-module-id="strength"><label>力量</label><input aria-label="力量" defaultValue="2" onClick={originalClick} /><SealChatRollButton moduleId="strength" /></div>
     </SealChatResources>));
-    const button = (text: string) => [...element.querySelectorAll("button")].find(item => item.textContent === text)!;
+    const button = (label: string) => element.querySelector<HTMLButtonElement>('[aria-label="' + label + '"]')!;
     await act(async () => button("关联并使用 PbDH 资源").click());
+    expect(element.querySelector(".sealchat-sync-status")?.textContent).toBe("已连接");
+    expect(element.querySelector(".sealchat-sync-notice")).toBeNull();
+    expect(element.textContent).not.toContain("PbDH 保存人物");
     await act(async () => element.querySelector<HTMLInputElement>("input")!.click());
     expect(document.querySelector("dialog")).toBeNull();
     expect(originalClick).toHaveBeenCalledOnce();
     await act(async () => element.querySelector<HTMLButtonElement>('[aria-label="力量掷骰"]')!.click());
-    expect(document.querySelector("dialog")?.textContent).toContain("力量检定 +0"); expect(element.querySelector<HTMLInputElement>("input")!.value).toBe("2");
+    expect(document.querySelector("dialog")?.textContent).toContain("力量掷骰 +0"); expect(element.querySelector<HTMLInputElement>("input")!.value).toBe("2");
     // 关闭模态框不依赖其内部按钮排列。
     await act(async () => document.querySelector<HTMLDialogElement>("dialog")!.dispatchEvent(new Event("cancel", { bubbles: true })));
     await act(async () => button("暂停同步").click());

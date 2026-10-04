@@ -28,7 +28,7 @@ export function SealChatRollDialog({ trait, state, roll, close }: {
         if (sent) close(); else setFeedback("未发送，请核对同步状态与最新数值。");
       });
     }}>
-      <header className="sealchat-roll-header"><div><span className="sealchat-roll-eyebrow">掷骰助手</span><h2 id="sealchat-roll-title">{trait}检定 <small>{state.rolls.traits[trait] === null ? "—" : (state.rolls.traits[trait]! >= 0 ? "+" : "") + state.rolls.traits[trait]}</small></h2></div>
+      <header className="sealchat-roll-header"><div><span className="sealchat-roll-eyebrow">掷骰助手</span><h2 id="sealchat-roll-title">{trait}掷骰 <small>{state.rolls.traits[trait] === null ? "—" : (state.rolls.traits[trait]! >= 0 ? "+" : "") + state.rolls.traits[trait]}</small></h2></div>
         <button type="button" className="sealchat-roll-close" aria-label="关闭掷骰助手" onClick={close}>×</button></header>
       <div className="sealchat-roll-mode" role="group" aria-label="掷骰模式">
         {(["normal", "adv", "dis"] as const).map((edge, i) => <button type="button" disabled={!ready} key={edge} aria-pressed={options.edge === edge}

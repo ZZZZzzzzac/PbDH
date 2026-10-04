@@ -19,9 +19,9 @@ test("普通网页默认不显示实验面板，菜单请求给出入口说明�
     await render(0);
     expect(container.querySelector('[aria-label="SealChat 资源同步"]')).toBeNull();
     await render(1);
-    expect(container.querySelector('[role="status"]')?.textContent).toContain("请从海豹聊天");
+    expect(container.querySelector(".sealchat-sync-notice")?.textContent).toContain("请从海豹聊天");
     expect(container.textContent).toContain("人物卡保持显示");
-    const close = [...container.querySelectorAll("button")].find(button => button.textContent === "收起连接面板");
+    const close = container.querySelector<HTMLButtonElement>('[aria-label="收起连接面板"]');
     if (!close) throw Error("缺少收起入口");
     await act(async () => close.click());
     expect(container.querySelector('[aria-label="SealChat 资源同步"]')).toBeNull();

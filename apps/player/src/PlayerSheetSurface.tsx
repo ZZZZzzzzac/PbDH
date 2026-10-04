@@ -1190,7 +1190,6 @@ export function PlayerSheetSurface({
       <div className="player-menu">
         <button className="player-menu-trigger" type="button" aria-haspopup="menu"><span>玩家功能</span>{outputOperation === "validation" ? <OperationStatus label="正在审核…" /> : null}</button>
         <div className="player-menu-panel" role="menu">
-          <button type="button" role="menuitem" onClick={() => setSealChatConnectionRequest(value => value + 1)}>与海豹聊天连接</button>
           <button className="player-menu-resource-manager" type="button" role="menuitem" onClick={() => setManagerOpen(true)}><span>资源管理器</span><strong>{library.size}</strong></button>
           {currentPackage?.characterCreationGuide ? (
             <button ref={guideButtonRef} type="button" role="menuitem" disabled={!characterData} onClick={() => setGuideSession(startGuideSession())}>创建向导</button>
@@ -1199,6 +1198,7 @@ export function PlayerSheetSurface({
             <button type="button" role="menuitem" disabled={!characterData} onClick={startQuestionnaire}>问卷创建</button>
           ) : null}
           <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void handleValidation()}>车卡审核</button>
+          <button type="button" role="menuitem" onClick={() => setSealChatConnectionRequest(value => value + 1)}>与海豹聊天连接</button>
         </div>
       </div>
 

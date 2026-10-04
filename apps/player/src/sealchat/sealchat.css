@@ -1,7 +1,19 @@
-.sealchat-sync { margin: 8px 12px; padding: 12px; border: 1px solid currentColor; border-radius: 8px; }
-.sealchat-sync p { margin: 6px 0; }
-.sealchat-sync > div { display: flex; flex-wrap: wrap; gap: 8px; }
-.sealchat-sync button { padding: 6px 10px; }
+.sealchat-sync { margin: 8px 12px; padding: 7px 10px; border: 1px solid #c8c4b6; border-radius: 6px; background: #f5f4ec; color: #303c33; font: 13px/1.4 system-ui, sans-serif; }
+.sealchat-sync-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.sealchat-sync-bar > strong { flex-shrink: 0; font-size: 13px; }
+.sealchat-sync-status { display: inline-flex; align-items: center; gap: 5px; color: #70766d; white-space: nowrap; font-size: 12px; }
+.sealchat-sync-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sealchat-sync[data-phase=bound] .sealchat-sync-status { color: #365b49; }
+.sealchat-sync[data-phase=error] .sealchat-sync-status { color: #a04435; }
+.sealchat-sync-name { flex: 1; min-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6b7066; }
+.sealchat-sync-actions { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+.sealchat-sync button { min-height: 28px; padding: 3px 9px; border: 1px solid #c8c4b6; border-radius: 4px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.sealchat-sync button:hover:enabled { border-color: #365b49; background: #e9ede5; }
+.sealchat-sync button:focus-visible { outline: 2px solid #365b49; outline-offset: 2px; }
+.sealchat-sync button:disabled { opacity: .4; cursor: default; }
+.sealchat-sync .sealchat-sync-bind:enabled { border-color: #365b49; background: #365b49; color: #fff; }
+.sealchat-sync .sealchat-sync-close { width: 26px; padding: 0; border: 0; font-size: 21px; line-height: 1; color: #74796f; }
+.sealchat-sync .sealchat-sync-notice { margin: 5px 0 0; font-size: 12px; overflow-wrap: anywhere; }
 [data-sealchat-dice=true] { position: relative; }
 [data-sealchat-dice=true] [data-part=label] { padding-right: 26px; }
 .sealchat-dice-button { display: inline-grid; vertical-align: middle; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: #284b40; cursor: pointer; font: 18px/1 system-ui, sans-serif; }

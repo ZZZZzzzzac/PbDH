@@ -64,7 +64,6 @@ test("零特质生成数值公式，经历修正内联、单独传费用，不�
   const data = readPlayerRollData({ strength: "0", "experience-1": "世界旅行者", "experience-modifier-1": "2" });
   const r = request(); r.options = { ...r.options, experienceIndices: [1], experienceRevision: data.experienceRevision, modifier: "-1", difficulty: "0", mode: "reaction", edge: "adv" };
   expect(rollCommand(r, data, 2)).toBe(".ddr 0+2-1 adv hope=1 dc0 -- 力量 · 世界旅行者");
-  expect(rollCommand(r, data, 2, documentId)).toContain("pbdh=" + documentId);
   expect(() => rollCommand(r, data, 0)).toThrow("希望不足"); expect(() => rollCommand({ ...r, trait: "知识" }, data, 2)).toThrow("尚未填写");
   expect(() => rollCommand({ ...r, expression: ".st 希望+1" }, data, 2)).toThrow("手动公式");
 });
@@ -72,9 +71,19 @@ test("发送前读取最新 PbDH 经历；过期选项、费用不足和双击�
   const f = fixture(); f.local.rolls = readPlayerRollData({ strength: "0", "experience-1": "经历", "experience-modifier-1": "2" }); await f.bind();
   const r = request(); r.options.experienceIndices = [1]; r.options.experienceRevision = f.local.rolls.experienceRevision;
   await Promise.all([f.sync.roll(r), f.sync.roll(r)]); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
-  expect(vi.mocked(f.client.messages.send).mock.calls[0]![0].text).toBe(".dd 0+2 hope=1 pbdh=" + documentId + " -- 力量 · 经历");
+  expect(vi.mocked(f.client.messages.send).mock.calls[0]![0].text).toBe(".dd 0+2 hope=1 -- 力量 · 经历");
   f.local.rolls = readPlayerRollData({ strength: "0", "experience-1": "改变了", "experience-modifier-1": "3" }); expect(await f.sync.roll(r)).toBe(false);
   f.card.attrs.希望 = 0; expect(await f.sync.roll(r)).toBe(false); expect(f.client.messages.send).toHaveBeenCalledTimes(1);
+});
+test("掷骰不带存档 UUID，发送前仍读取来源并拒绝已经切换的关联", async () => {
+  const f = fixture(); await f.bind();
+  expect(await f.sync.roll(request())).toBe(true);
+  const text = vi.mocked(f.client.messages.send).mock.calls[0]![0].text;
+  expect(text).toBe(".dd 0 -- 力量"); expect(text).not.toContain(documentId);
+  vi.mocked(f.client.messages.send).mockClear();
+  f.card.attrs[sourceField] = "f9027cc4-d880-4dbc-b38d-a2f8cc7d7265";
+  expect(await f.sync.roll(request())).toBe(false);
+  expect(f.client.messages.send).not.toHaveBeenCalled(); expect(f.sync.state.phase).toBe("ready");
 });
 test("请求结果未知时不重发，停止时释放 SDK", async () => {
   const f = fixture(); await f.bind(); vi.mocked(f.client.messages.send).mockRejectedValueOnce(Error("timeout"));

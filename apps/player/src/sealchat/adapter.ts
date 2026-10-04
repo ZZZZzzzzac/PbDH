@@ -252,7 +252,7 @@ export class SealChatSync {
           this.publish({ phase: this.boundKey ? "bound" : "ready", cardName: this.boundKey ? current.name : card.name, canBind: usable,
             resources: this.boundKey ? resources : emptyResources(), bindingToken: this.bindingToken(), rolls: this.snapshot()?.rolls ?? emptyRollData(),
             busy: this.sending || !!this.pending,
-            message: usable ? (this.boundKey ? "PbDH 保存人物；Dice 资源结果自动保存并沿用原有云同步。" : (card.sheetType === "" ? "Dice 当前卡未标记类型；可关联，Dice 会校验群规则。尚未启用时请先发送 .set dh。" : "可重连读取已关联人物的 Dice 资源，或用 PbDH 存档重新初始化。")) : blocker! });
+            message: usable ? (!this.boundKey && card.sheetType === "" ? "Dice 卡未标记类型，请确认 .set dh。" : "") : blocker! });
         } catch (error) {
           if (epoch !== this.epoch || this.stopped) continue;
           this.unbind(error instanceof Error ? error.message : "人物卡读取失败。"); this.publish({ phase: "error" });
@@ -300,7 +300,7 @@ export class SealChatSync {
       if (epoch !== this.epoch || !source || !this.remote || !this.state.canBind || this.stopped) return false;
       const { card, context } = this.remote;
       if (card.attrs[sourceField] !== source.documentId || card.attrs[nameField] !== source.name.trim()) {
-        this.publish({ message: "Dice 没有此人物的完整关联标记，请用‘关联并使用 PbDH 资源’初始化。" });
+        this.publish({ message: "此人物尚未关联，请先点“关联”。" });
         return false;
       }
       if (Object.values(source.defenses).some(value => value === null || !Number.isSafeInteger(value) || value < 0 || value > 1_000_000)) {
@@ -310,7 +310,7 @@ export class SealChatSync {
       this.boundKey = remoteKey(context, card);
       this.apply(resources, captured);
       this.publish({ phase: "bound", cardName: source.name, resources, bindingToken: this.bindingToken(), rolls: source.rolls,
-        message: "已重连，沿用 Dice 当前资源；没有发送初始化指令。" });
+        message: "" });
       return true;
     } catch (error) {
       if (epoch === this.epoch) {
@@ -331,7 +331,7 @@ export class SealChatSync {
     try { await this.writeFields(source, expected, true, source.defenses); await this.refresh(); }
     catch (error) { this.unbind(error instanceof Error ? error.message : "关联数据无效。"); this.publish({ phase: "error" }); }
   }
-  pause() { this.unbind("同步已暂停，请重新确认关联。"); }
+  pause() { this.unbind("同步已暂停。"); }
   async sendBound(build: () => string | null, expectedBinding = this.bindingToken()): Promise<boolean> {
     if (this.state.busy || this.state.phase !== "bound" || !this.boundKey || !this.connected || expectedBinding !== this.bindingToken()) return false;
     const key = this.boundKey, epoch = this.epoch;
@@ -343,7 +343,7 @@ export class SealChatSync {
       try { text = build(); } catch (error) { this.publish({ message: error instanceof Error ? error.message : "选项无效。" }); return false; }
       if (!text) return false;
       await this.client.messages.send({ text, ...(this.remote.context.currentCharacter ? { identityId: this.remote.context.currentCharacter.id } : {}), icMode: "ooc" });
-      if (epoch === this.epoch) this.publish({ message: "已发送，请在聊天查看结果；资源等待 Dice 回读后自动保存。" });
+      if (epoch === this.epoch) this.publish({ message: "已发送。" });
       await this.refresh(); return epoch === this.epoch && !this.stopped;
     } catch {
       if (epoch === this.epoch) { this.unbind("请求结果未知，请核对聊天后重新关联；不会自动重发。"); this.publish({ phase: "error" }); }
@@ -351,7 +351,7 @@ export class SealChatSync {
     } finally { this.sending = false; this.publish({ busy: !!this.pending }); }
   }
   roll(request: RollRequest, expectedBinding?: string) {
-    return this.sendBound(() => { const source = this.snapshot(); return source ? rollCommand(request, source.rolls, this.state.resources.hope?.current ?? null, source.documentId) : null; }, expectedBinding);
+    return this.sendBound(() => { const source = this.snapshot(); return source ? rollCommand(request, source.rolls, this.state.resources.hope?.current ?? null) : null; }, expectedBinding);
   }
   change(id: ResourceId, delta: number, expectedBinding?: string) {
     return this.sendBound(() => {
