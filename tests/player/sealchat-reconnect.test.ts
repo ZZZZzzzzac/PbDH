@@ -3,7 +3,7 @@ import { SealChatSync } from "../../apps/player/src/sealchat/adapter.ts";
 import { fixture, documentId, sourceField } from "./sealchat-fixture.ts";
 
 function markLinked(f: ReturnType<typeof fixture>) {
-  Object.assign(f.card.attrs, { [sourceField]: documentId, DHPbDH姓名: f.local.name });
+  Object.assign(f.card.attrs, { [sourceField]: documentId, DH姓名: f.local.name });
 }
 
 test("关闭后的新会话可重连同一存档，保留 Dice 最新资源，不发送初始化或资源写入", async () => {
@@ -11,7 +11,7 @@ test("关闭后的新会话可重连同一存档，保留 Dice 最新资源，�
   await f.bind();
   f.sync.stop();
   f.card.attrs.希望 = 0;
-  f.card.attrs.金币箱 = 2;
+  f.card.attrs.金币箱 = 1;
   f.card.name = "已改昵称";
   const reopened = new SealChatSync(f.client, f.local.key, vi.fn(), f.source);
   await reopened.start();
@@ -21,7 +21,7 @@ test("关闭后的新会话可重连同一存档，保留 Dice 最新资源，�
   expect(reopened.state.phase).toBe("bound");
   expect(reopened.state.cardName).toBe(f.local.name);
   expect(f.local.resources.hope?.current).toBe(0);
-  expect(f.local.resources["chest-gold"]?.current).toBe(2);
+  expect(f.local.resources["chest-gold"]?.current).toBe(1);
   await reopened.refresh();
   expect(f.client.messages.send).not.toHaveBeenCalled();
   expect(await reopened.change("hope", 1)).toBe(true);
@@ -36,8 +36,8 @@ test.each(["missing-source", "other-source", "missing-name", "other-name"])(
     markLinked(f);
     if (condition === "missing-source") delete f.card.attrs[sourceField];
     if (condition === "other-source") f.card.attrs[sourceField] = "11234567-89ab-4cde-8fab-0123456789ab";
-    if (condition === "missing-name") delete f.card.attrs.DHPbDH姓名;
-    if (condition === "other-name") f.card.attrs.DHPbDH姓名 = "其他人物";
+    if (condition === "missing-name") delete f.card.attrs.DH姓名;
+    if (condition === "other-name") f.card.attrs.DH姓名 = "其他人物";
     await f.sync.start();
     expect(await f.sync.reconnect()).toBe(false);
     expect(f.sync.state.phase).not.toBe("bound");

@@ -17,7 +17,7 @@ export function fixture() {
     messages: { send: vi.fn(async ({ text }) => {
       if (execute && text.startsWith(".dh pbdh ")) {
         const payload = JSON.parse(text.slice(9));
-        Object.assign(card.attrs, payload.values, { [sourceField]: payload.source, DHPbDH姓名: payload.name });
+        Object.assign(card.attrs, payload.values, { [sourceField]: payload.source, DH姓名: payload.name });
       }
       if (execute && text.startsWith(".st ")) for (const token of text.slice(4).split(" ")) {
         const match = /^(.+?)(=|[+-])(.+)$/.exec(token); if (!match) continue;

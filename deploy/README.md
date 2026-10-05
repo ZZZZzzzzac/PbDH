@@ -18,7 +18,7 @@ Python 3.10 的旧制品不能直接作为新机回滚版本。
 - Let's Encrypt 证书通过 webroot 签发；`pbdh-preview-cert-renew.timer` 每日两次检查续期，续期后重载 Nginx。
 - 公网 HTTP 仅供连通性测试，API 除 health 外为 403；完整功能测试使用上述 HTTPS 地址。
 - 正式域名已切到新机。`Inspect public routes` 只读检查新机服务，不再修改旧机路由。
-- 正式域名 Nginx 配置在 `Daggerheart_VPS/bandwagon/daggerheart-production.conf`；系统包目录必须优先匹配，允许公开的 `.pbdh-runtime-files.json`。
+- 正式域名 Nginx 配置在 `Daggerheart_VPS/servers/bandwagon-192.243.116.94/nginx/srd-migrated.conf`；系统包目录必须优先匹配，允许公开的 `.pbdh-runtime-files.json`。
 - 正式认证已恢复，但本轮未进行真实账号登录验收。
 
 旧站应用已停用，旧 Nginx 仅转发新机；禁止直接恢复旧应用造成数据分叉。最终私有归档位于 `/srv/domain-migration-20260909/final/`，回滚前必须先备份并同步新机写入。新机的早期
@@ -98,3 +98,11 @@ Backend 日志使用 `journalctl -u pbdh-platform` 查看。数据库备份位�
 `/var/lib/pbdh-platform/backups`；还必须定期同步到服务器
 外。SQLite 当前只支持单 Backend 实例，不得把 worker 数量调高。不要删除
 `/var/lib/pbdh-platform`，也不要在没有匹配备份的情况下回退数据库 schema。
+
+## SealChat iframe接入
+
+该功能随Platform前端的GitHub Release部署，不引入独立服务、账号库或schema。当前本站Chat位于/chat/，Player位于/pbdh/player/daggerheart-core；复用现有Nginx路由。生产服务器配置与频道安装步骤由Daggerheart_VPS/servers/bandwagon-192.243.116.94/sealchat/README.md维护。
+
+SealChat频道嵌入窗加载https://daggerheart.cn/pbdh/player/daggerheart-core?sealchat=1，默认840×790。启用Embed API并允许https://daggerheart.cn，授予context.read、characters.read、characterCard.read、messages.send。官方宿主自动提供hostOrigin与sdkUrl，SDK路径包含/chat前缀。不修改或编译SealChat/Dice宿主。
+
+Dice应安装并启用zac/daggerheart 0.5.0，频道连接Bot并选择.set dh。玩家登录PbDH、选择存档后明确关联初始化资源；重连只回读。完整存档/经历/装备继续由PbDH保存，Dice只持有资源副本、闪避/阈值与DH关联标记。不要在正式云端创建合成测试存档或代玩家发聊天验证。

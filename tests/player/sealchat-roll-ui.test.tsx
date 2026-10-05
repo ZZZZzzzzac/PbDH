@@ -25,7 +25,7 @@ test("掷骰窗使用 PbDH 零特质和经历，显示费用并保留反应/优�
     await act(async () => { button("优势").click(); button("反应掷骰").click(); });
     await act(async () => dialog.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
     expect(dialog.textContent).toContain("消耗 1 希望");
-    expect(dialog.querySelector<HTMLInputElement>(".sealchat-roll-expression")!.value).toBe(".ddr 0 adv hope=1 -- 力量 · 经历");
+    expect(dialog.querySelector<HTMLInputElement>(".sealchat-roll-expression")!.value).toBe(".ddr 0 adv hope -- 力量 · 经历");
     await act(async () => button("掷骰").click());
     expect(roll).toHaveBeenCalledOnce(); expect(close).toHaveBeenCalledOnce();
     expect(roll.mock.calls[0]?.[0]).toMatchObject({ trait: "力量", options: { mode: "reaction", edge: "adv", experienceIndices: [1] } });

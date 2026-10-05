@@ -58,13 +58,12 @@ export function rollCommand(request: RollRequest, data: RollData, hope: number |
   for (const n of [...indices.map(i => data.experiences[i - 1]!.modifier), modifier ?? 0]) if (n) arithmetic += (n > 0 ? "+" : "") + n;
   const parts = [o.mode === "reaction" ? ".ddr" : ".dd", arithmetic];
   if (o.edge !== "normal") parts.push(o.edge);
-  if (indices.length) parts.push("hope=" + indices.length);
+  if (indices.length) parts.push(indices.length === 1 ? "hope" : "hope" + indices.length);
   if (difficulty !== null) parts.push("dc" + difficulty);
   const labels = [trait, ...indices.map(i => data.experiences[i - 1]!.name), reason].filter(Boolean).join(" · ");
   parts.push("--", labels);
   const command = request.expression?.trim() || parts.join(" ");
   if (!/^\.ddr?(?:\s|$)/.test(command) || /[\u0000-\u001f\u007f]/.test(command) || command.length > 1000) throw Error("手动公式只接受单行 .dd / .ddr 指令。");
   if (indices.length && command !== parts.join(" ")) throw Error("使用经历时请通过选项调整公式，或取消勾选后手动编辑。");
-  if (/(?:^|\s)pbdh=/.test(command.split(/\s--(?:\s|$)/)[0]!)) throw Error("人物关联由接入层管理。");
   return command;
 }

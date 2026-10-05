@@ -144,7 +144,7 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
         {requested && supported && characterId ? <span className="sealchat-sync-name" title={names}>{names}</span> : null}
         <div className="sealchat-sync-actions">
           {requested ? <>
-            <button type="button" className="sealchat-sync-bind" aria-label="关联并使用 PbDH 资源" title="用当前人物初始化 Dice 资源"
+            <button type="button" className="sealchat-sync-bind" aria-label="关联并使用 PbDH 资源" title="用当前人物卡初始化 Dice 资源"
               disabled={!supported || !state.canBind || state.busy || ["bound", "binding"].includes(state.phase)} onClick={() => { void syncRef.current?.bind(); }}>关联</button>
             <button type="button" aria-label="暂停同步" disabled={state.phase !== "bound" || state.busy} onClick={() => syncRef.current?.pause()}>暂停</button>
             <button type="button" aria-label="刷新 / 重连" disabled={!config.value || state.busy} onClick={requestConnection}>重连</button>

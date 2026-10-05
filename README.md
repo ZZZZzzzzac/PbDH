@@ -38,6 +38,12 @@ Player 支持 `/player/<系统包目录名>` 直达，例如
 链接指定的系统包优先于本机首选包，加载该系统已有存档；普通 `/player`
 继续使用原来的首选包。该路由同样支持根目录与 `/pbdh/` 部署。
 
+## SealChat人物卡
+
+Player支持SealChat官方频道iframe接入：账号、导入、存档和市场仍使用同一个PbDH应用，数值掷骰与资源同步交给zac/daggerheart 0.5.0 sealpack。旧SealChat HTML人物卡和Dice经历协议已废弃；其他聊天平台的海豹骰导出只包含数字快照。
+
+部署与频道配置见[服务器部署](deploy/README.md#sealchat-iframe接入)。普通浏览器打开Player不启动SealChat连接；仅由已授予Embed API权限的频道嵌入窗建立会话。
+
 ## 目录
 
 - `apps/`：Player、Creator、Market 与 Platform Backend 组合根。

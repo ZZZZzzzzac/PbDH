@@ -34,7 +34,7 @@ export const resourceFields = {
 export const goldFields = {
   "handful-gold": { attr: "金币把", max: 9 },
   "bag-gold": { attr: "金币袋", max: 9 },
-  "chest-gold": { attr: "金币箱", max: null },
+  "chest-gold": { attr: "金币箱", max: 1 },
 } as const;
 export type ResourceId = keyof typeof resourceFields | keyof typeof goldFields;
 export function adjustableMaximum(id: ResourceId): id is keyof typeof resourceFields { return Object.hasOwn(resourceFields, id); }
@@ -63,8 +63,8 @@ export function readResources(attrs: Record<string, unknown>): Resources {
   for (const id of Object.keys(goldFields) as Array<keyof typeof goldFields>) {
     const field = goldFields[id];
     const current = integer(attrs[field.attr]);
-    // 金币保留 PbDH 9/9/无上限的步进边界；外部较大值照实显示，仍可递减。
-    result[id] = current !== null && current <= 1_000_000 ? { current, max: field.max } : null;
+    // 金币单位不自动兑换；三种单位分别限制为9、9、1。
+    result[id] = current !== null && current <= field.max ? { current, max: field.max } : null;
   }
   return result;
 }
@@ -117,8 +117,8 @@ export interface SyncState {
   phase: "connecting" | "ready" | "binding" | "bound" | "closed" | "error";
   cardName: string; resources: Resources; rolls: RollData; bindingToken: string; busy: boolean; canBind: boolean; message: string;
 }
-export const sourceField = "DHPbDH来源";
-export const nameField = "DHPbDH姓名";
+export const sourceField = "DH来源";
+export const nameField = "DH姓名";
 const same = (a: ResourceValue | null | undefined, b: ResourceValue | null | undefined) => a?.current === b?.current && a?.max === b?.max;
 type Pending = { expected: Partial<Record<ResourceId, Partial<ResourceValue>>>; defenses: Partial<Defenses>; source: PlayerSnapshot; initialize: boolean; started: number };
 export class SealChatSync {
@@ -277,7 +277,7 @@ export class SealChatSync {
       parts.push(defenseFields[id] + "=" + value); values[defenseFields[id]] = value;
     }
     if (!parts.length) return;
-    if (initialize && (!source.name.trim() || source.name.length > 100 || /[\u0000-\u001f\u007f]/.test(source.name))) throw Error("PbDH 人物姓名无效，请先检查姓名。");
+    if (initialize && (!source.name.trim() || source.name.length > 100 || /[\u0000-\u001f\u007f]/.test(source.name))) throw Error("PbDH 人物卡姓名无效，请先检查姓名。");
     const text = initialize ? ".dh pbdh " + JSON.stringify({ source: source.documentId, name: source.name.trim(), values }).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026") : ".st " + parts.join(" ");
     this.pending = { expected, defenses, source: structuredClone(source), initialize, started: Date.now() };
     this.publish({ phase: "binding", cardName: this.remote.card.name, busy: true, canBind: false, message: initialize ? "正在用 PbDH 初始化资源与徽标数值，等待 Dice 确认…" : "正在同步 PbDH 的数值修改…" });
