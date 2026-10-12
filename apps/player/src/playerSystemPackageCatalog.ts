@@ -27,10 +27,12 @@ import type {
   PresetSystemPackage,
 } from "./sheet-runtime/loaders/presetSystemPackageLoader.ts";
 import type { PackageLoadResult } from "./sheet-runtime/loaders/systemPackageLoader.ts";
+import type { CharacterGenerator } from "./sheet-runtime/domain/characterGenerator.ts";
 
 export type PlayerSystemPackageCatalogEntry = {
   system: SystemPackageDocument;
   preset: PresetSystemPackage;
+  randomCharacterGenerator?: CharacterGenerator;
   load(input: {
     currentSystem: SystemPackageDocument;
     installedPackages: ResourceLibrary;
@@ -46,6 +48,10 @@ export const playerSystemPackageCatalog: readonly PlayerSystemPackageCatalogEntr
     system: daggerheartSystemJson as SystemPackageDocument,
     preset: daggerheartCorePreset,
     load: loadDaggerheartCoreRuntimePackage,
+    randomCharacterGenerator: async (systemPackage) => {
+      const { generateDaggerheartCharacter } = await import("./sheet-runtime/domain/daggerheartRandomCharacter.ts");
+      return generateDaggerheartCharacter(systemPackage, new Set(daggerheartCorePreset.embeddedResourceIndex.map(entry => entry.packageId)));
+    },
   },
   {
     system: heartOfHopefindSystemJson as SystemPackageDocument,

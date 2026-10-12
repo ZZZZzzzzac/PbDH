@@ -328,6 +328,7 @@ export function PlayerSheetSurface({
   const enterAuthorPreview = useRuntimeStore((state) => state.enterAuthorPreview);
   const exitAuthorPreview = useRuntimeStore((state) => state.exitAuthorPreview);
   const createCharacterSave = useRuntimeStore((state) => state.createCharacterSave);
+  const createGeneratedCharacterSave = useRuntimeStore((state) => state.createGeneratedCharacterSave);
   const switchCharacterSave = useRuntimeStore((state) => state.switchCharacterSave);
   const renameCharacterSave = useRuntimeStore((state) => state.renameCharacterSave);
   const duplicateCharacterSave = useRuntimeStore((state) => state.duplicateCharacterSave);
@@ -1165,6 +1166,17 @@ export function PlayerSheetSurface({
     }
   }
 
+  async function handleRandomCharacter() {
+    const generator = currentCatalogEntry?.randomCharacterGenerator;
+    if (!generator || playerOperation || outputOperation) return;
+    setPlayerOperation("save");
+    try {
+      await createGeneratedCharacterSave(generator);
+    } finally {
+      setPlayerOperation(null);
+    }
+  }
+
   function startQuestionnaire() {
     const questionnaire = currentPackage?.questionnaireCharacterCreation;
     if (!questionnaire || !characterData) return;
@@ -1196,6 +1208,9 @@ export function PlayerSheetSurface({
           ) : null}
           {currentPackage?.questionnaireCharacterCreation ? (
             <button type="button" role="menuitem" disabled={!characterData} onClick={startQuestionnaire}>问卷创建</button>
+          ) : null}
+          {currentCatalogEntry?.randomCharacterGenerator && !authorPreviewActive ? (
+            <button type="button" role="menuitem" disabled={!currentPackage || Boolean(playerOperation) || Boolean(outputOperation)} onClick={() => void handleRandomCharacter()}>完全随机</button>
           ) : null}
           <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void handleValidation()}>车卡审核</button>
           <button type="button" role="menuitem" onClick={() => setSealChatConnectionRequest(value => value + 1)}>与海豹聊天连接</button>

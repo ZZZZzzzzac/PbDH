@@ -1,5 +1,6 @@
 import {
   createEmptyCharacterData,
+  characterDataSchema,
   updateCharacterValue,
   updatePlayerImage,
   removePlayerImage as removePlayerImageData,
@@ -70,6 +71,56 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         resourceReferenceIssues: [],
         pendingQuestionnaireResult: null,
       });
+    },
+
+    async createGeneratedCharacterSave(generator) {
+      const currentPackage = get().currentPackage;
+      const previousSaveId = get().activeCharacterSaveId;
+      if (!currentPackage) return;
+      try {
+        const generated = await generator(currentPackage);
+        const data = generated.data;
+        if (!characterDataSchema.safeParse(data).success
+          || data.systemPackage.id !== currentPackage.manifest.ID
+          || data.systemPackage.version !== currentPackage.manifest.版本
+          || !generated.name.trim()
+          || get().allCharacterSaves.some(save => save.id === data.character.id)) {
+          throw new Error("随机创建结果不符合当前系统包或新角色存档要求。");
+        }
+        const issues = await environment.dependencies.runValidationChecks({
+          characterData: data,
+          resourceLibraries: currentPackage.resourceLibraries ?? [],
+          cardState: data.cards,
+          packageMetadata: { id: currentPackage.manifest.ID, version: currentPackage.manifest.版本 },
+          checks: currentPackage.validationChecks ?? [],
+        });
+        if (issues.some(issue => issue.level !== "info")) {
+          throw new Error(`随机创建未通过车卡审核：${issues.filter(issue => issue.level !== "info").map(issue => issue.text).join("；")}`);
+        }
+        if (get().currentPackage !== currentPackage || get().activeCharacterSaveId !== previousSaveId) {
+          throw new Error("系统包或当前人物已切换，请重新随机创建。");
+        }
+        await flushPendingAutosave(environment, get().characterData, previousSaveId, get().characterSaves);
+        await environment.dependencies.storage.saveCharacterSave({
+          id: data.character.id, packageId: data.systemPackage.id, name: generated.name.trim(),
+          updatedAt: data.updatedAt, data,
+        });
+        await environment.dependencies.storage.setActiveCharacterSaveId(data.systemPackage.id, data.character.id);
+        set({
+          characterData: data,
+          characterSaves: await environment.dependencies.storage.listCharacterSaves(data.systemPackage.id),
+          allCharacterSaves: await environment.dependencies.storage.listAllCharacterSaves(),
+          activeCharacterSaveId: data.character.id,
+          ...emptyDerivedState(),
+          ...rebuildDependencyRuntimeState(data, currentPackage),
+          pendingCardTablePlacements: queueNewCardInstancePlacements({}, createEmptyCharacterData(currentPackage), data),
+          pendingQuestionnaireResult: null,
+          validationIssues: issues, validationStatus: "complete", resourceReferenceIssues: [],
+          importError: null, importNotice: "已创建1级随机角色，并通过车卡审核。", storageStatus: "saved",
+        });
+      } catch (error) {
+        set({ importError: error instanceof Error ? error.message : String(error), importNotice: null });
+      }
     },
 
     async switchCharacterSave(saveId) {

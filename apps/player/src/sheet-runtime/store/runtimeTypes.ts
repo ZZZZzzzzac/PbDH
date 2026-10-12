@@ -1,4 +1,5 @@
 import type { StateCreator } from "zustand";
+import type { CharacterGenerator } from "../domain/characterGenerator";
 import type { ImageAdmissionSelection } from "@pbdh/media-admission";
 import type { CardLayoutSnapshotEntry, CardTableLayout } from "../domain/cardEngine";
 import type {
@@ -144,6 +145,7 @@ export interface CharacterSlice {
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
   createCharacterSave: (name?: string) => Promise<void>;
+  createGeneratedCharacterSave: (generator: CharacterGenerator) => Promise<void>;
   switchCharacterSave: (saveId: string) => Promise<void>;
   confirmCharacterDataMigration: () => Promise<void>;
   cancelCharacterDataMigration: () => void;
