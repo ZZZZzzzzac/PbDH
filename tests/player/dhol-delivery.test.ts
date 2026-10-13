@@ -28,6 +28,18 @@ const systemPackage: SystemPackage = { manifest: { ID: DHOL_PACKAGE_ID, 名称: 
 
 afterEach(() => vi.unstubAllGlobals());
 
+it("当前 dhsheet 导出器的伤害前缀保留主副武器属性", () => {
+  const delivery = buildDholDelivery(data, {
+    ...exported,
+    primaryWeaponTrait: "物理/双手/远距离", primaryWeaponDamage: "敏捷: d6+3",
+    secondaryWeaponTrait: "物理/单手/近战", secondaryWeaponDamage: "力量: d4+2",
+  }, systemPackage);
+  expect(delivery.sheet.desktopView).toMatchObject({
+    primaryWeaponAttribute: "敏捷", primaryWeaponRange: "远距离",
+    secondaryWeaponAttribute: "力量", secondaryWeaponRange: "近战",
+  });
+});
+
 describe("PbDH delivery through the existing dhSheet contract", () => {
   it("keeps edited values and extension text while dropping both portraits", () => {
     const delivery = buildDholDelivery(data, exported, systemPackage);

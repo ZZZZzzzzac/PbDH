@@ -37,10 +37,12 @@ function resourceMax(sheet: Record<string, unknown>, key: "hp" | "stress" | "arm
   return value;
 }
 
-function weaponDisplay(value: unknown): { attribute: string; range: string } {
+function weaponDisplay(value: unknown, damage: unknown): { attribute: string; range: string } {
   const text = shown(value);
   return {
-    attribute: text.match(/敏捷|力量|灵巧|本能|风度|知识/u)?.[0] ?? "",
+    // 当前适配器把属性写为伤害前缀（如「敏捷: d6+3」），历史格式则放在特征中。
+    attribute: shown(damage).match(/^\s*(敏捷|力量|灵巧|本能|风度|知识)\s*[:：]/u)?.[1]
+      ?? text.match(/敏捷|力量|灵巧|本能|风度|知识/u)?.[0] ?? "",
     range: text.match(/极远距离|远距离|近距离|极远|邻近|近战/u)?.[0] ?? "",
   };
 }
@@ -108,8 +110,8 @@ export function buildDholDelivery(data: CharacterData, exported: Record<string, 
       typeof sheet.hope !== "number" || !Number.isInteger(sheet.hope) || sheet.hope < 0 || sheet.hope > hopeMax) {
     throw new Error("角色的希望值或上限无效，无法发送。");
   }
-  const primary = weaponDisplay(sheet.primaryWeaponTrait);
-  const secondary = weaponDisplay(sheet.secondaryWeaponTrait);
+  const primary = weaponDisplay(sheet.primaryWeaponTrait, sheet.primaryWeaponDamage);
+  const secondary = weaponDisplay(sheet.secondaryWeaponTrait, sheet.secondaryWeaponDamage);
   sheet.desktopView = {
     version: 1,
     evasion: shown(sheet.evasion),
