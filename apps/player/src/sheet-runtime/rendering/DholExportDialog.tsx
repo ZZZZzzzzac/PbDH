@@ -103,6 +103,13 @@ export function DholExportDialog({ data, systemPackage, onClose }: { data: Chara
         {result && <p className="dhol-export-dialog__success" role="status">{result}</p>}
       </div>
       <footer className="dhol-export-dialog__actions">
+        <a
+          className="icon-button secondary-button dhol-export-dialog__open-panel"
+          href={code.length === 6 ? `https://screenol.pages.dev/?room=${encodeURIComponent(code)}` : "https://screenol.pages.dev/"}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={code.length === 6 ? `在新标签页打开 DHOL 房间 ${code}` : "在新标签页打开 DHOL 在线面板"}
+        >{code.length === 6 ? "打开此房间 ↗" : "打开 DHOL ↗"}</a>
         <button type="button" className="icon-button secondary-button" onClick={onClose} disabled={sending}>关闭</button>
         <button type="submit" className="icon-button" disabled={sending || code.length !== 6 || !prepared}>{sending ? "发送中…" : "发送"}</button>
       </footer>

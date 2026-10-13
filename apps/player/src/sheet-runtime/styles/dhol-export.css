@@ -37,5 +37,6 @@
 .dhol-export-dialog__error, .dhol-export-dialog__success { margin: 0; padding: 10px; border-radius: 5px; line-height: 1.5; }
 .dhol-export-dialog__error { color: #842323; background: #fff0ef; }
 .dhol-export-dialog__success { color: #176641; background: #e8f7ef; }
-.dhol-export-dialog__actions { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #cbd4d6; }
-.dhol-export-dialog__actions button { min-height: 44px; }
+.dhol-export-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; border-top: 1px solid #cbd4d6; }
+.dhol-export-dialog__actions .icon-button { box-sizing: border-box; min-height: 44px; }
+.dhol-export-dialog__open-panel { margin-right: auto; font: inherit; text-decoration: none; }
