@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { CharacterData } from "../domain/characterData";
 import { exportExternalCharacterData, type CharacterAdapterExport } from "../domain/characterFormatAdapter";
@@ -55,7 +56,7 @@ export function DholExportDialog({ data, systemPackage, onClose }: { data: Chara
     setError(null);
     setResult(null);
     try {
-      retryRef.current ??= crypto.randomUUID();
+      retryRef.current ??= randomUUID();
       const sent = await sendDholDelivery(code, retryRef.current, prepared.delivery);
       try { localStorage.setItem(roomCodeStorageKey, code); } catch { /* 房间码记忆失败不影响投递。 */ }
       setResult(`${sent.action === "created" ? "已新增" : "已覆盖"}：${sent.name}`);

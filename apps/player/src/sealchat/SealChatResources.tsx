@@ -128,11 +128,12 @@ export function SealChatResources({ systemPackageId, characterId, characterName,
     openRoll: next => { if (visible && state.phase === "bound") { setSelection(next); void syncRef.current?.refresh(); } },
   } : null, [requested, supported, state, visible]);
 
-  const status = !requested ? "未连接" : !supported ? "不支持" : config.error || state.phase === "error" ? "连接异常"
+  const status = !requested ? "未连接" : config.error ? "连接异常" : !systemPackageId ? "等待人物卡" : !supported ? "不支持" : state.phase === "error" ? "连接异常"
     : state.phase === "bound" ? (state.busy ? "发送中" : "已连接") : state.phase === "binding" ? "同步中"
     : state.phase === "connecting" ? "连接中" : state.phase === "closed" ? "已断开" : state.message === "同步已暂停。" ? "已暂停" : "未关联";
-  const notice = !requested ? "请从海豹聊天的嵌入人物卡打开。" : !supported ? "仅支持匕首之心核心系统包。"
-    : config.error || (["connecting", "binding"].includes(state.phase) ? "" : state.message);
+  const notice = !requested ? "请从海豹聊天的嵌入人物卡打开。" : config.error || (!systemPackageId
+    ? "正在等待人物卡加载；若长时间空白，请查看右上角通知中的加载错误。" : !supported ? "仅支持匕首之心核心系统包。"
+    : ["connecting", "binding"].includes(state.phase) ? "" : state.message);
   const playerName = characterName || "未命名人物";
   const names = state.cardName && state.cardName !== playerName ? playerName + " → " + state.cardName : playerName;
 

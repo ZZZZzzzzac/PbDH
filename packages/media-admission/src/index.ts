@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 // 迁移来源：PbDH_Cards@0745f4e45d6bc1cb06bc7f5d7b005757546c5cbe frontend/src/media/localImagePipeline.ts。
 export type ImageCrop = {
   x: number;
@@ -346,7 +347,7 @@ async function encodeWebp(canvas: HTMLCanvasElement, maxOutputBytes: number): Pr
 }
 
 async function digestHex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes.slice().buffer as ArrayBuffer);
+  const digest = await digestSha256(bytes.slice().buffer as ArrayBuffer);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 

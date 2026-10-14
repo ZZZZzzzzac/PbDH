@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { createCardInstance } from "../domain/cardEngine";
 import {
   type CharacterData,
@@ -148,7 +149,7 @@ export function createCardInstancesFromSelection(
   return entries.reduce(
     (nextData, entry) =>
       createCardInstance(nextData, {
-        instanceId: crypto.randomUUID(),
+        instanceId: randomUUID(),
         tableModuleId: cardCreation.卡牌桌面模块ID,
         libraryId,
         definitionId: entry.ID,
@@ -198,7 +199,7 @@ export function createCardInstanceFromComposite(
     && instance.definitionRef.compositeResourceId === composite.ID);
   if (exists) return data;
   return createCardInstance(data, {
-    instanceId: crypto.randomUUID(),
+    instanceId: randomUUID(),
     tableModuleId: targetTable.ID,
     definitionRef: reference,
     state: sourceModule.创建卡牌.默认状态 ?? targetTable.状态选项?.[0],

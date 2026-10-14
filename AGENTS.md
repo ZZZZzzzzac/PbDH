@@ -58,6 +58,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `apps/backend/`：模块化单体 Platform Backend
 - `contracts/`：语言无关、独立版本化的 Contract Schemas 与契约样例；不得依赖具体 App、共享 package 或编程语言
 - `packages/contract-runtime/`：前端共享的 Contract Catalog Reader、Validator 与稳定诊断映射；只依赖 `contracts/` 制品，不拥有 Schema 或业务操作
+- `packages/crypto-runtime/`：无 UI、无业务依赖的 SHA-256 与安全随机 UUID 能力；原生 WebCrypto 优先，HTTP 嵌入环境按能力回退，不修改浏览器全局 API 或 Contract 摘要规则。
 - `packages/templates/`：可信 Resource Templates 与 Template Registry；使用无 React 的 `core` 入口和前端专用 `frontend` 入口隔离；内置模板默认服务 daggerheart，一个模板只服务一个系统，其它系统的专用契约另建以系统命名的模板（如 `罗德岛子职`），不得把别的系统字段加进内置模板
 - `packages/resource-renderer/`：所有前端共用的 Canonical Card Surface 渲染接口、基础组件与隔离样式；接收已解析 Template，不反向读取 Template Registry
 - `packages/resource-conversion/`：无 UI、无持久化的共享资源格式转换核心与可信 Adapter Registry；只能依赖 Contract 与 `templates/core`
@@ -78,6 +79,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 ## 依赖方向
 
 - `contracts/` 位于最底层；共享 package 不得形成循环依赖，也不得依赖 `apps/`。
+- `packages/crypto-runtime` 不依赖其他 workspace、React 或 DOM；Contract 实现与业务模块可调用其摘要和 UUID 能力。
 - `packages/contract-runtime`、`packages/templates/core`、`packages/tabletop/core` 与 `packages/resource-renderer` 的通用接口只依赖 Contract 生成物或各自内部模块；React 实现不得从 `core` 入口泄漏。
 - `packages/templates/frontend` 可以依赖 `templates/core` 与 `resource-renderer`；`packages/tabletop/react` 可以依赖 `tabletop/core` 与 `resource-renderer`。
 - 运行中的 App 通过 `@pbdh/templates/frontend/lazy` 按精确版本加载渲染器与编辑器；同步 `frontend` 入口只供契约验收和离线工具使用。历史实现保留，加载失败可重试；不得通过静态注册表把全部历史前端实现引入 App。

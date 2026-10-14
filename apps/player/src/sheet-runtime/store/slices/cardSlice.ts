@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   addCardIndicator,
   bringCardInstanceToFront,
@@ -62,7 +63,7 @@ export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<C
       const system = get().currentPackage;
       if (!system) return;
       try {
-        updateCardAndAutosave(environment, get, set, (data) => replacePlayerCard(readLoadedTemplateCore, data, system, instanceId, replacementId, crypto.randomUUID()));
+        updateCardAndAutosave(environment, get, set, (data) => replacePlayerCard(readLoadedTemplateCore, data, system, instanceId, replacementId, randomUUID()));
       } catch (error) {
         set({ importError: error instanceof Error ? error.message : "卡牌替换失败，当前卡牌未改变。" });
       }

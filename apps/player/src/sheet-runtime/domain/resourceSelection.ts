@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { createCardInstance } from "./cardEngine";
 import { gridSize } from "./gridLayout";
 import { updateResourceSelectionSnapshot, type CharacterData } from "./characterData";
@@ -80,7 +81,7 @@ function createCardInstancesFromSelection(
         [id]: [typeof previous === "string" ? previous : "", description].filter(Boolean).join("\n\n"),
       } } };
     }
-    const instanceId = crypto.randomUUID();
+    const instanceId = randomUUID();
     // 格子物资领取时即固定副本，后续资源更新不能改变已装包物品的尺寸。
     const entryId = targetTable.网格布局 ? `grid:${instanceId}` : entry.ID;
     const snapshot = targetTable.网格布局 ? { ...nextData, embeddedResourceEntries: {

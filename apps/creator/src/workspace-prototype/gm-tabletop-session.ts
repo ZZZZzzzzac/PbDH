@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import {
   clampTabletopPosition,
@@ -78,7 +79,7 @@ export function placeWorkspaceResourcesOnTabletop(
   workspaces: readonly CreatorWorkspace[],
   selections: readonly WorkspaceResourceSelection[],
   firstPosition?: { x: number; y: number },
-  createId: () => string = () => crypto.randomUUID(),
+  createId: () => string = () => randomUUID(),
 ): GmTabletopSessionResult {
   if (selections.length === 0) return { ok: true, tabletop, selectedInstanceIds: [] };
   let next = tabletop;
@@ -128,7 +129,7 @@ export function replaceTabletopInstanceFromWorkspace(
   workspaces: readonly CreatorWorkspace[],
   instanceId: string,
   replacementId: string,
-  createId: () => string = () => crypto.randomUUID(),
+  createId: () => string = () => randomUUID(),
 ): GmTabletopSessionResult {
   const instance = tabletop.instances.find((candidate) => candidate.id === instanceId);
   if (!instance) return { ok: false, error: "tabletop.instance.not-found" };

@@ -28,6 +28,10 @@ export function validateImport(importerPath, specifier) {
   const targetPath = resolveRelativeImport(importer, specifier);
   const violations = [];
   const inSharedPackage = importer.startsWith("packages/");
+  if (importer.startsWith("packages/crypto-runtime/") && (
+    specifier.startsWith("@pbdh/") || browserPackages.has(specifier)
+    || targetPath?.startsWith("apps/") || (targetPath?.startsWith("packages/") && !targetPath.startsWith("packages/crypto-runtime/"))
+  )) violations.push("crypto-runtime must remain independent of apps, workspace packages, and React");
   const targetsAppPackage = [...appPackages].some((packageName) => importsPackage(specifier, packageName));
   const importerApp = /^apps\/([^/]+)\//.exec(importer)?.[1];
   const targetApp = targetPath ? /^apps\/([^/]+)\//.exec(targetPath)?.[1] : undefined;

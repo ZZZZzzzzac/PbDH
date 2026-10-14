@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   CloudDocumentCoordinator,
   HttpCloudDocumentApi,
@@ -169,7 +170,7 @@ export class CreatorCloudDocumentService {
     }
     const restored = await this.#api.restoreDocument(
       remote.documentId,
-      crypto.randomUUID(),
+      randomUUID(),
       remote.revision,
       credentials,
     );

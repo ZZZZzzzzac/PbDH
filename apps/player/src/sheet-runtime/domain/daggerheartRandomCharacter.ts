@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { createEmptyCharacterData, type SheetValue } from "./characterData";
 import { createCardInstance } from "./cardEngine";
 import type { GeneratedCharacter } from "./characterGenerator";
@@ -96,7 +97,7 @@ export function generateDaggerheartCharacter(
     throw new Error("种族卡牌桌面不可用。");
   }
   data = createCardInstance(applyDependencyResultToCharacterData(data, ancestryResult), {
-    instanceId: crypto.randomUUID(), tableModuleId: targetTable.ID,
+    instanceId: randomUUID(), tableModuleId: targetTable.ID,
     definitionRef: { type: "compositeResource", compositeResourceId: composite.ID },
     state: composer.创建卡牌!.默认状态 ?? targetTable.状态选项?.[0],
   });

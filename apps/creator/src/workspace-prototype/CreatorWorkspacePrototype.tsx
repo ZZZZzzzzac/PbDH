@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   useCallback,
   useEffect,
@@ -609,7 +610,7 @@ export function CreatorWorkspacePrototype({
           if (!source) throw new Error("没有找到冲突的本地桌面。");
           await tabletopRepository.save({
             ...structuredClone(source),
-            id: crypto.randomUUID(),
+            id: randomUUID(),
             name: `${source.name} - 本地副本`,
           }, tabletopMedia, null);
         }
@@ -1071,7 +1072,7 @@ export function CreatorWorkspacePrototype({
   function createTabletopFromDialog() {
     const name = tabletopNameDraft.trim();
     if (!name) return;
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     setTabletops((current) => [...current, createTabletopDocument(id, name)]);
     setActiveTabletopId(id);
     clearTabletopSelection();
@@ -1158,7 +1159,7 @@ export function CreatorWorkspacePrototype({
 
   function duplicateSelectedInstance() {
     if (!selectedInstance) return;
-    const id = crypto.randomUUID();
+    const id = randomUUID();
     applyTabletopCommand({ type: "duplicate", instanceId: selectedInstance.id, newInstanceId: id });
     selectTabletopInstance(id);
     setTabletopContextMenu(null);

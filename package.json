@@ -22,7 +22,8 @@
     "packages/media-admission",
     "packages/platform-auth",
     "packages/platform-ui",
-    "packages/publication-ui"
+    "packages/publication-ui",
+    "packages/crypto-runtime"
   ],
   "scripts": {
     "check:boundaries": "node --test scripts/dependency-boundaries.test.mjs && node scripts/check-dependency-boundaries.mjs",

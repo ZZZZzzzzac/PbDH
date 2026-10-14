@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   createEmptyCharacterData,
   characterDataSchema,
@@ -225,7 +226,7 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
         : null;
       if (!currentPackage || !source) return;
       const now = new Date().toISOString();
-      const duplicateId = crypto.randomUUID();
+      const duplicateId = randomUUID();
       const sourceSummary = get().characterSaves.find((save) => save.id === saveId);
       const data: CharacterData = {
         ...source,

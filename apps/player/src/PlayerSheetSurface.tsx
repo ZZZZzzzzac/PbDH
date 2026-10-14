@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   lazy,
   Suspense,
@@ -919,7 +920,7 @@ export function PlayerSheetSurface({
         await characterSaveRepository.import({
           document: {
             ...structuredClone(source.document),
-            documentId: crypto.randomUUID(),
+            documentId: randomUUID(),
             name: `${source.document.name} 本地副本`,
             createdAt: now,
             updatedAt: now,

@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { createEmptyCharacterData, createCharacterId, type CharacterConversionReport, type CharacterData, type PlayerImageData, type SheetValue } from "./characterData";
 import type { CardInstance } from "./cardEngine";
 import { materializeImportedComposite } from "./resourceComposer";
@@ -126,7 +127,7 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
     const entry = systemPackage.resourceLibraries?.find((library) => library.ID === card.libraryId)?.entries.find((item) => item.ID === card.entryId);
     if (!entry) return { error: invalidOutput(adapter, `cards.${index} 引用了不存在的 Resource Entry ${card.libraryId}/${card.entryId}。`) };
     const siblingIndex = cards.filter((item) => item.tableModuleId === card.tableModuleId).length;
-    cards.push({ instanceId: crypto.randomUUID(), tableModuleId: card.tableModuleId, definitionRef: { type: "resourceLibrary", libraryId: card.libraryId, entryId: card.entryId }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
+    cards.push({ instanceId: randomUUID(), tableModuleId: card.tableModuleId, definitionRef: { type: "resourceLibrary", libraryId: card.libraryId, entryId: card.entryId }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
   }
   for (const [index, card] of (result.composedCards ?? []).entries()) {
     const composer = modules.get(card.composerModuleId);
@@ -143,7 +144,7 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
     if (composer.选择关系输出) fields[composer.选择关系输出.字段] = composer.选择关系输出.不全相同时;
     data.compositeResources[id] = materializeImportedComposite(composer, fields, systemPackage.resourceLibraries ?? []);
     const siblingIndex = cards.length;
-    cards.push({ instanceId: crypto.randomUUID(), tableModuleId: table.ID, definitionRef: { type: "compositeResource", compositeResourceId: id }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
+    cards.push({ instanceId: randomUUID(), tableModuleId: table.ID, definitionRef: { type: "compositeResource", compositeResourceId: id }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
   }
   return {
     adapter,
