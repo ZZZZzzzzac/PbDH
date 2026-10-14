@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CharacterData } from "../../apps/player/src/sheet-runtime/domain/characterData";
 import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/systemPackage";
-import { buildDholDelivery, DHOL_PACKAGE_ID, normalizeDholRoomCode, sendDholDelivery, supportsDholDelivery } from "../../apps/player/src/sheet-runtime/export/dholDelivery";
+import { buildDholDelivery, DHOL_BASE_URL, DHOL_PACKAGE_ID, normalizeDholRoomCode, sendDholDelivery, supportsDholDelivery } from "../../apps/player/src/sheet-runtime/export/dholDelivery";
 
 const data: CharacterData = {
   kind: "pbdh-character-data", schemaVersion: "0.1.0", systemPackage: { id: DHOL_PACKAGE_ID, version: "1.0.2" },
@@ -41,6 +41,16 @@ it("当前 dhsheet 导出器的伤害前缀保留主副武器属性", () => {
 });
 
 describe("PbDH delivery through the existing dhSheet contract", () => {
+  it("sends to the Pages API by default", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ ok: true, action: "created", name: "阿岚", generation: 1, seq: 1 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendDholDelivery("ABC123", "request-1", buildDholDelivery(data, exported, systemPackage));
+
+    expect(DHOL_BASE_URL).toBe("https://screenol.pages.dev");
+    expect(fetchMock).toHaveBeenCalledWith("https://screenol.pages.dev/api/v2/rooms/ABC123/characters", expect.any(Object));
+  });
+
   it("keeps edited values and extension text while dropping both portraits", () => {
     const delivery = buildDholDelivery(data, exported, systemPackage);
     expect(delivery.schemaVersion).toBe(2);

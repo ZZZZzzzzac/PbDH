@@ -20,7 +20,7 @@
 ## DHOL 在线面板投递（Issue #79）
 
 - Player「导入导出 → 发送到 DHOL 在线面板」仅对当前匕首之心系统包开放。先显示 dhsheet 转换报告，再由玩家输入 6 位房间码发送。
-- 复用当前系统包的 `dhsheet-character` 导出器，向 `https://dhol-realtime.gooole-dql.workers.dev/api/v2/rooms/:code/characters` 提交 `schemaVersion: 2`；`desktopView` 保存最终显示值，不让对端再次推导。人物和伙伴头像不发送。
+- 复用当前系统包的 `dhsheet-character` 导出器，向 `https://screenol.pages.dev/api/v2/rooms/:code/characters` 提交 `schemaVersion: 2`；Pages Function 通过 Service binding 转发到 DHOL Worker，浏览器无需直连 `workers.dev`。`desktopView` 保存最终显示值，不让对端再次推导。人物和伙伴头像不发送。
 - 同名投递覆盖 DHOL 角色及资源状态；网络失败后在同一弹窗重试会复用角色快照和 `Idempotency-Key`。更换房间码或成功发送后重新生成请求身份；请求 20 秒超时。
 - 卡牌优先读取人物自带资源副本。原生卡沿用适配器结果，不重复补卡；适配器不支持的其他资源库与组合卡以可读文字补充。所有非图片模块值和卡牌文字另存于 `sheet.pbdhSource`，不保证对端全部显示，也不改变 PBCHA。
 - DHOL 每张角色 JSON 上限 512 KiB、请求上限 544 KiB；超限报错，不截断。线上服务须允许当前页面 Origin；上游 `015c7d850d611f5ba6a94f21d3421908278b5362` 加入了 `https://daggerheart.cn`，localhost 或其他域名需由 DHOL 配置允许。
