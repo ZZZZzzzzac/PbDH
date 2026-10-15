@@ -1,0 +1,100 @@
+[
+  {
+    "ID": "apply-combat-style",
+    "sources": [
+      {
+        "类型": "resourcePicker",
+        "模块ID": "pick-combat-style"
+      }
+    ],
+    "targets": [
+      {
+        "类型": "module",
+        "模块ID": "combat-style"
+      },
+      {
+        "类型": "module",
+        "模块ID": "evasion"
+      },
+      {
+        "类型": "module",
+        "模块ID": "major-threshold"
+      },
+      {
+        "类型": "module",
+        "模块ID": "severe-threshold"
+      },
+      {
+        "类型": "module",
+        "模块ID": "damage"
+      },
+      {
+        "类型": "module",
+        "模块ID": "hp"
+      }
+    ],
+    "触发": {
+      "类型": "resourceSelected",
+      "来源模块ID": "pick-combat-style"
+    },
+    "条件": {
+      "类型": "selectedResourceFieldEquals",
+      "字段": "类型",
+      "值": "非日常预设"
+    },
+    "动作": [
+      {
+        "类型": "fillText",
+        "目标模块ID": "combat-style",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "名称"
+        }
+      },
+      {
+        "类型": "fillText",
+        "目标模块ID": "evasion",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "闪避"
+        }
+      },
+      {
+        "类型": "fillText",
+        "目标模块ID": "major-threshold",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "重度阈值"
+        }
+      },
+      {
+        "类型": "fillText",
+        "目标模块ID": "severe-threshold",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "严重阈值"
+        }
+      },
+      {
+        "类型": "fillText",
+        "目标模块ID": "damage",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "伤害"
+        }
+      },
+      {
+        "类型": "fillCountable",
+        "目标模块ID": "hp",
+        "当前值": {
+          "类型": "selectedResourceField",
+          "字段": "生命"
+        },
+        "最大值": {
+          "类型": "selectedResourceField",
+          "字段": "生命"
+        }
+      }
+    ]
+  }
+]

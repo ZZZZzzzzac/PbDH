@@ -1,0 +1,99 @@
+:scope { width: 100%; }
+:scope .persona-sheet { box-sizing: border-box; padding: .5rem; color: var(--framework-text); font-family: system-ui, "Microsoft YaHei", sans-serif; }
+:scope .persona-sheet *, :scope .persona-sheet *::before, :scope .persona-sheet *::after { box-sizing: border-box; }
+:scope h1, :scope h2, :scope h3 { margin: 0; }
+:scope .sheet-title { padding: 0 0 .6rem; border-bottom: 2px solid var(--framework-text-secondary); }
+:scope .sheet-title h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: .05em; }
+:scope .sheet-columns { display: grid; grid-template-columns: 210mm minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+:scope .character-panel, :scope .cards-panel { min-width: 0; height: 297mm; background: var(--framework-surface); border: 1px solid var(--framework-border); }
+:scope .character-content { display: grid; grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1fr); gap: .5rem; height: 100%; padding: 6mm; }
+:scope .cards-panel { display: flex; flex-direction: column; padding: .75rem; }
+:scope .section-heading { display: flex; align-items: center; min-height: 1.6rem; padding: 0 .2rem .2rem; border-bottom: 1px solid var(--framework-border-strong); }
+:scope .section-heading h2 { font-size: .85rem; letter-spacing: .12em; }
+:scope .combat-values { display: grid; grid-template-rows: 9.5rem 2rem minmax(0, 1fr); gap: .5rem; min-width: 0; min-height: 0; }
+:scope .combat-values > .region > [data-module-slot-id], :scope .combat-values [data-module-type="countableResource"] { height: 100%; }
+:scope .combat-values [data-module-type="countableResource"] { grid-template-columns: 4rem minmax(0, 1fr); min-height: 0; }
+:scope .combat-values [data-module-type="countableResource"] [data-part="label"] { min-height: 0; border-bottom: 0; border-right: 1px solid var(--framework-border-subtle); font-size: .75rem; }
+:scope .attributes > [data-module-slot-id], :scope .combat-stats > [data-module-slot-id], :scope .thresholds > [data-module-slot-id] { height: 100%; }
+:scope .name-level { display: grid; grid-template-columns: minmax(0, 1fr) 6rem; gap: .5rem; }
+:scope .attributes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; height: 4rem; }
+:scope .attributes [data-module-type="freeText"], :scope .combat-stats [data-module-type="freeText"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+:scope .attributes [data-part="label"], :scope .combat-stats [data-part="label"] { min-height: 1.35rem; padding: .125rem; border-right: 0; border-bottom: 1px solid var(--framework-border-subtle); justify-content: center; font-size: .75rem; white-space: nowrap; }
+:scope .attributes [data-part="input"], :scope .combat-stats [data-part="input"] { font-size: 1.5rem; min-height: 0; }
+:scope .portrait { height: 100%; min-height: 0; }
+:scope .portrait > [data-module-slot-id], :scope .portrait [data-module-type="imageField"] { height: 100%; }
+:scope .portrait [data-module-type="imageField"] { display: flex; flex-direction: column; }
+:scope .portrait [data-part="surface-frame"] { flex: 1; height: 0; min-height: 0; }
+:scope .portrait [data-part="image"] { object-fit: contain; }
+:scope .portrait [data-part="label"] { font-size: .75rem; }
+:scope .portrait [data-part="image-fallback"] { font-size: .75rem; }
+:scope .daily-details, :scope .palace-details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: .75rem; flex: 1; min-height: 0; }
+:scope .daily-values { display: grid; grid-template-rows: 4rem auto minmax(0, 1fr); gap: .5rem; min-width: 0; min-height: 0; }
+:scope .region { min-width: 0; padding: 0; }
+:scope h3 { margin: 0 0 .2rem; padding: 0 .2rem .15rem; border-bottom: 1px solid var(--framework-border-subtle); font-size: .8rem; }
+:scope .experience-row { display: grid; grid-template-columns: minmax(0, 1fr) 3rem; gap: .125rem; margin-bottom: .125rem; }
+:scope .resource-stack { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+:scope .resource-stack > .region > [data-module-slot-id], :scope .resource-stack > .region > [data-module-slot-id] > [data-module-type] { height: 100%; }
+:scope .resource-stack > .region > [data-module-slot-id] > [data-module-type] { grid-template-columns: 3rem minmax(0, 1fr); min-height: 2.25rem; }
+:scope .resource-stack > .region > [data-module-slot-id] > [data-module-type] > [data-part="label"], :scope .currency-region > h3 { justify-content: center; align-self: stretch; display: flex; align-items: center; margin: 0; padding: 0 .25rem; border: 0; border-right: 1px solid var(--framework-border-subtle); font-size: .8rem; }
+:scope .resource-stack [data-part="counter"] { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) 1.75rem; gap: 0; }
+:scope .resource-stack [data-part="marker-group"] { justify-self: center; }
+:scope .currency-region { display: grid; grid-template-columns: 3rem minmax(0, 1fr); grid-column: 1 / -1; border: 1px solid var(--framework-border); min-height: 2.25rem; }
+:scope .money { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; align-items: stretch; }
+:scope .money > [data-module-slot-id] + [data-module-slot-id] { border-left: 1px solid var(--framework-border-subtle); }
+:scope .money [data-module-type="countableResource"] { display: grid; grid-template-columns: minmax(0, 1fr) 2rem; height: 100%; border: 0; }
+:scope .money [data-part="label"] { grid-column: 2; grid-row: 1; min-height: 0; justify-content: center; padding: 0; border: 0; font-size: .75rem; font-weight: 500; }
+:scope .money [data-part="counter"] { grid-column: 1; grid-row: 1; }
+:scope .money [data-part="counter"] { grid-template-columns: 1.25rem minmax(0, 1fr) 1.25rem; }
+:scope .money [data-part="input"] { padding: 0; text-align: center; }
+:scope .daily-panel, :scope .palace-panel { display: flex; flex-direction: column; min-height: 0; gap: .5rem; }
+:scope .palace-heading { justify-content: space-between; }
+:scope .palace-heading [data-module-type="resourcePicker"] { min-height: 0; }
+:scope .palace-heading [data-part="button"] { width: 1.65rem; min-width: 1.65rem; height: 1.35rem; min-height: 1.35rem; padding: 0; font-size: 0; }
+:scope .combat-stats { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: .5rem; min-height: 0; }
+:scope .combat-stats > [data-module-slot-id] > [data-module-type="freeText"] { grid-template-columns: 4rem minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+:scope .combat-stats > [data-module-slot-id] [data-part="label"] { border-bottom: 0; border-right: 1px solid var(--framework-border-subtle); }
+:scope .thresholds { display: grid; grid-template-columns: 4rem minmax(0, 1fr); border: 1px solid var(--framework-border); background: var(--framework-surface); }
+:scope .threshold-label { display: flex; align-items: center; justify-content: center; padding: .125rem; border-right: 1px solid var(--framework-border-subtle); font-size: .75rem; font-weight: 700; color: var(--framework-text-secondary); }
+:scope .threshold-values { display: grid; grid-template-columns: minmax(0, 4rem) auto minmax(0, 4rem); justify-content: center; align-items: stretch; }
+:scope .threshold-values > span { align-self: center; font-size: 1.2rem; color: var(--framework-text-muted); }
+:scope .threshold-values [data-module-type="freeText"] { border: 0; grid-template-rows: minmax(0, 1fr); }
+:scope .threshold-values [data-module-slot-id] { height: 100%; }
+:scope .skills { flex: 1; min-height: 0; }
+:scope .skills > [data-module-slot-id], :scope .skills [data-module-type="longText"] { height: 100%; min-height: 0; }
+:scope .skills [data-markdown-editor] { flex: 1; min-height: 0; }
+:scope .skills [data-part="input"] { flex: 1; height: 100%; min-height: 0; max-height: none; }
+:scope .arcana-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+:scope .arcana-actions [data-part="button"] { min-height: 2rem; padding: .2rem .5rem; font-size: .8rem; }
+:scope .card-area { flex: 1; min-height: 0; margin-top: .5rem; }
+:scope .card-area > [data-module-slot-id] { height: 100%; min-height: 0; }
+:scope .card-area [data-module-type="cardTable"] { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+:scope .card-area .card-table-surface { flex: 1; min-height: 0; }
+:scope .card-area .card-table-resize-handle { display: none; }
+:scope [data-module-slot-id], :scope [data-module-type] { min-width: 0; }
+:scope [data-part="label"] { font-size: .8rem; }
+:scope input, :scope textarea, :scope select { max-width: 100%; }
+@media (max-width: 1100px) {
+  :scope .sheet-columns { grid-template-columns: minmax(0, 1fr); gap: .75rem; }
+  :scope .character-panel { width: 100%; max-width: 210mm; margin-inline: auto; }
+}
+@media (max-width: 520px) {
+  :scope .persona-sheet { padding: .3rem; }
+  :scope .character-content { padding: .5rem; }
+  :scope .attributes, :scope .combat-stats { gap: .2rem; }
+  :scope .daily-details, :scope .palace-details { grid-template-columns: minmax(0, .6fr) minmax(0, 1fr); gap: .4rem; }
+  :scope .attributes { grid-template-columns: repeat(2, minmax(0, 1fr)); height: 7rem; }
+  :scope .attributes [data-part="input"] { font-size: 1rem; }
+  :scope .daily-values { grid-template-rows: 7rem auto minmax(0, 1fr); }
+  :scope .money [data-module-type="countableResource"] { grid-template-columns: minmax(0, 1fr) 1rem; }
+  :scope .money [data-part="counter"] { grid-template-columns: .9rem minmax(0, 1fr) .9rem; }
+  :scope .money [data-part="input"] { font-size: .8rem; }
+}
+@media print {
+  :scope .persona-sheet { padding: 0; }
+  :scope .sheet-columns { grid-template-columns: minmax(0, 1fr); }
+  :scope .character-panel { width: 210mm; height: 297mm; border: 0; }
+  :scope .character-content { min-height: 0; }
+  :scope .cards-panel { break-before: page; border: 0; }
+  :scope .region { break-inside: avoid; }
+}

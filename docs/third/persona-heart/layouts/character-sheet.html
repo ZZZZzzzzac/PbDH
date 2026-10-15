@@ -1,0 +1,51 @@
+<main class="persona-sheet">
+  <div class="sheet-columns">
+    <section class="character-panel" aria-label="人物卡" data-print-page="true">
+      <div class="character-content">
+      <header class="sheet-title"><h1>潜相心影：都市异闻录</h1></header>
+      <div class="name-level" data-guide-region-id="guide-identity"><pb-module id="character-name"></pb-module><pb-module id="level"></pb-module></div>
+      <section class="daily-panel">
+      <div class="section-heading"><h2>日常</h2></div>
+      <div class="daily-details">
+        <div class="portrait daily-portrait"><pb-module id="daily-portrait"></pb-module></div>
+        <div class="daily-values">
+        <div class="attributes" data-guide-region-id="guide-attributes"><pb-module id="courage"></pb-module><pb-module id="agility"></pb-module><pb-module id="knowledge"></pb-module><pb-module id="charm"></pb-module></div>
+        <section class="region" data-guide-region-id="guide-experiences"><h3>经历</h3>
+          <div class="experience-row"><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
+          <div class="experience-row"><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
+          <div class="experience-row"><pb-module id="experience-3"></pb-module><pb-module id="experience-modifier-3"></pb-module></div>
+          <div class="experience-row"><pb-module id="experience-4"></pb-module><pb-module id="experience-modifier-4"></pb-module></div>
+          <div class="experience-row"><pb-module id="experience-5"></pb-module><pb-module id="experience-modifier-5"></pb-module></div>
+        </section>
+      <div class="resource-stack" data-guide-region-id="guide-resources">
+          <section class="region"><pb-module id="hope"></pb-module></section>
+          <section class="region"><pb-module id="stamina"></pb-module></section>
+          <section class="region currency-region"><h3>金钱</h3><div class="money"><pb-module id="money-notes"></pb-module><pb-module id="money-stacks"></pb-module><pb-module id="money-bundles"></pb-module></div></section>
+      </div>
+        </div>
+      </div>
+      </section>
+      <section class="palace-panel" data-guide-region-id="guide-combat">
+        <div class="section-heading palace-heading"><h2>宫殿</h2><pb-module id="pick-combat-style"></pb-module></div>
+        <div class="palace-details">
+          <div class="portrait palace-portrait"><pb-module id="palace-portrait"></pb-module></div>
+          <div class="combat-values">
+            <div class="combat-stats"><pb-module id="evasion"></pb-module><section class="thresholds" aria-label="阈值"><div class="threshold-label">阈值</div><div class="threshold-values"><pb-module id="major-threshold"></pb-module><span>/</span><pb-module id="severe-threshold"></pb-module></div></section><pb-module id="damage"></pb-module></div>
+            <section class="region"><pb-module id="hp"></pb-module></section>
+            <section class="region skills"><pb-module id="skills"></pb-module></section>
+          </div>
+        </div>
+      </section>
+      </div>
+    </section>
+    <section class="cards-panel" aria-label="卡牌区" data-guide-region-id="guide-arcana" data-print-page="true">
+      <div class="section-heading"><h2>阿卡纳</h2></div>
+      <div class="arcana-actions">
+        <pb-module id="pick-upright"></pb-module>
+        <pb-module id="pick-reversed"></pb-module>
+        <pb-module id="pick-minor"></pb-module>
+      </div>
+      <div class="card-area"><pb-module id="character-card-table"></pb-module></div>
+    </section>
+  </div>
+</main>
