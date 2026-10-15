@@ -105,6 +105,7 @@ import { PackageLoadingSurface } from "./sheet-runtime/rendering/app/PackageLoad
 import { resolveGuideTargetPageId } from "./sheet-runtime/rendering/app/guideTarget.ts";
 import { useSheetOutput } from "./sheet-runtime/rendering/app/useSheetOutput.ts";
 import { SheetRenderer } from "./sheet-runtime/rendering/SheetRenderer.tsx";
+import { SheetRenderBoundary } from "./sheet-runtime/rendering/app/SheetRenderBoundary.tsx";
 import { PlatformRuntimeStorage } from "./sheet-runtime/storage/platformRuntimeStorage.ts";
 import type { SystemPackageCacheSnapshot } from "./sheet-runtime/storage/runtimeStorage.ts";
 import type { RuntimePackageLoadResult } from "./sheet-runtime/store/runtimeTypes.ts";
@@ -743,7 +744,7 @@ export function PlayerSheetSurface({
   }
 
   async function handleSwitchSystem(entry: PlayerSystemPackageCatalogEntry): Promise<void> {
-    if (entry.system.package.id === currentSystem.package.id && !authorPreviewActive) return;
+    if (entry.system.package.id === currentPackage?.manifest.ID && !authorPreviewActive) return;
     try {
       await flushCurrentCharacter();
       if (authorPreviewActive) exitAuthorPreview();
@@ -1328,7 +1329,21 @@ export function PlayerSheetSurface({
       {currentPackage ? (
         <div className="player-runtime-layout">
           <main className="player-runtime-sheet">
-            <SheetRenderer systemPackage={currentPackage} requestedPageId={guideTargetPageId} outputMode={printMode} />
+            <SheetRenderBoundary
+              key={JSON.stringify([currentPackage.manifest.ID, currentPackage.manifest.版本, activeCharacterSaveId, characterData?.character.id])}
+              packageName={currentPackage.manifest.名称}
+              recoverySystems={playerSystemPackageCatalog.filter((entry) => entry.system.package.id !== currentPackage.manifest.ID).map((entry) => ({ id: entry.system.package.id, name: entry.system.package.name }))}
+              onSwitchSystem={(id) => {
+                const entry = findPlayerSystemPackage(id);
+                if (entry) void handleSwitchSystem(entry);
+              }}
+            >
+              {characterData ? (
+                <SheetRenderer systemPackage={currentPackage} requestedPageId={guideTargetPageId} outputMode={printMode} />
+              ) : <p className="message" role="status">{pendingPackageScriptConsent
+                ? "等待脚本授权后加载人物卡。"
+                : pendingCharacterDataMigration ? "等待确认存档升级后加载人物卡。" : "选择或新建人物后显示人物卡。"}</p>}
+            </SheetRenderBoundary>
           </main>
         </div>
       ) : null}
