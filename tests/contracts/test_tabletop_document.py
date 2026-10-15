@@ -11,6 +11,7 @@ from pbdh_backend.contracts import ContractRuntime
 ROOT = Path(__file__).parents[2]
 FIXTURE_ROOTS = [
     ROOT / "contracts/conformance/tabletop-document/1.0.0",
+    ROOT / "contracts/conformance/tabletop-document/1.1.0",
 ]
 
 

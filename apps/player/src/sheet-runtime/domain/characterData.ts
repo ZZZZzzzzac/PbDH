@@ -74,6 +74,7 @@ export const sheetValueSchema = z.union([
 const cardInstanceSchema = z.object({
   instanceId: z.string().min(1),
   tableModuleId: z.string().min(1),
+  backDefinition: z.custom<ResourceLibraryEntry>().optional(),
   definitionRef: z.discriminatedUnion("type", [
     z.object({ type: z.literal("resourceLibrary"), libraryId: z.string().min(1), entryId: z.string().min(1) }),
     z.object({ type: z.literal("compositeResource"), compositeResourceId: z.string().min(1) }),

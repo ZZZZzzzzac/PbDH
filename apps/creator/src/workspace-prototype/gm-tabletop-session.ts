@@ -9,7 +9,7 @@ import {
 } from "@pbdh/tabletop/core";
 
 import {
-  prepareWorkspaceReplacement,
+  prepareWorkspaceFlip,
   snapshotWorkspaceResourceForTabletop,
   type TabletopTemplateResolver,
 } from "./tabletop-placement.ts";
@@ -42,7 +42,6 @@ export const gmTabletopCapabilities = new Set<TabletopCapability>([
   "clear",
   "duplicate",
   "delete",
-  "replace",
   "edit-instance-data",
   "template-state-command",
 ]);
@@ -107,6 +106,7 @@ export function placeWorkspaceResourcesOnTabletop(
         type: "place",
         instanceId,
         resource: snapshot.resource,
+        ...(snapshot.backResource ? { backResource: snapshot.backResource } : {}),
         state: template.tabletop.defaultState(source.data as never),
         position,
         assets: snapshot.assets,
@@ -122,30 +122,27 @@ export function placeWorkspaceResourcesOnTabletop(
   return { ok: true, tabletop: containGmTabletopInstances(next), media, selectedInstanceIds: placedIds };
 }
 
-export function replaceTabletopInstanceFromWorkspace(
-  resolveTemplate: TabletopTemplateResolver,
+export function flipTabletopInstanceFromWorkspace(
   tabletop: TabletopDocumentModel,
   workspaces: readonly CreatorWorkspace[],
   instanceId: string,
-  replacementId: string,
-  createId: () => string = () => crypto.randomUUID(),
 ): GmTabletopSessionResult {
   const instance = tabletop.instances.find((candidate) => candidate.id === instanceId);
   if (!instance) return { ok: false, error: "tabletop.instance.not-found" };
   try {
-    const prepared = prepareWorkspaceReplacement(resolveTemplate, workspaces, instance, replacementId, createId());
+    const prepared = prepareWorkspaceFlip(workspaces, instance);
     const replaced = executeTabletopCommand(tabletop, prepared.command, {
       capabilities: gmTabletopCapabilities,
     });
     if (replaced.diagnostics.length > 0) return { ok: false, error: replaced.diagnostics[0]!.code };
     return {
       ok: true,
-      tabletop: containGmTabletopInstances(replaced.document),
+      tabletop: replaced.document,
       media: prepared.media,
-      selectedInstanceIds: [prepared.command.newInstanceId],
+      selectedInstanceIds: [instanceId],
     };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "tabletop.replacement.invalid" };
+    return { ok: false, error: error instanceof Error ? error.message : "翻面失败" };
   }
 }
 

@@ -1,6 +1,6 @@
 import type { ContractDiagnostic } from "./index.ts";
 
-export const TABLETOP_DOCUMENT_VERSION = "1.0.0";
+export const TABLETOP_DOCUMENT_VERSION = "1.1.0";
 
 export type TabletopAsset = {
   id: string;
@@ -26,6 +26,7 @@ export type TabletopResourceCopy = {
 export type CharacterTabletopInstance = {
   instanceId: string;
   resourceCopy: TabletopResourceCopy;
+  backResourceCopy?: TabletopResourceCopy;
   state: Record<string, string>;
   geometry: {
     x: number;
@@ -38,7 +39,7 @@ export type CharacterTabletopInstance = {
 };
 
 export type TabletopDocument = {
-  contractVersion: typeof TABLETOP_DOCUMENT_VERSION;
+  contractVersion: "1.0.0" | typeof TABLETOP_DOCUMENT_VERSION;
   documentId: string;
   name: string;
   createdAt: string;
@@ -47,6 +48,7 @@ export type TabletopDocument = {
   instances: Array<{
     instanceId: string;
     resourceCopy: TabletopResourceCopy;
+    backResourceCopy?: TabletopResourceCopy;
     state: Record<string, unknown>;
     geometry: {
       x: number;
@@ -114,8 +116,9 @@ export function validateTabletopDocumentReferences(
     assets.set(asset.id, asset);
   });
 
-  const referenced = new Set(document.instances.flatMap((instance) =>
-    Object.values(instance.resourceCopy.media)));
+  const referenced = new Set(document.instances.flatMap((instance) => [
+    ...Object.values(instance.resourceCopy.media), ...Object.values(instance.backResourceCopy?.media ?? {}),
+  ]));
   for (const assetId of referenced) {
     if (!assets.has(assetId)) {
       diagnostics.push(diagnostic(document.contractVersion,

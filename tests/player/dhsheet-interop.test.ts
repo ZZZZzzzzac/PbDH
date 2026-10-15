@@ -16,12 +16,10 @@ import type { SystemPackage } from "../../apps/player/src/sheet-runtime/domain/s
 import { applyResourceSelectionToDraft } from "../../apps/player/src/sheet-runtime/domain/resourceSelection.ts";
 import { executePackageScriptInWorker } from "../../apps/player/src/sheet-runtime/domain/packageScriptRunner.ts";
 import { canonicalCardResource } from "../../apps/player/src/sheet-runtime/rendering/cardTable/CardFace.tsx";
-import { cardReplacementOptions as replacementOptionsWithTemplates, replacePlayerCard as replaceWithTemplates } from "../../apps/player/src/sheet-runtime/domain/cardReplacement.ts";
-import { templateRegistry } from "@pbdh/templates/core";
+import { flipPlayerCard, resolveCardBack } from "../../apps/player/src/sheet-runtime/domain/cardBack.ts";
+import { resolveVisibleCardDefinition } from "../../apps/player/src/sheet-runtime/rendering/cardTable/cardDefinition.ts";
 import { resolveResourceDefinition } from "../../apps/player/src/sheet-runtime/domain/resourceDefinition.ts";
 
-const cardReplacementOptions = replacementOptionsWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
-const replacePlayerCard = replaceWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 
 async function loadSystem(directory: string) {
   const catalog = playerSystemPackageCatalog.find((entry) => entry.preset.directory === directory)!;
@@ -273,7 +271,7 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
     }
   }, 30000);
 
-  if (directory === "tttri") it("核心领域卡名称正确，五组 replacement 可切换并经 PBCHA 保存恢复", async () => {
+  if (directory === "tttri") it("核心领域卡名称正确，五组卡背可翻面并经 PBCHA 保存恢复", async () => {
     const resources = [...context.installed.values()].flatMap((item) => item.document.resources);
     const nameOf = (item: typeof resources[number]) => item.data && typeof item.data === "object" && !Array.isArray(item.data) ? item.data.名称 : undefined;
     for (const name of ["恶魇吞日", "遁入阇那"]) expect(resources.some((item) => nameOf(item) === name)).toBe(true);
@@ -290,23 +288,48 @@ describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) =
       const frontEntry = library.entries.find((item) => item.resourceCopy?.source?.resourceId === front.id)!;
       let data = createEmptyCharacterData(system);
       data.cards.instances = [{ instanceId: crypto.randomUUID(), tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: library.ID, entryId: frontEntry.ID }, state: "配置", xPct: 25, yPct: 30, zIndex: 3, rotation: 90, face: "front", scale: 1.2, indicators: [] }];
-      const options = cardReplacementOptions(data, system, data.cards.instances[0]!.instanceId);
-      expect(options.map((option) => option.name)).toEqual([backName]);
-      data = replacePlayerCard(data, system, data.cards.instances[0]!.instanceId, "alternate-form", crypto.randomUUID());
+      data.cards.instances[0]!.indicators = [{ indicatorId: "counter", colorIndex: 2, value: 7 }];
+      const original = structuredClone(data.cards.instances[0]!);
+      const module = system.modules.find((item) => item.ID === "character-card-table")!;
+      if (module.类型 !== "cardTable") throw new Error("missing table");
+      expect(resolveCardBack(system, data, module, original)?.fields.名称).toBe(backName);
+      data = flipPlayerCard(data, system, original.instanceId);
+      expect(data.cards.instances[0]).toMatchObject({ ...original, definitionRef: { ...original.definitionRef, entryId: `character-copy:${original.instanceId}` }, face: "back" });
       expect(data.cards.instances[0]).toMatchObject({ xPct: 25, yPct: 30, zIndex: 3, rotation: 90, scale: 1.2 });
       const candidate = await sheetCharacterToSave({ name: backName!, data, currentSystem: { ...catalog.system.package, resourceCompatibility: catalog.system.resourceCompatibility }, sheetSystemPackage: system, installedPackages: installed });
       const opened = await loadPbcha(writePbcha(candidate.document, candidate.media), validateCharacterSaveCandidate);
       expect(opened.diagnostics).toEqual([]);
       data = characterSaveToSheet({ candidate: opened.candidate!, currentSystem: catalog.system, sheetSystemPackage: system, installedPackages: installed, mediaUrl: (id) => id });
       const exported = await exportSheet(system, data);
-      expect((exported.document.cards as Array<{ name: string }>).some((item) => item.name === backName)).toBe(true);
+      expect((exported.document.cards as Array<{ name: string }>).some((item) => item.name === frontName)).toBe(true);
       expect((await importSheet(system, exported.document)).report.skippedCards).toBe(0);
-      expect(cardReplacementOptions(data, system, data.cards.instances[0]!.instanceId).map((option) => option.name)).toEqual([frontName]);
+      expect(data.cards.instances[0]).toMatchObject({ instanceId: original.instanceId, face: "back", state: original.state, indicators: original.indicators });
+      expect(resolveCardBack(system, data, module, data.cards.instances[0]!)?.fields.名称).toBe(backName);
       const missing = { ...system, resourceLibraries: [] };
-      expect(() => replacePlayerCard(data, missing, data.cards.instances[0]!.instanceId, "alternate-form", crypto.randomUUID())).toThrow("替换目标未安装");
-      data = replacePlayerCard(data, system, data.cards.instances[0]!.instanceId, "alternate-form", crypto.randomUUID());
-      expect(cardReplacementOptions(data, system, data.cards.instances[0]!.instanceId).map((option) => option.name)).toEqual([backName]);
+      data = flipPlayerCard(data, missing, original.instanceId);
+      expect(data.cards.instances[0]!.face).toBe("front");
+      data = flipPlayerCard(data, missing, original.instanceId);
+      expect(data.cards.instances[0]!.face).toBe("back");
     }
+  });
+
+  if (directory === "daggerheart-core") it("原有图片卡背保持纯图片显示，翻回时保留正面与指示物", () => {
+    const { system } = context;
+    const library = system.resourceLibraries!.find((item) => item.ID === "domain-cards")!;
+    const entry = library.entries.find((item) => item.resourceCopy?.media.back)!;
+    const module = system.modules.find((item) => item.ID === "character-card-table")!;
+    if (module.类型 !== "cardTable") throw new Error("missing table");
+    let data = createEmptyCharacterData(system);
+    const instanceId = crypto.randomUUID();
+    data.cards.instances = [{ instanceId, tableModuleId: module.ID, definitionRef: { type: "resourceLibrary", libraryId: library.ID, entryId: entry.ID }, state: "宝库", xPct: 25, yPct: 30, zIndex: 3, rotation: 90, face: "front", scale: 1.2, indicators: [{ indicatorId: "counter", colorIndex: 2, value: 7 }] }];
+    data = flipPlayerCard(data, system, instanceId);
+    const back = resolveVisibleCardDefinition(system, data, module, data.cards.instances[0])!;
+    expect(back.resourceCopy?.presentation.mode).toBe("image");
+    expect(back.resourceCopy?.media.portrait).toBe(entry.resourceCopy!.media.back);
+    const missing = { ...system, resourceLibraries: [] };
+    data = flipPlayerCard(data, missing, instanceId);
+    expect(resolveVisibleCardDefinition(missing, data, module, data.cards.instances[0])!.resourceCopy).toEqual(entry.resourceCopy);
+    expect(data.cards.instances[0]).toMatchObject({ instanceId, face: "front", state: "宝库", indicators: [{ indicatorId: "counter", colorIndex: 2, value: 7 }] });
   });
 
   if (directory === "daggerheart-core") it("野兽羁绊与驯兽大师三个阶段双向对应", async () => {

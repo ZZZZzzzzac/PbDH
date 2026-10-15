@@ -99,6 +99,10 @@ export function updateResourceReplacement(
   resource.replacements = targetResourceId
     ? [...retained, { replacementId, targetResourceId }]
     : retained;
+  if (replacementId === "alternate-form") {
+    const { back: _back, ...media } = resource.media;
+    resource.media = media;
+  }
   markResourceDirty(next, resource.id);
   return next;
 }

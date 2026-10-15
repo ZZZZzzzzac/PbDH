@@ -28,18 +28,20 @@ export async function loadTabletopTemplates(
 
 export type TabletopPlacementSnapshot = {
   resource: TabletopInstanceResourceCopy;
+  backResource?: TabletopInstanceResourceCopy;
   assets: CreatorWorkspace["document"]["assets"];
   media: Map<string, Uint8Array>;
 };
 
-export type PreparedTabletopReplacement = {
-  command: Extract<TabletopCommand, { type: "replace" }>;
+export type PreparedTabletopFlip = {
+  command: Extract<TabletopCommand, { type: "flip" }>;
   media: Map<string, Uint8Array>;
 };
 
 export function snapshotWorkspaceResourceForTabletop(
   workspace: CreatorWorkspace,
   resourceId: string,
+  includeBack = true,
 ): TabletopPlacementSnapshot {
   const source = workspace.document.resources.find((resource) => resource.id === resourceId);
   if (!source) throw new Error("tabletop.source-resource.not-found");
@@ -55,56 +57,39 @@ export function snapshotWorkspaceResourceForTabletop(
     media.set(asset.id, new Uint8Array(bytes));
   }
 
+  const backId = !source.media.back && includeBack
+    ? source.replacements?.find((item) => item.replacementId === "alternate-form")?.targetResourceId : undefined;
+  const back = backId ? snapshotWorkspaceResourceForTabletop(workspace, backId, false) : undefined;
+  back?.media.forEach((bytes, id) => media.set(id, bytes));
   return {
     resource: tabletopResourceCopy(workspace, source),
-    assets: structuredClone(assets),
+    ...(back ? { backResource: back.resource } : {}),
+    assets: structuredClone([...new Map([...assets, ...(back?.assets ?? [])].map((asset) => [asset.id, asset])).values()]),
     media,
   };
 }
 
-export function prepareWorkspaceReplacement(
-  resolveTemplate: TabletopTemplateResolver,
+export function prepareWorkspaceFlip(
   workspaces: readonly CreatorWorkspace[],
   instance: TabletopInstance,
-  replacementId: string,
-  newInstanceId: string,
-): PreparedTabletopReplacement {
-  const { workspace, target } = replacementTarget(workspaces, instance, replacementId);
-  const template = resolveTemplate(target.template.id, target.template.version);
-  if (!template) throw new Error("tabletop.replacement.template-unsupported");
-  const snapshot = snapshotWorkspaceResourceForTabletop(workspace, target.id);
+): PreparedTabletopFlip {
+  if (instance.flipped || instance.backResource || instance.resource.media.back) {
+    return { command: { type: "flip", instanceId: instance.id }, media: new Map() };
+  }
+  const source = instance.resource.source;
+  const back = instance.resource.replacements.find((item) => item.replacementId === "alternate-form");
+  const workspace = workspaces.find((item) => item.document.package.id === source?.packageId);
+  if (!workspace || !back) throw new Error("卡背来源不可用，当前卡牌未改变。");
+  const snapshot = snapshotWorkspaceResourceForTabletop(workspace, back.targetResourceId, false);
   return {
     command: {
-      type: "replace",
+      type: "flip",
       instanceId: instance.id,
-      newInstanceId,
-      replacementId,
-      resource: snapshot.resource,
-      state: template.tabletop.defaultState(target.data as never),
+      backResource: snapshot.resource,
       assets: snapshot.assets,
     },
     media: snapshot.media,
   };
-}
-
-export function workspaceReplacementTemplate(workspaces: readonly CreatorWorkspace[], instance: TabletopInstance, replacementId: string) {
-  return replacementTarget(workspaces, instance, replacementId).target.template;
-}
-
-function replacementTarget(workspaces: readonly CreatorWorkspace[], instance: TabletopInstance, replacementId: string) {
-  const source = instance.resource.source;
-  if (!source) throw new Error("tabletop.replacement.source-missing");
-  const replacement = instance.resource.replacements.find(
-    (candidate) => candidate.replacementId === replacementId,
-  );
-  if (!replacement) throw new Error("tabletop.replacement.unsupported");
-  const workspace = workspaces.find((candidate) => candidate.document.package.id === source.packageId);
-  if (!workspace) throw new Error("tabletop.replacement.workspace-not-found");
-  const target = workspace.document.resources.find(
-    (candidate) => candidate.id === replacement.targetResourceId,
-  );
-  if (!target) throw new Error("tabletop.replacement.target-not-found");
-  return { workspace, target };
 }
 
 function tabletopResourceCopy(

@@ -14,7 +14,7 @@ import {
   executeTabletopCommand,
   type TabletopCapability,
 } from "@pbdh/tabletop/core";
-import { adversaryTemplate, templateRegistry } from "@pbdh/templates/core";
+import { adversaryTemplate } from "@pbdh/templates/core";
 
 import minotaurPackage from "../../contracts/conformance/resource-package/1.0.0/valid/minotaur-wrecker.json";
 import {
@@ -23,20 +23,19 @@ import {
 } from "../../apps/creator/src/workspace-prototype/workspace-model.ts";
 import { creatorMarketHandoffMismatch } from "../../apps/creator/src/workspace-prototype/market-handoff.ts";
 import {
-  prepareWorkspaceReplacement as prepareWithTemplates,
+  prepareWorkspaceFlip,
   snapshotWorkspaceResourceForTabletop,
 } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 import { containGmTabletopInstances } from "../../apps/creator/src/workspace-prototype/gm-tabletop-geometry.ts";
 import { TabletopDocumentRepository } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 
 const databases: PbDHLocalDatabase[] = [];
-const prepareWorkspaceReplacement = prepareWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
 const capabilities = new Set<TabletopCapability>([
   "place",
   "move",
   "uniform-scale",
   "template-state-command",
-  "replace",
+  "flip",
 ]);
 
 test("repairs existing GM cards that were saved almost entirely outside the tabletop", () => {
@@ -158,7 +157,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
     )).toThrow("tabletop.source-media-bytes.not-found");
   });
 
-  test("switches A to B to C from current Workspace content without caching old forms", () => {
+  test("flips A to B and returns to A without following B to C", () => {
     const document = structuredClone(minotaurPackage) as ResourcePackageLogicalDocument;
     document.assets = [];
     const source = document.resources[0]!;
@@ -189,40 +188,35 @@ describe("Market enemy handoff to local GM tabletop", () => {
       { capabilities },
     ).document;
     tabletop.instances[0]!.rotation = 12;
-    tabletop.instances[0]!.flipped = true;
     tabletop.instances[0]!.scale = 1.3;
 
-    const toB = prepareWorkspaceReplacement(
+    const toB = prepareWorkspaceFlip(
       [workspace],
       tabletop.instances[0]!,
-      "alternate-form",
-      "01989f4e-7b2c-7000-8000-000000000022",
     );
     tabletop = executeTabletopCommand(tabletop, toB.command, { capabilities }).document;
     expect(tabletop.instances[0]).toMatchObject({
-      id: "01989f4e-7b2c-7000-8000-000000000022",
+      id: "01989f4e-7b2c-7000-8000-000000000021",
       position: { x: 42, y: 64 },
       rotation: 12,
-      flipped: false,
+      flipped: true,
       scale: 1.3,
     });
-    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 B");
-    expect(tabletop.instances[0]?.state).toEqual(adversaryTemplate.tabletop.defaultState(
-      workspace.document.resources[1]!.data as never,
-    ));
+    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 A");
+    expect(tabletop.instances[0]?.backResource?.data.名称).toBe("形态 B");
+    expect(tabletop.instances[0]?.state).toEqual({ currentHp: "1", currentStress: "3" });
 
     (workspace.document.resources[2]!.data as Record<string, unknown>).名称 = "形态 C·修改后";
-    const toC = prepareWorkspaceReplacement(
-      [workspace],
+    const toC = prepareWorkspaceFlip(
+      [],
       tabletop.instances[0]!,
-      "alternate-form",
-      "01989f4e-7b2c-7000-8000-000000000023",
     );
     tabletop = executeTabletopCommand(tabletop, toC.command, { capabilities }).document;
     expect(tabletop.instances).toHaveLength(1);
-    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 C·修改后");
+    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 A");
+    expect(tabletop.instances[0]?.flipped).toBe(false);
     expect(tabletop.instances[0]?.resource.replacements).toEqual([
-      { replacementId: "alternate-form", targetResourceId: "form-a" },
+      { replacementId: "alternate-form", targetResourceId: "form-b" },
     ]);
   });
 
@@ -233,7 +227,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
     source.media = {};
     source.replacements = [{ replacementId: "alternate-form", targetResourceId: "deleted-form" }];
     const workspace = createWorkspace({ document, media: new Map() });
-    const snapshot = snapshotWorkspaceResourceForTabletop(workspace, source.id);
+    const snapshot = snapshotWorkspaceResourceForTabletop(workspace, source.id, false);
     const tabletop = executeTabletopCommand(
       createTabletopDocument("01989f4e-7b2c-7000-8000-000000000030", "断裂目标"),
       {
@@ -246,12 +240,10 @@ describe("Market enemy handoff to local GM tabletop", () => {
       { capabilities },
     ).document;
 
-    expect(() => prepareWorkspaceReplacement(
+    expect(() => prepareWorkspaceFlip(
       [workspace],
       tabletop.instances[0]!,
-      "alternate-form",
-      "01989f4e-7b2c-7000-8000-000000000032",
-    )).toThrow("tabletop.replacement.target-not-found");
+    )).toThrow("tabletop.source-resource.not-found");
     expect(tabletop.instances[0]).toMatchObject({
       id: "01989f4e-7b2c-7000-8000-000000000031",
       state: { currentHp: "4" },
@@ -259,7 +251,7 @@ describe("Market enemy handoff to local GM tabletop", () => {
     });
   });
 
-  test("switches A to B and back by looking up both targets again", () => {
+  test("returns to the retained front after the source changes", () => {
     const document = structuredClone(minotaurPackage) as ResourcePackageLogicalDocument;
     document.assets = [];
     const source = document.resources[0]!;
@@ -285,16 +277,17 @@ describe("Market enemy handoff to local GM tabletop", () => {
       },
       { capabilities },
     ).document;
-    const toB = prepareWorkspaceReplacement(
-      [workspace], tabletop.instances[0]!, "alternate-form", "01989f4e-7b2c-7000-8000-000000000042",
+    const toB = prepareWorkspaceFlip(
+      [workspace], tabletop.instances[0]!,
     );
     tabletop = executeTabletopCommand(tabletop, toB.command, { capabilities }).document;
     (workspace.document.resources[0]!.data as Record<string, unknown>).名称 = "形态 A·最新";
-    const backToA = prepareWorkspaceReplacement(
-      [workspace], tabletop.instances[0]!, "alternate-form", "01989f4e-7b2c-7000-8000-000000000043",
+    const backToA = prepareWorkspaceFlip(
+      [], tabletop.instances[0]!,
     );
     tabletop = executeTabletopCommand(tabletop, backToA.command, { capabilities }).document;
     expect(tabletop.instances).toHaveLength(1);
-    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 A·最新");
+    expect(tabletop.instances[0]?.resource.data.名称).toBe("形态 A");
+    expect(tabletop.instances[0]?.flipped).toBe(false);
   });
 });

@@ -1,0 +1,184 @@
+[
+  {
+    "name": "accepts an independent back copy on a flipped instance",
+    "mutation": null,
+    "expected": []
+  },
+  {
+    "name": "rejects missing replacement list",
+    "mutation": {
+      "op": "delete",
+      "path": [
+        "instances",
+        0,
+        "resourceCopy",
+        "replacements"
+      ]
+    },
+    "expected": [
+      {
+        "code": "contract.schema.required",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.1.0",
+        "location": "/instances/0/resourceCopy/replacements",
+        "params": {
+          "property": "replacements"
+        }
+      }
+    ]
+  },
+  {
+    "name": "rejects non-positive instance width",
+    "mutation": {
+      "op": "set",
+      "path": [
+        "instances",
+        0,
+        "geometry",
+        "width"
+      ],
+      "value": 0
+    },
+    "expected": [
+      {
+        "code": "contract.schema.invalid",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.1.0",
+        "location": "/instances/0/geometry/width",
+        "params": {
+          "keyword": "exclusiveMinimum"
+        }
+      }
+    ]
+  },
+  {
+    "name": "rejects presentation-owned card dimensions",
+    "mutation": {
+      "op": "set",
+      "path": [
+        "instances",
+        0,
+        "resourceCopy",
+        "presentation",
+        "width"
+      ],
+      "value": "63"
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.1.0",
+        "location": "/instances/0/resourceCopy/presentation/width",
+        "params": {
+          "property": "width"
+        }
+      }
+    ]
+  },
+  {
+    "name": "accepts template-defined non-string state values",
+    "mutation": {
+      "op": "set",
+      "path": [
+        "instances",
+        0,
+        "state"
+      ],
+      "value": {
+        "counter": 2,
+        "active": true,
+        "details": {
+          "note": "ready"
+        }
+      }
+    },
+    "expected": []
+  },
+  {
+    "name": "rejects hidden replacement forms",
+    "mutation": {
+      "op": "set",
+      "path": [
+        "instances",
+        0,
+        "materializedForms"
+      ],
+      "value": []
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.1.0",
+        "location": "/instances/0/materializedForms",
+        "params": {
+          "property": "materializedForms"
+        }
+      }
+    ]
+  },
+  {
+    "name": "accepts a front without a back",
+    "mutation": {
+      "op": "delete",
+      "path": [
+        "instances",
+        0,
+        "backResourceCopy"
+      ]
+    },
+    "expected": []
+  },
+  {
+    "name": "rejects a recursive back copy",
+    "mutation": {
+      "op": "set",
+      "path": [
+        "instances",
+        0,
+        "backResourceCopy",
+        "backResourceCopy"
+      ],
+      "value": {
+        "source": {
+          "packageId": "0195f4d4-8b6b-7000-8000-000000000001",
+          "resourceId": "minotaur-wrecker"
+        },
+        "template": {
+          "id": "敌人",
+          "version": "1.0.0"
+        },
+        "presentation": {
+          "mode": "split",
+          "fixedRatio": true
+        },
+        "data": {
+          "名称": "共享背面",
+          "生命点": "7"
+        },
+        "labels": [
+          "敌人"
+        ],
+        "replacements": [],
+        "media": {}
+      }
+    },
+    "expected": [
+      {
+        "code": "contract.schema.additional-property",
+        "severity": "error",
+        "family": "tabletop-document",
+        "version": "1.1.0",
+        "location": "/instances/0/backResourceCopy/backResourceCopy",
+        "params": {
+          "property": "backResourceCopy"
+        }
+      }
+    ]
+  }
+]

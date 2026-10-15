@@ -17,6 +17,7 @@ import type {
   SheetValue,
 } from "../domain/characterData.ts";
 import type { CardInstance } from "../domain/cardEngine.ts";
+import { resolveCardBack } from "../domain/cardBack.ts";
 import type { SystemPackage as SheetSystemPackage } from "../domain/systemPackage.ts";
 
 export type NormalizedPlayerImage = {
@@ -86,9 +87,13 @@ export async function prepareCharacterSaveUpdate(input: Omit<CharacterSaveInput,
     const snapshot = existingInstance
       ? { resourceCopy: structuredClone(existingInstance.resourceCopy) }
       : await snapshotCard(card, input);
+    const module = input.sheetSystemPackage.modules.find((item) => item.ID === card.tableModuleId);
+    const backResourceCopy = card.backDefinition?.resourceCopy ?? existingInstance?.backResourceCopy
+      ?? (module?.类型 === "cardTable" ? resolveCardBack(input.sheetSystemPackage, input.data, module, card)?.resourceCopy : undefined);
     const instance: CharacterTabletopInstance = {
       instanceId: card.instanceId,
       resourceCopy: snapshot.resourceCopy,
+      ...(backResourceCopy ? { backResourceCopy: structuredClone(backResourceCopy) } : {}),
       state: {
         value: card.state,
         indicators: JSON.stringify(card.indicators),
@@ -181,6 +186,13 @@ export function characterSaveToSheet(input: {
       instanceId: instance.instanceId,
       tableModuleId: module.ID,
       definitionRef: { type: "resourceLibrary", libraryId, entryId },
+      ...(instance.backResourceCopy ? { backDefinition: buildSheetEmbeddedResourceEntry({
+        entryId: `${entryId}:back`, libraryId, resourceCopy: instance.backResourceCopy,
+        resolveMediaReference: ({ assetId }) => {
+          const bytes = resolveCardMedia(input.installedPackages, instance.backResourceCopy!, assetId);
+          return bytes ? input.mediaUrl(assetId, bytes) : undefined;
+        },
+      }) } : {}),
       state: instance.state.value ?? "",
       xPct: instance.geometry.x,
       yPct: instance.geometry.y,
@@ -561,15 +573,17 @@ function isTabletopInstance(value: unknown): value is CharacterTabletopInstance 
     && Number.isInteger(geometry.layer)
     && typeof geometry.scale === "number" && geometry.scale > 0
     && typeof geometry.flipped === "boolean"
-    && isRecord(value.resourceCopy.template)
-    && typeof value.resourceCopy.template.id === "string"
-    && typeof value.resourceCopy.template.version === "string"
-    && isRecord(value.resourceCopy.presentation)
-    && isRecord(value.resourceCopy.data)
-    && Array.isArray(value.resourceCopy.labels)
-    && value.resourceCopy.labels.every((label) => typeof label === "string")
-    && isRecord(value.resourceCopy.media)
-    && Object.values(value.resourceCopy.media).every((assetId) => typeof assetId === "string");
+    && isResourceCopy(value.resourceCopy)
+    && (value.backResourceCopy === undefined || isResourceCopy(value.backResourceCopy));
+}
+
+function isResourceCopy(value: unknown): boolean {
+  return isRecord(value) && isRecord(value.template)
+    && typeof value.template.id === "string" && typeof value.template.version === "string"
+    && isRecord(value.presentation) && isRecord(value.data) && Array.isArray(value.labels)
+    && value.labels.every((label) => typeof label === "string") && isRecord(value.media)
+    && Object.values(value.media).every((assetId) => typeof assetId === "string")
+    && value.backResourceCopy === undefined;
 }
 
 function isSerializedIndicators(value: string | undefined): boolean {

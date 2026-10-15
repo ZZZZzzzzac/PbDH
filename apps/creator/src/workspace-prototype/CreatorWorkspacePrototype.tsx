@@ -36,6 +36,7 @@ import { CardPreviewDialog } from "@pbdh/resource-renderer/react";
 import { canonicalCardDesignSize, usesFixedSurfaceRatio } from "@pbdh/resource-renderer/core";
 import {
   createTabletopDocument,
+  visibleTabletopResource,
   type TabletopCommand,
   type TabletopDocumentModel,
 } from "@pbdh/tabletop/core";
@@ -82,12 +83,12 @@ import {
   arrangeGmTabletop,
   executeGmTabletopCommand,
   placeWorkspaceResourcesOnTabletop,
-  replaceTabletopInstanceFromWorkspace,
+  flipTabletopInstanceFromWorkspace,
   selectTabletopInstances,
   type WorkspaceResourceSelection,
 } from "./gm-tabletop-session.ts";
 import { useGmTabletopViewport } from "./use-gm-tabletop-viewport.ts";
-import { loadTabletopTemplates, workspaceReplacementTemplate, type TabletopTemplateResolver } from "./tabletop-placement.ts";
+import { loadTabletopTemplates, type TabletopTemplateResolver } from "./tabletop-placement.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
 import {
   GmTabletopWorkbench,
@@ -195,26 +196,6 @@ export function filterWorkspaceResources(
   }));
 }
 
-
-function replacementFailureMessage(code: string): string {
-  switch (code) {
-    case "tabletop.replacement.source-not-found":
-    case "tabletop.replacement.workspace-not-found":
-      return "找不到原卡所属的资源包，原卡没有变化。";
-    case "tabletop.replacement.unsupported":
-      return "这张卡没有这个切换选项，原卡没有变化。";
-    case "tabletop.replacement.target-not-found":
-      return "目标卡已不存在，原卡没有变化。";
-    case "tabletop.replacement.template-unsupported":
-      return "目标卡的类型暂不支持，原卡没有变化。";
-    case "tabletop.replacement.source-media-missing":
-      return "目标卡所需的图片不完整，原卡没有变化。";
-    case "tabletop.replacement.target-mismatch":
-      return "目标卡与切换设置不一致，原卡没有变化。";
-    default:
-      return "换卡失败，原卡没有变化。";
-  }
-}
 
 
 
@@ -399,8 +380,8 @@ export function CreatorWorkspacePrototype({
   const selectedInstance = activeTabletop?.instances.find((instance) => instance.id === selectedInstanceId);
   const pendingTabletopTemplateOperation = useRef(false);
   const tabletopOperationMounted = useRef(false);
-  const latestTabletopCommits = useRef({ place: commitWorkspacePlacement, replace: commitInstanceReplacement });
-  latestTabletopCommits.current = { place: commitWorkspacePlacement, replace: commitInstanceReplacement };
+  const latestTabletopCommits = useRef({ place: commitWorkspacePlacement });
+  latestTabletopCommits.current = { place: commitWorkspacePlacement };
   useEffect(() => { tabletopOperationMounted.current = true; return () => { tabletopOperationMounted.current = false; }; }, []);
   const detailTabletopInstance = activeTabletop?.instances.find((instance) => instance.id === detailTabletopInstanceId);
   const selectedInstanceFrontend = selectedInstance
@@ -946,36 +927,16 @@ export function CreatorWorkspacePrototype({
     setResourceMultiSelect(false);
   }
 
-  async function replaceSelectedInstanceForm(replacementId: string) {
+  function flipSelectedInstance() {
     if (!activeTabletop || !selectedInstance) return;
     if (creatorOperation || pendingTabletopTemplateOperation.current) { notify("当前操作尚未完成，请稍后重试。"); return; }
-    pendingTabletopTemplateOperation.current = true;
-    setCreatorOperation("prepare-tabletop");
-    const tabletopId = activeTabletop.id;
-    const instanceId = selectedInstance.id;
-    try {
-      const reference = workspaceReplacementTemplate(workspaces, selectedInstance, replacementId);
-      const resolveTemplate = await loadTabletopTemplates([reference]);
-      if (tabletopOperationMounted.current) latestTabletopCommits.current.replace(tabletopId, instanceId, replacementId, resolveTemplate);
-    } catch (error) {
-      if (tabletopOperationMounted.current) notify(error instanceof Error ? error.message : "模板加载失败，请重试。");
-    } finally {
-      pendingTabletopTemplateOperation.current = false;
-      if (tabletopOperationMounted.current) setCreatorOperation((current) => current === "prepare-tabletop" ? null : current);
-    }
-  }
-
-  function commitInstanceReplacement(tabletopId: string, instanceId: string, replacementId: string, resolveTemplate: TabletopTemplateResolver) {
-    if (!activeTabletop || activeTabletop.id !== tabletopId) { notify("目标桌面已关闭或切换，未替换资源。"); return; }
-    const result = replaceTabletopInstanceFromWorkspace(
-      resolveTemplate,
+    const result = flipTabletopInstanceFromWorkspace(
       activeTabletop,
       workspaces,
-      instanceId,
-      replacementId,
+      selectedInstance.id,
     );
     if (!result.ok) {
-      notify(replacementFailureMessage(result.error));
+      notify(result.error);
       setTabletopContextMenu(null);
       return;
     }
@@ -1921,9 +1882,8 @@ export function CreatorWorkspacePrototype({
       case "delete-resource": requestWorkspaceNodeDeletion({ kind: "resource", id: command.resourceId }, command.workspaceKey); return;
       case "view-instance": if (selectedInstance) setDetailTabletopInstanceId(selectedInstance.id); setTabletopContextMenu(null); return;
       case "edit-instance": setTabletopView("instance-editor"); setTabletopContextMenu(null); return;
-      case "replace-instance": replaceSelectedInstanceForm(command.replacementId); return;
       case "rotate-instance": if (selectedInstance) applyTabletopCommand({ type: "rotate-quarter", instanceId: selectedInstance.id, quarterTurns: 1 }); setTabletopContextMenu(null); return;
-      case "flip-instance": if (selectedInstance) applyTabletopCommand({ type: "flip", instanceId: selectedInstance.id }); setTabletopContextMenu(null); return;
+      case "flip-instance": flipSelectedInstance(); return;
       case "duplicate-instance": duplicateSelectedInstance(); return;
       case "delete-instances": deleteSelectedInstances(); return;
       case "sync-tabletop": if (activeTabletop) requestCloudSync("gm-tabletop-document", activeTabletop.id, activeTabletop.name); return;
@@ -2076,7 +2036,7 @@ export function CreatorWorkspacePrototype({
       {detailTabletopInstance && <CardPreviewDialog
         designWidth={canonicalCardDesignSize.width}
         designHeight={canonicalCardDesignSize.height}
-        fixedRatio={usesFixedSurfaceRatio(detailTabletopInstance.resource.presentation)}
+        fixedRatio={usesFixedSurfaceRatio(visibleTabletopResource(detailTabletopInstance).presentation)}
         label="卡牌详情"
         onClose={() => setDetailTabletopInstanceId("")}
       ><GmTabletopCard instance={detailTabletopInstance} assetUrls={assetUrls} onCommand={applyTabletopCommand} /></CardPreviewDialog>}

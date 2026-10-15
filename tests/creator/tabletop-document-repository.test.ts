@@ -2,7 +2,7 @@ import "fake-indexeddb/auto";
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import type { TabletopDocument } from "@pbdh/contract-runtime";
+import { loadPbtab, writePbtab, type TabletopDocument } from "@pbdh/contract-runtime";
 import { DexieLocalDocumentStore, PbDHLocalDatabase } from "@pbdh/local-storage";
 import {
   createTabletopDocument,
@@ -16,6 +16,7 @@ import {
 } from "../../apps/creator/src/workspace-prototype/tabletop-document-repository.ts";
 import { validateTabletopDocumentCandidate } from "../../apps/creator/src/workspace-prototype/tabletop-document-validator.ts";
 import stableFixture from "../../contracts/conformance/tabletop-document/1.0.0/valid/basic.json";
+import { prepareWorkspaceFlip } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 
 const databases: PbDHLocalDatabase[] = [];
 const capabilities = new Set<TabletopCapability>(["place"]);
@@ -128,9 +129,42 @@ describe("GM Tabletop Document Repository", () => {
     const [stored] = await repository.list();
 
     expect(stored?.model).toEqual(model);
-    expect(stored?.document.contractVersion).toBe("1.0.0");
+    expect(stored?.document.contractVersion).toBe("1.1.0");
     expect(stored?.document.canvas).toEqual({ width: 2400, height: 1600 });
     expect(stored?.document.instances[0]?.resourceCopy.data.名称).toBe("牛头人破坏者");
+  });
+
+  test("shared backs retain each front, state and media through save, archive and source removal", async () => {
+    const repository = new TabletopDocumentRepository(new DexieLocalDocumentStore(database()));
+    const bytes = new Uint8Array([1, 2, 3]);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    const assetId = `sha256:${Array.from(new Uint8Array(hash), (value) => value.toString(16).padStart(2, "0")).join("")}`;
+    const media = new Map([[assetId, bytes]]);
+    const back = { source: null, template: { id: "自由", version: "1.1.0" }, presentation: { mode: "image" as const, fixedRatio: true }, data: { 名称: "共用卡背" }, labels: [], replacements: [], media: { portrait: assetId } };
+    let model = createTabletopDocument(crypto.randomUUID(), "共用卡背");
+    const commands = new Set<TabletopCapability>(["place", "flip", "delete"]);
+    for (const name of ["A", "B"]) {
+      const copy = structuredClone(stableFixture.instances[0]!.resourceCopy);
+      copy.data.名称 = name;
+      if (copy.source) copy.source.resourceId = name;
+      model = executeTabletopCommand(model, { type: "place", instanceId: crypto.randomUUID(), resource: { ...copy, presentation: { mode: "text", fixedRatio: true } }, backResource: back,
+        state: { currentHp: name === "A" ? "2" : "5", currentStress: "1", focused: "false", notes: name }, position: { x: 50, y: 60 },
+        assets: [{ id: assetId, mediaType: "image/webp", byteLength: "3", width: "1", height: "1" }],
+      }, { capabilities: commands }).document;
+    }
+    const originals = structuredClone(model.instances);
+    for (const instance of model.instances) model = executeTabletopCommand(model, { type: "flip", instanceId: instance.id }, { capabilities: commands }).document;
+    await repository.save(model, media);
+    const stored = (await repository.list())[0]!;
+    const archive = await loadPbtab(writePbtab(stored.document, stored.media), validateTabletopDocumentCandidate);
+    expect(archive.diagnostics).toEqual([]);
+    expect(archive.candidate!.document.instances.map((item) => item.backResourceCopy?.media.portrait)).toEqual([assetId, assetId]);
+    model = stored.model;
+    for (const instance of model.instances) model = executeTabletopCommand(model, prepareWorkspaceFlip([], instance).command, { capabilities: commands }).document;
+    expect(model.instances).toEqual(originals);
+    model = executeTabletopCommand(model, { type: "delete", instanceId: model.instances[0]!.id }, { capabilities: commands }).document;
+    expect(model.assets).toHaveLength(1);
+    expect(model.instances[0]!.resource.data.名称).toBe("B");
   });
 
   test("persists a renamed tabletop document", async () => {

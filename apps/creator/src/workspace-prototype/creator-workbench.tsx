@@ -8,7 +8,7 @@ import { templateUpgradeTargets } from "@pbdh/templates/core/lazy";
 import { Icon } from "./creator-controls.tsx";
 import { safeFileName } from "./creator-file-actions.ts";
 import { CreatorColumnResizeHandle, creatorColumnPreferences } from "./creator-layout.tsx";
-import { ReplacementEditor, ResourceAttributionEditor } from "./resource-authoring.tsx";
+import { CardBackEditor, ResourceAttributionEditor } from "./resource-authoring.tsx";
 import { ResourceIcon, TemplateRuntimePreview, resourceTitle } from "./resource-preview.tsx";
 import { resolveResourceAttribution, type CreatorWorkspace, type WorkspaceResource } from "./workspace-model.ts";
 import { orderTabsByKey, resourceTabKey, shouldActivateTabDrag, type TabDropPlacement } from "./tab-order.ts";
@@ -184,9 +184,10 @@ export function CreatorWorkbench({ snapshot, execute }: {
           sourceLabel={resolveResourceAttribution(resource, active.document.package.name).sourceLabel}
           onChange={(field, value) => execute({ type: "attribution-value", field, value })}
         />
-        {authoring.value?.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.map((replacement) => <ReplacementEditor
+        {authoring.value?.replacements === "after" && active.document.contractVersion === RESOURCE_PACKAGE_VERSION && template?.tabletop.replacements.filter((item) => item.id === "alternate-form").map((replacement) => <CardBackEditor
           key={replacement.id}
-          label={replacement.label}
+          label="背面卡牌"
+          hasImage={Boolean(resource.media.back)}
           value={resource.replacements?.find((candidate) => candidate.replacementId === replacement.id)?.targetResourceId ?? ""}
           options={active.document.resources.filter((candidate) => candidate.id !== resource.id).map((candidate) => ({ id: candidate.id, name: resourceTitle(candidate) }))}
           onChange={(targetResourceId) => execute({ type: "replacement", resourceId: resource.id, replacementId: replacement.id, targetResourceId })}

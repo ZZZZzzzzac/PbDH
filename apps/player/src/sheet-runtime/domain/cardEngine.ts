@@ -1,4 +1,5 @@
 import type { CharacterData } from "./characterData";
+import type { ResourceLibraryEntry } from "./resourceLibrary";
 import { transitionCountableState, type CountableDirection } from "./countableState";
 import {
   executeTabletopCommand,
@@ -26,6 +27,7 @@ export interface CardInstance {
   instanceId: string;
   tableModuleId: string;
   definitionRef: ResourceDefinitionRef;
+  backDefinition?: ResourceLibraryEntry;
   state: string;
   xPct: number;
   yPct: number;

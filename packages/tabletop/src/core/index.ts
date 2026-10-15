@@ -9,7 +9,6 @@ export type TabletopCapability =
   | "clear"
   | "duplicate"
   | "delete"
-  | "replace"
   | "edit-instance-data"
   | "template-state-command";
 
@@ -52,6 +51,7 @@ export type TabletopAsset = {
 export type TabletopInstance = {
   id: string;
   resource: TabletopInstanceResourceCopy;
+  backResource?: TabletopInstanceResourceCopy;
   state: Record<string, string>;
   position: { x: number; y: number };
   layer: number;
@@ -68,6 +68,17 @@ export type TabletopDocumentModel = {
   assets: TabletopAsset[];
 };
 
+export function visibleTabletopResource(instance: Pick<TabletopInstance, "resource" | "backResource" | "flipped">): TabletopInstanceResourceCopy {
+  if (!instance.flipped) return instance.resource;
+  if (instance.backResource) return instance.backResource;
+  const back = instance.resource.media.back;
+  return back ? {
+    ...instance.resource,
+    presentation: { ...instance.resource.presentation, mode: "image" },
+    media: { ...instance.resource.media, portrait: back },
+  } : instance.resource;
+}
+
 export type TemplateStateCommandDefinition = {
   id: string;
   capability: "adjust-decimal-string" | "set-string";
@@ -80,6 +91,7 @@ export type TabletopCommand =
       type: "place";
       instanceId: string;
       resource: TabletopInstanceResourceCopy;
+      backResource?: TabletopInstanceResourceCopy;
       state: Record<string, string>;
       position: { x: number; y: number };
       assets?: TabletopAsset[];
@@ -88,22 +100,13 @@ export type TabletopCommand =
   | { type: "move-many"; moves: Array<{ instanceId: string; position: { x: number; y: number } }> }
   | { type: "uniform-scale"; instanceId: string; scale: number }
   | { type: "rotate-quarter"; instanceId: string; quarterTurns: number }
-  | { type: "flip"; instanceId: string }
+  | { type: "flip"; instanceId: string; backResource?: TabletopInstanceResourceCopy; assets?: TabletopAsset[] }
   | { type: "layer"; instanceId: string; action: "front" | "forward" | "backward" | "back" }
   | { type: "arrange"; placements: Array<{ instanceId: string; position: { x: number; y: number }; layer: number; rotation?: number }> }
   | { type: "clear" }
   | { type: "duplicate"; instanceId: string; newInstanceId: string; offset?: { x: number; y: number } }
   | { type: "delete"; instanceId: string }
   | { type: "delete-many"; instanceIds: string[] }
-  | {
-      type: "replace";
-      instanceId: string;
-      newInstanceId: string;
-      replacementId: string;
-      resource: TabletopInstanceResourceCopy;
-      state: Record<string, string>;
-      assets?: TabletopAsset[];
-    }
   | { type: "edit-instance-data"; instanceId: string; path: string[]; value: unknown }
   | { type: "replace-instance-data"; instanceId: string; data: Record<string, unknown> }
   | { type: "template-state"; instanceId: string; commandId: string; value: string };
@@ -131,7 +134,6 @@ const commandCapability: Record<TabletopCommand["type"], TabletopCapability> = {
   duplicate: "duplicate",
   delete: "delete",
   "delete-many": "delete",
-  replace: "replace",
   "edit-instance-data": "edit-instance-data",
   "replace-instance-data": "edit-instance-data",
   "template-state": "template-state-command",
@@ -159,7 +161,9 @@ function cloneDocument(document: TabletopDocumentModel): TabletopDocumentModel {
 }
 
 function pruneAssets(document: TabletopDocumentModel): void {
-  const referenced = new Set(document.instances.flatMap((instance) => Object.values(instance.resource.media)));
+  const referenced = new Set(document.instances.flatMap((instance) => [
+    ...Object.values(instance.resource.media), ...Object.values(instance.backResource?.media ?? {}),
+  ]));
   document.assets = document.assets.filter((asset) => referenced.has(asset.id));
 }
 
@@ -257,6 +261,7 @@ export function executeTabletopCommand(
     next.instances.push({
       id: command.instanceId,
       resource: structuredClone(command.resource),
+      ...(command.backResource ? { backResource: structuredClone(command.backResource) } : {}),
       state: structuredClone(command.state),
       position: structuredClone(command.position),
       layer: nextTabletopLayer(document.instances),
@@ -383,52 +388,6 @@ export function executeTabletopCommand(
     return { document: next, diagnostics: [] };
   }
 
-  if (command.type === "replace") {
-    if (document.instances.some((instance) => instance.id === command.newInstanceId)) {
-      return fail(document, "tabletop.instance-id.duplicate", "/command/newInstanceId", {
-        instanceId: command.newInstanceId,
-      });
-    }
-    const sourceInstance = document.instances[instanceIndex]!;
-    if (!sourceInstance.resource.source) {
-      return fail(document, "tabletop.replacement.source-missing", `/instances/${command.instanceId}/resource/source`);
-    }
-    const replacement = sourceInstance.resource.replacements.find(
-      (candidate) => candidate.replacementId === command.replacementId,
-    );
-    if (!replacement) {
-      return fail(document, "tabletop.replacement.unsupported", "/command/replacementId", {
-        replacementId: command.replacementId,
-      });
-    }
-    if (!command.resource.source
-      || command.resource.source.packageId !== sourceInstance.resource.source.packageId
-      || command.resource.source.resourceId !== replacement.targetResourceId) {
-      return fail(document, "tabletop.replacement.target-mismatch", "/command/resource/source", {
-        expectedPackageId: sourceInstance.resource.source.packageId,
-        expectedResourceId: replacement.targetResourceId,
-      });
-    }
-    const next = cloneDocument(document);
-    next.instances[instanceIndex] = {
-      id: command.newInstanceId,
-      resource: structuredClone(command.resource),
-      state: structuredClone(command.state),
-      position: structuredClone(sourceInstance.position),
-      layer: sourceInstance.layer,
-      rotation: sourceInstance.rotation,
-      flipped: false,
-      scale: sourceInstance.scale,
-    };
-    for (const asset of command.assets ?? []) {
-      if (!next.assets.some((candidate) => candidate.id === asset.id)) {
-        next.assets.push(structuredClone(asset));
-      }
-    }
-    pruneAssets(next);
-    return { document: next, diagnostics: [] };
-  }
-
   if (command.type === "delete") {
     const next = cloneDocument(document);
     next.instances.splice(instanceIndex, 1);
@@ -473,8 +432,21 @@ export function executeTabletopCommand(
   }
 
   if (command.type === "flip") {
+    const source = document.instances[instanceIndex]!;
+    if (command.backResource && !source.backResource) {
+      const target = source.resource.replacements.find((item) => item.replacementId === "alternate-form");
+      if (!source.resource.source || !target || command.backResource.source?.packageId !== source.resource.source.packageId
+        || command.backResource.source.resourceId !== target.targetResourceId) {
+        return fail(document, "tabletop.back.target-mismatch", "/command/backResource");
+      }
+    }
     const next = cloneDocument(document);
-    next.instances[instanceIndex]!.flipped = toggleTabletopFlipped(next.instances[instanceIndex]!.flipped);
+    const instance = next.instances[instanceIndex]!;
+    if (!instance.backResource && command.backResource) instance.backResource = structuredClone(command.backResource);
+    for (const asset of command.assets ?? []) {
+      if (!next.assets.some((candidate) => candidate.id === asset.id)) next.assets.push(structuredClone(asset));
+    }
+    instance.flipped = toggleTabletopFlipped(instance.flipped);
     return { document: next, diagnostics: [] };
   }
 

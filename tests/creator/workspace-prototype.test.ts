@@ -844,7 +844,8 @@ describe("Creator Workspace UI contracts", () => {
     expect(creatorSource).not.toContain('className="package-license"');
     expect(creatorSource).not.toContain("发送到桌面");
     expect(creatorSource).toContain("requestTabletopRename");
-    expect(creatorSource).toContain("切换形态");
+    expect(creatorSource).toContain("翻至背面");
+    expect(creatorSource).not.toContain('type: "replace-instance"');
     expect(creatorSource).toContain("selectedInstanceIds={snapshot.selectedInstanceIds}");
     expect(creatorSource).toContain('type: "edit-instance-data"');
     expect(creatorSource).not.toContain('type: "replace-instance-resource"');

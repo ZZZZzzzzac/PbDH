@@ -12,6 +12,7 @@ import { CloudSyncIndicator, Icon } from "./creator-controls.tsx";
 import { gmTabletopCapabilities } from "./gm-tabletop-session.ts";
 import { gmTabletopZoomSteps } from "./gm-tabletop-viewport.ts";
 import { GmTabletopCard } from "./gm-tabletop-card.tsx";
+import { visibleTabletopResource } from "@pbdh/tabletop/core";
 import { gmCardPixelsPerDesignUnit } from "./gm-tabletop-geometry.ts";
 import { AutoFitPreview, ResourceIcon } from "./resource-preview.tsx";
 import { orderTabsByKey, shouldActivateTabDrag, type TabDropPlacement } from "./tab-order.ts";
@@ -252,7 +253,7 @@ export function GmTabletopWorkbench({
         capabilities={gmTabletopCapabilities}
         selectedInstanceId={snapshot.selectedInstanceId}
         selectedInstanceIds={snapshot.selectedInstanceIds}
-        renderInstance={(instance) => <CardDisplay designWidth={canonicalCardDesignSize.width} designHeight={canonicalCardDesignSize.height} fixedRatio={usesFixedSurfaceRatio(instance.resource.presentation)} displayWidth="250px" displayAspectRatio={63 / 88}>
+        renderInstance={(instance) => <CardDisplay designWidth={canonicalCardDesignSize.width} designHeight={canonicalCardDesignSize.height} fixedRatio={usesFixedSurfaceRatio(visibleTabletopResource(instance).presentation)} displayWidth="250px" displayAspectRatio={63 / 88}>
           <GmTabletopCard instance={instance} assetUrls={snapshot.assetUrls} onCommand={(command) => execute({ type: "tabletop-command", command })} />
         </CardDisplay>}
         onSelect={(instanceId, mode) => execute({ type: "select-instance", instanceId, mode })}

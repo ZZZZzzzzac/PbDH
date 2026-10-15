@@ -101,10 +101,11 @@ export function canonicalCardResource(
   definitionRef: Extract<CardInstance["definitionRef"], { type: "resourceLibrary" }> | undefined,
 ): SurfaceResource<Record<string, unknown>> {
   const backAssetId = resourceCopy.media.back;
-  const showingBack = definitionRef && definition.fields[cardField(module, "卡图字段")] === definition.fields[cardField(module, "卡背字段")];
+  const backRef = definition.fields[cardField(module, "卡背字段")];
+  const showingBack = definitionRef && backRef && definition.fields[cardField(module, "卡图字段")] === backRef;
   return {
     template: structuredClone(resourceCopy.template),
-    presentation: structuredClone(resourceCopy.presentation),
+    presentation: { ...resourceCopy.presentation, ...(showingBack ? { mode: "image" as const } : {}) },
     data: structuredClone(resourceCopy.data),
     media: showingBack && backAssetId
       ? { ...structuredClone(resourceCopy.media), portrait: backAssetId }

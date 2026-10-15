@@ -33,6 +33,7 @@ function toContract(
     canvas: structuredClone(model.canvas),
     instances: model.instances.map((instance) => ({
       instanceId: instance.id,
+      ...(instance.backResource ? { backResourceCopy: structuredClone(instance.backResource) } : {}),
       resourceCopy: {
         source: structuredClone(instance.resource.source),
         template: structuredClone(instance.resource.template),
@@ -66,6 +67,7 @@ function toModel(document: TabletopDocument): TabletopDocumentModel {
     canvas: structuredClone(document.canvas ?? { width: 2400, height: 1600 }),
     instances: document.instances.map((instance) => ({
       id: instance.instanceId,
+      ...(instance.backResourceCopy ? { backResource: { ...structuredClone(instance.backResourceCopy), replacements: structuredClone(instance.backResourceCopy.replacements ?? []) } } : {}),
       resource: {
         ...structuredClone(instance.resourceCopy),
         presentation: {
@@ -316,7 +318,7 @@ export class TabletopDocumentRepository {
   ): Promise<StoredTabletopDocument> {
     if (remote.documentKind !== "gm-tabletop-document"
       || remote.contractFamily !== "tabletop-document"
-      || remote.contractVersion !== TABLETOP_DOCUMENT_VERSION
+      || !["1.0.0", TABLETOP_DOCUMENT_VERSION].includes(remote.contractVersion)
       || remote.deletedAt !== null) {
       throw new Error("云端 GM 桌面格式无效。");
     }

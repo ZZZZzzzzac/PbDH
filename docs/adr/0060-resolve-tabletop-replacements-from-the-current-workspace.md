@@ -1,6 +1,8 @@
 # Resolve Tabletop Replacements from the Current Creator Workspace
 
-Status: accepted
+Status: superseded by ADR-0082
+
+ADR-0082 replaces this operation with reversible front/back flipping. Instances retain their original front, optional back copy, identity, state and layout. The following text records the historical decision; it is no longer the active behavior.
 
 A Tabletop Replacement is an explicit transition that resolves its package-local target from the same Creator Workspace at execution time and replaces the current card with a newly created Tabletop Instance. The new instance copies the target resource's current definition and media, initializes fresh Template-declared runtime state, and retains only the previous instance's position, size, rotation, and layer. Resolution and replacement are atomic: a missing or invalid target leaves the current instance and Tabletop Document unchanged.
 

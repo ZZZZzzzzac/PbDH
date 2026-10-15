@@ -3,9 +3,9 @@ import type { CardInstance } from "../../domain/cardEngine";
 import { resolveCardPresentation, type CardPresentation } from "../../domain/cardPresentation";
 import type { ResourceLibraryEntry } from "../../domain/resourceLibrary";
 import { resolveResourceDefinition } from "../../domain/resourceDefinition";
+import { resolveCardBack } from "../../domain/cardBack";
 import {
   findCardTableResourceLibrarySource,
-  findResourceLibrary,
   type CardTableModule,
   type SystemPackage,
 } from "../../domain/systemPackage";
@@ -30,16 +30,7 @@ export function resolveVisibleCardDefinition(
   const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
   if (!front || !instance || instance.face === "front") return front;
 
-  const backArt = front.fields[cardField(module, "卡背字段")]?.trim();
-  if (backArt) {
-    return { ...front, fields: { ...front.fields, [cardField(module, "卡图字段")]: backArt } };
-  }
-  const reverseId = front.fields[cardField(module, "背面卡牌ID字段")]?.trim();
-  const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
-  if (!libraryId) return front;
-  return reverseId
-    ? findResourceLibrary(systemPackage, libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
-    : front;
+  return resolveCardBack(systemPackage, characterData, module, instance) ?? front;
 }
 
 export function hasReverseCardDefinition(
@@ -48,14 +39,7 @@ export function hasReverseCardDefinition(
   module: CardTableModule,
   instance: CardInstance | undefined,
 ): boolean {
-  const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
-  const backArt = front?.fields[cardField(module, "卡背字段")]?.trim();
-  if (backArt) return true;
-  const reverseId = front?.fields[cardField(module, "背面卡牌ID字段")]?.trim();
-  const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
-  if (!libraryId) return false;
-  return Boolean(reverseId && reverseId !== front?.ID
-    && findResourceLibrary(systemPackage, libraryId)?.entries.some((entry) => entry.ID === reverseId));
+  return Boolean(instance && (instance.face === "back" || resolveCardBack(systemPackage, characterData, module, instance)));
 }
 
 export function findCardPresentation(

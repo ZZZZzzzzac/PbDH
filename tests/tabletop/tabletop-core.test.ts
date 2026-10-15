@@ -24,7 +24,6 @@ const allCapabilities = new Set<TabletopCapability>([
   "clear",
   "duplicate",
   "delete",
-  "replace",
   "edit-instance-data",
   "template-state-command",
 ]);
@@ -120,10 +119,10 @@ describe("Tabletop Core", () => {
     expect(duplicated.instances[1]?.state.currentHp).toBe("4.5");
   });
 
-  test("replaces one instance atomically while keeping only its geometry", () => {
+  test("flips without replacing identity, front, state or geometry", () => {
     const document = place();
     document.instances[0]!.rotation = 18;
-    document.instances[0]!.flipped = true;
+    document.instances[0]!.state = { currentHp: "3", notes: "保留" };
     document.instances[0]!.scale = 1.4;
     const target: TabletopInstanceResourceCopy = {
       ...structuredClone(resource),
@@ -133,39 +132,37 @@ describe("Tabletop Core", () => {
       media: {},
     };
     const result = executeTabletopCommand(document, {
-      type: "replace",
+      type: "flip",
       instanceId: "enemy-1",
-      newInstanceId: "enemy-rage",
-      replacementId: "alternate-form",
-      resource: target,
-      state: { currentHp: "9", notes: "" },
+      backResource: target,
     }, { capabilities: allCapabilities });
 
     expect(result.diagnostics).toEqual([]);
     expect(result.document.instances).toEqual([expect.objectContaining({
-      id: "enemy-rage",
+      id: "enemy-1",
       position: { x: 120, y: 80 },
       layer: 0,
       rotation: 18,
-      flipped: false,
+      flipped: true,
       scale: 1.4,
-      state: { currentHp: "9", notes: "" },
+      state: { currentHp: "3", notes: "保留" },
     })]);
-    expect(result.document.instances[0]?.resource.data.名称).toBe("狂暴牛头人");
+    expect(result.document.instances[0]?.resource).toEqual(document.instances[0]!.resource);
+    expect(result.document.instances[0]?.backResource).toEqual(target);
+    const returned = executeTabletopCommand(result.document, { type: "flip", instanceId: "enemy-1" }, { capabilities: allCapabilities });
+    expect(returned.document.instances[0]).toMatchObject(document.instances[0]!);
+    expect(document.instances[0]!.backResource).toBeUndefined();
   });
 
-  test("keeps the original instance when a replacement target does not match", () => {
+  test("keeps the original instance when a back target does not match", () => {
     const document = place();
     const result = executeTabletopCommand(document, {
-      type: "replace",
+      type: "flip",
       instanceId: "enemy-1",
-      newInstanceId: "enemy-wrong",
-      replacementId: "alternate-form",
-      resource: { ...structuredClone(resource), source: { packageId: "package-1", resourceId: "wrong" } },
-      state: {},
+      backResource: { ...structuredClone(resource), source: { packageId: "package-1", resourceId: "wrong" } },
     }, { capabilities: allCapabilities });
     expect(result.document).toBe(document);
-    expect(result.diagnostics[0]?.code).toBe("tabletop.replacement.target-mismatch");
+    expect(result.diagnostics[0]?.code).toBe("tabletop.back.target-mismatch");
   });
 
   test("requires both host capability and exact Template command declaration", () => {

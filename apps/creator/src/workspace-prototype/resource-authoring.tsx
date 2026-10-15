@@ -1,24 +1,27 @@
-export function ReplacementEditor({
+export function CardBackEditor({
   label,
   value,
+  hasImage,
   options,
   onChange,
 }: {
   label: string;
   value: string;
+  hasImage?: boolean;
   options: Array<{ id: string; name: string }>;
   onChange: (targetResourceId: string | null) => void;
 }) {
   return <section className="replacement-editor field-group">
-    <h2>换卡</h2>
+    <h2>卡背</h2>
     <label className="compact-field">
       <span>{label}</span>
       <select value={value} onChange={(event) => onChange(event.target.value || null)}>
-        <option value="">不设置</option>
+        <option value="">{hasImage ? "使用现有卡背图片" : "不设置"}</option>
         {options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
       </select>
     </label>
-    <p>点击桌面上的“{label}”时，现场读取这张目标卡。</p>
+    {hasImage && <button type="button" onClick={() => onChange(null)}>清除卡背图片</button>}
+    <p>将这张卡作为背面。翻面保留状态和指示物，再翻一次返回原正面；不会继续使用背面卡自己的卡背。</p>
   </section>;
 }
 

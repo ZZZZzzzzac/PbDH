@@ -177,7 +177,6 @@ export interface CardSlice {
   bringCardInstanceToFront: (instanceId: string) => void;
   updateCardInstanceState: (instanceId: string, cardState: string) => void;
   flipCardInstance: (instanceId: string) => void;
-  replaceCardInstance: (instanceId: string, replacementId: string) => void;
   rotateCardInstance: (instanceId: string, quarterTurns: number) => void;
   setCardInstanceUpright: (instanceId: string) => void;
   addCardIndicator: (instanceId: string) => void;

@@ -8,13 +8,12 @@ import { sharedTabletopReplacements } from "../../packages/templates/src/core/sh
 import templateCatalog from "../../packages/templates/catalog.json";
 import { createBlankWorkspace } from "../../apps/creator/src/workspace-prototype/workspace-lifecycle.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
-import { prepareWorkspaceReplacement as prepareWithTemplates, snapshotWorkspaceResourceForTabletop } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
+import { prepareWorkspaceFlip, snapshotWorkspaceResourceForTabletop } from "../../apps/creator/src/workspace-prototype/tabletop-placement.ts";
 
-const capabilities = new Set<TabletopCapability>(["place", "replace", "uniform-scale"]);
-const prepareWorkspaceReplacement = prepareWithTemplates.bind(undefined, templateRegistry.resolve.bind(templateRegistry));
+const capabilities = new Set<TabletopCapability>(["place", "flip", "uniform-scale"]);
 
-describe("all current Templates share explicit one-step replacements", () => {
-  test.each(currentTemplates)("$id supports reciprocal replacement without recursion", async (template) => {
+describe("all current Templates support ordinary cards as backs", () => {
+  test.each(currentTemplates)("$id flips reversibly without following the back's relation", async (template) => {
     const runtimeTemplate = templateRegistry.resolve(template.id, template.version)!;
     const workspace = await createBlankWorkspace("双面测试");
     workspace.document.resources = ["sealed", "released"].map((id) => ({
@@ -44,13 +43,15 @@ describe("all current Templates share explicit one-step replacements", () => {
     board = executeTabletopCommand(board, { type: "uniform-scale", instanceId: "instance-0", scale: 1.5 }, { capabilities }).document;
     const before = board.instances[0]!;
     for (let step = 1; step <= 20; step += 1) {
-      const prepared = prepareWorkspaceReplacement([workspace], board.instances[0]!, "alternate-form", `instance-${step}`);
+      const prepared = prepareWorkspaceFlip([workspace], board.instances[0]!);
       const result = executeTabletopCommand(board, prepared.command, { capabilities });
       expect(result.diagnostics).toEqual([]);
       expect(result.document.instances).toHaveLength(1);
       const current = result.document.instances[0]!;
-      expect(current.resource.source?.resourceId).toBe(step % 2 === 1 ? "released" : "sealed");
-      expect(current.resource.replacements[0]?.targetResourceId).toBe(step % 2 === 1 ? "sealed" : "released");
+      expect(current.id).toBe("instance-0");
+      expect(current.resource.source?.resourceId).toBe("sealed");
+      expect(current.backResource?.source?.resourceId).toBe("released");
+      expect(current.flipped).toBe(step % 2 === 1);
       expect(current.position).toEqual(before.position);
       expect(current.scale).toBe(before.scale);
       expect(current.layer).toBe(before.layer);
@@ -64,8 +65,7 @@ describe("all current Templates share explicit one-step replacements", () => {
     expect(await validateResourcePackageCandidate(workspace.document, workspace.media)).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "resource-package.replacement-target.missing" }),
     ]));
-    expect(() => prepareWorkspaceReplacement([workspace], board.instances[0]!, "unknown", "rejected"))
-      .toThrow("tabletop.replacement.unsupported");
+    expect(prepareWorkspaceFlip([], board.instances[0]!).command).toEqual({ type: "flip", instanceId: "instance-0" });
   });
 
   test("historical domain cards still reject unsupported replacement IDs", async () => {

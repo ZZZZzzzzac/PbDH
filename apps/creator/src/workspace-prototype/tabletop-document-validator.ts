@@ -13,12 +13,13 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import catalogJson from "../../../../contracts/catalog.json";
 import stableTabletopDocumentSchema from "../../../../contracts/tabletop-document/1.0.0/schema.json";
+import backTabletopDocumentSchema from "../../../../contracts/tabletop-document/1.1.0/schema.json";
 
 const family = (catalogJson as ContractCatalog).families.find(
   (candidate) => candidate.id === "tabletop-document",
 );
-const versions = family?.versions.filter((candidate) => candidate.version === "1.0.0") ?? [];
-if (versions.length !== 1) throw new Error("Missing Tabletop Document Contract");
+const versions = family?.versions.filter((candidate) => ["1.0.0", "1.1.0"].includes(candidate.version)) ?? [];
+if (versions.length !== 2) throw new Error("Missing Tabletop Document Contract");
 
 const catalog: ContractCatalog = {
   catalogVersion: 1,
@@ -26,6 +27,7 @@ const catalog: ContractCatalog = {
 };
 const runtime = new ContractRuntime(catalog, {
   "tabletop-document/1.0.0/schema.json": stableTabletopDocumentSchema,
+  "tabletop-document/1.1.0/schema.json": backTabletopDocumentSchema,
 });
 const stateAjv = new Ajv2020({ allErrors: true, strict: true });
 const stateValidators = new Map<string, ValidateFunction>();
@@ -47,9 +49,12 @@ function templateDiagnostic(
 }
 
 function validateTemplateStateAndReplacements(document: TabletopDocument): ContractDiagnostic[] {
-  if (document.contractVersion !== "1.0.0") return [];
   const diagnostics: ContractDiagnostic[] = [];
   for (const [instanceIndex, instance] of document.instances.entries()) {
+    const back = instance.backResourceCopy?.template;
+    if (back && !templateValidationMetadata(back.id, back.version)) {
+      diagnostics.push(templateDiagnostic(document, "tabletop-document.template.not-found", `/instances/${instanceIndex}/backResourceCopy/template`, { templateId: back.id, templateVersion: back.version }));
+    }
     const reference = instance.resourceCopy.template;
     const template = templateValidationMetadata(reference.id, reference.version);
     if (!template) {

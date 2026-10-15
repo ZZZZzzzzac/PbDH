@@ -1,0 +1,22 @@
+{
+  "$schema": "../../release.schema.json",
+  "family": "tabletop-document",
+  "version": "1.1.0",
+  "schema": "tabletop-document/1.1.0/schema.json",
+  "schemaSha256": "sha256:446fd9b17028e71aca62d971956d0e486f1a70f8933fa2a4896eaf61cbaf971e",
+  "reviewedAt": "2026-10-15",
+  "conformance": [
+    "conformance/tabletop-document/1.1.0/cases.json"
+  ],
+  "producerTests": [
+    "tests/creator/tabletop-document-repository.test.ts"
+  ],
+  "consumerTests": [
+    "tests/contracts/tabletop-document.test.ts",
+    "tests/contracts/test_tabletop_document.py"
+  ],
+  "implementations": [
+    "typescript",
+    "python"
+  ]
+}

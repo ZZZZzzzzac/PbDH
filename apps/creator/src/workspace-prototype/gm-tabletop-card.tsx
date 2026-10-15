@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import type { SurfaceResource } from "@pbdh/resource-renderer/core";
-import type { TabletopCommand, TabletopInstance } from "@pbdh/tabletop/core";
+import { visibleTabletopResource, type TabletopCommand, type TabletopInstance } from "@pbdh/tabletop/core";
 import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/frontend/lazy";
 
 export function GmTabletopCard({
@@ -13,13 +13,7 @@ export function GmTabletopCard({
   assetUrls: ReadonlyMap<string, string>;
   onCommand(command: TabletopCommand): void;
 }): ReactNode {
-  const displayResource = instance.flipped && instance.resource.media.back
-    ? {
-        ...instance.resource,
-        presentation: { ...instance.resource.presentation, mode: "image" as const },
-        media: { ...instance.resource.media, portrait: instance.resource.media.back },
-      }
-    : instance.resource;
+  const displayResource = visibleTabletopResource(instance);
   const assets = new Map(Object.values(displayResource.media).flatMap((id) => {
     const url = assetUrls.get(id);
     return url ? [[id, { status: "ready" as const, url }] as const] : [];
@@ -33,7 +27,7 @@ export function GmTabletopCard({
     resource={displayResource as unknown as SurfaceResource<Record<string, unknown>>}
     assets={assets}
     state={instance.state}
-    onStateCommand={(commandId, value) => onCommand({
+    onStateCommand={instance.flipped ? undefined : (commandId, value) => onCommand({
       type: "template-state",
       instanceId: instance.id,
       commandId,

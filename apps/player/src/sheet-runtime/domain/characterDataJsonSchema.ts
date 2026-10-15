@@ -76,19 +76,8 @@ function tabletopInstanceSchema(): JsonSchema {
     required: ["instanceId", "resourceCopy", "state", "geometry"],
     properties: {
       instanceId: { type: "string", minLength: 1 },
-      resourceCopy: {
-        type: "object",
-        required: ["source", "template", "presentation", "data", "labels", "media"],
-        properties: {
-          source: { anyOf: [{ type: "null" }, { type: "object" }] },
-          template: { type: "object" },
-          presentation: { type: "object" },
-          data: { type: "object" },
-          labels: { type: "array", items: { type: "string" } },
-          media: { type: "object", additionalProperties: { type: "string" } },
-        },
-        additionalProperties: false,
-      },
+      resourceCopy: tabletopResourceCopySchema(),
+      backResourceCopy: tabletopResourceCopySchema(),
       state: { type: "object", additionalProperties: { type: "string" } },
       geometry: {
         type: "object",
@@ -101,5 +90,22 @@ function tabletopInstanceSchema(): JsonSchema {
       },
     },
     additionalProperties: false,
+  };
+}
+
+function tabletopResourceCopySchema(): JsonSchema {
+  return {
+        type: "object",
+        required: ["source", "template", "presentation", "data", "labels", "media"],
+        properties: {
+          source: { anyOf: [{ type: "null" }, { type: "object" }] },
+          template: { type: "object" },
+          presentation: { type: "object" },
+          data: { type: "object" },
+          labels: { type: "array", items: { type: "string" } },
+          replacements: { type: "array", items: { type: "object" } },
+          media: { type: "object", additionalProperties: { type: "string" } },
+        },
+        additionalProperties: false,
   };
 }
