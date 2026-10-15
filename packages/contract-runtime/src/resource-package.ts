@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import type { ContractDiagnostic } from "./index.ts";
 
 const FAMILY = "resource-package";
@@ -157,7 +158,7 @@ function toHex(bytes: ArrayBuffer): string {
 async function sha256(bytes: Uint8Array): Promise<string> {
   const input = new Uint8Array(bytes.byteLength);
   input.set(bytes);
-  return toHex(await crypto.subtle.digest("SHA-256", input.buffer));
+  return toHex(await digestSha256(input.buffer));
 }
 
 export async function computeResourcePackageSnapshotDigest(

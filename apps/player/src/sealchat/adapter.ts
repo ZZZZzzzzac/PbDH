@@ -73,15 +73,21 @@ export interface EmbedConfig { hostOrigin: string; sdkUrl: string }
 export function readEmbedConfig(href: string, embedded: boolean): EmbedConfig | null {
   const url = new URL(href);
   if (url.searchParams.get("sealchat") !== "1" || !embedded) return null;
-  const host = new URL(url.searchParams.get("hostOrigin") ?? "");
-  const sdk = new URL(url.searchParams.get("sdkUrl") ?? "");
+  const hostValue = url.searchParams.get("hostOrigin");
+  const sdkValue = url.searchParams.get("sdkUrl");
+  if (!hostValue || !sdkValue) throw new Error("缺少 SealChat 连接参数，请在频道嵌入窗启用 Embed API 后重新打开。");
+  const host = new URL(hostValue);
+  const sdk = new URL(sdkValue);
   const local = host.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(host.hostname);
-  if ((!local && host.protocol !== "https:") || host.origin !== host.href.replace(/\/$/, "")
+  if (!["http:", "https:"].includes(host.protocol) || host.origin !== host.href.replace(/\/$/, "")
       || host.username || host.password || sdk.origin !== host.origin || sdk.username || sdk.password
       || sdk.search || sdk.hash || !sdk.pathname.endsWith("/api/v1/channel-embed-sdk.js")) {
     throw new Error("SealChat 接入地址无效。");
   }
-  return { hostOrigin: host.origin, sdkUrl: sdk.href };
+  // HTTP 宿主仍是唯一通信目标；仅 SDK 脚本使用本站官方 HTTPS 服务，避免混合内容。
+  // 不代理任意用户地址，不复制 SDK，不向本站 Chat 发送人物数据或聊天指令。
+  return { hostOrigin: host.origin, sdkUrl: host.protocol === "http:" && !local
+    ? "https://daggerheart.cn/chat/api/v1/channel-embed-sdk.js" : sdk.href };
 }
 
 function contextKey(context: EmbedContext): string {

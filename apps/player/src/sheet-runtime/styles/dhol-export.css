@@ -1,0 +1,42 @@
+.dhol-export-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--border-color, #a6b2b4);
+  border-radius: 10px;
+  color: var(--text-color, #17272c);
+  background: var(--surface-color, #fff);
+  box-shadow: 0 18px 50px #102e3540;
+}
+
+.dhol-export-dialog::backdrop { background: #101f2c99; }
+.dhol-export-dialog form { display: flex; flex-direction: column; }
+.dhol-export-dialog__header, .dhol-export-dialog__body, .dhol-export-dialog__actions { padding: 18px 22px; }
+.dhol-export-dialog__header { border-bottom: 1px solid #cbd4d6; }
+.dhol-export-dialog__header h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.dhol-export-dialog__header p { margin: 0; overflow-wrap: anywhere; }
+.dhol-export-dialog__body { display: grid; gap: 10px; overflow-y: auto; min-height: 0; }
+.dhol-export-dialog form { max-height: calc(100vh - 32px); }
+.dhol-export-dialog__report { font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
+.dhol-export-dialog__body label { font-weight: 700; }
+.dhol-export-dialog__body input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #819295;
+  border-radius: 5px;
+  color: inherit;
+  background: transparent;
+  font: 600 1.1rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: .16em;
+  text-align: center;
+}
+.dhol-export-dialog__body input:focus-visible { outline: 3px solid #3a819f; outline-offset: 2px; }
+.dhol-export-dialog__hint { margin: 0; font-size: .9rem; line-height: 1.5; }
+.dhol-export-dialog__error, .dhol-export-dialog__success { margin: 0; padding: 10px; border-radius: 5px; line-height: 1.5; }
+.dhol-export-dialog__error { color: #842323; background: #fff0ef; }
+.dhol-export-dialog__success { color: #176641; background: #e8f7ef; }
+.dhol-export-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; border-top: 1px solid #cbd4d6; }
+.dhol-export-dialog__actions .icon-button { box-sizing: border-box; min-height: 44px; }
+.dhol-export-dialog__open-panel { margin-right: auto; font: inherit; text-decoration: none; }

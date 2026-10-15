@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   CHARACTER_SAVE_VERSION,
   selectCharacterSavePlayerMedia,
@@ -51,7 +52,7 @@ export function createCharacterSave(input: {
   const now = input.now ?? new Date().toISOString();
   return {
     contractVersion: CHARACTER_SAVE_VERSION,
-    documentId: input.documentId ?? crypto.randomUUID(),
+    documentId: input.documentId ?? randomUUID(),
     name: input.name,
     createdAt: now,
     updatedAt: now,
@@ -202,7 +203,7 @@ export class CharacterSaveRepository {
     return this.import({
       document: {
         ...structuredClone(candidate.document),
-        documentId: crypto.randomUUID(),
+        documentId: randomUUID(),
         name: `${candidate.document.name} 副本`,
         createdAt: now,
         updatedAt: now,

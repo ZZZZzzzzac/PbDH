@@ -19,6 +19,7 @@ import { canonicalCardResource } from "../../apps/player/src/sheet-runtime/rende
 import { flipPlayerCard, resolveCardBack } from "../../apps/player/src/sheet-runtime/domain/cardBack.ts";
 import { resolveVisibleCardDefinition } from "../../apps/player/src/sheet-runtime/rendering/cardTable/cardDefinition.ts";
 import { resolveResourceDefinition } from "../../apps/player/src/sheet-runtime/domain/resourceDefinition.ts";
+import { buildDholDelivery } from "../../apps/player/src/sheet-runtime/export/dholDelivery.ts";
 
 
 async function loadSystem(directory: string) {
@@ -97,6 +98,24 @@ function domainCard(system: SystemPackage) {
 describe.each(["daggerheart-core", "tttri"])("%s dhsheet interop", (directory) => {
   let context: Awaited<ReturnType<typeof loadSystem>>;
   beforeAll(async () => { context = await loadSystem(directory); }, 60000);
+
+  if (directory === "daggerheart-core") it("实际 dhsheet 适配器的原生卡及手动数值可以投递 DHOL，PBCHA 重开后无需原资源库", async () => {
+    const { system, catalog, installed } = context;
+    const imported = await importSheet(system, sourceDocument([domainCard(system)]));
+    imported.data.character.values["background-story"] = "玩家编辑的背景";
+    const candidate = await sheetCharacterToSave({ name: "DHOL", data: imported.data, currentSystem: { ...catalog.system.package, resourceCompatibility: catalog.system.resourceCompatibility }, sheetSystemPackage: system, installedPackages: installed });
+    const detached = { ...system, resourceLibraries: [] };
+    const restored = characterSaveToSheet({ candidate, currentSystem: catalog.system, sheetSystemPackage: detached, mediaUrl: (id) => id });
+    const converted = await exportSheet(detached, restored);
+    const delivery = buildDholDelivery(restored, converted.document, detached);
+    expect(delivery.schemaVersion).toBe(2);
+    expect(delivery.sheet.cards).toEqual((converted.document.cards as Array<{ name: string }>).filter((card) => card.name));
+    expect(delivery.sheet.cards).toEqual(expect.arrayContaining([expect.objectContaining({ name: domainCard(system).name })]));
+    expect(delivery.sheet.desktopView).toMatchObject({ hpMax: 8, stressMax: 7, armorMax: 4 });
+    expect(delivery.sheet.characterBackground).toBe("玩家编辑的背景");
+    expect(delivery.sheet.pbdhSource).toMatchObject({ values: { "background-story": "玩家编辑的背景" } });
+    expect(delivery.sheet.characterImage).toBe("");
+  });
 
   if (directory === "daggerheart-core") it("纯血种族导入及 PBCHA 重开继承原生卡图，默认物品合并为一行", async () => {
     const { system, catalog, installed } = context;

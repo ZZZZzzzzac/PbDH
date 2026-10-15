@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import type { ContractDiagnostic } from "./index.ts";
 
 export const CHARACTER_SAVE_VERSION = "1.0.0";
@@ -48,7 +49,7 @@ function diagnostic(
 
 async function sha256AssetId(bytes: Uint8Array): Promise<string> {
   const copy = new Uint8Array(bytes);
-  const digest = await crypto.subtle.digest("SHA-256", copy.buffer);
+  const digest = await digestSha256(copy.buffer);
   return `sha256:${Array.from(new Uint8Array(digest), (value) =>
     value.toString(16).padStart(2, "0")).join("")}`;
 }

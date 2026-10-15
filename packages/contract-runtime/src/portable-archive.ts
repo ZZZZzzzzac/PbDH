@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import {
   strToU8,
   unzipSync,
@@ -126,7 +127,7 @@ function parseJson(bytes: Uint8Array): unknown {
 async function sha256AssetId(bytes: Uint8Array): Promise<string> {
   const input = new Uint8Array(bytes.byteLength);
   input.set(bytes);
-  const digest = await crypto.subtle.digest("SHA-256", input.buffer);
+  const digest = await digestSha256(input.buffer);
   return `sha256:${Array.from(
     new Uint8Array(digest),
     (value) => value.toString(16).padStart(2, "0"),

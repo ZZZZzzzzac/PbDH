@@ -8,6 +8,13 @@ import {
   workspaceDirectoriesFromManifest,
 } from "./dependency-boundaries-core.mjs";
 
+test("crypto-runtime cannot depend on workspace modules or React", () => {
+  for (const target of ["@pbdh/contract-runtime", "@pbdh/local-storage", "react", "../../local-storage/src/index.ts"]) {
+    assert.ok(validateImport("packages/crypto-runtime/src/index.ts", target).length > 0);
+  }
+  assert.deepEqual(validateImport("packages/crypto-runtime/src/index.ts", "@noble/hashes/sha2.js"), []);
+});
+
 test("shared package cannot import an app", () => {
   assert.deepEqual(
     validateImport("packages/tabletop/src/react/surface.tsx", "@pbdh/player"),

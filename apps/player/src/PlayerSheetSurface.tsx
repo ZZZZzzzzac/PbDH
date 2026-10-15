@@ -1,4 +1,7 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -91,6 +94,9 @@ import { CharacterDataMigrationDialog } from "./sheet-runtime/rendering/Characte
 import { PackageScriptConsentDialog } from "./sheet-runtime/rendering/PackageScriptConsentDialog.tsx";
 import { CharacterImportDialogs } from "./sheet-runtime/rendering/CharacterImportDialogs.tsx";
 import { CharacterExportDialog } from "./sheet-runtime/rendering/CharacterExportDialog.tsx";
+import { supportsDholDelivery } from "./sheet-runtime/export/dholDelivery.ts";
+import type { CharacterData } from "./sheet-runtime/domain/characterData.ts";
+import type { SystemPackage } from "./sheet-runtime/domain/systemPackage.ts";
 import { openQuestionnaireHost, type QuestionnaireHostSession } from "./sheet-runtime/rendering/questionnaireHost.ts";
 import {
   ValidationIssueDialog,
@@ -99,6 +105,7 @@ import { PackageLoadingSurface } from "./sheet-runtime/rendering/app/PackageLoad
 import { resolveGuideTargetPageId } from "./sheet-runtime/rendering/app/guideTarget.ts";
 import { useSheetOutput } from "./sheet-runtime/rendering/app/useSheetOutput.ts";
 import { SheetRenderer } from "./sheet-runtime/rendering/SheetRenderer.tsx";
+import { SheetRenderBoundary } from "./sheet-runtime/rendering/app/SheetRenderBoundary.tsx";
 import { PlatformRuntimeStorage } from "./sheet-runtime/storage/platformRuntimeStorage.ts";
 import type { SystemPackageCacheSnapshot } from "./sheet-runtime/storage/runtimeStorage.ts";
 import type { RuntimePackageLoadResult } from "./sheet-runtime/store/runtimeTypes.ts";
@@ -111,6 +118,7 @@ import { loadPlatformSystemPackageFromVfs } from "./system-package-ingress.ts";
 import { SealChatResources } from "./sealchat/SealChatResources.tsx";
 
 const preferredSystemPackageKey = "pbdh:player:preferred-system-package";
+const DholExportDialog = lazy(() => import("./sheet-runtime/rendering/DholExportDialog.tsx").then((module) => ({ default: module.DholExportDialog })));
 
 export async function restorePlayerResourceLibrary(
   repository: ResourcePackageRepository,
@@ -139,6 +147,7 @@ export function PlayerSheetSurface({
   onActiveSystemPackageChange?(systemPackageDirectory?: string): void;
 } = {}) {
   const auth = useAuth();
+  const [dholExport, setDholExport] = useState<{ data: CharacterData; systemPackage: SystemPackage } | null>(null);
   const [sealChatConnectionRequest, setSealChatConnectionRequest] = useState(0);
   // 首次启动先等账号恢复，避免匿名列表把上次选中的云存档回退成本地卡。
   // 完成后保持锁存；后续登录操作仍走原有账号切换恢复，不重启整套 Runtime。
@@ -735,7 +744,7 @@ export function PlayerSheetSurface({
   }
 
   async function handleSwitchSystem(entry: PlayerSystemPackageCatalogEntry): Promise<void> {
-    if (entry.system.package.id === currentSystem.package.id && !authorPreviewActive) return;
+    if (entry.system.package.id === currentPackage?.manifest.ID && !authorPreviewActive) return;
     try {
       await flushCurrentCharacter();
       if (authorPreviewActive) exitAuthorPreview();
@@ -912,7 +921,7 @@ export function PlayerSheetSurface({
         await characterSaveRepository.import({
           document: {
             ...structuredClone(source.document),
-            documentId: crypto.randomUUID(),
+            documentId: randomUUID(),
             name: `${source.document.name} 本地副本`,
             createdAt: now,
             updatedAt: now,
@@ -1257,6 +1266,9 @@ export function PlayerSheetSurface({
         <div className="player-menu-panel" role="menu">
           <button className="player-menu-primary" type="button" role="menuitem" disabled={Boolean(playerOperation)} onClick={() => characterFileInputRef.current?.click()}>导入存档（任意格式）</button>
           <button className="player-menu-primary" type="button" role="menuitem" disabled={!activeCharacterSaveId || Boolean(playerOperation)} onClick={() => void exportActiveCharacter()}>导出 pbcha 存档</button>
+          {supportsDholDelivery(currentPackage) ? <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation) || Boolean(playerOperation)} onClick={() => {
+            if (characterData && currentPackage) setDholExport({ data: characterData, systemPackage: currentPackage });
+          }}>发送到 DHOL 在线面板</button> : null}
           <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("html")}>导出 HTML</button>
           <button type="button" role="menuitem" disabled={!characterData || Boolean(outputOperation)} onClick={() => void beginOutput("print")}>导出 PDF</button>
           <hr role="separator" />
@@ -1317,7 +1329,21 @@ export function PlayerSheetSurface({
       {currentPackage ? (
         <div className="player-runtime-layout">
           <main className="player-runtime-sheet">
-            <SheetRenderer systemPackage={currentPackage} requestedPageId={guideTargetPageId} outputMode={printMode} />
+            <SheetRenderBoundary
+              key={JSON.stringify([currentPackage.manifest.ID, currentPackage.manifest.版本, activeCharacterSaveId, characterData?.character.id])}
+              packageName={currentPackage.manifest.名称}
+              recoverySystems={playerSystemPackageCatalog.filter((entry) => entry.system.package.id !== currentPackage.manifest.ID).map((entry) => ({ id: entry.system.package.id, name: entry.system.package.name }))}
+              onSwitchSystem={(id) => {
+                const entry = findPlayerSystemPackage(id);
+                if (entry) void handleSwitchSystem(entry);
+              }}
+            >
+              {characterData ? (
+                <SheetRenderer systemPackage={currentPackage} requestedPageId={guideTargetPageId} outputMode={printMode} />
+              ) : <p className="message" role="status">{pendingPackageScriptConsent
+                ? "等待脚本授权后加载人物卡。"
+                : pendingCharacterDataMigration ? "等待确认存档升级后加载人物卡。" : "选择或新建人物后显示人物卡。"}</p>}
+            </SheetRenderBoundary>
           </main>
         </div>
       ) : null}
@@ -1377,6 +1403,9 @@ export function PlayerSheetSurface({
         onCancel={cancelCharacterConversion}
       />
       <CharacterExportDialog pending={pendingExternalExport} onConfirm={confirmExternalExport} onCancel={cancelExternalExport} />
+      {dholExport && surfaceVisible ? <Suspense fallback={<OperationStatus label="正在加载 DHOL 投递…" />}>
+        <DholExportDialog data={dholExport.data} systemPackage={dholExport.systemPackage} onClose={() => setDholExport(null)} />
+      </Suspense> : null}
       {pendingNativeCharacterImport ? (
         <div className="character-save-dialog-backdrop">
           <section className="character-save-dialog" role="alertdialog" aria-modal="true" aria-label="确认导入 PbDH 人物存档">

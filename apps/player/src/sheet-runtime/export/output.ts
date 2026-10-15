@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import { exportCharacterData, parseCharacterDataJson, type CharacterData, type CharacterImportResult } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 
@@ -242,7 +243,7 @@ export async function prepareCardImagesForPrint(root: ParentNode): Promise<() =>
       const host = frame.querySelector<HTMLElement>("[data-pbdh-canonical-surface]");
       if (!host) continue;
       const snapshot = await buildCardPrintSvg(host);
-      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(snapshot.svg));
+      const digest = await digestSha256(new TextEncoder().encode(snapshot.svg));
       const key = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
       let blob = printCardImageCache.get(key);
       if (!blob) {

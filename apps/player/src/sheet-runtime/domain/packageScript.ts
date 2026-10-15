@@ -1,3 +1,5 @@
+import { digestSha256, randomUUID } from "@pbdh/crypto-runtime";
+
 export function buildPackageScriptBody(scriptContent: string, scriptLabel: string): string {
   return [
     '"use strict";',
@@ -13,8 +15,18 @@ export function buildPackageScriptBody(scriptContent: string, scriptLabel: strin
 export function executePackageScriptInContext(scriptContent: string, input: unknown, scriptLabel: string): Promise<unknown> {
   const module = { exports: {} as unknown };
   const exports = module.exports;
-  const runner = new Function("module", "exports", "input", buildPackageScriptBody(scriptContent, scriptLabel));
-  return Promise.resolve(runner(module, exports, input));
+  const runner = new Function("module", "exports", "input", "crypto", buildPackageScriptBody(scriptContent, scriptLabel));
+  // 只给系统包脚本注入其使用的摘要能力；不修改 Worker 全局或已发布脚本制品。
+  const scriptCrypto = globalThis.crypto.subtle ? globalThis.crypto : {
+    getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto),
+    randomUUID,
+    subtle: { digest: (algorithm: AlgorithmIdentifier, data: BufferSource) => {
+      const name = typeof algorithm === "string" ? algorithm : algorithm.name;
+      if (name.toUpperCase() !== "SHA-256") return Promise.reject(new DOMException("仅支持 SHA-256 摘要", "NotSupportedError"));
+      return digestSha256(data);
+    } },
+  };
+  return Promise.resolve(runner(module, exports, input, scriptCrypto));
 }
 
 export function cloneAndFreeze<T>(value: T): T {

@@ -46,6 +46,14 @@
 .player-runtime-sheet { min-width: 0; }
 .player-runtime-sheet > .sheet-tool { min-height: calc(100vh - 56px); }
 .print-mode .player-runtime-layout { display: block; }
+
+.player-sheet-render-error { max-width: 48rem; margin: 2rem auto; padding: 1.5rem; border: 1px solid var(--framework-border); background: var(--framework-surface); color: var(--framework-text); }
+.player-sheet-render-error h2 { margin: 0 0 1rem; }
+.player-sheet-render-error p { line-height: 1.6; }
+.player-sheet-recovery-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-block: 1.25rem; }
+.player-sheet-recovery-actions label { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.player-sheet-recovery-actions button, .player-sheet-recovery-actions select { min-height: 2.5rem; padding: .4rem .75rem; }
+.player-sheet-render-error pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .player-shell { display: grid; grid-template-columns: var(--character-save-list-width, 286px) minmax(560px, 1fr) 340px; min-height: calc(100vh - 56px); gap: 12px; padding: 12px; background: var(--character-save-canvas, #eeeae4); }
 .sheet-index, .character-sheet, .native-resources { border: 1px solid #d4c8b5; border-radius: 8px; background: #fffdf8; }
 .sheet-index { display: flex; min-width: 0; flex-direction: column; overflow: hidden; background: var(--character-save-list-background, #f3f0ea); border-color: var(--character-save-list-border, #c9c1b6); }

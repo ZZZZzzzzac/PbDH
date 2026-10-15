@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import type {
   DexieLocalDocumentStore,
   LocalDocumentEnvelope,
@@ -60,7 +61,7 @@ export async function trashCloudDocument(
         const remote = await api.getDocument(documentId, credentials);
         if (remote.documentKind !== documentKind) throw new Error("云端文档类型不匹配，未执行删除。");
         if (remote.deletedAt === null) {
-          await api.trashDocument(documentId, crypto.randomUUID(), remote.revision, credentials);
+          await api.trashDocument(documentId, randomUUID(), remote.revision, credentials);
         }
       } catch (error) {
         if (!(error instanceof CloudApiError && error.code === "CLOUD_DOCUMENT_NOT_FOUND")) {
@@ -136,7 +137,7 @@ export type FlushResult = {
 
 export function pendingSync(
   current: LocalDocumentSync,
-  mutationId: string = crypto.randomUUID(),
+  mutationId: string = randomUUID(),
 ): LocalDocumentSync {
   if (current.scope === "local-only" || current.state === "conflict") return current;
   return {
@@ -167,7 +168,7 @@ export class CloudDocumentCoordinator {
   constructor(
     store: LocalDocumentStore,
     api: CloudDocumentApi,
-    mutationId: () => string = () => crypto.randomUUID(),
+    mutationId: () => string = () => randomUUID(),
   ) {
     this.#store = store;
     this.#api = api;

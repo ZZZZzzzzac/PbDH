@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import { characterSavePlayerAssetIds, type SystemPackageDocument } from "@pbdh/contract-runtime";
 import { createBrowserImageAdmission, playerAvatarPolicy } from "@pbdh/media-admission";
 
@@ -495,7 +496,7 @@ function collectPackageScripts(systemPackage: SystemPackage): Array<{ label: str
 }
 
 async function sha256Text(content: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+  const digest = await digestSha256(new TextEncoder().encode(content));
   return `sha256:${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 

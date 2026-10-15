@@ -101,6 +101,8 @@ Backend 日志使用 `journalctl -u pbdh-platform` 查看。数据库备份位�
 
 ## SealChat iframe接入
 
+普通 HTTP SealChat（包括公网 IP:端口）也可使用原嵌入代码。PbDH 验证宿主参数后，从本站 `https://daggerheart.cn/chat/api/v1/channel-embed-sdk.js` 加载官方 v1 SDK，再直接与原宿主握手；不会请求对方的 HTTP 脚本，也不通过本站转发聊天或人物数据。该 HTTPS SDK 公开路由需随本站 Chat 保持可用。HTTPS 与回环宿主继续使用其注入的 SDK 地址。HTTP 祖先导致 WebCrypto 缺失时，摘要及 UUID 使用兼容实现，存档格式不变。详见 ADR 0081。
+
 该功能随Platform前端的GitHub Release部署，不引入独立服务、账号库或schema。当前本站Chat位于/chat/，Player位于/pbdh/player/daggerheart-core；复用现有Nginx路由。生产服务器配置与频道安装步骤由Daggerheart_VPS/servers/bandwagon-192.243.116.94/sealchat/README.md维护。
 
 SealChat频道嵌入窗加载https://daggerheart.cn/pbdh/player/daggerheart-core?sealchat=1，默认840×790。启用Embed API并允许https://daggerheart.cn，授予context.read、characters.read、characterCard.read、messages.send。官方宿主自动提供hostOrigin与sdkUrl，SDK路径包含/chat前缀。不修改或编译SealChat/Dice宿主。

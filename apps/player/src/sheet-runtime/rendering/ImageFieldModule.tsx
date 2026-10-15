@@ -16,11 +16,11 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
   const [processing, setProcessing] = useState(false);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const value = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
-  const playerImages = useRuntimeStore((state) => state.characterData?.playerImages ?? {});
+  const playerImages = useRuntimeStore((state) => state.characterData?.playerImages);
   const uploadPlayerImage = useRuntimeStore((state) => state.uploadPlayerImage);
   const removePlayerImage = useRuntimeStore((state) => state.removePlayerImage);
   const imageValue = isPlayerImageValue(value) ? value : null;
-  const image = imageValue ? playerImages[imageValue.imageId] : undefined;
+  const image = imageValue ? playerImages?.[imageValue.imageId] : undefined;
   const altText = module.替代文本 ?? module.标签;
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {

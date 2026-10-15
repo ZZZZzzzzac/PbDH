@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { canonicalCardDesignSize } from "@pbdh/resource-renderer/core";
 import {
   clampTabletopPosition,
@@ -77,7 +78,7 @@ export function placeWorkspaceResourcesOnTabletop(
   workspaces: readonly CreatorWorkspace[],
   selections: readonly WorkspaceResourceSelection[],
   firstPosition?: { x: number; y: number },
-  createId: () => string = () => crypto.randomUUID(),
+  createId: () => string = () => randomUUID(),
 ): GmTabletopSessionResult {
   if (selections.length === 0) return { ok: true, tabletop, selectedInstanceIds: [] };
   let next = tabletop;

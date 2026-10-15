@@ -1,3 +1,4 @@
+import { digestSha256 } from "@pbdh/crypto-runtime";
 import type { ReactNode } from "react";
 
 import type { ResourcePackageLogicalDocument } from "@pbdh/contract-runtime";
@@ -111,7 +112,7 @@ async function generatedPublicationCoverForResource(
     rendered.bytes.byteOffset,
     rendered.bytes.byteOffset + rendered.bytes.byteLength,
   ) as ArrayBuffer;
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", digestInput));
+  const digest = new Uint8Array(await digestSha256(digestInput));
   const assetId = `sha256:${[...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
   return {
     assetId,

@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import { z } from "zod";
 import type { TabletopAsset, TabletopResourceCopy } from "@pbdh/contract-runtime";
 import { type CardInstance } from "./cardEngine";
@@ -202,7 +203,7 @@ export function createEmptyCharacterData(systemPackage: SystemPackage, character
 }
 
 export function createCharacterId(): string {
-  return crypto.randomUUID();
+  return randomUUID();
 }
 
 function seedDefaultModuleValues(systemPackage: SystemPackage): Record<string, SheetValue> {

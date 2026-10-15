@@ -1,3 +1,4 @@
+import { randomUUID } from "@pbdh/crypto-runtime";
 import {
   TABLETOP_DOCUMENT_VERSION,
   validateTabletopMedia,
@@ -141,7 +142,7 @@ export class TabletopDocumentRepository {
   constructor(
     store = new DexieLocalDocumentStore(),
     now = () => new Date().toISOString(),
-    newId = () => crypto.randomUUID(),
+    newId = () => randomUUID(),
   ) {
     this.#store = store;
     this.#now = now;
