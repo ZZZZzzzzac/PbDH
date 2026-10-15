@@ -64,7 +64,7 @@ describe("Daggerheart Core Sheet Runtime 加载", () => {
     }
     if (scenario.includeExpansion) {
       const archive = await loadPbres(
-        new Uint8Array(await readFile(path.resolve("docs/third/daggerheart-hope-and-fear.pbres"))),
+        new Uint8Array(await readFile(path.resolve("tests/fixtures/resources/daggerheart-hope-and-fear.pbres"))),
         validateResourcePackageCandidate,
       );
       expect(archive.diagnostics).toEqual([]);

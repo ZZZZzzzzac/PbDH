@@ -63,8 +63,11 @@ async function loadThirdPartyGmResource() {
 }
 
 async function loadUpstreamPlayerPackages() {
-  return Promise.all(["daggerheart-core-book.pbres", "daggerheart-hope-and-fear.pbres"].map(async (filename) => {
-    const archive = new Uint8Array(readFileSync(path.join(root, "docs/third", filename)));
+  return Promise.all([
+    "docs/sources/daggerheart-srd2/daggerheart-core-book.pbres",
+    "tests/fixtures/resources/daggerheart-hope-and-fear.pbres",
+  ].map(async (filename) => {
+    const archive = new Uint8Array(readFileSync(path.join(root, filename)));
     const loaded = await loadPbres(archive, validateResourcePackageCandidate);
     expect(loaded.diagnostics).toEqual([]);
     expect(loaded.candidate).toBeDefined();
@@ -406,8 +409,8 @@ describe("migrated Daggerheart Core System Package", () => {
   test("保留 ParaTranz 正文快照和独立核心书、扩展归档，不恢复旧中间资源", () => {
     const sourceRoot = path.join(root, "apps/player/system-package-sources/daggerheart-core");
     expect(existsSync(path.join(root, "docs/sources/daggerheart-srd2/DH_SRD_2_2026_08_25.paratranz.json"))).toBe(true);
-    expect(existsSync(path.join(root, "docs/third/daggerheart-core-book.pbres"))).toBe(true);
-    expect(existsSync(path.join(root, "docs/third/daggerheart-hope-and-fear.pbres"))).toBe(true);
+    expect(existsSync(path.join(root, "docs/sources/daggerheart-srd2/daggerheart-core-book.pbres"))).toBe(true);
+    expect(existsSync(path.join(root, "tests/fixtures/resources/daggerheart-hope-and-fear.pbres"))).toBe(true);
     expect(existsSync(path.join(sourceRoot, "resources"))).toBe(false);
     expect(existsSync(path.join(sourceRoot, "extraction-overrides.json"))).toBe(false);
     expect(existsSync(path.join(sourceRoot, "daggerheart-core-player.resource-package.json"))).toBe(false);

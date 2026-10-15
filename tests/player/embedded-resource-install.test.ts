@@ -108,8 +108,8 @@ describe("系统包内置 .pbres 安装", () => {
       if (!result.candidate) throw new Error(`Invalid resource package: ${filePath}`);
       return result.candidate;
     };
-    const coreBook = await load("docs/third/daggerheart-core-book.pbres");
-    const expansion = await load("docs/third/daggerheart-hope-and-fear.pbres");
+    const coreBook = await load("docs/sources/daggerheart-srd2/daggerheart-core-book.pbres");
+    const expansion = await load("tests/fixtures/resources/daggerheart-hope-and-fear.pbres");
     const bundled = await load(path.join(packageRoot, "resources/daggerheart-core.pbres"));
     const packageId = "01a0132c-4eef-7703-94ac-ec8d1a660002";
     expect(bundled.document.package).toMatchObject({ id: packageId, version: "1.0.25" });

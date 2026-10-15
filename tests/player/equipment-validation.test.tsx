@@ -37,8 +37,8 @@ async function loadSystem(resourcePaths: string[]) {
   return loaded.package;
 }
 beforeAll(async () => {
-  coreSystem = await loadSystem(["docs/third/daggerheart-core-book.pbres"]);
-  system = await loadSystem(["docs/third/daggerheart-core-book.pbres", "docs/third/daggerheart-hope-and-fear.pbres"]);
+  coreSystem = await loadSystem(["docs/sources/daggerheart-srd2/daggerheart-core-book.pbres"]);
+  system = await loadSystem(["docs/sources/daggerheart-srd2/daggerheart-core-book.pbres", "tests/fixtures/resources/daggerheart-hope-and-fear.pbres"]);
 }, 60000);
 
 const traits = ["agility", "strength", "finesse", "instinct", "presence", "knowledge"];

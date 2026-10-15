@@ -15,5 +15,6 @@
 - [Player 迁移](pbdh-sheet-player-migration.md)、[人物存档](pbdh-sheet-character-save-migration.md)、[资源选择](pbdh-sheet-player-resource-selection-migration.md)：旧 Sheet 来源与行为证据。
 - [Creator 工作区迁移](pbdh-cards-creator-workspace-migration.md)、[身份迁移](pbdh-cards-identity-migration.md)：旧 Cards 来源与映射。
 - `agents/` 是项目协作规则；正式 PRD 和工作项以 GitHub Issues 为准，旧路线图和阶段审计不再充当当前任务清单。
-- `sources/`、`third/` 保存原始资料和资源，未纳入本次过期文档清理。
+- `sources/` 保存项目维护的原始资料与构建输入；资源回归样本位于 `tests/fixtures/resources/`。
+- 开发中的[潜相心影](persona-heart-system-package.md)与[颂火之魂试玩](../apps/player/system-package-sources/songfire-trial/README.md)在 `apps/player/system-package-sources/` 保留最新源码及 `.pbsys` 并纳入 Git，通过手动导入使用，不随网站发布。
 - `template-1.0.0-review-resource-package.json` 仍由模板一致性测试使用，不是可清理的临时样本。

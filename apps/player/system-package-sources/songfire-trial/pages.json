@@ -1,0 +1,22 @@
+[
+  {
+    "ID": "character-main",
+    "名称": "人物卡",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/character-main.html",
+      "css": "layouts/base.css"
+    }
+  },
+  {
+    "ID": "character-story",
+    "名称": "背景与关系",
+    "打印": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/character-story.html",
+      "css": "layouts/base.css"
+    }
+  }
+]

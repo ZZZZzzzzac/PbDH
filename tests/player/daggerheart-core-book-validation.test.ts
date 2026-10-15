@@ -9,7 +9,7 @@ let base: ResourcePackageLogicalDocument;
 
 beforeAll(async () => {
   const candidate = await loadValidatedCoreBook(
-    new Uint8Array(await readFile("docs/third/daggerheart-core-book.pbres")), playerTemplates,
+    new Uint8Array(await readFile("docs/sources/daggerheart-srd2/daggerheart-core-book.pbres")), playerTemplates,
   );
   expect(candidate.document.resources).toHaveLength(640);
   const resource = candidate.document.resources.find(({ template }) => template.id === "种族")!;

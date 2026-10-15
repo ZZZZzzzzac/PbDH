@@ -1,0 +1,124 @@
+.daggerheart-workspace {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.daggerheart-sheet-pane {
+  flex: 0 1 54rem;
+  width: min(54rem, 100%);
+  min-width: 38rem;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--dh-shell-line);
+  background: var(--dh-shell-surface);
+}
+
+.daggerheart-card-pane {
+  flex: 1 1 28rem;
+  min-width: 22rem;
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.daggerheart-card-table-slot {
+  flex: 1 1 auto;
+  display: grid;
+  min-height: 38rem;
+}
+
+.card-picker-grid {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media screen and (max-width: 1080px) {
+  .daggerheart-workspace {
+    flex-direction: column;
+  }
+
+  /* 纵向布局下 pane 高度须随内容自适应:原 flex-basis 54rem 会把页面高度
+     锁死在 864px,配合 overflow:hidden 裁掉超出部分(竖屏/平板/窄桌面窗口
+     下"背景与关系"等长页面底部被截断、窗口比例失真)。 */
+  .daggerheart-sheet-pane {
+    flex-basis: auto;
+    overflow: visible;
+  }
+
+  .daggerheart-sheet-pane,
+  .daggerheart-card-pane {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .daggerheart-card-pane {
+    min-height: 32rem;
+  }
+
+  .daggerheart-card-table-slot {
+    min-height: 32rem;
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .daggerheart-workspace {
+    padding: 0.375rem;
+  }
+
+  .card-picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.print-mode :scope .daggerheart-workspace {
+  display: block;
+  padding: 0;
+}
+
+.print-mode :scope .daggerheart-sheet-pane {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  border: 0;
+}
+
+.print-mode :scope .daggerheart-card-pane {
+  box-sizing: border-box;
+  padding: 3mm;
+}
+
+@media print {
+  .daggerheart-workspace {
+    display: block;
+    padding: 0;
+  }
+
+  .daggerheart-sheet-pane {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+    border: 0;
+  }
+
+  .daggerheart-card-pane {
+    display: block;
+    box-sizing: border-box;
+    padding: 3mm;
+  }
+
+  .daggerheart-card-pane > .card-picker-grid {
+    display: none;
+  }
+
+  .daggerheart-card-table-slot {
+    min-height: 0;
+  }
+}

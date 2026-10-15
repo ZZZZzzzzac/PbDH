@@ -53,6 +53,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 
 - `apps/platform/`：唯一用户前端组合根；拥有全局账号、Platform App Bar 与四个主页面的路由
 - `apps/player/`：Player App Surface 与领域状态，由 Platform Shell 组合
+- `apps/player/system-package-sources/`：开发中的系统包源码与最新 `.pbsys` 纳入 Git，不随网站发布；既有 `daggerheart-core/` 按其目录规则维护构建清单。正式网站资源放在 `apps/player/public/system-packages/`，预设仍须显式注册。
 - `apps/creator/`：Creator App Surface（卡牌工坊与其内嵌的 GM Tabletop 标签页），由 Platform Shell 组合
 - `apps/market/`：公共 Market Surface，由 Platform Shell 组合
 - `apps/backend/`：模块化单体 Platform Backend
@@ -71,7 +72,7 @@ PbDH 是桌游工具项目。默认使用 Python 与 Web 前端；未明确需�
 - `tests/`：跨 App 集成测试与 Contract/Template 一致性测试；模块内部测试跟随所属模块
 - `scripts/`：一次性或开发辅助脚本
 - `docs/`：项目文档与 ADR
-- `.scratch/`：临时 issue/研究材料；正式工作项使用 GitHub Issues
+- `.scratch/`：临时 issue/研究材料；正式工作项使用 GitHub Issues。清理时保留 `runtime/` 中的本地数据库及 `dev-servers/` 服务运行目录；已转换并上市场的材料不长期保留，构建输入、回归样本与开发中的系统包归入各自正式目录。
 
 新增顶层目录或共享 package 前，必须先更新本节或建立对应目录级 `AGENTS.md`。不得把旧仓库作为 submodule、subtree 或嵌套仓库放入本项目。
 

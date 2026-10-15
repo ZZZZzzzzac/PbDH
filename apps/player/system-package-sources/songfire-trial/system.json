@@ -1,0 +1,182 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a0ebaf-4334-7732-9dcf-3c0727816e37",
+    "version": "0.1.4",
+    "name": "颂火之魂TRPG（试玩）",
+    "description": "基于匕首之心角色表的手动测试版；使用颂火之魂试玩资源及原版武器、护甲、物品。规则审核暂未启用。"
+  },
+  "runtime": {
+    "characterDataVersion": "1.1.0",
+    "loadingPresentation": {
+      "tagline": "正在掷二元骰...",
+      "accentColor": "#a83a24"
+    },
+    "pages": "pages.json",
+    "shell": {
+      "html": "layouts/shell.html",
+      "css": "layouts/shell.css"
+    },
+    "skins": [
+      {
+        "id": "skin-KimiK3",
+        "name": "松烟纸墨",
+        "css": "skins/skin-KimiK3/skin.css",
+        "frameworkColorScheme": "light",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/skin-KimiK3/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/skin-KimiK3/character-main.html"
+            },
+            {
+              "id": "character-story",
+              "html": "skins/skin-KimiK3/character-story.html"
+            }
+          ]
+        }
+      },
+      {
+        "id": "skin-black-hours",
+        "name": "黑时祷书",
+        "css": "skins/skin-black-hours/skin.css",
+        "frameworkColorScheme": "dark",
+        "layoutOverrides": {
+          "shell": {
+            "html": "skins/skin-black-hours/shell.html"
+          },
+          "pages": [
+            {
+              "id": "character-main",
+              "html": "skins/skin-black-hours/character-main.html"
+            }
+          ]
+        }
+      }
+    ],
+    "defaultSkin": "skin-KimiK3",
+    "modules": "modules.json",
+    "dependencies": "dependencies.json",
+    "characterCreationGuide": "guides/character-creation.json",
+    "characterTextExports": "exports/character-text.json",
+    "characterDataMigrations": [
+      {
+        "fromVersion": "1.0.0",
+        "toVersion": "1.1.0",
+        "script": "migrations/1.0.0-1.1.0.js"
+      }
+    ]
+  },
+  "resourceCompatibility": [
+    {
+      "templateId": "社群",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "communities",
+        "label": "出身"
+      }
+    },
+    {
+      "templateId": "职业",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "classes",
+        "label": "职业"
+      }
+    },
+    {
+      "templateId": "子职业",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "subclasses",
+        "label": "子职业"
+      }
+    },
+    {
+      "templateId": "武器",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "weapons",
+        "label": "武器"
+      }
+    },
+    {
+      "templateId": "护甲",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "armor",
+        "label": "护甲"
+      }
+    },
+    {
+      "templateId": "物品",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "loot",
+        "label": "物品与消耗品"
+      }
+    },
+    {
+      "templateId": "领域卡",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "domain-cards",
+        "label": "领域卡"
+      }
+    },
+    {
+      "templateId": "敌人",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "adversaries",
+        "label": "敌人"
+      }
+    },
+    {
+      "templateId": "环境",
+      "versionRange": {
+        "minimumInclusive": "1.0.0",
+        "maximumExclusive": "2.0.0"
+      },
+      "nativeEntry": {
+        "id": "environments",
+        "label": "环境"
+      }
+    }
+  ],
+  "embeddedResources": [
+    {
+      "path": "resources/songfire.pbres"
+    },
+    {
+      "path": "resources/core-equipment.pbres"
+    }
+  ]
+}
