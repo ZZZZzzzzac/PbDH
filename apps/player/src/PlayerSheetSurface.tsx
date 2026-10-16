@@ -659,15 +659,19 @@ export function PlayerSheetSurface({
   }, [cloudNotice, notify]);
 
   useEffect(() => {
-    if (!libraryReady || handoffStartedRef.current === handoffUrl) return;
     const handoff = parsePlayerMarketHandoff(handoffUrl);
-    if (!handoff) return;
+    if (!handoff) {
+      handoffStartedRef.current = null;
+      return;
+    }
+    if (!libraryReady || handoffStartedRef.current === handoffUrl) return;
     handoffStartedRef.current = handoffUrl;
     const cleanedUrl = withoutPlayerMarketHandoff(handoffUrl);
     if (onHandoffConsumed) onHandoffConsumed(cleanedUrl);
     else window.history.replaceState(null, "", `${cleanedUrl.pathname}${cleanedUrl.search}${cleanedUrl.hash}`);
     setManagerOpen(true);
-    const ingressId = `market:${handoff.publicationId}:${handoff.snapshotDigest}`;
+    // 每次主动交接使用独立请求标识；是否已安装仍由当前资源库判断。
+    const ingressId = `market:${handoff.publicationId}:${randomUUID()}`;
     void fetch(playerMarketArchiveUrl(handoff), auth.credentials
       ? { headers: platformRequestHeaders(auth.credentials) }
       : undefined)
