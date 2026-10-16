@@ -21,6 +21,46 @@ const archive = new Uint8Array(readFileSync(new URL(
 )));
 
 describe("Creator package file workflow", () => {
+  test("exports Sheet cards and equipment as separate JSON files and reports skipped equipment", async () => {
+    const blank = await createBlankWorkspace("装备导出验收");
+    const template = currentTemplates.find((item) => item.id === "武器")!;
+    const { workspace } = addTemplateResource(blank, template);
+    workspace.document.resources[0]!.data = {
+      ...template.defaultData, 名称: "验收长剑", 类型: "主武器", 属性: "敏捷", 距离: "近战",
+      伤害: "d8+1", 负荷: "单手", 伤害类型: "物理", 位阶: "1", 特性名称: "可靠", 特性描述: "验收用武器。",
+    };
+    const result = await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId: "dhsheet", workspace });
+    if (result.type !== "third-party-export") throw new Error(JSON.stringify(result));
+    expect(result.fileName).toBe("装备导出验收.json");
+    expect(JSON.parse(strFromU8(result.bytes)).variant).toHaveLength(1);
+    const equipment = await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId: "dhsheet", dhsheetContent: "equipment", workspace });
+    if (equipment.type !== "third-party-export") throw new Error(JSON.stringify(equipment));
+    expect(equipment.fileName).toBe("装备导出验收-装备包.json");
+    expect(JSON.parse(strFromU8(equipment.bytes))).toMatchObject({
+      format: "daggerheart.equipment-pack.v1", author: "未署名",
+      equipment: { weapons: [{ name: "验收长剑", tier: "T1", damage: "d8+1" }] },
+    });
+    expect(result.diagnostics).toEqual([]);
+    expect(equipment.message).toContain("1 件装备");
+
+    const mixed = addTemplateResource(workspace, template).workspace;
+    mixed.document.resources[1]!.data = { ...workspace.document.resources[0]!.data, 名称: "奥术框架轮椅", 属性: "施法属性" };
+    const partial = await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId: "dhsheet", dhsheetContent: "equipment", workspace: mixed });
+    if (partial.type !== "third-party-export") throw new Error(JSON.stringify(partial));
+    expect(partial.fileName).toBe("装备导出验收-装备包.json");
+    expect(JSON.parse(strFromU8(partial.bytes)).equipment.weapons).toHaveLength(1);
+    expect(partial.message).toContain("跳过 1 件");
+    expect(partial.diagnostics[0]?.params.message).toContain("奥术框架轮椅");
+
+    workspace.document.resources[0]!.data.位阶 = "";
+    const incomplete = await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId: "dhsheet", workspace });
+    if (incomplete.type !== "third-party-export") throw new Error(JSON.stringify(incomplete));
+    expect(incomplete.fileName).toBe("装备导出验收.json");
+    expect(incomplete.diagnostics).toEqual([]);
+    const invalidEquipment = await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId: "dhsheet", dhsheetContent: "equipment", workspace });
+    expect(invalidEquipment.type).toBe("conversion-review");
+  });
+
   test.each([1, 2])("exports %i unsigned cards to Kid through the real workspace workflow", async (count) => {
     const inspected = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes: archive });
     if (inspected.type !== "import-ready") throw new Error("fixture should be importable");

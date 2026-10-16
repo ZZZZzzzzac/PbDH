@@ -17,6 +17,19 @@ Package、Market 或云存储。
 - `zzz`：`ZZZZzzzzac/DaggerHeart_Character@64e6a4484dd1daf9b93779dcf7aaea6e512efde4`
 - `dhsheet`：`RidRisR/DaggerHeart-CharacterSheet@fdc1f9e1423a5e044fc547b84f4dbe02af6a5b38`
 
+Sheet 导出分为两个独立入口，不打包 ZIP：
+- “导出 dhcb 卡牌包”保留原有六类卡包 JSON，供 `dhsheet.top` 和 `dhsheet.site` 导入。
+- “导出 dhcb 装备包”只下载 `包名-装备包.json`，在 `dhsheet.site` 导入后用于人物卡装备选择。
+  Adapter 使用 `dhsheetContent: "equipment"` 选择该输出；默认仍导出原卡牌包。
+装备包按 [官方装备包指南](https://dhsheet.site/card-pack-guide) 和
+[官方 Schema](https://dhsheet.site/自定义装备包指南和示例/equipment-pack.v1.schema.json)
+映射；Schema 快照保存在 `src/adapters/dhsheet-equipment.schema.json`（2026-10-16）。
+主副武器、属性、范围、负荷、伤害类型和位阶转换为标准枚举，护甲值和阈值转换为整数。
+特性名称与描述保留，不从描述推断自动数值修正。装备缺少必填值、使用不支持的值或
+阈值顺序错误时，仅跳过该装备，Creator 显示跳过数量、名称与原因，其余装备正常导出。
+例如 site 不支持动态“施法属性”，不能擅自替换为知识或其他固定属性。没有可导出的装备时
+不生成空文件。卡牌包出口不受这些装备要求影响，仍完整保留原来的扩展卡。
+
 Rink 导入支持单个 JSON（对象或数组），以及每个 JSON 文件包含一个资源对象的 ZIP。
 ZIP 内的相对目录和文件名直接成为资源 path，不移除顶层目录，也不按模板重新分类；
 UTF-8 文件名按 ZIP 标记读取，未标记的旧中文文件名按 GBK/GB18030 解码。

@@ -22,7 +22,7 @@ const resourceConversionRegistry = createResourceConversionRegistry(createPbresC
 export type CreatorPackageFileCommand =
   | { type: "inspect-import"; bytes: Uint8Array }
   | { type: "export-workspace"; workspace: CreatorWorkspace }
-  | { type: "export-third-party"; formatId: Exclude<ResourceFormatId, "pbres">; workspace: CreatorWorkspace }
+  | { type: "export-third-party"; formatId: Exclude<ResourceFormatId, "pbres">; workspace: CreatorWorkspace; dhsheetContent?: "cards" | "equipment" }
   | { type: "convert"; formatId: Exclude<ResourceFormatId, "pbres">; bytes: Uint8Array; fileName: string }
   | { type: "export-conversion"; review: CreatorConversionReview };
 
@@ -30,7 +30,7 @@ export type CreatorPackageFileResult =
   | { type: "import-ready"; candidate: ResourcePackageCandidate }
   | { type: "invalid"; title: string; diagnostics: ContractDiagnostic[] }
   | { type: "workspace-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string }
-  | { type: "third-party-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string }
+  | { type: "third-party-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string; diagnostics: ContractDiagnostic[] }
   | { type: "conversion-review"; review: CreatorConversionReview }
   | { type: "conversion-export"; bytes: Uint8Array; fileName: string }
   | { type: "no-conversion" };
@@ -84,6 +84,7 @@ export async function runCreatorPackageFileWorkflow(
       };
     }
     const exported = await resourceConversionRegistry.export(command.formatId, pbres.batch, {
+      dhsheetContent: command.dhsheetContent,
       packageName: workspace.document.package.name,
       packageVersion: workspace.document.package.version,
       // 基德要求署名字段；匿名资源不冒用包名或当前登录账号。
@@ -102,12 +103,20 @@ export async function runCreatorPackageFileWorkflow(
         },
       };
     }
+    const equipmentExport = command.formatId === "dhsheet" && command.dhsheetContent === "equipment";
+    const skippedEquipment = exported.report.diagnostics.filter((item) => item.code === "dhsheet.equipment.invalid").length;
     return {
       type: "third-party-export",
       workspace,
       bytes: exported.artifact.bytes,
       fileName: exported.artifact.fileName,
-      message: `已导出 ${command.formatId} 格式 · ${exported.report.converted} 项资源`,
+      message: equipmentExport
+        ? `已导出 dhcb 装备包 · ${exported.report.converted} 件装备，供 dhsheet.site 导入${skippedEquipment ? `；跳过 ${skippedEquipment} 件，详见转换提示` : ""}。`
+        : `已导出 ${command.formatId} 格式 · ${exported.report.converted} 项资源`,
+      diagnostics: exported.report.diagnostics.map((item) => ({
+        code: item.code, severity: item.severity, family: "resource-conversion", version: "1.0.0",
+        location: item.path ?? "/", params: { message: item.message, resourceId: item.resourceId ?? "" },
+      })),
     };
   }
 

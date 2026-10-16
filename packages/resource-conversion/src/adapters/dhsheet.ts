@@ -1,4 +1,5 @@
 import { strToU8, unzipSync, zipSync } from "fflate";
+import { exportDhsheetEquipment } from "./dhsheet-equipment.ts";
 
 import {
   asJsonObject,
@@ -49,6 +50,7 @@ const equipmentValueLabels: Record<string, string> = {
   veryFar: "极远距离",
   oneHanded: "单手",
   twoHanded: "双手",
+  offHand: "副手",
   physical: "物理",
   magic: "魔法",
 };
@@ -506,6 +508,7 @@ export const dhsheetAdapter: ResourceFormatAdapter = {
     };
   },
   export(batch, options: ExportOptions = {}) {
+    if (options.dhsheetContent === "equipment") return exportDhsheetEquipment(batch, options);
     const output: JsonObject = {
       name: options.packageName ?? batch.name,
       version: options.packageVersion ?? batch.version ?? "1.0.0",

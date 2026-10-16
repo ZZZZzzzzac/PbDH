@@ -1352,13 +1352,13 @@ export function CreatorWorkspacePrototype({
     }
   }
 
-  async function exportPackage(formatId: ResourceFormatId = "pbres") {
+  async function exportPackage(formatId: ResourceFormatId = "pbres", dhsheetContent?: "cards" | "equipment") {
     if (!active || creatorOperation) return;
     setCreatorOperation("export-package");
     try {
       const result = formatId === "pbres"
         ? await runCreatorPackageFileWorkflow({ type: "export-workspace", workspace: active })
-        : await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId, workspace: active });
+        : await runCreatorPackageFileWorkflow({ type: "export-third-party", formatId, dhsheetContent, workspace: active });
       if (result.type === "invalid") {
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
@@ -1371,6 +1371,9 @@ export function CreatorWorkspacePrototype({
       downloadBytes(result.bytes, result.fileName);
       if (!replaceActive(result.workspace)) return;
       notify(result.message);
+      if (result.type === "third-party-export" && result.diagnostics.length > 0) {
+        setDialog({ kind: "diagnostics", title: "导出完成 · 转换提示", diagnostics: result.diagnostics });
+      }
     } finally {
       setCreatorOperation(null);
     }
@@ -1709,7 +1712,7 @@ export function CreatorWorkspacePrototype({
           conversionImportRef.current.click();
         }
         return;
-      case "export-third-party": void exportPackage(command.formatId); return;
+      case "export-third-party": void exportPackage(command.formatId, command.dhsheetContent); return;
       case "export-package": void exportPackage(); return;
       case "publish-package": void openPublicationDialog(); return;
       case "new-resource": if (active) setDialog({ kind: "new-resource", workspaceKey: active.key }); return;

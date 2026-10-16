@@ -40,7 +40,7 @@ export type CreatorResourceExplorerSnapshot = {
 export type CreatorResourceExplorerCommand =
   | { type: "new-package" | "import-pbres" | "export-package" | "publish-package" | "new-resource" | "new-folder" | "toggle-multi-select" }
   | { type: "import-third-party"; formatId: Exclude<ResourceFormatId, "pbres"> }
-  | { type: "export-third-party"; formatId: Exclude<ResourceFormatId, "pbres"> }
+  | { type: "export-third-party"; formatId: Exclude<ResourceFormatId, "pbres">; dhsheetContent?: "cards" | "equipment" }
   | { type: "set-search"; value: string }
   | { type: "activate-resource" | "pin-resource" | "toggle-resource-selection"; workspaceKey: string; resourceId: string }
   | { type: "open-resource-context"; workspaceKey: string; resourceId: string; x: number; y: number }
@@ -176,7 +176,9 @@ export function CreatorResourceExplorer({
         <button type="button" title="导出资源包" aria-label="导出资源包" aria-haspopup="menu" disabled={!active || Boolean(snapshot.operation)}><Icon name="download" /></button>
         <div className="explorer-import-menu-panel" role="menu">
           <button className="is-native-format" type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-package" })}>导出 PBRES 格式</button>
-          {thirdPartyFormats.map((format) => <button key={format.id} type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: format.id })}>{`导出${format.label}`}</button>)}
+          <button type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: "dhsheet", dhsheetContent: "cards" })}>导出 dhcb 卡牌包</button>
+          <button type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: "dhsheet", dhsheetContent: "equipment" })}>导出 dhcb 装备包</button>
+          {thirdPartyFormats.filter((format) => format.id !== "dhsheet").map((format) => <button key={format.id} type="button" role="menuitem" disabled={!active || Boolean(snapshot.operation)} onClick={() => execute({ type: "export-third-party", formatId: format.id })}>{`导出${format.label}`}</button>)}
         </div>
       </div>
       <span className="explorer-toolbar-divider" aria-hidden="true" />

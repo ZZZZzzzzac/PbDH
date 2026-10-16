@@ -102,6 +102,7 @@ export type ImportResult =
 
 export type ExportOptions = {
   container?: ResourceContainer;
+  dhsheetContent?: "cards" | "equipment";
   packageName?: string;
   packageVersion?: string;
   creator?: string;
