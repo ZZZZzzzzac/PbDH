@@ -143,7 +143,7 @@
 .detail-side { grid-area: side; display: flex; flex-direction: column; gap: 14px; }
 .detail-side > section { padding: 16px; border: 1px solid var(--border); border-radius: 7px; background: var(--paper); }
 .detail-side h2 { margin: 0 0 12px; font-size: 16px; }
-.acquisition-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.acquisition-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .acquisition-actions button, .acquisition-actions a { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink); background: var(--paper); font-size: 14.5px; font-weight: 650; text-decoration: none; }
 .acquisition-actions button:hover, .acquisition-actions a:hover { border-color: #b78a87; }
 .primary-button, .acquisition-actions .primary-button { border-color: var(--accent); color: #fff; background: var(--accent); }
@@ -171,6 +171,14 @@
 .handoff-dialog > footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .handoff-dialog > footer button { height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink); background: var(--paper); font-size: 14px; font-weight: 650; }
 .handoff-dialog > footer .primary-button { border-color: var(--accent); color: #fff; background: var(--accent); }
+.market-export-dialog { max-height: calc(100dvh - 40px); overflow-y: auto; color: var(--ink); }
+.market-export-dialog::backdrop { background: rgba(31,25,21,.42); }
+.market-export-dialog > p { line-height: 1.6; }
+.market-export-format { display: grid; gap: 8px; margin: 20px 0; font-weight: 650; }
+.market-export-format select { width: 100%; min-height: 40px; padding: 8px; border: 1px solid var(--border); border-radius: 5px; color: var(--ink); background: var(--paper); font: inherit; }
+.market-export-dialog button:disabled, .market-export-dialog select:disabled { cursor: wait; opacity: .62; }
+.market-export-report { margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 6px; overflow-wrap: anywhere; }
+.market-export-report ul { max-height: 220px; padding-left: 20px; overflow-y: auto; font-size: 14px; line-height: 1.6; }
 .handoff-failure-dialog > p { margin: 18px 0 0; padding: 14px 16px; border: 1px solid #d7a7a5; border-radius: 6px; color: #8f3036; background: #f4dedc; font-size: 14.5px; }
 .unpublish-dialog { width: min(520px, 100%); padding: 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--paper); box-shadow: 0 18px 44px rgba(28,22,18,.22); }
 .unpublish-dialog > header { display: grid; grid-template-columns: minmax(0, 1fr) 30px; align-items: center; gap: 10px; }
@@ -221,7 +229,6 @@
   .canonical-preview { width: 100%; height: min(560px, 72vh); min-height: 440px; margin-top: 10px; }
   .detail-side { display: flex; margin-top: 10px; }
   .mobile-acquire { position: fixed; z-index: 40; inset: auto 12px 12px; width: calc(100% - 24px); height: 44px; display: block; border: 0; border-radius: 6px; color: #fff; background: var(--accent); font-size: 15px; font-weight: 700; box-shadow: 0 8px 20px rgba(88,35,38,.24); }
-  .acquisition-sheet .acquisition-actions { align-items: stretch; }
   .acquisition-sheet .acquisition-actions > * { min-height: 42px; justify-content: flex-start; }
   .handoff-dialog > footer { flex-wrap: wrap; }
 }

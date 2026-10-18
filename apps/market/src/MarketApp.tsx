@@ -23,6 +23,7 @@ import { CanonicalCardSurface, resolveTemplateFrontend } from "@pbdh/templates/f
 import { marketDesign } from "../design.ts";
 import { catalogOptions } from "./catalog-options.ts";
 import { Icon } from "./Icons.tsx";
+import { MarketExportDialog } from "./MarketExportDialog.tsx";
 import { publicationUpdateLabel } from "./publication-time.ts";
 import {
   deletePublication,
@@ -365,21 +366,22 @@ function isSurfaceResource(value: unknown): value is SurfaceResource<Record<stri
 }
 
 function AcquisitionActions({
-  publication,
   onHandoff,
   onDownload,
+  onExport,
   includeDownload = true,
   downloadBusy = false,
 }: {
-  publication: Publication;
   onHandoff: (target: HandoffTarget, creatorMode?: "import" | "fork") => void;
   onDownload: () => void;
+  onExport: () => void;
   includeDownload?: boolean;
   downloadBusy?: boolean;
 }) {
   return <div className="acquisition-actions">
     {includeDownload && <button type="button" className="primary-button" disabled={downloadBusy} onClick={onDownload}>{downloadBusy ? <OperationStatus label="正在下载整包…" /> : <><Icon name="download" />下载 .pbres</>}</button>}
-    <button type="button" onClick={() => onHandoff("player")}><Icon name="user" />安装到玩家</button>
+    <button type="button" disabled={downloadBusy} onClick={onExport}><Icon name="download" />导出为第三方格式…</button>
+    <button type="button" onClick={() => onHandoff("player")}><Icon name="user" />安装到玩家车卡器</button>
     <button type="button" onClick={() => onHandoff("creator")}><Icon name="cards" />导入卡牌工坊</button>
     <button type="button" onClick={() => onHandoff("creator", "fork")}><Icon name="cards" />创建 Fork 草稿</button>
     <button type="button" onClick={() => onHandoff("gm")}><Icon name="grid" />发送到桌面…</button>
@@ -423,6 +425,7 @@ export function PublicationDetail({
 }) {
   const selectedResourceId = resourceId ?? publication.resources[0]!.id;
   const [mobileActions, setMobileActions] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const canAcquire = canAcquirePublication(publication, canManage);
   return <div className="publication-detail">
     <div className="breadcrumbs"><button type="button" onClick={onBack}>资源市场</button><Icon name="chevronRight" /><strong>{publication.title}</strong><button type="button" className="share-link" onClick={onShare}>复制当前链接</button></div>
@@ -441,12 +444,13 @@ export function PublicationDetail({
       </aside>
       <CanonicalPreview publication={publication} resourceId={selectedResourceId} />
       <aside className="detail-side">
-        {canAcquire && <section><h2>取得资源包</h2><AcquisitionActions publication={publication} onHandoff={onHandoff} onDownload={onDownload} downloadBusy={downloadBusy} /></section>}
+        {canAcquire && <section><h2>取得资源包</h2><AcquisitionActions onHandoff={onHandoff} onDownload={onDownload} onExport={() => setExportOpen(true)} downloadBusy={downloadBusy} /></section>}
         <section><h2>当前资源包</h2><dl><dt>状态</dt><dd>{publication.status === "published" ? "已发布" : "未发布"}</dd><dt>版本</dt><dd>{publication.packageVersion}</dd>{publication.mediaBytes !== undefined && <><dt>包内图片大小</dt><dd>{formatStorageBytes(publication.mediaBytes)}</dd></>}<dt>更新时间</dt><dd>{publication.updatedAt}</dd><dt>资源</dt><dd>{publication.resourceCount} 项</dd><dt>语言</dt><dd>{publication.language}</dd><dt>目标系统</dt><dd>{publication.systemLabels.join(" / ") || "未指定"}</dd><dt>许可</dt><dd>{publication.license}</dd></dl>{canManage && <div className="publication-detail-management" aria-busy={Boolean(busyAction)}><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onEditMetadata}><Icon name="pencil" />编辑资源包信息</button><button type="button" className="publication-edit-button" disabled={Boolean(busyAction)} onClick={onUpgradeTemplates}><Icon name="refresh" />升级模板</button>{publication.status === "published" ? <button type="button" className="danger-button publication-unpublish-button" disabled={Boolean(busyAction)} onClick={onUnpublish}>取消发布</button> : <><button type="button" className="primary-button" disabled={Boolean(busyAction)} onClick={onRepublish}>{busyAction === "republish" ? <MarketBusyContent label="正在重新发布…" /> : "重新发布"}</button><button type="button" className="danger-button" disabled={Boolean(busyAction)} onClick={onDelete}>永久删除</button></>}</div>}</section>
       </aside>
     </div>
     {canAcquire && <button className="mobile-acquire" type="button" onClick={() => setMobileActions(true)}>取得资源包</button>}
-    {canAcquire && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions publication={publication} onHandoff={(target, creatorMode) => { setMobileActions(false); onHandoff(target, creatorMode); }} onDownload={onDownload} includeDownload={false} /></section></div>}
+    {canAcquire && mobileActions && <div className="sheet-backdrop" role="presentation" onMouseDown={() => setMobileActions(false)}><section className="acquisition-sheet" role="dialog" aria-modal="true" aria-label="取得资源包" onMouseDown={(event) => event.stopPropagation()}><header><strong>取得资源包</strong><button type="button" aria-label="关闭" onClick={() => setMobileActions(false)}><Icon name="x" /></button></header><AcquisitionActions onHandoff={(target, creatorMode) => { setMobileActions(false); onHandoff(target, creatorMode); }} onDownload={onDownload} onExport={() => { setMobileActions(false); setExportOpen(true); }} includeDownload={false} downloadBusy={downloadBusy} /></section></div>}
+    {canAcquire && exportOpen && <MarketExportDialog key={publication.id} publication={publication} onClose={() => setExportOpen(false)} />}
   </div>;
 }
 

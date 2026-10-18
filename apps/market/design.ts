@@ -13,7 +13,7 @@ export const marketDesign = {
   },
   "acquisitionActions": [
     "Publication 详情 / 下载完整包",
-    "Publication 详情 / 安装到玩家",
+    "Publication 详情 / 安装到玩家车卡器",
     "Publication 详情 / 导入卡牌工坊",
     "Publication 详情 / 发送到桌面"
   ],
