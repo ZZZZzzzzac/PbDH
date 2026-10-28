@@ -40,6 +40,11 @@
 .player-menu-system { padding-bottom: 10px; border-bottom: 1px solid #e3d9cd; }
 .player-menu-system > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .player-menu-system strong { color: #756a5e; font-size: 10px; font-variant-numeric: tabular-nums; }
+.player-menu-check { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; color: #21150f; font-size: 12px; cursor: pointer; }
+.player-menu-check input { width: 14px; height: 14px; margin: 0; accent-color: #8b2d31; }
+.player-menu-check input:disabled { cursor: not-allowed; }
+.player-menu-check input:disabled + span { color: #a89d91; }
+.player-menu-hint { display: block; padding: 0 8px 4px; color: #756a5e; font-size: 10px; line-height: 1.5; }
 .player-menu-resource-manager { display: flex; align-items: center; justify-content: space-between; }
 .player-menu-resource-manager strong { font-variant-numeric: tabular-nums; }
 .player-runtime-layout { display: block; min-height: calc(100vh - 56px); background: var(--framework-canvas); }

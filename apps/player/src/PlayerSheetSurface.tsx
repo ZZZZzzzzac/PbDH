@@ -56,6 +56,10 @@ import {
   withoutPlayerMarketHandoff,
 } from "./resources/market-handoff.ts";
 import {
+  areNativeResourcePackagesDisabled,
+  setNativeResourcePackagesDisabled,
+} from "./resources/native-resource-package-preference.ts";
+import {
   commitResourcePackageInstall,
   commitResourcePackageRemoval,
   type ResourceLibrary,
@@ -120,16 +124,25 @@ import { SealChatResources } from "./sealchat/SealChatResources.tsx";
 const preferredSystemPackageKey = "pbdh:player:preferred-system-package";
 const DholExportDialog = lazy(() => import("./sheet-runtime/rendering/DholExportDialog.tsx").then((module) => ({ default: module.DholExportDialog })));
 
+// 原生资源包只属于预置系统包；用户上传的系统包自带资源，不受这个开关影响。
+export function nativeResourcePackagesSuppressed(system: SystemPackageDocument): boolean {
+  return areNativeResourcePackagesDisabled() && Boolean(findPlayerSystemPackage(system.package.id));
+}
+
 export async function restorePlayerResourceLibrary(
   repository: ResourcePackageRepository,
   currentSystem: SystemPackageDocument = defaultPlayerSystemPackage.system,
 ): Promise<ResourceLibrary> {
+  const suppressed = nativeResourcePackagesSuppressed(currentSystem);
   const stored = await repository.list(currentSystem.package.id);
-  return new Map(stored.map((candidate) => [candidate.document.package.id, {
-    document: candidate.document,
-    media: candidate.media,
-    routes: routeResourcePackage({ currentSystem, resourcePackage: candidate.document }),
-  }] as const));
+  return new Map(stored
+    // 禁用原生资源包时跳过来源仍是 bundled 的记录；Market 或本地文件装进同名包后来源改变，仍然保留。
+    .filter((candidate) => !(suppressed && candidate.source === "bundled"))
+    .map((candidate) => [candidate.document.package.id, {
+      document: candidate.document,
+      media: candidate.media,
+      routes: routeResourcePackage({ currentSystem, resourcePackage: candidate.document }),
+    }] as const));
 }
 
 export function PlayerSheetSurface({
@@ -205,13 +218,15 @@ export function PlayerSheetSurface({
     const releaseVersion = document
       .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
       ?.content || targetSystem.preset.releaseVersion;
-    await installMissingEmbeddedResourcePackages({
-      systemPackage: targetSystem.system,
-      embeddedResourceIndex: targetSystem.preset.embeddedResourceIndex,
-      systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${targetSystem.preset.directory}`,
-      releaseVersion,
-      repository: resourceRepository,
-    });
+    if (!nativeResourcePackagesSuppressed(targetSystem.system)) {
+      await installMissingEmbeddedResourcePackages({
+        systemPackage: targetSystem.system,
+        embeddedResourceIndex: targetSystem.preset.embeddedResourceIndex,
+        systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${targetSystem.preset.directory}`,
+        releaseVersion,
+        repository: resourceRepository,
+      });
+    }
     const targetResources = await restorePlayerResourceLibrary(resourceRepository, targetSystem.system);
     const targetRuntime = await targetSystem.load({
       currentSystem: targetSystem.system,
@@ -289,6 +304,8 @@ export function PlayerSheetSurface({
   const [library, setLibrary] = useState<ResourceLibrary>(libraryRef.current);
   const [libraryReady, setLibraryReady] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [nativePackagesOff, setNativePackagesOff] = useState(() => areNativeResourcePackagesDisabled());
+  const [nativePackagesBusy, setNativePackagesBusy] = useState(false);
   const [incomingPackage, setIncomingPackage] = useState<ResourcePackageIngress>();
   const [surfaceError, setSurfaceError] = useState<string>();
   const [cloudNotice, setCloudNotice] = useState<string>();
@@ -435,16 +452,7 @@ export function PlayerSheetSurface({
           ensurePresetEmbeddedResources: async (preset) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) return;
-            const releaseVersion = document
-              .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
-              ?.content || entry.preset.releaseVersion;
-            const installed = await installMissingEmbeddedResourcePackages({
-              systemPackage: entry.system,
-              embeddedResourceIndex: entry.preset.embeddedResourceIndex,
-              systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
-              releaseVersion,
-              repository: resourceRepository,
-            });
+            const installed = await installPresetNativeResourcePackages(entry);
             if (installed.installedPackageIds.length === 0) return;
             const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
             libraryRef.current = routed;
@@ -454,7 +462,9 @@ export function PlayerSheetSurface({
           loadPresetSystemPackage: async (preset, onProgress) => {
             const entry = findPlayerSystemPackage(preset.id);
             if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
-            const embeddedTotal = entry.preset.embeddedResourceIndex.length;
+            const nativeSuppressed = nativeResourcePackagesSuppressed(entry.system);
+            // 禁用原生资源包时不下载、不安装，加载进度也不再计入内嵌资源。
+            const embeddedTotal = nativeSuppressed ? 0 : entry.preset.embeddedResourceIndex.length;
             const embeddedWeight = embeddedTotal > 0
               ? Math.max(entry.preset.metadataFileCount, 1)
               : 0;
@@ -463,19 +473,21 @@ export function PlayerSheetSurface({
               .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
               ?.content || entry.preset.releaseVersion;
             onProgress?.({ completed: 0, total });
-            await installMissingEmbeddedResourcePackages({
-              systemPackage: entry.system,
-              embeddedResourceIndex: entry.preset.embeddedResourceIndex,
-              systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
-              releaseVersion,
-              repository: resourceRepository,
-              onProgress: (progress) => {
-                const completed = progress.total > 0
-                  ? (progress.completed / progress.total) * embeddedWeight
-                  : embeddedWeight;
-                onProgress?.({ completed, total });
-              },
-            });
+            if (!nativeSuppressed) {
+              await installMissingEmbeddedResourcePackages({
+                systemPackage: entry.system,
+                embeddedResourceIndex: entry.preset.embeddedResourceIndex,
+                systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+                releaseVersion,
+                repository: resourceRepository,
+                onProgress: (progress) => {
+                  const completed = progress.total > 0
+                    ? (progress.completed / progress.total) * embeddedWeight
+                    : embeddedWeight;
+                  onProgress?.({ completed, total });
+                },
+              });
+            }
             const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
             libraryRef.current = routed;
             setLibrary(routed);
@@ -520,6 +532,11 @@ export function PlayerSheetSurface({
               localStorage.setItem(preferredSystemPackageKey, requested.system.package.id);
             }
           }
+        }
+        // 缓存里的 basePackage 可能仍带原生数据包（多标签页回写、旧缓存）；按当前开关重建一次。
+        if (!cancelled && nativeResourcePackagesSuppressed(startupEntry.system)
+          && useRuntimeStore.getState().currentPackage?.manifest.ID === startupEntry.system.package.id) {
+          await refreshInstalledResources(libraryRef.current, startupEntry.system);
         }
         runtimeReadyRef.current = true;
         appliedSystemRouteRef.current = requested?.preset.directory;
@@ -725,19 +742,74 @@ export function PlayerSheetSurface({
     await initialize(playerSystemPackageCatalog.map((candidate) => candidate.preset));
   }
 
-  async function refreshInstalledResources(next: ResourceLibrary): Promise<void> {
+  async function refreshInstalledResources(
+    next: ResourceLibrary,
+    system: SystemPackageDocument = currentSystem,
+  ): Promise<void> {
     const basePackage = useRuntimeStore.getState().basePackage;
     if (!basePackage) throw new Error("当前系统包尚未准备完成。");
     const refreshedBasePackage = replacePlatformResourceLibraries({
-      currentSystem,
+      currentSystem: system,
       basePackage,
       installedPackages: next,
     });
-    const currentAssets = await runtimeStorage.loadCurrentPackageAssets(currentSystem.package.id);
+    const currentAssets = await runtimeStorage.loadCurrentPackageAssets(system.package.id);
     await refreshPlatformResources(
       refreshedBasePackage,
       replacePlatformRuntimeMediaAssets(currentAssets, next),
     );
+  }
+
+  // 预置系统包的原生资源包按需安装；用户禁用原生数据包时整体跳过。
+  async function installPresetNativeResourcePackages(entry: PlayerSystemPackageCatalogEntry) {
+    if (nativeResourcePackagesSuppressed(entry.system)) {
+      return { installedPackageIds: [], unchangedPackageIds: [] };
+    }
+    const releaseVersion = document
+      .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
+      ?.content || entry.preset.releaseVersion;
+    return installMissingEmbeddedResourcePackages({
+      systemPackage: entry.system,
+      embeddedResourceIndex: entry.preset.embeddedResourceIndex,
+      systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+      releaseVersion,
+      repository: resourceRepository,
+    });
+  }
+
+  // 开关只改本地设置与当前资源库：已安装的原生数据包保留在 IndexedDB，重新启用无需重下。
+  async function handleNativeResourcePackageToggle(disabled: boolean): Promise<void> {
+    const entry = findPlayerSystemPackage(currentSystem.package.id);
+    if (!entry || nativePackagesBusy || bootStatus !== "ready" || authorPreviewActive) return;
+    setNativePackagesBusy(true);
+    // 先落盘再重建：写失败就什么都不改，避免界面与设置分叉。
+    if (!setNativeResourcePackagesDisabled(disabled)) {
+      setCloudNotice("浏览器无法保存原生数据包设置。");
+      setNativePackagesBusy(false);
+      return;
+    }
+    try {
+      if (!disabled) await installPresetNativeResourcePackages(entry);
+      const restored = await restorePlayerResourceLibrary(resourceRepository, currentSystem);
+      // 切换系统包会让 currentSystem 失效；此时以新包为准，放弃本次设置。
+      if (useRuntimeStore.getState().currentPackage?.manifest.ID !== entry.system.package.id) {
+        throw new Error("系统包已切换，已取消本次原生数据包设置。");
+      }
+      if (useRuntimeStore.getState().basePackage) await refreshInstalledResources(restored);
+      libraryRef.current = restored;
+      setLibrary(restored);
+      setNativePackagesOff(disabled);
+      useRuntimeStore.setState({
+        importNotice: disabled
+          ? "已禁用原生数据包，资源库只保留第三方资源包。"
+          : "已恢复原生数据包。",
+      });
+    } catch (error) {
+      setNativeResourcePackagesDisabled(!disabled);
+      setCloudNotice(error instanceof Error ? error.message : "切换原生数据包设置失败");
+    } finally {
+      setNativePackagesBusy(false);
+    }
   }
 
   // 预置系统包确实落位后记住偏好；宿主仅在直达入口更新后缀。
@@ -1291,19 +1363,34 @@ export function PlayerSheetSurface({
           <label className="player-menu-field player-menu-system">
             <span>当前系统包</span>
             <div>
-              <select aria-label="当前系统包" value={currentSystem.package.id} disabled={bootStatus === "loading"} onChange={handleSystemSelection}>
+              <select aria-label="当前系统包" value={currentSystem.package.id} disabled={bootStatus === "loading" || nativePackagesBusy} onChange={handleSystemSelection}>
                 {currentCatalogEntry ? null : <option value={currentSystem.package.id}>{currentSystem.package.name}</option>}
                 {playerSystemPackageCatalog.map((entry) => <option key={entry.system.package.id} value={entry.system.package.id}>{entry.system.package.name}</option>)}
               </select>
               <strong>v{currentSystem.package.version}</strong>
             </div>
           </label>
-          <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => packageFileInputRef.current?.click()}>上传系统包(.pbsys)</button>
-          <button type="button" role="menuitem" disabled={bootStatus === "loading"} onClick={() => void handleEnterAuthorPreview()}>上传系统包(文件夹)</button>
+          <button type="button" role="menuitem" disabled={bootStatus === "loading" || nativePackagesBusy} onClick={() => packageFileInputRef.current?.click()}>上传系统包(.pbsys)</button>
+          <button type="button" role="menuitem" disabled={bootStatus === "loading" || nativePackagesBusy} onClick={() => void handleEnterAuthorPreview()}>上传系统包(文件夹)</button>
+          <hr role="separator" />
+          <label className="player-menu-field player-menu-check">
+            <input
+              type="checkbox"
+              checked={nativePackagesOff}
+              disabled={bootStatus === "loading" || nativePackagesBusy || !currentCatalogEntry}
+              onChange={(event) => void handleNativeResourcePackageToggle(event.target.checked)}
+            />
+            <span>禁用原生数据包</span>
+          </label>
+          <small className="player-menu-hint">{bootStatus === "loading"
+            ? "正在载入系统包…"
+            : currentCatalogEntry
+              ? "勾选后不再安装或使用系统包内置的资源包，只保留第三方包。"
+              : "当前系统包由本地上传，没有可禁用的原生数据包。"}</small>
          </div>
       </div>
     </nav>
-  ), [activeCharacterSaveId, allCharacterSaves, auth.credentials, authorPreviewActive, bootStatus, characterData, currentCatalogEntry, currentPackage, currentSystem, exitAuthorPreview, library.size, outputOperation, playerOperation, selectedCharacterSave, selectedCharacterSaveId]);
+  ), [activeCharacterSaveId, allCharacterSaves, auth.credentials, authorPreviewActive, bootStatus, characterData, currentCatalogEntry, currentPackage, currentSystem, exitAuthorPreview, library.size, nativePackagesBusy, nativePackagesOff, outputOperation, playerOperation, selectedCharacterSave, selectedCharacterSaveId]);
   usePlatformAppBarActions("player", appBarActions);
 
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession

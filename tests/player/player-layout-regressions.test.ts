@@ -35,6 +35,37 @@ describe("Player layout regressions", () => {
     expect(styles).toContain(".player-menu-resource-manager { display: flex;");
   });
 
+  it("在系统包菜单提供禁用原生数据包开关", async () => {
+    const [source, styles] = await Promise.all([
+      readFile("apps/player/src/PlayerSheetSurface.tsx", "utf8"),
+      readFile("apps/player/src/styles.css", "utf8"),
+    ]);
+    const menu = source.slice(
+      source.indexOf("<span>系统包</span>"),
+      source.indexOf("</nav>"),
+    );
+    const toggle = source.slice(
+      source.indexOf("async function handleNativeResourcePackageToggle"),
+      source.indexOf("// 预置系统包确实落位后记住偏好"),
+    );
+
+    expect(menu).toContain("禁用原生数据包");
+    expect(menu).toContain('type="checkbox"');
+    expect(menu).toContain("handleNativeResourcePackageToggle(event.target.checked)");
+    // 开关执行期间锁住系统包下拉与上传，避免两个操作各按自己的系统包改资源库。
+    expect(menu.match(/disabled=\{bootStatus === "loading" \|\| nativePackagesBusy\}/gu)).toHaveLength(3);
+    expect(styles).toContain(".player-menu-check {");
+    // 先落盘、再刷新、最后才换资源库；刷新失败时资源库保持原样。
+    expect(toggle).toContain("if (!setNativeResourcePackagesDisabled(disabled)) {");
+    expect(toggle.indexOf("if (!setNativeResourcePackagesDisabled(disabled)) {"))
+      .toBeLessThan(toggle.indexOf("await restorePlayerResourceLibrary("));
+    expect(toggle.indexOf("await refreshInstalledResources(restored)"))
+      .toBeLessThan(toggle.indexOf("setLibrary(restored);"));
+    expect(toggle).toContain("if (!disabled) await installPresetNativeResourcePackages(entry);");
+    expect(source).toContain("if (!nativeResourcePackagesSuppressed(targetSystem.system)) {");
+    expect(source).toContain("if (!nativeSuppressed) {");
+  });
+
   it("为横向资源分类滚动条保留独立空间", async () => {
     const styles = await readFile("apps/player/src/styles.css", "utf8");
 
