@@ -40,11 +40,6 @@
 .player-menu-system { padding-bottom: 10px; border-bottom: 1px solid #e3d9cd; }
 .player-menu-system > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .player-menu-system strong { color: #756a5e; font-size: 10px; font-variant-numeric: tabular-nums; }
-.player-menu-check { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; color: #21150f; font-size: 12px; cursor: pointer; }
-.player-menu-check input { width: 14px; height: 14px; margin: 0; accent-color: #8b2d31; }
-.player-menu-check input:disabled { cursor: not-allowed; }
-.player-menu-check input:disabled + span { color: #a89d91; }
-.player-menu-hint { display: block; padding: 0 8px 4px; color: #756a5e; font-size: 10px; line-height: 1.5; }
 .player-menu-resource-manager { display: flex; align-items: center; justify-content: space-between; }
 .player-menu-resource-manager strong { font-variant-numeric: tabular-nums; }
 .player-runtime-layout { display: block; min-height: calc(100vh - 56px); background: var(--framework-canvas); }
@@ -149,6 +144,10 @@ button.character-save-status { cursor: pointer; }
 .package-row-select > div { display: flex; align-items: center; gap: 8px; }
 .package-row-remove { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: #9f231f; cursor: pointer; font-size: 18px; }
 .package-row-remove:hover { background: #f5dfd9; }
+.package-row-toggle { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: #8a6a35; cursor: pointer; font-size: 16px; line-height: 1; }
+.package-row-toggle:hover { background: #f1e8d8; }
+.package-row-toggle:disabled { color: #c0b3a4; cursor: not-allowed; background: transparent; }
+.package-row.is-disabled .package-row-select { opacity: 0.55; }
 .package-row strong { min-width: 0; flex: 1; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .package-row small { color: #756a5e; font-size: 11px; }
 .package-icon { color: #641f1d; }

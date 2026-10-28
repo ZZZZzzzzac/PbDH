@@ -9,6 +9,7 @@ import { validateResourcePackageCandidate } from "./resource-package-validator.t
 export type EmbeddedResourceInstallResult = {
   installedPackageIds: string[];
   unchangedPackageIds: string[];
+  skippedPackageIds: string[];
 };
 
 export type EmbeddedResourceInstallProgress = {
@@ -26,6 +27,8 @@ export async function installMissingEmbeddedResourcePackages(input: {
   systemPackageBaseUrl: string;
   releaseVersion?: string;
   repository: ResourcePackageRepository;
+  // 玩家在资源管理器里禁用的原生数据包：不下载、不安装，但仍报告进度。
+  skipPackageIds?: ReadonlySet<string>;
   fetchFile?: typeof fetch;
   onProgress?: (progress: EmbeddedResourceInstallProgress) => void;
 }): Promise<EmbeddedResourceInstallResult> {
@@ -36,6 +39,7 @@ export async function installMissingEmbeddedResourcePackages(input: {
   const result: EmbeddedResourceInstallResult = {
     installedPackageIds: [],
     unchangedPackageIds: [],
+    skippedPackageIds: [],
   };
 
   const declaredPaths = new Set(input.systemPackage.embeddedResources.map(({ path }) => path));
@@ -48,6 +52,11 @@ export async function installMissingEmbeddedResourcePackages(input: {
   for (const [index, embedded] of input.embeddedResourceIndex.entries()) {
     if (!declaredPaths.has(embedded.path)) {
       throw new Error(`内嵌资源索引引用了未声明路径：${embedded.path}`);
+    }
+    if (input.skipPackageIds?.has(embedded.packageId)) {
+      result.skippedPackageIds.push(embedded.packageId);
+      input.onProgress?.({ completed: index + 1, total });
+      continue;
     }
     const local = localById.get(embedded.packageId);
     if (local && local.source !== "bundled") {

@@ -53,6 +53,10 @@ type ResourceManagerProps = {
   ) => Promise<void>;
   onRemovePackage: (packageId: string) => Promise<void>;
   embeddedPackageIndex: ReadonlyMap<string, unknown>;
+  // 原生数据包可以禁用而不是移除：禁用的包不进入人物卡与资源选择，数据仍留在本机。
+  disabledPackageIds: ReadonlySet<string>;
+  nativePackageBusy: boolean;
+  onTogglePackageDisabled: (packageId: string, disabled: boolean) => Promise<void>;
   incomingPackage?: ResourcePackageIngress;
   onIncomingPackageHandled?: (id: string) => void;
   onClose: () => void;
@@ -262,7 +266,7 @@ function DialogSurface({
   </div>;
 }
 
-export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, embeddedPackageIndex, incomingPackage, onIncomingPackageHandled, onClose }: ResourceManagerProps) {
+export function ResourceManager({ currentSystem, library, onCommitInstall, onRemovePackage, embeddedPackageIndex, disabledPackageIds, nativePackageBusy, onTogglePackageDisabled, incomingPackage, onIncomingPackageHandled, onClose }: ResourceManagerProps) {
   const packages = [...library.values()];
   const [selectedId, setSelectedId] = useState(packages[0]?.document.package.id ?? "");
   const [packageQuery, setPackageQuery] = useState("");
@@ -467,17 +471,28 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
   }
 
   function renderPackageRow(installed: InstalledResourcePackage) {
-    const isSelected = installed.document.package.id === selected?.document.package.id;
+    const packageId = installed.document.package.id;
+    const isSelected = packageId === selected?.document.package.id;
+    const disabled = disabledPackageIds.has(packageId);
     const destinations = new Set(installed.routes.map((route) => route.nativeEntry?.label ?? "其他资源"));
     const action = embeddedResourcePackageAction(installed, embeddedPackageIndex);
-    return <div key={installed.document.package.id} className={`package-row ${isSelected ? "selected" : ""}`}>
-      <button className="package-row-select" type="button" onClick={() => setSelectedId(installed.document.package.id)}>
+    return <div key={packageId} className={`package-row${isSelected ? " selected" : ""}${disabled ? " is-disabled" : ""}`}>
+      <button className="package-row-select" type="button" onClick={() => setSelectedId(packageId)}>
         <div><span className="package-icon">▣</span><strong>{installed.document.package.name}</strong><small>{installed.document.package.version} · 图片 {formatStorageBytes(installed.document.assets.reduce((sum, asset) => sum + Number(asset.byteLength), 0))}</small></div>
         <p><span>{installed.document.resources.length} 个资源</span><span>{destinations.size} 种类型</span></p>
       </button>
       {action === "remove" ? (
         <button className="package-row-remove" type="button" aria-label={`移除 ${installed.document.package.name}`} disabled={Boolean(operation)} onClick={() => setDialog({ kind: "remove", installed })}>×</button>
-      ) : null}
+      ) : (
+        <button
+          className="package-row-toggle"
+          type="button"
+          aria-label={`${disabled ? "启用" : "禁用"} ${installed.document.package.name}`}
+          title={disabled ? "启用后重新进入人物卡与资源选择" : "禁用后不进入人物卡与资源选择，数据仍保留"}
+          disabled={Boolean(operation) || nativePackageBusy}
+          onClick={() => void onTogglePackageDisabled(packageId, !disabled)}
+        >{disabled ? "↻" : "⊘"}</button>
+      )}
     </div>;
   }
 
@@ -494,6 +509,7 @@ export function ResourceManager({ currentSystem, library, onCommitInstall, onRem
         </aside>
         <section className="package-detail">{selected ? <>
           <header className="package-detail-heading"><div><h2>{selected.document.package.name}</h2><p>版本 {selected.document.package.version} · 已安装 · {selected.document.license.label}</p></div></header>
+          {disabledPackageIds.has(selected.document.package.id) ? <div className="diagnostic info"><strong>此原生数据包已禁用</strong><span>不会出现在人物卡与资源选择里；资源与图片仍保存在本机，随时可以重新启用。</span></div> : null}
           <div className="detail-summary"><div><b>{selected.document.resources.length}</b><span>个资源</span></div><div><b>{selected.document.assets.length}</b><span>张图片</span></div><div><b>{resourceTypes.length}</b><span>种资源类型</span></div></div>
           <nav className="type-filters" aria-label="资源类型"><button className={selectedType === "全部" ? "active" : ""} onClick={() => setSelectedType("全部")}>全部 <b>{selected.document.resources.length}</b></button>{resourceTypes.map(([label, count]) => <button key={label} className={selectedType === label ? "active" : ""} onClick={() => setSelectedType(label)}>{label} <b>{count}</b></button>)}</nav>
           <div className="resource-search"><input aria-label="搜索资源" placeholder="搜索名称" value={resourceQuery} onChange={(event) => setResourceQuery(event.target.value)} /><span>{resources.length} / {selected.document.resources.length}</span></div>

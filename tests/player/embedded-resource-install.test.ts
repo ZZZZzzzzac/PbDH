@@ -63,6 +63,35 @@ describe("系统包内置 .pbres 安装", () => {
     expect(fetchCount).toBe(1);
   });
 
+  it("玩家禁用的原生数据包不下载也不写入，进度仍然走完", async () => {
+    const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
+    const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
+    const repository = new MemoryRepository();
+    const skippedPackageIds = new Set(preset.embeddedResourceIndex.map((item) => item.packageId));
+    const progress: number[] = [];
+    let fetchCount = 0;
+    const fetchFile: typeof fetch = async () => {
+      fetchCount += 1;
+      return new Response(null, { status: 404 });
+    };
+
+    const result = await installMissingEmbeddedResourcePackages({
+      systemPackage,
+      embeddedResourceIndex: preset.embeddedResourceIndex,
+      systemPackageBaseUrl: "https://preset.invalid",
+      repository,
+      fetchFile,
+      skipPackageIds: skippedPackageIds,
+      onProgress: (item) => progress.push(item.completed),
+    });
+
+    expect(result.installedPackageIds).toEqual([]);
+    expect(result.skippedPackageIds).toEqual([...skippedPackageIds]);
+    expect(fetchCount).toBe(0);
+    expect(repository.packages).toHaveLength(0);
+    expect(progress.at(-1)).toBe(preset.embeddedResourceIndex.length);
+  });
+
   it("读取大型内嵌资源包时持续报告下载进度", async () => {
     const systemPackage = JSON.parse(await readFile(path.join(packageRoot, "system.json"), "utf8")) as SystemPackageDocument;
     const preset = JSON.parse(await readFile("apps/player/src/daggerheart-core-preset.generated.json", "utf8")) as PresetSystemPackage;
