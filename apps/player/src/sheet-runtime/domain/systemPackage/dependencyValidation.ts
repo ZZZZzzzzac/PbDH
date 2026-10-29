@@ -135,6 +135,15 @@ export function collectDependencyValidationIssues(context: ValidationContext): v
         path: `dependencies.${dependency.ID}.条件.类型`,
       });
     }
+
+    if (dependency.条件?.类型 === "freeTextEquals" && dependency.触发.类型 !== "freeTextChanged") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_CONDITION",
+        text: `freeTextEquals 条件只能用于 freeTextChanged 触发：${dependency.ID}`,
+        path: `dependencies.${dependency.ID}.条件.类型`,
+      });
+    }
     const checkboxCondition = isCheckboxCondition(dependency.条件) ? dependency.条件 : undefined;
     if (checkboxCondition && sourceModule?.类型 === "checkboxResource" && !sourceModule.选项.some((option) => option.ID === checkboxCondition.选项ID)) {
       issues.push({
@@ -147,11 +156,11 @@ export function collectDependencyValidationIssues(context: ValidationContext): v
     }
 
     dependency.动作.forEach((action, actionIndex) => {
-      if (dependency.触发.类型 === "freeTextChanged" && action.类型 !== "setResourceDefaultFilter") {
+      if (dependency.触发.类型 === "freeTextChanged" && action.类型 !== "setResourceDefaultFilter" && action.类型 !== "setVisibility") {
         issues.push({
           level: "error",
           code: "UNSUPPORTED_DEPENDENCY_ACTION",
-          text: `freeTextChanged 只允许 setResourceDefaultFilter：${dependency.ID}`,
+          text: `freeTextChanged 只允许 setResourceDefaultFilter 或 setVisibility：${dependency.ID}`,
           path: `dependencies.${dependency.ID}.动作.${actionIndex}.类型`,
         });
       }

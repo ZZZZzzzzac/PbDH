@@ -183,6 +183,8 @@ function conditionMatches(condition: DependencyCondition | undefined, event: Dep
       return event.type === "checkboxChanged" && event.checkboxState[condition.选项ID] === true;
     case "checkboxOptionUnchecked":
       return event.type === "checkboxChanged" && event.checkboxState[condition.选项ID] !== true;
+    case "freeTextEquals":
+      return event.type === "freeTextChanged" && event.value.trim() === condition.值.trim();
     default:
       return false;
   }

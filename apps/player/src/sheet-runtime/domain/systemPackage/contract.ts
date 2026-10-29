@@ -336,6 +336,10 @@ export const dependencyConditionSchema = z.discriminatedUnion("类型", [
     类型: z.literal("checkboxOptionUnchecked"),
     选项ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("freeTextEquals"),
+    值: z.string(),
+  }),
 ]);
 
 export const fillTextContentSchema = z.union([

@@ -675,14 +675,14 @@
   {
     "ID": "show-beast-forms-from-druid-class",
     "sources": [
-      { "类型": "resourcePicker", "模块ID": "pick-class" }
+      { "类型": "freeText", "模块ID": "class-name" }
     ],
     "targets": [
       { "类型": "page", "页面ID": "beast-forms-t1-t2" },
       { "类型": "page", "页面ID": "beast-forms-t3-t4" }
     ],
-    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
-    "条件": { "类型": "selectedResourceFieldEquals", "字段": "名称", "值": "德鲁伊" },
+    "触发": { "类型": "freeTextChanged", "来源模块ID": "class-name" },
+    "条件": { "类型": "freeTextEquals", "值": "德鲁伊" },
     "动作": [
       { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t1-t2", "显示": true },
       { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t3-t4", "显示": true }
@@ -707,13 +707,13 @@
   {
     "ID": "show-ranger-companion-from-beastbound-subclass",
     "sources": [
-      { "类型": "resourcePicker", "模块ID": "pick-subclass" }
+      { "类型": "freeText", "模块ID": "subclass-name" }
     ],
     "targets": [
       { "类型": "page", "页面ID": "ranger-companion" }
     ],
-    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass" },
-    "条件": { "类型": "selectedResourceFieldEquals", "字段": "名称", "值": "驯兽大师" },
+    "触发": { "类型": "freeTextChanged", "来源模块ID": "subclass-name" },
+    "条件": { "类型": "freeTextEquals", "值": "驯兽大师" },
     "动作": [
       { "类型": "setVisibility", "目标类型": "page", "目标ID": "ranger-companion", "显示": true }
     ]
