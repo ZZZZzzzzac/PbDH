@@ -420,6 +420,81 @@ export function PlayerSheetSurface({
   });
 
   useEffect(() => {
+    // 依赖必须在第一次 await 之前配置：启动期间的任何系统包切换都会走这里注册的加载器。
+    // 落到默认依赖上时它拿不到资源库，会把「没有资源库」误报成系统包错误。
+    configureRuntimeDependencies({
+      storage: runtimeStorage,
+      loadSystemPackageFromFile: async (file) => {
+        const vfs = await createVirtualFileSystemFromZipFile(file);
+        return vfs.ok
+          ? loadImportedSystemPackage(vfs.vfs, true)
+          : { ok: false, issues: vfs.issues };
+      },
+      loadSystemPackageFromDirectory: async (files) => {
+        const vfs = await createVirtualFileSystemFromDirectoryFiles(files);
+        return vfs.ok
+          ? loadImportedSystemPackage(vfs.vfs, true)
+          : { ok: false, issues: vfs.issues };
+      },
+      loadSystemPackageFromDirectoryHandle: async (handle) => {
+        const vfs = await createVirtualFileSystemFromDirectoryHandle(handle);
+        return vfs.ok
+          ? loadImportedSystemPackage(vfs.vfs, false)
+          : { ok: false, issues: vfs.issues };
+      },
+      loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load(),
+      savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle),
+      ensurePresetEmbeddedResources: async (preset) => {
+        const entry = findPlayerSystemPackage(preset.id);
+        if (!entry) return;
+        const installed = await installPresetNativeResourcePackages(entry);
+        if (installed.installedPackageIds.length === 0) return;
+        const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
+        libraryRef.current = routed;
+        setLibrary(routed);
+        await refreshInstalledResources(routed);
+      },
+      loadPresetSystemPackage: async (preset, onProgress) => {
+        const entry = findPlayerSystemPackage(preset.id);
+        if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
+        // 已禁用的原生数据包不下载，跳过的那几项仍然计入进度，加载条不会倒退。
+        const embeddedTotal = entry.preset.embeddedResourceIndex.length;
+        const embeddedWeight = embeddedTotal > 0
+          ? Math.max(entry.preset.metadataFileCount, 1)
+          : 0;
+        const total = embeddedWeight + entry.preset.metadataFileCount;
+        const releaseVersion = document
+          .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
+          ?.content || entry.preset.releaseVersion;
+        onProgress?.({ completed: 0, total });
+        await installMissingEmbeddedResourcePackages({
+          systemPackage: entry.system,
+          embeddedResourceIndex: entry.preset.embeddedResourceIndex,
+          systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
+          releaseVersion,
+          repository: resourceRepository,
+          skipPackageIds: disabledNativePackageIdsRef.current,
+          onProgress: (progress) => {
+            const completed = progress.total > 0
+              ? (progress.completed / progress.total) * embeddedWeight
+              : embeddedWeight;
+            onProgress?.({ completed, total });
+          },
+        });
+        const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
+        libraryRef.current = routed;
+        setLibrary(routed);
+        return entry.load({
+          currentSystem: entry.system,
+          installedPackages: enabledResourceLibrary(routed, disabledNativePackageIdsRef.current),
+          releaseVersion,
+          onProgress: (progress) => onProgress?.({
+            completed: embeddedWeight + progress.completed,
+            total: embeddedWeight + progress.total,
+          }),
+        });
+      },
+    });
     if (!startupAuthReady) return;
     let cancelled = false;
     void (async () => {
@@ -443,79 +518,6 @@ export function PlayerSheetSurface({
         libraryRef.current = restored;
         setLibrary(restored);
         setLibraryReady(true);
-        configureRuntimeDependencies({
-          storage: runtimeStorage,
-          loadSystemPackageFromFile: async (file) => {
-            const vfs = await createVirtualFileSystemFromZipFile(file);
-            return vfs.ok
-              ? loadImportedSystemPackage(vfs.vfs, true)
-              : { ok: false, issues: vfs.issues };
-          },
-          loadSystemPackageFromDirectory: async (files) => {
-            const vfs = await createVirtualFileSystemFromDirectoryFiles(files);
-            return vfs.ok
-              ? loadImportedSystemPackage(vfs.vfs, true)
-              : { ok: false, issues: vfs.issues };
-          },
-          loadSystemPackageFromDirectoryHandle: async (handle) => {
-            const vfs = await createVirtualFileSystemFromDirectoryHandle(handle);
-            return vfs.ok
-              ? loadImportedSystemPackage(vfs.vfs, false)
-              : { ok: false, issues: vfs.issues };
-          },
-          loadPreviewDirectoryHandle: () => authorPreviewHandleStore.load(),
-          savePreviewDirectoryHandle: (handle) => authorPreviewHandleStore.save(handle),
-          ensurePresetEmbeddedResources: async (preset) => {
-            const entry = findPlayerSystemPackage(preset.id);
-            if (!entry) return;
-            const installed = await installPresetNativeResourcePackages(entry);
-            if (installed.installedPackageIds.length === 0) return;
-            const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
-            libraryRef.current = routed;
-            setLibrary(routed);
-            await refreshInstalledResources(routed);
-          },
-          loadPresetSystemPackage: async (preset, onProgress) => {
-            const entry = findPlayerSystemPackage(preset.id);
-            if (!entry) throw new Error(`未知预置系统包：${preset.id}`);
-            // 已禁用的原生数据包不下载，跳过的那几项仍然计入进度，加载条不会倒退。
-            const embeddedTotal = entry.preset.embeddedResourceIndex.length;
-            const embeddedWeight = embeddedTotal > 0
-              ? Math.max(entry.preset.metadataFileCount, 1)
-              : 0;
-            const total = embeddedWeight + entry.preset.metadataFileCount;
-            const releaseVersion = document
-              .querySelector<HTMLMetaElement>('meta[name="pbdh-version"]')
-              ?.content || entry.preset.releaseVersion;
-            onProgress?.({ completed: 0, total });
-            await installMissingEmbeddedResourcePackages({
-              systemPackage: entry.system,
-              embeddedResourceIndex: entry.preset.embeddedResourceIndex,
-              systemPackageBaseUrl: `${import.meta.env.BASE_URL}system-packages/${entry.preset.directory}`,
-              releaseVersion,
-              repository: resourceRepository,
-              skipPackageIds: disabledNativePackageIdsRef.current,
-              onProgress: (progress) => {
-                const completed = progress.total > 0
-                  ? (progress.completed / progress.total) * embeddedWeight
-                  : embeddedWeight;
-                onProgress?.({ completed, total });
-              },
-            });
-            const routed = await restorePlayerResourceLibrary(resourceRepository, entry.system);
-            libraryRef.current = routed;
-            setLibrary(routed);
-            return entry.load({
-              currentSystem: entry.system,
-              installedPackages: enabledResourceLibrary(routed, disabledNativePackageIdsRef.current),
-              releaseVersion,
-              onProgress: (progress) => onProgress?.({
-                completed: embeddedWeight + progress.completed,
-                total: embeddedWeight + progress.total,
-              }),
-            });
-          },
-        });
         const cachedMetadata = await runtimeStorage.loadCurrentSystemPackageCacheMetadata();
         if (cachedMetadata?.source === "imported" && cachedMetadata.systemDocument) {
           const system = cachedMetadata.systemDocument;
