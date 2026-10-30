@@ -96,5 +96,41 @@
         }
       }
     ]
+  },
+  {
+    "ID": "append-selected-skill",
+    "sources": [
+      {
+        "类型": "resourcePicker",
+        "模块ID": "pick-skill"
+      }
+    ],
+    "targets": [
+      {
+        "类型": "module",
+        "模块ID": "skills"
+      }
+    ],
+    "触发": {
+      "类型": "resourceSelected",
+      "来源模块ID": "pick-skill"
+    },
+    "条件": {
+      "类型": "selectedResourceFieldEquals",
+      "字段": "类型",
+      "值": "技能"
+    },
+    "动作": [
+      {
+        "类型": "fillText",
+        "目标模块ID": "skills",
+        "写入方式": "追加",
+        "追加分隔符": "\n\n",
+        "内容": {
+          "类型": "selectedResourceTemplate",
+          "格式": "### {{名称}} ({{元素}}・阶级{{阶级}})\n{{特性}}"
+        }
+      }
+    ]
   }
 ]

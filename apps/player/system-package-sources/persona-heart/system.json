@@ -2,12 +2,12 @@
   "contractVersion": "1.0.0",
   "package": {
     "id": "01a17c40-0000-7000-8000-000000000001",
-    "version": "0.1.12",
+    "version": "0.1.14",
     "name": "潜相心影：都市异闻录",
     "description": "P心制作组的双面都市生活规则草稿：日常、宫殿与大阿卡纳。"
   },
   "runtime": {
-    "characterDataVersion": "0.1.5",
+    "characterDataVersion": "0.1.6",
     "loadingPresentation": {
       "tagline": "正在进入都市的另一面…",
       "accentColor": "#394b85"
@@ -47,6 +47,11 @@
         "fromVersion": "0.1.4",
         "toVersion": "0.1.5",
         "script": "migrations/0.1.4-0.1.5.js"
+      },
+      {
+        "fromVersion": "0.1.5",
+        "toVersion": "0.1.6",
+        "script": "migrations/0.1.5-0.1.6.js"
       }
     ]
   },

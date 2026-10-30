@@ -59,8 +59,11 @@
 :scope .threshold-values > span { align-self: center; font-size: 1.2rem; color: var(--framework-text-muted); }
 :scope .threshold-values [data-module-type="freeText"] { border: 0; grid-template-rows: minmax(0, 1fr); }
 :scope .threshold-values [data-module-slot-id] { height: 100%; }
-:scope .skills { flex: 1; min-height: 0; }
-:scope .skills > [data-module-slot-id], :scope .skills [data-module-type="longText"] { height: 100%; min-height: 0; }
+:scope .skills { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+:scope .skill-actions { display: flex; justify-content: flex-end; margin-bottom: .25rem; }
+:scope .skill-actions [data-part="button"] { min-height: 1.75rem; padding: .15rem .5rem; font-size: .8rem; }
+:scope .combat-values > .skills > [data-module-slot-id] { flex: 1; height: 0; min-height: 0; }
+:scope .skills [data-module-type="longText"] { height: 100%; min-height: 0; }
 :scope .skills [data-markdown-editor] { flex: 1; min-height: 0; }
 :scope .skills [data-part="input"] { flex: 1; height: 100%; min-height: 0; max-height: none; }
 :scope .arcana-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
