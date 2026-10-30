@@ -34,6 +34,22 @@ npm run pbres:pack -- .scratch/witchy-edit .scratch/witchy-updated.pbres
 
 图片不适合直接覆盖原有哈希文件。若媒体发生变化，优先在卡牌工坊中更换图片；直接修改图片字节会因 asset SHA-256 不匹配而被封包工具拒绝。
 
+## 手工改包后重新导入
+
+解压 `.pbres`、改 JSON、换卡图、再压缩回去都是允许的。这类包在本地加载入口会按当前内容重算派生字段后继续：
+
+- Creator 导入 `.pbres`；
+- Player 从本地文件安装资源包；
+- Player 加载系统包时的内嵌 `.pbres`。
+
+重算的内容包括：图片按字节重新命名（`assets/<sha256>.webp` 与资源槽位一起更新）、`byteLength`、`snapshotDigest`。发布时服务器还会按实际像素更新 `width` / `height`。
+
+剩下的校验只针对结构和语法：zip 与 JSON 能否解析、`package.json` 字段、资源 ID 重复、替换项指向、资源引用的图片是否存在、图片能否解码为 WebP。发布封面仍然要求 630×880。
+
+在需要与外部权威比对的入口按原值校验：市场交接（与服务器记录的快照摘要比对）、云端文档回读、后端发布。这些场合请走 `pbres:unpack` / `pbres:pack`，或者让 Creator 重新导出一次。
+
+版本号是另一条独立要求：内容变了就要升版本，否则市场返回 `PUBLICATION_VERSION_CONFLICT` 并给出最低版本号。Creator 发布会按内容自动建议版本，`pbres:pack` 默认升 patch。
+
 ## 替换内置包
 
 审阅后直接替换权威 PBRES，再运行 `npm run verify`。预设系统包不固定 PBRES 的版本与摘要，修改资源内容不需要同步代码索引。

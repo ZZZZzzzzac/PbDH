@@ -2,6 +2,8 @@ import type { AnySchema, ErrorObject, ValidateFunction } from "ajv";
 import Ajv2020 from "ajv/dist/2020.js";
 
 export {
+  adoptResourcePackageContentDigest,
+  adoptResourcePackageMediaContent,
   computeResourcePackageSnapshotDigest,
   LEGACY_RESOURCE_PACKAGE_VERSION,
   RESOURCE_PACKAGE_VERSION,

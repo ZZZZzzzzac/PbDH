@@ -38,6 +38,22 @@ from pbdh_backend.settings import Settings
 
 router = APIRouter(prefix="/api/publications", tags=["publications"])
 
+_VERSION_CONFLICT_REASONS = {
+    "resource-package.version.target-added": "新增目标系统",
+    "resource-package.version.target-removed": "移除或更换目标系统",
+    "resource-package.version.target-major-changed": "目标系统跨主版本变更",
+    "resource-package.version.target-compatible-changed": "目标系统版本变更",
+    "resource-package.version.contract-major-changed": "资源包格式主版本变更",
+    "resource-package.version.resource-added": "新增资源",
+    "resource-package.version.resource-removed": "删除资源",
+    "resource-package.version.resource-template-incompatible": "资源更换了卡牌模板或模板主版本",
+    "resource-package.version.resource-template-compatible": "资源的卡牌模板版本升级",
+    "resource-package.version.replacement-added": "新增替换项",
+    "resource-package.version.replacement-removed": "删除替换项",
+    "resource-package.version.replacement-target-changed": "替换项的目标资源改变",
+    "resource-package.version.content-changed": "资源内容有改动",
+}
+
 
 class PublicationMetadata(BaseModel):
     model_config = ConfigDict(
@@ -134,7 +150,7 @@ async def publish(
     except PackageOwnershipConflict as error:
         raise ApiError(409, "PACKAGE_ID_OWNED_BY_ANOTHER_ACCOUNT", "该资源包 ID 已由其他账号发布。") from error
     except PublicationVersionConflict as error:
-        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", "新快照必须提高资源包版本。") from error
+        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", _version_conflict_message(error)) from error
     except ManagedMediaQuotaExceeded as error:
         raise ApiError(413, "ACCOUNT_MEDIA_QUOTA_EXCEEDED", "账号托管媒体空间不足。") from error
     return {"publication": publication}
@@ -273,18 +289,7 @@ def _commit_publication_information(
     except PublicationCoverInvalid as error:
         raise ApiError(422, "PUBLICATION_COVER_INVALID", "封面不存在或不可用。") from error
     except PublicationVersionConflict as error:
-        reasons = {
-            "resource-package.version.target-added": "新增目标系统",
-            "resource-package.version.target-removed": "移除或更换目标系统",
-            "resource-package.version.target-major-changed": "目标系统跨主版本变更",
-            "resource-package.version.target-compatible-changed": "目标系统版本变更",
-        }
-        reason = next((reasons[code] for code in error.reasons if code in reasons), "资源包版本不符合发布要求")
-        message = (
-            f"{reason}，版本号至少需要 {error.minimum_version}。请修改版本号后重试。"
-            if error.minimum_version else "资源包身份与已发布版本不一致，请刷新后重试。"
-        )
-        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", message) from error
+        raise ApiError(409, "PUBLICATION_VERSION_CONFLICT", _version_conflict_message(error)) from error
     except PublicationValidationError as error:
         raise ApiError(422, "PUBLICATION_CANDIDATE_INVALID", "资源包信息未通过校验。", [
             {"path": item["location"], "code": item["code"], "message": item["code"]}
@@ -430,6 +435,21 @@ def download_publication(
             )
         },
     )
+
+
+def _version_conflict_message(error: PublicationVersionConflict) -> str:
+    reason = next(
+        (
+            _VERSION_CONFLICT_REASONS[code]
+            for code in error.reasons
+            if code in _VERSION_CONFLICT_REASONS
+        ),
+        "",
+    )
+    if error.minimum_version:
+        lead = f"{reason}，" if reason else "资源包内容与已发布版本不同，"
+        return f"{lead}版本号至少需要 {error.minimum_version}。请提高 package.version 后重试。"
+    return "市场里已有相同或更高的版本号但内容不同：请把 package.version 提高到高于已发布版本后再发布。"
 
 
 def _safe_archive_name(package_name: str) -> str:

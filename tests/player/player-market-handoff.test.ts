@@ -110,6 +110,25 @@ describe("Player Market handoff ingress", () => {
       .toBe("player.market-handoff.snapshot-mismatch");
   });
 
+  test("本地导入接受手工改过摘要的包，市场交接仍按服务器摘要严格校验", async () => {
+    const edited = { ...structuredClone(document), package: { ...document.package, description: "本地改过的简介" } };
+    const stale = writePbres(edited, media);
+
+    const fromFile = await prepareResourcePackageInstall({ bytes: stale, currentSystem: system, library: new Map() });
+    expect(fromFile).toMatchObject({ kind: "ready", plan: { kind: "insert" } });
+
+    const fromMarket = await prepareResourcePackageInstall({
+      bytes: stale,
+      currentSystem: system,
+      library: new Map(),
+      expectedMarketHandoff: handoff,
+    });
+    expect(fromMarket.kind).toBe("invalid");
+    if (fromMarket.kind !== "invalid") return;
+    expect(fromMarket.diagnostics.map((item) => item.code))
+      .toContain("resource-package.snapshot-digest.mismatch");
+  });
+
   test("uses the same candidate preparation for file and Market bytes", async () => {
     const fromFile = await prepareResourcePackageInstall({ bytes, currentSystem: system, library: new Map() });
     const fromMarket = await prepareResourcePackageInstall({

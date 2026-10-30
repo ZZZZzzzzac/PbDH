@@ -79,6 +79,7 @@ import {
   type CreatorMarketHandoff,
 } from "./market-handoff.ts";
 import { validateResourcePackageCandidate } from "./resource-package-validator.ts";
+import { creatorDiagnosticMessage } from "./publication-feedback.ts";
 import { runGmTabletopFileWorkflow } from "./gm-tabletop-file-workflow.ts";
 import {
   arrangeGmTabletop,
@@ -1346,7 +1347,12 @@ export function CreatorWorkspacePrototype({
         setDialog({ kind: "diagnostics", title: result.title, diagnostics: result.diagnostics });
         return;
       }
-      if (result.type === "import-ready") await acceptIncoming(result.candidate);
+      if (result.type === "import-ready") {
+        if (result.notices.length > 0) {
+          notify(creatorDiagnosticMessage(result.notices[0]!.code, undefined, result.notices[0]!.params));
+        }
+        await acceptIncoming(result.candidate);
+      }
     } finally {
       setCreatorOperation(null);
     }

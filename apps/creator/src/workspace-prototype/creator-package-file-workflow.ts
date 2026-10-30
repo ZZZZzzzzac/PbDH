@@ -1,8 +1,13 @@
 import {
+  adoptResourcePackageContentDigest,
+  adoptResourcePackageMediaContent,
   loadPbres,
   writePbres,
   type ContractDiagnostic,
   type ResourcePackageCandidate,
+  type ResourcePackageCandidateValidator,
+  type ResourcePackageLogicalDocument,
+  type ResourcePackageMedia,
 } from "@pbdh/contract-runtime";
 import {
   createResourceConversionRegistry,
@@ -27,7 +32,7 @@ export type CreatorPackageFileCommand =
   | { type: "export-conversion"; review: CreatorConversionReview };
 
 export type CreatorPackageFileResult =
-  | { type: "import-ready"; candidate: ResourcePackageCandidate }
+  | { type: "import-ready"; candidate: ResourcePackageCandidate; notices: ContractDiagnostic[] }
   | { type: "invalid"; title: string; diagnostics: ContractDiagnostic[] }
   | { type: "workspace-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string }
   | { type: "third-party-export"; workspace: CreatorWorkspace; bytes: Uint8Array; fileName: string; message: string; diagnostics: ContractDiagnostic[] }
@@ -35,13 +40,50 @@ export type CreatorPackageFileResult =
   | { type: "conversion-export"; bytes: Uint8Array; fileName: string }
   | { type: "no-conversion" };
 
+/**
+ * 导入是本地作者入口：解压改 JSON 再压缩回去的包，包内 snapshotDigest 不会跟着更新。
+ * 这里按当前内容重算摘要放行，其余结构问题照旧报错。
+ * 市场交接、云恢复与 Player 市场下载不走这条路径，仍按原摘要严格校验。
+ */
+function withAuthorEditedDigestAcceptance(validate: ResourcePackageCandidateValidator): {
+  validate: ResourcePackageCandidateValidator;
+  repaired: () => { declared: string; actual: string } | null;
+} {
+  let repaired: { declared: string; actual: string } | null = null;
+  return {
+    repaired: () => repaired,
+    validate: async (document: ResourcePackageLogicalDocument, media: ResourcePackageMedia) => {
+      await adoptResourcePackageMediaContent(document, media as Map<string, Uint8Array>);
+      const adopted = await adoptResourcePackageContentDigest(document, media);
+      const diagnostics = await validate(document, media);
+      if (diagnostics.length === 0 && adopted.declared !== adopted.actual) repaired = adopted;
+      return diagnostics;
+    },
+  };
+}
+
 export async function runCreatorPackageFileWorkflow(
   command: CreatorPackageFileCommand,
 ): Promise<CreatorPackageFileResult> {
   if (command.type === "inspect-import") {
-    const result = await loadPbres(command.bytes, validateResourcePackageCandidate);
+    const acceptance = withAuthorEditedDigestAcceptance(validateResourcePackageCandidate);
+    const result = await loadPbres(command.bytes, acceptance.validate);
     if (!result.candidate) return { type: "invalid", title: "导入失败 · 零写入", diagnostics: result.diagnostics };
-    return { type: "import-ready", candidate: result.candidate };
+    const recomputed = acceptance.repaired();
+    return {
+      type: "import-ready",
+      candidate: result.candidate,
+      notices: recomputed
+        ? [{
+            code: "creator.import.snapshot-digest-recomputed",
+            severity: "warning",
+            family: "resource-package",
+            version: result.candidate.document.contractVersion,
+            location: "/snapshotDigest",
+            params: recomputed,
+          }]
+        : [],
+    };
   }
 
   if (command.type === "export-workspace") {

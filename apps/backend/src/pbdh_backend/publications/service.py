@@ -245,10 +245,6 @@ class PublicationService:
         for index, asset in enumerate(document["assets"]):
             try:
                 dimensions = validate_normalized_webp(media[asset["id"]])
-                if dimensions != (int(asset["width"]), int(asset["height"])):
-                    raise InvalidWebP("image dimensions do not match the asset declaration")
-                if document.get("publication", {}).get("coverAssetId") == asset["id"] and dimensions != (630, 880):
-                    raise InvalidWebP("publication cover must be 630 by 880 pixels")
             except InvalidWebP as error:
                 diagnostics.append({
                     "code": "publication.media.invalid",
@@ -257,6 +253,21 @@ class PublicationService:
                     "version": version,
                     "location": f"/assets/{index}",
                     "params": {"assetId": asset["id"], "message": str(error)},
+                })
+                continue
+            # 卡图内容可以替换，宽高是内容派生字段：按实际像素更新声明，只有发布封面保留 630×880 要求。
+            asset["width"], asset["height"] = str(dimensions[0]), str(dimensions[1])
+            if (
+                document.get("publication", {}).get("coverAssetId") == asset["id"]
+                and dimensions != (630, 880)
+            ):
+                diagnostics.append({
+                    "code": "publication.media.invalid",
+                    "severity": "error",
+                    "family": "resource-package",
+                    "version": version,
+                    "location": f"/assets/{index}",
+                    "params": {"assetId": asset["id"], "message": "publication cover must be 630 by 880 pixels"},
                 })
         if diagnostics:
             return diagnostics

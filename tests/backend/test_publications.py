@@ -140,7 +140,7 @@ def publish(
     )
 
 
-@pytest.mark.parametrize("bad_media", ["not-image", "header-only", "wrong-dimensions", "wrong-width", "wrong-cover-ratio"])
+@pytest.mark.parametrize("bad_media", ["not-image", "header-only", "wrong-width", "wrong-cover-ratio"])
 def test_publish_rejects_invalid_image_with_correct_hashes(tmp_path: Path, bad_media: str) -> None:
     api = client(tmp_path)
     headers = claim(api, "author-one")
@@ -176,6 +176,20 @@ def test_publish_rejects_invalid_image_with_correct_hashes(tmp_path: Path, bad_m
     assert api.get("/api/publications").json()["publications"] == []
     with Database(settings(tmp_path).database_path, ROOT / "apps/backend/migrations").connect() as connection:
         assert connection.execute("SELECT count(*) FROM media_blobs").fetchone()[0] == 0
+
+
+def test_publish_adopts_actual_image_dimensions_when_the_declaration_is_stale(tmp_path: Path) -> None:
+    api = client(tmp_path)
+    headers = claim(api, "author-one")
+    document, media = candidate()
+    document["assets"][0]["height"] = str(int(document["assets"][0]["height"]) + 1)
+    document["snapshotDigest"] = compute_resource_package_snapshot_digest(document, media)
+
+    response = publish(api, headers, document, media)
+
+    assert response.status_code == 200, response.text
+    stored = response.json()["publication"]["document"]["assets"][0]
+    assert (stored["width"], stored["height"]) == ("630", "880")
 
 
 def test_publish_validates_media_once_and_hashes_input_and_final_snapshot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -687,6 +701,24 @@ def test_package_ownership_idempotency_and_monotonic_versions(tmp_path: Path) ->
     assert updated.status_code == 200
     assert updated.json()["publication"]["publicationId"] == first.json()["publication"]["publicationId"]
     assert updated.json()["publication"]["packageVersion"] == "1.0.1"
+
+
+def test_publish_version_conflict_reports_required_version(tmp_path: Path) -> None:
+    api = client(tmp_path, "production")
+    owner = claim(api, "author-version-message")
+    document, media = candidate()
+    assert publish(api, owner, document, media).status_code == 200
+
+    changed = copy.deepcopy(document)
+    changed["resources"][0]["data"]["名称"] = "改名后的牛头人破坏者"
+    changed["snapshotDigest"] = compute_resource_package_snapshot_digest(changed, media)
+    conflict = publish(api, owner, changed, media)
+
+    assert conflict.status_code == 409, conflict.text
+    error = conflict.json()["error"]
+    assert error["code"] == "PUBLICATION_VERSION_CONFLICT"
+    assert "版本号至少需要 1.0.1" in error["message"]
+    assert "资源内容有改动" in error["message"]
 
 
 def test_repository_enforces_structural_version_minimum_atomically(tmp_path: Path) -> None:

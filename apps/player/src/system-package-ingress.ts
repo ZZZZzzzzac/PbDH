@@ -1,4 +1,6 @@
 import {
+  adoptResourcePackageContentDigest,
+  adoptResourcePackageMediaContent,
   loadSystemPackageDirectory,
   type NormalizedSystemPackage,
   type PortableDirectoryEntry,
@@ -26,7 +28,12 @@ export async function loadPlatformSystemPackageFromVfs(
 
   const result = await loadSystemPackageDirectory(entries, {
     validateSystem: validateSystemPackageDocument,
-    validateResource: validateResourcePackageCandidate,
+    // 系统包作者手工改内嵌 .pbres 后重新打包时，图片标识与摘要不会跟着更新：按内容重算后仍走正式校验。
+    validateResource: async (document, media) => {
+      await adoptResourcePackageMediaContent(document, media as Map<string, Uint8Array>);
+      await adoptResourcePackageContentDigest(document, media);
+      return validateResourcePackageCandidate(document, media);
+    },
   });
   if (!result.candidate) {
     return {

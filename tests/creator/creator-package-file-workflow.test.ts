@@ -1,13 +1,14 @@
 import { readFileSync } from "node:fs";
 import { strFromU8, unzipSync } from "fflate";
 
-import { loadPbres } from "@pbdh/contract-runtime";
+import { computeResourcePackageSnapshotDigest, loadPbres, writePbres } from "@pbdh/contract-runtime";
 import { createPbresCandidateValidator, upgradePbresTemplateVersions } from "@pbdh/resource-conversion";
 import { currentTemplates, listTemplateUpgradeRows, upgradeTemplateResources } from "@pbdh/templates/core";
 import { loadTemplateCore } from "@pbdh/templates/core/lazy";
 import { describe, expect, test } from "vitest";
 
 import { runCreatorPackageFileWorkflow } from "../../apps/creator/src/workspace-prototype/creator-package-file-workflow.ts";
+import { creatorDiagnosticMessage } from "../../apps/creator/src/workspace-prototype/publication-feedback.ts";
 import { validateResourcePackageCandidate } from "../../apps/creator/src/workspace-prototype/resource-package-validator.ts";
 import {
   addTemplateResource,
@@ -205,5 +206,70 @@ describe("Creator package file workflow", () => {
     expect(result.review).toMatchObject({ candidate: null, converted: 0 });
     expect(result.review.failed).toBeGreaterThan(0);
     expect(result.review.diagnostics.some((item) => item.severity === "error")).toBe(true);
+  });
+
+  test("imports a hand-edited package by recomputing the stale snapshot digest", async () => {
+    const loaded = await loadPbres(archive, validateResourcePackageCandidate);
+    if (!loaded.candidate) throw new Error(JSON.stringify(loaded.diagnostics));
+    const edited = structuredClone(loaded.candidate.document);
+    (edited.resources[0]!.data as Record<string, unknown>)["稀有度"] = "稀有";
+    // 直接封包但不更新 snapshotDigest，等价于手工改包后重新压缩。
+    const bytes = writePbres(edited, loaded.candidate.media);
+
+    const result = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes });
+
+    expect(result.type).toBe("import-ready");
+    if (result.type !== "import-ready") return;
+    const expected = await computeResourcePackageSnapshotDigest(result.candidate.document, result.candidate.media);
+    expect(result.candidate.document.snapshotDigest).toBe(expected);
+    expect(result.candidate.document.snapshotDigest).not.toBe(edited.snapshotDigest);
+    expect(result.candidate.document.resources[0]!.data).toMatchObject({ 稀有度: "稀有" });
+    expect(result.notices.map((item) => item.code))
+      .toEqual(["creator.import.snapshot-digest-recomputed"]);
+    expect(creatorDiagnosticMessage(result.notices[0]!.code)).toContain("重算摘要");
+  });
+
+  test("imports a package whose image content was replaced", async () => {
+    const loaded = await loadPbres(archive, validateResourcePackageCandidate);
+    if (!loaded.candidate) throw new Error(JSON.stringify(loaded.diagnostics));
+    const edited = structuredClone(loaded.candidate.document);
+    const oldId = edited.assets[0]!.id;
+    const replacement = new Uint8Array(readFileSync(new URL(
+      "../../contracts/conformance/resource-package/1.0.0/media/a991add6e770461480dd9bf35fde9debe267f7f5b970d01cb65bb689166b28cd.webp",
+      import.meta.url,
+    )));
+    const media = new Map(loaded.candidate.media);
+    media.set(oldId, replacement);
+
+    const result = await runCreatorPackageFileWorkflow({
+      type: "inspect-import",
+      bytes: writePbres(edited, media),
+    });
+
+    expect(result.type).toBe("import-ready");
+    if (result.type !== "import-ready") return;
+    const asset = result.candidate.document.assets[0]!;
+    expect(asset.id).not.toBe(oldId);
+    expect(asset.byteLength).toBe(String(replacement.byteLength));
+    expect(result.candidate.media.get(asset.id)).toEqual(replacement);
+    expect(result.candidate.media.has(oldId)).toBe(false);
+    expect(result.candidate.document.resources[0]!.media.portrait).toBe(asset.id);
+  });
+
+  test("still rejects a hand-edited package that has another structural error", async () => {
+    const loaded = await loadPbres(archive, validateResourcePackageCandidate);
+    if (!loaded.candidate) throw new Error(JSON.stringify(loaded.diagnostics));
+    const edited = structuredClone(loaded.candidate.document);
+    const duplicate = structuredClone(edited.resources[0]!);
+    duplicate.path = "resources/duplicate-resource.json";
+    edited.resources.push(duplicate);
+    const bytes = writePbres(edited, loaded.candidate.media);
+
+    const result = await runCreatorPackageFileWorkflow({ type: "inspect-import", bytes });
+
+    expect(result.type).toBe("invalid");
+    if (result.type !== "invalid") return;
+    expect(result.diagnostics.map((item) => item.code))
+      .toContain("resource-package.resource-id.duplicate");
   });
 });

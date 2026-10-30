@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   collapseCreatorDiagnostics,
   collapsePublicationFieldErrors,
+  creatorDiagnosticCodes,
   creatorDiagnosticMessage,
   publicationErrorMessage,
   publicationSuccessMessage,
@@ -23,8 +24,12 @@ describe("Creator publication feedback", () => {
 
   test("explains a changed development snapshot instead of reporting auth failure", () => {
     expect(publicationErrorMessage("PUBLICATION_VERSION_CONFLICT", "fallback")).toBe(
-      "当前内容与已发布版本不同，请重新发布开发中的 1.0.0。",
+      "当前内容与已发布版本不同。请提高 package.version 后再发布。",
     );
+    expect(creatorDiagnosticMessage(
+      "PUBLICATION_VERSION_CONFLICT",
+      "新增目标系统，版本号至少需要 1.1.0。请提高 package.version 后重试。",
+    )).toBe("新增目标系统，版本号至少需要 1.1.0。请提高 package.version 后重试。");
   });
 
   test("turns Contract lifecycle diagnostics into an actionable Chinese message", () => {
@@ -58,12 +63,41 @@ describe("Creator publication feedback", () => {
 
     expect(collapsed).toHaveLength(1);
     expect(collapsed[0]?.params.count).toBe(201);
-    expect(creatorDiagnosticMessage(collapsed[0]!.code)).toBe(
-      "资源包包含当前文件格式不支持的字段，请检查文件版本或重新导出。",
+    expect(creatorDiagnosticMessage(collapsed[0]!.code, undefined, collapsed[0]!.params)).toBe(
+      "文件包含当前格式不支持的字段：height。请检查字段名拼写，或确认文件格式版本是否受支持。",
     );
     expect(creatorDiagnosticMessage("unknown.import.error")).toBe(
-      "资源包未通过校验，请检查内容后重试。",
+      "资源包未通过校验（unknown.import.error），请检查内容后重试。",
     );
+  });
+
+  test("explains a stale snapshot digest and how to repack", () => {
+    const message = creatorDiagnosticMessage("resource-package.snapshot-digest.mismatch");
+
+    expect(message).toContain("摘要不一致");
+    expect(message).toContain("npm run pbres:pack");
+  });
+
+  test("names the offending field or path instead of a generic archive failure", () => {
+    expect(creatorDiagnosticMessage("resource-package.archive.path.invalid", undefined, {
+      path: "resources/牛头人.json",
+      reason: "backslash",
+    })).toBe("资源包内有不合法的路径 resources/牛头人.json：不能使用反斜杠。");
+    expect(creatorDiagnosticMessage("resource-package.archive.file.unknown", undefined, {
+      path: "resources/说明.txt",
+    })).toBe("资源包里有规则外的文件：resources/说明.txt。包内只允许 package.json、资源 JSON 和 assets/<sha256>.webp。");
+  });
+
+  test("keeps every diagnostic readable when the server sends no params", () => {
+    for (const code of creatorDiagnosticCodes) {
+      const message = creatorDiagnosticMessage(code);
+      expect(message.endsWith("。"), code).toBe(true);
+      expect(message, code).not.toContain("  ");
+      expect(message, code).not.toContain(" 。");
+      expect(message, code).not.toMatch(/：\s*。/u);
+      expect(message, code).not.toMatch(/（\s*）/u);
+      expect(message, code).not.toMatch(/^\s|\s$/u);
+    }
   });
 
   test("distinguishes created, updated and idempotent publication results", () => {

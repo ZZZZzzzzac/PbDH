@@ -181,6 +181,64 @@ export async function computeResourcePackageSnapshotDigest(
   return `sha256:${await sha256(concatenate(parts))}`;
 }
 
+/**
+ * 把图片资产重新按内容命名：asset id = sha256(bytes)，同步资源槽位、发布封面与字节长度。
+ * 本地加载入口用它接受「换过图、但文件名和元数据没跟着改」的包；缺字节、重复引用等结构问题仍交给正式校验。
+ * 返回值是内容与声明不一致、已被重命名的图片数量。
+ */
+export async function adoptResourcePackageMediaContent(
+  document: ResourcePackageLogicalDocument,
+  media: Map<string, Uint8Array>,
+): Promise<number> {
+  if (document.assets.length === 0) return 0;
+  let renamed = 0;
+  const remap = new Map<string, string>();
+  const assets: ResourcePackageLogicalDocument["assets"] = [];
+  const adopted = new Map<string, Uint8Array>();
+  for (const asset of document.assets) {
+    const bytes = media.get(asset.id);
+    if (!bytes) {
+      assets.push(asset);
+      continue;
+    }
+    const actualId = `sha256:${await sha256(bytes)}`;
+    if (actualId !== asset.id) renamed += 1;
+    remap.set(asset.id, actualId);
+    adopted.set(actualId, bytes);
+    if (assets.some((candidate) => candidate.id === actualId)) continue;
+    assets.push({ ...asset, id: actualId, byteLength: String(bytes.byteLength) });
+  }
+  document.assets = assets;
+  for (const resource of document.resources) {
+    for (const [slot, assetId] of Object.entries(resource.media)) {
+      const mapped = remap.get(assetId);
+      if (mapped && mapped !== assetId) resource.media[slot] = mapped;
+    }
+  }
+  if (document.publication) {
+    const mapped = remap.get(document.publication.coverAssetId);
+    if (mapped) document.publication.coverAssetId = mapped;
+  }
+  media.clear();
+  for (const [assetId, bytes] of adopted) media.set(assetId, bytes);
+  return renamed;
+}
+
+/**
+ * 把 `snapshotDigest` 按当前内容重写。
+ * 本地加载入口（作者手工改包、系统包内嵌资源）可以先认内容、再让正式校验跑其余规则；
+ * 需要与外部权威摘要比对的入口（市场交接、云端回读）不要调用它。
+ */
+export async function adoptResourcePackageContentDigest(
+  document: ResourcePackageLogicalDocument,
+  media: ResourcePackageMedia,
+): Promise<{ declared: string; actual: string }> {
+  const declared = document.snapshotDigest;
+  const actual = await computeResourcePackageSnapshotDigest(document, media);
+  document.snapshotDigest = actual;
+  return { declared, actual };
+}
+
 export async function computeResourcePackageVersionContentHash(
   document: ResourcePackageLogicalDocument,
 ): Promise<string> {

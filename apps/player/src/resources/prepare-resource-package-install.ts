@@ -1,4 +1,6 @@
 import {
+  adoptResourcePackageContentDigest,
+  adoptResourcePackageMediaContent,
   loadPbres,
   type ContractDiagnostic,
   type SystemPackageDocument,
@@ -30,7 +32,14 @@ export async function prepareResourcePackageInstall({
   library: ResourceLibrary;
   expectedMarketHandoff?: PlayerMarketHandoff;
 }): Promise<ResourcePackageInstallPreparation> {
-  const result = await loadPbres(bytes, validateResourcePackageCandidate);
+  // 市场交接带着服务器侧的权威摘要，文件必须与它一致；本地选的包按内容重算图片标识与摘要后再走正式校验。
+  const result = await loadPbres(bytes, async (document, media) => {
+    if (!expectedMarketHandoff) {
+      await adoptResourcePackageMediaContent(document, media as Map<string, Uint8Array>);
+      await adoptResourcePackageContentDigest(document, media);
+    }
+    return validateResourcePackageCandidate(document, media);
+  });
   if (!result.candidate) return { kind: "invalid", diagnostics: result.diagnostics };
   if (expectedMarketHandoff) {
     const mismatch = playerMarketHandoffMismatch(expectedMarketHandoff, result.candidate);

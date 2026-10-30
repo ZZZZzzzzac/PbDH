@@ -2,9 +2,15 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, test } from "vitest";
+import {
+  computeResourcePackageSnapshotDigest,
+  loadPbres,
+  writePbres,
+} from "@pbdh/contract-runtime";
 
 import { createVirtualFileSystem } from "../../apps/player/src/sheet-runtime/loaders/packageVfs.ts";
 import { loadSystemPackageFromVfs } from "../../apps/player/src/sheet-runtime/loaders/systemPackageLoader.ts";
+import { validateResourcePackageCandidate } from "../../apps/player/src/resources/resource-package-validator.ts";
 import { loadPlatformSystemPackageFromVfs } from "../../apps/player/src/system-package-ingress.ts";
 
 const packageRoot = new URL(
@@ -116,6 +122,28 @@ describe("Player System Package ingress", () => {
       level: "error",
       code: "SKIN_LAYOUT_OVERRIDE_PAGE_UNKNOWN",
     }));
+  });
+  test("内嵌 .pbres 被手工改过时按当前内容重算摘要后仍能加载", async () => {
+    const pbresPath = "resources/heart-of-hopefind.pbres";
+    const loaded = await loadPbres(readBytes(pbresPath), validateResourcePackageCandidate);
+    if (!loaded.candidate) throw new Error(JSON.stringify(loaded.diagnostics));
+    const edited = structuredClone(loaded.candidate.document);
+    edited.package.description = "本地改过的简介";
+    // 手工改包后重新压缩：包内 snapshotDigest 仍是旧值。
+    const stale = writePbres(edited, loaded.candidate.media);
+
+    const result = await loadPlatformSystemPackageFromVfs(createVirtualFileSystem(new Map([
+      ["system.json", readBytes("system.json")],
+      [pbresPath, stale],
+    ])));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const embedded = [...result.package.embeddedResources.values()][0]!;
+    expect(embedded.document.package.description).toBe("本地改过的简介");
+    expect(embedded.document.snapshotDigest).toBe(
+      await computeResourcePackageSnapshotDigest(embedded.document, embedded.media),
+    );
   });
 });
 

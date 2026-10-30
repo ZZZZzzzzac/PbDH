@@ -97,18 +97,33 @@ class PublicationRepository:
                     connection.commit()
                     return PublicationWrite(current["publication_id"], False, True)
                 version_order = _compare_semver(package_version, current["package_version"])
-                if version_order < 0 or (version_order == 0 and not allow_same_version_replace):
-                    raise PublicationVersionConflict(package_id)
-                if not allow_same_version_replace:
-                    classification = classify_resource_package_version_change(
+                # 生产模式下按内容分类算出的最低版本号，用来把「为什么不能发布」说清楚。
+                classification = (
+                    classify_resource_package_version_change(
                         json.loads(current["logical_document_json"]),
                         document,
                     )
-                    if not resource_package_version_meets_minimum(
-                        package_version,
-                        classification["minimumVersion"],
-                    ):
-                        raise PublicationVersionConflict(package_id)
+                    if not allow_same_version_replace
+                    else None
+                )
+                reasons = (
+                    [reason["code"] for reason in classification["reasons"]]
+                    if classification
+                    else []
+                )
+                minimum_version = current["package_version"]
+                if (
+                    classification
+                    and _compare_semver(classification["minimumVersion"], minimum_version) > 0
+                ):
+                    minimum_version = classification["minimumVersion"]
+                if version_order < 0 or (version_order == 0 and not allow_same_version_replace):
+                    raise PublicationVersionConflict(package_id, minimum_version, reasons)
+                if classification and not resource_package_version_meets_minimum(
+                    package_version,
+                    minimum_version,
+                ):
+                    raise PublicationVersionConflict(package_id, minimum_version, reasons)
                 publication_id = current["publication_id"]
                 created = False
             else:
