@@ -1,0 +1,11 @@
+[
+  {
+    "ID": "character-sheet",
+    "名称": "人物卡",
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/character-sheet.html",
+      "css": "layouts/base.css"
+    }
+  }
+]

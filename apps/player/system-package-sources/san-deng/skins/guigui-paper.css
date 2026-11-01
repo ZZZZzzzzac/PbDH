@@ -1,0 +1,134 @@
+:scope {
+  --guigui-paper: #eee8d7;
+  --guigui-ink: #171714;
+  --guigui-line: #302e28;
+  color-scheme: light;
+  color: var(--guigui-ink);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+:scope .guigui-page {
+  position: relative;
+  background: var(--guigui-paper);
+  border: 1.2mm solid var(--guigui-line);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(48, 46, 40, 0.07) 0 0.25mm,
+    transparent 0.25mm 7.25mm
+  );
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+:scope .sheet-title,
+:scope .background-panel,
+:scope .inventory-panel,
+:scope .scar-panel,
+:scope .experience-panel,
+:scope .lamp-panel {
+  border: 0.65mm solid var(--guigui-line);
+  padding: 2mm;
+}
+
+:scope .sheet-title {
+  border-width: 0 0 1mm;
+}
+
+:scope .sheet-title p,
+:scope .sheet-title small {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:scope .sheet-title h1 {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 2rem;
+}
+
+:scope .lamp-sky,
+:scope .lamp-yang {
+  border-color: #e08a2e;
+}
+
+:scope .lamp-yin {
+  border-color: #d6352b;
+}
+
+:scope [data-module-id$="-lamp-rule"] [data-part="value"] {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--guigui-ink);
+}
+
+:scope [data-module-type="countableResource"] {
+  --restricted-markdown-black: var(--guigui-ink);
+}
+
+:scope [data-module-id$="-lamp-state"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id$="-lamp-state"] > [data-part="label"],
+:scope [data-module-id$="-lamp-state"] [data-part="option-label"] {
+  display: none;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="options"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  padding: 0;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="option"] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  justify-content: flex-end;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="input"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #8d8572;
+  border-radius: 999px;
+  background: #cfc7b4;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="input"]::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fffefa;
+  box-shadow: 0 0 0 1px rgba(48, 46, 40, 0.15);
+  transition: transform 0.15s ease;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="input"]:checked {
+  background: #c0392b;
+}
+
+:scope [data-module-id$="-lamp-state"] [data-part="input"]:checked::before {
+  transform: translateX(14px);
+}
+
+:scope .experience-row + .experience-row,
+:scope .scar-row + .scar-row {
+  border-top: 0.35mm solid var(--guigui-line);
+}

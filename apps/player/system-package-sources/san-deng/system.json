@@ -1,0 +1,44 @@
+{
+  "contractVersion": "1.0.0",
+  "package": {
+    "id": "01a1976b-4189-7f77-83a3-64d7cd0211d5",
+    "version": "0.1.0",
+    "name": "三灯",
+    "description": "阳气、阴气与三盏灯的人物卡草稿。"
+  },
+  "runtime": {
+    "characterDataVersion": "0.1.3",
+    "characterDataMigrations": [
+      {
+        "fromVersion": "0.1.0",
+        "toVersion": "0.1.1",
+        "script": "migrations/0.1.0-0.1.1.js"
+      },
+      {
+        "fromVersion": "0.1.1",
+        "toVersion": "0.1.2",
+        "script": "migrations/0.1.1-0.1.2.js"
+      },
+      {
+        "fromVersion": "0.1.2",
+        "toVersion": "0.1.3",
+        "script": "migrations/0.1.2-0.1.3.js"
+      }
+    ],
+    "loadingPresentation": {
+      "tagline": "正在点灯…",
+      "accentColor": "#a42f28"
+    },
+    "pages": "pages.json",
+    "skins": [
+      {
+        "id": "guigui-paper",
+        "name": "灯纸",
+        "css": "skins/guigui-paper.css",
+        "frameworkColorScheme": "light"
+      }
+    ],
+    "defaultSkin": "guigui-paper",
+    "modules": "modules.json"
+  }
+}

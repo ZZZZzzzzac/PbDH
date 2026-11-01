@@ -1,0 +1,242 @@
+:scope {
+  width: 210mm;
+  max-width: none;
+  margin-inline: auto;
+}
+
+:scope .guigui-page {
+  box-sizing: border-box;
+  width: 100%;
+  height: 297mm;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  align-content: stretch;
+  gap: 3mm;
+  padding: 6mm;
+}
+
+:scope .sheet-title,
+:scope .overview-left,
+:scope .overview-right,
+:scope .dice-stack {
+  display: grid;
+  gap: 2mm;
+}
+
+:scope .sheet-title {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+:scope .sheet-title h1,
+:scope .sheet-title p {
+  margin: 0;
+}
+
+:scope .overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 0.82fr) minmax(0, 1fr);
+  gap: 3mm;
+  align-items: stretch;
+}
+
+:scope .overview-portrait,
+:scope .overview-portrait > [data-module-slot-id],
+:scope .overview-portrait [data-module-type="imageField"] {
+  min-height: 0;
+  height: 100%;
+}
+
+:scope .overview-portrait [data-part="surface-frame"] {
+  min-height: 0;
+}
+
+:scope .character-lower-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3mm;
+}
+
+:scope .panel-title {
+  margin: 0;
+}
+
+:scope .panel-title {
+  font-size: 1.05rem;
+}
+
+:scope .background-panel,
+:scope .inventory-panel,
+:scope .scar-panel,
+:scope .experience-panel {
+  display: grid;
+  align-content: stretch;
+  gap: 1.2mm;
+  min-height: 0;
+}
+
+:scope .background-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+:scope .inventory-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+:scope .scar-panel {
+  grid-template-rows: auto repeat(4, minmax(32px, 1fr));
+}
+
+:scope .experience-panel {
+  grid-template-rows: auto repeat(5, minmax(32px, 1fr));
+}
+
+:scope .experience-head,
+:scope .experience-row,
+:scope .scar-head,
+:scope .scar-row {
+  display: grid;
+  align-items: stretch;
+  gap: 1.5mm;
+}
+
+:scope .experience-head,
+:scope .experience-row {
+  grid-template-columns: minmax(0, 1fr) 20mm;
+}
+
+:scope .scar-head {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:scope .scar-row {
+  grid-template-columns: minmax(0, 0.5fr) minmax(0, 1fr);
+}
+
+:scope .experience-head span:last-child {
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+:scope .experience-row > [data-module-slot-id],
+:scope .scar-row > [data-module-slot-id] {
+  min-height: 0;
+  height: 100%;
+}
+
+:scope .experience-row [data-module-type="freeText"],
+:scope .scar-row [data-module-type="freeText"] {
+  height: 100%;
+  min-height: 0;
+}
+
+:scope .experience-row [data-part="input"],
+:scope .scar-row [data-part="input"] {
+  height: 100%;
+  min-height: 0;
+}
+
+:scope :is(.background-panel, .inventory-panel, .lamp-panel) [data-module-type="longText"] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+:scope :is(.background-panel, .inventory-panel, .lamp-panel) [data-module-type="longText"] > [data-markdown-editor] {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+:scope :is(.background-panel, .inventory-panel, .lamp-panel) [data-part="input"] {
+  box-sizing: border-box;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+:scope .lamp-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3mm;
+  min-height: 0;
+}
+
+:scope .lamp-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 1.5mm;
+  min-height: 0;
+}
+
+:scope .lamp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+:scope .lamp-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+:scope [data-module-id$="-lamp-state"] {
+  width: 10mm;
+  min-width: 10mm;
+}
+
+:scope [data-module-slot-id$="-lamp-rule"] {
+  display: none;
+}
+
+:scope .lamp-panel:has([data-module-id$="-lamp-state"] [data-part="input"]:checked) [data-module-slot-id$="-lamp-rule"] {
+  display: block;
+}
+
+:scope [data-module-id$="-lamp-rule"] {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+:scope [data-module-id$="-lamp-rule"] > [data-part="label"] {
+  display: none;
+}
+
+:scope [data-module-id$="-lamp-rule"] [data-part="value"] {
+  margin: 0;
+  white-space: pre-line;
+}
+
+:scope .lamp-panel:has([data-module-id$="-lamp-state"] [data-part="input"]:checked) [data-module-slot-id$="-lamp"] {
+  display: none;
+}
+
+@media screen and (max-width: 800px) {
+  :scope {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  :scope .guigui-page {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: none;
+  }
+
+  :scope .overview-grid,
+  :scope .character-lower-row,
+  :scope .lamp-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  :scope .guigui-page {
+    gap: 2mm;
+    padding: 3mm;
+  }
+}

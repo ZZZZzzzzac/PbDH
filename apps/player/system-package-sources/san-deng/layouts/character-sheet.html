@@ -1,0 +1,76 @@
+<main class="guigui-page character-sheet">
+  <header class="sheet-title">
+    <div>
+      <p>Three Lanterns</p>
+      <h1>三灯</h1>
+    </div>
+    <small>人物卡</small>
+  </header>
+
+  <section class="overview-grid">
+    <div class="overview-portrait">
+      <pb-module id="portrait"></pb-module>
+    </div>
+    <div class="overview-left">
+      <pb-module id="name"></pb-module>
+      <pb-module id="codename-age"></pb-module>
+      <pb-module id="life"></pb-module>
+      <pb-module id="stress"></pb-module>
+    </div>
+    <div class="overview-right">
+      <pb-module id="hope-points"></pb-module>
+      <div class="dice-stack">
+        <pb-module id="yang-die"></pb-module>
+        <pb-module id="yin-die"></pb-module>
+      </div>
+    </div>
+  </section>
+
+  <section class="character-lower-row">
+    <article class="background-panel">
+      <h2 class="panel-title">角色背景故事</h2>
+      <pb-module id="background-story"></pb-module>
+    </article>
+    <article class="inventory-panel">
+      <h2 class="panel-title">物品栏</h2>
+      <pb-module id="inventory"></pb-module>
+    </article>
+  </section>
+
+  <section class="character-lower-row">
+    <article class="scar-panel">
+      <div class="scar-head"><span>永久性伤痕</span></div>
+      <div class="scar-row"><pb-module id="scar-name-1"></pb-module><pb-module id="scar-modifier-1"></pb-module></div>
+      <div class="scar-row"><pb-module id="scar-name-2"></pb-module><pb-module id="scar-modifier-2"></pb-module></div>
+      <div class="scar-row"><pb-module id="scar-name-3"></pb-module><pb-module id="scar-modifier-3"></pb-module></div>
+      <div class="scar-row"><pb-module id="scar-name-4"></pb-module><pb-module id="scar-modifier-4"></pb-module></div>
+    </article>
+
+    <article class="experience-panel">
+      <div class="experience-head"><span>经历</span><span>加值</span></div>
+      <div class="experience-row"><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
+      <div class="experience-row"><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
+      <div class="experience-row"><pb-module id="experience-3"></pb-module><pb-module id="experience-modifier-3"></pb-module></div>
+      <div class="experience-row"><pb-module id="experience-4"></pb-module><pb-module id="experience-modifier-4"></pb-module></div>
+      <div class="experience-row"><pb-module id="experience-5"></pb-module><pb-module id="experience-modifier-5"></pb-module></div>
+    </article>
+  </section>
+
+  <section class="lamp-row">
+    <article class="lamp-panel lamp-sky">
+      <header class="lamp-head"><h2>天灯</h2><pb-module id="sky-lamp-state"></pb-module></header>
+      <pb-module id="sky-lamp-rule"></pb-module>
+      <pb-module id="sky-lamp"></pb-module>
+    </article>
+    <article class="lamp-panel lamp-yang">
+      <header class="lamp-head"><h2>阳灯</h2><pb-module id="yang-lamp-state"></pb-module></header>
+      <pb-module id="yang-lamp-rule"></pb-module>
+      <pb-module id="yang-lamp"></pb-module>
+    </article>
+    <article class="lamp-panel lamp-yin">
+      <header class="lamp-head"><h2>阴灯</h2><pb-module id="yin-lamp-state"></pb-module></header>
+      <pb-module id="yin-lamp-rule"></pb-module>
+      <pb-module id="yin-lamp"></pb-module>
+    </article>
+  </section>
+</main>
