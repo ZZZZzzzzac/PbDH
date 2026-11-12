@@ -11,11 +11,11 @@ function present(value: string | undefined): value is string {
   return Boolean(value?.trim());
 }
 
-function ProfessionFrame({ splitFixed = false, imageKey, children }: { splitFixed?: boolean; imageKey?: string; children: (cardRef: React.RefObject<HTMLElement | null>) => ReactNode }) {
+function ProfessionFrame({ fixedRatio, splitFixed = false, imageKey, children }: { fixedRatio: boolean; splitFixed?: boolean; imageKey?: string; children: (cardRef: React.RefObject<HTMLElement | null>) => ReactNode }) {
   const cardRef = useRef<HTMLElement>(null);
-  const [nativeHeight, setNativeHeight] = useState(720);
+  const [nativeHeight, setNativeHeight] = useState(fixedRatio ? fixedNativeHeight : 720);
   useLayoutEffect(() => {
-    if (!cardRef.current) return;
+    if (fixedRatio || !cardRef.current) return;
     const card = cardRef.current;
     const image = card.querySelector("img");
     const updateHeight = () => setNativeHeight(splitFixed ? fixedNativeHeight + (image?.offsetHeight ?? 0) : card.offsetHeight);
@@ -24,8 +24,8 @@ function ProfessionFrame({ splitFixed = false, imageKey, children }: { splitFixe
     if (image) observer.observe(image);
     updateHeight();
     return () => observer.disconnect();
-  }, [splitFixed, imageKey]);
-  return <div className="reference-card-frame is-fluid profession-card-frame" style={{ height: `${nativeHeight * scale}px`, "--split-fixed-native-height": `${nativeHeight}px` } as CSSProperties}>{children(cardRef)}</div>;
+  }, [fixedRatio, splitFixed, imageKey]);
+  return <div className={`reference-card-frame${fixedRatio ? "" : " is-fluid"} profession-card-frame`} style={{ height: `${(fixedRatio ? fixedNativeHeight : nativeHeight) * scale}px`, "--split-fixed-native-height": `${nativeHeight}px` } as CSSProperties}>{children(cardRef)}</div>;
 }
 
 function ProfessionCard({ data, mode, fixedRatio, portrait, attribution }: {
@@ -43,11 +43,11 @@ function ProfessionCard({ data, mode, fixedRatio, portrait, attribution }: {
   const relationshipQuestions = data.关系问题.filter(present);
   const hasCreation = attributes.length > 0 || present(equipment);
   const splitFixed = fixedRatio && mode === "split";
-  const cardClass = `reference-card profession-card is-${mode} is-fluid${splitFixed ? " has-fixed-base" : ""}${portrait ? " has-portrait" : ""}`;
+  const cardClass = `reference-card profession-card is-${mode}${mode === "image" ? "" : " is-fluid"}${splitFixed ? " has-fixed-base" : ""}${portrait ? " has-portrait" : ""}`;
 
-  if (mode === "image") return <ProfessionFrame>{(cardRef) => <article ref={cardRef} className={cardClass} data-renderer-revision="profession-card-r3" data-template-id="职业"><div className="reference-card-art is-image-only">{portrait ? <img src={portrait} alt={data.名称 || "职业主图"} /> : <div className="reference-card-image-missing" role="status">缺少主图</div>}</div></article>}</ProfessionFrame>;
+  if (mode === "image") return <ProfessionFrame fixedRatio>{(cardRef) => <article ref={cardRef} className={cardClass} data-renderer-revision="profession-card-r4" data-template-id="职业"><div className="profession-card-image">{portrait ? <img src={portrait} alt={data.名称 || "职业主图"} /> : <div className="reference-card-image-missing" role="status">缺少主图</div>}</div></article>}</ProfessionFrame>;
 
-  return <ProfessionFrame splitFixed={splitFixed} imageKey={portrait}>{(cardRef) => <article ref={cardRef} className={cardClass} data-renderer-revision="profession-card-r3" data-template-id="职业">
+  return <ProfessionFrame fixedRatio={false} splitFixed={splitFixed} imageKey={portrait}>{(cardRef) => <article ref={cardRef} className={cardClass} data-renderer-revision="profession-card-r4" data-template-id="职业">
     <div className="reference-card-art">
       {mode === "split" && portrait ? <img src={portrait} alt="" /> : null}
       <header className="reference-card-header">
@@ -95,11 +95,14 @@ function ProfessionCard({ data, mode, fixedRatio, portrait, attribution }: {
 }
 
 const professionBaseStyles = `
-.reference-card-frame{position:relative;width:63px;overflow:hidden}.reference-card-frame.is-fluid{overflow:visible}.reference-card{box-sizing:border-box;position:absolute;inset:0 auto auto 0;width:360px;min-height:568px;transform:scale(.175);transform-origin:top left;display:flex;flex-direction:column;border:3px solid #21150f;background:#eee4d0;color:#1d1713;font-family:"Noto Sans SC",sans-serif}.reference-card *{box-sizing:border-box}.reference-card-art{position:relative;flex:none;min-height:96px;overflow:hidden;background:#251a14;border-bottom:3px solid #b88a57}.reference-card.is-text .reference-card-art{min-height:0}.reference-card-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.62}.reference-card-art:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,#1d1310e8)}.reference-card-header{position:relative;z-index:1;padding:15px;color:#fff4df}.reference-card-title{min-width:0;margin:0;font:900 var(--reference-card-title-font-size,32px)/1.2 Georgia,"Noto Serif SC",serif}.reference-card-original-title{color:#d6bea0;font-size:11px}.reference-card-meta{display:flex;gap:8px}.reference-card-meta span{color:#e6c99f;font-size:11px}.reference-card-body{min-height:0;flex:1;display:flex;flex-direction:column}.reference-card-section{padding:10px;border:1px solid #c4a477;background:#f8f0df;font-size:15px;line-height:1.45}.reference-card-section h2{margin:0 0 6px;color:#641f1d}.reference-card-art.is-image-only{height:568px;border:0}.reference-card-art.is-image-only img{position:static;width:100%;height:100%;object-fit:cover}.reference-card-image-missing{height:100%;display:grid;place-items:center;color:#d8c4a5}
+.reference-card-frame{position:relative;width:63px;overflow:hidden}.reference-card-frame.is-fluid{overflow:visible}.reference-card{box-sizing:border-box;position:absolute;inset:0 auto auto 0;width:360px;min-height:568px;transform:scale(.175);transform-origin:top left;display:flex;flex-direction:column;border:3px solid #21150f;background:#eee4d0;color:#1d1713;font-family:"Noto Sans SC",sans-serif}.reference-card *{box-sizing:border-box}.reference-card-art{position:relative;flex:none;min-height:96px;overflow:hidden;background:#251a14;border-bottom:3px solid #b88a57}.reference-card.is-text .reference-card-art{min-height:0}.reference-card-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.62}.reference-card-art:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,#1d1310e8)}.reference-card-header{position:relative;z-index:1;padding:15px;color:#fff4df}.reference-card-title{min-width:0;margin:0;font:900 var(--reference-card-title-font-size,32px)/1.2 Georgia,"Noto Serif SC",serif}.reference-card-original-title{color:#d6bea0;font-size:11px}.reference-card-meta{display:flex;gap:8px}.reference-card-meta span{color:#e6c99f;font-size:11px}.reference-card-body{min-height:0;flex:1;display:flex;flex-direction:column}.reference-card-section{padding:10px;border:1px solid #c4a477;background:#f8f0df;font-size:15px;line-height:1.45}.reference-card-section h2{margin:0 0 6px;color:#641f1d}.reference-card-image-missing{height:100%;display:grid;place-items:center;color:#d8c4a5}
 `;
 
 export const professionRendererStyles = professionBaseStyles + `
 [data-template-id="职业"].profession-card{height:auto;overflow:visible}
+[data-template-id="职业"].profession-card.is-image{height:502.857px;min-height:502.857px}
+[data-template-id="职业"] .profession-card-image{height:100%;background:#251a14}
+[data-template-id="职业"] .profession-card-image img{display:block;width:100%;height:100%;object-fit:cover}
 [data-template-id="职业"] .reference-card-art{background:#251713;border-bottom-color:#b78a4f}
 [data-template-id="职业"] .profession-card-header-columns{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:16px}
 [data-template-id="职业"] .profession-card-identity,[data-template-id="职业"] .profession-card-taxonomy{display:flex;flex-direction:column}
@@ -145,7 +148,7 @@ export const professionRendererStyles = professionBaseStyles + `
 `;
 
 export const professionRendererRevision: RendererRevisionCapability<ProfessionData, Record<string, string>, ReactNode> = {
-  revision: "profession-card-r3",
+  revision: "profession-card-r4",
   templateId: "职业",
   templateVersion: "1.0.1",
   requiredMediaSlots: [],

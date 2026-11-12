@@ -8,7 +8,10 @@ import {
   professionTemplate,
   templateRegistry,
 } from "../../packages/templates/src/core/index.ts";
+import { professionTemplate as professionTemplate101 } from "../../packages/templates/src/core/profession/1.0.1/capability.ts";
 import { ProfessionAuthoringEditor } from "../../packages/templates/src/frontend/profession/1.0.0/authoring-editor.tsx";
+import { professionRendererRevision as professionRendererRevision100, professionRendererStyles as professionRendererStyles100 } from "../../packages/templates/src/frontend/profession/1.0.0/renderer.tsx";
+import { professionRendererRevision as professionRendererRevision101, professionRendererStyles as professionRendererStyles101 } from "../../packages/templates/src/frontend/profession/1.0.1/renderer.tsx";
 
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const validate = ajv.compile(professionTemplate.schema as AnySchema);
@@ -60,5 +63,67 @@ describe("职业 Template 1.0.0", () => {
     for (const label of ["领域1", "领域2", "生命", "闪避", "特性名称", "希望特性描述", "职业特性", "职业特性描述", "推荐初始属性", "敏捷", "力量", "灵巧", "本能", "风度", "知识", "背景问题1", "背景问题2", "背景问题3", "关系问题1", "关系问题2", "关系问题3", "新增", "清空", "删除"]) {
       expect(markup).toContain(label);
     }
+  });
+});
+
+describe("职业 Template 1.0.0 纯卡图", () => {
+  const base = {
+    data: { ...professionTemplate.defaultData, 名称: "吟游诗人" },
+    state: {},
+    assets: { portrait: "blob:profession-art" },
+    attribution: { artworkCredit: "", sourceLabel: "" },
+  };
+
+  test("pins the art-only card to the canonical 63:88 surface", () => {
+    for (const fixedRatio of [true, false]) {
+      const markup = renderToStaticMarkup(professionRendererRevision100.render({ ...base, presentation: { mode: "image", fixedRatio } }));
+      expect(Number(/style="height:([\d.]+)px/u.exec(markup)?.[1])).toBeCloseTo(88, 1);
+      expect(markup).toContain('data-renderer-revision="profession-card-r2"');
+      expect(markup).toContain('class="reference-card profession-card is-image');
+      expect(markup).not.toContain("is-fluid");
+      expect(markup).toContain('class="profession-card-image"');
+      expect(markup).not.toContain("reference-card-art");
+      expect(markup).not.toContain('data-card-footer="true"');
+    }
+  });
+
+  test("keeps text cards fluid and the art-only container opaque", () => {
+    const textMarkup = renderToStaticMarkup(professionRendererRevision100.render({ ...base, presentation: { mode: "text", fixedRatio: true } }));
+    expect(textMarkup).toContain("reference-card-frame is-fluid profession-card-frame");
+    expect(textMarkup).toContain("reference-card-art");
+    expect(professionRendererStyles100).toContain('[data-template-id="职业"].profession-card.is-image{height:502.857px;min-height:502.857px}');
+    expect(professionRendererStyles100).toContain('[data-template-id="职业"] .profession-card-image img{display:block;width:100%;height:100%;object-fit:cover}');
+    expect(professionRendererStyles100).not.toContain("is-image-only");
+  });
+});
+
+describe("职业 Template 1.0.1 纯卡图", () => {
+  const base = {
+    data: { ...professionTemplate101.defaultData, 名称: "吟游诗人" },
+    state: {},
+    assets: { portrait: "blob:profession-art" },
+    attribution: { artworkCredit: "", sourceLabel: "" },
+  };
+
+  test("pins the art-only card to the canonical 63:88 surface", () => {
+    for (const fixedRatio of [true, false]) {
+      const markup = renderToStaticMarkup(professionRendererRevision101.render({ ...base, presentation: { mode: "image", fixedRatio } }));
+      expect(Number(/style="height:([\d.]+)px/u.exec(markup)?.[1])).toBeCloseTo(88, 1);
+      expect(markup).toContain('data-renderer-revision="profession-card-r4"');
+      expect(markup).toContain('class="reference-card profession-card is-image');
+      expect(markup).not.toContain("is-fluid");
+      expect(markup).toContain('class="profession-card-image"');
+      expect(markup).not.toContain("reference-card-art");
+      expect(markup).not.toContain('data-card-footer="true"');
+    }
+  });
+
+  test("keeps text cards fluid and the art-only container opaque", () => {
+    const textMarkup = renderToStaticMarkup(professionRendererRevision101.render({ ...base, presentation: { mode: "text", fixedRatio: true } }));
+    expect(textMarkup).toContain("reference-card-frame is-fluid profession-card-frame");
+    expect(textMarkup).toContain("reference-card-art");
+    expect(professionRendererStyles101).toContain('[data-template-id="职业"].profession-card.is-image{height:502.857px;min-height:502.857px}');
+    expect(professionRendererStyles101).toContain('[data-template-id="职业"] .profession-card-image img{display:block;width:100%;height:100%;object-fit:cover}');
+    expect(professionRendererStyles101).not.toContain("is-image-only");
   });
 });

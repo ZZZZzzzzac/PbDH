@@ -47,7 +47,7 @@ export const professionTemplate = deepFreeze<TemplateCoreCapability<ProfessionDa
   },
   mediaSlots: [{ id: "portrait", label: "主图", required: false, accepts: ["image/webp"] }],
   defaultPresentation: { mode: "text", fixedRatio: false },
-  rendererRevision: "profession-card-r3",
+  rendererRevision: "profession-card-r4",
   upgrades: [upgradeFrom100],
   tabletop: {
     stateSchema: { type: "object", properties: {}, additionalProperties: false },
