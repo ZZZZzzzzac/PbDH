@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { findResourceLibrary, getOtherResourceLibraries, getResourcePickerLinks, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { getOtherResourceLibraryViews, getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { useRuntimeStore } from "../store/runtimeStore";
+import { sanitizeResourcePickerQuery } from "../storage/resourcePickerQueryCache";
 import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
+import { useResourcePickerQueryCache } from "./useResourcePickerQueryCache";
 
 interface ResourcePickerModuleProps {
   module: ResourcePickerModuleConfig;
@@ -23,7 +25,8 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
       : [{ link, library }];
   }), [links, module.资源库, systemPackage]);
   const [selectedLibraryId, setSelectedLibraryId] = useState(availableLibraries[0]?.library.ID ?? "");
-  const [queriesByLibrary, setQueriesByLibrary] = useState<Record<string, ResourceLibraryQuery>>({});
+  const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
+  const { queriesByLibrary, setQueriesByLibrary, persist: persistQueries } = useResourcePickerQueryCache(systemPackage.manifest.ID, activeCharacterSaveId, module.ID);
   const active = availableLibraries.find(({ library }) => library.ID === selectedLibraryId) ?? availableLibraries[0];
   const library = active?.library;
   const commitResourceSelection = useRuntimeStore((state) => state.commitResourceSelection);
@@ -34,9 +37,13 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
       ? library.fields
       : getResourceLibraryFields(library, active?.link.字段模板);
   }, [active?.link.字段模板, library, module.资源库]);
+  const restoredQuery = useMemo(
+    () => (library ? sanitizeResourcePickerQuery(queriesByLibrary[library.ID], library, browserFields) : undefined),
+    [browserFields, library, queriesByLibrary],
+  );
   const defaultQuery = useMemo(
-    () => mergeResourcePickerQuery(queriesByLibrary[library?.ID ?? ""] ?? active?.link.默认查询, runtimeDefaultQuery),
-    [active?.link.默认查询, library?.ID, queriesByLibrary, runtimeDefaultQuery],
+    () => mergeResourcePickerQuery(restoredQuery ?? active?.link.默认查询, runtimeDefaultQuery),
+    [active?.link.默认查询, restoredQuery, runtimeDefaultQuery],
   );
 
   useEffect(() => {
@@ -46,7 +53,8 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   }, [availableLibraries, selectedLibraryId]);
 
   const closeBrowser = () => {
-    setQueriesByLibrary({});
+    // 关闭时立即落盘；筛选、搜索与排序按资源库分别记忆，切表也不会串用。
+    persistQueries();
     setOpen(false);
   };
 

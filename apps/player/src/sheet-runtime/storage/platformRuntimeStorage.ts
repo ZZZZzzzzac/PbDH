@@ -31,6 +31,7 @@ import type {
   SystemPackageCacheSnapshot,
   SystemPackageCacheMetadata,
 } from "./runtimeStorage.ts";
+import { removeResourcePickerQueries } from "./resourcePickerQueryCache.ts";
 
 type CharacterSaveStore = Pick<
   CharacterSaveRepository,
@@ -338,6 +339,7 @@ export class PlatformRuntimeStorage implements RuntimeStorage {
     if (await this.loadActiveCharacterSaveId(packageId) === saveId) {
       this.#localStorage?.removeItem(`${activeCharacterKeyPrefix}${packageId}`);
     }
+    removeResourcePickerQueries(packageId, saveId, this.#localStorage);
   }
 
   async loadActiveCharacterSaveId(packageId: string): Promise<string | null> {

@@ -14,6 +14,10 @@ import { sheetCharacterToSave } from "../../apps/player/src/sheet-runtime/storag
 import { configureRuntimeEnvironment, createRuntimeEnvironment } from "../../apps/player/src/sheet-runtime/store/runtimeEnvironment.ts";
 import { createRuntimeStore } from "../../apps/player/src/sheet-runtime/store/runtimeStore.ts";
 import { persistImportedCharacter } from "../../apps/player/src/sheet-runtime/store/workflows/characterImport.ts";
+import {
+  loadResourcePickerQueries,
+  saveResourcePickerQueries,
+} from "../../apps/player/src/sheet-runtime/storage/resourcePickerQueryCache.ts";
 
 describe("Platform Runtime Storage", () => {
   it("导入图片后连续编辑复用内容地址，保存失败不替换当前角色", async () => {
@@ -285,9 +289,14 @@ describe("Platform Runtime Storage", () => {
     await storage.renameCharacterSave(currentSystem.package.id, data.character.id, "改名角色");
     expect((await storage.listCharacterSaves(currentSystem.package.id))[0]?.name).toBe("改名角色");
 
+    saveResourcePickerQueries(currentSystem.package.id, data.character.id, "pick-weapon", { weapons: { keywords: "剑" } }, localStorage);
+    expect(loadResourcePickerQueries(currentSystem.package.id, data.character.id, "pick-weapon", localStorage))
+      .toEqual({ weapons: { keywords: "剑" } });
+
     await storage.deleteCharacterSave(currentSystem.package.id, data.character.id);
     expect(await storage.listCharacterSaves(currentSystem.package.id)).toEqual([]);
     expect(await storage.loadActiveCharacterSaveId(currentSystem.package.id)).toBeNull();
+    expect(loadResourcePickerQueries(currentSystem.package.id, data.character.id, "pick-weapon", localStorage)).toEqual({});
   });
 
   it("按 System Package ID 隔离两个真实预置包的人物存档", async () => {
