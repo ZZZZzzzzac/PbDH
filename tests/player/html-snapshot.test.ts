@@ -100,6 +100,18 @@ describe("独立人物 HTML", () => {
     if (embedded.ok) expect(JSON.parse(embedded.text).character.values.name).toBe("哈罗</script>");
   });
 
+  it("保留上传按钮内的头像图片，只去掉按钮外壳与文件选择框", async () => {
+    const root = document.createElement("main");
+    root.innerHTML = '<figure class="container container-stack image" data-module-id="avatar" data-module-type="imageField" data-part="container"><figcaption class="label" data-part="label">头像</figcaption><div class="image-surface-frame" data-part="surface-frame"><button class="image-upload-surface" data-part="surface" type="button" aria-label="更换头像"><img class="value image-preview" data-part="image" src="data:image/png;base64,AQID" alt="头像"></button><button class="image-remove-button" data-part="remove-button" type="button" aria-label="移除头像"><svg aria-hidden="true"></svg></button><input class="visually-hidden" data-part="input" type="file"></div></figure>';
+    document.body.append(root);
+
+    const html = await buildReadonlyHtmlSnapshot(character, root);
+
+    expect(html).toContain('src="data:image/png;base64,AQID"');
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain('type="file"');
+  });
+
   it("卡图失效时明确报错，不生成白板快照", async () => {
     const root = document.createElement("main");
     root.innerHTML = '<div></div>';

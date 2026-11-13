@@ -354,6 +354,12 @@ function syncFormControls(sourceRoot: ParentNode, cloneRoot: ParentNode) {
 }
 
 function stripInteractiveRuntimeState(clone: ParentNode) {
+  // 头像等图片嵌在「上传/更换」按钮里：导出只去掉按钮外壳，保留图片本身。
+  clone.querySelectorAll("button").forEach((button) => {
+    const images = [...button.querySelectorAll("img")];
+    if (images.length === 0) return;
+    button.replaceWith(...images);
+  });
   clone.querySelectorAll("[data-markdown-editor]").forEach((element) => {
     if (element.getAttribute("data-markdown-empty") !== "true") {
       element.remove();
