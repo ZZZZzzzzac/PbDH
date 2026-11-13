@@ -1,9 +1,9 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { findResourceLibrary, getOtherResourceLibraries, getResourcePickerLinks, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
-import { getOtherResourceLibraryViews, getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
+import { getOtherResourceLibraryViews, getResourceLibraryFields, type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { useRuntimeStore } from "../store/runtimeStore";
-import { sanitizeResourcePickerQuery } from "../storage/resourcePickerQueryCache";
+import { mergedResourcePickerDefaultQuery, sanitizeResourcePickerQuery } from "../storage/resourcePickerQueryCache";
 import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
 import { useResourcePickerQueryCache } from "./useResourcePickerQueryCache";
 
@@ -42,8 +42,8 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
     [browserFields, library, queriesByLibrary],
   );
   const defaultQuery = useMemo(
-    () => mergeResourcePickerQuery(restoredQuery ?? active?.link.默认查询, runtimeDefaultQuery),
-    [active?.link.默认查询, restoredQuery, runtimeDefaultQuery],
+    () => mergedResourcePickerDefaultQuery(active?.link.默认查询, restoredQuery, runtimeDefaultQuery, browserFields),
+    [active?.link.默认查询, browserFields, restoredQuery, runtimeDefaultQuery],
   );
 
   useEffect(() => {
@@ -93,18 +93,3 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   );
 }
 
-function mergeResourcePickerQuery(baseQuery: ResourceLibraryQuery | undefined, runtimeQuery: ResourceLibraryQuery | undefined): ResourceLibraryQuery | undefined {
-  if (!baseQuery && !runtimeQuery) {
-    return undefined;
-  }
-
-  return {
-    ...baseQuery,
-    ...runtimeQuery,
-    filters: {
-      ...(baseQuery?.filters ?? {}),
-      ...(runtimeQuery?.filters ?? {}),
-    },
-    sort: runtimeQuery?.sort ?? baseQuery?.sort,
-  };
-}

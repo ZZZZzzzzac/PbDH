@@ -102,6 +102,48 @@ export function sanitizeResourcePickerQuery(
   };
 }
 
+/**
+ * 合并资源选择器打开时的默认查询：系统包默认查询 → 恢复的缓存查询 → 依赖规则给出的运行时查询。
+ * 默认不显示的列在界面上无法由用户改动，包给这些列的筛选只能来自系统包；
+ * 缓存里缺失时必须补回，否则旧缓存会让主武器选择器混入副武器。
+ */
+export function mergedResourcePickerDefaultQuery(
+  packageQuery: ResourceLibraryQuery | undefined,
+  restoredQuery: ResourceLibraryQuery | undefined,
+  runtimeQuery: ResourceLibraryQuery | undefined,
+  fields: ResourceLibraryField[],
+): ResourceLibraryQuery | undefined {
+  const scopedRestored = mergeResourcePickerQuery(restoredQuery ?? packageQuery, hiddenFieldFilters(packageQuery, fields));
+  return mergeResourcePickerQuery(scopedRestored, runtimeQuery);
+}
+
+function hiddenFieldFilters(
+  query: ResourceLibraryQuery | undefined,
+  fields: ResourceLibraryField[],
+): ResourceLibraryQuery | undefined {
+  if (!query?.filters) return undefined;
+  const hiddenKeys = new Set(fields.filter((field) => !field.visible).map((field) => field.key));
+  const filters = Object.fromEntries(Object.entries(query.filters).filter(([key]) => hiddenKeys.has(key)));
+  return Object.keys(filters).length > 0 ? { filters } : undefined;
+}
+
+function mergeResourcePickerQuery(
+  baseQuery: ResourceLibraryQuery | undefined,
+  runtimeQuery: ResourceLibraryQuery | undefined,
+): ResourceLibraryQuery | undefined {
+  if (!baseQuery && !runtimeQuery) return undefined;
+
+  return {
+    ...baseQuery,
+    ...runtimeQuery,
+    filters: {
+      ...(baseQuery?.filters ?? {}),
+      ...(runtimeQuery?.filters ?? {}),
+    },
+    sort: runtimeQuery?.sort ?? baseQuery?.sort,
+  };
+}
+
 function readCache(
   packageId: string,
   characterSaveId: string,

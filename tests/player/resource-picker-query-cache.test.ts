@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ResourceLibrary } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
+import { queryResourceLibraryEntries } from "../../apps/player/src/sheet-runtime/domain/resourceLibrary.ts";
 import {
   loadResourcePickerQueries,
+  mergedResourcePickerDefaultQuery,
   removeResourcePickerQueries,
   resourcePickerQueryCacheKey,
   sanitizeResourcePickerQuery,
@@ -85,6 +87,21 @@ describe("Resource Picker Query Cache", () => {
     expect(sanitizeResourcePickerQuery({ sort: { field: "隐藏" } }, library, library.fields)).toBeUndefined();
 
     expect(sanitizeResourcePickerQuery({}, library, library.fields)).toEqual({});
+  });
+
+  it("旧缓存丢掉不可见列的筛选时，重新打开仍只显示系统包限定的类型", () => {
+    // 主武器选择器靠不可见的「类型」列限定范围；旧版本的恢复路径会丢掉这个筛选，
+    // 再次打开时主武器列表就混入副武器。包给不可见列的筛选必须由恢复逻辑补回。
+    const packageQuery = { filters: { 隐藏: ["x"] }, sort: { field: "位阶", direction: "asc" as const } };
+    const staleRestored = { sort: { field: "位阶", direction: "asc" as const } };
+
+    const resolved = mergedResourcePickerDefaultQuery(packageQuery, staleRestored, undefined, library.fields);
+    expect(resolved?.filters).toEqual({ 隐藏: ["x"] });
+    expect(queryResourceLibraryEntries(library, resolved!, library.fields).map((entry) => entry.ID)).toEqual(["sword"]);
+
+    // 用户可改动的可见列仍然覆盖默认值，不可见列以系统包为准。
+    const userChanged = mergedResourcePickerDefaultQuery(packageQuery, { filters: { 隐藏: ["y"], 位阶: ["2"] } }, undefined, library.fields);
+    expect(userChanged?.filters).toEqual({ 隐藏: ["x"], 位阶: ["2"] });
   });
 
   it("localStorage 不可用时安全降级", () => {
