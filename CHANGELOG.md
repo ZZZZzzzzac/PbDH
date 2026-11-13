@@ -5,6 +5,24 @@
 
 `v0.1.28`–`v0.1.51` 于 2026-11-13 依据 tag、GitHub Release / Deploy Release 运行记录与提交历史补记；这些版本的 Release 构建与部署记录均为成功，未保留当时的人工验证细节。
 
+## v0.1.52 — 2026-11-13 17:04:24
+
+- 状态：已部署，公网版本与 API 健康检查通过。
+- 代码 commit：[f94238c](https://github.com/ZZZZzzzzac/PbDH/commit/f94238cfe08169d323790dfd48c767aaebb64c47)。
+- 上一部署：`v0.1.51` / `adaf40e`。
+- [Release](https://github.com/ZZZZzzzzac/PbDH/releases/tag/v0.1.52) · [构建记录](https://github.com/ZZZZzzzzac/PbDH/actions/runs/43397683479) · [部署记录](https://github.com/ZZZZzzzzac/PbDH/actions/runs/43398174730)。
+
+### 修复
+
+- 资源选择器恢复上次筛选时丢掉了系统包给不可见列的默认筛选，主武器选择器再次打开会同时列出主武器与副武器；现在恢复时先补回包给定的范围筛选，再合并缓存与运行时查询，副武器选择器同样生效。
+- 补充旧缓存路径的回归测试，并锁定可见列仍由用户覆盖、不可见列以系统包为准。
+
+### 验证
+
+- 本地 `npm run verify` 通过。
+- Release 工作流完成完整验证与双基路径构建；Deploy 工作流完成制品摘要核对、启动与公网版本校验。
+- 部署后 `/pbdh/` 版本为 `0.1.52`，`/api/health` 返回 `ok`。
+
 ## v0.1.51 — 2026-11-13 10:47:23
 
 - 状态：已部署，公网版本与 API 健康检查通过。
